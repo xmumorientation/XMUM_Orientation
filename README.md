@@ -1,4 +1,4 @@
-# XMUM Orientation Platform 2026 — "Starlight Revival"
+# XMUM Orientation Platform 2026 — "Starlight Revival" 
 
 Unified web platform for XMUM Orientation 2026: main orientation website
 (auth, roles, attendance, location tracking) + Big Game system (token
