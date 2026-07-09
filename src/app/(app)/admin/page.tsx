@@ -66,7 +66,7 @@ export default function AdminWarRoomPage() {
     setBusy(false);
     if (error) setError(friendlyError(error));
     else {
-      setNotice(`Phase "${key}": ${action} ✓`);
+      setNotice(`Phase "${key}": ${action}`);
       load();
     }
   }
@@ -89,7 +89,7 @@ export default function AdminWarRoomPage() {
     { key: "tokens_frozen", label: "Freeze token mutations", danger: "All GM ± operations rejected" },
     { key: "gacha_disabled", label: "Disable gacha", danger: "All draws rejected" },
     { key: "nfc_disabled", label: "Disable NFC activation", danger: "Sticker taps rejected" },
-    { key: "rehearsal_mode", label: "Rehearsal mode", danger: "Bypasses ALL phase gating — testing only" },
+    { key: "rehearsal_mode", label: "Rehearsal mode", danger: "Bypasses ALL phase gating. Testing only" },
     { key: "day2_map_layer", label: "Day 2 map layer", danger: "Reveals projectors on everyone's map" },
   ];
 
@@ -100,7 +100,7 @@ export default function AdminWarRoomPage() {
       <SuccessBanner message={notice} />
 
       {ops && (
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
           {[
             ["Tokens in circulation", ops.tokens_in_circulation],
             ["Transactions", ops.transactions_count],
@@ -118,6 +118,7 @@ export default function AdminWarRoomPage() {
         </div>
       )}
 
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.25fr)_minmax(20rem,0.75fr)]">
       <section>
         <h2 className="mb-2 font-semibold">Phase control</h2>
         <div className="space-y-2">
@@ -213,6 +214,7 @@ export default function AdminWarRoomPage() {
           })}
         </Card>
       </section>
+      </div>
 
     </div>
   );

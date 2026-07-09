@@ -19,6 +19,8 @@ import type {
 } from "@/lib/types";
 import { cn, friendlyError } from "@/lib/utils";
 
+type OpsView = "map" | "attendance" | "balances" | "register";
+
 interface FreshieHit {
   id: string;
   full_name: string;
@@ -45,6 +47,7 @@ export default function CommitteePage() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [view, setView] = useState<OpsView>("map");
 
   const canAssign = profile.role === "committee" || profile.role === "admin";
 
@@ -173,12 +176,19 @@ export default function CommitteePage() {
     setBusy(false);
     if (error) setError(friendlyError(error));
     else {
-      setNotice("Group assigned — the Freshie's app updates immediately.");
+      setNotice("Group assigned. The Freshie's app updates immediately.");
       setHits((h) =>
         h.map((x) => (x.id === freshieId ? { ...x, group_id: groupId } : x))
       );
     }
   }
+
+  const tabs: { key: OpsView; label: string; desc: string }[] = [
+    { key: "map", label: "Map", desc: "Live location view" },
+    { key: "attendance", label: "Attendance", desc: "Completion by group" },
+    { key: "balances", label: "Balances", desc: "Token overview" },
+    { key: "register", label: "Register", desc: "Assign freshies" },
+  ];
 
   return (
     <div className="space-y-4">
@@ -186,19 +196,39 @@ export default function CommitteePage() {
       <ErrorBanner message={error} />
       <SuccessBanner message={notice} />
 
+      <div className="grid grid-cols-2 gap-2 rounded-[1.5rem] bg-base-200 p-1.5 sm:grid-cols-4">
+        {tabs
+          .filter((tab) => tab.key !== "register" || canAssign)
+          .map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setView(tab.key)}
+              className={cn(
+                "min-h-[64px] rounded-[1.15rem] px-3 text-left transition",
+                view === tab.key
+                  ? "bg-white text-ink shadow-card"
+                  : "text-ink-faint hover:bg-white/50"
+              )}
+            >
+              <span className="block text-sm font-black">{tab.label}</span>
+              <span className="mt-1 block text-xs leading-4">{tab.desc}</span>
+            </button>
+          ))}
+      </div>
+
       {allocation && allocation.active && (
         <Card className="text-center">
           <h2 className="font-semibold">
-            📦 My blind box QR
+            My blind box QR
             {allocation.box_type === "special" && (
               <span className="chip ml-2 bg-star-goldsoft/40 text-star-gold">
-                ★ special
+                special
               </span>
             )}
           </h2>
           <p className="text-sm text-ink-faint">
             {allocation.total_boxes - allocation.used_boxes} of{" "}
-            {allocation.total_boxes} boxes left · {allocation.min_tokens}–
+            {allocation.total_boxes} boxes left · {allocation.min_tokens}-
             {allocation.max_tokens} tokens each · each group can scan you once
           </p>
           {qrDataUrl ? (
@@ -217,73 +247,79 @@ export default function CommitteePage() {
         </Card>
       )}
 
-      <section>
-        <h2 className="mb-2 font-semibold">Live map — all groups</h2>
-        <CampusMap showGroupPins />
-      </section>
+      {view === "map" && (
+        <section>
+          <h2 className="mb-2 font-semibold">Live map</h2>
+          <CampusMap showGroupPins />
+        </section>
+      )}
 
-      <section>
-        <div className="mb-2 flex items-center justify-between">
-          <h2 className="font-semibold">Attendance</h2>
-          <select
-            className="input max-w-[180px]"
-            value={sessionId ?? ""}
-            onChange={(e) => setSessionId(Number(e.target.value))}
-          >
-            {sessions.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        <Card className="divide-y divide-base-200 p-0">
-          {groups.map((g) => {
-            const a = attendance[g.id] ?? { present: 0, total: 0 };
-            const pct = a.total ? Math.round((a.present / a.total) * 100) : 0;
-            return (
-              <div key={g.id} className="flex items-center gap-3 px-4 py-2.5">
-                <span className="w-20 text-sm font-medium">{g.name}</span>
-                <div className="h-2 flex-1 overflow-hidden rounded-full bg-base-200">
-                  <div
-                    className={cn(
-                      "h-full rounded-full",
-                      pct === 100 ? "bg-status-open" : "bg-star-cyan"
-                    )}
-                    style={{ width: `${pct}%` }}
-                  />
-                </div>
-                <span className="w-16 text-right text-xs tabular-nums text-ink-faint">
-                  {a.present}/{a.total}
-                </span>
-              </div>
-            );
-          })}
-        </Card>
-      </section>
-
-      <section>
-        <h2 className="mb-2 font-semibold">Group balances</h2>
-        <Card className="grid grid-cols-2 gap-2">
-          {groups.map((g) => (
-            <div
-              key={g.id}
-              className="flex items-center justify-between rounded-lg bg-base-100 px-3 py-1.5 text-sm"
+      {view === "attendance" && (
+        <section>
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <h2 className="font-semibold">Attendance</h2>
+            <select
+              className="input max-w-[190px]"
+              value={sessionId ?? ""}
+              onChange={(e) => setSessionId(Number(e.target.value))}
             >
-              <span>{g.name}</span>
-              <span className="font-bold tabular-nums">{g.token_balance} ✦</span>
-            </div>
-          ))}
-        </Card>
-      </section>
+              {sessions.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <Card className="divide-y divide-base-200 p-0">
+            {groups.map((g) => {
+              const a = attendance[g.id] ?? { present: 0, total: 0 };
+              const pct = a.total ? Math.round((a.present / a.total) * 100) : 0;
+              return (
+                <div key={g.id} className="flex items-center gap-3 px-4 py-3">
+                  <span className="w-20 text-sm font-medium">{g.name}</span>
+                  <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-base-200">
+                    <div
+                      className={cn(
+                        "h-full rounded-full",
+                        pct === 100 ? "bg-status-open" : "bg-star-cyan"
+                      )}
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                  <span className="w-16 text-right text-xs tabular-nums text-ink-faint">
+                    {a.present}/{a.total}
+                  </span>
+                </div>
+              );
+            })}
+          </Card>
+        </section>
+      )}
 
-      {canAssign && (
+      {view === "balances" && (
+        <section>
+          <h2 className="mb-2 font-semibold">Group balances</h2>
+          <Card className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {groups.map((g) => (
+              <div
+                key={g.id}
+                className="flex items-center justify-between rounded-xl bg-base-100 px-3 py-2 text-sm"
+              >
+                <span>{g.name}</span>
+                <span className="font-bold tabular-nums">{g.token_balance} tokens</span>
+              </div>
+            ))}
+          </Card>
+        </section>
+      )}
+
+      {view === "register" && canAssign && (
         <section>
           <h2 className="mb-2 font-semibold">Register counter</h2>
           <Card className="space-y-3">
-            <form onSubmit={search} className="flex gap-2">
+            <form onSubmit={search} className="grid gap-2 sm:grid-cols-[1fr_auto]">
               <input
-                className="input flex-1"
+                className="input"
                 placeholder="Student ID or name…"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}

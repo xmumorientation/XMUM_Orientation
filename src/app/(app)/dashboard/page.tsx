@@ -7,6 +7,13 @@ import { useGroup } from "@/components/useGroup";
 import { Card, PageTitle, Skeleton, StatusPill } from "@/components/ui";
 import { ROLE_LABELS } from "@/lib/types";
 
+type Action = {
+  href: string;
+  code: string;
+  title: string;
+  desc: string;
+};
+
 function TokenBalanceCard() {
   const { group, loading } = useGroup();
   if (loading) return <Skeleton className="h-[132px]" />;
@@ -71,9 +78,59 @@ function ActionCard({
   );
 }
 
+function primaryAction(role: string): Action {
+  if (role === "freshie") {
+    return {
+      href: "/inventory",
+      code: "IT",
+      title: "Check your progress",
+      desc: "See puzzle pieces, tokens, and collected items.",
+    };
+  }
+  if (role === "faci") {
+    return {
+      href: "/attendance",
+      code: "AT",
+      title: "Mark attendance",
+      desc: "Update your group roster before moving on.",
+    };
+  }
+  if (role === "gm" || role === "guardian_gm") {
+    return {
+      href: "/gm",
+      code: "GM",
+      title: "Open station panel",
+      desc: "Run rewards, Day 2 results, boxes, and station status.",
+    };
+  }
+  if (role === "hof" || role === "hogm" || role === "committee") {
+    return {
+      href: "/committee",
+      code: "OP",
+      title: "Open operations",
+      desc: "Check map, attendance, balances, and registration.",
+    };
+  }
+  if (role === "admin") {
+    return {
+      href: "/admin",
+      code: "AD",
+      title: "Open war room",
+      desc: "Control phases, kill-switches, users, and game config.",
+    };
+  }
+  return {
+    href: "/map",
+    code: "MP",
+    title: "Open campus map",
+    desc: "Find stations and live statuses.",
+  };
+}
+
 export default function DashboardPage() {
   const profile = useProfile();
   const role = profile.role;
+  const main = primaryAction(role);
 
   return (
     <div className="space-y-4">
@@ -83,9 +140,31 @@ export default function DashboardPage() {
         action={<StatusPill tone="neutral">{ROLE_LABELS[role]}</StatusPill>}
       />
 
+      <Link
+        href={main.href}
+        className="card block overflow-hidden border-star-cyan/30 bg-white p-0 transition hover:-translate-y-0.5 hover:border-star-cyan/60"
+      >
+        <div className="bg-[linear-gradient(90deg,var(--brand-1),var(--brand-2))] px-4 py-3 text-white">
+          <p className="text-xs font-black uppercase tracking-[0.2em] text-white/75">
+            Next action
+          </p>
+          <div className="mt-3 flex items-end justify-between gap-3">
+            <div>
+              <p className="text-2xl font-black tracking-tight">{main.title}</p>
+              <p className="mt-1 max-w-[42ch] text-sm leading-5 text-white/80">
+                {main.desc}
+              </p>
+            </div>
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/15 text-sm font-black">
+              {main.code}
+            </span>
+          </div>
+        </div>
+      </Link>
+
       {(role === "freshie" || role === "faci") && <TokenBalanceCard />}
 
-      <div className="grid gap-3">
+      <div className="grid gap-3 sm:grid-cols-2">
         {(role === "freshie" || role === "faci") && (
           <>
             <ActionCard

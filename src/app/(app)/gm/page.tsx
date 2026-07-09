@@ -26,11 +26,18 @@ import { cn, friendlyError, idemKey } from "@/lib/utils";
 
 type Tab = "day1" | "day2" | "box" | "station";
 
+const TASKS: Record<Tab, { title: string; desc: string }> = {
+  day1: { title: "Day 1", desc: "Award station result" },
+  day2: { title: "Day 2", desc: "Charge entry and grant piece" },
+  box: { title: "Box", desc: "Sell GM blind box" },
+  station: { title: "Status", desc: "Update queue state" },
+};
+
 // GM control panel v2 (HOGM redesign):
-//  Day 1 — win/lose rewards (+2/+1)
-//  Day 2 — pick group + result (+ tier locations); the system deducts the
+//  Day 1 - win/lose rewards (+2/+1)
+//  Day 2 - pick group + result (+ tier locations); the system deducts the
 //          station's entry fee and auto-grants a random non-duplicate piece
-//  Box   — sell one of the limited GM blind boxes
+//  Box   - sell one of the limited GM blind boxes
 // All submissions carry idempotency keys and queue offline (NFR-6).
 export default function GmPanelPage() {
   const profile = useProfile();
@@ -94,14 +101,16 @@ export default function GmPanelPage() {
         p_reason: reason,
         p_idempotency_key: idemKey(),
       },
-      `${delta > 0 ? "+" : ""}${delta} → group ${groupId}`
+      `${delta > 0 ? "+" : ""}${delta} to group ${groupId}`
     );
     setBusy(false);
     if (res.status === "confirmed") {
       const bal = (res.data as { balance?: number })?.balance;
-      flash(`✓ ${reason}: ${delta > 0 ? "+" : ""}${delta}${bal !== undefined ? ` · balance ${bal}` : ""}`);
+      flash(
+        `${reason}: ${delta > 0 ? "+" : ""}${delta}${bal !== undefined ? ` · balance ${bal}` : ""}`
+      );
     } else if (res.status === "queued") {
-      flash("📶 Offline — queued, will send automatically.");
+      flash("Offline. Queued and will send automatically.");
     } else {
       setError(friendlyError({ message: res.error }));
     }
@@ -147,7 +156,7 @@ export default function GmPanelPage() {
         p_locations: needPicks > 0 ? locations : null,
         p_idempotency_key: idemKey(),
       },
-      `day2 ${success ? "win" : "lose"} → group ${groupId}`
+      `day2 ${success ? "win" : "lose"} to group ${groupId}`
     );
     setBusy(false);
     if (res.status === "confirmed") {
@@ -155,12 +164,12 @@ export default function GmPanelPage() {
       if (d.duplicate) return flash("Duplicate ignored (already recorded).");
       flash(
         d.success && d.piece_name
-          ? `✓ −${d.cost} tokens · granted ${d.piece_name} 🧩 · balance ${d.balance}`
-          : `✓ −${d.cost} tokens (challenge lost) · balance ${d.balance}`
+          ? `-${d.cost} tokens · granted ${d.piece_name} · balance ${d.balance}`
+          : `-${d.cost} tokens (challenge lost) · balance ${d.balance}`
       );
       setLocations([]);
     } else if (res.status === "queued") {
-      flash("📶 Offline — queued, will send automatically.");
+      flash("Offline. Queued and will send automatically.");
     } else {
       setError(friendlyError({ message: res.error }));
     }
@@ -178,7 +187,7 @@ export default function GmPanelPage() {
     if (error) setError(friendlyError(error));
     else {
       const d = data as { tokens: number; price: number; balance: number };
-      flash(`📦 Box opened: paid ${d.price}, won ${d.tokens} tokens · balance ${d.balance}`);
+      flash(`Box opened: paid ${d.price}, won ${d.tokens} tokens · balance ${d.balance}`);
       setBoxesSold((n) => n + 1);
     }
   }
@@ -212,19 +221,22 @@ export default function GmPanelPage() {
       <SuccessBanner message={notice} />
 
       {queue.length > 0 && (
-        <div className="rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800">
-          ⏳ {queue.length} submission{queue.length > 1 ? "s" : ""} queued
-          offline — will send when connection returns.
+        <div className="rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 shadow-card">
+          <p className="font-bold">Offline queue active</p>
+          <p className="mt-1">
+            {queue.length} submission{queue.length > 1 ? "s" : ""} waiting.
+            Keep this page open; they will send when the connection returns.
+          </p>
         </div>
       )}
 
-      <Card>
+      <Card className="sticky top-[8.75rem] z-20 border-star-cyan/20">
         <label className="label" htmlFor="group">
-          Group
+          Active group
         </label>
         <select
           id="group"
-          className="input"
+          className="input text-lg font-bold"
           value={groupId ?? ""}
           onChange={(e) => setGroupId(Number(e.target.value) || null)}
         >
@@ -237,60 +249,63 @@ export default function GmPanelPage() {
         </select>
       </Card>
 
-      <div className="grid grid-cols-4 gap-1 rounded-xl bg-base-200 p-1">
-        {(
-          [
-            ["day1", "Day 1"],
-            ["day2", "Day 2"],
-            ["box", "Box"],
-            ["station", "Status"],
-          ] as [Tab, string][]
-        ).map(([t, label]) => (
+      <div className="grid grid-cols-2 gap-2 rounded-[1.5rem] bg-base-200 p-1.5 sm:grid-cols-4">
+        {(Object.keys(TASKS) as Tab[]).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
             className={cn(
-              "min-h-[40px] rounded-lg text-sm font-semibold",
-              tab === t ? "bg-white shadow-card" : "text-ink-faint"
+              "min-h-[72px] rounded-[1.15rem] px-3 text-left transition active:scale-[0.99]",
+              tab === t
+                ? "bg-white text-ink shadow-card"
+                : "text-ink-faint hover:bg-white/50"
             )}
           >
-            {label}
+            <span className="block text-sm font-black">{TASKS[t].title}</span>
+            <span className="mt-1 block text-xs leading-4">{TASKS[t].desc}</span>
           </button>
         ))}
       </div>
 
       {tab === "day1" && (
-        <Card className="space-y-3">
-          <h2 className="font-semibold">Day 1 rewards</h2>
+        <Card className="space-y-4">
+          <div>
+            <h2 className="font-semibold">Day 1 rewards</h2>
+            <p className="text-sm text-ink-faint">
+              Big buttons for fast station scoring. Confirm the active group before tapping.
+            </p>
+          </div>
           <div className="grid grid-cols-2 gap-2">
             <button
               disabled={busy}
               onClick={() => day1Reward(2, "Station win")}
-              className="btn bg-green-600 text-lg text-white"
+              className="btn min-h-[92px] flex-col bg-green-600 text-white"
             >
-              🏆 Win +2
+              <span className="text-2xl font-black">+2</span>
+              <span className="text-sm">Win</span>
             </button>
             <button
               disabled={busy}
               onClick={() => day1Reward(1, "Station participation")}
-              className="btn bg-green-500 text-lg text-white"
+              className="btn min-h-[92px] flex-col bg-green-500 text-white"
             >
-              Lose +1
+              <span className="text-2xl font-black">+1</span>
+              <span className="text-sm">Participation</span>
             </button>
           </div>
           <button disabled={busy} onClick={undo} className="btn-secondary w-full">
-            ↩︎ Undo my last transaction (2 min window)
+            Undo my last transaction (2 min window)
           </button>
         </Card>
       )}
 
       {tab === "day2" && (
-        <Card className="space-y-3">
+        <Card className="space-y-4">
           <div>
             <h2 className="font-semibold">Day 2 challenge result</h2>
             <p className="text-sm text-ink-faint">
               {RISK_TIER_META[tier].label}: {RISK_TIER_META[tier].desc}. Entry
-              fee −{station?.entry_cost ?? "?"} is charged win or lose; a win
+              fee -{station?.entry_cost ?? "?"} is charged win or lose; a win
               grants a random piece the group doesn&apos;t own yet.
             </p>
           </div>
@@ -299,24 +314,26 @@ export default function GmPanelPage() {
             <button
               onClick={() => setSuccess(true)}
               className={cn(
-                "btn text-base",
+                "btn min-h-[76px] flex-col text-base",
                 success
                   ? "bg-green-600 text-white"
                   : "border border-base-300 bg-white text-ink-soft"
               )}
             >
-              ✓ Success
+              <span className="text-xl font-black">Success</span>
+              <span className="text-xs">Charge + grant</span>
             </button>
             <button
               onClick={() => setSuccess(false)}
               className={cn(
-                "btn text-base",
+                "btn min-h-[76px] flex-col text-base",
                 !success
                   ? "bg-red-600 text-white"
                   : "border border-base-300 bg-white text-ink-soft"
               )}
             >
-              ✗ Failed
+              <span className="text-xl font-black">Failed</span>
+              <span className="text-xs">Charge only</span>
             </button>
           </div>
 
@@ -331,7 +348,7 @@ export default function GmPanelPage() {
                     key={loc}
                     onClick={() => toggleLocation(loc)}
                     className={cn(
-                      "btn text-sm",
+                      "btn min-h-[64px] text-sm",
                       locations.includes(loc)
                         ? "bg-star-violet text-white"
                         : "border border-base-300 bg-white"
@@ -347,14 +364,14 @@ export default function GmPanelPage() {
           <button
             disabled={busy || !station}
             onClick={submitDay2}
-            className="btn-primary w-full"
+            className="btn-primary min-h-[64px] w-full text-lg"
           >
-            Submit (−{station?.entry_cost ?? "?"} tokens
-            {success ? " + 🧩 piece" : ""})
+            Submit (-{station?.entry_cost ?? "?"} tokens
+            {success ? " + piece" : ""})
           </button>
           {!station && (
             <p className="text-sm text-red-600">
-              No station assigned to your account — ask Admin.
+              No station assigned to your account. Ask Admin.
             </p>
           )}
         </Card>
@@ -364,16 +381,16 @@ export default function GmPanelPage() {
         <Card className="space-y-3">
           <h2 className="font-semibold">Sell a blind box</h2>
           <p className="text-sm text-ink-faint">
-            Price −{boxPrice} tokens, contents are random tokens. Limited
+            Price -{boxPrice} tokens, contents are random tokens. Limited
             stock: {Math.max(0, boxStock - boxesSold)} of {boxStock} left
             (shared across all GMs).
           </p>
           <button
             disabled={busy || boxesSold >= boxStock}
             onClick={sellBox}
-            className="btn-primary w-full"
+            className="btn-primary min-h-[72px] w-full text-lg"
           >
-            📦 Sell & open (−{boxPrice} tokens)
+            Sell and open (-{boxPrice} tokens)
           </button>
         </Card>
       )}
@@ -390,29 +407,29 @@ export default function GmPanelPage() {
                 <button
                   disabled={busy}
                   onClick={() => setStatus("available")}
-                  className="btn bg-green-600 text-sm text-white"
+                  className="btn min-h-[72px] bg-green-600 text-sm text-white"
                 >
-                  🟢 Available
+                  Available
                 </button>
                 <button
                   disabled={busy}
                   onClick={() => setStatus("in_progress")}
-                  className="btn bg-red-600 text-sm text-white"
+                  className="btn min-h-[72px] bg-red-600 text-sm text-white"
                 >
-                  🔴 Busy
+                  Busy
                 </button>
                 <button
                   disabled={busy}
                   onClick={() => setStatus("closed")}
-                  className="btn bg-gray-500 text-sm text-white"
+                  className="btn min-h-[72px] bg-gray-500 text-sm text-white"
                 >
-                  ⚪ Closed
+                  Closed
                 </button>
               </div>
             </>
           ) : (
             <p className="text-sm text-ink-faint">
-              No station assigned to your account — ask Admin to set your
+              No station assigned to your account. Ask Admin to set your
               station.
             </p>
           )}

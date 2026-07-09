@@ -37,8 +37,8 @@ export default function AdminLayout({
   }
 
   return (
-    <div>
-      <div className="-mx-4 mb-4 flex gap-1 overflow-x-auto px-4 pb-1">
+    <div className="lg:grid lg:grid-cols-[12rem_minmax(0,1fr)] lg:gap-5">
+      <div className="-mx-3 mb-4 flex gap-1 overflow-x-auto px-3 pb-1 sm:-mx-5 sm:px-5 lg:sticky lg:top-[9rem] lg:mx-0 lg:block lg:self-start lg:overflow-visible lg:px-0">
         {TABS.map((t) => {
           const active =
             t.href === "/admin"
@@ -49,10 +49,10 @@ export default function AdminLayout({
               key={t.href}
               href={t.href}
               className={cn(
-                "whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-semibold",
+                "whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-semibold lg:mb-1 lg:flex lg:min-h-[40px] lg:items-center lg:rounded-xl",
                 active
                   ? "bg-ink text-white"
-                  : "bg-white text-ink-soft shadow-card"
+                  : "bg-white text-ink-soft shadow-card hover:text-ink"
               )}
             >
               {t.label}
@@ -60,7 +60,7 @@ export default function AdminLayout({
           );
         })}
       </div>
-      {children}
+      <div className="min-w-0">{children}</div>
     </div>
   );
 }
