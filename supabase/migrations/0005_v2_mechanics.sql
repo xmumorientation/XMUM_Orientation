@@ -249,7 +249,12 @@ declare
   v_role public.user_role := public.my_role();
   v_station record;
   v_pool public.projector_location[];
-  v_item record;
+  -- typed %rowtype (not a bare `record`) so it has a known, all-NULL
+  -- structure even when p_success is false and it's never assigned —
+  -- referencing fields of an unassigned bare `record` raises
+  -- "record ... is not assigned yet" even inside a CASE WHEN that
+  -- shouldn't evaluate that branch.
+  v_item public.items%rowtype;
   v_balance integer;
   v_tx_id bigint;
 begin
