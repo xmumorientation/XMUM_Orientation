@@ -3,7 +3,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "XMUM Orientation",
+  title: "XMUM Orientation 2026 - Starlight Revival",
   description:
     "Official platform for XMUM Orientation — attendance, campus map and the Big Game.",
 };

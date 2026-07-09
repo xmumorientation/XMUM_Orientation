@@ -136,14 +136,14 @@ export default function AdminUsersPage() {
             onClick={() => runImport(true)}
             className="btn-secondary flex-1"
           >
-            🔍 Dry run
+            Dry run
           </button>
           <button
             disabled={busy || !csv.trim() || !result?.dryRun || (result?.errors?.length ?? 0) > 0}
             onClick={() => runImport(false)}
             className="btn-primary flex-1"
           >
-            📥 Import
+            Import
           </button>
         </div>
 

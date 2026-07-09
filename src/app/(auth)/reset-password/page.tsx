@@ -28,30 +28,43 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="card space-y-4 p-5">
-      <ErrorBanner message={error} />
-      <div>
-        <label className="label" htmlFor="password">
-          New password (min 8 chars)
-        </label>
-        <input
-          id="password"
-          type="password"
-          required
-          minLength={8}
-          autoComplete="new-password"
-          className="input"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
+    <form onSubmit={onSubmit} className="auth-card">
+      <div className="auth-card-inner space-y-5">
+        <div>
+          <p className="text-xs font-black uppercase tracking-[0.22em] text-star-cyanstrong">
+            New credentials
+          </p>
+          <h2 className="mt-3 text-3xl font-black tracking-[-0.03em] text-ink">
+            Set a new password.
+          </h2>
+        </div>
+        <ErrorBanner message={error} />
+        <div>
+          <label className="label" htmlFor="password">
+            New password (min 8 chars)
+          </label>
+          <input
+            id="password"
+            type="password"
+            required
+            minLength={8}
+            autoComplete="new-password"
+            className="input"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+        </div>
+        <button type="submit" disabled={busy} className="group auth-submit">
+          <span>
+            {busy ? (
+              <Spinner className="border-white/40 border-t-white" />
+            ) : (
+              "Set new password"
+            )}
+          </span>
+          <span className="auth-submit-mark">OK</span>
+        </button>
       </div>
-      <button type="submit" disabled={busy} className="btn-primary w-full">
-        {busy ? (
-          <Spinner className="border-white/40 border-t-white" />
-        ) : (
-          "Set new password"
-        )}
-      </button>
     </form>
   );
 }

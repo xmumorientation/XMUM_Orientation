@@ -166,9 +166,11 @@ export function CampusMap({
                   x={Number(p.map_x)}
                   y={Number(p.map_y) + 1.4}
                   textAnchor="middle"
-                  fontSize="4.5"
+                  fontSize="3"
+                  fontWeight="800"
+                  fill={p.activated_at ? "#d99a06" : "#7c3aed"}
                 >
-                  {p.activated_at ? "🌟" : "📽️"}
+                  {p.activated_at ? "ON" : "NFC"}
                 </text>
                 <text
                   x={Number(p.map_x)}
@@ -229,10 +231,10 @@ export function CampusMap({
             }}
           >
             {selected.status === "available"
-              ? "🟢 Available"
+              ? "Available"
               : selected.status === "in_progress"
-                ? "🔴 In Progress"
-                : "⚪ Closed"}
+                ? "In Progress"
+                : "Closed"}
           </span>
         </div>
       )}

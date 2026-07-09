@@ -4,50 +4,68 @@ import Link from "next/link";
 
 import { useProfile } from "@/components/ProfileProvider";
 import { useGroup } from "@/components/useGroup";
-import { Card, PageTitle } from "@/components/ui";
+import { Card, PageTitle, Skeleton, StatusPill } from "@/components/ui";
 import { ROLE_LABELS } from "@/lib/types";
 
 function TokenBalanceCard() {
   const { group, loading } = useGroup();
-  if (loading) return null;
+  if (loading) return <Skeleton className="h-[132px]" />;
   if (!group) {
     return (
-      <Card className="text-center">
-        <p className="text-sm text-ink-faint">
-          You haven&apos;t been assigned to a group yet. You&apos;ll get your
-          group at the registration counter — check back after check-in!
+      <Card className="border-amber-200 bg-amber-50/90">
+        <StatusPill tone="warning">Group pending</StatusPill>
+        <p className="mt-3 text-sm leading-5 text-amber-900">
+          You have not been assigned to a group yet. Check again after the
+          registration counter finishes your check-in.
         </p>
       </Card>
     );
   }
   return (
-    <Card className="bg-gradient-to-br from-star-goldsoft/20 via-white to-star-cyansoft/20 text-center">
-      <p className="text-sm font-medium text-ink-soft">{group.name}</p>
-      <p className="mt-1 text-5xl font-bold tabular-nums">
-        {group.token_balance}
-      </p>
-      <p className="mt-1 text-sm text-ink-faint">tokens ✦</p>
+    <Card className="overflow-hidden border-star-cyan/20 bg-white p-0">
+      <div className="flex items-center justify-between border-b border-base-200 bg-star-cyansoft/20 px-4 py-3">
+        <div>
+          <p className="text-sm font-semibold text-ink-soft">{group.name}</p>
+          <p className="text-xs text-ink-faint">Current group balance</p>
+        </div>
+        <StatusPill tone="info">Live</StatusPill>
+      </div>
+      <div className="px-4 py-5">
+        <p className="text-6xl font-black leading-none tracking-tight tabular-nums">
+          {group.token_balance}
+        </p>
+        <p className="mt-2 text-sm font-semibold text-ink-faint">tokens</p>
+      </div>
     </Card>
   );
 }
 
-function QuickLink({
+function ActionCard({
   href,
-  icon,
+  code,
   title,
   desc,
+  tone = "default",
 }: {
   href: string;
-  icon: string;
+  code: string;
   title: string;
   desc: string;
+  tone?: "default" | "primary";
 }) {
   return (
-    <Link href={href} className="card flex items-center gap-3 p-4">
-      <span className="text-2xl">{icon}</span>
+    <Link
+      href={href}
+      className={`card flex items-center gap-3 p-4 transition hover:-translate-y-0.5 hover:border-star-cyan/40 ${
+        tone === "primary" ? "bg-star-cyansoft/20" : ""
+      }`}
+    >
+      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-ink text-xs font-black tracking-tight text-white">
+        {code}
+      </span>
       <span>
         <span className="block font-semibold">{title}</span>
-        <span className="block text-sm text-ink-faint">{desc}</span>
+        <span className="block text-sm leading-5 text-ink-faint">{desc}</span>
       </span>
     </Link>
   );
@@ -61,23 +79,25 @@ export default function DashboardPage() {
     <div className="space-y-4">
       <PageTitle
         title={`Hi, ${profile.full_name || "there"}!`}
-        subtitle={ROLE_LABELS[role]}
+        subtitle="Your event tools for the current orientation phase."
+        action={<StatusPill tone="neutral">{ROLE_LABELS[role]}</StatusPill>}
       />
 
       {(role === "freshie" || role === "faci") && <TokenBalanceCard />}
 
-      <div className="space-y-3">
+      <div className="grid gap-3">
         {(role === "freshie" || role === "faci") && (
           <>
-            <QuickLink
+            <ActionCard
               href="/inventory"
-              icon="🎒"
+              code="IT"
               title="Inventory"
               desc="Puzzle pieces & facility cards"
+              tone="primary"
             />
-            <QuickLink
+            <ActionCard
               href="/transactions"
-              icon="🧾"
+              code="TX"
               title="Token history"
               desc="Every earn & spend, fully logged"
             />
@@ -86,15 +106,16 @@ export default function DashboardPage() {
 
         {role === "faci" && (
           <>
-            <QuickLink
+            <ActionCard
               href="/attendance"
-              icon="✅"
+              code="AT"
               title="Attendance"
               desc="Mark your group's roster"
+              tone="primary"
             />
-            <QuickLink
+            <ActionCard
               href="/checkin"
-              icon="📍"
+              code="CK"
               title="Location check-in"
               desc="Tell the committee where your group is"
             />
@@ -102,56 +123,59 @@ export default function DashboardPage() {
         )}
 
         {(role === "gm" || role === "guardian_gm") && (
-          <QuickLink
+          <ActionCard
             href="/gm"
-            icon="🎮"
+            code="GM"
             title="Station panel"
             desc="Tokens, items, gacha & station status"
+            tone="primary"
           />
         )}
 
         {role === "guardian_gm" && (
-          <QuickLink
+          <ActionCard
             href="/guardian"
-            icon="🛡️"
+            code="VG"
             title="Guardian verification"
             desc="Verify puzzle sets & manage activation"
           />
         )}
 
         {(role === "hof" || role === "hogm" || role === "committee") && (
-          <QuickLink
+          <ActionCard
             href="/committee"
-            icon="📡"
+            code="OP"
             title="Operations"
             desc="Live map, attendance & special draws"
+            tone="primary"
           />
         )}
 
         {role === "admin" && (
-          <QuickLink
+          <ActionCard
             href="/admin"
-            icon="⚙️"
+            code="AD"
             title="Admin console"
             desc="Users, game config, phases & kill-switches"
+            tone="primary"
           />
         )}
 
-        <QuickLink
+        <ActionCard
           href="/map"
-          icon="🗺️"
+          code="MP"
           title="Campus map"
           desc="Stations & live statuses"
         />
-        <QuickLink
+        <ActionCard
           href="/schedule"
-          icon="🗓️"
+          code="PL"
           title="Schedule"
           desc="The full event rundown"
         />
-        <QuickLink
+        <ActionCard
           href="/faq"
-          icon="❓"
+          code="FQ"
           title="FAQ & contacts"
           desc="Stuck? Start here"
         />

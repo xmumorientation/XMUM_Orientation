@@ -59,88 +59,101 @@ export default function RegisterPage() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="card space-y-4 p-5">
-      <ErrorBanner message={error} />
-      <SuccessBanner message={notice} />
-      <div>
-        <label className="label" htmlFor="fullName">
-          Full name
-        </label>
-        <input
-          id="fullName"
-          required
-          className="input"
-          value={fullName}
-          onChange={(e) => setFullName(e.target.value)}
-        />
+    <form onSubmit={onSubmit} className="auth-card">
+      <div className="auth-card-inner space-y-4">
+        <div>
+          <p className="text-xs font-black uppercase tracking-[0.22em] text-star-cyanstrong">
+            Freshie registration
+          </p>
+          <h2 className="mt-3 text-3xl font-black tracking-[-0.03em] text-ink">
+            Create your event pass.
+          </h2>
+        </div>
+        <ErrorBanner message={error} />
+        <SuccessBanner message={notice} />
+        <div>
+          <label className="label" htmlFor="fullName">
+            Full name
+          </label>
+          <input
+            id="fullName"
+            required
+            className="input"
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+          />
+        </div>
+        <div>
+          <label className="label" htmlFor="studentId">
+            Student ID
+          </label>
+          <input
+            id="studentId"
+            required
+            className="input"
+            value={studentId}
+            onChange={(e) => setStudentId(e.target.value)}
+          />
+        </div>
+        <div>
+          <label className="label" htmlFor="phone">
+            Phone
+          </label>
+          <input
+            id="phone"
+            type="tel"
+            required
+            className="input"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+          />
+        </div>
+        <div>
+          <label className="label" htmlFor="email">
+            XMUM student email
+          </label>
+          <input
+            id="email"
+            type="email"
+            required
+            placeholder="abc12345@xmu.edu.my"
+            className="input"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+        </div>
+        <div>
+          <label className="label" htmlFor="password">
+            Password (min 8 chars)
+          </label>
+          <input
+            id="password"
+            type="password"
+            required
+            minLength={8}
+            autoComplete="new-password"
+            className="input"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+        </div>
+        <button type="submit" disabled={busy} className="group auth-submit">
+          <span>
+            {busy ? (
+              <Spinner className="border-white/40 border-t-white" />
+            ) : (
+              "Create account"
+            )}
+          </span>
+          <span className="auth-submit-mark">ID</span>
+        </button>
+        <p className="text-center text-sm text-ink-faint">
+          Already registered?{" "}
+          <Link href="/login" className="font-bold text-star-cyanstrong">
+            Log in
+          </Link>
+        </p>
       </div>
-      <div>
-        <label className="label" htmlFor="studentId">
-          Student ID
-        </label>
-        <input
-          id="studentId"
-          required
-          className="input"
-          value={studentId}
-          onChange={(e) => setStudentId(e.target.value)}
-        />
-      </div>
-      <div>
-        <label className="label" htmlFor="phone">
-          Phone
-        </label>
-        <input
-          id="phone"
-          type="tel"
-          required
-          className="input"
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-        />
-      </div>
-      <div>
-        <label className="label" htmlFor="email">
-          XMUM student email
-        </label>
-        <input
-          id="email"
-          type="email"
-          required
-          placeholder="abc12345@xmu.edu.my"
-          className="input"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-      </div>
-      <div>
-        <label className="label" htmlFor="password">
-          Password (min 8 chars)
-        </label>
-        <input
-          id="password"
-          type="password"
-          required
-          minLength={8}
-          autoComplete="new-password"
-          className="input"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-      </div>
-      <button type="submit" disabled={busy} className="btn-primary w-full">
-        {busy ? (
-          <Spinner className="border-white/40 border-t-white" />
-        ) : (
-          "Create account"
-        )}
-      </button>
-      <p className="text-center text-sm text-ink-faint">
-        Already registered?{" "}
-        <Link href="/login" className="font-semibold text-star-cyan">
-          Log in
-        </Link>
-      </p>
     </form>
   );
 }

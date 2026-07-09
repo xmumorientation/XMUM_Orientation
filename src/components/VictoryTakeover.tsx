@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 
 import { PROJECTOR_LABELS, type ProjectorLocation } from "@/lib/types";
 
-// FR-9.3: full-screen "circuits connecting, lights turning on" takeover —
+// FR-9.3: full-screen "circuits connecting, lights turning on" takeover -
 // the second hero moment. Dark theatrical style by design (proposal §7).
 export function VictoryTakeover({
   location,
@@ -62,8 +62,8 @@ export function VictoryTakeover({
           </p>
         ) : (
           <div className="animate-burst">
-            <div className="text-8xl drop-shadow-[0_0_40px_rgba(245,197,66,0.9)]">
-              🌟
+            <div className="rounded-[2rem] border border-star-goldsoft/30 bg-star-goldsoft/10 px-8 py-6 text-5xl font-black tracking-[-0.06em] text-star-goldsoft shadow-[0_0_60px_rgba(245,197,66,0.28)]">
+              LIVE
             </div>
             <h1 className="mt-6 text-3xl font-extrabold text-white">
               PROJECTOR REVIVED!
@@ -77,7 +77,7 @@ export function VictoryTakeover({
               </p>
             )}
             <p className="mt-8 text-sm text-white/50">
-              The starlight returns to the theme park ✦
+              The starlight returns to the theme park
             </p>
           </div>
         )}

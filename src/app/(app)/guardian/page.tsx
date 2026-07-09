@@ -186,11 +186,11 @@ export default function GuardianPage() {
 
           {status.projector_activated ? (
             <p className="text-sm font-semibold text-star-gold">
-              🌟 This projector has already been revived.
+              This projector has already been revived.
             </p>
           ) : status.redeemed ? (
             <p className="text-sm font-semibold text-green-700">
-              ✅ Already redeemed — the group should tap the NFC sticker during
+              Already redeemed - the group should tap the NFC sticker during
               Endgame.
             </p>
           ) : status.complete ? (
@@ -212,7 +212,7 @@ export default function GuardianPage() {
                 onClick={redeem}
                 className="btn-primary w-full"
               >
-                ✅ Confirm set & mark redeemed
+                Confirm set and mark redeemed
               </button>
             </>
           ) : (
@@ -247,7 +247,7 @@ export default function GuardianPage() {
                 }
               >
                 {p.activated_at
-                  ? `🌟 Revived by group ${p.activated_by_group}`
+                  ? `Revived by group ${p.activated_by_group}`
                   : "Dormant"}
               </span>
             </li>

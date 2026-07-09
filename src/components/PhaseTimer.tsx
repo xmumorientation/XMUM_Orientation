@@ -87,7 +87,9 @@ export function PhaseTimer() {
           : "bg-gradient-to-r from-star-goldsoft/30 via-star-cyansoft/30 to-star-violetsoft/30 text-ink"
       )}
     >
-      <span>{isEndgame ? "🚨" : "⏱"}</span>
+      <span className="text-[10px] font-black tracking-[0.18em]">
+        {isEndgame ? "END" : "NOW"}
+      </span>
       <span>{current.name}</span>
       <span className="tabular-nums">
         {current.state === "paused"

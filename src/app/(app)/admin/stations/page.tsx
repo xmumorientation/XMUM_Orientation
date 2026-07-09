@@ -199,7 +199,7 @@ export default function AdminStationsPage() {
             >
               <span>{g.name}</span>
               <span className="font-bold tabular-nums">
-                {g.token_balance} ✦
+                {g.token_balance} tokens
               </span>
             </div>
           ))}

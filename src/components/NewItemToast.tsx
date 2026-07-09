@@ -63,7 +63,9 @@ export function NewItemToast() {
           key={t.id}
           className="card animate-floatup flex items-center gap-2 px-4 py-2 shadow-glow"
         >
-          <span className="text-xl">🎁</span>
+          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-ink text-[10px] font-black text-white">
+            NEW
+          </span>
           <span className="text-sm font-semibold">
             New item acquired: {t.name}
           </span>

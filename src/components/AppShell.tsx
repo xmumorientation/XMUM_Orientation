@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 interface NavItem {
   href: string;
   label: string;
-  icon: string;
+  code: string;
   roles: UserRole[];
 }
 
@@ -24,7 +24,7 @@ const NAV: NavItem[] = [
   {
     href: "/dashboard",
     label: "Home",
-    icon: "🏠",
+    code: "HM",
     roles: [
       "freshie",
       "faci",
@@ -39,7 +39,7 @@ const NAV: NavItem[] = [
   {
     href: "/map",
     label: "Map",
-    icon: "🗺️",
+    code: "MP",
     roles: [
       "freshie",
       "faci",
@@ -51,13 +51,13 @@ const NAV: NavItem[] = [
       "admin",
     ],
   },
-  { href: "/inventory", label: "Items", icon: "🎒", roles: ["freshie", "faci"] },
-  { href: "/attendance", label: "Roster", icon: "✅", roles: ["faci"] },
-  { href: "/gm", label: "Station", icon: "🎮", roles: ["gm", "guardian_gm"] },
+  { href: "/inventory", label: "Items", code: "IT", roles: ["freshie", "faci"] },
+  { href: "/attendance", label: "Roster", code: "AT", roles: ["faci"] },
+  { href: "/gm", label: "Station", code: "GM", roles: ["gm", "guardian_gm"] },
   {
     href: "/schedule",
     label: "Plan",
-    icon: "🗓️",
+    code: "PL",
     roles: [
       "freshie",
       "faci",
@@ -69,14 +69,14 @@ const NAV: NavItem[] = [
       "admin",
     ],
   },
-  { href: "/faq", label: "FAQ", icon: "❓", roles: ["freshie"] },
+  { href: "/faq", label: "FAQ", code: "FQ", roles: ["freshie"] },
   {
     href: "/committee",
     label: "Ops",
-    icon: "📡",
+    code: "OP",
     roles: ["hof", "hogm", "committee"],
   },
-  { href: "/admin", label: "Admin", icon: "⚙️", roles: ["admin"] },
+  { href: "/admin", label: "Admin", code: "AD", roles: ["admin"] },
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -103,21 +103,28 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         } as React.CSSProperties
       }
     >
-      <header className="sticky top-0 z-40 border-b border-base-200 bg-base-50/90 backdrop-blur">
-        <div className="flex items-center justify-between px-4 py-2.5">
-          <Link href="/dashboard" className="flex items-center gap-1.5">
-            <span className="text-lg">✦</span>
-            <span className="text-sm font-bold tracking-tight">
-              {brand.eventName}
+      <header className="sticky top-0 z-40 border-b border-base-200 bg-base-50/95 shadow-[0_1px_0_rgba(28,26,23,0.03)] backdrop-blur">
+        <div className="flex items-center justify-between gap-3 px-4 py-3">
+          <Link href="/dashboard" className="flex min-w-0 items-center gap-2">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-ink text-sm font-black text-white shadow-card">
+              SR
+            </span>
+            <span className="min-w-0">
+              <span className="block truncate text-sm font-bold tracking-tight">
+                {brand.eventName}
+              </span>
+              <span className="block truncate text-xs text-ink-faint">
+                XMUM Orientation 2026
+              </span>
             </span>
           </Link>
-          <div className="flex items-center gap-2">
-            <span className="chip bg-star-violetsoft/40 text-star-violet">
+          <div className="flex shrink-0 items-center gap-2">
+            <span className="chip border border-star-cyan/20 bg-star-cyansoft/20 text-star-cyanstrong">
               {ROLE_LABELS[profile.role]}
             </span>
             <button
               onClick={signOut}
-              className="text-xs font-medium text-ink-faint underline"
+              className="rounded-lg px-2 py-1 text-xs font-semibold text-ink-faint transition hover:bg-base-200 hover:text-ink"
             >
               Log out
             </button>
@@ -132,7 +139,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-base-200 bg-white/95 backdrop-blur">
         <div
-          className="mx-auto grid max-w-lg"
+          className="mx-auto grid max-w-lg px-1"
           style={{ gridTemplateColumns: `repeat(${items.length}, 1fr)` }}
         >
           {items.map((item) => {
@@ -143,11 +150,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "flex min-h-[56px] flex-col items-center justify-center gap-0.5 text-[11px] font-medium",
-                  active ? "text-star-cyan" : "text-ink-faint"
+                  "my-1 flex min-h-[56px] flex-col items-center justify-center gap-0.5 rounded-xl text-[11px] font-semibold transition",
+                  active
+                    ? "bg-star-cyansoft/20 text-star-cyanstrong"
+                    : "text-ink-faint hover:bg-base-100 hover:text-ink"
                 )}
               >
-                <span className="text-lg leading-none">{item.icon}</span>
+                <span className="text-[10px] font-black leading-none tracking-tight">
+                  {item.code}
+                </span>
                 {item.label}
               </Link>
             );

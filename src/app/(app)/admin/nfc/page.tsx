@@ -104,7 +104,7 @@ export default function AdminNfcPage() {
           />
         </div>
         <button disabled={busy} onClick={mint} className="btn-primary w-full">
-          🏷️ Generate {count} token{count > 1 ? "s" : ""}
+          Generate {count} token{count > 1 ? "s" : ""}
         </button>
       </Card>
 

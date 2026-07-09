@@ -8,7 +8,7 @@ import { COMMITTEE_TIER } from "@/lib/types";
 export default function MapPage() {
   const profile = useProfile();
   // D-1: committee sees all group pins; Faci sees own group only (the RPC
-  // enforces this server-side — the flag just requests pins).
+  // enforces this server-side - the flag just requests pins).
   const showPins =
     COMMITTEE_TIER.includes(profile.role) || profile.role === "faci";
 
@@ -16,7 +16,7 @@ export default function MapPage() {
     <div>
       <PageTitle
         title="Campus map"
-        subtitle="🟢 Available · 🔴 In progress · ⚪ Closed — tap a station for details"
+        subtitle="Available, in progress, and closed stations. Tap a station for details."
       />
       <CampusMap showGroupPins={showPins} />
     </div>

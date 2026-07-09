@@ -27,34 +27,47 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="card space-y-4 p-5">
-      <ErrorBanner message={error} />
-      <SuccessBanner message={notice} />
-      <div>
-        <label className="label" htmlFor="email">
-          Email
-        </label>
-        <input
-          id="email"
-          type="email"
-          required
-          className="input"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
+    <form onSubmit={onSubmit} className="auth-card">
+      <div className="auth-card-inner space-y-5">
+        <div>
+          <p className="text-xs font-black uppercase tracking-[0.22em] text-star-cyanstrong">
+            Account recovery
+          </p>
+          <h2 className="mt-3 text-3xl font-black tracking-[-0.03em] text-ink">
+            Reset your password.
+          </h2>
+        </div>
+        <ErrorBanner message={error} />
+        <SuccessBanner message={notice} />
+        <div>
+          <label className="label" htmlFor="email">
+            Email
+          </label>
+          <input
+            id="email"
+            type="email"
+            required
+            className="input"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+        </div>
+        <button type="submit" disabled={busy} className="group auth-submit">
+          <span>
+            {busy ? (
+              <Spinner className="border-white/40 border-t-white" />
+            ) : (
+              "Send reset link"
+            )}
+          </span>
+          <span className="auth-submit-mark">GO</span>
+        </button>
+        <p className="text-center text-sm">
+          <Link href="/login" className="font-bold text-star-cyanstrong">
+            Back to login
+          </Link>
+        </p>
       </div>
-      <button type="submit" disabled={busy} className="btn-primary w-full">
-        {busy ? (
-          <Spinner className="border-white/40 border-t-white" />
-        ) : (
-          "Send reset link"
-        )}
-      </button>
-      <p className="text-center text-sm">
-        <Link href="/login" className="text-star-cyan">
-          Back to login
-        </Link>
-      </p>
     </form>
   );
 }

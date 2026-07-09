@@ -19,12 +19,14 @@ const config: Config = {
         ink: {
           DEFAULT: "#1c1a17",
           soft: "#4a463f",
-          faint: "#8a857b",
+          faint: "#6f695f",
+          muted: "#746f66",
         },
         star: {
           gold: "#d99a06",
           goldsoft: "#f5c542",
           cyan: "#0891b2",
+          cyanstrong: "#0f7188",
           cyansoft: "#67e8f9",
           violet: "#7c3aed",
           violetsoft: "#c4b5fd",
@@ -42,8 +44,9 @@ const config: Config = {
       },
       fontFamily: {
         sans: [
-          "Inter",
           "Plus Jakarta Sans",
+          "Geist",
+          "Avenir Next",
           "system-ui",
           "-apple-system",
           "Segoe UI",

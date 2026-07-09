@@ -8,16 +8,18 @@ import { PROJECTOR_LABELS, type ProjectorLocation } from "@/lib/types";
 export const dynamic = "force-dynamic";
 
 // FR-9.x: the URL written on every physical NFC sticker points here.
-// iOS background tag reading & Android both open this natively — the
+// iOS background tag reading & Android both open this natively - the
 // codebase contains no Web NFC API usage anywhere.
 //
-// Validation chain: HMAC signature (server, Node crypto) → RPC checks
-// unused ∧ set redeemed by this group ∧ projector free ∧ Endgame phase.
+// Validation chain: HMAC signature (server, Node crypto) -> RPC checks
+// unused, set redeemed by this group, projector free, Endgame phase.
 
 function ErrorScreen({ title, message }: { title: string; message: string }) {
   return (
     <main className="flex min-h-dvh flex-col items-center justify-center bg-night-900 px-8 text-center">
-      <div className="text-6xl">🔌</div>
+      <div className="rounded-[2rem] border border-white/10 bg-white/5 px-6 py-5 text-3xl font-black tracking-[-0.06em] text-white">
+        NFC
+      </div>
       <h1 className="mt-6 text-2xl font-bold text-white">{title}</h1>
       <p className="mt-3 text-white/70">{message}</p>
       <a href="/dashboard" className="btn-primary mt-10 min-w-[180px]">

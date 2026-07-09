@@ -82,7 +82,7 @@ export default function AdminSessionsPage() {
             <div className="flex-1">
               <p className="text-sm font-semibold">{s.name}</p>
               <p className="text-xs text-ink-faint">
-                {s.closed ? "🔒 Closed — records locked" : "🟢 Open"}
+                {s.closed ? "Closed - records locked" : "Open"}
               </p>
             </div>
             <button
