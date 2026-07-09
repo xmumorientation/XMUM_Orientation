@@ -55,14 +55,11 @@ export default function ResetPasswordPage() {
           />
         </div>
         <button type="submit" disabled={busy} className="group auth-submit">
-          <span>
-            {busy ? (
-              <Spinner className="border-white/40 border-t-white" />
-            ) : (
-              "Set new password"
-            )}
-          </span>
-          <span className="auth-submit-mark">OK</span>
+          {busy ? (
+            <Spinner className="border-white/40 border-t-white" />
+          ) : (
+            "Set new password"
+          )}
         </button>
       </div>
     </form>

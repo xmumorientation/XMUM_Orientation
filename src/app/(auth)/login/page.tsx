@@ -77,14 +77,11 @@ function LoginForm() {
           />
         </div>
         <button type="submit" disabled={busy} className="group auth-submit">
-          <span>
-            {busy ? (
-              <Spinner className="border-white/40 border-t-white" />
-            ) : (
-              "Log in"
-            )}
-          </span>
-          <span className="auth-submit-mark">GO</span>
+          {busy ? (
+            <Spinner className="border-white/40 border-t-white" />
+          ) : (
+            "Log in"
+          )}
         </button>
         <div className="flex justify-between gap-4 text-sm">
           <Link href="/forgot-password" className="font-semibold text-ink-soft">

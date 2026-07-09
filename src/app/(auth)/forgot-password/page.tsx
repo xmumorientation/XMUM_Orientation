@@ -53,14 +53,11 @@ export default function ForgotPasswordPage() {
           />
         </div>
         <button type="submit" disabled={busy} className="group auth-submit">
-          <span>
-            {busy ? (
-              <Spinner className="border-white/40 border-t-white" />
-            ) : (
-              "Send reset link"
-            )}
-          </span>
-          <span className="auth-submit-mark">GO</span>
+          {busy ? (
+            <Spinner className="border-white/40 border-t-white" />
+          ) : (
+            "Send reset link"
+          )}
         </button>
         <p className="text-center text-sm">
           <Link href="/login" className="font-bold text-star-cyanstrong">

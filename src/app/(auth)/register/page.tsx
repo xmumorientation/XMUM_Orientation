@@ -138,14 +138,11 @@ export default function RegisterPage() {
           />
         </div>
         <button type="submit" disabled={busy} className="group auth-submit">
-          <span>
-            {busy ? (
-              <Spinner className="border-white/40 border-t-white" />
-            ) : (
-              "Create account"
-            )}
-          </span>
-          <span className="auth-submit-mark">ID</span>
+          {busy ? (
+            <Spinner className="border-white/40 border-t-white" />
+          ) : (
+            "Create account"
+          )}
         </button>
         <p className="text-center text-sm text-ink-faint">
           Already registered?{" "}
