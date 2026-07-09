@@ -79,6 +79,16 @@ const NAV: NavItem[] = [
   { href: "/admin", label: "Admin", code: "AD", roles: ["admin"] },
 ];
 
+function initials(name: string) {
+  const letters = name
+    .split(/\s+/)
+    .map((part) => part[0])
+    .join("")
+    .replace(/[^a-z]/gi, "")
+    .toUpperCase();
+  return letters.slice(0, 2) || "VX";
+}
+
 export function AppShell({ children }: { children: React.ReactNode }) {
   const profile = useProfile();
   const pathname = usePathname();
@@ -95,7 +105,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div
-      className="mx-auto flex min-h-dvh w-full max-w-lg flex-col"
+      className="mx-auto flex min-h-dvh w-full max-w-3xl flex-col"
       style={
         {
           "--brand-1": brand.brandPrimary,
@@ -103,11 +113,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         } as React.CSSProperties
       }
     >
-      <header className="sticky top-0 z-40 border-b border-base-200 bg-base-50/95 shadow-[0_1px_0_rgba(28,26,23,0.03)] backdrop-blur">
-        <div className="flex items-center justify-between gap-3 px-4 py-3">
+      <header className="sticky top-0 z-40 border-b border-base-200 bg-base-50/95 pt-[env(safe-area-inset-top)] shadow-[0_1px_0_rgba(28,26,23,0.03)] backdrop-blur">
+        <div className="flex items-center justify-between gap-3 px-3 py-2.5 sm:px-5 sm:py-3">
           <Link href="/dashboard" className="flex min-w-0 items-center gap-2">
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-ink text-sm font-black text-white shadow-card">
-              SR
+              {initials(brand.eventName)}
             </span>
             <span className="min-w-0">
               <span className="block truncate text-sm font-bold tracking-tight">
@@ -133,13 +143,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <PhaseTimer />
       </header>
 
-      <main className="flex-1 px-4 pb-24 pt-4">{children}</main>
+      <main className="flex-1 px-3 pb-[calc(5.75rem+env(safe-area-inset-bottom))] pt-3 sm:px-5 sm:pt-5">
+        {children}
+      </main>
 
       <NewItemToast />
 
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-base-200 bg-white/95 backdrop-blur">
         <div
-          className="mx-auto grid max-w-lg px-1"
+          className="mx-auto grid max-w-3xl px-1"
           style={{ gridTemplateColumns: `repeat(${items.length}, 1fr)` }}
         >
           {items.map((item) => {
@@ -150,7 +162,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "my-1 flex min-h-[56px] flex-col items-center justify-center gap-0.5 rounded-xl text-[11px] font-semibold transition",
+                  "my-1 flex min-h-[56px] min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl px-1 text-[10px] font-semibold transition sm:text-[11px]",
                   active
                     ? "bg-star-cyansoft/20 text-star-cyanstrong"
                     : "text-ink-faint hover:bg-base-100 hover:text-ink"
@@ -159,7 +171,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <span className="text-[10px] font-black leading-none tracking-tight">
                   {item.code}
                 </span>
-                {item.label}
+                <span className="max-w-full truncate">{item.label}</span>
               </Link>
             );
           })}

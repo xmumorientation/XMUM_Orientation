@@ -73,7 +73,7 @@ export function EmptyState({
   return (
     <div className="card flex flex-col items-center gap-2 p-8 text-center">
       <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-star-cyansoft/20 text-xs font-black tracking-tight text-star-cyanstrong">
-        SR
+        VX
       </span>
       <p className="font-semibold">{title}</p>
       <p className="max-w-[28ch] text-sm leading-5 text-ink-faint">

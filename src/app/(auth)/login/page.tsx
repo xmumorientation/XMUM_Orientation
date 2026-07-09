@@ -38,13 +38,13 @@ function LoginForm() {
       <div className="auth-card-inner space-y-5">
         <div>
           <p className="text-xs font-black uppercase tracking-[0.22em] text-star-cyanstrong">
-            Secure access
+            Account access
           </p>
           <h2 className="mt-3 text-3xl font-black tracking-[-0.03em] text-ink">
-            Sign in to mission control.
+            Sign in to continue.
           </h2>
           <p className="mt-2 text-sm leading-6 text-ink-faint">
-            Use your assigned account to continue into the orientation system.
+            Use your assigned XMUM Orientation account.
           </p>
         </div>
         <ErrorBanner message={error} />

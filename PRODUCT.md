@@ -14,7 +14,7 @@ XMUM Orientation Platform unifies event access, role-based workflows, attendance
 
 ## Brand Personality
 
-Playful, clear, operational. The theme can feel like "Starlight Revival", but the interface must still behave like a trusted event control surface.
+Playful, clear, operational. The 2026 theme is "Vortexa", but the interface must still behave like a trusted event control surface.
 
 ## Anti-references
 
@@ -25,7 +25,7 @@ Avoid generic purple-gradient SaaS dashboards, over-decorated glass cards, tiny 
 1. Make the next action obvious within one glance.
 2. Keep event-critical controls high contrast and thumb friendly.
 3. Let role and phase context shape navigation instead of showing everything.
-4. Use the Starlight theme as identity, not decoration.
+4. Use the Vortexa theme as identity, not decoration.
 5. Prefer trustworthy product patterns over novelty.
 
 ## Accessibility & Inclusion
