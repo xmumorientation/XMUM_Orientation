@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 
 import { NewItemToast } from "@/components/NewItemToast";
 import { PhaseTimer } from "@/components/PhaseTimer";
+import { useConfig } from "@/components/useConfig";
 import { useProfile } from "@/components/ProfileProvider";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { ROLE_LABELS, type UserRole } from "@/lib/types";
@@ -54,6 +55,22 @@ const NAV: NavItem[] = [
   { href: "/attendance", label: "Roster", icon: "✅", roles: ["faci"] },
   { href: "/gm", label: "Station", icon: "🎮", roles: ["gm", "guardian_gm"] },
   {
+    href: "/schedule",
+    label: "Plan",
+    icon: "🗓️",
+    roles: [
+      "freshie",
+      "faci",
+      "gm",
+      "guardian_gm",
+      "hof",
+      "hogm",
+      "committee",
+      "admin",
+    ],
+  },
+  { href: "/faq", label: "FAQ", icon: "❓", roles: ["freshie"] },
+  {
     href: "/committee",
     label: "Ops",
     icon: "📡",
@@ -66,6 +83,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const profile = useProfile();
   const pathname = usePathname();
   const router = useRouter();
+  const { brand } = useConfig();
 
   const items = NAV.filter((n) => n.roles.includes(profile.role));
 
@@ -76,13 +94,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="mx-auto flex min-h-dvh w-full max-w-lg flex-col">
+    <div
+      className="mx-auto flex min-h-dvh w-full max-w-lg flex-col"
+      style={
+        {
+          "--brand-1": brand.brandPrimary,
+          "--brand-2": brand.brandSecondary,
+        } as React.CSSProperties
+      }
+    >
       <header className="sticky top-0 z-40 border-b border-base-200 bg-base-50/90 backdrop-blur">
         <div className="flex items-center justify-between px-4 py-2.5">
           <Link href="/dashboard" className="flex items-center gap-1.5">
             <span className="text-lg">✦</span>
             <span className="text-sm font-bold tracking-tight">
-              Starlight Revival
+              {brand.eventName}
             </span>
           </Link>
           <div className="flex items-center gap-2">

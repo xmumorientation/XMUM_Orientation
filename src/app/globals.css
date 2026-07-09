@@ -3,6 +3,11 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    /* Event brand accents — overridden at runtime from Admin → Brand */
+    --brand-1: #0891b2;
+    --brand-2: #7c3aed;
+  }
   html {
     /* NFR-5: 16px minimum body on mobile, high-contrast dark text */
     font-size: 16px;
@@ -25,7 +30,8 @@
       disabled:pointer-events-none disabled:opacity-40;
   }
   .btn-primary {
-    @apply btn bg-gradient-to-r from-star-gold to-star-cyan text-white shadow-card;
+    @apply btn text-white shadow-card;
+    background-image: linear-gradient(90deg, var(--brand-1), var(--brand-2));
   }
   .btn-secondary {
     @apply btn border border-base-300 bg-white text-ink;
@@ -45,9 +51,9 @@
   }
 }
 
-/* Starlight accent underline used on page headings */
+/* Brand accent underline used on page headings */
 .starlight-rule {
-  background: linear-gradient(90deg, #f5c542, #67e8f9, #c4b5fd);
+  background: linear-gradient(90deg, var(--brand-1), var(--brand-2));
   height: 3px;
   border-radius: 999px;
 }

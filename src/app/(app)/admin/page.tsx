@@ -15,10 +15,11 @@ import { cn, friendlyError } from "@/lib/utils";
 interface LiveOps {
   tokens_in_circulation: number;
   transactions_count: number;
-  draws_count: number;
+  blindbox_claims: number;
+  blindbox_sales: number;
+  pieces_granted: number;
   sets_redeemed: number;
   projectors_activated: number;
-  gala_drawn_by: string | null;
 }
 
 // FR-11.5 kill-switches + FR-11.6 live ops + FR-10.1 phase control.
@@ -82,17 +83,6 @@ export default function AdminWarRoomPage() {
     else load();
   }
 
-  async function setGalaMode(mode: string) {
-    setBusy(true);
-    const { error } = await supabase.rpc("fn_set_config", {
-      p_key: "gala_reveal_mode",
-      p_value: mode,
-    });
-    setBusy(false);
-    if (error) setError(friendlyError(error));
-    else load();
-  }
-
   const boolOf = (k: string) => config[k] === true || config[k] === "true";
 
   const SWITCHES: { key: string; label: string; danger: string }[] = [
@@ -114,10 +104,11 @@ export default function AdminWarRoomPage() {
           {[
             ["Tokens in circulation", ops.tokens_in_circulation],
             ["Transactions", ops.transactions_count],
-            ["Gacha draws", ops.draws_count],
+            ["Blind boxes opened", ops.blindbox_claims],
+            ["GM boxes sold", ops.blindbox_sales],
+            ["Pieces granted", ops.pieces_granted],
             ["Sets redeemed", ops.sets_redeemed],
             ["Projectors revived", `${ops.projectors_activated}/3`],
-            ["Gala winner", ops.gala_drawn_by ?? "— not drawn —"],
           ].map(([label, value]) => (
             <Card key={String(label)} className="p-3 text-center">
               <p className="text-xl font-bold tabular-nums">{String(value)}</p>
@@ -223,27 +214,6 @@ export default function AdminWarRoomPage() {
         </Card>
       </section>
 
-      <section>
-        <h2 className="mb-2 font-semibold">Gala Night reveal (D-3)</h2>
-        <Card className="flex gap-2">
-          {["hidden", "immediate"].map((mode) => {
-            const active = String(config["gala_reveal_mode"] ?? "hidden").replace(/"/g, "") === mode;
-            return (
-              <button
-                key={mode}
-                disabled={busy}
-                onClick={() => setGalaMode(mode)}
-                className={cn(
-                  "btn flex-1 text-sm capitalize",
-                  active ? "bg-star-violet text-white" : "border border-base-300 bg-white"
-                )}
-              >
-                {mode === "hidden" ? "🤫 Hidden until Gala" : "🎉 Reveal immediately"}
-              </button>
-            );
-          })}
-        </Card>
-      </section>
     </div>
   );
 }

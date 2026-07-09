@@ -9,9 +9,13 @@ import { cn } from "@/lib/utils";
 const TABS = [
   { href: "/admin", label: "War room" },
   { href: "/admin/users", label: "Users" },
-  { href: "/admin/gacha", label: "Gacha" },
   { href: "/admin/stations", label: "Stations" },
+  { href: "/admin/blindbox", label: "Blind box" },
+  { href: "/admin/puzzles", label: "Puzzles" },
   { href: "/admin/sessions", label: "Sessions" },
+  { href: "/admin/schedule", label: "Schedule" },
+  { href: "/admin/faq", label: "FAQ" },
+  { href: "/admin/brand", label: "Brand" },
   { href: "/admin/nfc", label: "NFC" },
   { href: "/admin/audit", label: "Audit" },
 ];

@@ -143,6 +143,18 @@ export default function DashboardPage() {
           title="Campus map"
           desc="Stations & live statuses"
         />
+        <QuickLink
+          href="/schedule"
+          icon="🗓️"
+          title="Schedule"
+          desc="The full event rundown"
+        />
+        <QuickLink
+          href="/faq"
+          icon="❓"
+          title="FAQ & contacts"
+          desc="Stuck? Start here"
+        />
       </div>
     </div>
   );

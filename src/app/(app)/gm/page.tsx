@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-import { GachaReveal } from "@/components/GachaReveal";
 import { useProfile } from "@/components/ProfileProvider";
+import { useConfig } from "@/components/useConfig";
 import { useOfflineQueue } from "@/components/useOfflineQueue";
 import {
   Card,
@@ -13,44 +13,54 @@ import {
   SuccessBanner,
 } from "@/components/ui";
 import { supabaseBrowser } from "@/lib/supabase/client";
-import type {
-  GachaResult,
-  Item,
-  Station,
-  StationStatus,
+import {
+  PROJECTOR_LABELS,
+  PROJECTOR_LOCATIONS,
+  RISK_TIER_META,
+  type Day2Result,
+  type ProjectorLocation,
+  type Station,
+  type StationStatus,
 } from "@/lib/types";
 import { cn, friendlyError, idemKey } from "@/lib/utils";
 
-type Tab = "tokens" | "items" | "gacha" | "station";
+type Tab = "day1" | "day2" | "box" | "station";
 
-// GM control panel (FR-5.2): select group → tap amount. Two-tap max.
-// All mutations run through the offline retry queue (NFR-6) with
-// idempotency keys (FR-5.7).
+// GM control panel v2 (HOGM redesign):
+//  Day 1 — win/lose rewards (+2/+1)
+//  Day 2 — pick group + result (+ tier locations); the system deducts the
+//          station's entry fee and auto-grants a random non-duplicate piece
+//  Box   — sell one of the limited GM blind boxes
+// All submissions carry idempotency keys and queue offline (NFR-6).
 export default function GmPanelPage() {
   const profile = useProfile();
   const supabase = useMemo(() => supabaseBrowser(), []);
+  const { config } = useConfig();
   const { queue, submit } = useOfflineQueue();
 
-  const [tab, setTab] = useState<Tab>("tokens");
+  const [tab, setTab] = useState<Tab>("day1");
   const [groups, setGroups] = useState<{ id: number; name: string }[]>([]);
   const [groupId, setGroupId] = useState<number | null>(null);
-  const [items, setItems] = useState<Item[]>([]);
   const [station, setStation] = useState<Station | null>(null);
+  const [success, setSuccess] = useState(true);
+  const [locations, setLocations] = useState<ProjectorLocation[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [gacha, setGacha] = useState<GachaResult | null>(null);
+  const [boxesSold, setBoxesSold] = useState<number>(0);
 
   useEffect(() => {
     let active = true;
     async function load() {
-      const [{ data: gs }, { data: its }] = await Promise.all([
+      const [{ data: gs }, { count }] = await Promise.all([
         supabase.rpc("fn_list_groups"),
-        supabase.from("items").select("*").order("id"),
+        supabase
+          .from("blind_box_sales")
+          .select("*", { count: "exact", head: true }),
       ]);
       if (!active) return;
       setGroups(gs ?? []);
-      setItems((its as Item[]) ?? []);
+      setBoxesSold(count ?? 0);
       if (profile.station_id) {
         const { data: st } = await supabase
           .from("stations")
@@ -66,19 +76,14 @@ export default function GmPanelPage() {
     };
   }, [supabase, profile.station_id]);
 
-  function flash(ok: string | null, err: string | null) {
-    setNotice(ok);
-    setError(err);
-    setTimeout(() => {
-      setNotice(null);
-    }, 3000);
+  function flash(msg: string) {
+    setNotice(msg);
+    setError(null);
+    setTimeout(() => setNotice(null), 4000);
   }
 
-  async function adjustTokens(delta: number, reason: string) {
-    if (!groupId) {
-      setError("Select a group first.");
-      return;
-    }
+  async function day1Reward(delta: number, reason: string) {
+    if (!groupId) return setError("先选组别 Select a group first.");
     setBusy(true);
     setError(null);
     const res = await submit(
@@ -89,17 +94,14 @@ export default function GmPanelPage() {
         p_reason: reason,
         p_idempotency_key: idemKey(),
       },
-      `${delta > 0 ? "+" : ""}${delta} tokens → group ${groupId}`
+      `${delta > 0 ? "+" : ""}${delta} → group ${groupId}`
     );
     setBusy(false);
     if (res.status === "confirmed") {
       const bal = (res.data as { balance?: number })?.balance;
-      flash(
-        `Done: ${delta > 0 ? "+" : ""}${delta} tokens${bal !== undefined ? ` · new balance ${bal}` : ""}`,
-        null
-      );
+      flash(`✓ ${reason}: ${delta > 0 ? "+" : ""}${delta}${bal !== undefined ? ` · balance ${bal}` : ""}`);
     } else if (res.status === "queued") {
-      flash("📶 Offline — queued, will send automatically.", null);
+      flash("📶 Offline — queued, will send automatically.");
     } else {
       setError(friendlyError({ message: res.error }));
     }
@@ -111,51 +113,74 @@ export default function GmPanelPage() {
     const { data, error } = await supabase.rpc("fn_undo_last_transaction");
     setBusy(false);
     if (error) setError(friendlyError(error));
-    else
-      flash(
-        `Undone. Balance is now ${(data as { balance?: number })?.balance ?? "updated"}.`,
-        null
-      );
+    else flash(`Undone. Balance: ${(data as { balance?: number })?.balance ?? "updated"}`);
   }
 
-  async function grantItem(item: Item) {
-    if (!groupId) {
-      setError("Select a group first.");
-      return;
+  const tier = station?.risk_tier ?? "low";
+  const needPicks = RISK_TIER_META[tier].pick;
+
+  function toggleLocation(loc: ProjectorLocation) {
+    setLocations((cur) => {
+      if (cur.includes(loc)) return cur.filter((l) => l !== loc);
+      if (cur.length >= needPicks) {
+        // replace the oldest pick so the flow stays 2-tap fast
+        return [...cur.slice(1 - needPicks || 1), loc].slice(-needPicks);
+      }
+      return [...cur, loc];
+    });
+  }
+
+  async function submitDay2() {
+    if (!groupId) return setError("先选组别 Select a group first.");
+    if (needPicks > 0 && locations.length !== needPicks) {
+      return setError(
+        needPicks === 2 ? "Pick exactly 2 locations." : "Pick exactly 1 location."
+      );
     }
     setBusy(true);
     setError(null);
     const res = await submit(
-      "fn_grant_item",
+      "fn_day2_challenge",
       {
         p_group_id: groupId,
-        p_item_id: item.id,
+        p_success: success,
+        p_locations: needPicks > 0 ? locations : null,
         p_idempotency_key: idemKey(),
       },
-      `${item.name} → group ${groupId}`
+      `day2 ${success ? "win" : "lose"} → group ${groupId}`
     );
     setBusy(false);
-    if (res.status === "confirmed") flash(`Granted: ${item.name}`, null);
-    else if (res.status === "queued")
-      flash("📶 Offline — queued, will send automatically.", null);
-    else setError(friendlyError({ message: res.error }));
+    if (res.status === "confirmed") {
+      const d = res.data as Day2Result;
+      if (d.duplicate) return flash("Duplicate ignored (already recorded).");
+      flash(
+        d.success && d.piece_name
+          ? `✓ −${d.cost} tokens · granted ${d.piece_name} 🧩 · balance ${d.balance}`
+          : `✓ −${d.cost} tokens (challenge lost) · balance ${d.balance}`
+      );
+      setLocations([]);
+    } else if (res.status === "queued") {
+      flash("📶 Offline — queued, will send automatically.");
+    } else {
+      setError(friendlyError({ message: res.error }));
+    }
   }
 
-  async function drawGacha(poolKey: string) {
-    if (!groupId) {
-      setError("Select a group first.");
-      return;
-    }
+  async function sellBox() {
+    if (!groupId) return setError("先选组别 Select a group first.");
     setBusy(true);
     setError(null);
-    const { data, error } = await supabase.rpc("fn_gacha_draw", {
+    const { data, error } = await supabase.rpc("fn_sell_blind_box", {
       p_group_id: groupId,
-      p_pool_key: poolKey,
       p_idempotency_key: idemKey(),
     });
     setBusy(false);
     if (error) setError(friendlyError(error));
-    else setGacha(data as GachaResult);
+    else {
+      const d = data as { tokens: number; price: number; balance: number };
+      flash(`📦 Box opened: paid ${d.price}, won ${d.tokens} tokens · balance ${d.balance}`);
+      setBoxesSold((n) => n + 1);
+    }
   }
 
   async function setStatus(status: StationStatus) {
@@ -170,14 +195,18 @@ export default function GmPanelPage() {
     else setStation({ ...station, status });
   }
 
-  const puzzleItems = items.filter((i) => i.type === "puzzle");
-  const cardItems = items.filter((i) => i.type === "facility_card");
+  const boxPrice = Number(config["gm_blindbox_price"] ?? 2);
+  const boxStock = Number(config["gm_blindbox_stock"] ?? 8);
 
   return (
     <div className="space-y-4">
       <PageTitle
         title="Station panel"
-        subtitle={station ? `${station.name} (${station.area})` : undefined}
+        subtitle={
+          station
+            ? `${station.name} · ${RISK_TIER_META[tier].label} (entry ${station.entry_cost})`
+            : undefined
+        }
       />
       <ErrorBanner message={error} />
       <SuccessBanner message={notice} />
@@ -209,133 +238,143 @@ export default function GmPanelPage() {
       </Card>
 
       <div className="grid grid-cols-4 gap-1 rounded-xl bg-base-200 p-1">
-        {(["tokens", "items", "gacha", "station"] as Tab[]).map((t) => (
+        {(
+          [
+            ["day1", "Day 1"],
+            ["day2", "Day 2"],
+            ["box", "Box"],
+            ["station", "Status"],
+          ] as [Tab, string][]
+        ).map(([t, label]) => (
           <button
             key={t}
             onClick={() => setTab(t)}
             className={cn(
-              "min-h-[40px] rounded-lg text-sm font-semibold capitalize",
+              "min-h-[40px] rounded-lg text-sm font-semibold",
               tab === t ? "bg-white shadow-card" : "text-ink-faint"
             )}
           >
-            {t}
+            {label}
           </button>
         ))}
       </div>
 
-      {tab === "tokens" && (
+      {tab === "day1" && (
         <Card className="space-y-3">
           <h2 className="font-semibold">Day 1 rewards</h2>
           <div className="grid grid-cols-2 gap-2">
             <button
               disabled={busy}
-              onClick={() => adjustTokens(2, "Station win")}
+              onClick={() => day1Reward(2, "Station win")}
               className="btn bg-green-600 text-lg text-white"
             >
-              +2 Win
+              🏆 Win +2
             </button>
             <button
               disabled={busy}
-              onClick={() => adjustTokens(1, "Station participation")}
+              onClick={() => day1Reward(1, "Station participation")}
               className="btn bg-green-500 text-lg text-white"
             >
-              +1 Lose
+              Lose +1
             </button>
           </div>
-          <h2 className="pt-2 font-semibold">Day 2 entry fees</h2>
-          <div className="grid grid-cols-3 gap-2">
-            {[-1, -2, -3].map((d) => (
-              <button
-                key={d}
-                disabled={busy}
-                onClick={() => adjustTokens(d, `Challenge entry (${d})`)}
-                className="btn bg-red-600 text-lg text-white"
-              >
-                {d}
-              </button>
-            ))}
-          </div>
-          <button
-            disabled={busy}
-            onClick={undo}
-            className="btn-secondary w-full"
-          >
+          <button disabled={busy} onClick={undo} className="btn-secondary w-full">
             ↩︎ Undo my last transaction (2 min window)
           </button>
         </Card>
       )}
 
-      {tab === "items" && (
+      {tab === "day2" && (
         <Card className="space-y-3">
-          <h2 className="font-semibold">Puzzle pieces</h2>
-          <div className="grid grid-cols-3 gap-2">
-            {puzzleItems.map((i) => (
-              <button
-                key={i.id}
-                disabled={busy}
-                onClick={() => grantItem(i)}
-                className="btn-secondary flex-col py-2 text-xs"
-              >
-                <span className="text-lg">🧩</span>
-                {i.puzzle_location} · {i.puzzle_index}
-              </button>
-            ))}
+          <div>
+            <h2 className="font-semibold">Day 2 challenge result</h2>
+            <p className="text-sm text-ink-faint">
+              {RISK_TIER_META[tier].label}: {RISK_TIER_META[tier].desc}. Entry
+              fee −{station?.entry_cost ?? "?"} is charged win or lose; a win
+              grants a random piece the group doesn&apos;t own yet.
+            </p>
           </div>
-          <h2 className="pt-2 font-semibold">Facility cards (manual grant)</h2>
+
           <div className="grid grid-cols-2 gap-2">
-            {cardItems.map((i) => (
-              <button
-                key={i.id}
-                disabled={busy}
-                onClick={() => grantItem(i)}
-                className="btn-secondary py-2 text-xs"
-              >
-                🎠 {i.name}
-              </button>
-            ))}
+            <button
+              onClick={() => setSuccess(true)}
+              className={cn(
+                "btn text-base",
+                success
+                  ? "bg-green-600 text-white"
+                  : "border border-base-300 bg-white text-ink-soft"
+              )}
+            >
+              ✓ Success
+            </button>
+            <button
+              onClick={() => setSuccess(false)}
+              className={cn(
+                "btn text-base",
+                !success
+                  ? "bg-red-600 text-white"
+                  : "border border-base-300 bg-white text-ink-soft"
+              )}
+            >
+              ✗ Failed
+            </button>
           </div>
+
+          {needPicks > 0 && (
+            <div>
+              <label className="label">
+                {needPicks === 2 ? "Pick 2 locations" : "Pick the location"}
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                {PROJECTOR_LOCATIONS.map((loc) => (
+                  <button
+                    key={loc}
+                    onClick={() => toggleLocation(loc)}
+                    className={cn(
+                      "btn text-sm",
+                      locations.includes(loc)
+                        ? "bg-star-violet text-white"
+                        : "border border-base-300 bg-white"
+                    )}
+                  >
+                    {PROJECTOR_LABELS[loc]}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <button
+            disabled={busy || !station}
+            onClick={submitDay2}
+            className="btn-primary w-full"
+          >
+            Submit (−{station?.entry_cost ?? "?"} tokens
+            {success ? " + 🧩 piece" : ""})
+          </button>
+          {!station && (
+            <p className="text-sm text-red-600">
+              No station assigned to your account — ask Admin.
+            </p>
+          )}
         </Card>
       )}
 
-      {tab === "gacha" && (
+      {tab === "box" && (
         <Card className="space-y-3">
-          {profile.role !== "gm" ? (
-            <p className="text-sm text-ink-faint">
-              Bounty Hunter draws are run by station GMs (SRS §2). Guardian
-              GMs don&apos;t trigger gacha.
-            </p>
-          ) : (
-            <>
-              <div>
-                <h2 className="font-semibold">Bounty Hunter — Clue draw</h2>
-                <p className="mb-2 text-sm text-ink-faint">
-                  Costs the group 2 tokens; yields a clue card.
-                </p>
-                <button
-                  disabled={busy}
-                  onClick={() => drawGacha("idea2_clue")}
-                  className="btn-primary w-full"
-                >
-                  🎁 Draw clue (−2 tokens)
-                </button>
-              </div>
-              <div className="pt-2">
-                <h2 className="font-semibold">
-                  Bounty Hunter — Resource draw
-                </h2>
-                <p className="mb-2 text-sm text-ink-faint">
-                  Only after the group succeeds at the bounty challenge.
-                </p>
-                <button
-                  disabled={busy}
-                  onClick={() => drawGacha("idea2_resource")}
-                  className="btn-primary w-full"
-                >
-                  🎰 Draw resources
-                </button>
-              </div>
-            </>
-          )}
+          <h2 className="font-semibold">Sell a blind box</h2>
+          <p className="text-sm text-ink-faint">
+            Price −{boxPrice} tokens, contents are random tokens. Limited
+            stock: {Math.max(0, boxStock - boxesSold)} of {boxStock} left
+            (shared across all GMs).
+          </p>
+          <button
+            disabled={busy || boxesSold >= boxStock}
+            onClick={sellBox}
+            className="btn-primary w-full"
+          >
+            📦 Sell & open (−{boxPrice} tokens)
+          </button>
         </Card>
       )}
 
@@ -379,8 +418,6 @@ export default function GmPanelPage() {
           )}
         </Card>
       )}
-
-      {gacha && <GachaReveal result={gacha} onClose={() => setGacha(null)} />}
     </div>
   );
 }

@@ -19,6 +19,7 @@ import { cn, friendlyError } from "@/lib/utils";
 
 interface PuzzleStatus {
   pieces: number;
+  total: number;
   complete: boolean;
   redeemed: boolean;
   projector_activated: boolean;
@@ -179,7 +180,7 @@ export default function GuardianPage() {
                   : "bg-red-100 text-red-800"
               )}
             >
-              {status.pieces}/3 pieces
+              {status.pieces}/{status.total} pieces
             </span>
           </div>
 
@@ -217,7 +218,8 @@ export default function GuardianPage() {
           ) : (
             <p className="text-sm text-ink-faint">
               Set incomplete — the group still needs{" "}
-              {3 - status.pieces} piece{3 - status.pieces > 1 ? "s" : ""}.
+              {status.total - status.pieces} piece
+              {status.total - status.pieces > 1 ? "s" : ""}.
             </p>
           )}
 

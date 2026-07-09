@@ -10,6 +10,9 @@ Follow these steps once you have access to the team's Supabase project.
    2. `supabase/migrations/0002_rls.sql` — row-level security policies
    3. `supabase/migrations/0003_functions.sql` — game logic RPCs
    4. `supabase/migrations/0004_seed.sql` — groups, stations, items, pools
+   5. `supabase/migrations/0005_v2_mechanics.sql` — v2 game design:
+      5-piece puzzles, station risk tiers, blind boxes (replaces gacha),
+      schedule/FAQ, event branding config, puzzle image storage
 3. **Auth settings** (Dashboard → Authentication):
    - Providers → Email: enabled. Decide on email confirmation
      (recommended ON for production; OFF speeds up testing).

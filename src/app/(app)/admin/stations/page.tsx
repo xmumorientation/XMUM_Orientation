@@ -10,7 +10,7 @@ import {
   SuccessBanner,
 } from "@/components/ui";
 import { supabaseBrowser } from "@/lib/supabase/client";
-import type { Group, Station, StationStatus } from "@/lib/types";
+import type { Group, RiskTier, Station, StationStatus } from "@/lib/types";
 
 // FR-11.3: station management (count/IDs still open per D-2 — fully
 // editable here without redeploy). Also group creation.
@@ -110,7 +110,7 @@ export default function AdminStationsPage() {
               </div>
               <StationStatusChip status={s.status} />
               <select
-                className="input min-h-[36px] w-[110px] text-xs"
+                className="input min-h-[36px] w-[100px] text-xs"
                 value={s.status}
                 onChange={(e) =>
                   updateStation(s.id, {
@@ -122,6 +122,30 @@ export default function AdminStationsPage() {
                 <option value="in_progress">In progress</option>
                 <option value="closed">Closed</option>
               </select>
+              <select
+                className="input min-h-[36px] w-[92px] text-xs"
+                title="Day 2 risk tier"
+                value={s.risk_tier}
+                onChange={(e) =>
+                  updateStation(s.id, {
+                    risk_tier: e.target.value as RiskTier,
+                  })
+                }
+              >
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+              </select>
+              <input
+                type="number"
+                min="0"
+                title="Day 2 entry cost (tokens)"
+                className="input min-h-[36px] w-[64px] px-2 text-xs"
+                defaultValue={s.entry_cost}
+                onBlur={(e) =>
+                  updateStation(s.id, { entry_cost: Number(e.target.value) })
+                }
+              />
               <button
                 onClick={() => deleteStation(s.id)}
                 className="text-sm text-red-500"

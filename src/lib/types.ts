@@ -33,6 +33,8 @@ export interface Group {
   token_balance: number;
 }
 
+export type RiskTier = "low" | "medium" | "high";
+
 export interface Station {
   id: number;
   code: string;
@@ -41,7 +43,18 @@ export interface Station {
   status: StationStatus;
   map_x: number;
   map_y: number;
+  risk_tier: RiskTier;
+  entry_cost: number;
 }
+
+export const RISK_TIER_META: Record<
+  RiskTier,
+  { label: string; pick: number; desc: string }
+> = {
+  low: { label: "Low Risk", pick: 0, desc: "Random piece from any location" },
+  medium: { label: "Medium Risk", pick: 2, desc: "Pick 2 locations, random piece from them" },
+  high: { label: "High Risk", pick: 1, desc: "Pick 1 location, guaranteed piece for it" },
+};
 
 export interface Projector {
   location: ProjectorLocation;
@@ -103,6 +116,57 @@ export interface AttendanceSession {
   ends_at: string | null;
   closed: boolean;
 }
+
+export interface BlindBoxAllocation {
+  id: number;
+  profile_id: string;
+  qr_token: string;
+  box_type: "normal" | "special";
+  min_tokens: number;
+  max_tokens: number;
+  total_boxes: number;
+  used_boxes: number;
+  active: boolean;
+}
+
+export interface BlindBoxResult {
+  ok: boolean;
+  tokens: number;
+  special: boolean;
+  member_name: string | null;
+  balance: number;
+}
+
+export interface Day2Result {
+  ok: boolean;
+  duplicate: boolean;
+  balance: number;
+  success: boolean;
+  cost: number;
+  piece_name: string | null;
+  piece_location: ProjectorLocation | null;
+  piece_index: number | null;
+}
+
+export interface ScheduleItem {
+  id: number;
+  day_label: string;
+  time_label: string;
+  title: string;
+  location: string;
+  description: string;
+  sort_order: number;
+}
+
+export interface FaqItem {
+  id: number;
+  category: string;
+  question: string;
+  answer: string;
+  sort_order: number;
+}
+
+export const PIECES_PER_SET = 5;
 
 export interface GachaPool {
   id: number;

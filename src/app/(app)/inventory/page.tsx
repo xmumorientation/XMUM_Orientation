@@ -2,23 +2,27 @@
 
 import { useEffect, useMemo, useState } from "react";
 
+import { PuzzleBoard } from "@/components/PuzzleBoard";
 import { useProfile } from "@/components/ProfileProvider";
+import { useConfig, puzzleImageUrl } from "@/components/useConfig";
+import { useGroup } from "@/components/useGroup";
 import { Card, EmptyState, PageTitle, Spinner } from "@/components/ui";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import {
+  PIECES_PER_SET,
   PROJECTOR_LABELS,
   PROJECTOR_LOCATIONS,
   type InventoryEntry,
-  type Item,
   type ProjectorLocation,
 } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-// FR-6.1/6.5: group inventory with per-location set-completion progress.
-// FR-8.1: the assembled "QR" is celebratory display only — completion truth
-// lives in the database.
+// v2 inventory: 5 pieces per location; owned pieces render their slice of
+// the Admin-uploaded picture and merge into the full image when complete.
 export default function InventoryPage() {
   const profile = useProfile();
+  const { group } = useGroup();
+  const { config } = useConfig();
   const supabase = useMemo(() => supabaseBrowser(), []);
   const [entries, setEntries] = useState<InventoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -75,30 +79,29 @@ export default function InventoryPage() {
     return (
       <div>
         <PageTitle title="Inventory" />
-        <EmptyState message="You'll see your group's items here once you're assigned to a group." />
+        <EmptyState message="You'll see your group's puzzle pieces here once you're assigned to a group." />
       </div>
     );
   }
 
-  const puzzles = entries.filter((e) => e.items?.type === "puzzle");
-  const cards = entries.filter((e) => e.items?.type === "facility_card");
-
-  const piecesByLocation = (loc: ProjectorLocation): Item[] =>
-    puzzles
-      .filter((e) => e.items?.puzzle_location === loc)
-      .map((e) => e.items!)
-      .sort((a, b) => (a.puzzle_index ?? 0) - (b.puzzle_index ?? 0));
+  const ownedIndices = (loc: ProjectorLocation): number[] =>
+    entries
+      .filter(
+        (e) => e.items?.type === "puzzle" && e.items?.puzzle_location === loc
+      )
+      .map((e) => e.items!.puzzle_index!)
+      .sort((a, b) => a - b);
 
   return (
     <div className="space-y-4">
       <PageTitle
         title="Inventory"
-        subtitle="Collect all 3 pieces of one blueprint to revive a projector"
+        subtitle={`Collect all ${PIECES_PER_SET} pieces of one blueprint to revive a projector`}
       />
 
       {PROJECTOR_LOCATIONS.map((loc) => {
-        const pieces = piecesByLocation(loc);
-        const complete = pieces.length >= 3;
+        const owned = ownedIndices(loc);
+        const complete = owned.length >= PIECES_PER_SET;
         return (
           <Card key={loc}>
             <div className="mb-2 flex items-center justify-between">
@@ -113,28 +116,15 @@ export default function InventoryPage() {
                     : "bg-base-200 text-ink-soft"
                 )}
               >
-                {pieces.length}/3 pieces
+                {owned.length}/{PIECES_PER_SET} pieces
               </span>
             </div>
-            <div className="grid grid-cols-3 gap-2">
-              {[1, 2, 3].map((idx) => {
-                const owned = pieces.some((p) => p.puzzle_index === idx);
-                return (
-                  <div
-                    key={idx}
-                    className={cn(
-                      "flex aspect-square flex-col items-center justify-center rounded-xl border text-center",
-                      owned
-                        ? "border-star-goldsoft bg-star-goldsoft/20 shadow-glow"
-                        : "border-dashed border-base-300 bg-base-100"
-                    )}
-                  >
-                    <span className="text-2xl">{owned ? "🧩" : "❔"}</span>
-                    <span className="text-xs text-ink-faint">Piece {idx}</span>
-                  </div>
-                );
-              })}
-            </div>
+            <PuzzleBoard
+              ownedIndices={owned}
+              imageUrl={puzzleImageUrl(config, loc)}
+              complete={complete}
+              groupName={group?.name}
+            />
             {complete && (
               <p className="mt-2 text-center text-sm font-semibold text-star-gold">
                 ✨ Set complete! Bring your group to the Guardian at{" "}
@@ -144,31 +134,6 @@ export default function InventoryPage() {
           </Card>
         );
       })}
-
-      <Card>
-        <h2 className="mb-2 font-semibold">Facility cards ({cards.length})</h2>
-        {cards.length === 0 ? (
-          <p className="text-sm text-ink-faint">
-            No facility cards yet — try your luck at the blind boxes!
-          </p>
-        ) : (
-          <ul className="grid grid-cols-2 gap-2">
-            {cards.map((e) => (
-              <li
-                key={e.id}
-                className="rounded-xl border border-star-violetsoft/50 bg-star-violetsoft/10 px-3 py-2"
-              >
-                <span className="block text-sm font-semibold">
-                  🎠 {e.items?.name}
-                </span>
-                <span className="block text-xs text-ink-faint">
-                  {new Date(e.created_at).toLocaleTimeString()}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Card>
     </div>
   );
 }

@@ -1,9 +1,12 @@
-# XMUM Orientation Platform 2026 — "Starlight Revival" 
+# XMUM Orientation Platform — "Vortexa" 2026
 
-Unified web platform for XMUM Orientation 2026: main orientation website
-(auth, roles, attendance, location tracking) + Big Game system (token
-economy, inventory, gacha, puzzle verification, NFC projector activation,
-live event control).
+Unified, **reusable** web platform for XMUM Orientation: main orientation
+website (auth, roles, attendance, location tracking, schedule, FAQ) + Big
+Game system (token economy, 5-piece puzzle collection with risk-tiered
+stations, blind boxes via committee QR codes, NFC projector activation,
+live event control). Event name, colours, puzzle pictures and all game
+numbers are Admin-configurable so every year's orientation can rebrand
+without code changes — 2026 is "Vortexa".
 
 **Stack:** Next.js (App Router) + Tailwind CSS + Supabase (Postgres, Auth,
 Realtime) · deployed on Vercel.

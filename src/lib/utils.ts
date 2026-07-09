@@ -70,6 +70,16 @@ const ERROR_MESSAGES: Record<string, string> = {
   NOTHING_TO_UNDO: "No recent transaction to undo.",
   UNDO_WINDOW_EXPIRED: "The 2-minute undo window has passed.",
   UNDO_WOULD_GO_NEGATIVE: "Undo rejected: it would make the balance negative.",
+  NO_STATION_ASSIGNED: "Your account has no station assigned — ask Admin.",
+  NEED_TWO_LOCATIONS: "Pick exactly 2 locations for a medium-risk station.",
+  NEED_ONE_LOCATION: "Pick exactly 1 location for a high-risk station.",
+  POOL_EXHAUSTED:
+    "This group already owns every piece available from that choice — pick differently.",
+  FRESHIE_ONLY: "Only Freshie accounts can open blind boxes.",
+  BOX_UNKNOWN: "This blind box code isn't recognised.",
+  BOXES_SOLD_OUT: "All blind boxes here have been given out!",
+  ALREADY_CLAIMED_FROM_MEMBER:
+    "Your group has already opened a box from this committee member.",
   NOT_ACTIVE: "The phase is not active.",
   NOT_PAUSED: "The phase is not paused.",
   PHASE_NOT_FOUND: "Phase not found.",

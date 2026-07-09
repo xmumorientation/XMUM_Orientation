@@ -1,9 +1,9 @@
 "use client";
 
+import QRCode from "qrcode";
 import { useEffect, useMemo, useState } from "react";
 
 import { CampusMap } from "@/components/CampusMap";
-import { GachaReveal } from "@/components/GachaReveal";
 import { useProfile } from "@/components/ProfileProvider";
 import {
   Card,
@@ -14,10 +14,10 @@ import {
 import { supabaseBrowser } from "@/lib/supabase/client";
 import type {
   AttendanceSession,
-  GachaResult,
+  BlindBoxAllocation,
   Group,
 } from "@/lib/types";
-import { cn, friendlyError, idemKey } from "@/lib/utils";
+import { cn, friendlyError } from "@/lib/utils";
 
 interface FreshieHit {
   id: string;
@@ -28,7 +28,7 @@ interface FreshieHit {
 }
 
 // Committee-tier operations: live map (FR-3.4), attendance completion
-// (FR-2.3), Idea 1 special draw (HOF/HOGM), register counter (FR-12.1).
+// (FR-2.3), personal blind-box QR (v2), register counter (FR-12.1).
 export default function CommitteePage() {
   const profile = useProfile();
   const supabase = useMemo(() => supabaseBrowser(), []);
@@ -38,38 +38,72 @@ export default function CommitteePage() {
   const [attendance, setAttendance] = useState<
     Record<number, { present: number; total: number }>
   >({});
-  const [drawGroup, setDrawGroup] = useState<number | null>(null);
-  const [gacha, setGacha] = useState<GachaResult | null>(null);
+  const [allocation, setAllocation] = useState<BlindBoxAllocation | null>(null);
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [hits, setHits] = useState<FreshieHit[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const canDraw = profile.role === "hof" || profile.role === "hogm";
   const canAssign = profile.role === "committee" || profile.role === "admin";
 
   useEffect(() => {
     let active = true;
     async function load() {
-      const [{ data: gs }, { data: sess }] = await Promise.all([
+      const [{ data: gs }, { data: sess }, { data: alloc }] = await Promise.all([
         supabase.from("groups").select("*").order("id"),
         supabase
           .from("attendance_sessions")
           .select("*")
           .order("id", { ascending: false }),
+        supabase
+          .from("blind_box_allocations")
+          .select("*")
+          .eq("profile_id", profile.id)
+          .maybeSingle(),
       ]);
       if (!active) return;
       setGroups((gs as Group[]) ?? []);
       setSessions((sess as AttendanceSession[]) ?? []);
+      setAllocation((alloc as BlindBoxAllocation) ?? null);
       const open = (sess as AttendanceSession[])?.find((s) => !s.closed);
       setSessionId(open?.id ?? (sess as AttendanceSession[])?.[0]?.id ?? null);
     }
     load();
+
+    const channel = supabase
+      .channel(`bb-alloc-${profile.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "blind_box_allocations",
+          filter: `profile_id=eq.${profile.id}`,
+        },
+        load
+      )
+      .subscribe();
     return () => {
       active = false;
+      supabase.removeChannel(channel);
     };
-  }, [supabase]);
+  }, [supabase, profile.id]);
+
+  // render personal blind-box QR from the stored signed token
+  useEffect(() => {
+    if (!allocation?.qr_token) {
+      setQrDataUrl(null);
+      return;
+    }
+    const base =
+      process.env.NEXT_PUBLIC_SITE_URL ?? window.location.origin;
+    const url = `${base}/blindbox?t=${encodeURIComponent(allocation.qr_token)}`;
+    QRCode.toDataURL(url, { width: 480, margin: 2 })
+      .then(setQrDataUrl)
+      .catch(() => setQrDataUrl(null));
+  }, [allocation?.qr_token]);
 
   // FR-2.3: realtime attendance completion per group
   useEffect(() => {
@@ -97,10 +131,7 @@ export default function CommitteePage() {
       }
       for (const r of recs ?? []) {
         const rec = r as { group_id: number; status: string };
-        totals[rec.group_id] = totals[rec.group_id] ?? {
-          present: 0,
-          total: 0,
-        };
+        totals[rec.group_id] = totals[rec.group_id] ?? { present: 0, total: 0 };
         if (rec.status === "present") totals[rec.group_id].present++;
       }
       setAttendance(totals);
@@ -121,23 +152,6 @@ export default function CommitteePage() {
       supabase.removeChannel(channel);
     };
   }, [supabase, sessionId]);
-
-  async function specialDraw() {
-    if (!drawGroup) {
-      setError("Select a group first.");
-      return;
-    }
-    setBusy(true);
-    setError(null);
-    const { data, error } = await supabase.rpc("fn_gacha_draw", {
-      p_group_id: drawGroup,
-      p_pool_key: "idea1",
-      p_idempotency_key: idemKey(),
-    });
-    setBusy(false);
-    if (error) setError(friendlyError(error));
-    else setGacha(data as GachaResult);
-  }
 
   async function search(e: React.FormEvent) {
     e.preventDefault();
@@ -171,6 +185,37 @@ export default function CommitteePage() {
       <PageTitle title="Operations" subtitle="Live situational awareness" />
       <ErrorBanner message={error} />
       <SuccessBanner message={notice} />
+
+      {allocation && allocation.active && (
+        <Card className="text-center">
+          <h2 className="font-semibold">
+            📦 My blind box QR
+            {allocation.box_type === "special" && (
+              <span className="chip ml-2 bg-star-goldsoft/40 text-star-gold">
+                ★ special
+              </span>
+            )}
+          </h2>
+          <p className="text-sm text-ink-faint">
+            {allocation.total_boxes - allocation.used_boxes} of{" "}
+            {allocation.total_boxes} boxes left · {allocation.min_tokens}–
+            {allocation.max_tokens} tokens each · each group can scan you once
+          </p>
+          {qrDataUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={qrDataUrl}
+              alt="My blind box QR code"
+              className="mx-auto mt-2 w-56 max-w-full rounded-xl border border-base-200"
+            />
+          ) : (
+            <p className="mt-2 text-sm text-ink-faint">Generating QR…</p>
+          )}
+          <p className="mt-1 text-xs text-ink-faint">
+            Let a Freshie scan this with their phone camera after your mini-game.
+          </p>
+        </Card>
+      )}
 
       <section>
         <h2 className="mb-2 font-semibold">Live map — all groups</h2>
@@ -232,41 +277,9 @@ export default function CommitteePage() {
         </Card>
       </section>
 
-      {canDraw && (
-        <section>
-          <h2 className="mb-2 font-semibold">
-            Bankruptcy Protection draw (Idea 1)
-          </h2>
-          <Card className="space-y-2">
-            <p className="text-sm text-ink-faint">
-              +2 tokens and one facility card from the remaining pool of 10.
-            </p>
-            <select
-              className="input"
-              value={drawGroup ?? ""}
-              onChange={(e) => setDrawGroup(Number(e.target.value) || null)}
-            >
-              <option value="">Select group…</option>
-              {groups.map((g) => (
-                <option key={g.id} value={g.id}>
-                  {g.name}
-                </option>
-              ))}
-            </select>
-            <button
-              disabled={busy}
-              onClick={specialDraw}
-              className="btn-primary w-full"
-            >
-              🎁 Trigger special draw
-            </button>
-          </Card>
-        </section>
-      )}
-
       {canAssign && (
         <section>
-          <h2 className="mb-2 font-semibold">Register counter (FR-12.1)</h2>
+          <h2 className="mb-2 font-semibold">Register counter</h2>
           <Card className="space-y-3">
             <form onSubmit={search} className="flex gap-2">
               <input
@@ -309,8 +322,6 @@ export default function CommitteePage() {
           </Card>
         </section>
       )}
-
-      {gacha && <GachaReveal result={gacha} onClose={() => setGacha(null)} />}
     </div>
   );
 }

@@ -8,9 +8,11 @@ export default function AuthLayout({
       <div className="mb-8 text-center">
         <div className="mb-2 text-4xl">✦</div>
         <h1 className="text-2xl font-bold tracking-tight">
-          Starlight Revival
+          XMUM Orientation
         </h1>
-        <p className="text-sm text-ink-faint">XMUM Orientation 2026</p>
+        <p className="text-sm text-ink-faint">
+          One platform for the whole adventure ✦
+        </p>
         <div className="starlight-rule mx-auto mt-3 w-24" />
       </div>
       {children}
