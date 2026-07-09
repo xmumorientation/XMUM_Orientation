@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 
 import { supabaseBrowser } from "@/lib/supabase/client";
 import type { Phase } from "@/lib/types";
@@ -9,6 +9,7 @@ import { cn, formatCountdown } from "@/lib/utils";
 // FR-10.2: persistent phase countdown on every screen; Endgame in warning
 // red. FR-10.4: countdown uses server-time offset, not the device clock.
 export function PhaseTimer({ compact = false }: { compact?: boolean }) {
+  const id = useId().replace(/[^a-zA-Z0-9_-]/g, "");
   const [phases, setPhases] = useState<Phase[]>([]);
   const [offsetMs, setOffsetMs] = useState(0);
   const [tick, setTick] = useState(0);
@@ -42,7 +43,7 @@ export function PhaseTimer({ compact = false }: { compact?: boolean }) {
     loadPhases();
 
     const channel = supabase
-      .channel("phases-timer")
+      .channel(`phases-timer-${id}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "phases" },
@@ -59,7 +60,7 @@ export function PhaseTimer({ compact = false }: { compact?: boolean }) {
       clearInterval(interval);
       clearInterval(resync);
     };
-  }, [supabase]);
+  }, [id, supabase]);
 
   void tick;
 
