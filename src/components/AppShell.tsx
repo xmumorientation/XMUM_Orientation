@@ -18,8 +18,8 @@ interface NavItem {
   roles: UserRole[];
 }
 
-// Mobile-first bottom navigation, filtered by role. Server-side RLS is the
-// real permission boundary; this only controls what's presented.
+// Browser-first top navigation, filtered by role. Server-side RLS is the real
+// permission boundary; this only controls what's presented.
 const NAV: NavItem[] = [
   {
     href: "/dashboard",
@@ -141,43 +141,43 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </div>
         <PhaseTimer />
+        <nav className="border-t border-base-200/70 bg-white/70">
+          <div className="mx-auto flex max-w-3xl gap-1 overflow-x-auto px-2 py-1.5 [scrollbar-width:none] sm:px-4">
+            {items.map((item) => {
+              const active =
+                pathname === item.href || pathname.startsWith(item.href + "/");
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cn(
+                    "flex min-h-[40px] shrink-0 items-center gap-2 rounded-full px-3 text-xs font-bold transition sm:text-sm",
+                    active
+                      ? "bg-ink text-white shadow-card"
+                      : "border border-base-200 bg-white/80 text-ink-soft hover:border-star-cyan/40 hover:text-ink"
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "text-[10px] font-black tracking-tight",
+                      active ? "text-white/70" : "text-star-cyanstrong"
+                    )}
+                  >
+                    {item.code}
+                  </span>
+                  {item.label}
+                </Link>
+              );
+            })}
+          </div>
+        </nav>
       </header>
 
-      <main className="flex-1 px-3 pb-[calc(5.75rem+env(safe-area-inset-bottom))] pt-3 sm:px-5 sm:pt-5">
+      <main className="flex-1 px-3 pb-[calc(1.25rem+env(safe-area-inset-bottom))] pt-3 sm:px-5 sm:pb-8 sm:pt-5">
         {children}
       </main>
 
       <NewItemToast />
-
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-base-200 bg-white/95 backdrop-blur">
-        <div
-          className="mx-auto grid max-w-3xl px-1"
-          style={{ gridTemplateColumns: `repeat(${items.length}, 1fr)` }}
-        >
-          {items.map((item) => {
-            const active =
-              pathname === item.href || pathname.startsWith(item.href + "/");
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  "my-1 flex min-h-[56px] min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl px-1 text-[10px] font-semibold transition sm:text-[11px]",
-                  active
-                    ? "bg-star-cyansoft/20 text-star-cyanstrong"
-                    : "text-ink-faint hover:bg-base-100 hover:text-ink"
-                )}
-              >
-                <span className="text-[10px] font-black leading-none tracking-tight">
-                  {item.code}
-                </span>
-                <span className="max-w-full truncate">{item.label}</span>
-              </Link>
-            );
-          })}
-        </div>
-        <div className="h-[env(safe-area-inset-bottom)]" />
-      </nav>
     </div>
   );
 }
