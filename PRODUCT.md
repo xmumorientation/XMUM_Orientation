@@ -14,7 +14,7 @@ XMUM Orientation Platform unifies event access, role-based workflows, attendance
 
 ## Brand Personality
 
-Playful, clear, operational. The 2026 theme is "Vortexa", but the interface must still behave like a trusted event control surface.
+Playful, clear, operational. The 2026 theme is "Vortexa" with the slogan "One ticket, One Ride, Discover adventure Inside." The interface must still behave like a trusted event control surface.
 
 ## Anti-references
 

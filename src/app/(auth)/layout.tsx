@@ -14,6 +14,9 @@ export default function AuthLayout({
           <h1 className="text-[clamp(5rem,10vw,9rem)] font-black leading-[0.82] tracking-[-0.04em] text-ink">
             VORTEXA
           </h1>
+          <p className="mt-6 max-w-xl text-2xl font-black leading-8 tracking-tight text-ink-soft">
+            One ticket, One Ride, Discover adventure Inside.
+          </p>
           <div className="mt-8 h-1.5 w-40 rounded-full bg-[linear-gradient(90deg,var(--brand-1),var(--brand-2))]" />
           <div className="mt-14 grid max-w-lg grid-cols-[1fr_auto] items-end gap-5 border-t border-ink/10 pt-5">
             <p className="text-sm font-semibold uppercase tracking-[0.24em] text-ink-faint">
@@ -34,6 +37,9 @@ export default function AuthLayout({
               <h1 className="mt-1 text-3xl font-black tracking-[-0.03em]">
                 VORTEXA
               </h1>
+              <p className="mt-1 max-w-[16rem] text-sm font-semibold leading-5 text-ink-faint">
+                One ticket, One Ride, Discover adventure Inside.
+              </p>
             </div>
             <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-ink text-sm font-black text-white">
               VX
