@@ -8,7 +8,7 @@ import { cn, formatCountdown } from "@/lib/utils";
 
 // FR-10.2: persistent phase countdown on every screen; Endgame in warning
 // red. FR-10.4: countdown uses server-time offset, not the device clock.
-export function PhaseTimer() {
+export function PhaseTimer({ compact = false }: { compact?: boolean }) {
   const [phases, setPhases] = useState<Phase[]>([]);
   const [offsetMs, setOffsetMs] = useState(0);
   const [tick, setTick] = useState(0);
@@ -81,7 +81,8 @@ export function PhaseTimer() {
   return (
     <div
       className={cn(
-        "flex items-center justify-center gap-2 px-3 py-1.5 text-sm font-semibold",
+        "flex items-center gap-2 px-3 py-1.5 text-sm font-semibold",
+        compact ? "justify-start rounded-2xl" : "justify-center",
         isEndgame
           ? "animate-pulseglow bg-red-600 text-white"
           : "bg-gradient-to-r from-star-goldsoft/30 via-star-cyansoft/30 to-star-violetsoft/30 text-ink"

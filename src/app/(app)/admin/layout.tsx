@@ -38,7 +38,7 @@ export default function AdminLayout({
 
   return (
     <div className="lg:grid lg:grid-cols-[12rem_minmax(0,1fr)] lg:gap-5">
-      <div className="-mx-3 mb-4 flex gap-1 overflow-x-auto px-3 pb-1 sm:-mx-5 sm:px-5 lg:sticky lg:top-[9rem] lg:mx-0 lg:block lg:self-start lg:overflow-visible lg:px-0">
+      <div className="-mx-3 mb-4 flex gap-1 overflow-x-auto px-3 pb-1 sm:-mx-5 sm:px-5 lg:sticky lg:top-6 lg:mx-0 lg:block lg:self-start lg:overflow-visible lg:px-0">
         {TABS.map((t) => {
           const active =
             t.href === "/admin"

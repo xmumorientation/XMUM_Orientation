@@ -57,7 +57,7 @@ export function NewItemToast() {
   if (toasts.length === 0) return null;
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 top-[calc(7.5rem+env(safe-area-inset-top))] z-50 flex flex-col items-center gap-2 px-4">
+    <div className="pointer-events-none fixed inset-x-0 top-[calc(7.5rem+env(safe-area-inset-top))] z-50 flex flex-col items-center gap-2 px-4 lg:left-64 lg:top-5">
       {toasts.map((t) => (
         <div
           key={t.id}
