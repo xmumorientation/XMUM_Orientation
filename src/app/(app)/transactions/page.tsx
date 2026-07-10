@@ -14,8 +14,11 @@ export default function TransactionsPage() {
   const profile = useProfile();
   const { group } = useGroup();
   const supabase = useMemo(() => supabaseBrowser(), []);
+  const PAGE_SIZE = 100;
   const [txs, setTxs] = useState<TokenTransaction[]>([]);
   const [loading, setLoading] = useState(true);
+  const [limit, setLimit] = useState(PAGE_SIZE);
+  const [hasMore, setHasMore] = useState(false);
 
   useEffect(() => {
     if (!profile.group_id) {
@@ -25,14 +28,17 @@ export default function TransactionsPage() {
     let active = true;
 
     async function load() {
+      // Fetch one extra row to detect whether more history exists.
       const { data } = await supabase
         .from("token_transactions")
         .select("*")
         .eq("group_id", profile.group_id!)
         .order("created_at", { ascending: false })
-        .limit(100);
+        .limit(limit + 1);
       if (active) {
-        setTxs((data as TokenTransaction[]) ?? []);
+        const rows = (data as TokenTransaction[]) ?? [];
+        setHasMore(rows.length > limit);
+        setTxs(rows.slice(0, limit));
         setLoading(false);
       }
     }
@@ -56,7 +62,7 @@ export default function TransactionsPage() {
       active = false;
       supabase.removeChannel(channel);
     };
-  }, [supabase, profile.group_id]);
+  }, [supabase, profile.group_id, limit]);
 
   if (loading) {
     return (
@@ -98,6 +104,16 @@ export default function TransactionsPage() {
             </div>
           ))}
         </Card>
+      )}
+      {hasMore && (
+        <div className="flex justify-center">
+          <button
+            onClick={() => setLimit((l) => l + PAGE_SIZE)}
+            className="btn-secondary"
+          >
+            Load more
+          </button>
+        </div>
       )}
     </div>
   );

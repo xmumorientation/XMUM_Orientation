@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { requireAdmin } from "@/lib/auth";
 import { generateNfcToken, nfcUrl } from "@/lib/nfc";
-import { supabaseAdmin, supabaseServer } from "@/lib/supabase/server";
-import type { ProjectorLocation } from "@/lib/types";
+import { supabaseAdmin } from "@/lib/supabase/server";
+import { PROJECTOR_LOCATIONS, type ProjectorLocation } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -10,46 +11,45 @@ export const dynamic = "force-dynamic";
 // The full token appears ONLY in this response — write it to the sticker
 // immediately. The DB stores just the hash.
 
-async function requireAdmin() {
-  const supabase = await supabaseServer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-  return profile?.role === "admin" ? user : null;
-}
-
 export async function POST(req: NextRequest) {
   const admin = await requireAdmin();
   if (!admin) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const { location, count, labelPrefix } = (await req.json()) as {
-    location: ProjectorLocation;
-    count: number;
-    labelPrefix?: string;
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
+  const { location, count, labelPrefix } = (body ?? {}) as {
+    location?: unknown;
+    count?: unknown;
+    labelPrefix?: unknown;
   };
 
-  if (!["B1", "A3", "TF"].includes(location)) {
+  if (
+    typeof location !== "string" ||
+    !PROJECTOR_LOCATIONS.includes(location as ProjectorLocation)
+  ) {
     return NextResponse.json({ error: "Invalid location" }, { status: 400 });
   }
-  const n = Math.min(Math.max(Number(count) || 1, 1), 20);
+  if (labelPrefix !== undefined && typeof labelPrefix !== "string") {
+    return NextResponse.json({ error: "Invalid labelPrefix" }, { status: 400 });
+  }
+  const loc = location as ProjectorLocation;
+  const n = Math.min(Math.max(Math.floor(Number(count)) || 1, 1), 20);
 
   const service = supabaseAdmin();
   const results: { label: string; url: string }[] = [];
 
   for (let i = 1; i <= n; i++) {
-    const { token, tokenHash } = generateNfcToken(location);
-    const label = `${labelPrefix || location + " sticker"} #${i}`;
+    const { token, tokenHash } = generateNfcToken(loc);
+    const label = `${labelPrefix || loc + " sticker"} #${i}`;
     const { error } = await service.from("nfc_tokens").insert({
       token_hash: tokenHash,
-      location,
+      location: loc,
       label,
       created_by: admin.id,
     });

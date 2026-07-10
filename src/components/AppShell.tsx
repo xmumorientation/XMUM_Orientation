@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { NewItemToast } from "@/components/NewItemToast";
 import { PhaseTimer } from "@/components/PhaseTimer";
@@ -96,9 +96,56 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { brand } = useConfig();
   const [menuOpen, setMenuOpen] = useState(false);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const drawerRef = useRef<HTMLDivElement>(null);
 
   const items = NAV.filter((n) => n.roles.includes(profile.role));
   const mark = initials(brand.eventName);
+
+  // Close the drawer on route change so it never lingers over a new page.
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [pathname]);
+
+  // Accessible dialog behaviour: move focus in on open, restore it to the
+  // trigger on close, Escape to close, and a simple Tab focus trap.
+  useEffect(() => {
+    if (!menuOpen) return;
+    const trigger = menuButtonRef.current;
+    const drawer = drawerRef.current;
+    drawer?.querySelector<HTMLElement>(
+      'a, button, [tabindex]:not([tabindex="-1"])'
+    )?.focus();
+
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        setMenuOpen(false);
+        return;
+      }
+      if (e.key !== "Tab" || !drawer) return;
+      const focusable = Array.from(
+        drawer.querySelectorAll<HTMLElement>(
+          'a, button, [tabindex]:not([tabindex="-1"])'
+        )
+      ).filter((el) => !el.hasAttribute("disabled"));
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    }
+
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      trigger?.focus();
+    };
+  }, [menuOpen]);
 
   async function signOut() {
     await supabaseBrowser().auth.signOut();
@@ -174,7 +221,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </span>
           <button
             onClick={signOut}
-            className="block text-sm font-semibold text-ink-faint transition hover:text-ink"
+            className="flex min-h-[44px] items-center text-sm font-semibold text-ink-faint transition hover:text-ink"
           >
             Log out
           </button>
@@ -202,8 +249,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               {ROLE_LABELS[profile.role]}
             </span>
             <button
+              ref={menuButtonRef}
               onClick={() => setMenuOpen(true)}
-              className="min-h-[40px] rounded-xl border border-base-300 bg-white px-3 text-sm font-black text-ink shadow-card"
+              aria-expanded={menuOpen}
+              aria-controls="mobile-nav-drawer"
+              aria-haspopup="dialog"
+              className="min-h-[44px] rounded-xl border border-base-300 bg-white px-3 text-sm font-black text-ink shadow-card"
             >
               Menu
             </button>
@@ -213,8 +264,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </header>
 
       {menuOpen && (
-        <div className="fixed inset-0 z-50 bg-ink/35 p-3 pt-[calc(0.75rem+env(safe-area-inset-top))] lg:hidden">
-          <div className="ml-auto flex max-h-[calc(100dvh-1.5rem-env(safe-area-inset-top))] w-full max-w-sm flex-col rounded-[1.75rem] border border-white/80 bg-white p-2 shadow-[0_24px_90px_rgba(28,26,23,0.22)]">
+        <div
+          className="fixed inset-0 z-50 bg-ink/35 p-3 pt-[calc(0.75rem+env(safe-area-inset-top))] lg:hidden"
+          onClick={() => setMenuOpen(false)}
+        >
+          <div
+            ref={drawerRef}
+            id="mobile-nav-drawer"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Navigation menu"
+            onClick={(e) => e.stopPropagation()}
+            className="ml-auto flex max-h-[calc(100dvh-1.5rem-env(safe-area-inset-top))] w-full max-w-sm flex-col rounded-[1.75rem] border border-white/80 bg-white p-2 shadow-[0_24px_90px_rgba(28,26,23,0.22)]"
+          >
             <div className="flex items-center justify-between gap-3 p-2">
               <div className="flex min-w-0 items-center gap-2">
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-ink text-sm font-black text-white">
@@ -229,7 +291,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </div>
               <button
                 onClick={() => setMenuOpen(false)}
-                className="min-h-[40px] rounded-xl border border-base-300 px-3 text-sm font-bold text-ink-soft"
+                className="min-h-[44px] rounded-xl border border-base-300 px-3 text-sm font-bold text-ink-soft"
               >
                 Close
               </button>

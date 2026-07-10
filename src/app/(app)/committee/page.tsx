@@ -108,29 +108,41 @@ export default function CommitteePage() {
       .catch(() => setQrDataUrl(null));
   }, [allocation?.qr_token]);
 
-  // FR-2.3: realtime attendance completion per group
+  // FR-2.3: realtime attendance completion per group.
+  // Group head-counts don't change during a session, so fetch them once and
+  // cache; realtime events only refetch the (small) records for this session
+  // and merge against the cached totals. The subscription is filtered to the
+  // active session to avoid a refetch storm across concurrent sessions.
   useEffect(() => {
     if (!sessionId) return;
     let active = true;
+    // group_id -> total members, computed once per session.
+    let groupTotals: Record<number, number> | null = null;
 
-    async function loadAttendance() {
-      const [{ data: recs }, { data: members }] = await Promise.all([
-        supabase
-          .from("attendance_records")
-          .select("group_id, status")
-          .eq("session_id", sessionId!),
-        supabase
-          .from("profiles")
-          .select("group_id")
-          .eq("role", "freshie")
-          .not("group_id", "is", null),
-      ]);
-      if (!active) return;
-      const totals: Record<number, { present: number; total: number }> = {};
+    async function loadGroupTotals() {
+      const { data: members } = await supabase
+        .from("profiles")
+        .select("group_id")
+        .eq("role", "freshie")
+        .not("group_id", "is", null);
+      const totals: Record<number, number> = {};
       for (const m of members ?? []) {
         const gid = (m as { group_id: number }).group_id;
-        totals[gid] = totals[gid] ?? { present: 0, total: 0 };
-        totals[gid].total++;
+        totals[gid] = (totals[gid] ?? 0) + 1;
+      }
+      return totals;
+    }
+
+    async function loadAttendance() {
+      if (!groupTotals) groupTotals = await loadGroupTotals();
+      const { data: recs } = await supabase
+        .from("attendance_records")
+        .select("group_id, status")
+        .eq("session_id", sessionId!);
+      if (!active) return;
+      const totals: Record<number, { present: number; total: number }> = {};
+      for (const [gid, total] of Object.entries(groupTotals)) {
+        totals[Number(gid)] = { present: 0, total };
       }
       for (const r of recs ?? []) {
         const rec = r as { group_id: number; status: string };
@@ -145,7 +157,12 @@ export default function CommitteePage() {
       .channel(`att-dash-${sessionId}`)
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "attendance_records" },
+        {
+          event: "*",
+          schema: "public",
+          table: "attendance_records",
+          filter: `session_id=eq.${sessionId}`,
+        },
         loadAttendance
       )
       .subscribe();

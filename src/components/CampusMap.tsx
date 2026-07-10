@@ -128,35 +128,74 @@ export function CampusMap({
           </text>
 
           {/* stations */}
-          {stations.map((s) => (
-            <g
-              key={s.id}
-              onClick={() => {
-                setSelected(s);
-                onStationTap?.(s);
-              }}
-              className="cursor-pointer"
-            >
-              <circle
-                cx={Number(s.map_x)}
-                cy={Number(s.map_y)}
-                r={highlightStationId === s.id ? 4 : 2.6}
-                fill={stationDotColor(s.status)}
-                stroke="#fff"
-                strokeWidth="0.7"
-              />
-              <text
-                x={Number(s.map_x)}
-                y={Number(s.map_y) - 3.6}
-                textAnchor="middle"
-                fontSize="2.6"
-                fontWeight="600"
-                fill="#4a463f"
+          {stations.map((s) => {
+            const cx = Number(s.map_x);
+            const cy = Number(s.map_y);
+            const r = highlightStationId === s.id ? 4 : 2.6;
+            const statusLabel =
+              s.status === "available"
+                ? "Available"
+                : s.status === "in_progress"
+                  ? "In progress"
+                  : "Closed";
+            return (
+              <g
+                key={s.id}
+                onClick={() => {
+                  setSelected(s);
+                  onStationTap?.(s);
+                }}
+                className="cursor-pointer"
               >
-                {s.code}
-              </text>
-            </g>
-          ))}
+                {/* Status is conveyed by shape as well as colour (PRODUCT.md):
+                    available = solid, in progress = ring, closed = crossed. */}
+                <title>
+                  {s.code} · {s.name} · {statusLabel}
+                </title>
+                <circle
+                  cx={cx}
+                  cy={cy}
+                  r={r}
+                  fill={stationDotColor(s.status)}
+                  stroke="#fff"
+                  strokeWidth="0.7"
+                />
+                {s.status === "in_progress" && (
+                  <circle cx={cx} cy={cy} r={r * 0.45} fill="#fff" />
+                )}
+                {s.status === "closed" && (
+                  <>
+                    <line
+                      x1={cx - r * 0.6}
+                      y1={cy - r * 0.6}
+                      x2={cx + r * 0.6}
+                      y2={cy + r * 0.6}
+                      stroke="#fff"
+                      strokeWidth="0.6"
+                    />
+                    <line
+                      x1={cx - r * 0.6}
+                      y1={cy + r * 0.6}
+                      x2={cx + r * 0.6}
+                      y2={cy - r * 0.6}
+                      stroke="#fff"
+                      strokeWidth="0.6"
+                    />
+                  </>
+                )}
+                <text
+                  x={cx}
+                  y={cy - 3.6}
+                  textAnchor="middle"
+                  fontSize="2.6"
+                  fontWeight="600"
+                  fill="#4a463f"
+                >
+                  {s.code}
+                </text>
+              </g>
+            );
+          })}
 
           {/* Day 2 layer: projectors (FR-4.3) */}
           {day2Layer &&

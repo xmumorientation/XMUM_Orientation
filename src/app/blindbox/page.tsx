@@ -13,7 +13,12 @@ export const dynamic = "force-dynamic";
 function ErrorScreen({ title, message }: { title: string; message: string }) {
   return (
     <main className="flex min-h-dvh flex-col items-center justify-center bg-night-900 px-8 text-center">
-      <div className="text-6xl">📦</div>
+      <div
+        aria-hidden="true"
+        className="flex h-16 w-16 items-center justify-center rounded-3xl bg-white/10 text-3xl"
+      >
+        📦
+      </div>
       <h1 className="mt-6 text-2xl font-bold text-white">{title}</h1>
       <p className="mt-3 text-white/70">{message}</p>
       <a href="/dashboard" className="btn-primary mt-10 min-w-[180px]">

@@ -171,7 +171,7 @@ export default function DashboardPage() {
               href="/inventory"
               code="IT"
               title="Inventory"
-              desc="Puzzle pieces & facility cards"
+              desc="Puzzle pieces & blueprint progress"
               tone="primary"
             />
             <ActionCard
@@ -206,7 +206,7 @@ export default function DashboardPage() {
             href="/gm"
             code="GM"
             title="Station panel"
-            desc="Tokens, items, gacha & station status"
+            desc="Tokens, items & station status"
             tone="primary"
           />
         )}
@@ -225,7 +225,7 @@ export default function DashboardPage() {
             href="/committee"
             code="OP"
             title="Operations"
-            desc="Live map, attendance & special draws"
+            desc="Live map, attendance & balances"
             tone="primary"
           />
         )}

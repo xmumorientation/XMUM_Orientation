@@ -1,67 +1,14 @@
 "use client";
 
-import { useEffect, useId, useMemo, useRef, useState } from "react";
-
-import { supabaseBrowser } from "@/lib/supabase/client";
-import type { Phase } from "@/lib/types";
+import { usePhaseTimer } from "@/components/PhaseTimerProvider";
 import { cn, formatCountdown } from "@/lib/utils";
 
 // FR-10.2: persistent phase countdown on every screen; Endgame in warning
 // red. FR-10.4: countdown uses server-time offset, not the device clock.
+// Pure consumer of PhaseTimerProvider — the subscription, clock sync and 1s
+// tick live there once, so the two mounted instances share one data source.
 export function PhaseTimer({ compact = false }: { compact?: boolean }) {
-  const id = useId().replace(/[^a-zA-Z0-9_-]/g, "");
-  const [phases, setPhases] = useState<Phase[]>([]);
-  const [offsetMs, setOffsetMs] = useState(0);
-  const [tick, setTick] = useState(0);
-  const supabase = useMemo(() => supabaseBrowser(), []);
-  const mounted = useRef(true);
-
-  useEffect(() => {
-    mounted.current = true;
-
-    async function syncClock() {
-      try {
-        const t0 = Date.now();
-        const res = await fetch("/api/time", { cache: "no-store" });
-        const { now } = await res.json();
-        const t1 = Date.now();
-        if (mounted.current) setOffsetMs(now + (t1 - t0) / 2 - t1);
-      } catch {
-        // keep previous offset
-      }
-    }
-
-    async function loadPhases() {
-      const { data } = await supabase
-        .from("phases")
-        .select("*")
-        .order("sort_order");
-      if (mounted.current && data) setPhases(data as Phase[]);
-    }
-
-    syncClock();
-    loadPhases();
-
-    const channel = supabase
-      .channel(`phases-timer-${id}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "phases" },
-        loadPhases
-      )
-      .subscribe();
-
-    const interval = setInterval(() => setTick((t) => t + 1), 1000);
-    const resync = setInterval(syncClock, 5 * 60 * 1000);
-
-    return () => {
-      mounted.current = false;
-      supabase.removeChannel(channel);
-      clearInterval(interval);
-      clearInterval(resync);
-    };
-  }, [id, supabase]);
-
+  const { phases, offsetMs, tick } = usePhaseTimer();
   void tick;
 
   const active = phases.find((p) => p.state === "active");

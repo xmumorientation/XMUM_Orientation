@@ -9,10 +9,13 @@ import { timeAgo } from "@/lib/utils";
 
 // FR-11.4: global audit log, filterable by action type / free text.
 export default function AdminAuditPage() {
+  const PAGE_SIZE = 200;
   const supabase = useMemo(() => supabaseBrowser(), []);
   const [entries, setEntries] = useState<AuditEntry[]>([]);
   const [action, setAction] = useState("");
   const [loading, setLoading] = useState(true);
+  const [limit, setLimit] = useState(PAGE_SIZE);
+  const [hasMore, setHasMore] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -20,16 +23,24 @@ export default function AdminAuditPage() {
       .from("audit_log")
       .select("*")
       .order("created_at", { ascending: false })
-      .limit(200);
+      // Fetch one extra row to detect whether more history exists.
+      .limit(limit + 1);
     if (action) query = query.ilike("action", `%${action}%`);
     const { data } = await query;
-    setEntries((data as AuditEntry[]) ?? []);
+    const rows = (data as AuditEntry[]) ?? [];
+    setHasMore(rows.length > limit);
+    setEntries(rows.slice(0, limit));
     setLoading(false);
-  }, [supabase, action]);
+  }, [supabase, action, limit]);
 
   useEffect(() => {
     load();
   }, [load]);
+
+  // Reset the window when the filter changes so results start from the top.
+  useEffect(() => {
+    setLimit(PAGE_SIZE);
+  }, [action]);
 
   return (
     <div className="space-y-4">
@@ -74,6 +85,16 @@ export default function AdminAuditPage() {
             </p>
           )}
         </Card>
+      )}
+      {!loading && hasMore && (
+        <div className="flex justify-center">
+          <button
+            onClick={() => setLimit((l) => l + PAGE_SIZE)}
+            className="btn-secondary"
+          >
+            Load more
+          </button>
+        </div>
       )}
     </div>
   );

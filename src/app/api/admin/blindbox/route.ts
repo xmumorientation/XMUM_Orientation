@@ -1,26 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { requireAdmin } from "@/lib/auth";
 import { generateBlindBoxToken } from "@/lib/blindbox";
-import { supabaseAdmin, supabaseServer } from "@/lib/supabase/server";
+import { supabaseAdmin } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
 // Create / regenerate a committee member's blind-box allocation with a
 // fresh signed QR token. Regenerating invalidates any previously printed QR.
-
-async function requireAdmin() {
-  const supabase = await supabaseServer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-  return profile?.role === "admin" ? user : null;
-}
 
 export async function POST(req: NextRequest) {
   const admin = await requireAdmin();
@@ -28,21 +15,31 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const { profileId, boxType, minTokens, maxTokens, totalBoxes } =
-    (await req.json()) as {
-      profileId: string;
-      boxType: "normal" | "special";
-      minTokens: number;
-      maxTokens: number;
-      totalBoxes: number;
-    };
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
+  const { profileId, boxType, minTokens, maxTokens, totalBoxes } = (body ??
+    {}) as {
+    profileId?: unknown;
+    boxType?: unknown;
+    minTokens?: unknown;
+    maxTokens?: unknown;
+    totalBoxes?: unknown;
+  };
 
-  if (!profileId || !["normal", "special"].includes(boxType)) {
+  if (
+    typeof profileId !== "string" ||
+    !profileId ||
+    (boxType !== "normal" && boxType !== "special")
+  ) {
     return NextResponse.json({ error: "Invalid input" }, { status: 400 });
   }
-  const min = Math.max(0, Number(minTokens) || 0);
-  const max = Math.max(min, Number(maxTokens) || min);
-  const total = Math.min(Math.max(Number(totalBoxes) || 1, 0), 50);
+  const min = Math.max(0, Math.floor(Number(minTokens)) || 0);
+  const max = Math.max(min, Math.floor(Number(maxTokens)) || min);
+  const total = Math.min(Math.max(Math.floor(Number(totalBoxes)) || 1, 0), 50);
 
   const { token, tokenHash } = generateBlindBoxToken(profileId);
 

@@ -168,40 +168,6 @@ export interface FaqItem {
 
 export const PIECES_PER_SET = 5;
 
-export interface GachaPool {
-  id: number;
-  key: string;
-  name: string;
-  description: string;
-  cost_tokens: number;
-  bonus_tokens: number;
-  enabled: boolean;
-  allowed_roles: UserRole[];
-}
-
-export interface GachaPoolEntry {
-  id: number;
-  pool_id: number;
-  label: string;
-  kind: "facility_card" | "tokens" | "clue" | "nothing";
-  item_id: number | null;
-  token_amount: number;
-  weight: number;
-  remaining: number | null;
-}
-
-export interface GachaResult {
-  ok: boolean;
-  duplicate: boolean;
-  draw_id: number;
-  kind: string;
-  label: string;
-  token_amount: number;
-  bonus_tokens: number;
-  is_gala: boolean;
-  balance: number;
-}
-
 export interface LatestLocation {
   group_id: number;
   group_name: string;
