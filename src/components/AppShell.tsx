@@ -77,6 +77,12 @@ const NAV: NavItem[] = [
     code: "OP",
     roles: ["hof", "hogm", "committee"],
   },
+  {
+    href: "/bigscreen",
+    label: "Big screen",
+    code: "BS",
+    roles: ["hof", "hogm", "committee", "admin"],
+  },
   { href: "/admin", label: "Admin", code: "AD", roles: ["admin"] },
 ];
 
