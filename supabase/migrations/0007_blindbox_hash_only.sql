@@ -1,0 +1,27 @@
+-- ═══════════════════════════════════════════════════════════════════════
+-- Migration 0007: blind-box tokens become hash-only (run AFTER 0006)
+--
+-- blind_box_allocations.qr_token stored the full signed token in
+-- plaintext so a committee member could re-render their QR from their
+-- own phone. That breaks the hash-only invariant NFC tokens follow: any
+-- path around RLS (admin account compromise, a leaked service-role key,
+-- database backups) exposes every member's live QR at once.
+--
+-- New flow — rotate-on-demand: the member (or Admin, for any member)
+-- taps "Show QR", the server mints a FRESH signed token, overwrites
+-- qr_hash, and returns the token exactly once for rendering
+-- (POST /api/blindbox/qr). Rotation is safe: fn_scan_blind_box matches
+-- only on qr_hash, and claims/used_boxes are keyed by allocation_id, so
+-- prior claims are unaffected. Each rotation invalidates any previously
+-- displayed or printed QR for that member.
+--
+-- This migration only drops the plaintext column; no data or function
+-- changes. 0005's CREATE TABLE is updated in-source for fresh installs
+-- (same pattern as 0006's in-source fix of fn_day2_challenge).
+--
+-- ⚠ Deploy order: ship the updated app code FIRST (it no longer reads
+--   qr_token), then run this migration. Running this first would
+--   silently break the old committee self-display until the deploy.
+-- ═══════════════════════════════════════════════════════════════════════
+
+alter table public.blind_box_allocations drop column if exists qr_token;

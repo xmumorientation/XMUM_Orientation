@@ -5,9 +5,9 @@ import type { User } from "@supabase/supabase-js";
 // Shared role gate for privileged API routes. UI hiding and RLS are the real
 // boundaries; this stops a request early with a clear 403 before touching the
 // service-role client. Previously copy-pasted into every admin route.
-export async function requireRole(
+export async function requireRoleDetail(
   roles: UserRole[]
-): Promise<User | null> {
+): Promise<{ user: User; role: UserRole } | null> {
   const supabase = await supabaseServer();
   const {
     data: { user },
@@ -18,7 +18,12 @@ export async function requireRole(
     .select("role")
     .eq("id", user.id)
     .single();
-  return profile && roles.includes(profile.role as UserRole) ? user : null;
+  const role = profile?.role as UserRole | undefined;
+  return role && roles.includes(role) ? { user, role } : null;
+}
+
+export async function requireRole(roles: UserRole[]): Promise<User | null> {
+  return (await requireRoleDetail(roles))?.user ?? null;
 }
 
 export function requireAdmin(): Promise<User | null> {

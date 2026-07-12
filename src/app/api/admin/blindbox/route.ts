@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { requireAdmin } from "@/lib/auth";
-import { generateBlindBoxToken } from "@/lib/blindbox";
+import { blindBoxUrl, generateBlindBoxToken } from "@/lib/blindbox";
 import { supabaseAdmin } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -44,11 +44,11 @@ export async function POST(req: NextRequest) {
   const { token, tokenHash } = generateBlindBoxToken(profileId);
 
   const service = supabaseAdmin();
+  // Hash-only (0007): the full token is returned once below, never stored.
   const { error } = await service.from("blind_box_allocations").upsert(
     {
       profile_id: profileId,
       qr_hash: tokenHash,
-      qr_token: token,
       box_type: boxType,
       min_tokens: min,
       max_tokens: max,
@@ -69,5 +69,6 @@ export async function POST(req: NextRequest) {
     detail: { boxType, min, max, total },
   });
 
-  return NextResponse.json({ ok: true });
+  // The one-time chance to render this QR — the token is not recoverable.
+  return NextResponse.json({ ok: true, url: blindBoxUrl(token) });
 }
