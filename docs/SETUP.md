@@ -29,8 +29,10 @@ Follow these steps once you have access to the team's Supabase project.
 ## 2. Environment variables
 
 ```bash
-cp .env.example .env.local
+[ -f .env.local ] || cp .env.example .env.local
 ```
+
+Use the guarded copy above so existing local keys are not overwritten.
 
 | Variable | Where to find it |
 |---|---|
