@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { supabaseBrowser } from "@/lib/supabase/client";
 
@@ -12,18 +12,33 @@ export interface QueuedCall {
   queuedAt: number;
 }
 
-const STORAGE_KEY = "gm-offline-queue-v1";
+export interface FailedCall extends QueuedCall {
+  error: string;
+  failedAt: number;
+}
 
-function readQueue(): QueuedCall[] {
+const STORAGE_KEY = "gm-offline-queue-v1";
+const FAILED_KEY = "gm-offline-failed-v1";
+
+function readJson<T>(key: string): T[] {
   try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "[]");
+    return JSON.parse(localStorage.getItem(key) ?? "[]");
   } catch {
     return [];
   }
 }
 
-function writeQueue(q: QueuedCall[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(q));
+function writeJson(key: string, value: unknown[]) {
+  localStorage.setItem(key, JSON.stringify(value));
+}
+
+// PostgREST errors (permission, balance, bad args…) always carry a non-empty
+// `code` (SQLSTATE or PGRSTxxx). A failed fetch surfaces as an error with an
+// empty code, or as a thrown TypeError. Message-sniffing is only a fallback —
+// browsers word network failures differently.
+function isNetworkError(error: { code?: string; message?: string }): boolean {
+  if (!error.code) return true;
+  return /fetch|network|timeout|connection/i.test(error.message ?? "");
 }
 
 // NFR-6: GM submissions queue locally and retry on reconnect. Safe because
@@ -32,33 +47,55 @@ function writeQueue(q: QueuedCall[]) {
 export function useOfflineQueue() {
   const supabase = useMemo(() => supabaseBrowser(), []);
   const [queue, setQueue] = useState<QueuedCall[]>([]);
+  const [failed, setFailed] = useState<FailedCall[]>([]);
+  const flushing = useRef(false);
 
   useEffect(() => {
-    setQueue(readQueue());
+    setQueue(readJson<QueuedCall>(STORAGE_KEY));
+    setFailed(readJson<FailedCall>(FAILED_KEY));
   }, []);
 
   const flush = useCallback(async () => {
-    let q = readQueue();
-    for (const call of [...q]) {
-      const { error } = await supabase.rpc(call.fn, call.args);
-      // Business-rule rejections (permission, balance…) won't succeed on
-      // retry — drop them. Network errors keep the item queued.
-      const isNetworkError =
-        error && /fetch|network|timeout|connection/i.test(error.message ?? "");
-      if (!error || !isNetworkError) {
+    if (flushing.current) return; // online event + interval can race
+    flushing.current = true;
+    try {
+      let q = readJson<QueuedCall>(STORAGE_KEY);
+      for (const call of [...q]) {
+        let error: { code?: string; message?: string } | null;
+        try {
+          ({ error } = await supabase.rpc(call.fn, call.args));
+        } catch {
+          break; // still offline; stop hammering
+        }
+        if (error && isNetworkError(error)) break;
+        // Success, or a business-rule rejection (permission, balance…) that
+        // won't succeed on retry. Either way it leaves the queue — but a
+        // rejection is kept visible so the GM knows the submission was lost.
         q = q.filter((c) => c.id !== call.id);
-        writeQueue(q);
-      } else {
-        break; // still offline; stop hammering
+        writeJson(STORAGE_KEY, q);
+        if (error) {
+          const f = readJson<FailedCall>(FAILED_KEY);
+          f.push({ ...call, error: error.message ?? "Rejected", failedAt: Date.now() });
+          writeJson(FAILED_KEY, f);
+          setFailed(f);
+        }
       }
+      setQueue(q);
+    } finally {
+      flushing.current = false;
     }
-    setQueue(q);
   }, [supabase]);
+
+  const dismissFailed = useCallback((id: string) => {
+    const f = readJson<FailedCall>(FAILED_KEY).filter((c) => c.id !== id);
+    writeJson(FAILED_KEY, f);
+    setFailed(f);
+  }, []);
 
   useEffect(() => {
     window.addEventListener("online", flush);
     const interval = setInterval(() => {
-      if (readQueue().length > 0 && navigator.onLine) flush();
+      if (readJson<QueuedCall>(STORAGE_KEY).length > 0 && navigator.onLine) flush();
     }, 15_000);
     return () => {
       window.removeEventListener("online", flush);
@@ -78,25 +115,8 @@ export function useOfflineQueue() {
       error?: string;
       data?: unknown;
     }> => {
-      try {
-        const { data, error } = await supabase.rpc(fn, args);
-        if (!error) return { status: "confirmed", data };
-        if (/fetch|network|timeout|connection/i.test(error.message ?? "")) {
-          const q = readQueue();
-          q.push({
-            id: crypto.randomUUID(),
-            fn,
-            args,
-            label,
-            queuedAt: Date.now(),
-          });
-          writeQueue(q);
-          setQueue(q);
-          return { status: "queued" };
-        }
-        return { status: "rejected", error: error.message };
-      } catch {
-        const q = readQueue();
+      const enqueue = () => {
+        const q = readJson<QueuedCall>(STORAGE_KEY);
         q.push({
           id: crypto.randomUUID(),
           fn,
@@ -104,13 +124,24 @@ export function useOfflineQueue() {
           label,
           queuedAt: Date.now(),
         });
-        writeQueue(q);
+        writeJson(STORAGE_KEY, q);
         setQueue(q);
+      };
+      try {
+        const { data, error } = await supabase.rpc(fn, args);
+        if (!error) return { status: "confirmed", data };
+        if (isNetworkError(error)) {
+          enqueue();
+          return { status: "queued" };
+        }
+        return { status: "rejected", error: error.message };
+      } catch {
+        enqueue();
         return { status: "queued" };
       }
     },
     [supabase]
   );
 
-  return { queue, submit, flush };
+  return { queue, failed, dismissFailed, submit, flush };
 }

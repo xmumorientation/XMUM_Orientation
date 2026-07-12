@@ -43,7 +43,7 @@ export default function GmPanelPage() {
   const profile = useProfile();
   const supabase = useMemo(() => supabaseBrowser(), []);
   const { config } = useConfig();
-  const { queue, submit } = useOfflineQueue();
+  const { queue, failed, dismissFailed, submit } = useOfflineQueue();
 
   const [tab, setTab] = useState<Tab>("day1");
   const [groups, setGroups] = useState<{ id: number; name: string }[]>([]);
@@ -227,6 +227,34 @@ export default function GmPanelPage() {
             {queue.length} submission{queue.length > 1 ? "s" : ""} waiting.
             Keep this page open; they will send when the connection returns.
           </p>
+        </div>
+      )}
+
+      {failed.length > 0 && (
+        <div className="rounded-2xl border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-900 shadow-card">
+          <p className="font-bold">
+            {failed.length} queued submission{failed.length > 1 ? "s" : ""} rejected
+          </p>
+          <p className="mt-1">
+            These were sent after reconnecting but the server refused them.
+            They were NOT applied — redo them manually if still needed.
+          </p>
+          <ul className="mt-2 space-y-1">
+            {failed.map((f) => (
+              <li key={f.id} className="flex items-center justify-between gap-2">
+                <span>
+                  {f.label} — {f.error}
+                </span>
+                <button
+                  type="button"
+                  className="shrink-0 rounded-lg border border-red-300 px-2 py-1 text-xs font-bold"
+                  onClick={() => dismissFailed(f.id)}
+                >
+                  Dismiss
+                </button>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 

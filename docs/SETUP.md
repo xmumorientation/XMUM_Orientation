@@ -5,7 +5,7 @@ Follow these steps once you have access to the team's Supabase project.
 ## 1. Supabase project
 
 1. Open the Supabase Dashboard → your project.
-2. Go to **SQL Editor** and run the four migration files **in order**:
+2. Go to **SQL Editor** and run the migration files **in order**:
    1. `supabase/migrations/0001_schema.sql` — tables, enums, triggers
    2. `supabase/migrations/0002_rls.sql` — row-level security policies
    3. `supabase/migrations/0003_functions.sql` — game logic RPCs
@@ -13,6 +13,8 @@ Follow these steps once you have access to the team's Supabase project.
    5. `supabase/migrations/0005_v2_mechanics.sql` — v2 game design:
       5-piece puzzles, station risk tiers, blind boxes (replaces gacha),
       schedule/FAQ, event branding config, puzzle image storage
+   6. `supabase/migrations/0006_fix_day2_record.sql` — fixes
+      `fn_day2_challenge` erroring on a losing challenge
 3. **Auth settings** (Dashboard → Authentication):
    - Providers → Email: enabled. Decide on email confirmation
      (recommended ON for production; OFF speeds up testing).
