@@ -29,8 +29,9 @@ function LoginForm() {
       setBusy(false);
       return;
     }
+    // Dynamic routes bypass the client router cache in Next 15, so replace()
+    // alone fetches a fresh server render — no refresh() needed on top.
     router.replace(params.get("next") || "/dashboard");
-    router.refresh();
   }
 
   return (
