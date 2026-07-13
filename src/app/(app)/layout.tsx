@@ -4,7 +4,7 @@ import { AppShell } from "@/components/AppShell";
 import { PhaseTimerProvider } from "@/components/PhaseTimerProvider";
 import { ProfileProvider } from "@/components/ProfileProvider";
 import { supabaseServer } from "@/lib/supabase/server";
-import type { Profile } from "@/lib/types";
+import type { Group, Profile } from "@/lib/types";
 
 export default async function AppLayout({
   children,
@@ -12,22 +12,29 @@ export default async function AppLayout({
   children: React.ReactNode;
 }) {
   const supabase = await supabaseServer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
 
-  if (!user) redirect("/login");
+  // Middleware already validated the session with getUser() on this request;
+  // getClaims() verifies the JWT locally instead of a second Auth round trip.
+  // The RLS-scoped profile query below is the authoritative check — a forged
+  // token returns no profile and redirects.
+  const { data } = await supabase.auth.getClaims();
+  const userId = data?.claims.sub;
 
-  const { data: profile } = await supabase
+  if (!userId) redirect("/login");
+
+  // One round trip for profile + group (the dashboard needs both).
+  const { data: row } = await supabase
     .from("profiles")
-    .select("*")
-    .eq("id", user.id)
+    .select("*, group:groups(*)")
+    .eq("id", userId)
     .single();
 
-  if (!profile) redirect("/login");
+  if (!row) redirect("/login");
+
+  const { group, ...profile } = row as Profile & { group: Group | null };
 
   return (
-    <ProfileProvider profile={profile as Profile}>
+    <ProfileProvider profile={profile as Profile} initialGroup={group}>
       <PhaseTimerProvider>
         <AppShell>{children}</AppShell>
       </PhaseTimerProvider>

@@ -2,17 +2,24 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-import { useProfile } from "@/components/ProfileProvider";
+import { useInitialGroup, useProfile } from "@/components/ProfileProvider";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import type { Group } from "@/lib/types";
 
 // Live view of the signed-in user's group (token balance updates in
-// realtime — FR-5.1).
+// realtime — FR-5.1). Seeded from the server-fetched snapshot so pages
+// paint without a loading skeleton; the fetch below reconciles any change
+// that happened between server render and the realtime subscription.
 export function useGroup() {
   const profile = useProfile();
+  const initialGroup = useInitialGroup();
   const supabase = useMemo(() => supabaseBrowser(), []);
-  const [group, setGroup] = useState<Group | null>(null);
-  const [loading, setLoading] = useState(true);
+  const seeded =
+    initialGroup !== null && initialGroup.id === profile.group_id;
+  const [group, setGroup] = useState<Group | null>(
+    seeded ? initialGroup : null
+  );
+  const [loading, setLoading] = useState(!seeded);
 
   useEffect(() => {
     if (!profile.group_id) {
@@ -27,10 +34,10 @@ export function useGroup() {
         .select("*")
         .eq("id", profile.group_id!)
         .single();
-      if (active) {
-        setGroup((data as Group) ?? null);
-        setLoading(false);
+      if (active && data) {
+        setGroup(data as Group);
       }
+      if (active) setLoading(false);
     }
     load();
 
