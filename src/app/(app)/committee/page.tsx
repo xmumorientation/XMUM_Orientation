@@ -42,6 +42,7 @@ export default function CommitteePage() {
   >({});
   const [allocation, setAllocation] = useState<BlindBoxAllocation | null>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+  const [qrBusy, setQrBusy] = useState(false);
   const [query, setQuery] = useState("");
   const [hits, setHits] = useState<FreshieHit[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -94,19 +95,26 @@ export default function CommitteePage() {
     };
   }, [supabase, profile.id]);
 
-  // render personal blind-box QR from the stored signed token
-  useEffect(() => {
-    if (!allocation?.qr_token) {
-      setQrDataUrl(null);
-      return;
+  // Tokens are hash-only in the DB (0007): mint a fresh one on demand via
+  // the rotation route and render it once. Explicit button only — rotating
+  // on page load would invalidate the QR on every visit and ping-pong with
+  // the allocation realtime subscription above.
+  async function showMyQr() {
+    setQrBusy(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/blindbox/qr", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? "Couldn't generate the QR");
+      } else {
+        setQrDataUrl(await QRCode.toDataURL(data.url, { width: 480, margin: 2 }));
+      }
+    } catch (err) {
+      setError(String(err));
     }
-    const base =
-      process.env.NEXT_PUBLIC_SITE_URL ?? window.location.origin;
-    const url = `${base}/blindbox?t=${encodeURIComponent(allocation.qr_token)}`;
-    QRCode.toDataURL(url, { width: 480, margin: 2 })
-      .then(setQrDataUrl)
-      .catch(() => setQrDataUrl(null));
-  }, [allocation?.qr_token]);
+    setQrBusy(false);
+  }
 
   // FR-2.3: realtime attendance completion per group.
   // Group head-counts don't change during a session, so fetch them once and
@@ -248,18 +256,25 @@ export default function CommitteePage() {
             {allocation.total_boxes} boxes left · {allocation.min_tokens}-
             {allocation.max_tokens} tokens each · each group can scan you once
           </p>
-          {qrDataUrl ? (
+          {qrDataUrl && (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={qrDataUrl}
               alt="My blind box QR code"
               className="mx-auto mt-2 w-56 max-w-full rounded-xl border border-base-200"
             />
-          ) : (
-            <p className="mt-2 text-sm text-ink-faint">Generating QR…</p>
           )}
-          <p className="mt-1 text-xs text-ink-faint">
-            Let a Freshie scan this with their phone camera after your mini-game.
+          <button
+            onClick={showMyQr}
+            disabled={qrBusy}
+            className="btn-primary mx-auto mt-3"
+          >
+            {qrBusy ? "Generating…" : qrDataUrl ? "Refresh QR" : "Show my QR"}
+          </button>
+          <p className="mt-2 text-xs text-ink-faint">
+            {qrDataUrl
+              ? "Let a Freshie scan this with their phone camera after your mini-game. Generating again invalidates this QR."
+              : "Generates a fresh QR each time — any previously shown or printed QR stops working."}
           </p>
         </Card>
       )}

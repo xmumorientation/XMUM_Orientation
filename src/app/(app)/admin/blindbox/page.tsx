@@ -87,7 +87,19 @@ export default function AdminBlindBoxPage() {
       const data = await res.json();
       if (!res.ok) setError(data.error ?? "Failed");
       else {
-        flash("QR allocated. The member sees it on their Operations page.");
+        flash(
+          "QR allocated. The member can also generate it on their Operations page."
+        );
+        // Hash-only tokens (0007): this response is the only time the new
+        // QR is available without another rotation — show it right away.
+        if (data.url) {
+          const member = staff.find((s) => s.id === form.profileId);
+          const dataUrl = await QRCode.toDataURL(data.url, {
+            width: 560,
+            margin: 2,
+          });
+          setQrPreview({ name: member?.full_name ?? "member", dataUrl });
+        }
         load();
       }
     } catch (err) {
@@ -105,12 +117,30 @@ export default function AdminBlindBoxPage() {
     else load();
   }
 
+  // Tokens are hash-only (0007) — previewing mints a fresh token via the
+  // rotation route, which invalidates the member's previously shown QR.
   async function showQr(a: BlindBoxAllocation) {
-    const member = staff.find((s) => s.id === a.profile_id);
-    const base = process.env.NEXT_PUBLIC_SITE_URL ?? window.location.origin;
-    const url = `${base}/blindbox?t=${encodeURIComponent(a.qr_token)}`;
-    const dataUrl = await QRCode.toDataURL(url, { width: 560, margin: 2 });
-    setQrPreview({ name: member?.full_name ?? "member", dataUrl });
+    setError(null);
+    try {
+      const res = await fetch("/api/blindbox/qr", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ profileId: a.profile_id }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? "Failed to generate QR");
+        return;
+      }
+      const member = staff.find((s) => s.id === a.profile_id);
+      const dataUrl = await QRCode.toDataURL(data.url, {
+        width: 560,
+        margin: 2,
+      });
+      setQrPreview({ name: member?.full_name ?? "member", dataUrl });
+    } catch (err) {
+      setError(String(err));
+    }
   }
 
   async function saveGmConfig(key: string, value: number) {
@@ -291,7 +321,9 @@ export default function AdminBlindBoxPage() {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={qrPreview.dataUrl} alt="Blind box QR" className="w-full" />
             <p className="mt-2 text-xs text-ink-faint">
-              Screenshot or print this for the member. Tap anywhere to close.
+              Fresh QR — any previously shown or printed QR for this member is
+              now invalid. Screenshot or print this for them. Tap anywhere to
+              close.
             </p>
           </div>
         </div>

@@ -65,15 +65,14 @@ update public.stations set risk_tier = 'high',   entry_cost = 6 where id in (11,
 
 -- ── 3. Blind boxes ───────────────────────────────────────────────────────
 
--- One row per committee member who carries boxes. QR token hash works
--- like NFC tokens: the signed token lives only in the printed QR.
+-- One row per committee member who carries boxes. Hash-only, like NFC
+-- tokens: the signed token is never stored — it is minted on demand and
+-- returned exactly once by POST /api/blindbox/qr, which rotates qr_hash
+-- (each rotation invalidates the member's previous QR). See 0007.
 create table public.blind_box_allocations (
   id          serial primary key,
   profile_id  uuid not null unique references public.profiles (id) on delete cascade,
   qr_hash     text not null unique,
-  -- full signed token, so the member can show their QR from their own
-  -- phone (RLS: visible only to the member themself and Admin)
-  qr_token    text not null default '',
   box_type    text not null default 'normal' check (box_type in ('normal', 'special')),
   min_tokens  integer not null default 1 check (min_tokens >= 0),
   max_tokens  integer not null default 2 check (max_tokens >= min_tokens),

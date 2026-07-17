@@ -359,34 +359,7 @@ $$;
 
 -- ── Puzzle set verification (FR-8.x) ─────────────────────────────────────
 
--- Guardian GM checks a group's piece status for one location
-create or replace function public.fn_puzzle_status(p_group_id integer, p_location public.projector_location)
-returns jsonb
-language plpgsql stable security definer set search_path = public
-as $$
-declare
-  v_pieces integer;
-  v_redeemed boolean;
-  v_activated boolean;
-begin
-  if public.my_role() not in ('gm', 'guardian_gm', 'hof', 'hogm', 'admin') then
-    raise exception 'PERMISSION_DENIED';
-  end if;
-
-  select count(distinct i.puzzle_index) into v_pieces
-    from public.inventory inv
-    join public.items i on i.id = inv.item_id
-   where inv.group_id = p_group_id and i.type = 'puzzle' and i.puzzle_location = p_location;
-
-  v_redeemed := exists (select 1 from public.puzzle_redemptions
-                         where group_id = p_group_id and location = p_location);
-  v_activated := exists (select 1 from public.projectors
-                          where location = p_location and activated_at is not null);
-
-  return jsonb_build_object('pieces', v_pieces, 'complete', v_pieces >= 3,
-                            'redeemed', v_redeemed, 'projector_activated', v_activated);
-end;
-$$;
+-- fn_puzzle_status: superseded by 0005_v2_mechanics.sql (5-piece sets).
 
 -- FR-8.2/8.3: mark a complete set as redeemed and log the physical handover
 create or replace function public.fn_redeem_puzzle_set(
@@ -829,29 +802,4 @@ $$;
 
 -- ── Live ops snapshot (FR-11.6) ──────────────────────────────────────────
 
-create or replace function public.fn_live_ops()
-returns jsonb
-language plpgsql stable security definer set search_path = public
-as $$
-declare v jsonb;
-begin
-  if public.my_role() not in ('hof', 'hogm', 'admin') then
-    raise exception 'PERMISSION_DENIED';
-  end if;
-  select jsonb_build_object(
-    'tokens_in_circulation', (select coalesce(sum(token_balance), 0) from public.groups),
-    'transactions_count',    (select count(*) from public.token_transactions),
-    'draws_count',           (select count(*) from public.gacha_draws),
-    'sets_redeemed',         (select count(*) from public.puzzle_redemptions),
-    'projectors_activated',  (select count(*) from public.projectors where activated_at is not null),
-    'gala_drawn_by', (
-      select g.name from public.gacha_draws d
-        join public.gacha_pool_entries e on e.id = d.entry_id
-        join public.items i on i.id = e.item_id
-        join public.groups g on g.id = d.group_id
-       where i.is_gala limit 1
-    )
-  ) into v;
-  return v;
-end;
-$$;
+-- fn_live_ops: superseded by 0005_v2_mechanics.sql (blind-box metrics).

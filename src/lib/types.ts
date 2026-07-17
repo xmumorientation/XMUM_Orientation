@@ -120,7 +120,6 @@ export interface AttendanceSession {
 export interface BlindBoxAllocation {
   id: number;
   profile_id: string;
-  qr_token: string;
   box_type: "normal" | "special";
   min_tokens: number;
   max_tokens: number;
