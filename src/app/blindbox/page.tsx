@@ -1,3 +1,4 @@
+import { Package } from "lucide-react";
 import { redirect } from "next/navigation";
 
 import { BoxReveal } from "@/components/BoxReveal";
@@ -15,9 +16,9 @@ function ErrorScreen({ title, message }: { title: string; message: string }) {
     <main className="flex min-h-dvh flex-col items-center justify-center bg-night-900 px-8 text-center">
       <div
         aria-hidden="true"
-        className="flex h-16 w-16 items-center justify-center rounded-3xl bg-white/10 text-3xl"
+        className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/10"
       >
-        📦
+        <Package size={28} strokeWidth={1.75} className="text-white" />
       </div>
       <h1 className="mt-6 text-2xl font-bold text-white">{title}</h1>
       <p className="mt-3 text-white/70">{message}</p>

@@ -1,16 +1,18 @@
 import type { Config } from "tailwindcss";
 
 /**
- * "Soft Starlight" design tokens (proposal §7):
- * light, warm base + starlight accents (gold-amber, aqua-cyan, soft violet).
- * Dark theatrical styles are reserved for hero moments (gacha, activation).
+ * Design tokens: neutral "control room" base (paper/ink/status/night) with a
+ * single swappable identity slot — brand-1/brand-2, set at runtime from
+ * Admin → Brand — so a yearly theme change never requires touching these
+ * tokens. Dark theatrical styling stays reserved for hero moments (gacha,
+ * NFC activation, bigscreen).
  */
 const config: Config = {
   content: ["./src/**/*.{ts,tsx}"],
   theme: {
     extend: {
       colors: {
-        base: {
+        paper: {
           50: "#fdfcfa",
           100: "#f8f6f2",
           200: "#efece5",
@@ -22,14 +24,11 @@ const config: Config = {
           faint: "#6f695f",
           muted: "#746f66",
         },
-        star: {
-          gold: "#d99a06",
-          goldsoft: "#f5c542",
-          cyan: "#0891b2",
-          cyanstrong: "#0f7188",
-          cyansoft: "#67e8f9",
-          violet: "#7c3aed",
-          violetsoft: "#c4b5fd",
+        // The one swappable accent — reads var(--brand-1-rgb)/var(--brand-2-rgb)
+        // channel triples so opacity modifiers (bg-brand-1/20) work correctly.
+        brand: {
+          1: "rgb(var(--brand-1-rgb) / <alpha-value>)",
+          2: "rgb(var(--brand-2-rgb) / <alpha-value>)",
         },
         status: {
           open: "#16a34a",
@@ -43,19 +42,30 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: [
-          "Plus Jakarta Sans",
-          "Geist",
-          "Avenir Next",
-          "system-ui",
-          "-apple-system",
-          "Segoe UI",
-          "sans-serif",
-        ],
+        sans: ["var(--font-body)", "system-ui", "-apple-system", "Segoe UI", "sans-serif"],
+        display: ["var(--font-display)", "var(--font-body)", "system-ui", "sans-serif"],
+        mono: ["var(--font-mono)", "ui-monospace", "SFMono-Regular", "monospace"],
+      },
+      borderRadius: {
+        sm: "0.625rem",
+        md: "0.875rem",
+        lg: "1.125rem",
+        xl: "1.5rem",
+        "2xl": "1.75rem",
       },
       boxShadow: {
-        card: "0 1px 3px rgba(28,26,23,0.06), 0 4px 16px rgba(28,26,23,0.06)",
-        glow: "0 0 24px rgba(245,197,66,0.45)",
+        flat: "none",
+        raised: "0 1px 2px rgba(28,26,23,0.05), 0 2px 8px rgba(28,26,23,0.06)",
+        floating: "0 8px 24px rgba(28,26,23,0.10), 0 2px 6px rgba(28,26,23,0.06)",
+        overlay: "0 24px 90px rgba(28,26,23,0.18)",
+      },
+      transitionDuration: {
+        fast: "120ms",
+        base: "180ms",
+        slow: "240ms",
+      },
+      transitionTimingFunction: {
+        snappy: "cubic-bezier(0.32,0.72,0,1)",
       },
       keyframes: {
         shake: {
@@ -82,6 +92,11 @@ const config: Config = {
           "0%": { transform: "translateY(12px)", opacity: "0" },
           "100%": { transform: "translateY(0)", opacity: "1" },
         },
+        stampImpact: {
+          "0%": { transform: "scale(0.4) rotate(-14deg)", opacity: "0" },
+          "60%": { transform: "scale(1.08) rotate(3deg)", opacity: "1" },
+          "100%": { transform: "scale(1) rotate(0deg)", opacity: "1" },
+        },
       },
       animation: {
         shake: "shake 0.5s ease-in-out 3",
@@ -89,9 +104,10 @@ const config: Config = {
         circuit: "circuit 2.4s ease-in-out forwards",
         pulseglow: "pulseglow 1.6s ease-in-out infinite",
         floatup: "floatup 0.35s ease-out forwards",
+        "stamp-impact": "stampImpact 280ms cubic-bezier(0.32,0.72,0,1) forwards",
       },
     },
   },
-  plugins: [],
+  plugins: [require("tailwindcss-animate")],
 };
 export default config;

@@ -52,7 +52,7 @@ export default function FaqPage() {
         categories.map((cat) => (
           <section key={cat}>
             <h2 className="mb-2 font-semibold">{cat}</h2>
-            <Card className="divide-y divide-base-200 p-0">
+            <Card className="divide-y divide-paper-200 p-0">
               {items
                 .filter((i) => i.category === cat)
                 .map((i) => (

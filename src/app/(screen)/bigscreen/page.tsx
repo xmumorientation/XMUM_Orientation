@@ -11,7 +11,7 @@ import {
   PROJECTOR_LOCATIONS,
   type ProjectorLocation,
 } from "@/lib/types";
-import { cn, formatCountdown } from "@/lib/utils";
+import { cn, formatCountdown, hexToRgbChannels } from "@/lib/utils";
 
 interface GroupRow {
   id: number;
@@ -227,11 +227,13 @@ export default function BigScreenPage() {
 
   return (
     <div
-      className="min-h-dvh bg-[#0b0e17] px-4 py-4 text-white lg:px-10 lg:py-8"
+      className="min-h-dvh bg-night-900 px-4 py-4 text-white lg:px-10 lg:py-8"
       style={
         {
           "--brand-1": brand.brandPrimary,
           "--brand-2": brand.brandSecondary,
+          "--brand-1-rgb": hexToRgbChannels(brand.brandPrimary),
+          "--brand-2-rgb": hexToRgbChannels(brand.brandSecondary),
         } as React.CSSProperties
       }
     >

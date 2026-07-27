@@ -1,5 +1,6 @@
 "use client";
 
+import { TriangleAlert } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import {
@@ -137,8 +138,8 @@ export default function GuardianPage() {
                 className={cn(
                   "btn text-sm",
                   location === loc
-                    ? "bg-star-violet text-white"
-                    : "border border-base-300 bg-white"
+                    ? "bg-brand-2 text-white"
+                    : "border border-paper-300 bg-white"
                 )}
               >
                 {loc}
@@ -185,7 +186,7 @@ export default function GuardianPage() {
           </div>
 
           {status.projector_activated ? (
-            <p className="text-sm font-semibold text-star-gold">
+            <p className="text-sm font-semibold text-amber-500">
               This projector has already been revived.
             </p>
           ) : status.redeemed ? (
@@ -229,7 +230,8 @@ export default function GuardianPage() {
               onClick={manualActivate}
               className="btn-danger w-full"
             >
-              ⚠️ Manual activation (sticker damaged)
+              <TriangleAlert size={20} strokeWidth={1.75} />
+              Manual activation (sticker damaged)
             </button>
           )}
         </Card>
@@ -243,7 +245,7 @@ export default function GuardianPage() {
               <span>{p.name}</span>
               <span
                 className={
-                  p.activated_at ? "font-semibold text-star-gold" : "text-ink-faint"
+                  p.activated_at ? "font-semibold text-amber-500" : "text-ink-faint"
                 }
               >
                 {p.activated_at

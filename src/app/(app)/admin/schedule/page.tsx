@@ -1,5 +1,6 @@
 "use client";
 
+import { Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { Card, ErrorBanner, PageTitle, SuccessBanner } from "@/components/ui";
@@ -111,10 +112,10 @@ export default function AdminSchedulePage() {
 
       {days.map((day) => (
         <Card key={day} className="p-0">
-          <p className="border-b border-base-200 px-4 py-2 text-sm font-bold">
+          <p className="border-b border-paper-200 px-4 py-2 text-sm font-bold">
             {day}
           </p>
-          <div className="divide-y divide-base-200">
+          <div className="divide-y divide-paper-200">
             {items
               .filter((i) => i.day_label === day)
               .map((i) => (
@@ -135,7 +136,7 @@ export default function AdminSchedulePage() {
                     className="text-sm text-red-500"
                     aria-label={`Delete ${i.title}`}
                   >
-                    ✕
+                    <Trash2 size={16} strokeWidth={1.75} />
                   </button>
                 </div>
               ))}

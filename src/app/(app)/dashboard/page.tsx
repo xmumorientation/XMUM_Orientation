@@ -29,8 +29,8 @@ function TokenBalanceCard() {
     );
   }
   return (
-    <Card className="overflow-hidden border-star-cyan/20 bg-white p-0">
-      <div className="flex items-center justify-between border-b border-base-200 bg-star-cyansoft/20 px-4 py-3">
+    <Card className="overflow-hidden border-brand-1/20 bg-white p-0">
+      <div className="flex items-center justify-between border-b border-paper-200 bg-brand-1/20 px-4 py-3">
         <div>
           <p className="text-sm font-semibold text-ink-soft">{group.name}</p>
           <p className="text-xs text-ink-faint">Current group balance</p>
@@ -63,8 +63,8 @@ function ActionCard({
   return (
     <Link
       href={href}
-      className={`card flex items-center gap-3 p-4 transition hover:-translate-y-0.5 hover:border-star-cyan/40 ${
-        tone === "primary" ? "bg-star-cyansoft/20" : ""
+      className={`card flex items-center gap-3 p-4 transition hover:-translate-y-0.5 hover:border-brand-1/40 ${
+        tone === "primary" ? "bg-brand-1/20" : ""
       }`}
     >
       <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-ink text-xs font-black tracking-tight text-white">
@@ -142,7 +142,7 @@ export default function DashboardPage() {
 
       <Link
         href={main.href}
-        className="card block overflow-hidden border-star-cyan/30 bg-white p-0 transition hover:-translate-y-0.5 hover:border-star-cyan/60"
+        className="card block overflow-hidden border-brand-1/30 bg-white p-0 transition hover:-translate-y-0.5 hover:border-brand-1/60"
       >
         <div className="bg-[linear-gradient(90deg,var(--brand-1),var(--brand-2))] px-4 py-3 text-white">
           <p className="text-xs font-black uppercase tracking-[0.2em] text-white/75">

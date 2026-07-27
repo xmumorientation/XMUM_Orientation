@@ -76,7 +76,7 @@ export default function AdminSessionsPage() {
         </form>
       </Card>
 
-      <Card className="divide-y divide-base-200 p-0">
+      <Card className="divide-y divide-paper-200 p-0">
         {sessions.map((s) => (
           <div key={s.id} className="flex items-center gap-3 px-4 py-3">
             <div className="flex-1">
@@ -90,7 +90,7 @@ export default function AdminSessionsPage() {
               className={cn(
                 "btn min-w-[90px] text-sm",
                 s.closed
-                  ? "border border-base-300 bg-white"
+                  ? "border border-paper-300 bg-white"
                   : "bg-ink text-white"
               )}
             >

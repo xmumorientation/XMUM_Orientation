@@ -31,7 +31,7 @@ export default function ResetPasswordPage() {
     <form onSubmit={onSubmit} className="auth-card">
       <div className="auth-card-inner space-y-5">
         <div>
-          <p className="text-xs font-black uppercase tracking-[0.22em] text-star-cyanstrong">
+          <p className="text-xs font-black uppercase tracking-[0.22em] text-brand-1">
             New credentials
           </p>
           <h2 className="mt-3 text-3xl font-black tracking-[-0.03em] text-ink">

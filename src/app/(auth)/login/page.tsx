@@ -37,7 +37,7 @@ function LoginForm() {
     <form onSubmit={onSubmit} className="auth-card">
       <div className="auth-card-inner space-y-5">
         <div>
-          <p className="text-xs font-black uppercase tracking-[0.22em] text-star-cyanstrong">
+          <p className="text-xs font-black uppercase tracking-[0.22em] text-brand-1">
             Account access
           </p>
           <h2 className="mt-3 text-3xl font-black tracking-[-0.03em] text-ink">
@@ -87,7 +87,7 @@ function LoginForm() {
           <Link href="/forgot-password" className="font-semibold text-ink-soft">
             Forgot password?
           </Link>
-          <Link href="/register" className="font-bold text-star-cyanstrong">
+          <Link href="/register" className="font-bold text-brand-1">
             New Freshie? Register
           </Link>
         </div>

@@ -91,8 +91,8 @@ export default function AdminPuzzlesPage() {
               </>
             ) : (
               <p className="text-sm text-ink-faint">
-                No picture yet — pieces show a placeholder 🧩 until you upload
-                one. Landscape images (~5:3) look best.
+                No picture yet — pieces show a placeholder icon until you
+                upload one. Landscape images (~5:3) look best.
               </p>
             )}
           </Card>

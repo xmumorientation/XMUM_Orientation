@@ -1,5 +1,6 @@
 "use client";
 
+import { MapPin } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { Card, EmptyState, PageTitle, Spinner } from "@/components/ui";
@@ -59,24 +60,31 @@ export default function SchedulePage() {
       ) : (
         days.map((day) => (
           <Card key={day} className="p-0">
-            <p className="border-b border-base-200 px-4 py-2.5 font-bold">
+            <p className="border-b border-paper-200 px-4 py-2.5 font-bold">
               {day}
             </p>
-            <div className="divide-y divide-base-200">
+            <div className="divide-y divide-paper-200">
               {items
                 .filter((i) => i.day_label === day)
                 .map((i) => (
                   <div key={i.id} className="flex gap-3 px-4 py-3">
-                    <span className="w-24 shrink-0 text-sm font-semibold tabular-nums text-star-cyan">
+                    <span className="w-24 shrink-0 text-sm font-semibold tabular-nums text-brand-1">
                       {i.time_label}
                     </span>
                     <div className="min-w-0">
                       <p className="text-sm font-medium">{i.title}</p>
                       {(i.location || i.description) && (
-                        <p className="text-xs text-ink-faint">
-                          {[i.location && `📍 ${i.location}`, i.description]
-                            .filter(Boolean)
-                            .join(" · ")}
+                        <p className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-ink-faint">
+                          {i.location && (
+                            <span className="inline-flex items-center gap-1">
+                              <MapPin size={14} strokeWidth={1.75} />
+                              {i.location}
+                            </span>
+                          )}
+                          {i.location && i.description && (
+                            <span aria-hidden="true">·</span>
+                          )}
+                          {i.description}
                         </p>
                       )}
                     </div>

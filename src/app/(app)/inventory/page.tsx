@@ -1,5 +1,6 @@
 "use client";
 
+import { Sparkles } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { PuzzleBoard } from "@/components/PuzzleBoard";
@@ -113,7 +114,7 @@ export default function InventoryPage() {
                   "chip",
                   complete
                     ? "bg-green-100 text-green-800"
-                    : "bg-base-200 text-ink-soft"
+                    : "bg-paper-200 text-ink-soft"
                 )}
               >
                 {owned.length}/{PIECES_PER_SET} pieces
@@ -126,8 +127,9 @@ export default function InventoryPage() {
               groupName={group?.name}
             />
             {complete && (
-              <p className="mt-2 text-center text-sm font-semibold text-star-gold">
-                ✨ Set complete! Bring your group to the Guardian at{" "}
+              <p className="mt-2 flex items-center justify-center gap-1.5 text-center text-sm font-semibold text-amber-500">
+                <Sparkles size={16} strokeWidth={1.75} className="shrink-0" />
+                Set complete! Bring your group to the Guardian at{" "}
                 {PROJECTOR_LABELS[loc]} to verify.
               </p>
             )}

@@ -148,7 +148,7 @@ export default function AdminUsersPage() {
         </div>
 
         {result?.dryRun && (
-          <div className="rounded-xl bg-base-100 p-3 text-sm">
+          <div className="rounded-xl bg-paper-100 p-3 text-sm">
             <p>
               {result.valid}/{result.total} rows valid.
             </p>
@@ -206,7 +206,7 @@ export default function AdminUsersPage() {
             {visible.map((u) => (
               <div
                 key={u.id}
-                className="rounded-xl border border-base-200 p-3"
+                className="rounded-xl border border-paper-200 p-3"
               >
                 <p className="text-sm font-semibold">
                   {u.full_name || "(no name)"}

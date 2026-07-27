@@ -60,7 +60,7 @@ export default function AdminAuditPage() {
           <Spinner />
         </div>
       ) : (
-        <Card className="divide-y divide-base-200 p-0">
+        <Card className="divide-y divide-paper-200 p-0">
           {entries.map((e) => (
             <div key={e.id} className="px-4 py-2.5">
               <div className="flex items-center justify-between">
@@ -73,7 +73,7 @@ export default function AdminAuditPage() {
                 {e.actor_role ?? "system"} → {e.target ?? "—"}
               </p>
               {Object.keys(e.detail ?? {}).length > 0 && (
-                <pre className="mt-1 overflow-x-auto rounded bg-base-100 p-1.5 text-[10px] text-ink-soft">
+                <pre className="mt-1 overflow-x-auto rounded bg-paper-100 p-1.5 text-[10px] text-ink-soft">
                   {JSON.stringify(e.detail)}
                 </pre>
               )}

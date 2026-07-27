@@ -1,5 +1,6 @@
 "use client";
 
+import { QrCode, Sparkles } from "lucide-react";
 import QRCode from "qrcode";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -162,7 +163,7 @@ export default function AdminBlindBoxPage() {
               }
             >
               <option value="normal">Normal</option>
-              <option value="special">★ Special</option>
+              <option value="special">Special</option>
             </select>
             <input
               type="number"
@@ -201,24 +202,27 @@ export default function AdminBlindBoxPage() {
             Regenerating invalidates the member&apos;s previous QR.
           </p>
           <button disabled={busy} type="submit" className="btn-primary w-full">
-            🏷️ Generate QR
+            <QrCode size={20} strokeWidth={1.75} />
+            Generate QR
           </button>
         </form>
       </Card>
 
       <Card className="p-0">
-        <p className="border-b border-base-200 px-4 py-2 text-sm font-semibold">
+        <p className="border-b border-paper-200 px-4 py-2 text-sm font-semibold">
           Allocations ({allocations.length})
         </p>
-        <div className="max-h-[360px] divide-y divide-base-200 overflow-y-auto">
+        <div className="max-h-[360px] divide-y divide-paper-200 overflow-y-auto">
           {allocations.map((a) => {
             const member = staff.find((s) => s.id === a.profile_id);
             return (
               <div key={a.id} className="flex items-center gap-2 px-4 py-2.5">
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">
+                  <p className="flex items-center gap-1 truncate text-sm font-medium">
                     {member?.full_name ?? a.profile_id.slice(0, 8)}
-                    {a.box_type === "special" && " ★"}
+                    {a.box_type === "special" && (
+                      <Sparkles size={14} strokeWidth={1.75} className="shrink-0 text-amber-500" />
+                    )}
                   </p>
                   <p className="text-xs text-ink-faint">
                     {claimCounts[a.id] ?? 0}/{a.total_boxes} used ·{" "}
@@ -237,7 +241,7 @@ export default function AdminBlindBoxPage() {
                     "btn min-h-[36px] min-w-[64px] px-3 text-xs",
                     a.active
                       ? "bg-green-600 text-white"
-                      : "border border-base-300 bg-white text-ink-faint"
+                      : "border border-paper-300 bg-white text-ink-faint"
                   )}
                 >
                   {a.active ? "Active" : "Off"}

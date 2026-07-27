@@ -1,5 +1,6 @@
 "use client";
 
+import { Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
@@ -98,7 +99,7 @@ export default function AdminStationsPage() {
           {stations.map((s) => (
             <div
               key={s.id}
-              className="flex items-center gap-2 rounded-xl border border-base-200 p-2.5"
+              className="flex items-center gap-2 rounded-xl border border-paper-200 p-2.5"
             >
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold">
@@ -151,7 +152,7 @@ export default function AdminStationsPage() {
                 className="text-sm text-red-500"
                 aria-label={`Delete ${s.code}`}
               >
-                ✕
+                <Trash2 size={16} strokeWidth={1.75} />
               </button>
             </div>
           ))}
@@ -195,7 +196,7 @@ export default function AdminStationsPage() {
           {groups.map((g) => (
             <div
               key={g.id}
-              className="flex justify-between rounded-lg bg-base-100 px-3 py-2 text-sm"
+              className="flex justify-between rounded-lg bg-paper-100 px-3 py-2 text-sm"
             >
               <span>{g.name}</span>
               <span className="font-bold tabular-nums">
