@@ -7,6 +7,10 @@
     /* Event brand accents — overridden at runtime from Admin → Brand */
     --brand-1: #0891b2;
     --brand-2: #7c3aed;
+    /* Channel triples so Tailwind can apply opacity modifiers (bg-brand-1/20)
+       to a runtime-set CSS var. Keep these in sync with --brand-1/--brand-2. */
+    --brand-1-rgb: 8 145 178;
+    --brand-2-rgb: 124 58 237;
   }
   html {
     /* NFR-5: 16px minimum body on mobile, high-contrast dark text */
@@ -14,12 +18,11 @@
     -webkit-tap-highlight-color: transparent;
   }
   body {
-    @apply bg-base-100 text-ink antialiased;
+    @apply bg-paper-50 text-ink antialiased;
     min-height: 100dvh;
     background:
-      radial-gradient(circle at top left, rgb(103 232 249 / 0.16), transparent 28rem),
-      radial-gradient(circle at bottom right, rgb(245 197 66 / 0.16), transparent 26rem),
-      #f7f7f5;
+      radial-gradient(circle at top left, rgb(var(--brand-1-rgb) / 0.06), transparent 30rem),
+      #fdfcfa;
   }
 
   h1,
@@ -33,35 +36,35 @@
   }
 
   :focus-visible {
-    outline: 3px solid rgb(8 145 178 / 0.45);
+    outline: 3px solid rgb(var(--brand-1-rgb) / 0.45);
     outline-offset: 2px;
   }
 }
 
 @layer components {
   .card {
-    @apply rounded-[1.5rem] border border-base-200/80 bg-white/90 shadow-card;
+    @apply rounded-xl border border-paper-200/80 bg-white/90 shadow-raised;
   }
   .btn {
     /* NFR-5: ≥44px touch targets */
     @apply inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full px-5
-      text-base font-semibold transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.98]
+      text-base font-semibold transition-all duration-base ease-snappy active:scale-[0.98]
       disabled:pointer-events-none disabled:opacity-40;
   }
   .btn-primary {
-    @apply btn text-white shadow-card;
+    @apply btn text-white shadow-raised;
     background-image: linear-gradient(90deg, var(--brand-1), var(--brand-2));
   }
   .btn-secondary {
-    @apply btn border border-base-300 bg-white text-ink hover:-translate-y-0.5 hover:border-star-cyan/50 hover:bg-star-cyansoft/10;
+    @apply btn border border-paper-300 bg-white text-ink hover:-translate-y-0.5 hover:border-brand-1/50 hover:bg-brand-1/5;
   }
   .btn-danger {
     @apply btn bg-status-busy text-white;
   }
   .input {
-    @apply min-h-[44px] w-full rounded-xl border border-base-300 bg-white px-3 text-base
+    @apply min-h-[44px] w-full rounded-md border border-paper-300 bg-white px-3 text-base
       text-ink outline-none transition placeholder:text-ink-muted
-      focus:border-star-cyan focus:ring-2 focus:ring-star-cyansoft/50;
+      focus:border-brand-1 focus:ring-2 focus:ring-brand-1/30;
   }
   .label {
     @apply mb-1 block text-sm font-medium text-ink-soft;
@@ -69,14 +72,37 @@
   .chip {
     @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold;
   }
+  /* Ticket-stub shape for the Auth zone: two circular notches cut into the
+     card's side edges evoke a torn perforation line. Pure CSS, no assets —
+     the notch color matches the page base so it reads as a cutout. */
   .auth-card {
-    @apply rounded-[1.5rem] border border-white/80 bg-white/90 p-1.5 shadow-[0_24px_90px_rgba(28,26,23,0.13)] sm:rounded-[2rem];
+    @apply relative rounded-xl border border-white/80 bg-white/90 p-1.5 shadow-overlay sm:rounded-2xl;
+  }
+  .auth-card::before,
+  .auth-card::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    height: 1.25rem;
+    width: 1.25rem;
+    transform: translateY(-50%);
+    border-radius: 9999px;
+    background: theme("colors.paper.50");
+  }
+  .auth-card::before {
+    left: -0.625rem;
+  }
+  .auth-card::after {
+    right: -0.625rem;
   }
   .auth-card-inner {
-    @apply rounded-[calc(1.5rem-0.375rem)] border border-base-200/80 bg-white p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] sm:rounded-[calc(2rem-0.375rem)] sm:p-5;
+    @apply rounded-lg border border-paper-200/80 bg-white p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] sm:rounded-[calc(theme(borderRadius.2xl)-0.375rem)] sm:p-5;
   }
   .auth-submit {
-    @apply inline-flex min-h-[52px] w-full items-center justify-center rounded-full bg-ink px-6 py-2 text-base font-bold text-white shadow-[0_18px_48px_rgba(28,26,23,0.18)] transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] hover:-translate-y-0.5 hover:bg-star-cyanstrong active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50;
+    @apply inline-flex min-h-[52px] w-full items-center justify-center rounded-full bg-ink px-6 py-2 text-base font-bold text-white shadow-overlay transition-all duration-slow ease-snappy hover:-translate-y-0.5 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50;
+  }
+  .auth-submit:hover {
+    background-color: color-mix(in srgb, var(--brand-1) 92%, black);
   }
 }
 

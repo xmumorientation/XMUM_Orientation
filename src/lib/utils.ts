@@ -1,7 +1,33 @@
 import { clsx, type ClassValue } from "clsx";
+import { twMerge } from "tailwind-merge";
 
 export function cn(...inputs: ClassValue[]) {
-  return clsx(inputs);
+  return twMerge(clsx(inputs));
+}
+
+// "#0891b2" -> "8 145 178", for CSS vars consumed as
+// rgb(var(--x-rgb) / <alpha-value>) so Tailwind opacity modifiers work
+// against a runtime-set brand color. Falls back to a mid-gray triple on
+// anything that isn't a valid 6-digit hex (defensive: this reads directly
+// from Admin-editable config).
+export function hexToRgbChannels(hex: string): string {
+  const match = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
+  if (!match) return "115 115 115";
+  const int = parseInt(match[1], 16);
+  const r = (int >> 16) & 255;
+  const g = (int >> 8) & 255;
+  const b = int & 255;
+  return `${r} ${g} ${b}`;
+}
+
+export function initialsFrom(name: string): string {
+  const letters = name
+    .split(/\s+/)
+    .map((part) => part[0])
+    .join("")
+    .replace(/[^a-z]/gi, "")
+    .toUpperCase();
+  return letters.slice(0, 2) || "OR";
 }
 
 // Client-generated idempotency key (FR-5.7)

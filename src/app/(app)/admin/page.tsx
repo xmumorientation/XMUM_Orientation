@@ -140,7 +140,7 @@ export default function AdminWarRoomPage() {
                         ? "bg-amber-100 text-amber-800"
                         : p.state === "ended"
                           ? "bg-gray-200 text-gray-600"
-                          : "bg-base-200 text-ink-soft"
+                          : "bg-paper-200 text-ink-soft"
                   )}
                 >
                   {p.state}
@@ -190,7 +190,7 @@ export default function AdminWarRoomPage() {
 
       <section>
         <h2 className="mb-2 font-semibold">Kill-switches</h2>
-        <Card className="divide-y divide-base-200 p-0">
+        <Card className="divide-y divide-paper-200 p-0">
           {SWITCHES.map((s) => {
             const on = boolOf(s.key);
             return (
@@ -204,7 +204,7 @@ export default function AdminWarRoomPage() {
                   onClick={() => toggleConfig(s.key, on)}
                   className={cn(
                     "btn min-w-[64px] text-sm",
-                    on ? "bg-red-600 text-white" : "border border-base-300 bg-white"
+                    on ? "bg-red-600 text-white" : "border border-paper-300 bg-white"
                   )}
                 >
                   {on ? "ON" : "off"}

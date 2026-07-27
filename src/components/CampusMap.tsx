@@ -207,7 +207,7 @@ export function CampusMap({
                   textAnchor="middle"
                   fontSize="3"
                   fontWeight="800"
-                  fill={p.activated_at ? "#d99a06" : "#7c3aed"}
+                  fill={p.activated_at ? "#f59e0b" : "var(--brand-2)"}
                 >
                   {p.activated_at ? "ON" : "NFC"}
                 </text>
@@ -217,7 +217,7 @@ export function CampusMap({
                   textAnchor="middle"
                   fontSize="2.4"
                   fontWeight="700"
-                  fill={p.activated_at ? "#d99a06" : "#7c3aed"}
+                  fill={p.activated_at ? "#f59e0b" : "var(--brand-2)"}
                 >
                   {p.activated_at ? "REVIVED" : p.location}
                 </text>

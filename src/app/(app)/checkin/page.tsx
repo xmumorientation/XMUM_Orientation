@@ -30,7 +30,7 @@ export default function CheckinPage() {
       p_station_id: station.id,
     });
     if (error) setError(friendlyError(error));
-    else setNotice(`Checked in at ${station.name} ✓`);
+    else setNotice(`Checked in at ${station.name}`);
     setPending(null);
   }
 

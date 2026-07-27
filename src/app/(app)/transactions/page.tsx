@@ -81,7 +81,7 @@ export default function TransactionsPage() {
       {txs.length === 0 ? (
         <EmptyState message="No transactions yet. Win station games to earn tokens!" />
       ) : (
-        <Card className="divide-y divide-base-200 p-0">
+        <Card className="divide-y divide-paper-200 p-0">
           {txs.map((tx) => (
             <div key={tx.id} className="flex items-center gap-3 px-4 py-3">
               <span

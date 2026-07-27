@@ -1,5 +1,6 @@
 "use client";
 
+import { TriangleAlert } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { Card, ErrorBanner, PageTitle } from "@/components/ui";
@@ -81,8 +82,8 @@ export default function AdminNfcPage() {
               className={cn(
                 "btn text-sm",
                 location === loc
-                  ? "bg-star-violet text-white"
-                  : "border border-base-300 bg-white"
+                  ? "bg-brand-2 text-white"
+                  : "border border-paper-300 bg-white"
               )}
             >
               {PROJECTOR_LABELS[loc]}
@@ -109,14 +110,15 @@ export default function AdminNfcPage() {
       </Card>
 
       {minted.length > 0 && (
-        <Card className="space-y-2 border-2 border-star-goldsoft">
-          <p className="text-sm font-semibold text-red-600">
-            ⚠️ These full URLs are shown ONCE. Write each to its sticker now
+        <Card className="space-y-2 border-2 border-amber-400">
+          <p className="flex items-start gap-1.5 text-sm font-semibold text-red-600">
+            <TriangleAlert size={16} strokeWidth={1.75} className="mt-0.5 shrink-0" />
+            These full URLs are shown ONCE. Write each to its sticker now
             (NFC Tools → Write → URL record), then keep this list somewhere
             safe offline.
           </p>
           {minted.map((t) => (
-            <div key={t.label} className="rounded-lg bg-base-100 p-2">
+            <div key={t.label} className="rounded-lg bg-paper-100 p-2">
               <p className="text-xs font-bold">{t.label}</p>
               <p className="break-all font-mono text-[10px] text-ink-soft">
                 {t.url}
@@ -127,10 +129,10 @@ export default function AdminNfcPage() {
       )}
 
       <Card className="p-0">
-        <p className="border-b border-base-200 px-4 py-2 text-sm font-semibold">
+        <p className="border-b border-paper-200 px-4 py-2 text-sm font-semibold">
           Issued tokens ({existing.length})
         </p>
-        <div className="max-h-[320px] divide-y divide-base-200 overflow-y-auto">
+        <div className="max-h-[320px] divide-y divide-paper-200 overflow-y-auto">
           {existing.map((t) => (
             <div
               key={t.id}

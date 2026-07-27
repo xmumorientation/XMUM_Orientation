@@ -39,7 +39,7 @@ export function VictoryTakeover({
             key={i}
             d={d}
             fill="none"
-            stroke={lit ? "#f5c542" : "#67e8f9"}
+            stroke={lit ? "var(--brand-2)" : "var(--brand-1)"}
             strokeWidth="1.2"
             strokeDasharray="1000"
             className="animate-circuit"
@@ -50,25 +50,25 @@ export function VictoryTakeover({
           cx="100"
           cy="100"
           r="14"
-          fill={lit ? "#f5c542" : "#1c1c38"}
+          fill={lit ? "var(--brand-2)" : "#1c1c38"}
           className={lit ? "animate-pulseglow" : ""}
         />
       </svg>
 
       <div className="relative z-10">
         {!lit ? (
-          <p className="animate-pulseglow text-lg font-semibold text-star-cyansoft">
+          <p className="animate-pulseglow text-lg font-semibold text-brand-1">
             Connecting circuits…
           </p>
         ) : (
           <div className="animate-burst">
-            <div className="rounded-[2rem] border border-star-goldsoft/30 bg-star-goldsoft/10 px-8 py-6 text-5xl font-black tracking-[-0.06em] text-star-goldsoft shadow-[0_0_60px_rgba(245,197,66,0.28)]">
+            <div className="rounded-2xl border border-amber-400/30 bg-amber-400/10 px-8 py-6 text-5xl font-display font-bold tracking-[-0.06em] text-amber-400 shadow-[0_0_60px_rgba(251,191,36,0.28)]">
               LIVE
             </div>
-            <h1 className="mt-6 text-3xl font-extrabold text-white">
+            <h1 className="mt-6 font-display text-3xl font-bold text-white">
               PROJECTOR REVIVED!
             </h1>
-            <p className="mt-3 text-lg text-star-goldsoft">
+            <p className="mt-3 text-lg text-amber-400">
               {PROJECTOR_LABELS[location]}
             </p>
             {groupName && (
@@ -77,7 +77,7 @@ export function VictoryTakeover({
               </p>
             )}
             <p className="mt-8 text-sm text-white/50">
-              The starlight returns to the theme park
+              The lights return across campus
             </p>
           </div>
         )}

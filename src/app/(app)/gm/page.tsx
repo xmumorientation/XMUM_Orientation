@@ -258,7 +258,7 @@ export default function GmPanelPage() {
         </div>
       )}
 
-      <Card className="sticky top-[8.75rem] z-20 border-star-cyan/20">
+      <Card className="sticky top-[8.75rem] z-20 border-brand-1/20">
         <label className="label" htmlFor="group">
           Active group
         </label>
@@ -277,7 +277,7 @@ export default function GmPanelPage() {
         </select>
       </Card>
 
-      <div className="grid grid-cols-2 gap-2 rounded-[1.5rem] bg-base-200 p-1.5 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2 rounded-[1.5rem] bg-paper-200 p-1.5 sm:grid-cols-4">
         {(Object.keys(TASKS) as Tab[]).map((t) => (
           <button
             key={t}
@@ -345,7 +345,7 @@ export default function GmPanelPage() {
                 "btn min-h-[76px] flex-col text-base",
                 success
                   ? "bg-green-600 text-white"
-                  : "border border-base-300 bg-white text-ink-soft"
+                  : "border border-paper-300 bg-white text-ink-soft"
               )}
             >
               <span className="text-xl font-black">Success</span>
@@ -357,7 +357,7 @@ export default function GmPanelPage() {
                 "btn min-h-[76px] flex-col text-base",
                 !success
                   ? "bg-red-600 text-white"
-                  : "border border-base-300 bg-white text-ink-soft"
+                  : "border border-paper-300 bg-white text-ink-soft"
               )}
             >
               <span className="text-xl font-black">Failed</span>
@@ -378,8 +378,8 @@ export default function GmPanelPage() {
                     className={cn(
                       "btn min-h-[64px] text-sm",
                       locations.includes(loc)
-                        ? "bg-star-violet text-white"
-                        : "border border-base-300 bg-white"
+                        ? "bg-brand-2 text-white"
+                        : "border border-paper-300 bg-white"
                     )}
                   >
                     {PROJECTOR_LABELS[loc]}

@@ -1,5 +1,6 @@
 "use client";
 
+import { Check, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { useProfile } from "@/components/ProfileProvider";
@@ -167,13 +168,13 @@ export default function AttendancePage() {
         <EmptyState message="No Freshies assigned to your group yet." />
       ) : (
         <Card className="p-0">
-          <div className="flex items-center justify-between border-b border-base-200 px-4 py-2 text-sm text-ink-faint">
+          <div className="flex items-center justify-between border-b border-paper-200 px-4 py-2 text-sm text-ink-faint">
             <span>{roster.length} Freshies</span>
             <span>
               {presentCount} marked present
             </span>
           </div>
-          <ul className="divide-y divide-base-200">
+          <ul className="divide-y divide-paper-200">
             {roster.map((f) => {
               const status = records[f.id];
               return (
@@ -191,26 +192,28 @@ export default function AttendancePage() {
                       <button
                         onClick={() => mark(f.id, "present")}
                         disabled={session?.closed}
+                        aria-label={`Mark ${f.full_name ?? f.student_id} present`}
                         className={cn(
                           "btn min-w-[64px] text-sm",
                           status === "present"
                             ? "bg-green-600 text-white"
-                            : "border border-base-300 bg-white text-ink-soft"
+                            : "border border-paper-300 bg-white text-ink-soft"
                         )}
                       >
-                        ✓
+                        <Check size={20} strokeWidth={1.75} />
                       </button>
                       <button
                         onClick={() => mark(f.id, "absent")}
                         disabled={session?.closed}
+                        aria-label={`Mark ${f.full_name ?? f.student_id} absent`}
                         className={cn(
                           "btn min-w-[64px] text-sm",
                           status === "absent"
                             ? "bg-red-600 text-white"
-                            : "border border-base-300 bg-white text-ink-soft"
+                            : "border border-paper-300 bg-white text-ink-soft"
                         )}
                       >
-                        ✗
+                        <X size={20} strokeWidth={1.75} />
                       </button>
                     </>
                   )}

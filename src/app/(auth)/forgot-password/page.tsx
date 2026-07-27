@@ -30,7 +30,7 @@ export default function ForgotPasswordPage() {
     <form onSubmit={onSubmit} className="auth-card">
       <div className="auth-card-inner space-y-5">
         <div>
-          <p className="text-xs font-black uppercase tracking-[0.22em] text-star-cyanstrong">
+          <p className="text-xs font-black uppercase tracking-[0.22em] text-brand-1">
             Account recovery
           </p>
           <h2 className="mt-3 text-3xl font-black tracking-[-0.03em] text-ink">
@@ -60,7 +60,7 @@ export default function ForgotPasswordPage() {
           )}
         </button>
         <p className="text-center text-sm">
-          <Link href="/login" className="font-bold text-star-cyanstrong">
+          <Link href="/login" className="font-bold text-brand-1">
             Back to login
           </Link>
         </p>

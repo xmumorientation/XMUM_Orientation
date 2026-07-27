@@ -221,7 +221,7 @@ export default function CommitteePage() {
       <ErrorBanner message={error} />
       <SuccessBanner message={notice} />
 
-      <div className="grid grid-cols-2 gap-2 rounded-[1.5rem] bg-base-200 p-1.5 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2 rounded-[1.5rem] bg-paper-200 p-1.5 sm:grid-cols-4">
         {tabs
           .filter((tab) => tab.key !== "register" || canAssign)
           .map((tab) => (
@@ -246,7 +246,7 @@ export default function CommitteePage() {
           <h2 className="font-semibold">
             My blind box QR
             {allocation.box_type === "special" && (
-              <span className="chip ml-2 bg-star-goldsoft/40 text-star-gold">
+              <span className="chip ml-2 bg-amber-400/40 text-amber-500">
                 special
               </span>
             )}
@@ -261,7 +261,7 @@ export default function CommitteePage() {
             <img
               src={qrDataUrl}
               alt="My blind box QR code"
-              className="mx-auto mt-2 w-56 max-w-full rounded-xl border border-base-200"
+              className="mx-auto mt-2 w-56 max-w-full rounded-xl border border-paper-200"
             />
           )}
           <button
@@ -302,18 +302,18 @@ export default function CommitteePage() {
               ))}
             </select>
           </div>
-          <Card className="divide-y divide-base-200 p-0">
+          <Card className="divide-y divide-paper-200 p-0">
             {groups.map((g) => {
               const a = attendance[g.id] ?? { present: 0, total: 0 };
               const pct = a.total ? Math.round((a.present / a.total) * 100) : 0;
               return (
                 <div key={g.id} className="flex items-center gap-3 px-4 py-3">
                   <span className="w-20 text-sm font-medium">{g.name}</span>
-                  <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-base-200">
+                  <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-paper-200">
                     <div
                       className={cn(
                         "h-full rounded-full",
-                        pct === 100 ? "bg-status-open" : "bg-star-cyan"
+                        pct === 100 ? "bg-status-open" : "bg-brand-1"
                       )}
                       style={{ width: `${pct}%` }}
                     />
@@ -335,7 +335,7 @@ export default function CommitteePage() {
             {groups.map((g) => (
               <div
                 key={g.id}
-                className="flex items-center justify-between rounded-xl bg-base-100 px-3 py-2 text-sm"
+                className="flex items-center justify-between rounded-xl bg-paper-100 px-3 py-2 text-sm"
               >
                 <span>{g.name}</span>
                 <span className="font-bold tabular-nums">{g.token_balance} tokens</span>
@@ -363,7 +363,7 @@ export default function CommitteePage() {
             {hits.map((h) => (
               <div
                 key={h.id}
-                className="flex items-center gap-2 rounded-xl border border-base-200 px-3 py-2"
+                className="flex items-center gap-2 rounded-xl border border-paper-200 px-3 py-2"
               >
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">{h.full_name}</p>

@@ -33,7 +33,7 @@ export function PhaseTimer({ compact = false }: { compact?: boolean }) {
         compact ? "justify-start rounded-2xl" : "justify-center",
         isEndgame
           ? "animate-pulseglow bg-red-600 text-white"
-          : "bg-gradient-to-r from-star-goldsoft/30 via-star-cyansoft/30 to-star-violetsoft/30 text-ink"
+          : "bg-gradient-to-r from-amber-400/30 via-brand-1/30 to-brand-2/30 text-ink"
       )}
     >
       <span className="text-[10px] font-black tracking-[0.18em]">

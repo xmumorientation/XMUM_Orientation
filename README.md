@@ -17,10 +17,13 @@ Realtime) · deployed on Vercel.
 ## Quick start
 
 ```bash
-cp .env.example .env.local   # fill in Supabase keys + NFC secret
 npm install
+[ -f .env.local ] || cp .env.example .env.local
 npm run dev
 ```
+
+Only run the copy step when `.env.local` does not exist yet. A plain
+`cp .env.example .env.local` overwrites your local secrets.
 
 ## Project layout
 
