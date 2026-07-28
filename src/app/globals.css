@@ -5,11 +5,11 @@
 @layer base {
   :root {
     /* Event brand accents — overridden at runtime from Admin → Brand */
-    --brand-1: #0891b2;
+    --brand-1: #1e3a8a;
     --brand-2: #7c3aed;
     /* Channel triples so Tailwind can apply opacity modifiers (bg-brand-1/20)
        to a runtime-set CSS var. Keep these in sync with --brand-1/--brand-2. */
-    --brand-1-rgb: 8 145 178;
+    --brand-1-rgb: 30 58 138;
     --brand-2-rgb: 124 58 237;
   }
   html {
@@ -52,8 +52,7 @@
       disabled:pointer-events-none disabled:opacity-40;
   }
   .btn-primary {
-    @apply btn text-white shadow-raised;
-    background-image: linear-gradient(90deg, var(--brand-1), var(--brand-2));
+    @apply btn text-white shadow-raised bg-brand-1;
   }
   .btn-secondary {
     @apply btn border border-paper-300 bg-white text-ink hover:-translate-y-0.5 hover:border-brand-1/50 hover:bg-brand-1/5;
@@ -108,7 +107,7 @@
 
 /* Brand accent underline used on page headings */
 .starlight-rule {
-  background: linear-gradient(90deg, var(--brand-1), var(--brand-2));
+  background: var(--brand-1);
   height: 3px;
   border-radius: 999px;
 }
