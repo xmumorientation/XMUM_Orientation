@@ -49,7 +49,7 @@ export default function AdminAuditPage() {
       <Card>
         <input
           className="input"
-          placeholder="Filter by action (e.g. tokens., gacha., projector.)…"
+          placeholder="Filter by action (e.g. tokens., blindbox., projector.)…"
           value={action}
           onChange={(e) => setAction(e.target.value)}
         />
