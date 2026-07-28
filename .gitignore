@@ -31,3 +31,4 @@ supabase/.temp
 
 # local agent tooling config
 .claude/
+.superpowers/
