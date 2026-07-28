@@ -15,7 +15,7 @@ export default function AdminBrandPage() {
   const [form, setForm] = useState({
     event_name: "",
     event_tagline: "",
-    brand_primary: "#0891b2",
+    brand_primary: "#1e3a8a",
     brand_secondary: "#7c3aed",
   });
   const [error, setError] = useState<string | null>(null);
@@ -129,6 +129,13 @@ export default function AdminBrandPage() {
           >
             <p className="text-lg font-bold">{form.event_name || "Event"}</p>
             <p className="text-sm opacity-80">{form.event_tagline}</p>
+          </div>
+          <div
+            className="flex items-center justify-between rounded-xl p-3 text-sm font-semibold text-white"
+            style={{ background: form.brand_primary }}
+          >
+            <span>System accent (buttons, headings)</span>
+            <span className="opacity-75">flat, no gradient</span>
           </div>
 
           <button disabled={busy} type="submit" className="btn-primary w-full">

@@ -53,7 +53,7 @@ export function useConfig() {
   const brand: BrandConfig = {
     eventName: unquote(config["event_name"], "Orientation"),
     eventTagline: unquote(config["event_tagline"], ""),
-    brandPrimary: unquote(config["brand_primary"], "#0891b2"),
+    brandPrimary: unquote(config["brand_primary"], "#1e3a8a"),
     brandSecondary: unquote(config["brand_secondary"], "#7c3aed"),
   };
 

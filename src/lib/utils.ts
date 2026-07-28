@@ -5,7 +5,7 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-// "#0891b2" -> "8 145 178", for CSS vars consumed as
+// "#1e3a8a" -> "30 58 138", for CSS vars consumed as
 // rgb(var(--x-rgb) / <alpha-value>) so Tailwind opacity modifiers work
 // against a runtime-set brand color. Falls back to a mid-gray triple on
 // anything that isn't a valid 6-digit hex (defensive: this reads directly
