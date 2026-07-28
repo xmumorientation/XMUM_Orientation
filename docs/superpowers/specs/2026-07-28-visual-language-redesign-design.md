@@ -55,9 +55,10 @@ system-layer default). Status colors (`status.open` green / `status.busy` red /
 **General Sans** (Fontshare, offered free for commercial use — confirm exact license
 terms before implementation — self-hosted via `next/font/local`
 — no CDN runtime dependency, preserving the existing "flaky venue wifi" constraint in
-`layout.tsx`). Use one family across the full weight range (400 body → 900 display)
-instead of pairing two fonts. Keep JetBrains Mono for data/status readouts (IDs, timers,
-token counts).
+`layout.tsx`). General Sans ships weights 400/500/600/700 only (no 800/900) — use that
+range for both body and display instead of pairing two fonts; existing `font-black`
+(900) usages fall back to browser synthetic bolding on top of 700, which is acceptable
+for this pass. Keep JetBrains Mono for data/status readouts (IDs, timers, token counts).
 
 **Shape & elevation** — Replace the soft blurred shadows (`shadow-raised` /
 `shadow-floating` / `shadow-overlay`, the "glass card" look named as an anti-reference in
