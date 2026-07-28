@@ -64,6 +64,13 @@ token counts).
 [PRODUCT.md](../../../PRODUCT.md)) with thin 1px borders and minimal flat elevation.
 Border-radius scale stays similar in size but should read crisp, not glassy.
 
+**Dense/form-heavy layout pattern** — For data-entry and admin-style screens (`/admin`,
+`/gm`, long forms), favor discipline over decoration: generous vertical whitespace
+between sections, a single thin divider line instead of wrapping each section in a
+card, and plain-text links (not styled buttons) for secondary/repeatable actions like
+"+ Add item". Reserve actual `.card` / bordered containers for content that is really a
+discrete object (a ticket, a group, a station) — not for every form section.
+
 ## Rejected directions (and why)
 
 Explored interactively before landing on the above — kept here so the reasoning isn't
