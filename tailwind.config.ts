@@ -55,9 +55,9 @@ const config: Config = {
       },
       boxShadow: {
         flat: "none",
-        raised: "0 1px 2px rgba(28,26,23,0.05), 0 2px 8px rgba(28,26,23,0.06)",
-        floating: "0 8px 24px rgba(28,26,23,0.10), 0 2px 6px rgba(28,26,23,0.06)",
-        overlay: "0 24px 90px rgba(28,26,23,0.18)",
+        raised: "0 1px 2px rgba(28,26,23,0.06)",
+        floating: "0 4px 12px rgba(28,26,23,0.10)",
+        overlay: "0 12px 32px rgba(28,26,23,0.16)",
       },
       transitionDuration: {
         fast: "120ms",
