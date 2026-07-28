@@ -18,8 +18,7 @@ export const buttonVariants = cva(
   {
     variants: {
       intent: {
-        primary:
-          "text-white shadow-raised bg-[image:linear-gradient(90deg,theme(colors.brand.1),theme(colors.brand.2))]",
+        primary: "text-white shadow-raised bg-brand-1",
         secondary:
           "border border-paper-300 bg-white text-ink hover:-translate-y-0.5 hover:border-brand-1/50 hover:bg-brand-1/5",
         danger: "bg-status-busy text-white shadow-raised",
