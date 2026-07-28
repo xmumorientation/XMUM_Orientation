@@ -7,7 +7,7 @@ import { useProfile } from "@/components/ProfileProvider";
 import { cn } from "@/lib/utils";
 
 const TABS = [
-  { href: "/admin", label: "War room" },
+  { href: "/admin", label: "Control room" },
   { href: "/admin/users", label: "Users" },
   { href: "/admin/stations", label: "Stations" },
   { href: "/admin/blindbox", label: "Blind box" },

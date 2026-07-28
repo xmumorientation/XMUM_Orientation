@@ -115,7 +115,7 @@ function primaryAction(role: string): Action {
     return {
       href: "/admin",
       code: "AD",
-      title: "Open war room",
+      title: "Open control room",
       desc: "Control phases, kill-switches, users, and game config.",
     };
   }

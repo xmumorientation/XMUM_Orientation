@@ -87,7 +87,7 @@ export default function AdminWarRoomPage() {
 
   const SWITCHES: { key: string; label: string; danger: string }[] = [
     { key: "tokens_frozen", label: "Freeze token mutations", danger: "All GM ± operations rejected" },
-    { key: "gacha_disabled", label: "Disable gacha", danger: "All draws rejected" },
+    { key: "blindbox_disabled", label: "Disable blind box", danger: "All scans & sells rejected" },
     { key: "nfc_disabled", label: "Disable NFC activation", danger: "Sticker taps rejected" },
     { key: "rehearsal_mode", label: "Rehearsal mode", danger: "Bypasses ALL phase gating. Testing only" },
     { key: "day2_map_layer", label: "Day 2 map layer", danger: "Reveals projectors on everyone's map" },
@@ -95,7 +95,7 @@ export default function AdminWarRoomPage() {
 
   return (
     <div className="space-y-4">
-      <PageTitle title="War room" subtitle="Live ops, phases & kill-switches" />
+      <PageTitle title="Control room" subtitle="Live ops, phases & kill-switches" />
       <ErrorBanner message={error} />
       <SuccessBanner message={notice} />
 
