@@ -144,7 +144,7 @@ export default function DashboardPage() {
         href={main.href}
         className="card block overflow-hidden border-brand-1/30 bg-white p-0 transition hover:-translate-y-0.5 hover:border-brand-1/60"
       >
-        <div className="bg-[linear-gradient(90deg,var(--brand-1),var(--brand-2))] px-4 py-3 text-white">
+        <div className="bg-brand-1 px-4 py-3 text-white">
           <p className="text-xs font-black uppercase tracking-[0.2em] text-white/75">
             Next action
           </p>
