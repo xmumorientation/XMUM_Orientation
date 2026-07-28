@@ -1,20 +1,39 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, JetBrains_Mono, Space_Grotesk } from "next/font/google";
+import { JetBrains_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
 import "./globals.css";
 import { cn } from "@/lib/utils";
 
-// Self-hosted at build time by next/font — no runtime dependency on a font
-// CDN, which matters on flaky venue wifi during the live event.
-const display = Space_Grotesk({
-  subsets: ["latin"],
-  variable: "--font-display",
-  display: "swap",
-});
-const body = Inter({
-  subsets: ["latin"],
-  variable: "--font-body",
+// Self-hosted at build time — no runtime dependency on a font CDN, which
+// matters on flaky venue wifi during the live event. General Sans ships
+// weights 400/500/600/700 only (no 800/900); font-black usages elsewhere
+// fall back to browser synthetic bolding on top of 700.
+const sans = localFont({
+  src: [
+    {
+      path: "./fonts/general-sans/general-sans-400.woff2",
+      weight: "400",
+      style: "normal",
+    },
+    {
+      path: "./fonts/general-sans/general-sans-500.woff2",
+      weight: "500",
+      style: "normal",
+    },
+    {
+      path: "./fonts/general-sans/general-sans-600.woff2",
+      weight: "600",
+      style: "normal",
+    },
+    {
+      path: "./fonts/general-sans/general-sans-700.woff2",
+      weight: "700",
+      style: "normal",
+    },
+  ],
+  variable: "--font-sans",
   display: "swap",
 });
 const mono = JetBrains_Mono({
@@ -41,10 +60,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html
-      lang="en"
-      className={cn(display.variable, body.variable, mono.variable)}
-    >
+    <html lang="en" className={cn(sans.variable, mono.variable)}>
       <body className="min-h-dvh font-sans">
         {children}
         <SpeedInsights />
