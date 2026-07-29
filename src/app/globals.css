@@ -5,12 +5,12 @@
 @layer base {
   :root {
     /* Event brand accents — overridden at runtime from Admin → Brand */
-    --brand-1: #1e3a8a;
-    --brand-2: #7c3aed;
+    --brand-1: #e63b1f;
+    --brand-2: #b02a14;
     /* Channel triples so Tailwind can apply opacity modifiers (bg-brand-1/20)
        to a runtime-set CSS var. Keep these in sync with --brand-1/--brand-2. */
-    --brand-1-rgb: 30 58 138;
-    --brand-2-rgb: 124 58 237;
+    --brand-1-rgb: 230 59 31;
+    --brand-2-rgb: 176 42 20;
   }
   html {
     /* NFR-5: 16px minimum body on mobile, high-contrast dark text */
