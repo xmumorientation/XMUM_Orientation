@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
+import { useDesignVariant } from "@/components/DesignVariantProvider";
 import { usePhaseTimer } from "@/components/PhaseTimerProvider";
 import { useConfig } from "@/components/useConfig";
+import { SoftBigScreen } from "@/components/soft/SoftBigScreen";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import {
   PROJECTOR_LABELS,
@@ -111,6 +113,7 @@ function PieceDots({ have }: { have: number }) {
 
 export default function BigScreenPage() {
   const supabase = useMemo(() => supabaseBrowser(), []);
+  const { variant } = useDesignVariant();
   const { brand } = useConfig();
   const [groups, setGroups] = useState<GroupRow[]>([]);
   const [pieceRows, setPieceRows] = useState<
@@ -225,17 +228,30 @@ export default function BigScreenPage() {
 
   const activatedCount = projectors.filter((p) => p.activated_by_group).length;
 
+  const brandVars = {
+    "--brand-1": brand.brandPrimary,
+    "--brand-2": brand.brandSecondary,
+    "--brand-1-rgb": hexToRgbChannels(brand.brandPrimary),
+    "--brand-2-rgb": hexToRgbChannels(brand.brandSecondary),
+  } as React.CSSProperties;
+
+  if (variant === "soft") {
+    return (
+      <div className="min-h-dvh bg-night-900" style={brandVars}>
+        <SoftBigScreen
+          eventName={brand.eventName}
+          eventTagline={brand.eventTagline}
+          standings={standings}
+          activatedCount={activatedCount}
+        />
+      </div>
+    );
+  }
+
   return (
     <div
       className="min-h-dvh bg-night-900 px-4 py-4 text-white lg:px-10 lg:py-8"
-      style={
-        {
-          "--brand-1": brand.brandPrimary,
-          "--brand-2": brand.brandSecondary,
-          "--brand-1-rgb": hexToRgbChannels(brand.brandPrimary),
-          "--brand-2-rgb": hexToRgbChannels(brand.brandSecondary),
-        } as React.CSSProperties
-      }
+      style={brandVars}
     >
       <header className="flex items-start justify-between gap-4">
         <Link href="/committee" className="min-w-0">

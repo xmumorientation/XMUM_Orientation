@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import { DesignVariantToggle } from "@/components/DesignVariantToggle";
 import { NewItemToast } from "@/components/NewItemToast";
 import { PhaseTimer } from "@/components/PhaseTimer";
 import { useConfig } from "@/components/useConfig";
@@ -177,6 +178,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <span className="chip border border-brand-1/20 bg-brand-1/20 text-brand-1">
             {ROLE_LABELS[profile.role]}
           </span>
+          <DesignVariantToggle compact />
           <button
             onClick={signOut}
             className="flex min-h-[44px] items-center text-sm font-semibold text-ink-faint transition hover:text-ink"
@@ -242,6 +244,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     {navLinks("drawer")}
                   </nav>
 
+                  <div className="px-1 pb-2">
+                    <DesignVariantToggle compact />
+                  </div>
                   <button
                     onClick={signOut}
                     className="mt-2 min-h-[48px] rounded-xl border border-paper-300 bg-paper-100 px-3 text-left text-sm font-bold text-ink-soft"

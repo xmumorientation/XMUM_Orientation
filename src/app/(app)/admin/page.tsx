@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { useDesignVariant } from "@/components/DesignVariantProvider";
+import { SoftWarRoom } from "@/components/soft/SoftWarRoom";
 import {
   Card,
   ErrorBanner,
@@ -24,6 +26,7 @@ interface LiveOps {
 
 // FR-11.5 kill-switches + FR-11.6 live ops + FR-10.1 phase control.
 export default function AdminWarRoomPage() {
+  const { variant } = useDesignVariant();
   const supabase = useMemo(() => supabaseBrowser(), []);
   const [ops, setOps] = useState<LiveOps | null>(null);
   const [phases, setPhases] = useState<Phase[]>([]);
@@ -92,6 +95,24 @@ export default function AdminWarRoomPage() {
     { key: "rehearsal_mode", label: "Rehearsal mode", danger: "Bypasses ALL phase gating. Testing only" },
     { key: "day2_map_layer", label: "Day 2 map layer", danger: "Reveals projectors on everyone's map" },
   ];
+
+  if (variant === "soft") {
+    return (
+      <div className="space-y-4">
+        <ErrorBanner message={error} />
+        <SuccessBanner message={notice} />
+        <SoftWarRoom
+          ops={ops}
+          phases={phases}
+          busy={busy}
+          onPhaseAction={phaseAction}
+          switches={SWITCHES}
+          boolOf={boolOf}
+          onToggle={toggleConfig}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">

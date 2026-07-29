@@ -4,6 +4,7 @@ import localFont from "next/font/local";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
 import "./globals.css";
+import { DesignVariantProvider } from "@/components/DesignVariantProvider";
 import { cn } from "@/lib/utils";
 
 // Self-hosted at build time — no runtime dependency on a font CDN, which
@@ -62,7 +63,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={cn(sans.variable, mono.variable)}>
       <body className="min-h-dvh font-sans">
-        {children}
+        <DesignVariantProvider>{children}</DesignVariantProvider>
         <SpeedInsights />
       </body>
     </html>
