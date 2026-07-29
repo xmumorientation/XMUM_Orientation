@@ -53,11 +53,12 @@ export function useConfig() {
   const brand: BrandConfig = {
     eventName: unquote(config["event_name"], "Orientation"),
     eventTagline: unquote(config["event_tagline"], ""),
-    // LOCAL PREVIEW ONLY (preview/red-white-soft): force the red-white mockup
-    // accent regardless of what game_config holds, so auth/bigscreen match the
-    // rest of the preview. Revert to unquote(config[...]) before merging anywhere.
-    brandPrimary: "#e63b1f",
-    brandSecondary: "#b02a14",
+    // LOCAL PREVIEW ONLY (preview/red-white-soft): force the Modernist
+    // mono-red accent regardless of what game_config holds, so auth/bigscreen
+    // match the rest of the preview. Revert to unquote(config[...]) before
+    // merging anywhere.
+    brandPrimary: "#ec3013",
+    brandSecondary: "#e15b47",
   };
 
   return { config, brand, loaded };

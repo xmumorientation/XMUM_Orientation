@@ -8,29 +8,14 @@ import { DesignVariantProvider } from "@/components/DesignVariantProvider";
 import { cn } from "@/lib/utils";
 
 // Self-hosted at build time — no runtime dependency on a font CDN, which
-// matters on flaky venue wifi during the live event. General Sans ships
-// weights 400/500/600/700 only (no 800/900); font-black usages elsewhere
-// fall back to browser synthetic bolding on top of 700.
+// matters on flaky venue wifi during the live event. Archivo is a variable
+// font (wght 100–900), so one file covers every weight the Modernist
+// language uses (400 body / 600 emphasis / 800 display).
 const sans = localFont({
   src: [
     {
-      path: "./fonts/general-sans/general-sans-400.woff2",
-      weight: "400",
-      style: "normal",
-    },
-    {
-      path: "./fonts/general-sans/general-sans-500.woff2",
-      weight: "500",
-      style: "normal",
-    },
-    {
-      path: "./fonts/general-sans/general-sans-600.woff2",
-      weight: "600",
-      style: "normal",
-    },
-    {
-      path: "./fonts/general-sans/general-sans-700.woff2",
-      weight: "700",
+      path: "./fonts/archivo/archivo-variable-latin.woff2",
+      weight: "100 900",
       style: "normal",
     },
   ],
@@ -52,7 +37,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#fdfcfa",
+  themeColor: "#f3f2f2",
 };
 
 export default function RootLayout({

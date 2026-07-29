@@ -12,17 +12,19 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        // Modernist neutrals (OKLCH ramp): warm gray ground, surface fill,
+        // and strong rules — dividers read as structure, not hairlines.
         paper: {
-          50: "#fdfcfa",
-          100: "#f8f6f2",
-          200: "#efece5",
-          300: "#e2ded4",
+          50: "#f3f2f2",
+          100: "#eae9e9",
+          200: "#d7d3d3",
+          300: "#a6a2a2",
         },
         ink: {
-          DEFAULT: "#1c1a17",
-          soft: "#4a463f",
-          faint: "#6f695f",
-          muted: "#746f66",
+          DEFAULT: "#201e1d",
+          soft: "#444141",
+          faint: "#605d5d",
+          muted: "#7d7979",
         },
         // The one swappable accent — reads var(--brand-1-rgb)/var(--brand-2-rgb)
         // channel triples so opacity modifiers (bg-brand-1/20) work correctly.
@@ -46,18 +48,24 @@ const config: Config = {
         display: ["var(--font-sans)", "system-ui", "-apple-system", "Segoe UI", "sans-serif"],
         mono: ["var(--font-mono)", "ui-monospace", "SFMono-Regular", "monospace"],
       },
+      // Modernist: zero radius everywhere — including `rounded-full` pills,
+      // which square off on purpose ("do not round a corner anywhere").
       borderRadius: {
-        sm: "0.625rem",
-        md: "0.875rem",
-        lg: "1.125rem",
-        xl: "1.5rem",
-        "2xl": "1.75rem",
+        none: "0px",
+        DEFAULT: "0px",
+        sm: "0px",
+        md: "0px",
+        lg: "0px",
+        xl: "0px",
+        "2xl": "0px",
+        "3xl": "0px",
+        full: "0px",
       },
       boxShadow: {
         flat: "none",
-        raised: "0 1px 2px rgba(28,26,23,0.06)",
-        floating: "0 4px 12px rgba(28,26,23,0.10)",
-        overlay: "0 12px 32px rgba(28,26,23,0.16)",
+        raised: "0 1px 2px rgba(45,43,43,0.14)",
+        floating: "0 3px 10px rgba(45,43,43,0.16)",
+        overlay: "0 12px 32px rgba(45,43,43,0.22)",
       },
       transitionDuration: {
         fast: "120ms",

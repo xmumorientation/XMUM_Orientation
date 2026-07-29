@@ -4,13 +4,19 @@
 
 @layer base {
   :root {
-    /* Event brand accents — overridden at runtime from Admin → Brand */
-    --brand-1: #e63b1f;
-    --brand-2: #b02a14;
+    /* Event brand accents — overridden at runtime from Admin → Brand.
+       Modernist mono-red: accent-2 is a stand-in shade of the same role. */
+    --brand-1: #ec3013;
+    --brand-2: #e15b47;
     /* Channel triples so Tailwind can apply opacity modifiers (bg-brand-1/20)
        to a runtime-set CSS var. Keep these in sync with --brand-1/--brand-2. */
-    --brand-1-rgb: 230 59 31;
-    --brand-2-rgb: 176 42 20;
+    --brand-1-rgb: 236 48 19;
+    --brand-2-rgb: 225 91 71;
+    /* Modernist accent ramp steps used by component states */
+    --accent-100: #fff2ef;
+    --accent-600: #dd2b0f;
+    --accent-700: #ae1800;
+    --accent-800: #7c1405;
   }
   html {
     /* NFR-5: 16px minimum body on mobile, high-contrast dark text */
@@ -18,11 +24,9 @@
     -webkit-tap-highlight-color: transparent;
   }
   body {
+    /* Modernist: flat ground, no ambient tint — structure comes from rules. */
     @apply bg-paper-50 text-ink antialiased;
     min-height: 100dvh;
-    background:
-      radial-gradient(circle at top left, rgb(var(--brand-1-rgb) / 0.06), transparent 30rem),
-      #fdfcfa;
   }
 
   h1,
@@ -36,40 +40,101 @@
   }
 
   :focus-visible {
-    outline: 3px solid rgb(var(--brand-1-rgb) / 0.45);
+    outline: 2px solid var(--brand-1);
     outline-offset: 2px;
+  }
+  ::selection {
+    background: rgb(var(--brand-1-rgb) / 0.3);
   }
 }
 
 @layer components {
+  /* Modernist: cards are flat surface fills — no border, no default shadow;
+     elevation is opt-in via shadow-raised/floating on the rare object that
+     really floats. */
   .card {
-    @apply rounded-xl border border-paper-200/80 bg-white/90 shadow-raised;
+    @apply rounded-none bg-paper-100;
+  }
+  .card-kicker {
+    @apply text-[10px] font-semibold uppercase tracking-[0.1em] text-brand-1;
+  }
+  .card-meta {
+    @apply flex items-center gap-1.5 text-[11px] text-ink-muted;
   }
   .btn {
-    /* NFR-5: ≥44px touch targets */
-    @apply inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full px-5
-      text-base font-semibold transition-all duration-base ease-snappy active:scale-[0.98]
-      disabled:pointer-events-none disabled:opacity-40;
+    /* NFR-5: ≥44px touch targets. Flat, square, Archivo-bold. */
+    @apply inline-flex min-h-[44px] items-center justify-center gap-2 rounded-none px-5
+      text-base font-bold transition-colors duration-fast
+      disabled:pointer-events-none disabled:opacity-45;
   }
   .btn-primary {
-    @apply btn text-white shadow-raised bg-brand-1;
+    @apply btn bg-brand-1 text-paper-50;
+  }
+  .btn-primary:hover {
+    background: var(--accent-600);
+  }
+  .btn-primary:active {
+    background: var(--accent-700);
   }
   .btn-secondary {
-    @apply btn border border-paper-300 bg-white text-ink hover:-translate-y-0.5 hover:border-brand-1/50 hover:bg-brand-1/5;
+    @apply btn border border-paper-300 bg-transparent text-ink hover:bg-ink/5 active:bg-ink/10;
   }
   .btn-danger {
     @apply btn bg-status-busy text-white;
   }
+  /* Modernist block buttons: label starts flush left, never centered. */
+  .btn-block {
+    @apply w-full justify-start text-left;
+  }
   .input {
-    @apply min-h-[44px] w-full rounded-md border border-paper-300 bg-white px-3 text-base
-      text-ink outline-none transition placeholder:text-ink-muted
-      focus:border-brand-1 focus:ring-2 focus:ring-brand-1/30;
+    @apply min-h-[44px] w-full rounded-none border border-paper-300 bg-paper-100 px-3 text-base
+      text-ink outline-none transition placeholder:text-ink-muted caret-brand-1
+      focus:border-brand-1 focus:ring-0;
   }
   .label {
     @apply mb-1 block text-sm font-medium text-ink-soft;
   }
   .chip {
-    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold;
+    @apply inline-flex items-center gap-1 rounded-none px-2.5 py-0.5 text-xs font-semibold;
+  }
+  /* Modernist tags — tinted from the accent/neutral ramps */
+  .tag-accent {
+    @apply chip;
+    background: var(--accent-100);
+    color: var(--accent-800);
+  }
+  .tag-neutral {
+    @apply chip bg-paper-100 text-ink-soft;
+  }
+  .tag-outline {
+    @apply chip border border-brand-1 text-brand-1;
+  }
+  /* Strong 2px rule between major sections */
+  .hr-rule {
+    @apply h-0.5 border-0 bg-ink/40;
+  }
+  /* Segmented control (native inputs, no script) */
+  .seg {
+    @apply inline-flex overflow-hidden rounded-none border border-ink/40;
+  }
+  .seg-opt {
+    @apply inline-flex cursor-pointer items-center gap-1.5 px-3 py-2 text-sm;
+  }
+  .seg-opt + .seg-opt {
+    border-left: 1px solid rgb(32 30 29 / 0.4);
+  }
+  .seg-opt:has(input:checked) {
+    @apply bg-brand-1 text-paper-50;
+  }
+  .seg-opt:not(:has(input:checked)):hover {
+    @apply bg-ink/5;
+  }
+  .seg-opt input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+    pointer-events: none;
   }
   /* Ticket-stub shape for the Auth zone: two circular notches cut into the
      card's side edges evoke a torn perforation line. Pure CSS, no assets —
@@ -105,11 +170,11 @@
   }
 }
 
-/* Brand accent underline used on page headings */
+/* Brand accent underline used on page headings — square-ended per Modernist */
 .starlight-rule {
   background: var(--brand-1);
   height: 3px;
-  border-radius: 999px;
+  border-radius: 0;
 }
 
 @media (prefers-reduced-motion: reduce) {
