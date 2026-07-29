@@ -9,7 +9,7 @@ import type {
   Projector,
   Station,
 } from "@/lib/types";
-import { isStale, timeAgo } from "@/lib/utils";
+import { cn, isStale, timeAgo } from "@/lib/utils";
 
 // FR-4.1: custom SVG campus map (no Google Maps dependency).
 // FR-4.4: station status changes propagate via Realtime.
@@ -18,10 +18,14 @@ export function CampusMap({
   showGroupPins = false,
   onStationTap,
   highlightStationId,
+  soft = false,
 }: {
   showGroupPins?: boolean;
   onStationTap?: (station: Station) => void;
   highlightStationId?: number | null;
+  // Round 4/5 language: rounder frame, quieter rounded rows for the pin
+  // list instead of flat white bars. Same data and subscriptions either way.
+  soft?: boolean;
 }) {
   const supabase = useMemo(() => supabaseBrowser(), []);
   const [stations, setStations] = useState<Station[]>([]);
@@ -102,7 +106,12 @@ export function CampusMap({
 
   return (
     <div>
-      <div className="card overflow-hidden p-0">
+      <div
+        className={cn(
+          "overflow-hidden p-0",
+          soft ? "rounded-3xl bg-white shadow-floating" : "card"
+        )}
+      >
         <svg viewBox="0 0 100 100" className="block w-full" role="img">
           {/* campus base: simple zones */}
           <rect width="100" height="100" fill="#f6f4ef" />
@@ -257,7 +266,12 @@ export function CampusMap({
       </div>
 
       {selected && (
-        <div className="card mt-3 flex items-center justify-between p-3">
+        <div
+          className={cn(
+            "mt-3 flex items-center justify-between p-3",
+            soft ? "rounded-2xl bg-white shadow-raised" : "card"
+          )}
+        >
           <div>
             <p className="font-semibold">{selected.name}</p>
             <p className="text-xs text-ink-faint">{selected.area}</p>
@@ -280,11 +294,23 @@ export function CampusMap({
 
       {/* GPS reports can't be plotted on the illustrated map — list them */}
       {showGroupPins && (
-        <div className="mt-3 space-y-1">
-          {locations.map((l) => (
+        <div
+          className={cn(
+            "mt-3",
+            soft
+              ? "overflow-hidden rounded-2xl bg-white shadow-raised"
+              : "space-y-1"
+          )}
+        >
+          {locations.map((l, i) => (
             <div
               key={l.group_id}
-              className="flex items-center justify-between rounded-lg bg-white px-3 py-1.5 text-sm"
+              className={cn(
+                "flex items-center justify-between px-3 py-1.5 text-sm",
+                soft
+                  ? i > 0 && "border-t border-paper-100"
+                  : "rounded-lg bg-white"
+              )}
             >
               <span className="font-medium">{l.group_name}</span>
               <span className="text-xs text-ink-faint">

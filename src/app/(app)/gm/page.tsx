@@ -2,9 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 
+import { useDesignVariant } from "@/components/DesignVariantProvider";
 import { useProfile } from "@/components/ProfileProvider";
 import { useConfig } from "@/components/useConfig";
 import { useOfflineQueue } from "@/components/useOfflineQueue";
+import { SoftGmPanel } from "@/components/soft/SoftGmPanel";
 import {
   Card,
   ErrorBanner,
@@ -41,6 +43,7 @@ const TASKS: Record<Tab, { title: string; desc: string }> = {
 // All submissions carry idempotency keys and queue offline (NFR-6).
 export default function GmPanelPage() {
   const profile = useProfile();
+  const { variant } = useDesignVariant();
   const supabase = useMemo(() => supabaseBrowser(), []);
   const { config } = useConfig();
   const { queue, failed, dismissFailed, submit } = useOfflineQueue();
@@ -206,6 +209,39 @@ export default function GmPanelPage() {
 
   const boxPrice = Number(config["gm_blindbox_price"] ?? 2);
   const boxStock = Number(config["gm_blindbox_stock"] ?? 8);
+
+  if (variant === "soft") {
+    return (
+      <SoftGmPanel
+        station={station}
+        tier={tier}
+        queueLength={queue.length}
+        failed={failed}
+        onDismissFailed={dismissFailed}
+        error={error}
+        notice={notice}
+        groups={groups}
+        groupId={groupId}
+        onGroupChange={setGroupId}
+        tab={tab}
+        onTabChange={setTab}
+        busy={busy}
+        onDay1Reward={day1Reward}
+        onUndo={undo}
+        success={success}
+        onSetSuccess={setSuccess}
+        needPicks={needPicks}
+        locations={locations}
+        onToggleLocation={toggleLocation}
+        onSubmitDay2={submitDay2}
+        boxPrice={boxPrice}
+        boxStock={boxStock}
+        boxesSold={boxesSold}
+        onSellBox={sellBox}
+        onSetStatus={setStatus}
+      />
+    );
+  }
 
   return (
     <div className="space-y-4">

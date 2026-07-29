@@ -3,6 +3,7 @@ import { Inter, JetBrains_Mono, Space_Grotesk } from "next/font/google";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
 import "./globals.css";
+import { DesignVariantProvider } from "@/components/DesignVariantProvider";
 import { cn } from "@/lib/utils";
 
 // Self-hosted at build time by next/font — no runtime dependency on a font
@@ -46,7 +47,7 @@ export default function RootLayout({
       className={cn(display.variable, body.variable, mono.variable)}
     >
       <body className="min-h-dvh font-sans">
-        {children}
+        <DesignVariantProvider>{children}</DesignVariantProvider>
         <SpeedInsights />
       </body>
     </html>
