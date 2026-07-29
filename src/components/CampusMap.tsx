@@ -265,6 +265,84 @@ export function CampusMap({
         </svg>
       </div>
 
+      {/* Legend — the dot shapes are meaningless to a first-day freshie
+          without this key (status is shape + colour per PRODUCT.md). */}
+      <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 px-1 text-xs text-ink-faint">
+        <span className="flex items-center gap-1.5">
+          <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden>
+            <circle cx="6" cy="6" r="5" fill="#16a34a" />
+          </svg>
+          Open — walk in
+        </span>
+        <span className="flex items-center gap-1.5">
+          <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden>
+            <circle cx="6" cy="6" r="5" fill="#dc2626" />
+            <circle cx="6" cy="6" r="2.2" fill="#fff" />
+          </svg>
+          Busy — a group is playing
+        </span>
+        <span className="flex items-center gap-1.5">
+          <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden>
+            <circle cx="6" cy="6" r="5" fill="#9ca3af" />
+            <path d="M3.8 3.8l4.4 4.4M3.8 8.2l4.4-4.4" stroke="#fff" strokeWidth="1.2" />
+          </svg>
+          Closed
+        </span>
+      </div>
+
+      {/* Every station with its human name — the map pins only carry codes
+          (A4-1, CRT-2), which mean nothing on day one. */}
+      {stations.length > 0 && (
+        <div
+          className={cn(
+            "mt-3",
+            soft ? "overflow-hidden rounded-2xl bg-white shadow-raised" : "card"
+          )}
+        >
+          {stations.every((s) => s.status === "closed") && (
+            <p className="border-b border-paper-100 px-3 py-2 text-xs text-ink-faint">
+              All stations are closed right now — they open when the game
+              phase starts. Watch the countdown at the top.
+            </p>
+          )}
+          {[...stations]
+            .sort((a, b) => a.code.localeCompare(b.code))
+            .map((s, i) => (
+              <button
+                key={s.id}
+                onClick={() => {
+                  setSelected(s);
+                  onStationTap?.(s);
+                }}
+                className={cn(
+                  "flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm",
+                  i > 0 && "border-t border-paper-100"
+                )}
+              >
+                <span className="flex min-w-0 items-baseline gap-2">
+                  <span className="shrink-0 text-xs font-bold text-ink-faint">
+                    {s.code}
+                  </span>
+                  <span className="truncate font-medium">{s.name}</span>
+                </span>
+                <span
+                  className="chip shrink-0"
+                  style={{
+                    backgroundColor: stationDotColor(s.status) + "22",
+                    color: stationDotColor(s.status),
+                  }}
+                >
+                  {s.status === "available"
+                    ? "Open"
+                    : s.status === "in_progress"
+                      ? "Busy"
+                      : "Closed"}
+                </span>
+              </button>
+            ))}
+        </div>
+      )}
+
       {selected && (
         <div
           className={cn(

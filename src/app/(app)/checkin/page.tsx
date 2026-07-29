@@ -74,7 +74,8 @@ export default function CheckinPage() {
     <div className="space-y-4">
       <PageTitle
         title="Location check-in"
-        subtitle="Tap a station on the map, then confirm"
+        subtitle="Tap a station on the map, then confirm. Works even on bad
+          signal — a check-in is never counted twice."
       />
       <ErrorBanner message={error} />
       <SuccessBanner message={notice} />

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 
+import { NavIcon } from "@/components/NavIcon";
 import { useGroup } from "@/components/useGroup";
 import { Card, Skeleton, StatusPill } from "@/components/ui";
 
@@ -66,8 +67,8 @@ export function ActionCard({
         tone === "primary" ? "bg-brand-1/20" : ""
       }`}
     >
-      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-ink text-xs font-black tracking-tight text-white">
-        {code}
+      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-ink text-white">
+        <NavIcon code={code} />
       </span>
       <span>
         <span className="block font-semibold">{title}</span>
@@ -83,7 +84,7 @@ export function primaryAction(role: string): Action {
       href: "/inventory",
       code: "IT",
       title: "Check your progress",
-      desc: "See puzzle pieces, tokens, and collected items.",
+      desc: "See the puzzle pieces, tokens, and rewards your group has earned so far.",
     };
   }
   if (role === "faci") {
@@ -136,15 +137,15 @@ export function secondaryActions(role: string): Action[] {
       {
         href: "/inventory",
         code: "IT",
-        title: "Inventory",
-        desc: "Puzzle pieces & blueprint progress",
+        title: "My items",
+        desc: "Puzzle pieces and rewards your group has collected",
         primary: true,
       },
       {
         href: "/transactions",
         code: "TX",
         title: "Token history",
-        desc: "Every earn & spend, fully logged",
+        desc: "Where your group earned and spent tokens",
       }
     );
   }
@@ -211,19 +212,19 @@ export function secondaryActions(role: string): Action[] {
       href: "/map",
       code: "MP",
       title: "Campus map",
-      desc: "Stations & live statuses",
+      desc: "Find game stations and see which are open right now",
     },
     {
       href: "/schedule",
       code: "PL",
       title: "Schedule",
-      desc: "The full event rundown",
+      desc: "What's happening today, hour by hour",
     },
     {
       href: "/faq",
       code: "FQ",
       title: "FAQ & contacts",
-      desc: "Stuck? Start here",
+      desc: "Stuck or lost? Start here",
     }
   );
 

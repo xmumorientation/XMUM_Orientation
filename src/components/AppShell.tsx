@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { DesignVariantToggle } from "@/components/DesignVariantToggle";
+import { NavIcon } from "@/components/NavIcon";
 import { NewItemToast } from "@/components/NewItemToast";
 import { PhaseTimer } from "@/components/PhaseTimer";
 import { useConfig } from "@/components/useConfig";
@@ -61,7 +62,7 @@ const NAV: NavItem[] = [
   { href: "/gm", label: "Station", code: "GM", roles: ["gm", "guardian_gm"] },
   {
     href: "/schedule",
-    label: "Plan",
+    label: "Schedule",
     code: "PL",
     roles: [
       "freshie",
@@ -98,6 +99,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [menuOpen, setMenuOpen] = useState(false);
 
   const items = NAV.filter((n) => n.roles.includes(profile.role));
+  // The Classic/Soft comparison toggle is a decision tool for the committee,
+  // not user-facing UI — freshies/facis/GMs never see it.
+  const showVariantToggle = ["admin", "committee", "hof", "hogm"].includes(
+    profile.role
+  );
 
   // Close the drawer on route change so it never lingers over a new page.
   // Radix Dialog owns focus-trap/Escape/backdrop-dismiss/focus-return; route
@@ -130,13 +136,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         >
           <span
             className={cn(
-              "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-[10px] font-black tracking-tight",
+              "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl",
               active
                 ? "bg-white/15 text-white"
                 : "bg-brand-1/20 text-brand-1"
             )}
           >
-            {item.code}
+            <NavIcon code={item.code} />
           </span>
           <span>{item.label}</span>
         </Link>
@@ -169,7 +175,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </Link>
 
         <div className="mt-5">
-          <PhaseTimer compact />
+          <PhaseTimer compact brandName={brand.eventName} />
         </div>
 
         <nav className="mt-5 space-y-1">{navLinks("sidebar")}</nav>
@@ -178,7 +184,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <span className="chip border border-brand-1/20 bg-brand-1/20 text-brand-1">
             {ROLE_LABELS[profile.role]}
           </span>
-          <DesignVariantToggle compact />
+          {showVariantToggle && <DesignVariantToggle compact />}
           <button
             onClick={signOut}
             className="flex min-h-[44px] items-center text-sm font-semibold text-ink-faint transition hover:text-ink"
@@ -244,9 +250,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     {navLinks("drawer")}
                   </nav>
 
-                  <div className="px-1 pb-2">
-                    <DesignVariantToggle compact />
-                  </div>
+                  {showVariantToggle && (
+                    <div className="px-1 pb-2">
+                      <DesignVariantToggle compact />
+                    </div>
+                  )}
                   <button
                     onClick={signOut}
                     className="mt-2 min-h-[48px] rounded-xl border border-paper-300 bg-paper-100 px-3 text-left text-sm font-bold text-ink-soft"
@@ -258,7 +266,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </Dialog>
           </div>
         </div>
-        <PhaseTimer />
+        <PhaseTimer brandName={brand.eventName} />
       </header>
 
       <main className="mx-auto min-h-dvh w-full max-w-6xl px-3 pb-[calc(1.25rem+env(safe-area-inset-bottom))] pt-3 sm:px-5 sm:pb-8 sm:pt-5 lg:px-8 lg:py-6">
