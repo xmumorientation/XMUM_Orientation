@@ -1,6 +1,6 @@
 "use client";
 
-import { Menu } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -190,26 +190,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <div className="min-w-0">
       <header className="sticky top-0 z-40 border-b border-paper-200 bg-paper-50/95 pt-[env(safe-area-inset-top)] shadow-[0_1px_0_rgba(28,26,23,0.03)] backdrop-blur lg:hidden">
         <div className="flex items-center justify-between gap-3 px-3 py-2.5 sm:px-5 sm:py-3">
-          <Link href="/dashboard" className="flex min-w-0 items-center gap-2">
-            <Monogram name={brand.eventName} size="sm" />
-            <span className="min-w-0">
-              <span className="block truncate text-sm font-bold tracking-tight">
-                {brand.eventName}
-              </span>
-              <span className="block truncate text-xs text-ink-faint">
-                XMUM Orientation 2026
-              </span>
-            </span>
-          </Link>
-          <div className="flex shrink-0 items-center gap-2">
-            <span className="chip border border-brand-1/20 bg-brand-1/20 text-brand-1">
-              {ROLE_LABELS[profile.role]}
-            </span>
+          <div className="flex min-w-0 items-center gap-2.5">
             <Dialog open={menuOpen} onOpenChange={setMenuOpen}>
               <DialogTrigger asChild>
-                <button className="flex min-h-[44px] items-center gap-1.5 rounded-xl border border-paper-300 bg-white px-3 text-sm font-bold text-ink shadow-raised">
+                <button
+                  aria-label="Open menu"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-paper-300 bg-white text-ink shadow-raised transition hover:bg-paper-100 active:scale-95"
+                >
                   <Menu size={20} strokeWidth={1.75} />
-                  Menu
                 </button>
               </DialogTrigger>
               <DialogContent
@@ -221,22 +209,27 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               >
                 <div className="flex h-full flex-col">
                   <div className="flex items-center justify-between gap-3 p-2">
-                    <div className="flex min-w-0 items-center gap-2">
-                      <Monogram name={brand.eventName} size="sm" />
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-bold">
-                          {brand.eventName}
-                        </p>
-                        <p className="truncate text-xs text-ink-faint">
-                          {ROLE_LABELS[profile.role]}
-                        </p>
+                    <div className="flex min-w-0 items-center gap-2.5">
+                      <DialogClose asChild>
+                        <button
+                          aria-label="Close menu"
+                          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-paper-300 text-ink-soft transition hover:bg-paper-100 hover:text-ink active:scale-95"
+                        >
+                          <X size={20} strokeWidth={1.75} />
+                        </button>
+                      </DialogClose>
+                      <div className="flex min-w-0 items-center gap-2">
+                        <Monogram name={brand.eventName} size="sm" />
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-bold">
+                            {brand.eventName}
+                          </p>
+                          <p className="truncate text-xs text-ink-faint">
+                            {ROLE_LABELS[profile.role]}
+                          </p>
+                        </div>
                       </div>
                     </div>
-                    <DialogClose asChild>
-                      <button className="min-h-[44px] rounded-xl border border-paper-300 px-3 text-sm font-bold text-ink-soft">
-                        Close
-                      </button>
-                    </DialogClose>
                   </div>
 
                   <nav className="mt-2 flex-1 space-y-1 overflow-y-auto px-1 pb-2">
@@ -252,6 +245,24 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 </div>
               </DialogContent>
             </Dialog>
+
+            <Link href="/dashboard" className="flex min-w-0 items-center gap-2">
+              <Monogram name={brand.eventName} size="sm" />
+              <span className="min-w-0">
+                <span className="block truncate text-sm font-bold tracking-tight">
+                  {brand.eventName}
+                </span>
+                <span className="block truncate text-xs text-ink-faint">
+                  XMUM Orientation 2026
+                </span>
+              </span>
+            </Link>
+          </div>
+
+          <div className="flex shrink-0 items-center gap-2">
+            <span className="chip border border-brand-1/20 bg-brand-1/20 text-brand-1">
+              {ROLE_LABELS[profile.role]}
+            </span>
           </div>
         </div>
         <PhaseTimer />

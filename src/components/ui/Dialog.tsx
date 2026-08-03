@@ -23,8 +23,8 @@ const contentVariants = cva(
           "left-1/2 top-1/2 w-[calc(100%-1.5rem)] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-xl p-5 " +
           "data-[state=open]:zoom-in-95 data-[state=closed]:zoom-out-95 data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0",
         sheet:
-          "inset-y-0 right-0 ml-auto h-dvh w-full max-w-sm rounded-l-2xl p-2 pt-[calc(0.75rem+env(safe-area-inset-top))] " +
-          "data-[state=open]:slide-in-from-right data-[state=closed]:slide-out-to-right",
+          "inset-y-0 left-0 mr-auto h-dvh w-full max-w-sm rounded-r-2xl p-2 pt-[calc(0.75rem+env(safe-area-inset-top))] " +
+          "data-[state=open]:slide-in-from-left data-[state=closed]:slide-out-to-left",
         sheetBottom:
           "inset-x-0 bottom-0 w-full rounded-t-2xl p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] " +
           "data-[state=open]:slide-in-from-bottom data-[state=closed]:slide-out-to-bottom",
