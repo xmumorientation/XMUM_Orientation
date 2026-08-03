@@ -1,6 +1,5 @@
 "use client";
 
-import { Monogram } from "@/components/ui/Monogram";
 import { useConfig } from "@/components/useConfig";
 import { hexToRgbChannels } from "@/lib/utils";
 
@@ -10,7 +9,6 @@ export default function AuthLayout({
   children: React.ReactNode;
 }) {
   const { brand } = useConfig();
-  const tagline = brand.eventTagline || "Your event, unlocked.";
 
   return (
     <main
@@ -25,42 +23,41 @@ export default function AuthLayout({
       }
     >
       <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_16%_14%,rgb(var(--brand-1-rgb)/0.18),transparent_28rem),radial-gradient(circle_at_84%_16%,rgb(var(--brand-2-rgb)/0.14),transparent_28rem),linear-gradient(135deg,#fdfcfa,#f5f8f7_52%,#f8f6f0)]" />
-      <div className="mx-auto grid min-h-[calc(100dvh-2.5rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] max-w-6xl items-center gap-6 lg:grid-cols-[1.05fr_0.95fr]">
+
+      <div className="mx-auto grid min-h-[calc(100dvh-2.5rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] max-w-6xl items-center gap-8 lg:grid-cols-[1.1fr_0.9fr]">
         <section className="hidden lg:block">
-          <div className="mb-7 inline-flex rounded-full border border-ink/10 bg-white/70 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.28em] text-ink-soft shadow-[0_18px_60px_rgba(28,26,23,0.08)]">
-            XMUM Orientation 2026
+          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-paper-300 bg-white/80 px-4 py-1.5 text-xs font-bold text-ink-soft shadow-raised">
+            <span className="h-2 w-2 rounded-full bg-brand-1" />
+            <span>XMUM Freshies Orientation</span>
           </div>
-          <h1 className="font-display text-[clamp(4.5rem,9vw,8rem)] font-bold leading-[0.86] tracking-[-0.03em] text-ink">
-            {brand.eventName}
+
+          <h1 className="font-display text-[clamp(3.5rem,6vw,5.5rem)] font-black leading-[0.95] tracking-[-0.03em] text-ink">
+            Welcome to XMUM!
           </h1>
-          <p className="mt-6 max-w-xl text-2xl font-semibold leading-8 tracking-tight text-ink-soft">
-            {tagline}
+          <p className="mt-4 max-w-md text-xl font-bold leading-8 tracking-tight text-ink-soft">
+            Your XMUM journey starts here.
           </p>
-          <div className="mt-8 h-1.5 w-40 rounded-full bg-[linear-gradient(90deg,var(--brand-1),var(--brand-2))]" />
-          <div className="mt-14 grid max-w-lg grid-cols-[1fr_auto] items-end gap-5 border-t border-ink/10 pt-5">
-            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-ink-faint">
-              Student portal
-            </p>
-            <p className="text-right text-sm font-bold text-ink-soft">
-              July 2026
-            </p>
+
+          <div className="mt-6 h-1.5 w-32 rounded-full bg-[linear-gradient(90deg,var(--brand-1),var(--brand-2))]" />
+
+          <div className="mt-10 max-w-lg border-t border-paper-200 pt-4 text-xs font-semibold text-ink-faint">
+            Xiamen University Malaysia • Official Orientation Platform
           </div>
         </section>
 
         <section className="mx-auto w-full max-w-md">
-          <div className="mb-4 flex items-center justify-between sm:mb-5 lg:hidden">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-[0.22em] text-brand-1">
-                XMUM Orientation 2026
-              </p>
-              <h1 className="mt-1 font-display text-3xl font-bold tracking-[-0.02em]">
-                {brand.eventName}
-              </h1>
-              <p className="mt-1 max-w-[16rem] text-sm font-semibold leading-5 text-ink-faint">
-                {tagline}
-              </p>
+          <div className="mb-6 lg:hidden">
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-xs font-bold uppercase tracking-[0.2em] text-brand-1">
+                XMUM Freshies Orientation
+              </span>
             </div>
-            <Monogram name={brand.eventName} />
+            <h1 className="mt-2 text-2xl font-black tracking-tight text-ink">
+              Welcome to XMUM
+            </h1>
+            <p className="mt-1 text-sm font-semibold leading-5 text-ink-faint">
+              Your XMUM journey starts here.
+            </p>
           </div>
           {children}
         </section>
