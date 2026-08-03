@@ -5,27 +5,37 @@ const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!url || !key) {
   console.error("Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
-  console.error("Run with: node --env-file=.env.local --env-file=.env scripts/seed-test-accounts.mjs");
+  console.error("Run with: node --env-file=.env.local scripts/seed-test-accounts.mjs");
   process.exit(1);
 }
 
 const supabase = createClient(url, key);
 
 const TEST_ACCOUNTS = [
-  { email: "admin@test.com", role: "admin", name: "Test Admin" },
-  { email: "hof@test.com", role: "hof", name: "Test HOF" },
-  { email: "hogm@test.com", role: "hogm", name: "Test HOGM" },
-  { email: "faci@test.com", role: "faci", name: "Test Facilitator", group_id: 1 },
-  { email: "gm@test.com", role: "gm", name: "Test GameMaster", station_id: 1 },
-  { email: "counter@test.com", role: "committee", name: "Test Counter" },
-  { email: "freshie@test.com", role: "freshie", name: "Test Freshie", group_id: 1 },
+  // Official Demo Accounts (xmu.edu.my)
+  { email: "admin.test@xmu.edu.my", role: "admin", name: "Test Admin", password: "TestPass123!" },
+  { email: "freshie.test@xmu.edu.my", role: "freshie", name: "Test Freshie", group_id: 1, password: "TestPass123!" },
+  { email: "hof.test@xmu.edu.my", role: "hof", name: "Test HOF", password: "TestPass123!" },
+  { email: "hogm.test@xmu.edu.my", role: "hogm", name: "Test HOGM", password: "TestPass123!" },
+  { email: "faci.test@xmu.edu.my", role: "faci", name: "Test Facilitator", group_id: 1, password: "TestPass123!" },
+  { email: "gm.test@xmu.edu.my", role: "gm", name: "Test GameMaster", station_id: 1, password: "TestPass123!" },
+  { email: "counter.test@xmu.edu.my", role: "committee", name: "Test Counter", password: "TestPass123!" },
+
+  // Quick Short Accounts (test.com)
+  { email: "admin@test.com", role: "admin", name: "Test Admin", password: "pass123" },
+  { email: "freshie@test.com", role: "freshie", name: "Test Freshie", group_id: 1, password: "pass123" },
+  { email: "hof@test.com", role: "hof", name: "Test HOF", password: "pass123" },
+  { email: "hogm@test.com", role: "hogm", name: "Test HOGM", password: "pass123" },
+  { email: "faci@test.com", role: "faci", name: "Test Facilitator", group_id: 1, password: "pass123" },
+  { email: "gm@test.com", role: "gm", name: "Test GameMaster", station_id: 1, password: "pass123" },
+  { email: "counter@test.com", role: "committee", name: "Test Counter", password: "pass123" },
 ];
 
 async function seed() {
-  console.log("Seeding test accounts...");
-  const password = "pass123";
+  console.log("Seeding official demo & test accounts...");
 
   for (const acc of TEST_ACCOUNTS) {
+    const password = acc.password;
     const { data, error } = await supabase.auth.admin.createUser({
       email: acc.email,
       password,
