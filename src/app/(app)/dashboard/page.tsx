@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 
+import { NavIcon } from "@/components/NavIcon";
 import { useProfile } from "@/components/ProfileProvider";
 import { useGroup } from "@/components/useGroup";
 import { Card, PageTitle, Skeleton, StatusPill } from "@/components/ui";
@@ -67,8 +68,8 @@ function ActionCard({
         tone === "primary" ? "bg-brand-1/20" : ""
       }`}
     >
-      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-ink text-xs font-black tracking-tight text-white">
-        {code}
+      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-ink text-white shadow-raised">
+        <NavIcon code={code} size={20} strokeWidth={1.75} />
       </span>
       <span>
         <span className="block font-semibold">{title}</span>
@@ -155,8 +156,8 @@ export default function DashboardPage() {
                 {main.desc}
               </p>
             </div>
-            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/15 text-sm font-black">
-              {main.code}
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/15 text-white">
+              <NavIcon code={main.code} size={24} strokeWidth={1.75} />
             </span>
           </div>
         </div>

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import { NavIcon } from "@/components/NavIcon";
 import { NewItemToast } from "@/components/NewItemToast";
 import { PhaseTimer } from "@/components/PhaseTimer";
 import { useConfig } from "@/components/useConfig";
@@ -60,7 +61,7 @@ const NAV: NavItem[] = [
   { href: "/gm", label: "Station", code: "GM", roles: ["gm", "guardian_gm"] },
   {
     href: "/schedule",
-    label: "Plan",
+    label: "Schedule",
     code: "PL",
     roles: [
       "freshie",
@@ -129,13 +130,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         >
           <span
             className={cn(
-              "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-[10px] font-black tracking-tight",
+              "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-colors",
               active
                 ? "bg-white/15 text-white"
                 : "bg-brand-1/20 text-brand-1"
             )}
           >
-            {item.code}
+            <NavIcon code={item.code} size={18} strokeWidth={1.75} />
           </span>
           <span>{item.label}</span>
         </Link>
