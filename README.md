@@ -37,25 +37,25 @@ src/app/(app)/         authenticated app (role-gated by RLS + layout)
   transactions/        token history (dispute prevention)
   attendance/          Faci roster marking + headcount fallback
   checkin/             manual location check-in + GPS auto-report
-  gm/                  GM panel: tokens / items / gacha / station status
+  gm/                  GM panel: tokens / items / blind box / station status
   guardian/            Guardian GM: puzzle verification + manual activation
   committee/           live ops map, attendance dashboard, register counter
-  admin/               war room, users CSV import, gacha config, NFC, audit
+  admin/               control room, users CSV import, blind box config, NFC, audit
 src/app/activate/      NFC sticker landing page (signed one-time tokens)
 src/app/api/           server routes (service-role: user import, NFC mint)
-src/components/        shared UI (map, timer, gacha/victory animations)
+src/components/        shared UI (map, timer, blind box/victory animations)
 src/lib/               supabase clients, types, NFC signing, utils
 ```
 
 ## Core principles
 
-- **Server-authoritative:** every token mutation, gacha roll, grant and
-  activation is a Postgres RPC with role checks, atomicity, idempotency
-  keys and audit logging. The client never computes outcomes.
+- **Server-authoritative:** every token mutation, blind box draw, grant
+  and activation is a Postgres RPC with role checks, atomicity,
+  idempotency keys and audit logging. The client never computes outcomes.
 - **RLS everywhere:** UI hiding is presentation only; Postgres row-level
   security is the real permission boundary.
 - **No Web NFC:** stickers carry plain NDEF URLs with signed one-time
   tokens — works on iOS (background tag read) and Android alike.
-- **Everything configurable:** stations, gacha weights, phases and
-  kill-switches are editable live from the Admin console — no redeploys
-  on D-day.
+- **Everything configurable:** stations, blind box pricing/stock, phases
+  and kill-switches are editable live from the Admin console — no
+  redeploys on D-day.

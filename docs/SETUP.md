@@ -90,14 +90,14 @@ exactly once — export and distribute them centrally.
 
 ## 6. Rehearsal / testing mode
 
-Admin → War room → **Rehearsal mode ON** bypasses phase gating so you can
+Admin → Control room → **Rehearsal mode ON** bypasses phase gating so you can
 test token deductions and NFC activation outside Endgame. Turn it OFF for
 the real event.
 
 ## 7. D-day runbook pointers
 
-- Kill-switches (freeze tokens / disable gacha / disable NFC) are in
-  Admin → War room, each independent (FR-11.5).
+- Kill-switches (freeze tokens / disable blind box / disable NFC) are in
+  Admin → Control room, each independent (FR-11.5).
 - Phase control (start/pause/extend Day 1, Day 2, Endgame) same page.
 - Audit log: Admin → Audit. HOF/HOGM also have read access via API.
 - Supabase Pro upgrade for November (proposal §8): Dashboard → Billing.
