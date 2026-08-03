@@ -23,7 +23,7 @@ interface LiveOps {
 }
 
 // FR-11.5 kill-switches + FR-11.6 live ops + FR-10.1 phase control.
-export default function AdminWarRoomPage() {
+export default function AdminControlRoomPage() {
   const supabase = useMemo(() => supabaseBrowser(), []);
   const [ops, setOps] = useState<LiveOps | null>(null);
   const [phases, setPhases] = useState<Phase[]>([]);
