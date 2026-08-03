@@ -97,7 +97,7 @@ export default function InventoryPage() {
     <div className="space-y-4">
       <PageTitle
         title="Inventory"
-        subtitle={`Collect all ${PIECES_PER_SET} pieces of one blueprint to revive a projector`}
+        subtitle={`Collect all ${PIECES_PER_SET} pieces of each blueprint to reveal your group's image`}
       />
 
       {PROJECTOR_LOCATIONS.map((loc) => {

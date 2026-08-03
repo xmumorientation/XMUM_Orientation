@@ -64,7 +64,7 @@ function ActionCard({
   return (
     <Link
       href={href}
-      className={`card flex items-center gap-3 p-4 transition hover:-translate-y-0.5 hover:border-brand-1/40 ${
+      className={`card flex items-center gap-3 p-4 transition-all duration-base ease-snappy hover:-translate-y-0.5 hover:border-brand-1/40 active:scale-[0.98] ${
         tone === "primary" ? "bg-brand-1/20" : ""
       }`}
     >
@@ -85,7 +85,7 @@ function primaryAction(role: string): Action {
       href: "/inventory",
       code: "IT",
       title: "Check your progress",
-      desc: "See puzzle pieces, tokens, and collected items.",
+      desc: "See your group's collected pieces & rank.",
     };
   }
   if (role === "faci") {
@@ -93,7 +93,7 @@ function primaryAction(role: string): Action {
       href: "/attendance",
       code: "AT",
       title: "Mark attendance",
-      desc: "Update your group roster before moving on.",
+      desc: "Mark your group members present.",
     };
   }
   if (role === "gm" || role === "guardian_gm") {
@@ -101,7 +101,7 @@ function primaryAction(role: string): Action {
       href: "/gm",
       code: "GM",
       title: "Open station panel",
-      desc: "Run rewards, Day 2 results, boxes, and station status.",
+      desc: "Grant tokens, sell blind boxes & update stations.",
     };
   }
   if (role === "hof" || role === "hogm" || role === "committee") {
@@ -109,7 +109,7 @@ function primaryAction(role: string): Action {
       href: "/committee",
       code: "OP",
       title: "Open operations",
-      desc: "Check map, attendance, balances, and registration.",
+      desc: "Live map, roster & event ops.",
     };
   }
   if (role === "admin") {
@@ -117,14 +117,14 @@ function primaryAction(role: string): Action {
       href: "/admin",
       code: "AD",
       title: "Open control room",
-      desc: "Control phases, kill-switches, users, and game config.",
+      desc: "Live event controls, users & switches.",
     };
   }
   return {
     href: "/map",
     code: "MP",
     title: "Open campus map",
-    desc: "Find stations and live statuses.",
+    desc: "Find game stations & live locations.",
   };
 }
 
@@ -143,7 +143,7 @@ export default function DashboardPage() {
 
       <Link
         href={main.href}
-        className="card block overflow-hidden border-brand-1/30 bg-white p-0 transition hover:-translate-y-0.5 hover:border-brand-1/60"
+        className="card block overflow-hidden border-brand-1/30 bg-white p-0 transition-all duration-base ease-snappy hover:-translate-y-0.5 hover:border-brand-1/60 active:scale-[0.98]"
       >
         <div className="bg-[linear-gradient(90deg,var(--brand-1),var(--brand-2))] px-4 py-3 text-white">
           <p className="text-xs font-black uppercase tracking-[0.2em] text-white/75">
@@ -172,14 +172,14 @@ export default function DashboardPage() {
               href="/inventory"
               code="IT"
               title="Inventory"
-              desc="Puzzle pieces & blueprint progress"
+              desc="See your group's collected pieces & rank"
               tone="primary"
             />
             <ActionCard
               href="/transactions"
               code="TX"
               title="Token history"
-              desc="Every earn & spend, fully logged"
+              desc="Track every token earned & spent"
             />
           </>
         )}
@@ -190,14 +190,14 @@ export default function DashboardPage() {
               href="/attendance"
               code="AT"
               title="Attendance"
-              desc="Mark your group's roster"
+              desc="Mark your group members present"
               tone="primary"
             />
             <ActionCard
               href="/checkin"
               code="CK"
               title="Location check-in"
-              desc="Tell the committee where your group is"
+              desc="Update group location for committee"
             />
           </>
         )}
@@ -207,7 +207,7 @@ export default function DashboardPage() {
             href="/gm"
             code="GM"
             title="Station panel"
-            desc="Tokens, items & station status"
+            desc="Grant tokens, sell blind boxes & update stations"
             tone="primary"
           />
         )}
@@ -226,7 +226,7 @@ export default function DashboardPage() {
             href="/committee"
             code="OP"
             title="Operations"
-            desc="Live map, attendance & balances"
+            desc="Live map, roster & event ops"
             tone="primary"
           />
         )}
@@ -236,7 +236,7 @@ export default function DashboardPage() {
             href="/admin"
             code="AD"
             title="Admin console"
-            desc="Users, game config, phases & kill-switches"
+            desc="Live event controls, users & switches"
             tone="primary"
           />
         )}
@@ -245,19 +245,19 @@ export default function DashboardPage() {
           href="/map"
           code="MP"
           title="Campus map"
-          desc="Stations & live statuses"
+          desc="Find game stations & live locations"
         />
         <ActionCard
           href="/schedule"
           code="PL"
           title="Schedule"
-          desc="The full event rundown"
+          desc="Event timeline & phase schedule"
         />
         <ActionCard
           href="/faq"
           code="FQ"
           title="FAQ & contacts"
-          desc="Stuck? Start here"
+          desc="Need help? Q&A and emergency contacts"
         />
       </div>
     </div>
