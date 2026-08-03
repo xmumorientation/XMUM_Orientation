@@ -87,6 +87,24 @@ const NAV: NavItem[] = [
     code: "BS",
     roles: ["hof", "hogm", "committee", "admin"],
   },
+  {
+    href: "/booking",
+    label: "Booking",
+    code: "BK",
+    roles: ["hof", "hogm", "faci", "gm", "committee", "admin"],
+  },
+  {
+    href: "/reservations",
+    label: "Reservations",
+    code: "RS",
+    roles: ["faci", "gm", "committee", "admin"],
+  },
+  {
+    href: "/register-counter",
+    label: "Counter",
+    code: "RC",
+    roles: ["faci", "committee", "admin"],
+  },
   { href: "/admin", label: "Admin", code: "AD", roles: ["admin"] },
 ];
 

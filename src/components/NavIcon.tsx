@@ -1,7 +1,9 @@
 import {
   Activity,
   Calendar,
+  CalendarCheck,
   ClipboardCheck,
+  Clock,
   Gamepad2,
   HelpCircle,
   History,
@@ -12,6 +14,7 @@ import {
   Package,
   ShieldCheck,
   Sliders,
+  UserCheck,
   type LucideProps,
 } from "lucide-react";
 
@@ -28,7 +31,10 @@ export type NavIconCode =
   | "BS"
   | "AD"
   | "PL"
-  | "FQ";
+  | "FQ"
+  | "BK"
+  | "RS"
+  | "RC";
 
 interface NavIconProps extends Omit<LucideProps, "ref"> {
   code: NavIconCode | string;
@@ -69,6 +75,12 @@ export function NavIcon({
       return <Calendar {...iconProps} />;
     case "FQ":
       return <HelpCircle {...iconProps} />;
+    case "BK":
+      return <CalendarCheck {...iconProps} />;
+    case "RS":
+      return <Clock {...iconProps} />;
+    case "RC":
+      return <UserCheck {...iconProps} />;
     default:
       return <Home {...iconProps} />;
   }

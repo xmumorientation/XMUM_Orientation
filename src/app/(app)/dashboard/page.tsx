@@ -241,6 +241,34 @@ export default function DashboardPage() {
           />
         )}
 
+        {(role === "hof" || role === "hogm" || role === "faci" || role === "gm" || role === "committee" || role === "admin") && (
+          <ActionCard
+            href="/booking"
+            code="BK"
+            title="Interview Booking"
+            desc="Degree Week 1 — HOF & HOGM interview selection slots"
+            tone="primary"
+          />
+        )}
+
+        {(role === "faci" || role === "gm" || role === "committee" || role === "admin") && (
+          <ActionCard
+            href="/reservations"
+            code="RS"
+            title="Practice Reservations"
+            desc="Degree Week 3 — Rehearsal hall group bookings"
+          />
+        )}
+
+        {(role === "faci" || role === "committee" || role === "admin") && (
+          <ActionCard
+            href="/register-counter"
+            code="RC"
+            title="Register Counter"
+            desc="D-Day — Onboarding registration & group assignment"
+          />
+        )}
+
         <ActionCard
           href="/map"
           code="MP"
