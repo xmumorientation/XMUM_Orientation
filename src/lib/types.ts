@@ -45,6 +45,12 @@ export interface Station {
   map_y: number;
   risk_tier: RiskTier;
   entry_cost: number;
+  is_pk_day1: boolean;
+}
+
+export interface StationOccupancy {
+  station_id: number;
+  occupancy_count: number;
 }
 
 export const RISK_TIER_META: Record<
