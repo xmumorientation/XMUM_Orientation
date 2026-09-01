@@ -101,10 +101,12 @@ const NAV: NavItem[] = [
   },
   {
     href: "/register-counter",
-    label: "Counter",
+    label: "Freshies Register Counter",
     code: "RC",
-    roles: ["faci", "committee", "admin"],
+    roles: ["admin"],
   },
+
+
   { href: "/admin", label: "Admin", code: "AD", roles: ["admin"] },
 ];
 
@@ -126,8 +128,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   async function signOut() {
     await supabaseBrowser().auth.signOut();
-    router.replace("/login");
-    router.refresh();
+    window.location.href = "/login";
   }
 
   const navLinks = (mode: "sidebar" | "drawer") =>

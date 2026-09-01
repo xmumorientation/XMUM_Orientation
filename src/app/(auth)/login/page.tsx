@@ -51,7 +51,7 @@ function LoginForm() {
       setBusy(false);
       return;
     }
-    router.replace(nextUrl || "/dashboard");
+    window.location.href = nextUrl || "/dashboard";
   }
 
   async function onSubmit(e: React.FormEvent) {
