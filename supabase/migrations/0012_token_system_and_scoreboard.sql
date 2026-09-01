@@ -36,10 +36,12 @@ set group_id = excluded.group_id,
 -- ── 2. Stations (Ensure station_id, day, station_name, difficulty, token_cost) ──
 
 -- Difficulty enum / text check
-create type public.game_difficulty as enum ('NONE', 'EASY', 'MEDIUM', 'HARD');
+do $$
+begin
+  create type public.game_difficulty as enum ('NONE', 'EASY', 'MEDIUM', 'HARD');
 exception
   when duplicate_object then null;
-;
+end $$;
 
 alter table public.stations
   add column if not exists station_id integer,
