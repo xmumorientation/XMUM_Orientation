@@ -60,6 +60,19 @@ const NAV: NavItem[] = [
   { href: "/attendance", label: "Roster", code: "AT", roles: ["faci"] },
   { href: "/gm", label: "Station", code: "GM", roles: ["gm", "guardian_gm"] },
   {
+    href: "/token",
+    label: "Token System",
+    code: "TK",
+    roles: [
+      "gm",
+      "guardian_gm",
+      "faci",
+      "hof",
+      "hogm",
+      "committee",
+    ],
+  },
+  {
     href: "/schedule",
     label: "Schedule",
     code: "PL",
