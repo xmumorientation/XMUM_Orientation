@@ -384,7 +384,92 @@ begin
 end;
 $$;
 
--- ── 7. Realtime Enablement ─────────────────────────────────────────────
+-- ── 7. RLS & Permissions ─────────────────────────────────────────────
+
+alter table public.token_logs enable row level security;
+alter table public.puzzle_inventory enable row level security;
+alter table public.game_config_rules enable row level security;
+
+-- Permissive policies for token_logs
+drop policy if exists "allow all select on token_logs" on public.token_logs;
+drop policy if exists "allow all insert on token_logs" on public.token_logs;
+drop policy if exists "allow all update on token_logs" on public.token_logs;
+drop policy if exists "allow all delete on token_logs" on public.token_logs;
+
+create policy "allow all select on token_logs"
+  on public.token_logs for select
+  using (true);
+
+create policy "allow all insert on token_logs"
+  on public.token_logs for insert
+  with check (true);
+
+create policy "allow all update on token_logs"
+  on public.token_logs for update
+  using (true)
+  with check (true);
+
+create policy "allow all delete on token_logs"
+  on public.token_logs for delete
+  using (true);
+
+-- Permissive policies for puzzle_inventory
+drop policy if exists "allow all select on puzzle_inventory" on public.puzzle_inventory;
+drop policy if exists "allow all insert on puzzle_inventory" on public.puzzle_inventory;
+drop policy if exists "allow all update on puzzle_inventory" on public.puzzle_inventory;
+drop policy if exists "allow all delete on puzzle_inventory" on public.puzzle_inventory;
+
+create policy "allow all select on puzzle_inventory"
+  on public.puzzle_inventory for select
+  using (true);
+
+create policy "allow all insert on puzzle_inventory"
+  on public.puzzle_inventory for insert
+  with check (true);
+
+create policy "allow all update on puzzle_inventory"
+  on public.puzzle_inventory for update
+  using (true)
+  with check (true);
+
+create policy "allow all delete on puzzle_inventory"
+  on public.puzzle_inventory for delete
+  using (true);
+
+-- Permissive policies for game_config_rules
+drop policy if exists "allow all select on game_config_rules" on public.game_config_rules;
+drop policy if exists "allow all insert on game_config_rules" on public.game_config_rules;
+drop policy if exists "allow all update on game_config_rules" on public.game_config_rules;
+drop policy if exists "allow all delete on game_config_rules" on public.game_config_rules;
+
+create policy "allow all select on game_config_rules"
+  on public.game_config_rules for select
+  using (true);
+
+create policy "allow all insert on game_config_rules"
+  on public.game_config_rules for insert
+  with check (true);
+
+create policy "allow all update on game_config_rules"
+  on public.game_config_rules for update
+  using (true)
+  with check (true);
+
+create policy "allow all delete on game_config_rules"
+  on public.game_config_rules for delete
+  using (true);
+
+-- Explicit grants to anon, authenticated, service_role
+grant all on public.token_logs to anon, authenticated, service_role;
+grant all on public.puzzle_inventory to anon, authenticated, service_role;
+grant all on public.game_config_rules to anon, authenticated, service_role;
+
+-- ── 8. Realtime Enablement & Replica Identity ───────────────────────────
+
+alter table public.token_logs replica identity full;
+alter table public.puzzle_inventory replica identity full;
+alter table public.groups replica identity full;
+alter table public.game_config_rules replica identity full;
 
 do $$
 begin
@@ -413,3 +498,4 @@ begin
 exception
   when others then null;
 end $$;
+
