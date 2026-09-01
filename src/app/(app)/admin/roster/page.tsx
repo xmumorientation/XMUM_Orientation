@@ -368,7 +368,7 @@ export default function AdminRosterPage() {
         <Card className="border border-amber-200 bg-amber-50 text-amber-800">
           <p className="text-sm font-semibold">No Sessions Available</p>
           <p className="text-xs mt-0.5">
-            Please create an attendance session first in the &quot;Sessions&quot; tab.
+            Please create an attendance session first.
           </p>
         </Card>
       )}
