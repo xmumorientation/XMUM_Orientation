@@ -482,6 +482,51 @@ export async function manualTokenAdjust(params: {
   return { ok: true, newTokens: g.current_tokens };
 }
 
+export async function setTotalGroups(
+  targetCount: number
+): Promise<{ ok: boolean; totalGroups?: number; message?: string; error?: string }> {
+  if (!targetCount || targetCount < 1) {
+    return { ok: false, error: "Total groups count must be at least 1." };
+  }
+
+  const supabase = supabaseBrowser();
+  try {
+    const { data, error } = await supabase.rpc("fn_set_total_groups", {
+      p_target_count: targetCount,
+    });
+
+    if (!error && data?.ok) {
+      // Re-sync local items
+      const freshGroups = await fetchTokenGroups();
+      setLocalItem("groups", freshGroups);
+      return { ok: true, totalGroups: data.total_groups, message: data.message };
+    }
+  } catch (err) {
+    console.warn("Supabase fn_set_total_groups fallback:", err);
+  }
+
+  // Fallback local mutation
+  const currentGroups = await fetchTokenGroups();
+  let updatedGroups: TokenGroup[];
+  if (targetCount >= currentGroups.length) {
+    updatedGroups = [...currentGroups];
+    for (let i = currentGroups.length + 1; i <= targetCount; i++) {
+      updatedGroups.push({
+        group_id: i,
+        group_name: `Group ${i}`,
+        current_tokens: 0,
+        puzzles_count: 0,
+        location_pieces: { 1: [], 2: [], 3: [] },
+      });
+    }
+  } else {
+    updatedGroups = currentGroups.slice(0, targetCount);
+  }
+
+  setLocalItem("groups", updatedGroups);
+  return { ok: true, totalGroups: targetCount, message: `Configured for ${targetCount} groups (Local sync)` };
+}
+
 export async function updateGameConfigRule(
   ruleKey: string,
   ruleValue: number

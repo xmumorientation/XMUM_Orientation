@@ -39,6 +39,7 @@ import {
   manualTokenAdjust,
   resetAllTokensAndPuzzles,
   saveTokenPresets,
+  setTotalGroups,
   updateTokenLog,
   deleteTokenLog,
 } from "@/lib/token-api";
