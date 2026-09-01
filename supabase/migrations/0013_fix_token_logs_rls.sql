@@ -1,9 +1,11 @@
 -- ═══════════════════════════════════════════════════════════════════════
 -- XMUM Orientation Platform 2026 — Migration 0013 (Consolidated Update)
--- 1. Dynamic Group Manager (`fn_set_total_groups`): Supports ANY group count
---    with automatic cleanup of excess groups and group_number constraint fix.
--- 2. RLS Policies & Grants: Fixes live audit logs and permission errors.
--- 3. Supabase Realtime: Full replica identity and publication broadcasts.
+-- 1. Universal Dynamic Group Manager (`fn_set_total_groups`): Supports ANY
+--    group count with automatic cascade cleanup & group_number constraint fix.
+-- 2. Freshie CRUD RPCs (`fn_admin_update_freshie`, `fn_admin_delete_freshie`)
+--    and full RLS policies on `freshies` for registration counter.
+-- 3. RLS Policies & Grants: Fixes live audit logs and permission errors.
+-- 4. Supabase Realtime: Full replica identity and publication broadcasts.
 -- ═══════════════════════════════════════════════════════════════════════
 
 -- ── 1. Dynamic Group Manager Function (Supports any group count) ───────
@@ -75,16 +77,23 @@ begin
     begin update public.phases set used_by_group = null where used_by_group > p_target_count; exception when others then null; end;
     begin update public.freshie_registrations set group_id = null where group_id > p_target_count; exception when others then null; end;
     begin update public.profiles set group_id = null where group_id > p_target_count; exception when others then null; end;
+    begin update public.freshies set group_id = null where group_id > p_target_count; exception when others then null; end;
 
     delete from public.groups where id > p_target_count;
   end if;
 
-  -- Record config rule
+  -- Record config rule in game_config_rules and game_config
   insert into public.game_config_rules (day, rule_key, rule_value, description, updated_at)
   values (1, 'TOTAL_GROUPS_COUNT', p_target_count, 'Total active student orientation groups', now())
   on conflict (rule_key) do update
   set rule_value = excluded.rule_value,
       updated_at = now();
+
+  begin
+    insert into public.game_config (key, value, updated_by)
+    values ('freshie_total_groups', to_jsonb(p_target_count), auth.uid())
+    on conflict (key) do update set value = excluded.value, updated_at = now();
+  exception when others then null; end;
 
   return jsonb_build_object(
     'ok', true,
@@ -96,11 +105,95 @@ $$;
 
 grant execute on function public.fn_set_total_groups(integer) to anon, authenticated, service_role;
 
--- ── 2. Enable RLS & Policies for Live Audit Logs ─────────────────────────
+-- Link fn_set_freshie_group_count to use the universal group manager
+create or replace function public.fn_set_freshie_group_count(p_count integer)
+returns jsonb
+language plpgsql security definer set search_path = public
+as $$
+begin
+  return public.fn_set_total_groups(p_count);
+end;
+$$;
+
+grant execute on function public.fn_set_freshie_group_count(integer) to anon, authenticated, service_role;
+
+-- ── 2. Freshie CRUD RPC Functions ────────────────────────────────────────
+
+-- Update Freshie details
+create or replace function public.fn_admin_update_freshie(
+  p_freshie_id bigint,
+  p_full_name text,
+  p_phone text default null,
+  p_gender public.freshie_gender default 'Male',
+  p_nationality public.freshie_nationality default 'Local',
+  p_student_id text default null,
+  p_group_id integer default null
+)
+returns jsonb
+language plpgsql
+security definer
+as $$
+begin
+  if coalesce(trim(p_full_name), '') = '' then
+    raise exception 'Full name is required.';
+  end if;
+
+  if p_group_id is not null and not exists (select 1 from public.groups where id = p_group_id) then
+    raise exception 'Selected group does not exist.';
+  end if;
+
+  update public.freshies
+  set full_name = trim(p_full_name),
+      phone = nullif(trim(coalesce(p_phone, '')), ''),
+      gender = p_gender,
+      nationality = p_nationality,
+      student_id = nullif(trim(coalesce(p_student_id, '')), ''),
+      group_id = p_group_id
+  where id = p_freshie_id;
+
+  if not found then
+    raise exception 'Freshie record not found.';
+  end if;
+
+  return jsonb_build_object(
+    'ok', true,
+    'freshie_id', p_freshie_id,
+    'message', 'Freshie details updated successfully.'
+  );
+end;
+$$;
+
+-- Delete Freshie record
+create or replace function public.fn_admin_delete_freshie(
+  p_freshie_id bigint
+)
+returns jsonb
+language plpgsql
+security definer
+as $$
+begin
+  delete from public.freshies where id = p_freshie_id;
+  if not found then
+    raise exception 'Freshie record not found.';
+  end if;
+
+  return jsonb_build_object(
+    'ok', true,
+    'freshie_id', p_freshie_id,
+    'message', 'Freshie deleted successfully.'
+  );
+end;
+$$;
+
+grant execute on function public.fn_admin_update_freshie(bigint, text, text, public.freshie_gender, public.freshie_nationality, text, integer) to anon, authenticated, service_role;
+grant execute on function public.fn_admin_delete_freshie(bigint) to anon, authenticated, service_role;
+
+-- ── 3. Enable RLS & Policies for Token Logs, Inventory & Freshies ─────────
 
 alter table public.token_logs enable row level security;
 alter table public.puzzle_inventory enable row level security;
 alter table public.game_config_rules enable row level security;
+alter table public.freshies enable row level security;
 
 drop policy if exists "allow all select on token_logs" on public.token_logs;
 drop policy if exists "allow all insert on token_logs" on public.token_logs;
@@ -117,6 +210,11 @@ drop policy if exists "allow all insert on game_config_rules" on public.game_con
 drop policy if exists "allow all update on game_config_rules" on public.game_config_rules;
 drop policy if exists "allow all delete on game_config_rules" on public.game_config_rules;
 
+drop policy if exists "allow all select on freshies" on public.freshies;
+drop policy if exists "allow all insert on freshies" on public.freshies;
+drop policy if exists "allow all update on freshies" on public.freshies;
+drop policy if exists "allow all delete on freshies" on public.freshies;
+
 create policy "allow all select on token_logs" on public.token_logs for select using (true);
 create policy "allow all insert on token_logs" on public.token_logs for insert with check (true);
 create policy "allow all update on token_logs" on public.token_logs for update using (true) with check (true);
@@ -132,38 +230,28 @@ create policy "allow all insert on game_config_rules" on public.game_config_rule
 create policy "allow all update on game_config_rules" on public.game_config_rules for update using (true) with check (true);
 create policy "allow all delete on game_config_rules" on public.game_config_rules for delete using (true);
 
+create policy "allow all select on freshies" on public.freshies for select using (true);
+create policy "allow all insert on freshies" on public.freshies for insert with check (true);
+create policy "allow all update on freshies" on public.freshies for update using (true) with check (true);
+create policy "allow all delete on freshies" on public.freshies for delete using (true);
+
 grant all on public.token_logs to anon, authenticated, service_role;
 grant all on public.puzzle_inventory to anon, authenticated, service_role;
 grant all on public.game_config_rules to anon, authenticated, service_role;
+grant all on public.freshies to anon, authenticated, service_role;
 
--- ── 3. Realtime Enablement & Replica Identity ───────────────────────────
+-- ── 4. Realtime Enablement & Replica Identity ───────────────────────────
 
 alter table public.token_logs replica identity full;
 alter table public.puzzle_inventory replica identity full;
 alter table public.groups replica identity full;
 alter table public.game_config_rules replica identity full;
+alter table public.freshies replica identity full;
 
-do $$
-begin
-  alter publication supabase_realtime add table public.token_logs;
-exception
-  when others then null;
-end $$;
+do $$ begin alter publication supabase_realtime add table public.token_logs; exception when others then null; end $$;
+do $$ begin alter publication supabase_realtime add table public.puzzle_inventory; exception when others then null; end $$;
+do $$ begin alter publication supabase_realtime add table public.game_config_rules; exception when others then null; end $$;
+do $$ begin alter publication supabase_realtime add table public.freshies; exception when others then null; end $$;
 
-do $$
-begin
-  alter publication supabase_realtime add table public.puzzle_inventory;
-exception
-  when others then null;
-end $$;
-
-do $$
-begin
-  alter publication supabase_realtime add table public.game_config_rules;
-exception
-  when others then null;
-end $$;
-
--- ── 4. Execute Initial Setup for 10 Groups ──────────────────────────────
--- (You can change this number anytime to 8, 10, 12, 16, etc.)
+-- ── 5. Set Initial Total Groups (Default: 10 groups) ────────────────────
 select public.fn_set_total_groups(10);
