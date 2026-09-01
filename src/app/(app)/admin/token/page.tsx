@@ -413,7 +413,7 @@ export default function AdminTokenAllInOnePage() {
 
   // Reset All
   const handleResetAll = async () => {
-    if (!window.confirm("⚠️ DANGER: Reset all 12 groups to 0 tokens and clear all puzzle inventory & logs?")) {
+    if (!window.confirm("⚠️ DANGER: Reset all 10 groups to 0 tokens and clear all puzzle inventory & logs?")) {
       return;
     }
     setBusy(true);
@@ -705,7 +705,7 @@ export default function AdminTokenAllInOnePage() {
             <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
-              placeholder="Search group name or number (1-12)..."
+              placeholder="Search group name or number (1-10)..."
               value={scoreSearch}
               onChange={(e) => setScoreSearch(e.target.value)}
               className="w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-3.5 py-2 text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:border-cyan-500 focus:bg-white focus:outline-none"

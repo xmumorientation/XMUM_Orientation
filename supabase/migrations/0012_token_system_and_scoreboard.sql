@@ -4,64 +4,62 @@
 -- Strictly keyed by group_id (1 to 12) without requiring user_id.
 -- ═══════════════════════════════════════════════════════════════════════
 
--- ── 1. Groups (Ensure 12 Groups with group_id, group_number, and current_tokens) ────
+-- ── 1. Groups (Ensure 10 Groups with group_id, group_number, and current_tokens) ────
 
 do $$
 declare
   has_group_num boolean;
-  has_group_name boolean;
   i integer;
 begin
-  -- Add compatibility columns if missing
+  -- 1. Ensure columns exist
   alter table public.groups
     add column if not exists group_id integer,
     add column if not exists group_name text,
     add column if not exists current_tokens integer not null default 0;
 
-  -- Check if group_number column exists in public.groups
+  -- 2. If group_number exists, drop NOT NULL constraint to permanently prevent constraint violations
   select exists (
     select 1 from information_schema.columns 
     where table_schema = 'public' and table_name = 'groups' and column_name = 'group_number'
   ) into has_group_num;
 
   if has_group_num then
+    alter table public.groups alter column group_number drop not null;
     execute 'update public.groups set group_number = coalesce(group_number, id) where group_number is null';
+  else
+    alter table public.groups add column if not exists group_number integer;
   end if;
 
-  -- Sync existing groups
+  -- 3. Sync existing groups
   update public.groups
   set group_id = coalesce(group_id, id),
       group_name = coalesce(group_name, name),
       current_tokens = coalesce(current_tokens, token_balance, 0)
   where group_id is null or group_name is null;
 
-  -- Seed Groups 1 through 12 if missing
-  for i in 1..12 loop
+  -- 4. Seed Groups 1 through 10
+  for i in 1..10 loop
     if not exists (select 1 from public.groups where id = i or group_id = i or name = 'Group ' || i) then
-      if has_group_num then
-        execute format(
-          'insert into public.groups (id, name, token_balance, group_id, group_name, group_number, current_tokens) values (%s, %L, 0, %s, %L, %s, 0) on conflict do nothing',
-          i, 'Group ' || i, i, 'Group ' || i, i
-        );
-      else
-        insert into public.groups (id, name, token_balance, group_id, group_name, current_tokens)
-        values (i, 'Group ' || i, 0, i, 'Group ' || i, 0)
-        on conflict do nothing;
-      end if;
+      insert into public.groups (id, name, token_balance, group_id, group_name, group_number, current_tokens)
+      values (i, 'Group ' || i, 0, i, 'Group ' || i, i, 0)
+      on conflict (id) do update
+      set group_id = excluded.group_id,
+          group_name = excluded.group_name,
+          group_number = excluded.group_number;
     else
-      if has_group_num then
-        execute format(
-          'update public.groups set group_id = coalesce(group_id, id), group_name = coalesce(group_name, name), group_number = coalesce(group_number, id) where id = %s or group_id = %s or name = %L',
-          i, i, 'Group ' || i
-        );
-      else
-        update public.groups
-        set group_id = coalesce(group_id, id),
-            group_name = coalesce(group_name, name)
-        where id = i or group_id = i or name = 'Group ' || i;
-      end if;
+      update public.groups
+      set group_id = coalesce(group_id, id),
+          group_name = coalesce(group_name, name),
+          group_number = coalesce(group_number, id)
+      where id = i or group_id = i or name = 'Group ' || i;
     end if;
   end loop;
+
+  -- Remove groups > 10 if unused (no profiles assigned)
+  delete from public.groups 
+  where id > 10 
+    and not exists (select 1 from public.profiles where group_id = public.groups.id);
+
 end $$;
 
 -- ── 2. Stations (Ensure station_id, day, station_name, difficulty, token_cost) ──

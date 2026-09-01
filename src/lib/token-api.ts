@@ -35,9 +35,9 @@ function setLocalItem<T>(key: string, value: T): void {
   }
 }
 
-// Initial 12 groups generator
-export function generateInitial12Groups(): TokenGroup[] {
-  return Array.from({ length: 12 }, (_, i) => {
+// Initial groups generator (Default: 10 Groups)
+export function generateInitialGroups(count = 10): TokenGroup[] {
+  return Array.from({ length: count }, (_, i) => {
     const id = i + 1;
     return {
       group_id: id,
@@ -48,6 +48,8 @@ export function generateInitial12Groups(): TokenGroup[] {
     };
   });
 }
+
+export const generateInitial12Groups = () => generateInitialGroups(10);
 
 // Initial stations generator
 export function generateInitialStations(): StationItem[] {

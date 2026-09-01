@@ -1,4 +1,4 @@
-// Domain types for the group-centric Token System & Scoreboard (strictly by group_id 1-12)
+// Domain types for the group-centric Token System & Scoreboard (strictly by group_id 1-10)
 
 export type GameDifficulty = "NONE" | "EASY" | "MEDIUM" | "HARD";
 
