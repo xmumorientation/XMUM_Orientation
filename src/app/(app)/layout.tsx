@@ -25,7 +25,7 @@ export default async function AppLayout({
   // One round trip for profile + group (the dashboard needs both).
   const { data: row } = await supabase
     .from("profiles")
-    .select("*, group:groups(*)")
+    .select("*, group:groups!profiles_group_id_fkey(*)")
     .eq("id", userId)
     .single();
 

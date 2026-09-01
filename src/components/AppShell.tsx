@@ -128,8 +128,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   async function signOut() {
     await supabaseBrowser().auth.signOut();
-    router.replace("/login");
-    router.refresh();
+    window.location.href = "/login";
   }
 
   const navLinks = (mode: "sidebar" | "drawer") =>
