@@ -13,6 +13,7 @@ const TABS = [
   { href: "/admin/blindbox", label: "Blind box" },
   { href: "/admin/puzzles", label: "Puzzles" },
   { href: "/admin/sessions", label: "Sessions" },
+  { href: "/admin/roster", label: "Roster" },
   { href: "/admin/schedule", label: "Schedule" },
   { href: "/admin/faq", label: "FAQ" },
   { href: "/admin/brand", label: "Brand" },

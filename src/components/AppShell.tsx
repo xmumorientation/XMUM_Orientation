@@ -101,10 +101,12 @@ const NAV: NavItem[] = [
   },
   {
     href: "/register-counter",
-    label: "Counter",
+    label: "Freshies Register Counter",
     code: "RC",
-    roles: ["faci", "committee", "admin"],
+    roles: ["admin"],
   },
+
+
   { href: "/admin", label: "Admin", code: "AD", roles: ["admin"] },
 ];
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, X } from "lucide-react";
+import { Check, Clock, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { useProfile } from "@/components/ProfileProvider";
@@ -15,7 +15,7 @@ import { supabaseBrowser } from "@/lib/supabase/client";
 import type {
   AttendanceSession,
   AttendanceStatus,
-  Profile,
+  Freshie,
 } from "@/lib/types";
 import { cn, friendlyError } from "@/lib/utils";
 
@@ -28,13 +28,21 @@ export default function AttendancePage() {
   const profile = useProfile();
   const supabase = useMemo(() => supabaseBrowser(), []);
   const [sessions, setSessions] = useState<AttendanceSession[]>([]);
-  const [sessionId, setSessionId] = useState<number | null>(null);
-  const [roster, setRoster] = useState<Profile[]>([]);
+  const [roster, setRoster] = useState<Freshie[]>([]);
   const [records, setRecords] = useState<RecordMap>({});
   const [headcount, setHeadcount] = useState("");
+  const [savedHeadcount, setSavedHeadcount] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [savingId, setSavingId] = useState<string | null>(null);
+  const [savingId, setSavingId] = useState<number | null>(null);
+  const [bulkLoading, setBulkLoading] = useState(false);
+
+  // Auto-determine the active/open session
+  const activeSession = useMemo(() => {
+    return sessions.find((s) => !s.closed) ?? sessions[0] ?? null;
+  }, [sessions]);
+
+  const sessionId = activeSession?.id ?? null;
 
   useEffect(() => {
     let active = true;
@@ -46,18 +54,15 @@ export default function AttendancePage() {
           .order("id", { ascending: false }),
         profile.group_id
           ? supabase
-              .from("profiles")
+              .from("freshies")
               .select("*")
               .eq("group_id", profile.group_id)
-              .eq("role", "freshie")
               .order("full_name")
           : Promise.resolve({ data: [] }),
       ]);
       if (!active) return;
       setSessions((sess as AttendanceSession[]) ?? []);
-      setRoster((members as Profile[]) ?? []);
-      const open = (sess as AttendanceSession[])?.find((s) => !s.closed);
-      setSessionId(open?.id ?? (sess as AttendanceSession[])?.[0]?.id ?? null);
+      setRoster((members as Freshie[]) ?? []);
       setLoading(false);
     }
     load();
@@ -70,19 +75,37 @@ export default function AttendancePage() {
     if (!sessionId || !profile.group_id) return;
     let active = true;
     async function loadRecords() {
-      const { data } = await supabase
-        .from("attendance_records")
-        .select("freshie_id, status")
-        .eq("session_id", sessionId!)
-        .eq("group_id", profile.group_id!);
+      const [{ data: recs }, { data: hc }] = await Promise.all([
+        supabase
+          .from("attendance_records")
+          .select("freshie_id, status")
+          .eq("session_id", sessionId!)
+          .eq("group_id", profile.group_id!),
+        supabase
+          .from("attendance_headcounts")
+          .select("headcount")
+          .eq("session_id", sessionId!)
+          .eq("group_id", profile.group_id!)
+          .maybeSingle(),
+      ]);
+
       if (!active) return;
+
       const map: RecordMap = {};
-      for (const r of data ?? []) {
-        map[(r as { freshie_id: string }).freshie_id] = (
+      for (const r of recs ?? []) {
+        map[String((r as { freshie_id: number }).freshie_id)] = (
           r as { status: AttendanceStatus }
         ).status;
       }
       setRecords(map);
+
+      if (hc) {
+        setSavedHeadcount((hc as { headcount: number }).headcount);
+        setHeadcount(String((hc as { headcount: number }).headcount));
+      } else {
+        setSavedHeadcount(null);
+        setHeadcount("");
+      }
     }
     loadRecords();
     return () => {
@@ -90,9 +113,7 @@ export default function AttendancePage() {
     };
   }, [supabase, sessionId, profile.group_id]);
 
-  const session = sessions.find((s) => s.id === sessionId) ?? null;
-
-  async function mark(freshieId: string, status: AttendanceStatus) {
+  async function mark(freshieId: number, status: AttendanceStatus) {
     if (!sessionId) return;
     setError(null);
     setSavingId(freshieId);
@@ -110,16 +131,42 @@ export default function AttendancePage() {
     setSavingId(null);
   }
 
+  async function markAllPresent() {
+    if (!sessionId || !profile.group_id) return;
+    setError(null);
+    setBulkLoading(true);
+
+    const { error } = await supabase.rpc("fn_bulk_mark_present", {
+      p_session_id: sessionId,
+      p_group_id: profile.group_id,
+    });
+
+    if (error) {
+      setError(friendlyError(error));
+    } else {
+      const updatedMap: RecordMap = {};
+      roster.forEach((f) => {
+        updatedMap[f.id] = "present";
+      });
+      setRecords(updatedMap);
+    }
+    setBulkLoading(false);
+  }
+
   async function submitHeadcount(e: React.FormEvent) {
     e.preventDefault();
     if (!sessionId) return;
     setError(null);
+    const countVal = parseInt(headcount, 10);
     const { error } = await supabase.rpc("fn_record_headcount", {
       p_session_id: sessionId,
-      p_count: parseInt(headcount, 10),
+      p_count: countVal,
     });
-    if (error) setError(friendlyError(error));
-    else setHeadcount("");
+    if (error) {
+      setError(friendlyError(error));
+    } else {
+      setSavedHeadcount(countVal);
+    }
   }
 
   if (loading) {
@@ -130,92 +177,129 @@ export default function AttendancePage() {
     );
   }
 
-  const presentCount = Object.values(records).filter(
-    (s) => s === "present"
-  ).length;
+  const presentCount = Object.values(records).filter((s) => s === "present").length;
+  const lateCount = Object.values(records).filter((s) => s === "late").length;
+  const absentCount = Object.values(records).filter((s) => s === "absent").length;
 
   return (
     <div className="space-y-4">
       <PageTitle title="Attendance" subtitle="Mark your group per session" />
       <ErrorBanner message={error} />
 
-      <Card>
-        <label className="label" htmlFor="session">
-          Session
-        </label>
-        <select
-          id="session"
-          className="input"
-          value={sessionId ?? ""}
-          onChange={(e) => setSessionId(Number(e.target.value))}
-        >
-          {sessions.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.name}
-              {s.closed ? " (closed)" : ""}
-            </option>
-          ))}
-        </select>
-        {session?.closed && (
-          <p className="mt-2 text-sm text-red-600">
-            This session is closed — records are locked (contact Admin for
-            corrections).
-          </p>
-        )}
-      </Card>
+      {activeSession ? (
+        <Card className="bg-paper-50 border border-paper-200">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div>
+              <p className="text-xs text-ink-faint uppercase font-bold tracking-wider">Active Session</p>
+              <h3 className="text-lg font-bold text-ink">{activeSession.name}</h3>
+              {(activeSession.starts_at || activeSession.ends_at) && (
+                <p className="text-xs text-ink-soft mt-0.5">
+                  {activeSession.starts_at && `Starts: ${new Date(activeSession.starts_at).toLocaleTimeString()} `}
+                  {activeSession.ends_at && `Ends: ${new Date(activeSession.ends_at).toLocaleTimeString()}`}
+                </p>
+              )}
+            </div>
+            <div>
+              <span
+                className={cn(
+                  "chip text-xs",
+                  activeSession.closed
+                    ? "bg-red-100 text-red-800"
+                    : "bg-green-100 text-green-800"
+                )}
+              >
+                {activeSession.closed ? "Closed" : "Open"}
+              </span>
+            </div>
+          </div>
+          {activeSession.closed && (
+            <p className="mt-2 text-xs text-red-600 font-medium">
+              This session is closed — records are locked (contact Admin for corrections).
+            </p>
+          )}
+        </Card>
+      ) : (
+        <Card className="border border-amber-200 bg-amber-50 text-amber-800">
+          <p className="text-sm font-semibold">No Sessions Available</p>
+        </Card>
+      )}
 
       {roster.length === 0 ? (
         <EmptyState message="No Freshies assigned to your group yet." />
       ) : (
-        <Card className="p-0">
-          <div className="flex items-center justify-between border-b border-paper-200 px-4 py-2 text-sm text-ink-faint">
-            <span>{roster.length} Freshies</span>
-            <span>
-              {presentCount} marked present
-            </span>
+        <Card className="p-0 overflow-hidden">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-paper-200 bg-paper-50 px-4 py-3 text-sm text-ink-soft gap-2">
+            <div>
+              <span className="font-semibold text-ink">{roster.length}</span> Freshies &middot;{" "}
+              <span className="text-green-600 font-medium">{presentCount} present</span>,{" "}
+              <span className="text-amber-600 font-medium">{lateCount} late</span>,{" "}
+              <span className="text-red-600 font-medium">{absentCount} absent</span>
+            </div>
+            <button
+              onClick={markAllPresent}
+              disabled={bulkLoading || activeSession?.closed}
+              className="btn-secondary text-xs py-1 px-3 self-start sm:self-auto"
+            >
+              {bulkLoading ? "Marking..." : "Mark All Present"}
+            </button>
           </div>
           <ul className="divide-y divide-paper-200">
             {roster.map((f) => {
               const status = records[f.id];
               return (
-                <li key={f.id} className="flex items-center gap-2 px-4 py-2.5">
+                <li key={f.id} className="flex items-center justify-between gap-4 px-4 py-3 hover:bg-paper-50 transition-colors">
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">
+                    <p className="truncate text-sm font-semibold text-ink">
                       {f.full_name}
                     </p>
-                    <p className="text-xs text-ink-faint">{f.student_id}</p>
+                    <p className="text-xs text-ink-faint tabular-nums">{f.student_id}</p>
                   </div>
                   {savingId === f.id ? (
-                    <Spinner />
+                    <div className="w-[180px] flex justify-center">
+                      <Spinner className="h-4 w-4" />
+                    </div>
                   ) : (
-                    <>
+                    <div className="flex items-center gap-1.5">
                       <button
                         onClick={() => mark(f.id, "present")}
-                        disabled={session?.closed}
+                        disabled={activeSession?.closed}
                         aria-label={`Mark ${f.full_name ?? f.student_id} present`}
                         className={cn(
-                          "btn min-w-[64px] text-sm",
+                          "btn p-2 rounded-lg transition-all border",
                           status === "present"
-                            ? "bg-green-600 text-white"
-                            : "border border-paper-300 bg-white text-ink-soft"
+                            ? "bg-green-600 border-green-600 text-white shadow-sm"
+                            : "border-paper-300 bg-white text-ink-soft hover:bg-paper-50"
                         )}
                       >
-                        <Check size={20} strokeWidth={1.75} />
+                        <Check size={18} />
+                      </button>
+                      <button
+                        onClick={() => mark(f.id, "late")}
+                        disabled={activeSession?.closed}
+                        aria-label={`Mark ${f.full_name ?? f.student_id} late`}
+                        className={cn(
+                          "btn p-2 rounded-lg transition-all border",
+                          status === "late"
+                            ? "bg-amber-500 border-amber-500 text-white shadow-sm"
+                            : "border-paper-300 bg-white text-ink-soft hover:bg-paper-50"
+                        )}
+                      >
+                        <Clock size={18} />
                       </button>
                       <button
                         onClick={() => mark(f.id, "absent")}
-                        disabled={session?.closed}
+                        disabled={activeSession?.closed}
                         aria-label={`Mark ${f.full_name ?? f.student_id} absent`}
                         className={cn(
-                          "btn min-w-[64px] text-sm",
+                          "btn p-2 rounded-lg transition-all border",
                           status === "absent"
-                            ? "bg-red-600 text-white"
-                            : "border border-paper-300 bg-white text-ink-soft"
+                            ? "bg-red-600 border-red-600 text-white shadow-sm"
+                            : "border-paper-300 bg-white text-ink-soft hover:bg-paper-50"
                         )}
                       >
-                        <X size={20} strokeWidth={1.75} />
+                        <X size={18} />
                       </button>
-                    </>
+                    </div>
                   )}
                 </li>
               );
@@ -224,31 +308,37 @@ export default function AttendancePage() {
         </Card>
       )}
 
-      <Card>
-        <h2 className="mb-2 font-semibold">Headcount fallback</h2>
-        <p className="mb-2 text-sm text-ink-faint">
-          When individual marking is impractical, record a quick headcount
-          instead.
-        </p>
-        <form onSubmit={submitHeadcount} className="flex gap-2">
-          <input
-            type="number"
-            min="0"
-            required
-            className="input flex-1"
-            placeholder="e.g. 24"
-            value={headcount}
-            onChange={(e) => setHeadcount(e.target.value)}
-          />
-          <button
-            type="submit"
-            disabled={session?.closed}
-            className="btn-secondary"
-          >
-            Save
-          </button>
-        </form>
-      </Card>
+      {profile.group_id && activeSession && (
+        <Card>
+          <h2 className="mb-1 font-semibold">Headcount fallback</h2>
+          <p className="mb-3 text-xs text-ink-faint">
+            When individual marking is impractical, record a quick headcount instead.
+          </p>
+          <form onSubmit={submitHeadcount} className="flex gap-2">
+            <input
+              type="number"
+              min="0"
+              required
+              className="input flex-1"
+              placeholder="e.g. 24"
+              value={headcount}
+              onChange={(e) => setHeadcount(e.target.value)}
+            />
+            <button
+              type="submit"
+              disabled={activeSession?.closed}
+              className="btn-secondary px-5"
+            >
+              Save
+            </button>
+          </form>
+          {savedHeadcount !== null && (
+            <p className="mt-2 text-xs text-ink-soft">
+              Currently recorded headcount fallback: <span className="font-semibold text-ink">{savedHeadcount}</span>
+            </p>
+          )}
+        </Card>
+      )}
     </div>
   );
 }

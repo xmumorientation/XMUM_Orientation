@@ -108,7 +108,12 @@ const ERROR_MESSAGES: Record<string, string> = {
   NOT_PAUSED: "The phase is not paused.",
   PHASE_NOT_FOUND: "Phase not found.",
   USER_NOT_FOUND: "User not found.",
+  NAME_REQUIRED: "Full name is required.",
+  NO_GROUPS_CONFIGURED: "No groups configured yet — set the total number of groups first.",
+  INVALID_COUNT: "Enter a group count between 1 and 200.",
+  FRESHIE_NOT_FOUND: "Freshie not found.",
 };
+
 
 export function friendlyError(err: unknown): string {
   const msg =

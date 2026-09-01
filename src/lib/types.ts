@@ -14,7 +14,7 @@ export type StationStatus = "available" | "in_progress" | "closed";
 export type PhaseState = "pending" | "active" | "paused" | "ended";
 export type ProjectorLocation = "B1" | "A3" | "TF";
 export type ItemType = "puzzle" | "facility_card";
-export type AttendanceStatus = "present" | "absent";
+export type AttendanceStatus = "present" | "absent" | "late";
 
 export interface Profile {
   id: string;
@@ -209,3 +209,40 @@ export const ROLE_LABELS: Record<UserRole, string> = {
 };
 
 export const COMMITTEE_TIER: UserRole[] = ["hof", "hogm", "committee", "admin"];
+
+// ── Freshie Registration & Group Assignment (D-Day desk) ─────────────────
+// Freshies have NO login accounts — stored entirely separate from
+// staff/committee/admin `profiles`.
+
+export type FreshieGender = "Male" | "Female";
+export type FreshieNationality = "Local" | "International";
+
+export interface Freshie {
+  id: number;
+  full_name: string;
+  phone: string | null;
+  gender: FreshieGender;
+  nationality: FreshieNationality;
+  student_id: string | null;
+  group_id: number | null;
+  created_at: string;
+}
+
+export interface FreshieGroupStats {
+  group_id: number;
+  group_name: string;
+  headcount: number;
+  male_count: number;
+  female_count: number;
+  local_count: number;
+  international_count: number;
+}
+
+export interface RegisterFreshieResult {
+  ok: boolean;
+  freshie_id: number;
+  group_id: number;
+  group_name: string;
+}
+
+

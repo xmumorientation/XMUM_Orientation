@@ -13,6 +13,8 @@ export default function AdminSessionsPage() {
   const supabase = useMemo(() => supabaseBrowser(), []);
   const [sessions, setSessions] = useState<AttendanceSession[]>([]);
   const [name, setName] = useState("");
+  const [startsAt, setStartsAt] = useState("");
+  const [endsAt, setEndsAt] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -33,10 +35,16 @@ export default function AdminSessionsPage() {
     setError(null);
     const { error } = await supabase
       .from("attendance_sessions")
-      .insert({ name });
+      .insert({
+        name,
+        starts_at: startsAt ? new Date(startsAt).toISOString() : null,
+        ends_at: endsAt ? new Date(endsAt).toISOString() : null,
+      });
     if (error) setError(error.message);
     else {
       setName("");
+      setStartsAt("");
+      setEndsAt("");
       setNotice("Session created.");
       setTimeout(() => setNotice(null), 2000);
       load();
@@ -62,17 +70,45 @@ export default function AdminSessionsPage() {
       <SuccessBanner message={notice} />
 
       <Card>
-        <form onSubmit={create} className="flex gap-2">
-          <input
-            className="input flex-1"
-            placeholder='e.g. "Day 1 AM"'
-            required
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
-          <button type="submit" className="btn-primary">
-            + Create
-          </button>
+        <form onSubmit={create} className="space-y-3">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+            <div>
+              <label className="label" htmlFor="session-name">Session name</label>
+              <input
+                id="session-name"
+                className="input w-full"
+                placeholder='e.g. "Day 1 AM"'
+                required
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="label" htmlFor="session-start">Start time (optional)</label>
+              <input
+                id="session-start"
+                type="datetime-local"
+                className="input w-full"
+                value={startsAt}
+                onChange={(e) => setStartsAt(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="label" htmlFor="session-end">End time (optional)</label>
+              <input
+                id="session-end"
+                type="datetime-local"
+                className="input w-full"
+                value={endsAt}
+                onChange={(e) => setEndsAt(e.target.value)}
+              />
+            </div>
+          </div>
+          <div className="flex justify-end">
+            <button type="submit" className="btn-primary px-6">
+              + Create Session
+            </button>
+          </div>
         </form>
       </Card>
 
@@ -81,9 +117,19 @@ export default function AdminSessionsPage() {
           <div key={s.id} className="flex items-center gap-3 px-4 py-3">
             <div className="flex-1">
               <p className="text-sm font-semibold">{s.name}</p>
-              <p className="text-xs text-ink-faint">
-                {s.closed ? "Closed - records locked" : "Open"}
-              </p>
+              <div className="flex flex-wrap gap-x-4 gap-y-1 mt-0.5 text-xs text-ink-faint">
+                <span>{s.closed ? "Closed - records locked" : "Open"}</span>
+                {s.starts_at && (
+                  <span>
+                    Starts: {new Date(s.starts_at).toLocaleString()}
+                  </span>
+                )}
+                {s.ends_at && (
+                  <span>
+                    Ends: {new Date(s.ends_at).toLocaleString()}
+                  </span>
+                )}
+              </div>
             </div>
             <button
               onClick={() => toggleClosed(s)}
