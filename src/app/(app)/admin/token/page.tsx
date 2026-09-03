@@ -296,13 +296,42 @@ export default function AdminTokenAllInOnePage() {
     e.preventDefault();
     if (!editingLog) return;
 
+    const targetGroupId = Number(editLogForm.groupId);
+    const newAmt = Number(editLogForm.amount);
+    const oldAmt = editingLog.amount;
+    const oldGrpId = editingLog.group_id;
+
+    if (oldGrpId === targetGroupId) {
+      const delta = newAmt - oldAmt;
+      const grp = groups.find((g) => g.group_id === oldGrpId);
+      if (grp && grp.current_tokens + delta < 0) {
+        notifyError(
+          `⛔ Action Denied: Group ${oldGrpId} only has ${grp.current_tokens} tokens. Editing this log would result in a negative balance (${grp.current_tokens + delta}).`
+        );
+        return;
+      }
+    } else {
+      const oldG = groups.find((g) => g.group_id === oldGrpId);
+      if (oldG && oldG.current_tokens - oldAmt < 0) {
+        notifyError(
+          `⛔ Action Denied: Group ${oldGrpId} does not have enough tokens (${oldG.current_tokens}) to reverse this transaction.`
+        );
+        return;
+      }
+      const newG = groups.find((g) => g.group_id === targetGroupId);
+      if (newG && newG.current_tokens + newAmt < 0) {
+        notifyError(`⛔ Action Denied: Group ${targetGroupId} token balance cannot become negative.`);
+        return;
+      }
+    }
+
     setBusy(true);
     setErrorMsg(null);
     try {
       const res = await updateTokenLog({
         logId: editingLog.log_id,
-        newGroupId: Number(editLogForm.groupId),
-        newAmount: Number(editLogForm.amount),
+        newGroupId: targetGroupId,
+        newAmount: newAmt,
         newNotes: editLogForm.notes.trim(),
         newTransactionType: editLogForm.transactionType,
       });
@@ -323,6 +352,14 @@ export default function AdminTokenAllInOnePage() {
   };
 
   const handleDeleteLog = async (log: TokenLog) => {
+    const grp = groups.find((g) => g.group_id === log.group_id);
+    if (log.amount > 0 && grp && grp.current_tokens < log.amount) {
+      notifyError(
+        `⛔ Action Denied: Cannot delete transaction. Group ${log.group_id} only has ${grp.current_tokens} tokens, reversing +${log.amount} tokens would cause a negative balance.`
+      );
+      return;
+    }
+
     if (
       !window.confirm(
         `Are you sure you want to delete this transaction?\n\nGroup ${log.group_id}: ${
@@ -364,17 +401,14 @@ export default function AdminTokenAllInOnePage() {
     const delta = actionType === "add" ? Math.abs(tokenAmount) : -Math.abs(tokenAmount);
     const noteText = auditNotes.trim() || `${actionType === "add" ? "Added" : "Deducted"} tokens`;
 
-    // Deduct balance check
+    // Deduct balance check: STRICTLY DENY if user/group has insufficient tokens
     if (actionType === "deduct" && currentGroup.current_tokens < Math.abs(delta)) {
-      if (
-        !window.confirm(
-          `Warning: Group ${selectedGroupId} only has ${currentGroup.current_tokens} tokens. Deducting ${Math.abs(
-            delta
-          )} tokens will set balance to 0. Continue?`
-        )
-      ) {
-        return;
-      }
+      notifyError(
+        `⛔ Action Denied: Group ${selectedGroupId} only has ${currentGroup.current_tokens} tokens. Cannot deduct ${Math.abs(
+          delta
+        )} tokens.`
+      );
+      return;
     }
 
     setBusy(true);
@@ -639,6 +673,18 @@ export default function AdminTokenAllInOnePage() {
           </div>
         </div>
 
+        {/* Insufficient Token Warning Banner */}
+        {actionType === "deduct" && currentGroup.current_tokens < tokenAmount && (
+          <div className="flex items-center gap-2 rounded-xl border border-rose-500/40 bg-rose-950/60 p-3 text-xs font-semibold text-rose-300 animate-fade-in shadow-inner">
+            <AlertCircle size={16} className="text-rose-400 shrink-0" />
+            <span>
+              <strong>⛔ Insufficient Tokens (Action Blocked):</strong> Group {selectedGroupId} currently only has{" "}
+              <span className="font-mono font-black underline text-amber-300">{currentGroup.current_tokens} tokens</span>.
+              Deducting <span className="font-mono font-black underline text-rose-300">{tokenAmount} tokens</span> is prohibited.
+            </span>
+          </div>
+        )}
+
         {/* Audit Note Input & Submit Button */}
         <div className="grid gap-3 sm:grid-cols-12 pt-1">
           <div className="sm:col-span-7 space-y-1.5">
@@ -657,16 +703,28 @@ export default function AdminTokenAllInOnePage() {
           <div className="sm:col-span-5 flex items-end">
             <button
               onClick={handleApplyTokenUpdate}
-              disabled={busy}
+              disabled={busy || (actionType === "deduct" && currentGroup.current_tokens < tokenAmount)}
               className={cn(
                 "w-full flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-black shadow-xl transition-all active:scale-[0.98]",
                 actionType === "add"
                   ? "bg-gradient-to-r from-emerald-500 via-emerald-600 to-teal-600 text-white shadow-emerald-600/30 hover:brightness-110"
+                  : currentGroup.current_tokens < tokenAmount
+                  ? "bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700 shadow-none"
                   : "bg-gradient-to-r from-rose-600 via-red-600 to-amber-700 text-white shadow-rose-600/30 hover:brightness-110"
               )}
             >
-              {actionType === "add" ? <PlusCircle size={18} /> : <MinusCircle size={18} />}
-              {actionType === "add" ? "Apply Add" : "Apply Deduct"}{" "}
+              {actionType === "add" ? (
+                <PlusCircle size={18} />
+              ) : currentGroup.current_tokens < tokenAmount ? (
+                <ShieldAlert size={18} className="text-rose-400" />
+              ) : (
+                <MinusCircle size={18} />
+              )}
+              {actionType === "add"
+                ? "Apply Add"
+                : currentGroup.current_tokens < tokenAmount
+                ? "Denied: Insufficient Tokens"
+                : "Apply Deduct"}{" "}
               <span className="font-mono underline">
                 {actionType === "add" ? `+${tokenAmount}` : `-${tokenAmount}`} Tokens
               </span>{" "}

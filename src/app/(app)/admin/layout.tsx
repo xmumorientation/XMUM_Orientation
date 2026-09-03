@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 
 const TABS = [
   { href: "/admin", label: "Control room" },
-  { href: "/admin/token", label: "Token System" },
+  { href: "/admin/token", label: "Tokens" },
   { href: "/admin/users", label: "Users" },
   { href: "/admin/stations", label: "Stations" },
   { href: "/admin/blindbox", label: "Blind box" },

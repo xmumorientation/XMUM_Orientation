@@ -327,14 +327,16 @@ begin
   where id = p_group_id or group_id = p_group_id
   for update;
 
-  if v_current_tokens is null then
-    raise exception 'Group % not found.', p_group_id;
+  if p_amount < 0 and v_current_tokens < abs(p_amount) then
+    return jsonb_build_object(
+      'ok', false,
+      'error', format('Insufficient tokens: Group %s only has %s tokens, cannot deduct %s tokens. Action denied.', p_group_id, v_current_tokens, abs(p_amount)),
+      'current_tokens', v_current_tokens,
+      'required_tokens', abs(p_amount)
+    );
   end if;
 
   v_new_balance := v_current_tokens + p_amount;
-  if v_new_balance < 0 then
-    v_new_balance := 0;
-  end if;
 
   update public.groups
   set current_tokens = v_new_balance,

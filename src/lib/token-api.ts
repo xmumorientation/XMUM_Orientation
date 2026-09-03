@@ -442,6 +442,18 @@ export async function manualTokenAdjust(params: {
 }): Promise<{ ok: boolean; newTokens?: number; error?: string }> {
   const { groupId, amount, transactionType = "MANUAL_ADMIN_ADJUST", notes = "Manual token adjustment" } = params;
 
+  // Pre-check for insufficient tokens before deduction
+  if (amount < 0) {
+    const preCheckGroups = await fetchTokenGroups();
+    const targetGroup = preCheckGroups.find((g) => g.group_id === groupId);
+    if (targetGroup && targetGroup.current_tokens < Math.abs(amount)) {
+      return {
+        ok: false,
+        error: `Insufficient tokens: Group ${groupId} only has ${targetGroup.current_tokens} tokens, cannot deduct ${Math.abs(amount)} tokens. Action denied.`,
+      };
+    }
+  }
+
   const supabase = supabaseBrowser();
   try {
     const { data, error } = await supabase.rpc("fn_manual_token_adjust", {
@@ -451,10 +463,24 @@ export async function manualTokenAdjust(params: {
       p_notes: notes.trim() || "Manual adjustment",
     });
 
-    if (!error && data?.ok) {
+    if (!error && data) {
+      if (!data.ok) {
+        return {
+          ok: false,
+          error: data.error || `Insufficient tokens. Cannot deduct ${Math.abs(amount)} tokens.`,
+        };
+      }
       return { ok: true, newTokens: data.new_tokens };
     }
-  } catch (err) {
+
+    if (error) {
+      console.warn("Supabase fn_manual_token_adjust error:", error);
+      return {
+        ok: false,
+        error: error.message || "Failed to adjust group tokens.",
+      };
+    }
+  } catch (err: any) {
     console.warn("Supabase fn_manual_token_adjust fallback:", err);
   }
 
@@ -463,7 +489,14 @@ export async function manualTokenAdjust(params: {
   const g = groups.find((grp) => grp.group_id === groupId);
   if (!g) return { ok: false, error: "Group not found." };
 
-  g.current_tokens = Math.max(0, g.current_tokens + amount);
+  if (amount < 0 && g.current_tokens < Math.abs(amount)) {
+    return {
+      ok: false,
+      error: `Insufficient tokens: Group ${groupId} only has ${g.current_tokens} tokens, cannot deduct ${Math.abs(amount)} tokens. Action denied.`,
+    };
+  }
+
+  g.current_tokens = g.current_tokens + amount;
 
   const logs = await fetchTokenLogs();
   logs.unshift({
@@ -588,18 +621,31 @@ export async function updateTokenLog(params: {
   if (oldGroupId === newGroupId) {
     const delta = newAmount - oldAmount;
     const g = groups.find((grp) => grp.group_id === oldGroupId);
-    if (g) {
-      g.current_tokens = Math.max(0, g.current_tokens + delta);
+    if (!g) return { ok: false, error: "Group not found." };
+    if (g.current_tokens + delta < 0) {
+      return {
+        ok: false,
+        error: `Action denied: Group ${oldGroupId} only has ${g.current_tokens} tokens. Editing this log would result in a negative balance (${g.current_tokens + delta}).`,
+      };
     }
+    g.current_tokens = g.current_tokens + delta;
   } else {
     const oldGroup = groups.find((grp) => grp.group_id === oldGroupId);
-    if (oldGroup) {
-      oldGroup.current_tokens = Math.max(0, oldGroup.current_tokens - oldAmount);
+    if (oldGroup && oldGroup.current_tokens - oldAmount < 0) {
+      return {
+        ok: false,
+        error: `Action denied: Group ${oldGroupId} does not have enough tokens (${oldGroup.current_tokens}) to reverse this transaction.`,
+      };
     }
     const newGroup = groups.find((grp) => grp.group_id === newGroupId);
-    if (newGroup) {
-      newGroup.current_tokens = Math.max(0, newGroup.current_tokens + newAmount);
+    if (newGroup && newGroup.current_tokens + newAmount < 0) {
+      return {
+        ok: false,
+        error: `Action denied: Group ${newGroupId} token balance cannot become negative.`,
+      };
     }
+    if (oldGroup) oldGroup.current_tokens = oldGroup.current_tokens - oldAmount;
+    if (newGroup) newGroup.current_tokens = newGroup.current_tokens + newAmount;
   }
 
   existingLog.group_id = newGroupId;
@@ -660,8 +706,16 @@ export async function deleteTokenLog(logId: string): Promise<{ ok: boolean; erro
   const { group_id, amount } = existingLog;
   const groups = await fetchTokenGroups();
   const g = groups.find((grp) => grp.group_id === group_id);
+
+  if (g && amount > 0 && g.current_tokens < amount) {
+    return {
+      ok: false,
+      error: `Action denied: Cannot delete log. Group ${group_id} only has ${g.current_tokens} tokens, reversing ${amount} tokens would result in a negative balance.`,
+    };
+  }
+
   if (g) {
-    g.current_tokens = Math.max(0, g.current_tokens - amount);
+    g.current_tokens = g.current_tokens - amount;
   }
 
   const updatedLogs = logs.filter((l) => l.log_id !== logId);
