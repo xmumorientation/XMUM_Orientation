@@ -2,27 +2,38 @@
 
 import { createContext, useContext } from "react";
 
-import type { Group, Profile } from "@/lib/types";
+import type { CurrentUserContext, Group, Profile } from "@/lib/types";
 
 const ProfileContext = createContext<Profile | null>(null);
 const InitialGroupContext = createContext<Group | null>(null);
+const UserContext = createContext<CurrentUserContext | null>(null);
 
 export function ProfileProvider({
   profile,
+  context,
   initialGroup = null,
   children,
 }: {
   profile: Profile;
+  context: CurrentUserContext;
   initialGroup?: Group | null;
   children: React.ReactNode;
 }) {
   return (
-    <ProfileContext.Provider value={profile}>
-      <InitialGroupContext.Provider value={initialGroup}>
-        {children}
-      </InitialGroupContext.Provider>
-    </ProfileContext.Provider>
+    <UserContext.Provider value={context}>
+      <ProfileContext.Provider value={profile}>
+        <InitialGroupContext.Provider value={initialGroup}>
+          {children}
+        </InitialGroupContext.Provider>
+      </ProfileContext.Provider>
+    </UserContext.Provider>
   );
+}
+
+export function useCurrentUserContext(): CurrentUserContext {
+  const context = useContext(UserContext);
+  if (!context) throw new Error("Missing authenticated user context");
+  return context;
 }
 
 export function useProfile(): Profile {

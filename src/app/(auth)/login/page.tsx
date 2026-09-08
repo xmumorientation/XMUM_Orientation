@@ -1,11 +1,9 @@
 "use client";
 
 import {
-  CalendarCheck,
   Eye,
   EyeOff,
   Gamepad2,
-  GraduationCap,
   Lock,
   ShieldCheck,
   Sparkles,
@@ -17,14 +15,11 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 
 import { ErrorBanner, Spinner } from "@/components/ui";
-import { supabaseBrowser } from "@/lib/supabase/client";
 
 const DEMO_PRESETS = [
-  { label: "Freshie", email: "freshie.test@xmu.edu.my", pass: "TestPass123!", icon: GraduationCap },
   { label: "Admin", email: "admin.test@xmu.edu.my", pass: "TestPass123!", icon: ShieldCheck },
   { label: "Faci", email: "faci.test@xmu.edu.my", pass: "TestPass123!", icon: Users },
   { label: "GM", email: "gm.test@xmu.edu.my", pass: "TestPass123!", icon: Gamepad2 },
-  { label: "HOF", email: "hof.test@xmu.edu.my", pass: "TestPass123!", icon: CalendarCheck },
 ];
 
 function LoginForm() {
@@ -32,35 +27,40 @@ function LoginForm() {
   const params = useSearchParams();
   const nextUrl = params.get("next");
 
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  async function performLogin(loginEmail: string, loginPass: string) {
+  async function performLogin(loginIdentifier: string, loginPass: string) {
     setBusy(true);
     setError(null);
-    const supabase = supabaseBrowser();
-    const { error } = await supabase.auth.signInWithPassword({
-      email: loginEmail,
-      password: loginPass,
+    const res = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ identifier: loginIdentifier, password: loginPass }),
     });
-    if (error) {
-      setError(error.message);
+    const data = await res.json();
+    if (!res.ok) {
+      setError(data.error ?? "Invalid username or password.");
       setBusy(false);
       return;
     }
-    window.location.href = nextUrl || "/dashboard";
+    const destination =
+      nextUrl?.startsWith("/") && !nextUrl.startsWith("//")
+        ? nextUrl
+        : "/dashboard";
+    router.replace(destination);
   }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    await performLogin(email, password);
+    await performLogin(identifier, password);
   }
 
   function applyPreset(presetEmail: string, presetPass: string) {
-    setEmail(presetEmail);
+    setIdentifier(presetEmail);
     setPassword(presetPass);
     performLogin(presetEmail, presetPass);
   }
@@ -71,7 +71,7 @@ function LoginForm() {
         <div>
           <div className="flex items-center justify-between">
             <p className="text-xs font-black uppercase tracking-[0.2em] text-brand-1">
-              Account Login
+              BIG GAME
             </p>
             {nextUrl && (
               <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-bold text-amber-800">
@@ -83,7 +83,7 @@ function LoginForm() {
             Sign in to your account
           </h2>
           <p className="mt-1 text-sm leading-5 text-ink-faint">
-            Enter your XMUM student or staff email to continue.
+            Enter your username or registered email to continue.
           </p>
         </div>
 
@@ -117,18 +117,18 @@ function LoginForm() {
         <ErrorBanner message={error} />
 
         <div>
-          <label className="label" htmlFor="email">
-            Email address
+          <label className="label" htmlFor="identifier">
+            Username or email
           </label>
           <input
-            id="email"
-            type="email"
+            id="identifier"
+            type="text"
             required
-            placeholder="student@xmu.edu.my"
-            autoComplete="email"
+            placeholder="username or student@xmu.edu.my"
+            autoComplete="username"
             className="input"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            value={identifier}
+            onChange={(e) => setIdentifier(e.target.value)}
           />
         </div>
 
@@ -172,16 +172,14 @@ function LoginForm() {
             className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-brand-1/30 bg-brand-1/10 px-4 py-2.5 font-bold text-brand-1 transition hover:bg-brand-1/20 active:scale-95"
           >
             <UserCheck size={16} />
-            New Freshie? Register Account
+            Freshie registration information
           </Link>
 
           <div className="flex justify-between gap-4 pt-2 text-xs font-semibold text-ink-faint">
             <Link href="/forgot-password" className="hover:text-ink">
               Forgot password?
             </Link>
-            <Link href="/activate" className="hover:text-ink">
-              Staff invite activation
-            </Link>
+            <span>Staff accounts are invited by Admin</span>
           </div>
         </div>
       </div>

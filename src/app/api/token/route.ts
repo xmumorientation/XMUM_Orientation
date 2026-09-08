@@ -14,8 +14,11 @@ import {
   updateTokenLog,
   deleteTokenLog,
 } from "@/lib/token-api";
+import { requirePermission } from "@/lib/auth";
 
 export async function GET(request: Request) {
+  const auth = await requirePermission("token.view");
+  if (!auth) return NextResponse.json({ ok: false, error: "Forbidden" }, { status: 403 });
   const { searchParams } = new URL(request.url);
   const type = searchParams.get("type") || "all";
   const groupId = searchParams.get("groupId") ? Number(searchParams.get("groupId")) : undefined;
@@ -70,6 +73,11 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { action } = body;
+    const permission = ["day1_record", "day2_deduct", "day2_award_piece"].includes(action)
+      ? "token.play" as const
+      : "token.manage" as const;
+    const auth = await requirePermission(permission);
+    if (!auth) return NextResponse.json({ ok: false, error: "Forbidden" }, { status: 403 });
 
     if (action === "day1_record") {
       const res = await recordDay1Result(body);

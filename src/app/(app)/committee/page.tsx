@@ -4,7 +4,7 @@ import QRCode from "qrcode";
 import { useEffect, useMemo, useState } from "react";
 
 import { CampusMap } from "@/components/CampusMap";
-import { useProfile } from "@/components/ProfileProvider";
+import { useCurrentUserContext, useProfile } from "@/components/ProfileProvider";
 import {
   Card,
   ErrorBanner,
@@ -18,6 +18,7 @@ import type {
   Group,
 } from "@/lib/types";
 import { cn, friendlyError } from "@/lib/utils";
+import { hasPermission } from "@/lib/permissions";
 
 type OpsView = "map" | "attendance" | "balances" | "register";
 
@@ -33,6 +34,7 @@ interface FreshieHit {
 // (FR-2.3), personal blind-box QR (v2), register counter (FR-12.1).
 export default function CommitteePage() {
   const profile = useProfile();
+  const context = useCurrentUserContext();
   const supabase = useMemo(() => supabaseBrowser(), []);
   const [groups, setGroups] = useState<Group[]>([]);
   const [sessions, setSessions] = useState<AttendanceSession[]>([]);
@@ -50,7 +52,7 @@ export default function CommitteePage() {
   const [busy, setBusy] = useState(false);
   const [view, setView] = useState<OpsView>("map");
 
-  const canAssign = profile.role === "committee" || profile.role === "admin";
+  const canAssign = hasPermission(context.permissions, "allocation.manage");
 
   useEffect(() => {
     let active = true;

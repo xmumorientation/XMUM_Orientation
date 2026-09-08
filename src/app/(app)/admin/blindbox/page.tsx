@@ -45,7 +45,7 @@ export default function AdminBlindBoxPage() {
         supabase
           .from("profiles")
           .select("*")
-          .in("role", ["hof", "hogm", "committee"])
+          .eq("role", "admin")
           .order("role")
           .order("full_name"),
         supabase.from("blind_box_allocations").select("*").order("id"),
@@ -159,7 +159,7 @@ export default function AdminBlindBoxPage() {
     <div className="space-y-4">
       <PageTitle
         title="Blind boxes"
-        subtitle="Personal QRs for committee members + the GM-sold box"
+        subtitle="Admin-issued personal QRs and the GM-sold box"
       />
       <ErrorBanner message={error} />
       <SuccessBanner message={notice} />
@@ -173,7 +173,7 @@ export default function AdminBlindBoxPage() {
             value={form.profileId}
             onChange={(e) => setForm({ ...form, profileId: e.target.value })}
           >
-            <option value="">Select committee member…</option>
+            <option value="">Select Admin operator…</option>
             {staff.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.full_name} ({ROLE_LABELS[s.role]})

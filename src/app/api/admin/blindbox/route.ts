@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { requireAdmin } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth";
 import { blindBoxUrl, generateBlindBoxToken } from "@/lib/blindbox";
 import { supabaseAdmin } from "@/lib/supabase/server";
 
@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 // fresh signed QR token. Regenerating invalidates any previously printed QR.
 
 export async function POST(req: NextRequest) {
-  const admin = await requireAdmin();
+  const admin = await requirePermission("configuration.manage");
   if (!admin) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
   }
 
   await service.from("audit_log").insert({
-    actor: admin.id,
+    actor: admin.user.id,
     actor_role: "admin",
     action: "blindbox.allocate",
     target: `user:${profileId}`,

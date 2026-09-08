@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { requireRoleDetail } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth";
 import { blindBoxUrl, generateBlindBoxToken } from "@/lib/blindbox";
 import { supabaseAdmin } from "@/lib/supabase/server";
 
@@ -15,7 +15,7 @@ export const dynamic = "force-dynamic";
 // hash, claims are keyed by allocation_id).
 
 export async function POST(req: NextRequest) {
-  const auth = await requireRoleDetail(["hof", "hogm", "committee", "admin"]);
+  const auth = await requirePermission("configuration.manage");
   if (!auth) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -28,15 +28,7 @@ export async function POST(req: NextRequest) {
   }
 
   let target = auth.user.id;
-  if (profileId && profileId !== auth.user.id) {
-    if (auth.role !== "admin") {
-      return NextResponse.json(
-        { error: "Only admins can rotate another member's QR" },
-        { status: 403 }
-      );
-    }
-    target = profileId;
-  }
+  if (profileId && profileId !== auth.user.id) target = profileId;
 
   const service = supabaseAdmin();
   const { data: alloc } = await service
@@ -62,7 +54,7 @@ export async function POST(req: NextRequest) {
 
   await service.from("audit_log").insert({
     actor: auth.user.id,
-    actor_role: auth.role,
+    actor_role: auth.context.role,
     action: "blindbox.qr_rotate",
     target: `user:${target}`,
     detail: { self: target === auth.user.id },

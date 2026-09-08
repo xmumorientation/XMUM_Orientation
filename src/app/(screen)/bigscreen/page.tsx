@@ -238,7 +238,7 @@ export default function BigScreenPage() {
       }
     >
       <header className="flex items-start justify-between gap-4">
-        <Link href="/committee" className="min-w-0">
+        <Link href="/admin/operations" className="min-w-0">
           <p className="truncate text-3xl font-black tracking-tight lg:text-6xl">
             <span className="bg-gradient-to-r from-[var(--brand-1)] to-[var(--brand-2)] bg-clip-text text-transparent">
               {brand.eventName}

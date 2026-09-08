@@ -6,21 +6,22 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { NavIcon } from "@/components/NavIcon";
+import { AccountStatusNotice } from "@/components/AccountStatusNotice";
 import { NewItemToast } from "@/components/NewItemToast";
 import { PhaseTimer } from "@/components/PhaseTimer";
 import { useConfig } from "@/components/useConfig";
-import { useProfile } from "@/components/ProfileProvider";
+import { useCurrentUserContext, useProfile } from "@/components/ProfileProvider";
 import { Dialog, DialogClose, DialogContent, DialogTrigger } from "@/components/ui/Dialog";
 import { Monogram } from "@/components/ui/Monogram";
-import { supabaseBrowser } from "@/lib/supabase/client";
-import { ROLE_LABELS, type UserRole } from "@/lib/types";
+import { ROLE_LABELS } from "@/lib/types";
+import { hasAnyPermission, type Permission } from "@/lib/permissions";
 import { cn, hexToRgbChannels } from "@/lib/utils";
 
 interface NavItem {
   href: string;
   label: string;
   code: string;
-  roles: UserRole[];
+  permissions?: Permission[];
 }
 
 // Responsive navigation, filtered by role. Server-side RLS is the real
@@ -30,107 +31,77 @@ const NAV: NavItem[] = [
     href: "/dashboard",
     label: "Home",
     code: "HM",
-    roles: [
-      "freshie",
-      "faci",
-      "gm",
-      "guardian_gm",
-      "hof",
-      "hogm",
-      "committee",
-      "admin",
-    ],
+    permissions: ["dashboard.view"],
   },
   {
     href: "/map",
     label: "Map",
     code: "MP",
-    roles: [
-      "freshie",
-      "faci",
-      "gm",
-      "guardian_gm",
-      "hof",
-      "hogm",
-      "committee",
-      "admin",
-    ],
+    permissions: ["map.view"],
   },
-  { href: "/inventory", label: "Items", code: "IT", roles: ["freshie", "faci"] },
-  { href: "/attendance", label: "Roster", code: "AT", roles: ["faci"] },
-  { href: "/gm", label: "Station", code: "GM", roles: ["gm", "guardian_gm"] },
-  {
-    href: "/token",
-    label: "Token System",
-    code: "TK",
-    roles: [
-      "gm",
-      "guardian_gm",
-      "faci",
-      "hof",
-      "hogm",
-      "committee",
-    ],
-  },
+  { href: "/inventory", label: "Items", code: "IT", permissions: ["inventory.view"] },
+  { href: "/attendance", label: "Roster", code: "AT", permissions: ["attendance.manage"] },
+  { href: "/gm", label: "Day 1 / Day 2", code: "GM", permissions: ["gameplay.day1", "gameplay.day2"] },
+  { href: "/token", label: "Token System", code: "TK", permissions: ["token.view", "token.play", "token.manage"] },
+  { href: "/guardian", label: "Puzzle verify", code: "VG", permissions: ["gameplay.puzzle_verify"] },
+  { href: "/lighting", label: "Lighting Zone", code: "LZ", permissions: ["lighting.view"] },
   {
     href: "/schedule",
     label: "Schedule",
     code: "PL",
-    roles: [
-      "freshie",
-      "faci",
-      "gm",
-      "guardian_gm",
-      "hof",
-      "hogm",
-      "committee",
-      "admin",
-    ],
+    permissions: ["dashboard.view"],
   },
-  { href: "/faq", label: "FAQ", code: "FQ", roles: ["freshie"] },
+  { href: "/faq", label: "FAQ", code: "FQ", permissions: ["dashboard.view"] },
   {
-    href: "/committee",
+    href: "/admin/operations",
     label: "Ops",
     code: "OP",
-    roles: ["hof", "hogm", "committee"],
+    permissions: ["operations.manage"],
   },
   {
     href: "/bigscreen",
     label: "Big screen",
     code: "BS",
-    roles: ["hof", "hogm", "committee", "admin"],
+    permissions: ["admin.access"],
   },
   {
     href: "/booking",
     label: "Booking",
     code: "BK",
-    roles: ["hof", "hogm", "faci", "gm", "committee", "admin"],
+    permissions: ["dashboard.view"],
   },
   {
     href: "/reservations",
     label: "Reservations",
     code: "RS",
-    roles: ["faci", "gm", "committee", "admin"],
+    permissions: ["dashboard.view"],
   },
   {
     href: "/register-counter",
-    label: "Freshies Register Counter",
+    label: "Counter",
     code: "RC",
-    roles: ["admin"],
+    permissions: ["accounts.manage"],
   },
-
-
-  { href: "/admin", label: "Admin", code: "AD", roles: ["admin"] },
+  { href: "/admin", label: "Admin", code: "AD", permissions: ["admin.access"] },
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const profile = useProfile();
+  const userContext = useCurrentUserContext();
   const pathname = usePathname();
   const router = useRouter();
   const { brand } = useConfig();
   const [menuOpen, setMenuOpen] = useState(false);
 
-  const items = NAV.filter((n) => n.roles.includes(profile.role));
+  const items = NAV.filter(
+    (item) =>
+      !item.permissions ||
+      hasAnyPermission(userContext.permissions, item.permissions)
+  );
+  const pageTitle =
+    items.find(
+      (item) => pathname === item.href || pathname.startsWith(item.href + "/")
+    )?.label ?? brand.eventName;
 
   // Close the drawer on route change so it never lingers over a new page.
   // Radix Dialog owns focus-trap/Escape/backdrop-dismiss/focus-return; route
@@ -140,8 +111,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, [pathname]);
 
   async function signOut() {
-    await supabaseBrowser().auth.signOut();
-    window.location.href = "/login";
+    await fetch("/api/auth/logout", { method: "POST" });
+    router.replace("/login");
+    router.refresh();
   }
 
   const navLinks = (mode: "sidebar" | "drawer") =>
@@ -221,8 +193,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       <div className="min-w-0">
       <header className="sticky top-0 z-40 border-b border-paper-200 bg-paper-50/95 pt-[env(safe-area-inset-top)] shadow-[0_1px_0_rgba(28,26,23,0.03)] backdrop-blur lg:hidden">
-        <div className="flex items-center justify-between gap-3 px-3 py-2.5 sm:px-5 sm:py-3">
-          <div className="flex min-w-0 items-center gap-2.5">
+        <div className="relative flex items-center justify-between gap-3 px-3 py-2.5 sm:px-5 sm:py-3">
+          <div className="flex shrink-0 items-center">
             <Dialog open={menuOpen} onOpenChange={setMenuOpen}>
               <DialogTrigger asChild>
                 <button
@@ -278,18 +250,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </DialogContent>
             </Dialog>
 
-            <Link href="/dashboard" className="flex min-w-0 items-center gap-2">
-              <Monogram name={brand.eventName} size="sm" />
-              <span className="min-w-0">
-                <span className="block truncate text-sm font-bold tracking-tight">
-                  {brand.eventName}
-                </span>
-                <span className="block truncate text-xs text-ink-faint">
-                  XMUM Orientation 2026
-                </span>
-              </span>
-            </Link>
           </div>
+
+          <p className="pointer-events-none absolute left-1/2 max-w-[45vw] -translate-x-1/2 truncate text-center text-sm font-bold tracking-tight text-ink">
+            {pageTitle}
+          </p>
 
           <div className="flex shrink-0 items-center gap-2">
             <span className="chip border border-brand-1/20 bg-brand-1/20 text-brand-1">
@@ -301,6 +266,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </header>
 
       <main className="mx-auto min-h-dvh w-full max-w-6xl px-3 pb-[calc(1.25rem+env(safe-area-inset-bottom))] pt-3 sm:px-5 sm:pb-8 sm:pt-5 lg:px-8 lg:py-6">
+        <AccountStatusNotice />
         {children}
       </main>
 

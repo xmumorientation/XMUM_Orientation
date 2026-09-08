@@ -96,20 +96,12 @@ function primaryAction(role: string): Action {
       desc: "Mark your group members present.",
     };
   }
-  if (role === "gm" || role === "guardian_gm") {
+  if (role === "gm") {
     return {
       href: "/gm",
       code: "GM",
       title: "Open station panel",
       desc: "Grant tokens, sell blind boxes & update stations.",
-    };
-  }
-  if (role === "hof" || role === "hogm" || role === "committee") {
-    return {
-      href: "/committee",
-      code: "OP",
-      title: "Open operations",
-      desc: "Live map, roster & event ops.",
     };
   }
   if (role === "admin") {
@@ -202,46 +194,43 @@ export default function DashboardPage() {
           </>
         )}
 
-        {(role === "gm" || role === "guardian_gm") && (
-          <ActionCard
-            href="/gm"
-            code="GM"
-            title="Station panel"
-            desc="Grant tokens, sell blind boxes & update stations"
-            tone="primary"
-          />
-        )}
-
-        {role === "guardian_gm" && (
-          <ActionCard
-            href="/guardian"
-            code="VG"
-            title="Guardian verification"
-            desc="Verify puzzle sets & manage activation"
-          />
-        )}
-
-        {(role === "hof" || role === "hogm" || role === "committee") && (
-          <ActionCard
-            href="/committee"
-            code="OP"
-            title="Operations"
-            desc="Live map, roster & event ops"
-            tone="primary"
-          />
+        {role === "gm" && (
+          <>
+            <ActionCard
+              href="/gm"
+              code="GM"
+              title="Station panel"
+              desc="Grant tokens, sell blind boxes & update stations"
+              tone="primary"
+            />
+            <ActionCard
+              href="/guardian"
+              code="VG"
+              title="Puzzle verification"
+              desc="Verify puzzle sets & manage activation"
+            />
+          </>
         )}
 
         {role === "admin" && (
-          <ActionCard
-            href="/admin"
-            code="AD"
-            title="Admin console"
-            desc="Live event controls, users & switches"
-            tone="primary"
-          />
+          <>
+            <ActionCard
+              href="/admin"
+              code="AD"
+              title="Admin console"
+              desc="Live event controls, users & switches"
+              tone="primary"
+            />
+            <ActionCard
+              href="/admin/operations"
+              code="OP"
+              title="Operations"
+              desc="Live map, roster & event operations"
+            />
+          </>
         )}
 
-        {(role === "hof" || role === "hogm" || role === "faci" || role === "gm" || role === "committee" || role === "admin") && (
+        {(role === "faci" || role === "gm" || role === "admin") && (
           <ActionCard
             href="/booking"
             code="BK"
@@ -251,7 +240,7 @@ export default function DashboardPage() {
           />
         )}
 
-        {(role === "faci" || role === "gm" || role === "committee" || role === "admin") && (
+        {(role === "faci" || role === "gm" || role === "admin") && (
           <ActionCard
             href="/reservations"
             code="RS"
@@ -260,7 +249,7 @@ export default function DashboardPage() {
           />
         )}
 
-        {(role === "faci" || role === "committee" || role === "admin") && (
+        {(role === "faci" || role === "admin") && (
           <ActionCard
             href="/register-counter"
             code="RC"

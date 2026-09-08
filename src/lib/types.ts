@@ -1,16 +1,21 @@
 // Shared domain types mirroring the Supabase schema (migration 0001).
 
-export type UserRole =
-  | "freshie"
-  | "faci"
-  | "gm"
-  | "guardian_gm"
-  | "hof"
-  | "hogm"
-  | "committee"
-  | "admin";
+export type UserRole = "freshie" | "faci" | "gm" | "admin";
+
+export type AdminTeam = "HOF" | "HOGM" | "TECH";
+
+export interface CurrentUserContext {
+  userId: string;
+  role: UserRole;
+  groupId: number | null;
+  stationId: number | null;
+  day: 1 | 2 | null;
+  adminTeam: AdminTeam | null;
+  permissions: string[];
+}
 
 export type StationStatus = "available" | "in_progress" | "closed";
+export type GameDay = 1 | 2;
 export type PhaseState = "pending" | "active" | "paused" | "ended";
 export type ProjectorLocation = "B1" | "A3" | "TF";
 export type ItemType = "puzzle" | "facility_card";
@@ -25,6 +30,8 @@ export interface Profile {
   phone: string | null;
   group_id: number | null;
   station_id: number | null;
+  username?: string | null;
+  admin_team?: AdminTeam | null;
 }
 
 export interface Group {
@@ -201,18 +208,14 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   freshie: "Freshie",
   faci: "Facilitator",
   gm: "Game Master",
-  guardian_gm: "Guardian GM",
-  hof: "Head of Facilitators",
-  hogm: "Head of Game Masters",
-  committee: "Committee",
   admin: "Admin",
 };
 
-export const COMMITTEE_TIER: UserRole[] = ["hof", "hogm", "committee", "admin"];
+export const ADMIN_TIER: UserRole[] = ["admin"];
 
 // ── Freshie Registration & Group Assignment (D-Day desk) ─────────────────
-// Freshies have NO login accounts — stored entirely separate from
-// staff/committee/admin `profiles`.
+// Freshies have no authentication accounts. Their roster and group allocation
+// are stored separately from the Faci, GM, and Admin `profiles`.
 
 export type FreshieGender = "Male" | "Female";
 export type FreshieNationality = "Local" | "International";

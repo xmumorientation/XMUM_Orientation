@@ -79,6 +79,30 @@ export function SuccessBanner({ message }: { message: string | null }) {
   );
 }
 
+export function NotificationBanner({
+  type,
+  title,
+  message,
+}: {
+  type: "INFO" | "SUCCESS" | "WARNING" | "ERROR";
+  title: string;
+  message: string;
+}) {
+  const tone = type === "ERROR"
+    ? "border-red-200 bg-red-50 text-red-900"
+    : type === "WARNING"
+      ? "border-amber-200 bg-amber-50 text-amber-900"
+      : type === "SUCCESS"
+        ? "border-emerald-200 bg-emerald-50 text-emerald-900"
+        : "border-blue-200 bg-blue-50 text-blue-900";
+  return (
+    <div role={type === "ERROR" ? "alert" : "status"} className={`rounded-2xl border p-4 ${tone}`}>
+      <p className="font-bold">{title}</p>
+      <p className="mt-1 text-sm leading-5">{message}</p>
+    </div>
+  );
+}
+
 export function StatusPill({
   tone,
   children,

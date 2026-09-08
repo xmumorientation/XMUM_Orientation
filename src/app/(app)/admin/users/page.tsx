@@ -122,7 +122,7 @@ export default function AdminUsersPage() {
         <h2 className="font-semibold">Staff CSV import</h2>
         <p className="text-xs text-ink-faint">
           Columns: <code>name,email,role,group,station</code> — role ∈{" "}
-          faci/gm/guardian_gm/hof/hogm/committee/admin. Always dry-run first.
+          faci/gm/admin. Freshies are managed in the roster. Always dry-run first.
         </p>
         <textarea
           className="input min-h-[120px] py-2 font-mono text-xs"

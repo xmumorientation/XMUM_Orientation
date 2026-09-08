@@ -1,12 +1,16 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+import { hasAnyPermission, permissionsForPath } from "@/lib/permissions";
+
 const PUBLIC_PATHS = [
   "/login",
   "/register",
   "/forgot-password",
   "/reset-password",
   "/auth/callback",
+  "/api/auth/login",
+  "/api/auth/register",
 ];
 
 // Session refresh + coarse auth gate. Fine-grained role checks live in the
@@ -15,8 +19,8 @@ export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!.trim(),
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!.trim(),
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
         getAll() {
@@ -61,6 +65,28 @@ export async function middleware(request: NextRequest) {
     url.pathname = "/dashboard";
     url.search = "";
     return NextResponse.redirect(url);
+  }
+
+  if (user && path === "/committee") {
+    const url = request.nextUrl.clone();
+    url.pathname = "/admin/operations";
+    url.search = "";
+    return NextResponse.redirect(url);
+  }
+
+  const required = permissionsForPath(path);
+  if (user && required) {
+    const { data: context } = await supabase
+      .rpc("fn_current_user_context")
+      .single();
+    const permissions = (context as { permissions?: string[] } | null)
+      ?.permissions ?? [];
+    if (!hasAnyPermission(permissions, required)) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/forbidden";
+      url.search = "";
+      return NextResponse.redirect(url);
+    }
   }
 
   return response;

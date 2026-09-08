@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { requireAdmin } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import type { UserRole } from "@/lib/types";
 
@@ -8,20 +8,12 @@ export const dynamic = "force-dynamic";
 
 // FR-1.1 + FR-11.1: bulk staff import via CSV with dry-run preview.
 // CSV columns: name,email,role,group,station
-//   role   ∈ faci|gm|guardian_gm|hof|hogm|committee|admin
+//   role   ∈ faci|gm|admin (Freshies use the registration roster)
 //   group  = group id (optional, facis)
 //   station= station id (optional, GMs)
 // Returns generated credentials so Admin can distribute them centrally.
 
-const STAFF_ROLES: UserRole[] = [
-  "faci",
-  "gm",
-  "guardian_gm",
-  "hof",
-  "hogm",
-  "committee",
-  "admin",
-];
+const STAFF_ROLES: UserRole[] = ["faci", "gm", "admin"];
 
 interface CsvRow {
   line: number;
@@ -85,7 +77,7 @@ function generatePassword(length = 12): string {
 }
 
 export async function POST(req: NextRequest) {
-  const admin = await requireAdmin();
+  const admin = await requirePermission("accounts.manage");
   if (!admin) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -182,11 +174,45 @@ export async function POST(req: NextRequest) {
       failed.push({ email: row.email, error: `profile: ${updErr.message}` });
       continue;
     }
+    if (row.group && row.role === "faci") {
+      const { error: assignmentError } = await service
+        .from("user_group_assignments")
+        .upsert(
+          {
+            user_id: data.user.id,
+            group_id: Number(row.group),
+            source: "admin_import",
+            created_by: admin.user.id,
+            updated_by: admin.user.id,
+          },
+          { onConflict: "user_id" }
+        );
+      if (assignmentError) {
+        failed.push({ email: row.email, error: `group assignment: ${assignmentError.message}` });
+        continue;
+      }
+    }
+    if (row.station && row.role === "gm") {
+      const stationRows = ([1, 2] as const).map((day) => ({
+        user_id: data.user.id,
+        day,
+        station_id: Number(row.station),
+        created_by: admin.user.id,
+        updated_by: admin.user.id,
+      }));
+      const { error: assignmentError } = await service
+        .from("gm_station_assignments")
+        .upsert(stationRows, { onConflict: "user_id,day" });
+      if (assignmentError) {
+        failed.push({ email: row.email, error: `station assignment: ${assignmentError.message}` });
+        continue;
+      }
+    }
     created.push({ email: row.email, password, role: row.role });
   }
 
   await service.from("audit_log").insert({
-    actor: admin.id,
+    actor: admin.user.id,
     actor_role: "admin",
     action: "users.import",
     detail: { created: created.length, failed: failed.length },

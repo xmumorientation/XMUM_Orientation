@@ -14,21 +14,13 @@ const supabase = createClient(url, key);
 const TEST_ACCOUNTS = [
   // Official Demo Accounts (xmu.edu.my)
   { email: "admin.test@xmu.edu.my", role: "admin", name: "Test Admin", password: "TestPass123!" },
-  { email: "freshie.test@xmu.edu.my", role: "freshie", name: "Test Freshie", group_id: 1, password: "TestPass123!" },
-  { email: "hof.test@xmu.edu.my", role: "hof", name: "Test HOF", password: "TestPass123!" },
-  { email: "hogm.test@xmu.edu.my", role: "hogm", name: "Test HOGM", password: "TestPass123!" },
   { email: "faci.test@xmu.edu.my", role: "faci", name: "Test Facilitator", group_id: 1, password: "TestPass123!" },
   { email: "gm.test@xmu.edu.my", role: "gm", name: "Test GameMaster", station_id: 1, password: "TestPass123!" },
-  { email: "counter.test@xmu.edu.my", role: "committee", name: "Test Counter", password: "TestPass123!" },
 
   // Quick Short Accounts (test.com)
   { email: "admin@test.com", role: "admin", name: "Test Admin", password: "pass123" },
-  { email: "freshie@test.com", role: "freshie", name: "Test Freshie", group_id: 1, password: "pass123" },
-  { email: "hof@test.com", role: "hof", name: "Test HOF", password: "pass123" },
-  { email: "hogm@test.com", role: "hogm", name: "Test HOGM", password: "pass123" },
   { email: "faci@test.com", role: "faci", name: "Test Facilitator", group_id: 1, password: "pass123" },
   { email: "gm@test.com", role: "gm", name: "Test GameMaster", station_id: 1, password: "pass123" },
-  { email: "counter@test.com", role: "committee", name: "Test Counter", password: "pass123" },
 ];
 
 async function seed() {
@@ -62,6 +54,26 @@ async function seed() {
         group_id: acc.group_id ?? null,
         station_id: acc.station_id ?? null,
       });
+      if (acc.group_id !== undefined) {
+        await supabase.from("user_group_assignments").upsert(
+          {
+            user_id: userId,
+            group_id: acc.group_id,
+            source: "test_seed",
+          },
+          { onConflict: "user_id" }
+        );
+      }
+      if (acc.station_id !== undefined && acc.role === "gm") {
+        await supabase.from("gm_station_assignments").upsert(
+          [1, 2].map((day) => ({
+            user_id: userId,
+            day,
+            station_id: acc.station_id,
+          })),
+          { onConflict: "user_id,day" }
+        );
+      }
       console.log(`✅ [${acc.role.toUpperCase()}] ${acc.email} -> password: ${password}`);
     } else {
       console.error(`❌ Failed ${acc.email}`);

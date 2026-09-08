@@ -1,16 +1,17 @@
 "use client";
 
 import { CampusMap } from "@/components/CampusMap";
-import { useProfile } from "@/components/ProfileProvider";
+import { useCurrentUserContext } from "@/components/ProfileProvider";
 import { PageTitle } from "@/components/ui";
-import { COMMITTEE_TIER } from "@/lib/types";
+import { hasPermission } from "@/lib/permissions";
 
 export default function MapPage() {
-  const profile = useProfile();
-  // D-1: committee sees all group pins; Faci sees own group only (the RPC
+  const context = useCurrentUserContext();
+  // Admin sees all group pins; Faci sees their own group only (the RPC
   // enforces this server-side - the flag just requests pins).
   const showPins =
-    COMMITTEE_TIER.includes(profile.role) || profile.role === "faci";
+    hasPermission(context.permissions, "operations.manage") ||
+    hasPermission(context.permissions, "map.update");
 
   return (
     <div>

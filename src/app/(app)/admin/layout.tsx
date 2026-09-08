@@ -3,11 +3,13 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { useProfile } from "@/components/ProfileProvider";
+import { useCurrentUserContext } from "@/components/ProfileProvider";
+import { hasPermission } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
 
 const TABS = [
   { href: "/admin", label: "Control room" },
+  { href: "/admin/operations", label: "Operations" },
   { href: "/admin/token", label: "Tokens" },
   { href: "/admin/users", label: "Users" },
   { href: "/admin/stations", label: "Stations" },
@@ -27,10 +29,10 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const profile = useProfile();
+  const context = useCurrentUserContext();
   const pathname = usePathname();
 
-  if (profile.role !== "admin") {
+  if (!hasPermission(context.permissions, "admin.access")) {
     return (
       <p className="py-16 text-center text-sm text-ink-faint">
         Admin access required.

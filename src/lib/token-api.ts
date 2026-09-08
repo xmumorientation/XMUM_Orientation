@@ -13,8 +13,10 @@ import {
   type TransactionType,
 } from "./token-types";
 
-// In-memory / local fallback store for seamless dev & offline resilience
+// Read-only local snapshots make loading resilient. Gameplay mutations never
+// fall back locally because device-only balances would diverge from Supabase.
 const LOCAL_STORAGE_KEY_PREFIX = "xmum_token_system_";
+const LOCAL_MUTATION_FALLBACK = false;
 
 function getLocalItem<T>(key: string, fallback: T): T {
   if (typeof window === "undefined") return fallback;
@@ -286,6 +288,8 @@ export async function recordDay1Result(params: {
     console.warn("Supabase fn_day1_record_result fallback:", err);
   }
 
+  if (!LOCAL_MUTATION_FALLBACK) return { ok: false, error: "Could not save the Day 1 result. No tokens were changed." };
+
   // Fallback local mutation
   const rules = await fetchGameConfigRules();
   const winVal = rules.find((r) => r.rule_key === "DAY1_WIN_TOKENS")?.rule_value ?? 2;
@@ -355,6 +359,8 @@ export async function deductDay2Entry(params: {
     console.warn("Supabase fn_day2_deduct_entry fallback:", err);
   }
 
+  if (!LOCAL_MUTATION_FALLBACK) return { ok: false, error: "Could not deduct tokens. No tokens were changed." };
+
   // Fallback local mutation
   const groups = await fetchTokenGroups();
   const targetGroup = groups.find((g) => g.group_id === groupId);
@@ -407,6 +413,8 @@ export async function awardDay2PuzzlePiece(params: {
   } catch (err) {
     console.warn("Supabase fn_day2_award_piece fallback:", err);
   }
+
+  if (!LOCAL_MUTATION_FALLBACK) return { ok: false, pieceId, locationId, error: "Could not award the puzzle piece. Nothing was changed." };
 
   // Fallback local mutation
   const inv = await fetchPuzzleInventory();
@@ -484,6 +492,8 @@ export async function manualTokenAdjust(params: {
     console.warn("Supabase fn_manual_token_adjust fallback:", err);
   }
 
+  if (!LOCAL_MUTATION_FALLBACK) return { ok: false, error: "Could not adjust tokens. No tokens were changed." };
+
   // Fallback local mutation
   const groups = await fetchTokenGroups();
   const g = groups.find((grp) => grp.group_id === groupId);
@@ -538,6 +548,8 @@ export async function setTotalGroups(
     console.warn("Supabase fn_set_total_groups fallback:", err);
   }
 
+  if (!LOCAL_MUTATION_FALLBACK) return { ok: false, error: "Could not update the group count." };
+
   // Fallback local mutation
   const currentGroups = await fetchTokenGroups();
   let updatedGroups: TokenGroup[];
@@ -577,6 +589,8 @@ export async function updateGameConfigRule(
   } catch (err) {
     console.warn("Supabase fn_update_game_config_rule fallback:", err);
   }
+
+  if (!LOCAL_MUTATION_FALLBACK) return { ok: false, error: "Could not update the token rule." };
 
   // Fallback local mutation
   const rules = await fetchGameConfigRules();

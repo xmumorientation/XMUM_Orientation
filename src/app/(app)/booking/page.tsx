@@ -84,7 +84,7 @@ export default function BookingPage() {
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-bold">Available Interview Slots</h2>
-          {(profile.role === "hof" || profile.role === "hogm" || profile.role === "admin") && (
+          {profile.role === "admin" && (
             <Button size="sm" icon={Plus}>
               Create New Slot
             </Button>

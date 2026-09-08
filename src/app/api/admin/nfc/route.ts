@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { requireAdmin } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth";
 import { generateNfcToken, nfcUrl } from "@/lib/nfc";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { PROJECTOR_LOCATIONS, type ProjectorLocation } from "@/lib/types";
@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 // immediately. The DB stores just the hash.
 
 export async function POST(req: NextRequest) {
-  const admin = await requireAdmin();
+  const admin = await requirePermission("nfc.recovery");
   if (!admin) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
       token_hash: tokenHash,
       location: loc,
       label,
-      created_by: admin.id,
+      created_by: admin.user.id,
     });
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
   }
 
   await service.from("audit_log").insert({
-    actor: admin.id,
+    actor: admin.user.id,
     actor_role: "admin",
     action: "nfc.generate",
     target: `projector:${location}`,
