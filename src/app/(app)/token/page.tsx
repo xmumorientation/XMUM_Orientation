@@ -1,1 +1,1 @@
-export { default } from "../admin/token/page";
+export { default } from "../transactions/page";

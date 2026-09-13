@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { HamburgerMenu } from "@/components/HamburgerMenu";
 import { NavIcon } from "@/components/NavIcon";
 import { AccountStatusNotice } from "@/components/AccountStatusNotice";
+import { GroupUpdatesBanner } from "@/components/GroupUpdatesBanner";
 import { NewItemToast } from "@/components/NewItemToast";
 import { PhaseTimer } from "@/components/PhaseTimer";
 import { useConfig } from "@/components/useConfig";
@@ -136,6 +137,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       <main className="mx-auto min-h-dvh w-full max-w-6xl px-3 pb-[calc(1.25rem+env(safe-area-inset-bottom))] pt-3 sm:px-5 sm:pb-8 sm:pt-5 lg:px-8 lg:py-6">
         <AccountStatusNotice />
+        <GroupUpdatesBanner />
         {children}
       </main>
 

@@ -36,8 +36,10 @@ export function useConfig() {
       setLoaded(true);
     }
     load();
+    // Every mounted hook needs its own channel. Reusing a channel name causes
+    // Supabase to reject additional callbacks after the first subscription.
     const channel = supabase
-      .channel("config-live")
+      .channel(`config-live-${crypto.randomUUID()}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "game_config" },

@@ -55,7 +55,7 @@ export function HamburgerMenu({
               );
             })}
           </nav>
-          <button onClick={onSignOut} className="min-h-[48px] rounded-xl border border-paper-300 bg-white px-4 text-left text-sm font-bold text-ink-soft">
+          <button onClick={onSignOut} className="min-h-[52px] rounded-xl border border-red-700 bg-red-600 px-4 text-left text-sm font-black text-white shadow-raised transition hover:bg-red-700 active:scale-[0.99]">
             Log out
           </button>
         </div>

@@ -112,6 +112,17 @@ const ERROR_MESSAGES: Record<string, string> = {
   NO_GROUPS_CONFIGURED: "No groups configured yet — set the total number of groups first.",
   INVALID_COUNT: "Enter a group count between 1 and 200.",
   FRESHIE_NOT_FOUND: "Freshie not found.",
+  GROUP_NOT_ASSIGNED: "Your group has not been assigned yet.",
+  BLIND_BOX_DISABLED: "Blind Box claims are currently disabled.",
+  BLIND_BOX_SESSION_CLOSED: "The bonding session is not active.",
+  INVALID_BLIND_BOX_SOURCE_QR: "This QR code is not a valid Big Game Blind Box source.",
+  BLIND_BOX_SOURCE_INACTIVE: "This Blind Box source is currently inactive.",
+  SOURCE_ALREADY_CLAIMED: "Your group has already redeemed from this source.",
+  GM_BLIND_BOX_LIMIT_REACHED: "Your group has reached the GM-station Blind Box limit.",
+  BLIND_BOX_OUT_OF_STOCK: "This source has no remaining Blind Boxes.",
+  BLIND_BOX_ALREADY_OPENED: "This Blind Box has already been opened.",
+  BLIND_BOX_OPENING_CLOSED: "The bonding session has ended. This Blind Box cannot currently be opened.",
+  BLIND_BOX_NOT_FOUND: "This Blind Box does not belong to your group.",
 };
 
 

@@ -42,7 +42,7 @@ export function useGroup() {
     load();
 
     const channel = supabase
-      .channel(`group-${profile.group_id}`)
+      .channel(`group-${profile.group_id}-${crypto.randomUUID()}`)
       .on(
         "postgres_changes",
         {
