@@ -52,7 +52,17 @@ export interface Station {
   map_y: number;
   risk_tier: RiskTier;
   entry_cost: number;
+  station_number?: number;
+  day?: 1 | 2 | null;
+  difficulty?: "NONE" | "EASY" | "MEDIUM" | "HARD";
+  token_cost?: number;
+  location_exclusion_limit?: number;
+  is_active?: boolean;
+  config_version?: number;
 }
+
+export interface UserGroupAssignment { user_id: string; group_id: number; version: number; }
+export interface GmStationAssignment { user_id: string; day: 1 | 2; station_id: number; version: number; }
 
 export const RISK_TIER_META: Record<
   RiskTier,
