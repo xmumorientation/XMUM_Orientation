@@ -9,3 +9,4 @@ export * from "@/components/ui/TicketCard";
 export * from "@/components/ui/Monogram";
 export * from "@/components/ui/Spinner";
 export * from "@/components/ui/Skeleton";
+export * from "@/components/ui/Shared";

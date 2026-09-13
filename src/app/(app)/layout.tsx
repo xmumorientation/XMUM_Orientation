@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { AppShell } from "@/components/AppShell";
 import { PhaseTimerProvider } from "@/components/PhaseTimerProvider";
 import { ProfileProvider } from "@/components/ProfileProvider";
+import { ToastProvider } from "@/components/ToastProvider";
 import { resolveCurrentUserContext } from "@/lib/context";
 import { supabaseServer } from "@/lib/supabase/server";
 import type { Group, Profile } from "@/lib/types";
@@ -44,7 +45,9 @@ export default async function AppLayout({
   return (
     <ProfileProvider profile={profile} context={context} initialGroup={(group as Group | null) ?? null}>
       <PhaseTimerProvider>
-        <AppShell>{children}</AppShell>
+        <ToastProvider>
+          <AppShell>{children}</AppShell>
+        </ToastProvider>
       </PhaseTimerProvider>
     </ProfileProvider>
   );

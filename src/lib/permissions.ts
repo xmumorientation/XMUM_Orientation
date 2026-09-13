@@ -53,6 +53,7 @@ export const ROUTE_PERMISSIONS: RoutePermission[] = [
   { prefix: "/token", anyOf: ["token.view", "token.play", "token.manage"] },
   { prefix: "/inventory", anyOf: ["inventory.view"] },
   { prefix: "/lighting", anyOf: ["lighting.view"] },
+  { prefix: "/timer", anyOf: ["timer.view"] },
   { prefix: "/activate", anyOf: ["nfc.scan"] },
   { prefix: "/blindbox", anyOf: ["blindbox.claim"] },
   { prefix: "/map", anyOf: ["map.view"] },
