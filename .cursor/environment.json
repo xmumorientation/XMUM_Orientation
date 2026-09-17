@@ -1,0 +1,13 @@
+{
+  "name": "XMUM Orientation Platform",
+  "user": "ubuntu",
+  "install": "bash .cursor/install.sh",
+  "start": "bash .cursor/start.sh",
+  "terminals": [
+    {
+      "name": "next-dev",
+      "command": "cd /workspace && npm run dev",
+      "description": "Next.js dev server on http://localhost:3000 (reads .env.local created by start.sh)."
+    }
+  ]
+}
