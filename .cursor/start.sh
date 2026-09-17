@@ -19,7 +19,11 @@ log() { echo "[start] $*"; }
 # the start command's process group is cleaned up, leaving a dead daemon.
 if ! sudo docker info >/dev/null 2>&1; then
   log "Starting Docker daemon..."
-  sudo bash -c 'setsid dockerd >/tmp/dockerd.log 2>&1 </dev/null &'
+  # Open the log with the current (non-root) shell so the redirect works even
+  # on fuse-backed /tmp, and wrap in setsid so dockerd keeps running in its own
+  # session after this start command's process group is cleaned up.
+  sudo rm -f /tmp/dockerd.log 2>/dev/null || true
+  setsid sudo dockerd >/tmp/dockerd.log 2>&1 </dev/null &
   for _ in $(seq 1 60); do
     sudo docker info >/dev/null 2>&1 && break
     sleep 1
