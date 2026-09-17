@@ -60,23 +60,27 @@ fi
 
 # ── 4. Warm the Supabase Docker images (baked into the snapshot) ──────────────
 # Pulling here means the per-boot `supabase start` in start.sh does not download
-# ~10 images. Guarded so re-running install against a warm snapshot is cheap.
+# ~10 images. The daemon must be up for image detection to be reliable, so start
+# it first, then pull only when the images are actually missing (a cold install).
+# On a warm snapshot the images already exist and this is a fast no-op.
+DOCKERD_PID=""
+if ! sudo docker info >/dev/null 2>&1; then
+  sudo dockerd >/tmp/dockerd-install.log 2>&1 &
+  DOCKERD_PID=$!
+  for _ in $(seq 1 30); do sudo docker info >/dev/null 2>&1 && break; sleep 1; done
+fi
+sudo chmod 666 /var/run/docker.sock 2>/dev/null || true
+
 if ! docker image ls --format '{{.Repository}}' 2>/dev/null | grep -q 'supabase/postgres'; then
   log "Warming Supabase images (first run only)..."
-  DOCKERD_PID=""
-  if ! sudo docker info >/dev/null 2>&1; then
-    sudo dockerd >/tmp/dockerd-install.log 2>&1 &
-    DOCKERD_PID=$!
-    for _ in $(seq 1 30); do sudo docker info >/dev/null 2>&1 && break; sleep 1; done
-  fi
-  sudo chmod 666 /var/run/docker.sock 2>/dev/null || true
   supabase start || true
   supabase stop --no-backup || true
-  if [ -n "$DOCKERD_PID" ]; then
-    sudo kill "$DOCKERD_PID" 2>/dev/null || true
-  fi
 else
   log "Supabase images already present; skipping warm-up."
+fi
+
+if [ -n "$DOCKERD_PID" ]; then
+  sudo kill "$DOCKERD_PID" 2>/dev/null || true
 fi
 
 log "install.sh complete."
