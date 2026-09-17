@@ -14,15 +14,22 @@ cd "$REPO_DIR"
 log() { echo "[start] $*"; }
 
 # ── 1. Docker daemon ──────────────────────────────────────────────────────────
+# Launch dockerd in its own session (setsid + detached stdio) so it survives
+# after this start command returns; a plain background job can be reaped when
+# the start command's process group is cleaned up, leaving a dead daemon.
 if ! sudo docker info >/dev/null 2>&1; then
   log "Starting Docker daemon..."
-  sudo dockerd >/tmp/dockerd.log 2>&1 &
+  sudo bash -c 'setsid dockerd >/tmp/dockerd.log 2>&1 </dev/null &'
   for _ in $(seq 1 60); do
     sudo docker info >/dev/null 2>&1 && break
     sleep 1
   done
 fi
 sudo chmod 666 /var/run/docker.sock 2>/dev/null || true
+if ! sudo docker info >/dev/null 2>&1; then
+  log "ERROR: Docker daemon failed to start; see /tmp/dockerd.log"
+  exit 1
+fi
 log "Docker ready: $(docker --version)"
 
 # ── 2. Supabase local stack ───────────────────────────────────────────────────
