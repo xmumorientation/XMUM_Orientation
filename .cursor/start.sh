@@ -37,12 +37,23 @@ fi
 log "Docker ready: $(docker --version)"
 
 # ── 2. Supabase local stack ───────────────────────────────────────────────────
+# `supabase start` can lose a first-boot race where supabase_db is still
+# "starting"; it is idempotent, so retry until the stack reports healthy.
 if supabase status >/dev/null 2>&1; then
   log "Supabase already running."
 else
   log "Starting Supabase local stack (applies migrations)..."
-  supabase start
+  for attempt in 1 2 3 4 5; do
+    supabase start && break
+    log "supabase start attempt ${attempt} did not complete (db readiness race?); retrying in 10s..."
+    sleep 10
+  done
 fi
+if ! supabase status >/dev/null 2>&1; then
+  log "ERROR: Supabase stack failed to become ready; see 'supabase status'."
+  exit 1
+fi
+log "Supabase stack is up."
 
 # ── 3. Environment file for the Next.js app ───────────────────────────────────
 # Local Supabase keys are deterministic dev credentials, not real secrets.
