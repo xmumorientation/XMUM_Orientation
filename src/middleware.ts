@@ -12,6 +12,12 @@ const PUBLIC_PATHS = [
 // Session refresh + coarse auth gate. Fine-grained role checks live in the
 // (app) layout and — authoritatively — in RLS/RPCs server-side (NFR-4).
 export async function middleware(request: NextRequest) {
+  // The "Enter the Park" cinematic prototype is a public, backend-free route.
+  // Short-circuit before touching Supabase so it works without auth or env.
+  if (request.nextUrl.pathname.startsWith("/park")) {
+    return NextResponse.next({ request });
+  }
+
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient(
