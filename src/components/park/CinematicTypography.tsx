@@ -49,7 +49,14 @@ export function CinematicTypography({ scrollRef, reduced = false, active = true 
           end: "bottom bottom",
           scrub: 1,
           onUpdate: (self) => {
-            scroll.target = self.progress;
+            // Feed the 3D camera the RAW scroll progress, not the scrubbed
+            // value. The camera already eases via its own damp, and reading the
+            // scrubbed progress here makes an instant jump to the top (Home)
+            // replay the flight in reverse while scrub slowly catches up. The
+            // captions keep using this scrubbed timeline for smooth fades.
+            const span = self.end - self.start;
+            scroll.target =
+              span > 0 ? Math.min(Math.max((self.scroll() - self.start) / span, 0), 1) : 0;
           },
         },
       });

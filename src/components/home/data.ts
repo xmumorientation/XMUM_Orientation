@@ -142,22 +142,32 @@ export const QUIZ: QuizQuestion[] = [
   { q: "How many student clubs are officially registered?", opts: ["48", "72", "96", "120"], ans: 3 },
 ];
 
+import { resetScroll } from "@/components/park/scrollStore";
+
 /**
- * Smooth-scrolls to a homepage section. "home" scrolls to the very top of the
- * page — the top of the cinematic section — since the cinematic is now the
- * first section of one continuous page. This never restarts the opening
- * animation (that is a one-time mount effect, not tied to scroll position).
- * Other ids scroll to their section, accounting for the fixed nav.
+ * Scrolls to a homepage section. "home" jumps to the very top of the page — the
+ * top of the cinematic section — since the cinematic is the first section of one
+ * continuous page.
+ *
+ * The jump is instant (not a long smooth-scroll across the whole page): a
+ * multi-second smooth scroll back up would replay the entire camera flight in
+ * reverse. Snapping the shared scroll store to 0 first keeps the camera pinned
+ * at the establishing shot, so the one-time opening animation never restarts and
+ * there is no jarring reverse fly-through.
+ *
+ * Other ids smooth-scroll to their section (short, in-content distances),
+ * accounting for the fixed nav via each section's scrollMarginTop.
  */
 export function scrollToSection(id: string) {
   if (id === "home") {
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    resetScroll();
+    window.scrollTo({ top: 0, behavior: "auto" });
     return;
   }
   const el = document.getElementById(id);
   if (el) {
     el.scrollIntoView({ behavior: "smooth", block: "start" });
   } else {
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    window.scrollTo({ top: 0, behavior: "auto" });
   }
 }
