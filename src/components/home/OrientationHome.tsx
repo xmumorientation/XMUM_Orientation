@@ -6,7 +6,6 @@ import { CinematicHero } from "./CinematicHero";
 import { SiteFooter } from "./SiteFooter";
 import { SiteNav } from "./SiteNav";
 import { FONT } from "./data";
-import { useIntro } from "./useIntro";
 import { HomeContent } from "./sections/HomeContent";
 import { Scoreboard } from "./sections/Scoreboard";
 import { Games } from "./sections/Games";
@@ -24,41 +23,40 @@ const CONTENT_BG =
   "linear-gradient(to bottom, rgba(5,1,12,0) 0px, #05010c 260px)";
 
 /**
- * Public Orientation 2026 homepage. One coherent neon world:
- *   - cinematic "Enter the Park" entry (emotional layer, plays once per browser)
- *   - functional content sections adapted from the Figma Make prototype
+ * Public Orientation 2026 homepage — one continuous, scrollable neon world:
+ *   - the cinematic "Enter the Park" flight is the FIRST SECTION (emotional
+ *     layer), always structurally present, driven by scroll progress;
+ *   - the functional content sections (adapted from the Figma Make prototype)
+ *     flow naturally below it.
+ *
+ * There is no intro→content phase swap: the user simply scrolls from the park
+ * into the content. `orientation_intro_seen` only softens the opening title
+ * animation for returning visitors; it never mounts/unmounts anything.
  * Unauthenticated — Login is reachable from the nav but never forced.
  */
 export default function OrientationHome() {
-  const { phase, markSeen } = useIntro();
   const [revealed, setRevealed] = useState(false);
 
-  // Take over scroll restoration only while the homepage is mounted, so a
-  // reload never restores an old cinematic-layout scroll position into the
-  // (shorter) content-only layout. Restored on unmount so navigation elsewhere
-  // (e.g. /login, /dashboard) keeps the browser/Next.js default behavior.
-  // Client-only effect → no hydration impact.
+  // Own scroll restoration only while the homepage is mounted, and always start
+  // at the top of the cinematic section. The layout is identical every load
+  // (cinematic first, content below), so this just guarantees the entrance
+  // reads the same each time and a reload never drops the user mid-flight.
+  // Restored on unmount so /login, /dashboard, etc. keep default behavior.
   useEffect(() => {
-    if (typeof window === "undefined" || !("scrollRestoration" in window.history)) return;
-    const previous = window.history.scrollRestoration;
-    window.history.scrollRestoration = "manual";
+    if (typeof window === "undefined") return;
+    const supported = "scrollRestoration" in window.history;
+    const previous = supported ? window.history.scrollRestoration : null;
+    if (supported) window.history.scrollRestoration = "manual";
+    window.scrollTo(0, 0);
     return () => {
-      window.history.scrollRestoration = previous;
+      if (supported && previous) window.history.scrollRestoration = previous;
     };
   }, []);
 
-  // Returning/skip visitors: show the nav immediately and land at the top of the
-  // homepage content (never a restored mid-content position).
+  // Reveal the nav once the opening beat finishes; fall back to scroll/timeout
+  // so it can never get stuck hidden if the reveal is skipped or interrupted.
+  const handleRevealed = useCallback(() => setRevealed(true), []);
   useEffect(() => {
-    if (phase === "content") {
-      setRevealed(true);
-      window.scrollTo(0, 0);
-    }
-  }, [phase]);
-
-  // Fallbacks so the nav can never get stuck hidden during the intro.
-  useEffect(() => {
-    if (phase !== "intro") return;
     const onScroll = () => {
       if (window.scrollY > 40) setRevealed(true);
     };
@@ -68,33 +66,19 @@ export default function OrientationHome() {
       window.removeEventListener("scroll", onScroll);
       window.clearTimeout(t);
     };
-  }, [phase]);
-
-  // Called only when the cinematic reveal has actually finished — this is where
-  // the "intro seen" flag is persisted (never on mount).
-  const handleIntroComplete = useCallback(() => {
-    setRevealed(true);
-    markSeen();
-  }, [markSeen]);
+  }, []);
 
   return (
     <div className="nexus relative min-h-dvh bg-[#05010c] text-white" style={{ fontFamily: FONT.body }}>
       <SiteNav revealed={revealed} />
 
-      {/* Emotional layer: cinematic entry — mounted only on first visit so there
-          is never a second WebGL scene or a replayed reveal. */}
-      {phase === "intro" && <CinematicHero onRevealed={handleIntroComplete} />}
+      {/* Emotional layer: the cinematic entry is the first section of the page. */}
+      <CinematicHero onRevealed={handleRevealed} />
 
-      {/* Functional layer: homepage content. Neon-atmosphere background with a
-          dissolving top edge continues the park world into the content. */}
-      <main
-        style={{
-          position: "relative",
-          zIndex: 20,
-          background: CONTENT_BG,
-          paddingTop: phase === "content" ? 56 : 0,
-        }}
-      >
+      {/* Functional layer: homepage content flows directly below the cinematic.
+          Neon-atmosphere background with a dissolving top edge continues the
+          park world into the content — no hard seam, no handoff. */}
+      <main style={{ position: "relative", zIndex: 20, background: CONTENT_BG }}>
         <HomeContent />
         <Scoreboard />
         <Games />
@@ -103,13 +87,6 @@ export default function OrientationHome() {
         <Committees />
         <SiteFooter />
       </main>
-
-      {/* Deterministic black cover until the client decides intro vs content —
-          avoids a content flash and hands seamlessly to the cinematic's own
-          black opening on first visit. */}
-      {phase === "checking" && (
-        <div className="fixed inset-0 z-[60] bg-black" aria-hidden="true" />
-      )}
     </div>
   );
 }

@@ -5,6 +5,12 @@ import gsap from "gsap";
 
 type Props = {
   reduced?: boolean;
+  /**
+   * Returning visitor: skip the full title sequence and just dissolve the black
+   * cover quickly to reveal the park. Keeps the cinematic section intact while
+   * avoiding a repeat of the expensive opening animation.
+   */
+  skip?: boolean;
   onDone?: () => void;
 };
 
@@ -13,7 +19,7 @@ type Props = {
  * the park behind it while the title typography rises. Purely time-based (not
  * scroll-based) so it plays once on load, then hands control to the scroll story.
  */
-export function LoadingReveal({ reduced = false, onDone }: Props) {
+export function LoadingReveal({ reduced = false, skip = false, onDone }: Props) {
   const root = useRef<HTMLDivElement>(null);
   const overlay = useRef<HTMLDivElement>(null);
   const glow = useRef<HTMLDivElement>(null);
@@ -33,6 +39,18 @@ export function LoadingReveal({ reduced = false, onDone }: Props) {
         if (root.current) root.current.style.pointerEvents = "none";
         onDoneRef.current?.();
       };
+
+      if (skip) {
+        // Returning visitor: no title cards, just a quick dissolve of the black
+        // cover into the already-familiar park. The scroll-driven cinematic
+        // section itself is unchanged.
+        gsap.set([brand.current, line1.current, line2.current], { opacity: 0 });
+        gsap.set(glow.current, { opacity: 0 });
+        gsap
+          .timeline({ onComplete: finish })
+          .to(overlay.current, { opacity: 0, duration: 0.45, ease: "power2.out" }, 0.05);
+        return;
+      }
 
       if (reduced) {
         // Simplified but still a reveal: quick title, quick dissolve.
@@ -83,7 +101,7 @@ export function LoadingReveal({ reduced = false, onDone }: Props) {
     }, root);
 
     return () => ctx.revert();
-  }, [reduced]);
+  }, [reduced, skip]);
 
   return (
     <div

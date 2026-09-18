@@ -5,36 +5,37 @@ import { useCallback, useEffect, useState } from "react";
 const KEY = "orientation_intro_seen";
 
 /**
- * "checking" — pre-mount / SSR state (render deterministically to avoid
- *              hydration mismatches; localStorage is browser-only).
- * "intro"    — first visit: play the cinematic entrance once.
- * "content"  — intro already seen: land directly on the homepage content.
+ * Tracks whether the opening title-card animation has already played in this
+ * browser. This ONLY influences the initial reveal animation (returning
+ * visitors get a quick fade instead of the full title sequence) — it never
+ * changes the page layout or mounts/unmounts the cinematic section. The
+ * cinematic is always structurally the first section of the homepage.
+ *
+ * `seen` is `null` until decided on the client (localStorage is browser-only),
+ * so the reveal is rendered only once we know which variant to play. Server and
+ * first client render agree, so there is no hydration mismatch.
  */
-export type IntroPhase = "checking" | "intro" | "content";
+export function useIntroSeen() {
+  const [seen, setSeen] = useState<boolean | null>(null);
 
-export function useIntro() {
-  const [phase, setPhase] = useState<IntroPhase>("checking");
-
-  // Decide on the client only. Server and first client render both use
-  // "checking", so hydration stays consistent.
   useEffect(() => {
-    let seen = false;
+    let value = false;
     try {
-      seen = window.localStorage.getItem(KEY) === "1";
+      value = window.localStorage.getItem(KEY) === "1";
     } catch {
       // Private mode / storage disabled — treat as first visit.
     }
-    setPhase(seen ? "content" : "intro");
+    setSeen(value);
   }, []);
 
-  // Persisted ONLY after the cinematic has actually completed (never on mount).
   const markSeen = useCallback(() => {
+    setSeen(true);
     try {
       window.localStorage.setItem(KEY, "1");
     } catch {
-      // Ignore storage failures; the intro simply plays again next time.
+      // Ignore storage failures; the full reveal simply plays again next time.
     }
   }, []);
 
-  return { phase, markSeen };
+  return { seen, markSeen };
 }

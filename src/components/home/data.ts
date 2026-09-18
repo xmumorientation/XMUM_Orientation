@@ -143,11 +143,17 @@ export const QUIZ: QuizQuestion[] = [
 ];
 
 /**
- * Smooth-scrolls to a homepage section id, accounting for the fixed nav.
- * "home" targets the content's top (#home) — never the cinematic — so the nav
- * returns to the homepage content and never restarts the intro.
+ * Smooth-scrolls to a homepage section. "home" scrolls to the very top of the
+ * page — the top of the cinematic section — since the cinematic is now the
+ * first section of one continuous page. This never restarts the opening
+ * animation (that is a one-time mount effect, not tied to scroll position).
+ * Other ids scroll to their section, accounting for the fixed nav.
  */
 export function scrollToSection(id: string) {
+  if (id === "home") {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    return;
+  }
   const el = document.getElementById(id);
   if (el) {
     el.scrollIntoView({ behavior: "smooth", block: "start" });
