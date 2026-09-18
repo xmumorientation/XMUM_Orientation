@@ -33,9 +33,27 @@ export default function OrientationHome() {
   const { phase, markSeen } = useIntro();
   const [revealed, setRevealed] = useState(false);
 
-  // Once the intro is skipped (returning visitor), the nav is shown immediately.
+  // Take over scroll restoration only while the homepage is mounted, so a
+  // reload never restores an old cinematic-layout scroll position into the
+  // (shorter) content-only layout. Restored on unmount so navigation elsewhere
+  // (e.g. /login, /dashboard) keeps the browser/Next.js default behavior.
+  // Client-only effect → no hydration impact.
   useEffect(() => {
-    if (phase === "content") setRevealed(true);
+    if (typeof window === "undefined" || !("scrollRestoration" in window.history)) return;
+    const previous = window.history.scrollRestoration;
+    window.history.scrollRestoration = "manual";
+    return () => {
+      window.history.scrollRestoration = previous;
+    };
+  }, []);
+
+  // Returning/skip visitors: show the nav immediately and land at the top of the
+  // homepage content (never a restored mid-content position).
+  useEffect(() => {
+    if (phase === "content") {
+      setRevealed(true);
+      window.scrollTo(0, 0);
+    }
   }, [phase]);
 
   // Fallbacks so the nav can never get stuck hidden during the intro.

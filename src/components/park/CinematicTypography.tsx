@@ -84,7 +84,9 @@ export function CinematicTypography({ scrollRef, reduced = false, active = true 
       beat(meet.current, 0.36, 0.48);
       beat(explore.current, 0.52, 0.63);
       beat(experience.current, 0.67, 0.8);
-      beat(open.current, 0.9); // final beat stays on screen
+      // Final end-card: shows during the last of the flight, then fades out well
+      // before progress 1.0 so it never overlays the incoming homepage content.
+      beat(open.current, 0.84, 0.93);
     });
 
     return () => ctx.revert();
