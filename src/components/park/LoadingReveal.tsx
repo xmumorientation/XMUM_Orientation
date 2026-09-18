@@ -21,11 +21,17 @@ export function LoadingReveal({ reduced = false, onDone }: Props) {
   const line1 = useRef<HTMLDivElement>(null);
   const line2 = useRef<HTMLDivElement>(null);
 
+  // Keep the latest onDone without making it an effect dependency — otherwise a
+  // new callback identity from the parent would re-run the effect and replay the
+  // entire intro. The timeline must build exactly once.
+  const onDoneRef = useRef(onDone);
+  onDoneRef.current = onDone;
+
   useEffect(() => {
     const ctx = gsap.context(() => {
       const finish = () => {
         if (root.current) root.current.style.pointerEvents = "none";
-        onDone?.();
+        onDoneRef.current?.();
       };
 
       if (reduced) {
@@ -77,7 +83,7 @@ export function LoadingReveal({ reduced = false, onDone }: Props) {
     }, root);
 
     return () => ctx.revert();
-  }, [reduced, onDone]);
+  }, [reduced]);
 
   return (
     <div

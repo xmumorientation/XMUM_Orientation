@@ -142,12 +142,16 @@ export const QUIZ: QuizQuestion[] = [
   { q: "How many student clubs are officially registered?", opts: ["48", "72", "96", "120"], ans: 3 },
 ];
 
-/** Smooth-scrolls to a homepage section id, accounting for the fixed nav. */
+/**
+ * Smooth-scrolls to a homepage section id, accounting for the fixed nav.
+ * "home" targets the content's top (#home) — never the cinematic — so the nav
+ * returns to the homepage content and never restarts the intro.
+ */
 export function scrollToSection(id: string) {
-  if (id === "home") {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-    return;
-  }
   const el = document.getElementById(id);
-  if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  if (el) {
+    el.scrollIntoView({ behavior: "smooth", block: "start" });
+  } else {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
 }
