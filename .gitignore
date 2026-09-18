@@ -32,3 +32,7 @@ supabase/.temp
 # local agent tooling config
 .claude/
 .superpowers/
+
+# supabase local CLI state
+supabase/.branches
+supabase/.temp
