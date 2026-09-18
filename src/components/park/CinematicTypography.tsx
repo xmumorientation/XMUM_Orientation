@@ -12,6 +12,8 @@ type Props = {
   /** The tall spacer that defines scroll length; drives the timeline. */
   scrollRef: RefObject<HTMLDivElement | null>;
   reduced?: boolean;
+  /** When false, hide the overlay (hero has scrolled out of view). */
+  active?: boolean;
 };
 
 const capBase =
@@ -22,7 +24,7 @@ const capBase =
  * timeline fades each beat in/out at fixed scroll progress, and the same
  * ScrollTrigger publishes progress to the shared scroll store for the 3D camera.
  */
-export function CinematicTypography({ scrollRef, reduced = false }: Props) {
+export function CinematicTypography({ scrollRef, reduced = false, active = true }: Props) {
   const hint = useRef<HTMLDivElement>(null);
   const journey = useRef<HTMLDivElement>(null);
   const meet = useRef<HTMLDivElement>(null);
@@ -91,7 +93,11 @@ export function CinematicTypography({ scrollRef, reduced = false }: Props) {
   // Reduced motion: a calm, static, fully-readable summary of the story beats.
   if (reduced) {
     return (
-      <div className="pointer-events-none fixed inset-0 z-30 flex flex-col items-center justify-center gap-8 px-6 text-center">
+      <div
+        className={`pointer-events-none fixed inset-0 z-30 flex flex-col items-center justify-center gap-8 px-6 text-center ${
+          active ? "" : "hidden"
+        }`}
+      >
         <p
           className="font-display text-3xl font-bold uppercase text-white sm:text-5xl"
           style={{ textShadow: "0 0 30px rgba(164,55,255,0.6)" }}
@@ -114,7 +120,7 @@ export function CinematicTypography({ scrollRef, reduced = false }: Props) {
   }
 
   return (
-    <div className="pointer-events-none fixed inset-0 z-30">
+    <div className={`pointer-events-none fixed inset-0 z-30 ${active ? "" : "hidden"}`}>
       {/* Scroll hint (bottom) */}
       <div
         ref={hint}

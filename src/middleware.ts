@@ -12,9 +12,13 @@ const PUBLIC_PATHS = [
 // Session refresh + coarse auth gate. Fine-grained role checks live in the
 // (app) layout and — authoritatively — in RLS/RPCs server-side (NFR-4).
 export async function middleware(request: NextRequest) {
-  // The "Enter the Park" cinematic prototype is a public, backend-free route.
-  // Short-circuit before touching Supabase so it works without auth or env.
-  if (request.nextUrl.pathname.startsWith("/park")) {
+  const path = request.nextUrl.pathname;
+
+  // Public, backend-free routes: the Orientation homepage ("/") and the
+  // standalone cinematic prototype ("/park"). Short-circuit before touching
+  // Supabase so they render without auth or env. Authentication for every
+  // other route is unchanged below.
+  if (path === "/" || path.startsWith("/park")) {
     return NextResponse.next({ request });
   }
 
@@ -51,7 +55,6 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const path = request.nextUrl.pathname;
   const isPublic = PUBLIC_PATHS.some((p) => path.startsWith(p));
 
   if (!user && !isPublic) {

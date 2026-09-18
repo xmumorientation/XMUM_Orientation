@@ -123,3 +123,91 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   NEXUS '26 — neon "Enter the Park" homepage theme.
+   Scoped to the public marketing homepage (/) via the .nexus wrapper so these
+   utilities never leak into the authenticated control-room app.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.nexus {
+  --holo: linear-gradient(135deg, #ff3cac 0%, #ff6b35 12%, #f9d342 24%, #39ff14 36%,
+    #00cfff 50%, #7b2fff 62%, #d966ff 74%, #ff3cac 86%, #ff6b35 100%);
+  --holo-warm: linear-gradient(135deg, #ff3cac 0%, #ff6b35 30%, #f9d342 60%, #39ff14 100%);
+  --holo-cool: linear-gradient(135deg, #7b2fff 0%, #00cfff 50%, #39ff14 100%);
+}
+
+.nexus .text-holo {
+  background: var(--holo);
+  background-size: 300% 300%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  animation: holo-shift 6s ease infinite;
+}
+.nexus .text-holo-cool {
+  background: var(--holo-cool);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+.nexus .text-holo-warm {
+  background: var(--holo-warm);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+@keyframes holo-shift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+/* Animated gradient hairline border card */
+.nexus .card-glow {
+  position: relative;
+  background: #0b0714;
+  border-radius: 1.25rem;
+}
+.nexus .card-glow::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: 1.3rem;
+  background: var(--holo);
+  background-size: 300% 300%;
+  animation: holo-shift 6s ease infinite;
+  z-index: -1;
+  opacity: 0.35;
+}
+
+@keyframes nexus-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.nexus .marquee-track { animation: nexus-marquee 20s linear infinite; }
+
+@keyframes nexus-blob {
+  0%, 100% { transform: translateY(0) scale(1); }
+  33% { transform: translateY(-16px) scale(1.04); }
+  66% { transform: translateY(8px) scale(0.97); }
+}
+.nexus .blob-float { animation: nexus-blob 9s ease-in-out infinite; }
+
+@keyframes nexus-pulse {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
+}
+.nexus .pulse-bright { animation: nexus-pulse 2s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .nexus .text-holo,
+  .nexus .card-glow::before,
+  .nexus .marquee-track,
+  .nexus .blob-float,
+  .nexus .pulse-bright {
+    animation: none !important;
+  }
+}

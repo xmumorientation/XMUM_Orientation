@@ -17,6 +17,7 @@ export function LoadingReveal({ reduced = false, onDone }: Props) {
   const root = useRef<HTMLDivElement>(null);
   const overlay = useRef<HTMLDivElement>(null);
   const glow = useRef<HTMLDivElement>(null);
+  const brand = useRef<HTMLDivElement>(null);
   const line1 = useRef<HTMLDivElement>(null);
   const line2 = useRef<HTMLDivElement>(null);
 
@@ -29,12 +30,12 @@ export function LoadingReveal({ reduced = false, onDone }: Props) {
 
       if (reduced) {
         // Simplified but still a reveal: quick title, quick dissolve.
-        gsap.set([line1.current, line2.current], { opacity: 1, y: 0 });
+        gsap.set([brand.current, line1.current, line2.current], { opacity: 1, y: 0 });
         gsap.set(glow.current, { opacity: 0.5 });
         gsap
           .timeline({ onComplete: finish })
           .to({}, { duration: 1.2 })
-          .to([line1.current, line2.current], { opacity: 0, duration: 0.4 })
+          .to([brand.current, line1.current, line2.current], { opacity: 0, duration: 0.4 })
           .to(overlay.current, { opacity: 0, duration: 0.6 }, "<");
         return;
       }
@@ -48,23 +49,31 @@ export function LoadingReveal({ reduced = false, onDone }: Props) {
       // 1.5s: neon lights illuminate, wheel partially visible
       tl.to(overlay.current, { opacity: 0.68, duration: 0.6 }, 1.5);
       tl.to(glow.current, { opacity: 0.8, duration: 0.6 }, 1.5);
-      // 2.0s: main typography rises
+      // 1.9s: NEXUS '26 brand rises first
+      tl.fromTo(
+        brand.current,
+        { opacity: 0, y: 26, filter: "blur(10px)" },
+        { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.7 },
+        1.9
+      );
+      // 2.25s: ORIENTATION 2026 kicker
       tl.fromTo(
         line1.current,
-        { opacity: 0, y: 24, filter: "blur(8px)" },
-        { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.7 },
-        2.0
+        { opacity: 0, y: 20, filter: "blur(8px)" },
+        { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.6 },
+        2.25
       );
+      // 2.5s: WELCOME TO THE PARK
       tl.fromTo(
         line2.current,
         { opacity: 0, y: 28, filter: "blur(10px)" },
         { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.8 },
-        2.35
+        2.5
       );
-      // 2.6s+: black overlay dissolves fully, titles fade so the story can begin
-      tl.to(overlay.current, { opacity: 0, duration: 1.0 }, 2.9);
-      tl.to(glow.current, { opacity: 0, duration: 1.0 }, 2.9);
-      tl.to([line1.current, line2.current], { opacity: 0, y: -20, duration: 0.7 }, 3.4);
+      // 3.1s+: black overlay dissolves fully, titles fade so the story can begin
+      tl.to(overlay.current, { opacity: 0, duration: 1.0 }, 3.2);
+      tl.to(glow.current, { opacity: 0, duration: 1.0 }, 3.2);
+      tl.to([brand.current, line1.current, line2.current], { opacity: 0, y: -20, duration: 0.7 }, 3.7);
     }, root);
 
     return () => ctx.revert();
@@ -89,15 +98,22 @@ export function LoadingReveal({ reduced = false, onDone }: Props) {
       />
       <div className="relative z-10 px-6 text-center">
         <div
+          ref={brand}
+          className="font-display text-5xl font-black uppercase tracking-tight text-white opacity-0 sm:text-7xl md:text-8xl"
+          style={{ textShadow: "0 0 44px rgba(18,230,255,0.75), 0 0 80px rgba(164,55,255,0.5)" }}
+        >
+          NEXUS <span className="text-[#12e6ff]">&apos;26</span>
+        </div>
+        <div
           ref={line1}
-          className="font-mono text-sm tracking-[0.5em] text-[#12e6ff] opacity-0 sm:text-base"
+          className="mt-5 font-mono text-sm tracking-[0.5em] text-[#12e6ff] opacity-0 sm:text-base"
           style={{ textShadow: "0 0 18px rgba(18,230,255,0.8)" }}
         >
           ORIENTATION&nbsp;2026
         </div>
         <div
           ref={line2}
-          className="mt-4 font-display text-4xl font-bold uppercase tracking-tight text-white opacity-0 sm:text-6xl md:text-7xl"
+          className="mt-3 font-display text-3xl font-bold uppercase tracking-tight text-white/90 opacity-0 sm:text-5xl"
           style={{ textShadow: "0 0 40px rgba(164,55,255,0.7)" }}
         >
           Welcome to the Park

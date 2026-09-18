@@ -11,6 +11,8 @@ import { CameraController } from "./CameraController";
 type Props = {
   mobile?: boolean;
   reduced?: boolean;
+  /** When true, stop the render loop (used once the hero scrolls out of view). */
+  paused?: boolean;
 };
 
 /**
@@ -18,12 +20,13 @@ type Props = {
  * Bloom (the neon glow) is desktop-only and skipped for reduced motion / mobile
  * to keep the prototype smooth on modest hardware.
  */
-export default function CinematicScene({ mobile = false, reduced = false }: Props) {
+export default function CinematicScene({ mobile = false, reduced = false, paused = false }: Props) {
   const useBloom = !mobile && !reduced;
 
   return (
     <Canvas
       dpr={mobile ? [1, 1.5] : [1, 2]}
+      frameloop={paused ? "never" : "always"}
       gl={{
         antialias: !mobile,
         powerPreference: "high-performance",
