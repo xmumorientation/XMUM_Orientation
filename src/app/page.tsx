@@ -4,9 +4,9 @@ import OrientationHome from "@/components/home/OrientationHome";
 import { nexusBody, nexusDisplay } from "@/components/home/fonts";
 
 export const metadata: Metadata = {
-  title: "NEXUS '26 — Orientation 2026",
+  title: "Vortexa — XMUM Orientation 2026",
   description:
-    "Enter the Park. A futuristic neon carnival marking the start of your university journey — Orientation 2026.",
+    "One ticket, One Ride, Discover adventure Inside. Enter Vortexa, a futuristic neon carnival marking the start of your university journey at XMUM.",
 };
 
 // Public landing: the cinematic Orientation homepage (no auth required).

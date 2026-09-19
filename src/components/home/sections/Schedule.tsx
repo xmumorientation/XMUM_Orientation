@@ -1,78 +1,192 @@
 "use client";
 
-import { useState } from "react";
-import { EVENTS, FONT } from "../data";
+import React, { useState } from "react";
+import { FONT, EVENTS } from "../data";
+import { Star, Gamepad2, Info, UtensilsCrossed } from "lucide-react";
 
 export function Schedule() {
-  const [activeDay, setActiveDay] = useState(0);
-  const typeColors: Record<string, string> = { star: "#f9d342", game: "#00cfff", map: "#39ff14", info: "#d966ff", food: "#ff6b35" };
-  const typeIcons: Record<string, string> = { star: "⭐", game: "🎮", map: "🗺️", info: "ℹ️", food: "🍜" };
-  const committeeColors: Record<string, string> = {
-    Logistics: "#f9d342", Program: "#d966ff", Welfare: "#39ff14",
-    Games: "#00cfff", Academic: "#ff3cac", Entertainment: "#ff6b35", Media: "rgba(255,255,255,0.4)",
+  const [activeDayIdx, setActiveDayIdx] = useState(0);
+
+  const TYPE_ICONS: Record<string, { icon: React.ReactNode; color: string }> = {
+    star: { icon: <Star size={16} />, color: "#f9d342" },
+    game: { icon: <Gamepad2 size={16} />, color: "#12e6ff" },
+    info: { icon: <Info size={16} />, color: "#a437ff" },
+    food: { icon: <UtensilsCrossed size={16} />, color: "#ffb454" },
   };
-  const dayColors = ["#00cfff", "#d966ff", "#ff3cac"];
+
+  const dayColors = ["#12e6ff", "#a437ff"];
+  const currentDay = EVENTS[activeDayIdx] ?? EVENTS[0];
 
   return (
-    <section id="schedule" style={{ scrollMarginTop: 64, padding: "56px 20px 72px", maxWidth: 720, margin: "0 auto" }}>
-      <div style={{ marginBottom: 32 }}>
-        <h2 style={{ fontFamily: FONT.display, fontWeight: 900, fontSize: "clamp(40px, 8vw, 64px)", lineHeight: 1 }}>
-          <span className="text-holo">SCHED</span>
-          <span style={{ color: "#fff" }}>ULE</span>
-        </h2>
-        <div style={{ fontFamily: FONT.mono, fontSize: 11, color: "rgba(255,255,255,0.3)", letterSpacing: 3, marginTop: 8 }}>SEP 18–20, 2026 · 3 DAYS</div>
-      </div>
-
-      {/* Day tabs */}
-      <div style={{ display: "flex", gap: 12, marginBottom: 36 }}>
-        {EVENTS.map((ev, i) => (
-          <button
-            key={ev.day}
-            onClick={() => setActiveDay(i)}
+    <section
+      id="schedule"
+      style={{
+        scrollMarginTop: 64,
+        position: "relative",
+        padding: "84px 20px 76px",
+        background: "transparent",
+      }}
+    >
+      <div style={{ maxWidth: 720, margin: "0 auto", position: "relative", zIndex: 2 }}>
+        <div style={{ textAlign: "center", marginBottom: 36 }}>
+          <h2
             style={{
-              flex: 1,
-              padding: "12px 8px",
-              borderRadius: 14,
-              cursor: "pointer",
-              background: activeDay === i ? `linear-gradient(135deg, ${dayColors[i]}cc, ${dayColors[i]}66)` : "#0b0714",
-              color: activeDay === i ? "#000" : "rgba(255,255,255,0.4)",
               fontFamily: FONT.display,
-              fontWeight: 800,
-              fontSize: 13,
-              border: activeDay === i ? "none" : "1px solid rgba(255,255,255,0.06)",
-              boxShadow: activeDay === i ? `0 0 20px ${dayColors[i]}40` : "none",
-              transition: "all 0.2s",
+              fontWeight: 900,
+              fontSize: "clamp(36px, 7vw, 64px)",
+              lineHeight: 1,
+              marginBottom: 16,
             }}
           >
-            <div>{ev.day}</div>
-            <div style={{ fontSize: 11, fontWeight: 400, opacity: 0.7, marginTop: 2 }}>{ev.date}</div>
-          </button>
-        ))}
-      </div>
+            <span className="text-holo">SCHED</span>
+            <span style={{ color: "#fff" }}>ULE</span>
+          </h2>
+          <div
+            style={{
+              fontFamily: FONT.mono,
+              fontSize: 11,
+              color: "rgba(255, 255, 255, 0.45)",
+              letterSpacing: 3,
+              textTransform: "uppercase",
+            }}
+          >
+            28–29 NOVEMBER 2026 · 2 DAYS
+          </div>
+        </div>
 
-      {/* Timeline */}
-      <div style={{ position: "relative" }}>
-        <div style={{ position: "absolute", left: 52, top: 0, bottom: 0, width: 1, background: "rgba(255,255,255,0.06)" }} />
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          {EVENTS[activeDay].items.map((item, i) => (
-            <div key={i} style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
-              <div style={{ width: 40, flexShrink: 0, textAlign: "right", paddingTop: 2 }}>
-                <span style={{ fontFamily: FONT.mono, fontSize: 11, color: "rgba(255,255,255,0.3)" }}>{item.time}</span>
-              </div>
-              <div style={{ flexShrink: 0, width: 26, height: 26, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, zIndex: 1, background: `${typeColors[item.type]}15`, border: `2px solid ${typeColors[item.type]}50`, marginTop: 1 }}>
-                {typeIcons[item.type]}
-              </div>
-              <div className="card-glow" style={{ flex: 1, padding: "12px 16px" }}>
-                <div style={{ fontFamily: FONT.display, fontWeight: 800, fontSize: 14, color: "#fff", marginBottom: 4 }}>{item.title}</div>
-                <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-                  <span style={{ fontSize: 11, color: "rgba(255,255,255,0.35)" }}>📍 {item.venue}</span>
-                  <span style={{ padding: "2px 8px", borderRadius: 50, fontSize: 10, fontWeight: 700, background: `${committeeColors[item.committee] ?? "#fff"}15`, color: committeeColors[item.committee] ?? "rgba(255,255,255,0.5)" }}>
-                    {item.committee}
-                  </span>
+        {/* Day Tabs */}
+        <div style={{ display: "flex", gap: 12, marginBottom: 36, justifyContent: "center" }}>
+          {EVENTS.map((ev, i) => {
+            const isActive = activeDayIdx === i;
+            const color = dayColors[i] || "#12e6ff";
+            return (
+              <button
+                key={ev.day}
+                onClick={() => setActiveDayIdx(i)}
+                style={{
+                  flex: 1,
+                  maxWidth: 180,
+                  padding: "14px 16px",
+                  borderRadius: 16,
+                  cursor: "pointer",
+                  background: isActive ? `linear-gradient(135deg, ${color}30, ${color}10)` : "rgba(11, 7, 24, 0.45)",
+                  color: isActive ? "#fff" : "rgba(255, 255, 255, 0.5)",
+                  fontFamily: FONT.display,
+                  fontWeight: 800,
+                  fontSize: 14,
+                  border: isActive ? `1.5px solid ${color}` : "1px solid rgba(255, 255, 255, 0.08)",
+                  boxShadow: isActive ? `0 0 25px ${color}30` : "none",
+                  backdropFilter: "blur(12px)",
+                  transition: "all 0.2s ease",
+                  textAlign: "center",
+                }}
+              >
+                <div>{ev.day}</div>
+                <div style={{ fontSize: 11, fontWeight: 500, opacity: 0.75, marginTop: 2, fontFamily: FONT.mono }}>
+                  {ev.date}
                 </div>
-              </div>
-            </div>
-          ))}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Timeline Items */}
+        <div style={{ position: "relative" }}>
+          <div
+            style={{
+              position: "absolute",
+              left: 48,
+              top: 8,
+              bottom: 8,
+              width: 1,
+              background: "rgba(255, 255, 255, 0.1)",
+            }}
+          />
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            {currentDay.items.map((item, i) => {
+              const cfg = TYPE_ICONS[item.type] || TYPE_ICONS.info;
+              return (
+                <div key={i} style={{ display: "flex", gap: 16, alignItems: "center" }}>
+                  {/* Time column */}
+                  <div
+                    style={{
+                      width: 40,
+                      flexShrink: 0,
+                      textAlign: "right",
+                      fontFamily: FONT.mono,
+                      fontSize: 11,
+                      color: "rgba(255, 255, 255, 0.45)",
+                      letterSpacing: 1,
+                    }}
+                  >
+                    {item.time}
+                  </div>
+
+                  {/* Icon circle */}
+                  <div
+                    style={{
+                      flexShrink: 0,
+                      width: 32,
+                      height: 32,
+                      borderRadius: "50%",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      zIndex: 1,
+                      background: "#0b0718",
+                      border: `1.5px solid ${cfg.color}`,
+                      color: cfg.color,
+                      boxShadow: `0 0 12px ${cfg.color}40`,
+                    }}
+                  >
+                    {cfg.icon}
+                  </div>
+
+                  {/* Content card with translucent glass */}
+                  <div
+                    style={{
+                      flex: 1,
+                      padding: "16px 20px",
+                      borderRadius: 14,
+                      background: "rgba(11, 7, 24, 0.45)",
+                      border: "1px solid rgba(255, 255, 255, 0.06)",
+                      backdropFilter: "blur(12px)",
+                      boxShadow: "0 4px 20px rgba(0, 0, 0, 0.25)",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      gap: 12,
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontFamily: FONT.display,
+                        fontWeight: 800,
+                        fontSize: 15,
+                        color: "#fff",
+                      }}
+                    >
+                      {item.title}
+                    </div>
+
+                    <div
+                      style={{
+                        fontSize: 11,
+                        color: "rgba(255, 255, 255, 0.4)",
+                        fontFamily: FONT.mono,
+                        letterSpacing: 1,
+                        textTransform: "uppercase",
+                        flexShrink: 0,
+                      }}
+                    >
+                      {item.venue === "TBD" ? "TIME & VENUE TBD" : item.venue}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
     </section>

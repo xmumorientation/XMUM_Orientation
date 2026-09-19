@@ -8,9 +8,10 @@ import { StarSparkle } from "./decor";
 
 const TABS = [
   { id: "home", label: "Home" },
-  { id: "scoreboard", label: "Scoreboard" },
+  { id: "welcome", label: "Welcome" },
+  { id: "overview", label: "Overview" },
   { id: "games", label: "Games" },
-  { id: "map", label: "Map" },
+  { id: "scoreboard", label: "Scoreboard" },
   { id: "schedule", label: "Schedule" },
   { id: "committees", label: "Committees" },
 ];
@@ -19,7 +20,6 @@ export function SiteNav({ revealed = true }: { revealed?: boolean }) {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState("home");
 
-  // Scroll-spy: highlight the section currently in view.
   useEffect(() => {
     const ids = TABS.map((t) => t.id).filter((id) => id !== "home");
     const observer = new IntersectionObserver(
@@ -79,13 +79,12 @@ export function SiteNav({ revealed = true }: { revealed?: boolean }) {
         {/* Logo */}
         <button
           onClick={() => go("home")}
-          aria-label="NEXUS '26 — go to top"
+          aria-label="Vortexa — go to top"
           style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }}
         >
           <span className="text-holo" style={{ fontFamily: FONT.display, fontWeight: 900, fontSize: 22, letterSpacing: 1 }}>
-            NEXUS
+            VORTEXA
           </span>
-          <span style={{ fontFamily: FONT.display, fontWeight: 900, fontSize: 22, color: "#fff", letterSpacing: 1 }}>&apos;26</span>
           <StarSparkle size={14} color="#d966ff" style={{ marginLeft: 2 }} />
         </button>
 
@@ -98,8 +97,8 @@ export function SiteNav({ revealed = true }: { revealed?: boolean }) {
               style={{
                 fontFamily: FONT.display,
                 fontWeight: 700,
-                fontSize: 13,
-                padding: "6px 14px",
+                fontSize: 12,
+                padding: "6px 12px",
                 borderRadius: 8,
                 border: "none",
                 cursor: "pointer",
@@ -121,13 +120,13 @@ export function SiteNav({ revealed = true }: { revealed?: boolean }) {
               fontSize: 13,
               padding: "8px 18px",
               borderRadius: 50,
-              border: "1px solid rgba(255,255,255,0.25)",
-              color: "#fff",
+              background: "linear-gradient(135deg,#ff3cac,#d966ff,#00cfff)",
+              color: "#000",
               letterSpacing: 0.5,
               textDecoration: "none",
             }}
           >
-            Login
+            JOIN THE GAME
           </Link>
         </div>
 
@@ -182,12 +181,12 @@ export function SiteNav({ revealed = true }: { revealed?: boolean }) {
               fontSize: 15,
               padding: "12px 0",
               borderRadius: 50,
-              border: "1px solid rgba(255,255,255,0.25)",
-              color: "#fff",
+              background: "linear-gradient(135deg,#ff3cac,#d966ff,#00cfff)",
+              color: "#000",
               textDecoration: "none",
             }}
           >
-            Login
+            JOIN THE GAME
           </Link>
         </div>
       )}

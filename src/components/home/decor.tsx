@@ -72,7 +72,16 @@ export function HoloSticker({
 }
 
 export function MarqueeBanner() {
-  const items = ["NEXUS '26", "ORIENTATION 2026", "★ GAME ON ★", "3 DAYS", "6 TEAMS", "1,240 STUDENTS", "★ LET'S GO ★"];
+  const items = [
+    "VORTEXA",
+    "XMUM ORIENTATION 2026",
+    "★ ONE TICKET, ONE RIDE ★",
+    "28–29 NOV 2026",
+    "2 DAYS",
+    "TEAMS TBA",
+    "10 COMMITTEES",
+    "★ DISCOVER ADVENTURE INSIDE ★",
+  ];
   const doubled = [...items, ...items];
   return (
     <div
@@ -101,7 +110,7 @@ export function MarqueeBanner() {
 
 export function Countdown() {
   const calc = () => {
-    const diff = new Date("2026-09-18T08:00:00").getTime() - Date.now();
+    const diff = new Date("2026-11-28T08:00:00+08:00").getTime() - Date.now();
     if (diff <= 0) return { d: 0, h: 0, m: 0, s: 0 };
     return {
       d: Math.floor(diff / 86400000),
@@ -123,7 +132,7 @@ export function Countdown() {
     { label: "DAYS", val: t?.d, color: "#ff3cac" },
     { label: "HRS", val: t?.h, color: "#d966ff" },
     { label: "MIN", val: t?.m, color: "#00cfff" },
-    { label: "SEC", val: t?.s, color: "#39ff14" },
+    { label: "SEC", val: t?.s, color: "#00cfff" },
   ];
 
   return (

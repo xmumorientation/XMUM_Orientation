@@ -12,12 +12,13 @@ import { useIntroSeen } from "./useIntro";
 const CinematicScene = dynamic(() => import("@/components/park/CinematicScene"), { ssr: false });
 
 /**
- * The cinematic "Enter the Park" flight — the first section of the homepage.
- * A single fixed WebGL layer + caption overlay sit behind a tall scroll spacer;
- * scroll progress along that spacer drives the camera. Once the user scrolls
- * past the section into the content, the layer is hidden and its render loop
- * paused to free the GPU — but it is never unmounted and the page layout never
- * changes, so scrolling stays continuous with a single canvas.
+ * The cinematic "Enter the Park" flight — the visual backbone of the homepage.
+ * A single fixed WebGL canvas sits permanently at z-0 behind the entire page.
+ * During the initial spacer, scroll progress drives the camera flight and
+ * synchronized typography captions. Once the user scrolls past into the HTML
+ * content, the canvas remains continuously visible as the living 3D environment
+ * (with slowly rotating Ferris wheel, neon grid, stars, and atmospheric lights),
+ * providing the real world within which all content sections naturally float.
  */
 export function CinematicHero({ onRevealed }: { onRevealed?: () => void }) {
   const reduced = useReducedMotion();
@@ -32,14 +33,16 @@ export function CinematicHero({ onRevealed }: { onRevealed?: () => void }) {
     window.scrollTo(0, 0);
   }, []);
 
-  // Toggle the WebGL layer only while the hero region is on screen. This pauses
-  // the render loop when the park is off-screen without unmounting the canvas.
+  // Track when the opening captions region is in view vs scrolled past.
+  // The 3D canvas stays permanently visible; only the Opening typography overlay
+  // is hidden once the user enters the Welcome section.
   useEffect(() => {
     let raf = 0;
     const update = () => {
       raf = 0;
       const h = spacerRef.current?.offsetHeight ?? window.innerHeight;
-      setHeroActive(window.scrollY < h - 2);
+      const y = window.scrollY;
+      setHeroActive(y < h - 2);
     };
     const onScroll = () => {
       if (!raf) raf = requestAnimationFrame(update);
@@ -54,32 +57,29 @@ export function CinematicHero({ onRevealed }: { onRevealed?: () => void }) {
     };
   }, []);
 
-  // The opening reveal has finished (either the full first-visit sequence or the
-  // quick returning-visitor fade): remember it and reveal the nav.
   const handleRevealed = useCallback(() => {
     markSeen();
     onRevealed?.();
   }, [markSeen, onRevealed]);
 
-  // Hero scroll length: long on desktop for the flight, short for reduced motion.
   const heroHeight = reduced ? "110vh" : mobile ? "360vh" : "480vh";
 
   return (
     <>
-      <div className="fixed inset-0 z-0" style={{ display: heroActive ? "block" : "none" }}>
-        {mounted && <CinematicScene mobile={mobile} reduced={reduced} paused={!heroActive} />}
+      {/* Persistent WebGL canvas: fixed full-viewport at z-0, visible across all sections */}
+      <div className="fixed inset-0 z-0 pointer-events-none" aria-hidden="true">
+        {mounted && <CinematicScene mobile={mobile} reduced={reduced} paused={reduced} />}
       </div>
 
+      {/* Opening captions overlay: active only during the initial flight */}
       {mounted && <CinematicTypography scrollRef={spacerRef} reduced={reduced} active={heroActive} />}
 
-      {/* Opening title card. Rendered only once `seen` is decided so we know
-          whether to play the full sequence or a quick fade for returning
-          visitors — never gating layout, only the animation. */}
+      {/* Initial cinematic reveal title card: fades once on first visit */}
       {mounted && seen !== null && (
         <LoadingReveal reduced={reduced} skip={seen} onDone={handleRevealed} />
       )}
 
-      {/* Scroll length for the cinematic camera flight. */}
+      {/* Scroll length for the camera flight */}
       <div ref={spacerRef} aria-hidden="true" className="relative z-10" style={{ height: heroHeight }} />
     </>
   );

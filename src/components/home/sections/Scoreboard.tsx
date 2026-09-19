@@ -1,78 +1,194 @@
 "use client";
 
+import React from "react";
 import { FONT, TEAMS } from "../data";
 
 export function Scoreboard() {
-  const sorted = [...TEAMS].sort((a, b) => b.score - a.score);
-  const maxScore = sorted[0].score;
-  const medals = ["🥇", "🥈", "🥉"];
-
   return (
-    <section id="scoreboard" style={{ scrollMarginTop: 64, padding: "56px 20px 72px", maxWidth: 720, margin: "0 auto" }}>
-      <div style={{ marginBottom: 32 }}>
-        <h2 style={{ fontFamily: FONT.display, fontWeight: 900, fontSize: "clamp(40px, 8vw, 64px)", lineHeight: 1 }}>
+    <section
+      id="scoreboard"
+      style={{
+        scrollMarginTop: 64,
+        position: "relative",
+        padding: "84px 20px 76px",
+        background: "transparent",
+      }}
+    >
+      <div style={{ maxWidth: 760, margin: "0 auto", textAlign: "center", position: "relative", zIndex: 2 }}>
+        <h2
+          style={{
+            fontFamily: FONT.display,
+            fontWeight: 900,
+            fontSize: "clamp(36px, 7vw, 64px)",
+            lineHeight: 1,
+            marginBottom: 16,
+          }}
+        >
           <span className="text-holo">SCORE</span>
           <span style={{ color: "#fff" }}>BOARD</span>
         </h2>
-        <div style={{ fontFamily: FONT.mono, fontSize: 11, color: "rgba(255,255,255,0.3)", letterSpacing: 3, marginTop: 8 }}>UPDATED LIVE · DAY 2 OF 3</div>
-      </div>
 
-      {/* Podium */}
-      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "center", gap: 12, marginBottom: 44, height: 170 }}>
-        {[sorted[1], sorted[0], sorted[2]].map((team, idx) => {
-          const hs = [120, 152, 100];
-          const pos = [2, 1, 3];
-          return (
-            <div key={team.id} style={{ flex: 1, maxWidth: 140, display: "flex", flexDirection: "column", alignItems: "center" }}>
-              <div style={{ fontSize: 24, marginBottom: 4 }}>{team.emoji}</div>
-              <div style={{ fontFamily: FONT.display, fontWeight: 800, fontSize: 12, color: team.color, marginBottom: 6, textAlign: "center" }}>{team.name.replace("Team ", "")}</div>
-              <div style={{ width: "100%", height: hs[idx], borderRadius: "12px 12px 0 0", background: `${team.color}18`, border: `2px solid ${team.color}50`, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: FONT.display, fontWeight: 900, fontSize: 28, color: team.color, boxShadow: `0 0 20px ${team.color}30` }}>
-                {pos[idx]}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+        <p
+          style={{
+            fontFamily: FONT.body,
+            fontSize: "clamp(15px, 2.5vw, 18px)",
+            color: "rgba(255, 255, 255, 0.7)",
+            maxWidth: 520,
+            margin: "0 auto 36px",
+            lineHeight: 1.6,
+          }}
+        >
+          Real-time standings across all orientation houses and teams.
+        </p>
 
-      {/* Ranked list */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        {sorted.map((team, i) => (
-          <div key={team.id} className="card-glow" style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 16 }}>
-            <div style={{ fontSize: 24, width: 32, textAlign: "center" }}>{medals[i] ?? `#${i + 1}`}</div>
-            <div style={{ fontSize: 24 }}>{team.emoji}</div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontFamily: FONT.display, fontWeight: 800, fontSize: 14, color: team.color, marginBottom: 6 }}>{team.name}</div>
-              <div style={{ height: 6, borderRadius: 3, background: "rgba(255,255,255,0.08)", overflow: "hidden" }}>
-                <div style={{ height: "100%", borderRadius: 3, width: `${(team.score / maxScore) * 100}%`, background: `linear-gradient(90deg, ${team.color}88, ${team.color})`, boxShadow: `0 0 8px ${team.color}80` }} />
-              </div>
-              <div style={{ display: "flex", gap: 12, marginTop: 4, fontSize: 11, color: "rgba(255,255,255,0.35)", fontFamily: FONT.mono }}>
-                <span>{team.members} members</span>
-                <span>{team.wins}W</span>
-              </div>
-            </div>
-            <div style={{ textAlign: "right", flexShrink: 0 }}>
-              <div style={{ fontFamily: FONT.mono, fontWeight: 700, fontSize: 22, color: team.color }}>{team.score.toLocaleString()}</div>
-              <div style={{ fontSize: 10, color: "rgba(255,255,255,0.3)" }}>points</div>
-            </div>
+        {/* Futuristic Leaderboard Display Board with translucent glass */}
+        <div
+          style={{
+            borderRadius: 24,
+            padding: "36px 24px",
+            background: "rgba(5, 1, 12, 0.30)",
+            border: "1px solid rgba(18, 230, 255, 0.18)",
+            boxShadow: "0 4px 24px rgba(0, 0, 0, 0.25), 0 0 30px rgba(18, 230, 255, 0.05)",
+            backdropFilter: "blur(8px)",
+            position: "relative",
+            overflow: "hidden",
+          }}
+        >
+          {/* Neon Header Status */}
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "6px 18px",
+              borderRadius: 50,
+              background: "rgba(18, 230, 255, 0.08)",
+              border: "1px solid rgba(18, 230, 255, 0.25)",
+              marginBottom: 18,
+            }}
+          >
+            <span
+              style={{
+                width: 8,
+                height: 8,
+                borderRadius: "50%",
+                background: "#12e6ff",
+                boxShadow: "0 0 10px #12e6ff",
+              }}
+            />
+            <span
+              style={{
+                fontFamily: FONT.mono,
+                fontSize: 11,
+                color: "#12e6ff",
+                letterSpacing: 2,
+                textTransform: "uppercase",
+              }}
+            >
+              Standby · System Initialised
+            </span>
           </div>
-        ))}
-      </div>
 
-      {/* Breakdown */}
-      <div className="card-glow" style={{ marginTop: 32, padding: 24 }}>
-        <h3 className="text-holo-cool" style={{ fontFamily: FONT.display, fontWeight: 800, fontSize: 18, marginBottom: 16 }}>Points Breakdown</h3>
-        {[
-          { event: "Tower Build", winner: "Team Aquila", pts: 350, color: "#00cfff" },
-          { event: "Morning Cheer", winner: "Team Vega", pts: 200, color: "#d966ff" },
-          { event: "Registration Sprint", winner: "Team Orion", pts: 150, color: "#ff3cac" },
-          { event: "Attendance Bonus", winner: "All Teams", pts: 100, color: "#39ff14" },
-        ].map((row) => (
-          <div key={row.event} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid rgba(255,255,255,0.06)", fontSize: 13 }}>
-            <span style={{ color: "rgba(255,255,255,0.7)" }}>{row.event}</span>
-            <span style={{ color: "rgba(255,255,255,0.3)", fontSize: 11, fontFamily: FONT.mono }}>{row.winner}</span>
-            <span style={{ fontFamily: FONT.mono, fontWeight: 700, color: row.color }}>+{row.pts}</span>
+          <h3
+            style={{
+              fontFamily: FONT.display,
+              fontWeight: 900,
+              fontSize: "clamp(19px, 3.8vw, 26px)",
+              color: "#fff",
+              letterSpacing: 1,
+              marginBottom: 8,
+            }}
+          >
+            THE SCOREBOARD WILL GO LIVE WHEN THE GAME BEGINS
+          </h3>
+
+          <p
+            style={{
+              fontFamily: FONT.mono,
+              fontSize: 12,
+              color: "rgba(255, 255, 255, 0.45)",
+              letterSpacing: 2,
+              textTransform: "uppercase",
+              marginBottom: 32,
+            }}
+          >
+            D-Day: 28–29 November 2026 · Live Telemetry
+          </p>
+
+          {/* Team Standing Preview Roster */}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))",
+              gap: 12,
+              textAlign: "left",
+            }}
+          >
+            {TEAMS.map((team, idx) => (
+              <div
+                key={team.id}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  padding: "14px 18px",
+                  borderRadius: 14,
+                  background: "rgba(255, 255, 255, 0.03)",
+                  border: `1px solid ${team.color}25`,
+                  backdropFilter: "blur(8px)",
+                  transition: "border-color 0.2s, transform 0.2s",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <span
+                    style={{
+                      fontFamily: FONT.mono,
+                      fontWeight: 700,
+                      fontSize: 15,
+                      color: "rgba(255, 255, 255, 0.35)",
+                      width: 20,
+                    }}
+                  >
+                    0{idx + 1}
+                  </span>
+                  <div>
+                    <div
+                      style={{
+                        fontFamily: FONT.display,
+                        fontWeight: 800,
+                        fontSize: 14,
+                        color: "#fff",
+                      }}
+                    >
+                      {team.name}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 10,
+                        fontFamily: FONT.mono,
+                        color: team.color,
+                        letterSpacing: 1,
+                        marginTop: 2,
+                      }}
+                    >
+                      READY
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    width: 10,
+                    height: 10,
+                    borderRadius: "50%",
+                    background: team.color,
+                    boxShadow: `0 0 10px ${team.color}80`,
+                  }}
+                />
+              </div>
+            ))}
           </div>
-        ))}
+        </div>
       </div>
     </section>
   );

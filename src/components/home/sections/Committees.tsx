@@ -1,73 +1,212 @@
 "use client";
 
-import { useState } from "react";
-import { COMMITTEES, FONT, type Committee } from "../data";
+import React, { useState } from "react";
+import { FONT, COMMITTEES, type Committee } from "../data";
+import {
+  Code,
+  Calendar,
+  Briefcase,
+  Users,
+  Gamepad2,
+  Megaphone,
+  Wallet,
+  FileText,
+  Palette,
+  Camera,
+} from "lucide-react";
+
+const COMMITTEE_ICONS: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
+  Code,
+  Calendar,
+  Briefcase,
+  Users,
+  Gamepad2,
+  Megaphone,
+  Wallet,
+  FileText,
+  Palette,
+  Camera,
+};
 
 export function Committees() {
-  const [active, setActive] = useState<Committee | null>(null);
+  const [activeCommittee, setActiveCommittee] = useState<Committee | null>(null);
 
   return (
-    <section id="committees" style={{ scrollMarginTop: 64, padding: "56px 20px 72px", maxWidth: 960, margin: "0 auto" }}>
-      <div style={{ marginBottom: 32 }}>
-        <h2 style={{ fontFamily: FONT.display, fontWeight: 900, fontSize: "clamp(36px, 8vw, 64px)", lineHeight: 1 }}>
-          <span className="text-holo">COMMIT</span>
-          <span style={{ color: "#fff" }}>TEES</span>
-        </h2>
-        <div style={{ fontFamily: FONT.mono, fontSize: 11, color: "rgba(255,255,255,0.3)", letterSpacing: 3, marginTop: 8 }}>
-          6 TEAMS · {COMMITTEES.reduce((a, c) => a + c.members, 0)} MEMBERS TOTAL
-        </div>
-      </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 16, marginBottom: 24 }}>
-        {COMMITTEES.map((c) => (
-          <button
-            key={c.name}
-            onClick={() => setActive(active?.name === c.name ? null : c)}
-            className="card-glow"
+    <section
+      id="committees"
+      style={{
+        scrollMarginTop: 64,
+        position: "relative",
+        padding: "84px 20px 80px",
+        background: "transparent",
+      }}
+    >
+      <div style={{ maxWidth: 960, margin: "0 auto", position: "relative", zIndex: 2 }}>
+        <div style={{ textAlign: "center", marginBottom: 40 }}>
+          <h2
             style={{
-              padding: 24,
-              textAlign: "left",
-              border: "none",
-              cursor: "pointer",
-              outline: active?.name === c.name ? `2px solid ${c.color}60` : "none",
-              outlineOffset: 2,
-              boxShadow: active?.name === c.name ? `0 0 30px ${c.color}25` : "none",
-              transition: "all 0.2s",
+              fontFamily: FONT.display,
+              fontWeight: 900,
+              fontSize: "clamp(36px, 7vw, 64px)",
+              lineHeight: 1,
+              marginBottom: 16,
             }}
           >
-            <div style={{ fontSize: 36, marginBottom: 12 }}>{c.icon}</div>
-            <div style={{ fontFamily: FONT.display, fontWeight: 900, fontSize: 16, color: c.color, marginBottom: 4, textShadow: `0 0 16px ${c.color}50` }}>{c.name}</div>
-            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginBottom: 12 }}>{c.head} · {c.members} members</div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-              {c.functions.slice(0, 2).map((f) => (
-                <span key={f} style={{ padding: "3px 10px", borderRadius: 50, fontSize: 10, background: `${c.color}12`, color: c.color, border: `1px solid ${c.color}25` }}>{f}</span>
-              ))}
-            </div>
-          </button>
-        ))}
-      </div>
+            <span className="text-holo">COMMIT</span>
+            <span style={{ color: "#fff" }}>TEES</span>
+          </h2>
+          <div
+            style={{
+              fontFamily: FONT.mono,
+              fontSize: 11,
+              color: "rgba(255, 255, 255, 0.45)",
+              letterSpacing: 3,
+              textTransform: "uppercase",
+            }}
+          >
+            THE CREW BEHIND VORTEXA · 10 TEAMS
+          </div>
+        </div>
 
-      {active && (
-        <div className="card-glow" style={{ padding: 28 }}>
-          <div style={{ display: "flex", gap: 20, alignItems: "flex-start", flexWrap: "wrap" }}>
-            <div style={{ fontSize: 48 }}>{active.icon}</div>
-            <div style={{ flex: 1, minWidth: 200 }}>
-              <h3 style={{ fontFamily: FONT.display, fontWeight: 900, fontSize: 26, color: active.color, marginBottom: 8, textShadow: `0 0 24px ${active.color}60` }}>{active.name}</h3>
-              <p style={{ fontSize: 14, color: "rgba(255,255,255,0.55)", lineHeight: 1.65, marginBottom: 20 }}>{active.desc}</p>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10 }}>
-                {active.functions.map((f) => (
-                  <div key={f} style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", borderRadius: 12, background: `${active.color}08`, fontSize: 13, color: "rgba(255,255,255,0.8)" }}>
-                    <span style={{ color: active.color, fontSize: 10 }}>✦</span> {f}
-                  </div>
-                ))}
+        {/* Committee Grid: Restrained credits aesthetic with translucent glass */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))",
+            gap: 14,
+            marginBottom: 28,
+          }}
+        >
+          {COMMITTEES.map((c) => {
+            const Icon = COMMITTEE_ICONS[c.icon] || Users;
+            const isSelected = activeCommittee?.id === c.id;
+
+            return (
+              <button
+                key={c.id}
+                onClick={() => setActiveCommittee(isSelected ? null : c)}
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  padding: "22px 14px",
+                  borderRadius: 16,
+                  cursor: "pointer",
+                  background: isSelected ? `rgba(${c.color === "#12e6ff" ? "18,230,255" : "164,55,255"}, 0.14)` : "rgba(11, 7, 24, 0.42)",
+                  border: isSelected ? `1.5px solid ${c.color}` : "1px solid rgba(255, 255, 255, 0.06)",
+                  boxShadow: isSelected ? `0 0 25px ${c.color}35` : "0 4px 20px rgba(0, 0, 0, 0.25)",
+                  backdropFilter: "blur(12px)",
+                  transition: "all 0.2s ease",
+                  textAlign: "center",
+                  outline: "none",
+                }}
+              >
+                <div
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: "50%",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginBottom: 12,
+                    background: `${c.color}15`,
+                    color: c.color,
+                    border: `1px solid ${c.color}40`,
+                    boxShadow: `0 0 14px ${c.color}20`,
+                  }}
+                >
+                  <Icon size={20} />
+                </div>
+
+                <div
+                  style={{
+                    fontFamily: FONT.display,
+                    fontWeight: 900,
+                    fontSize: 15,
+                    color: "#fff",
+                    marginBottom: 4,
+                  }}
+                >
+                  {c.name}
+                </div>
+
+                <div
+                  style={{
+                    fontFamily: FONT.body,
+                    fontSize: 11,
+                    color: "rgba(255, 255, 255, 0.48)",
+                    lineHeight: 1.3,
+                  }}
+                >
+                  {c.fullName}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Detail Panel with translucent glass */}
+        {activeCommittee && (
+          <div
+            style={{
+              padding: "28px 32px",
+              borderRadius: 20,
+              background: "rgba(11, 7, 24, 0.55)",
+              border: `1px solid ${activeCommittee.color}40`,
+              boxShadow: `0 8px 32px rgba(0, 0, 0, 0.4), 0 0 35px ${activeCommittee.color}20`,
+              backdropFilter: "blur(16px)",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 16 }}>
+              <div style={{ flex: 1, minWidth: 260 }}>
+                <div
+                  style={{
+                    fontFamily: FONT.display,
+                    fontWeight: 900,
+                    fontSize: 22,
+                    color: activeCommittee.color,
+                    marginBottom: 6,
+                  }}
+                >
+                  {activeCommittee.name} · {activeCommittee.fullName}
+                </div>
+                <p
+                  style={{
+                    fontFamily: FONT.body,
+                    fontSize: 14,
+                    color: "rgba(255, 255, 255, 0.8)",
+                    lineHeight: 1.6,
+                    margin: 0,
+                  }}
+                >
+                  {activeCommittee.desc}
+                </p>
               </div>
-              <div style={{ marginTop: 16, fontSize: 10, color: "rgba(255,255,255,0.25)", fontFamily: FONT.mono, letterSpacing: 2 }}>
-                COMMITTEE HEAD · {active.head.toUpperCase()} · {active.members} MEMBERS
+
+              <div style={{ display: "flex", gap: 24, flexShrink: 0 }}>
+                <div>
+                  <div style={{ fontSize: 10, fontFamily: FONT.mono, color: "rgba(255, 255, 255, 0.4)", letterSpacing: 2, textTransform: "uppercase" }}>
+                    Committee Head
+                  </div>
+                  <div style={{ fontSize: 14, fontFamily: FONT.mono, color: "#fff", fontWeight: 700, marginTop: 4 }}>
+                    {activeCommittee.head || "TBD"}
+                  </div>
+                </div>
+
+                <div>
+                  <div style={{ fontSize: 10, fontFamily: FONT.mono, color: "rgba(255, 255, 255, 0.4)", letterSpacing: 2, textTransform: "uppercase" }}>
+                    Members
+                  </div>
+                  <div style={{ fontSize: 14, fontFamily: FONT.mono, color: "#fff", fontWeight: 700, marginTop: 4 }}>
+                    {activeCommittee.members !== null ? activeCommittee.members : "TBD"}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </section>
   );
 }
