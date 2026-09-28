@@ -1,6 +1,6 @@
 "use client";
 
-import { Menu, X } from "lucide-react";
+import { Menu, ScanLine, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -41,6 +41,8 @@ const NAV: NavItem[] = [
       "admin",
     ],
   },
+  // Web QR scanner (blind boxes). Mobile also gets a floating button below.
+  { href: "/scan", label: "Scan", code: "SC", roles: ["freshie"] },
   {
     href: "/map",
     label: "Map",
@@ -131,6 +133,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [menuOpen, setMenuOpen] = useState(false);
 
   const items = NAV.filter((n) => n.roles.includes(profile.role));
+  // Floating Scan button: Freshies only, phones/tablets only, hidden on the
+  // scanner itself (which is full-screen).
+  const showScanFab = profile.role === "freshie" && pathname !== "/scan";
 
   // Close the drawer on route change so it never lingers over a new page.
   // Radix Dialog owns focus-trap/Escape/backdrop-dismiss/focus-return; route
@@ -300,9 +305,28 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <PhaseTimer />
       </header>
 
-      <main className="mx-auto min-h-dvh w-full max-w-6xl px-3 pb-[calc(1.25rem+env(safe-area-inset-bottom))] pt-3 sm:px-5 sm:pb-8 sm:pt-5 lg:px-8 lg:py-6">
+      <main
+        className={cn(
+          "mx-auto min-h-dvh w-full max-w-6xl px-3 pb-[calc(1.25rem+env(safe-area-inset-bottom))] pt-3 sm:px-5 sm:pb-8 sm:pt-5 lg:px-8 lg:py-6",
+          showScanFab &&
+            "pb-[calc(6.5rem+env(safe-area-inset-bottom))] sm:pb-[calc(6.5rem+env(safe-area-inset-bottom))]"
+        )}
+      >
         {children}
       </main>
+
+      {showScanFab && (
+        <Link
+          href="/scan"
+          aria-label="Scan a QR code"
+          className="fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] left-1/2 z-40 flex -translate-x-1/2 flex-col items-center gap-1 lg:hidden"
+        >
+          <span className="flex h-16 w-16 items-center justify-center rounded-full bg-ink text-white shadow-overlay ring-4 ring-paper-50 transition active:scale-95">
+            <ScanLine size={28} strokeWidth={2} />
+          </span>
+          <span className="rounded-full bg-paper-50/95 px-2 text-xs font-bold text-ink">Scan</span>
+        </Link>
+      )}
 
       <NewItemToast />
       </div>

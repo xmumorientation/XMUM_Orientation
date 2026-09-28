@@ -1,11 +1,23 @@
-import { Exo_2, Outfit } from "next/font/google";
+import { Alfa_Slab_One, Outfit, Shrikhand } from "next/font/google";
 
-// Scoped to the public homepage only (applied on the .nexus wrapper), so these
-// display/body faces are not requested on the authenticated app routes.
-export const nexusDisplay = Exo_2({
+// Scoped to the public homepage only (applied on the page wrapper), so these
+// faces are not requested on the authenticated app routes.
+//
+// Brand guideline faces are Brasika (titles) and Karimun (subtitles). They are
+// not on Google Fonts, so Shrikhand and Alfa Slab One stand in for now. To
+// switch, load the licensed files with `next/font/local` under the same
+// variable names — nothing else needs to change.
+export const vxDisplay = Shrikhand({
   subsets: ["latin"],
-  weight: ["400", "600", "700", "800", "900"],
-  variable: "--font-nexus-display",
+  weight: "400",
+  variable: "--font-vx-display",
+  display: "swap",
+});
+
+export const vxSlab = Alfa_Slab_One({
+  subsets: ["latin"],
+  weight: "400",
+  variable: "--font-vx-slab",
   display: "swap",
 });
 

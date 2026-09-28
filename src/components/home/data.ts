@@ -2,8 +2,6 @@
 // Items marked PLACEHOLDER should be replaced with real Supabase queries
 // once the backend data is available.
 
-import { resetScroll } from "@/components/park/scrollStore";
-
 // ---------------------------------------------------------------------------
 // Event identity
 // ---------------------------------------------------------------------------
@@ -21,6 +19,10 @@ export const EVENT = {
 
 /** Font-family shorthands mapped to the scoped homepage font variables. */
 export const FONT = {
+  /** Brand title face (Brasika stand-in). */
+  brand: "var(--font-vx-display), Georgia, serif",
+  /** Section headings and big numbers (Karimun stand-in). */
+  slab: "var(--font-vx-slab), Georgia, serif",
   display: "var(--font-nexus-display), 'Exo 2', sans-serif",
   body: "var(--font-nexus-body), Outfit, sans-serif",
   mono: "var(--font-mono), 'JetBrains Mono', monospace",
@@ -168,24 +170,26 @@ export const COMMITTEES: Committee[] = [
 // Scroll navigation
 // ---------------------------------------------------------------------------
 
-/**
- * Scrolls to a homepage section. "home" jumps to the very top of the page — the
- * top of the cinematic section — since the cinematic is the first section of one
- * continuous page.
- *
- * The jump is instant (not smooth-scroll) to avoid replaying the camera flight
- * in reverse. Other sections smooth-scroll because they are close in-content
- * distances. Each section's scrollMarginTop accounts for the fixed nav.
- */
+/** The homepage "ride stops", in scroll order. Each id is a section element id. */
+export const STOPS = [
+  { id: "welcome", label: "Welcome" },
+  { id: "overview", label: "Overview" },
+  { id: "games", label: "Games" },
+  { id: "scoreboard", label: "Scoreboard" },
+  { id: "schedule", label: "Schedule" },
+  { id: "committees", label: "Committees" },
+  { id: "join", label: "Join" },
+] as const;
+
+export type StopId = (typeof STOPS)[number]["id"];
+
+/** Scrolls to a homepage section. "home" is an alias for the first stop. */
 export function scrollToSection(id: string) {
-  if (id === "home") {
-    resetScroll();
-    window.scrollTo({ top: 0, behavior: "auto" });
-    return;
-  }
-  const el = document.getElementById(id);
+  const target = id === "home" ? "welcome" : id;
+  const el = document.getElementById(target);
+  const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   if (el) {
-    el.scrollIntoView({ behavior: "smooth", block: "start" });
+    el.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
   } else {
     window.scrollTo({ top: 0, behavior: "auto" });
   }

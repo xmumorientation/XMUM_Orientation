@@ -108,6 +108,16 @@ export function MarqueeBanner() {
   );
 }
 
+/** Four-point sticker star from the brand style reference. Decorative only. */
+export function Spark({ size, color, style = {} }: { size: number; color: string; style?: CSSProperties }) {
+  return <i className="vx-spark" aria-hidden style={{ width: size, height: size, background: color, ...style }} />;
+}
+
+/** Soft colour glow placed behind a section's content. Decorative only. */
+export function Glow({ size, color, style = {} }: { size: number | string; color: string; style?: CSSProperties }) {
+  return <div className="vx-glow" aria-hidden style={{ width: size, height: size, background: color, ...style }} />;
+}
+
 export function Countdown() {
   const calc = () => {
     const diff = new Date("2026-11-28T08:00:00+08:00").getTime() - Date.now();
@@ -129,38 +139,20 @@ export function Countdown() {
 
   const pad = (n: number) => String(n).padStart(2, "0");
   const units = [
-    { label: "DAYS", val: t?.d, color: "#ff3cac" },
-    { label: "HRS", val: t?.h, color: "#d966ff" },
-    { label: "MIN", val: t?.m, color: "#00cfff" },
-    { label: "SEC", val: t?.s, color: "#00cfff" },
+    { label: "DAYS", val: t?.d },
+    { label: "HRS", val: t?.h },
+    { label: "MIN", val: t?.m },
+    { label: "SEC", val: t?.s },
   ];
 
   return (
-    <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-      {units.map((u) => (
-        <div key={u.label} style={{ textAlign: "center" }}>
-          <div
-            style={{
-              width: 80,
-              height: 80,
-              borderRadius: 16,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 30,
-              fontWeight: 900,
-              fontFamily: FONT.mono,
-              color: u.color,
-              background: `${u.color}12`,
-              border: `2px solid ${u.color}40`,
-              boxShadow: `0 0 20px ${u.color}30`,
-            }}
-          >
+    <div className="vx-count" role="timer" aria-label="Time until orientation begins">
+      {units.map((u, i) => (
+        <div key={u.label} className="vx-count-cell vx-ticket">
+          <b className="vx-num" style={{ color: i === 0 ? "var(--vx-cyan)" : "#fff" }}>
             {u.val === undefined ? "--" : pad(u.val)}
-          </div>
-          <div style={{ fontSize: 10, marginTop: 6, color: "rgba(255,255,255,0.4)", fontFamily: FONT.mono, letterSpacing: 2 }}>
-            {u.label}
-          </div>
+          </b>
+          <span className="vx-mono">{u.label}</span>
         </div>
       ))}
     </div>

@@ -1,48 +1,30 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { CalendarDays, Gamepad2, Home, Menu, ScanLine, Trophy, X } from "lucide-react";
 
-import { FONT, scrollToSection } from "./data";
-import { StarSparkle } from "./decor";
+import { STOPS, scrollToSection, type StopId } from "./data";
 
-const TABS = [
-  { id: "home", label: "Home" },
-  { id: "welcome", label: "Welcome" },
-  { id: "overview", label: "Overview" },
-  { id: "games", label: "Games" },
-  { id: "scoreboard", label: "Scoreboard" },
-  { id: "schedule", label: "Schedule" },
-  { id: "committees", label: "Committees" },
-];
+/** Sections listed in the desktop nav (Join lives on the yellow button). */
+const NAV_LINKS = STOPS.filter((s) => s.id !== "join");
 
-export function SiteNav({ revealed = true }: { revealed?: boolean }) {
+/**
+ * Fixed top bar. On desktop: logo, section links, Join button. On phones and
+ * tablets: logo, menu button, and a progress bar naming the current stop.
+ */
+export function SiteNav({ active, onScan }: { active: StopId; onScan?: () => void }) {
   const [open, setOpen] = useState(false);
-  const [active, setActive] = useState("home");
+  const index = Math.max(0, STOPS.findIndex((s) => s.id === active));
+  const current = STOPS[index];
 
   useEffect(() => {
-    const ids = TABS.map((t) => t.id).filter((id) => id !== "home");
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const e of entries) {
-          if (e.isIntersecting) setActive(e.target.id);
-        }
-      },
-      { rootMargin: "-45% 0px -50% 0px", threshold: 0 }
-    );
-    ids.forEach((id) => {
-      const el = document.getElementById(id);
-      if (el) observer.observe(el);
-    });
-    const onScroll = () => {
-      if (window.scrollY < window.innerHeight * 0.6) setActive("home");
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => {
-      observer.disconnect();
-      window.removeEventListener("scroll", onScroll);
-    };
-  }, []);
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
 
   const go = (id: string) => {
     scrollToSection(id);
@@ -50,146 +32,135 @@ export function SiteNav({ revealed = true }: { revealed?: boolean }) {
   };
 
   return (
-    <nav
-      style={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        right: 0,
-        zIndex: 50,
-        background: "rgba(5,1,12,0.82)",
-        backdropFilter: "blur(20px)",
-        borderBottom: "1px solid rgba(255,255,255,0.06)",
-        transform: revealed ? "translateY(0)" : "translateY(-100%)",
-        opacity: revealed ? 1 : 0,
-        transition: "transform 0.6s ease, opacity 0.6s ease",
-      }}
-    >
-      <div
-        style={{
-          maxWidth: 1200,
-          margin: "0 auto",
-          padding: "0 20px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          height: 56,
-        }}
-      >
-        {/* Logo */}
-        <button
-          onClick={() => go("home")}
-          aria-label="Vortexa — go to top"
-          style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }}
-        >
-          <span className="text-holo" style={{ fontFamily: FONT.display, fontWeight: 900, fontSize: 22, letterSpacing: 1 }}>
-            VORTEXA
-          </span>
-          <StarSparkle size={14} color="#d966ff" style={{ marginLeft: 2 }} />
+    <nav className="vx-nav" aria-label="Homepage sections">
+      <div className="vx-nav-row">
+        <button type="button" className="vx-nav-logo" onClick={() => go("welcome")} aria-label="Vortexa — back to top">
+          <Image src="/vortexa-logo-sm.webp" alt="" width={320} height={184} priority style={{ width: "auto" }} />
         </button>
 
-        {/* Desktop links */}
-        <div className="hidden md:flex" style={{ gap: 4, alignItems: "center" }}>
-          {TABS.map((t) => (
+        <div className="vx-nav-links">
+          {NAV_LINKS.map((t) => (
             <button
               key={t.id}
+              type="button"
+              className="vx-nav-link"
+              aria-current={active === t.id}
               onClick={() => go(t.id)}
-              style={{
-                fontFamily: FONT.display,
-                fontWeight: 700,
-                fontSize: 12,
-                padding: "6px 12px",
-                borderRadius: 8,
-                border: "none",
-                cursor: "pointer",
-                background: active === t.id ? "linear-gradient(135deg,#ff3cac,#d966ff,#00cfff)" : "transparent",
-                color: active === t.id ? "#000" : "rgba(255,255,255,0.6)",
-                letterSpacing: 0.5,
-                transition: "all 0.2s",
-              }}
             >
               {t.label}
             </button>
           ))}
-          <Link
-            href="/login"
-            style={{
-              marginLeft: 8,
-              fontFamily: FONT.display,
-              fontWeight: 800,
-              fontSize: 13,
-              padding: "8px 18px",
-              borderRadius: 50,
-              background: "linear-gradient(135deg,#ff3cac,#d966ff,#00cfff)",
-              color: "#000",
-              letterSpacing: 0.5,
-              textDecoration: "none",
-            }}
-          >
-            JOIN THE GAME
-          </Link>
         </div>
 
-        {/* Mobile toggle */}
+        {/* DEV PREVIEW scanner entry (desktop) — see ScanPreview.tsx */}
+        {onScan && (
+          <button type="button" className="vx-btn vx-btn-ghost vx-nav-scan" onClick={onScan}>
+            <ScanLine size={16} aria-hidden /> Scan
+          </button>
+        )}
+
+        <Link href="/login" className="vx-btn vx-btn-primary vx-nav-cta">
+          Join the Game
+        </Link>
+
         <button
+          type="button"
+          className="vx-burger"
           onClick={() => setOpen(!open)}
-          className="md:hidden"
           aria-label={open ? "Close menu" : "Open menu"}
           aria-expanded={open}
-          style={{ background: "none", border: "none", cursor: "pointer", color: "#fff", fontSize: 22 }}
+          aria-controls="vx-menu"
         >
-          {open ? "✕" : "☰"}
+          {open ? <X size={24} /> : <Menu size={24} />}
         </button>
       </div>
 
-      {/* Mobile menu */}
-      {open && (
-        <div
-          className="md:hidden"
-          style={{ background: "#05010c", borderTop: "1px solid rgba(255,255,255,0.06)", padding: "8px 20px 18px" }}
-        >
-          {TABS.map((t) => (
-            <button
-              key={t.id}
-              onClick={() => go(t.id)}
-              style={{
-                display: "block",
-                width: "100%",
-                textAlign: "left",
-                fontFamily: FONT.display,
-                fontWeight: 700,
-                fontSize: 15,
-                padding: "12px 0",
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                color: active === t.id ? "#d966ff" : "rgba(255,255,255,0.6)",
-              }}
-            >
-              {t.label}
-            </button>
-          ))}
-          <Link
-            href="/login"
-            onClick={() => setOpen(false)}
-            style={{
-              display: "block",
-              marginTop: 8,
-              textAlign: "center",
-              fontFamily: FONT.display,
-              fontWeight: 800,
-              fontSize: 15,
-              padding: "12px 0",
-              borderRadius: 50,
-              background: "linear-gradient(135deg,#ff3cac,#d966ff,#00cfff)",
-              color: "#000",
-              textDecoration: "none",
-            }}
-          >
-            JOIN THE GAME
-          </Link>
-        </div>
-      )}
+      <div className="vx-stopbar vx-mono" aria-hidden={open}>
+        <b>{String(index + 1).padStart(2, "0")}</b>
+        <span className="vx-stopbar-track">
+          <span className="vx-stopbar-fill" style={{ width: `${((index + 1) / STOPS.length) * 100}%` }} />
+        </span>
+        <span>{current.label}</span>
+      </div>
+
+      <div id="vx-menu" className="vx-menu" data-open={open}>
+        {STOPS.map((t, i) => (
+          <button key={t.id} type="button" className="vx-menu-item" aria-current={active === t.id} onClick={() => go(t.id)}>
+            <span>{t.label}</span>
+            <span className="vx-mono" style={{ fontSize: 12, color: "var(--vx-mute)" }}>
+              {String(i + 1).padStart(2, "0")}
+            </span>
+          </button>
+        ))}
+        <Link href="/login" className="vx-btn vx-btn-primary" onClick={() => setOpen(false)}>
+          Join the Game ★
+        </Link>
+      </div>
     </nav>
+  );
+}
+
+/** Desktop-only column of dots on the right edge: one per stop, clickable. */
+export function StopRail({ active }: { active: StopId }) {
+  const index = STOPS.findIndex((s) => s.id === active);
+  return (
+    <div className="vx-rail" role="navigation" aria-label="Jump to section">
+      {STOPS.map((s, i) => (
+        <button
+          key={s.id}
+          type="button"
+          aria-label={s.label}
+          aria-current={i === index}
+          data-state={i < index ? "done" : undefined}
+          onClick={() => scrollToSection(s.id)}
+        >
+          <span className="vx-rail-tip" aria-hidden>
+            {s.label}
+          </span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+const TABS: { label: string; target: StopId; match: StopId[]; Icon: typeof Home }[] = [
+  { label: "Home", target: "welcome", match: ["welcome", "overview"], Icon: Home },
+  { label: "Games", target: "games", match: ["games"], Icon: Gamepad2 },
+  { label: "Score", target: "scoreboard", match: ["scoreboard"], Icon: Trophy },
+  { label: "Schedule", target: "schedule", match: ["schedule"], Icon: CalendarDays },
+];
+
+/**
+ * Phone/tablet bottom tab bar for the four most-used stops. When `onScan` is
+ * given, a raised Scan button sits in the middle (DEV PREVIEW — see
+ * ScanPreview.tsx).
+ */
+export function TabBar({ active, onScan }: { active: StopId; onScan?: () => void }) {
+  const tab = ({ label, target, match, Icon }: (typeof TABS)[number]) => (
+    <button
+      key={label}
+      type="button"
+      className="vx-tab"
+      aria-current={match.includes(active)}
+      onClick={() => scrollToSection(target)}
+    >
+      <Icon size={22} aria-hidden />
+      {label}
+    </button>
+  );
+
+  return (
+    <div className="vx-tabbar" role="navigation" aria-label="Quick sections">
+      {TABS.slice(0, 2).map(tab)}
+      {onScan && (
+        <button type="button" className="vx-tab vx-tab-scan" onClick={onScan} aria-label="Scan a QR code">
+          <span className="vx-tab-scan-btn" aria-hidden>
+            <ScanLine size={26} strokeWidth={2.2} />
+          </span>
+          Scan
+        </button>
+      )}
+      {TABS.slice(2).map(tab)}
+    </div>
   );
 }

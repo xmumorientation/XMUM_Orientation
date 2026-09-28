@@ -2,10 +2,11 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-import { CinematicHero } from "./CinematicHero";
+import "./vortexa.css";
+import { ScanPreview, SHOW_SCAN_PREVIEW } from "./ScanPreview";
 import { SiteFooter } from "./SiteFooter";
-import { SiteNav } from "./SiteNav";
-import { FONT } from "./data";
+import { SiteNav, StopRail, TabBar } from "./SiteNav";
+import { FONT, STOPS, type StopId } from "./data";
 import { WelcomeSection } from "./sections/WelcomeSection";
 import { OverviewSection } from "./sections/OverviewSection";
 import { Games } from "./sections/Games";
@@ -15,20 +16,23 @@ import { Committees } from "./sections/Committees";
 import { JoinSection } from "./sections/JoinSection";
 
 /**
- * Public Orientation 2026 homepage — ONE continuous, unified Vortexa world:
- *   - the persistent 3D WebGL environment (CinematicHero) runs at z-0 across the
- *     entire page, providing the living atmosphere, lighting, depth, and world;
- *   - the functional HTML content sections (Welcome, Overview, Games, Scoreboard,
- *     Schedule, Committees, Join) sit naturally inside this single world at z-20,
- *     using transparent section backgrounds and subtle translucent glass surfaces
- *     for readability without ever creating a separate opaque "content layer".
+ * Public Orientation 2026 homepage — "Night Ticket".
  *
- * There is no intro→content phase swap, no route transition, and no artificial
- * background barrier. The user smoothly journeys through one continuous park.
+ * Seven full-screen "ride stops" (Welcome → Join) on a black ground, read one
+ * at a time with scroll snapping. A single IntersectionObserver tracks the
+ * current stop for the nav, the desktop dot rail and the mobile tab bar, and
+ * marks each stop `data-seen` the first time it enters view so its entrance
+ * animation plays once.
  */
 export default function OrientationHome() {
-  const [revealed, setRevealed] = useState(false);
+  const [active, setActive] = useState<StopId>("welcome");
+  // DEV PREVIEW scanner overlay — see ScanPreview.tsx.
+  const [scanOpen, setScanOpen] = useState(false);
+  const openScan = useCallback(() => setScanOpen(true), []);
+  const closeScan = useCallback(() => setScanOpen(false), []);
+  const onScan = SHOW_SCAN_PREVIEW ? openScan : undefined;
 
+  // Land at the top on reload rather than a restored mid-page position.
   useEffect(() => {
     if (typeof window === "undefined") return;
     const supported = "scrollRestoration" in window.history;
@@ -40,28 +44,50 @@ export default function OrientationHome() {
     };
   }, []);
 
-  const handleRevealed = useCallback(() => setRevealed(true), []);
+  // Section-by-section snapping applies to this page only.
   useEffect(() => {
-    const onScroll = () => {
-      if (window.scrollY > 40) setRevealed(true);
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    const t = window.setTimeout(() => setRevealed(true), 6000);
+    const root = document.documentElement;
+    root.classList.add("vx-snap");
+    return () => root.classList.remove("vx-snap");
+  }, []);
+
+  useEffect(() => {
+    const els = STOPS.map((s) => document.getElementById(s.id)).filter((el): el is HTMLElement => !!el);
+
+    const current = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) if (e.isIntersecting) setActive(e.target.id as StopId);
+      },
+      { rootMargin: "-45% 0px -50% 0px", threshold: 0 }
+    );
+    const seen = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting) {
+            e.target.setAttribute("data-seen", "");
+            seen.unobserve(e.target);
+          }
+        }
+      },
+      { threshold: 0.25 }
+    );
+
+    els.forEach((el) => {
+      current.observe(el);
+      seen.observe(el);
+    });
     return () => {
-      window.removeEventListener("scroll", onScroll);
-      window.clearTimeout(t);
+      current.disconnect();
+      seen.disconnect();
     };
   }, []);
 
   return (
-    <div className="nexus relative min-h-dvh text-white" style={{ fontFamily: FONT.body, backgroundColor: "#05010c" }}>
-      <SiteNav revealed={revealed} />
+    <div className="vx nexus relative text-white" style={{ fontFamily: FONT.body }}>
+      <SiteNav active={active} onScan={onScan} />
+      <StopRail active={active} />
 
-      {/* World layer: Persistent 3D WebGL environment across the entire page */}
-      <CinematicHero onRevealed={handleRevealed} />
-
-      {/* Content layer: Transparent sections floating inside the 3D world */}
-      <main style={{ position: "relative", zIndex: 20 }}>
+      <main>
         <WelcomeSection />
         <OverviewSection />
         <Games />
@@ -69,8 +95,11 @@ export default function OrientationHome() {
         <Schedule />
         <Committees />
         <JoinSection />
-        <SiteFooter />
       </main>
+      <SiteFooter />
+
+      <TabBar active={active} onScan={onScan} />
+      {SHOW_SCAN_PREVIEW && scanOpen && <ScanPreview onClose={closeScan} />}
     </div>
   );
 }

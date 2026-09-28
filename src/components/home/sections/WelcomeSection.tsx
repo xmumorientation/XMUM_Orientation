@@ -1,117 +1,53 @@
 "use client";
 
 import Link from "next/link";
-import { FONT } from "../data";
+import { scrollToSection } from "../data";
+import { Glow, Spark } from "../decor";
 
 export function WelcomeSection() {
   return (
-    <section
-      id="welcome"
-      style={{
-        scrollMarginTop: 64,
-        position: "relative",
-        padding: "100px 20px 90px",
-        background: "transparent",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-      }}
-    >
-      {/* Central content container floating directly inside the cinematic world */}
-      <div
-        style={{
-          position: "relative",
-          zIndex: 2,
-          maxWidth: 780,
-          width: "100%",
-          textAlign: "center",
-          padding: "52px 20px",
-        }}
-      >
-        <div
-          style={{
-            display: "inline-block",
-            padding: "6px 20px",
-            borderRadius: 100,
-            marginBottom: 24,
-            background: "rgba(18, 230, 255, 0.1)",
-            border: "1px solid rgba(18, 230, 255, 0.3)",
-            color: "#12e6ff",
-            fontFamily: FONT.mono,
-            fontSize: 11,
-            letterSpacing: 3,
-            textTransform: "uppercase",
-            boxShadow: "0 0 16px rgba(18, 230, 255, 0.2)",
-          }}
-        >
-          XMUM ORIENTATION 2026
-        </div>
+    <section id="welcome" className="vx-sec vx-welcome" aria-labelledby="welcome-title">
+      <div className="vx-dots" />
+      <Glow size="min(520px, 90vw)" color="var(--vx-navy)" style={{ left: "-8%", top: "12%", opacity: 0.8 }} />
+      <Glow size="min(380px, 70vw)" color="var(--vx-pink)" style={{ right: "-4%", bottom: "-6%" }} />
+      <Spark size={26} color="var(--vx-yellow)" style={{ left: "16%", top: "24%" }} />
+      <Spark size={16} color="var(--vx-cyan)" style={{ right: "20%", top: "20%" }} />
+      <Spark size={34} color="linear-gradient(#FFB1C1, #FE06AB)" style={{ right: "14%", bottom: "22%" }} />
 
-        <h1
-          style={{
-            fontFamily: FONT.display,
-            fontWeight: 900,
-            fontSize: "clamp(38px, 8vw, 72px)",
-            lineHeight: 1.05,
-            letterSpacing: -1,
-            marginBottom: 22,
-          }}
-        >
-          <span className="text-holo">WELCOME TO</span>
-          <br />
-          <span style={{ color: "#fff", textShadow: "0 0 35px rgba(18,230,255,0.4)" }}>VORTEXA</span>
+      <div className="vx-inner">
+        <div className="vx-eyebrow vx-rise">XMUM Orientation 2026</div>
+
+        <h1 id="welcome-title" className="vx-rise" style={{ margin: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+          <span className="vx-welcome-pre">WELCOME TO</span>
+          <span className="vx-welcome-mark vx-holo">Vortexa</span>
         </h1>
 
-        <p
-          style={{
-            fontFamily: FONT.body,
-            fontSize: "clamp(15px, 2.6vw, 19px)",
-            color: "rgba(255, 255, 255, 0.85)",
-            maxWidth: 620,
-            margin: "0 auto 16px",
-            lineHeight: 1.65,
-            textShadow: "0 2px 18px rgba(0, 0, 0, 0.9)",
-          }}
-        >
-          Vortexa is the official theme of XMUM Orientation 2026 — a futuristic neon carnival where new beginnings take flight. Over two unforgettable days, discover campus, bond with your team, and step into university life with energy and purpose.
+        <p className="vx-welcome-slogan vx-rise-2">One ticket, one ride. Discover the adventure inside.</p>
+
+        <p className="vx-lead vx-rise-2">
+          Vortexa is the official theme of XMUM Orientation 2026 — a neon carnival where new beginnings take flight. Over two
+          days, discover campus, bond with your team, and step into university life with energy and purpose.
         </p>
 
-        <p
-          style={{
-            fontFamily: FONT.mono,
-            fontSize: "clamp(12px, 1.8vw, 13px)",
-            color: "rgba(255, 255, 255, 0.6)",
-            letterSpacing: 2,
-            textTransform: "uppercase",
-            marginBottom: 40,
-            textShadow: "0 2px 14px rgba(0, 0, 0, 0.85)",
-          }}
-        >
-          &ldquo;One ticket, One Ride, Discover adventure Inside.&rdquo;
-        </p>
-
-        <div style={{ display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap" }}>
-          <Link
-            href="/login"
-            style={{
-              padding: "16px 38px",
-              borderRadius: 50,
-              fontFamily: FONT.display,
-              fontWeight: 800,
-              fontSize: 15,
-              letterSpacing: 1,
-              background: "linear-gradient(135deg, #ff2e8b, #a437ff, #12e6ff)",
-              color: "#000",
-              textDecoration: "none",
-              boxShadow: "0 0 35px rgba(164, 55, 255, 0.45)",
-              display: "inline-block",
-              transition: "transform 0.2s, box-shadow 0.2s",
-            }}
-          >
-            JOIN THE GAME ★
+        <div className="vx-welcome-actions vx-rise-3">
+          <Link href="/login" className="vx-btn vx-btn-primary">
+            Join the Game ★
           </Link>
+          <button type="button" className="vx-btn vx-btn-ghost" onClick={() => scrollToSection("overview")}>
+            What&apos;s inside ↓
+          </button>
+        </div>
+
+        <div className="vx-welcome-strip vx-mono vx-rise-3">
+          <span><b>28–29 NOV</b>2026</span>
+          <span><b>2 DAYS</b>on campus</span>
+          <span><b>XMUM</b>Sepang, Selangor</span>
         </div>
       </div>
+
+      <button type="button" className="vx-scrollhint vx-mono" onClick={() => scrollToSection("overview")}>
+        SCROLL · NEXT STOP: OVERVIEW
+      </button>
     </section>
   );
 }

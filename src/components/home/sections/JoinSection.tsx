@@ -1,95 +1,32 @@
 "use client";
 
 import Link from "next/link";
-import { FONT } from "../data";
+import { Glow, Spark } from "../decor";
 
 export function JoinSection() {
   return (
-    <section
-      id="join"
-      style={{
-        scrollMarginTop: 64,
-        position: "relative",
-        padding: "120px 20px 110px",
-        textAlign: "center",
-        background: "transparent",
-      }}
-    >
-      <div style={{ maxWidth: 720, margin: "0 auto", position: "relative", zIndex: 2 }}>
-        <div
-          style={{
-            fontFamily: FONT.mono,
-            fontSize: 12,
-            color: "rgba(255, 255, 255, 0.45)",
-            letterSpacing: 4,
-            textTransform: "uppercase",
-            marginBottom: 20,
-          }}
-        >
-          READY TO ENTER?
-        </div>
+    <section id="join" className="vx-sec vx-join" aria-labelledby="join-title">
+      <div className="vx-dots" />
+      <Glow size="min(480px, 90vw)" color="var(--vx-navy)" style={{ left: "8%", top: "14%", opacity: 0.8 }} />
+      <Glow size="min(320px, 70vw)" color="var(--vx-pink)" style={{ right: "10%", bottom: "6%" }} />
+      <Spark size={30} color="var(--vx-yellow)" style={{ left: "12%", bottom: "18%" }} />
+      <Spark size={18} color="var(--vx-cyan)" style={{ right: "14%", top: "18%" }} />
 
-        <h2
-          style={{
-            fontFamily: FONT.display,
-            fontWeight: 900,
-            fontSize: "clamp(52px, 12vw, 100px)",
-            lineHeight: 0.95,
-            letterSpacing: -1,
-            marginBottom: 20,
-            textShadow: "0 0 50px rgba(18, 230, 255, 0.35)",
-          }}
-        >
-          <span className="text-holo">VORTEXA</span>
-        </h2>
-
-        <div
-          style={{
-            fontFamily: FONT.mono,
-            fontSize: "clamp(13px, 2.5vw, 16px)",
-            color: "#12e6ff",
-            letterSpacing: 3,
-            textTransform: "uppercase",
-            marginBottom: 20,
-            textShadow: "0 0 20px rgba(18, 230, 255, 0.5)",
-          }}
-        >
-          XMUM ORIENTATION 2026
-        </div>
-
-        <p
-          style={{
-            fontFamily: FONT.body,
-            fontSize: "clamp(16px, 2.8vw, 20px)",
-            color: "rgba(255, 255, 255, 0.72)",
-            maxWidth: 500,
-            margin: "0 auto 48px",
-            lineHeight: 1.6,
-          }}
-        >
-          &ldquo;One ticket, One Ride, Discover adventure Inside.&rdquo;
-        </p>
-
-        <div>
-          <Link
-            href="/login"
-            style={{
-              display: "inline-block",
-              padding: "18px 48px",
-              borderRadius: 50,
-              fontFamily: FONT.display,
-              fontWeight: 900,
-              fontSize: 18,
-              letterSpacing: 1.5,
-              background: "linear-gradient(135deg, #ff2e8b, #a437ff, #12e6ff)",
-              color: "#000",
-              textDecoration: "none",
-              boxShadow: "0 0 50px rgba(164, 55, 255, 0.55)",
-              transition: "transform 0.2s, box-shadow 0.2s",
-            }}
-          >
-            JOIN THE GAME ★
-          </Link>
+      <div className="vx-inner">
+        <div className="vx-ticket vx-pass vx-rise">
+          <div className="vx-pass-main">
+            <div className="vx-eyebrow">Admit one · Freshie</div>
+            <h2 id="join-title" className="vx-pass-title vx-holo">Your ride starts here</h2>
+            <p>One ticket, one ride. Sign in to see your team, your game stations and the live score.</p>
+            <Link href="/login" className="vx-btn vx-btn-primary">
+              Join the Game ★
+            </Link>
+          </div>
+          <div className="vx-pass-stub vx-mono">
+            <span>GATE OPENS</span>
+            <b className="vx-num">28 NOV</b>
+            <span className="vx-pass-year">2026 · XMUM</span>
+          </div>
         </div>
       </div>
     </section>
