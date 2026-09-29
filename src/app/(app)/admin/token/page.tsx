@@ -456,13 +456,13 @@ export default function AdminTokenAllInOnePage() {
 
   // Reset All
   const handleResetAll = async () => {
-    if (!window.confirm("⚠️ DANGER: Reset all 10 groups to 0 tokens and clear all puzzle inventory & logs?")) {
+    if (!window.confirm("⚠️ DANGER: Reset every group to 0 tokens? Puzzle ownership and history will be preserved.")) {
       return;
     }
     setBusy(true);
     try {
       await resetAllTokensAndPuzzles();
-      notifySuccess("All group tokens, puzzle inventory, and transaction logs have been reset.");
+      notifySuccess("All group Token balances have been reset. Puzzle history was preserved.");
       await loadAllData();
     } catch (e: any) {
       notifyError(e.message || "Reset failed.");
@@ -503,7 +503,7 @@ export default function AdminTokenAllInOnePage() {
               className="btn-secondary min-h-[38px] border-red-300 text-red-700 hover:bg-red-50 px-3 text-xs font-semibold"
             >
               <ShieldAlert size={14} />
-              Reset State
+              Reset Tokens
             </button>
           )}
         </div>

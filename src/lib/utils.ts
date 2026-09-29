@@ -136,6 +136,13 @@ const ERROR_MESSAGES: Record<string, string> = {
   DAY2_STATION_NOT_CONFIGURED: "Your Day 2 station configuration is incomplete.",
   DAY2_REPLAY_LIMIT_REACHED: "This group has reached the attempt limit for this station.",
   DAY2_ACTIVE_ATTEMPT_EXISTS: "This group already has an active attempt at this station.",
+  PUZZLE_NOT_AVAILABLE: "That Puzzle is no longer available.",
+  PUZZLE_CONFIGURATION_INVALID: "Enter a valid Puzzle code and change reason.",
+  PUZZLE_NOT_FOUND: "Puzzle not found.",
+  PUZZLE_OWNERSHIP_NOT_FOUND: "Puzzle ownership record not found.",
+  PUZZLE_REDEMPTION_DEPENDENCY: "This Puzzle has already been used by a redemption workflow.",
+  INVALID_PUZZLE_STATUS: "Puzzle status must be COLLECTED or REDEEMED.",
+  CONFIGURATION_CONFLICT: "Another Admin changed this configuration. Refresh and try again.",
 };
 
 

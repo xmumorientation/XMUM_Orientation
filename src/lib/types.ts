@@ -101,6 +101,10 @@ export interface Item {
   puzzle_location: ProjectorLocation | null;
   puzzle_index: number | null;
   is_gala: boolean;
+  puzzle_code?: string | null;
+  is_active?: boolean;
+  display_asset?: string | null;
+  version?: number;
 }
 
 export interface InventoryEntry {
@@ -110,6 +114,12 @@ export interface InventoryEntry {
   item_type: ItemType;
   source: string;
   created_at: string;
+  status?: "COLLECTED" | "REDEEMED";
+  obtained_station_id?: number | null;
+  obtained_attempt_id?: string | null;
+  redeemed_at?: string | null;
+  redeemed_by_nfc_id?: string | null;
+  version?: number;
   items?: Item;
 }
 

@@ -657,7 +657,7 @@ export async function resetAllTokensAndPuzzles(): Promise<{ ok: boolean }> {
   const supabase = supabaseBrowser();
   try {
     const { data, error } = await supabase.rpc("fn_reset_token_state", {
-      p_reason: "Admin reset of Token and puzzle state",
+      p_reason: "Admin reset of Token balances",
     });
     if (error || !data?.ok) return { ok: false };
   } catch (err: any) {
@@ -667,7 +667,6 @@ export async function resetAllTokensAndPuzzles(): Promise<{ ok: boolean }> {
 
   const freshGroups = generateInitial12Groups();
   setLocalItem("groups", freshGroups);
-  setLocalItem("puzzle_inv", []);
 
   return { ok: true };
 }
