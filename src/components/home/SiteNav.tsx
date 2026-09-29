@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { CalendarDays, Gamepad2, Home, Menu, ScanLine, Trophy, X } from "lucide-react";
 
 import { STOPS, scrollToSection, type StopId } from "./data";
@@ -16,15 +17,34 @@ const NAV_LINKS = STOPS.filter((s) => s.id !== "join");
  */
 export function SiteNav({ active, onScan }: { active: StopId; onScan?: () => void }) {
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const index = Math.max(0, STOPS.findIndex((s) => s.id === active));
   const current = STOPS[index];
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
     if (!open) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener("keydown", onKey);
+    };
   }, [open]);
+
+  useEffect(() => {
+    const onResize = () => {
+      if (window.innerWidth >= 1024) setOpen(false);
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
 
   const go = (id: string) => {
     scrollToSection(id);
@@ -32,7 +52,19 @@ export function SiteNav({ active, onScan }: { active: StopId; onScan?: () => voi
   };
 
   return (
-    <nav className="vx-nav" aria-label="Homepage sections">
+    <>
+      {mounted &&
+        createPortal(
+          <div
+            className="vx-menu-backdrop"
+            data-open={open}
+            onClick={() => setOpen(false)}
+            aria-hidden="true"
+          />,
+          document.body
+        )}
+
+      <nav className="vx-nav" data-open={open} aria-label="Homepage sections">
       <div className="vx-nav-row">
         <button type="button" className="vx-nav-logo" onClick={() => go("welcome")} aria-label="Vortexa — back to top">
           <Image src="/vortexa-logo-sm.webp" alt="" width={320} height={184} priority style={{ width: "auto" }} />
@@ -97,6 +129,7 @@ export function SiteNav({ active, onScan }: { active: StopId; onScan?: () => voi
         </Link>
       </div>
     </nav>
+    </>
   );
 }
 

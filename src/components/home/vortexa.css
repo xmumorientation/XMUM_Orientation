@@ -181,8 +181,31 @@ html.vx-snap { scroll-snap-type: y proximity; }
 }
 .vx-stopbar { display: none; }
 .vx-menu { display: none; }
+.vx-menu-backdrop { display: none; }
 
 @media (max-width: 1023px) {
+  .vx-nav[data-open="true"] {
+    z-index: 60;
+    background: rgba(7, 6, 11, 0.96);
+  }
+  .vx-menu-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 55;
+    background: rgba(3, 2, 6, 0.72);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+                backdrop-filter 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+                -webkit-backdrop-filter 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .vx-menu-backdrop[data-open="true"] {
+    opacity: 1;
+    pointer-events: auto;
+  }
   .vx-nav-row { padding: 0 12px 0 16px; }
   .vx-nav-logo img { height: 32px; }
   .vx-nav-links, .vx-nav-cta, .vx-nav-scan { display: none; }
@@ -195,8 +218,28 @@ html.vx-snap { scroll-snap-type: y proximity; }
   .vx-stopbar-track { flex: 1; height: 4px; border-radius: 4px; background: var(--vx-ink-3); overflow: hidden; }
   .vx-stopbar-fill { display: block; height: 100%; background: var(--vx-holo); transition: width 0.35s ease; }
   .vx-menu[data-open="true"] {
-    display: block; padding: 8px 16px 20px; background: var(--vx-ink); border-top: 1px solid var(--vx-line);
-    max-height: calc(100dvh - var(--vx-nav-h)); overflow-y: auto;
+    display: block;
+    padding: 8px 16px 20px;
+    background: rgba(14, 12, 21, 0.98);
+    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(20px);
+    border-top: 1px solid var(--vx-line);
+    border-bottom: 1px solid var(--vx-line-2);
+    box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.85);
+    max-height: calc(100dvh - var(--vx-nav-h));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    animation: vx-menu-enter 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  @keyframes vx-menu-enter {
+    from {
+      opacity: 0;
+      transform: translateY(-6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
   .vx-menu-item {
     display: flex; justify-content: space-between; width: 100%; min-height: 48px; align-items: center;
