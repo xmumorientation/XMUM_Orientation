@@ -130,6 +130,12 @@ const ERROR_MESSAGES: Record<string, string> = {
   INVALID_DAY1_STATION: "Your assigned station is not available for Day 1.",
   DAY1_REWARD_NOT_CONFIGURED: "Day 1 rewards have not been configured correctly.",
   INVALID_REQUEST_ID: "This submission could not be identified. Please try again.",
+  DAY2_SESSION_INACTIVE: "The Day 2 gameplay session is not active.",
+  DAY2_STATION_NOT_ASSIGNED: "Your Day 2 station has not been assigned yet.",
+  INVALID_DAY2_STATION: "Your assigned station is not available for Day 2.",
+  DAY2_STATION_NOT_CONFIGURED: "Your Day 2 station configuration is incomplete.",
+  DAY2_REPLAY_LIMIT_REACHED: "This group has reached the attempt limit for this station.",
+  DAY2_ACTIVE_ATTEMPT_EXISTS: "This group already has an active attempt at this station.",
 };
 
 
