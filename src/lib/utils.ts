@@ -123,6 +123,13 @@ const ERROR_MESSAGES: Record<string, string> = {
   BLIND_BOX_ALREADY_OPENED: "This Blind Box has already been opened.",
   BLIND_BOX_OPENING_CLOSED: "The bonding session has ended. This Blind Box cannot currently be opened.",
   BLIND_BOX_NOT_FOUND: "This Blind Box does not belong to your group.",
+  DAY1_RESULT_EMPTY: "Enter at least one winner or loser group.",
+  DAY1_SAME_GROUP: "The winner and loser cannot be the same group.",
+  DAY1_SESSION_INACTIVE: "The Day 1 gameplay session is not active.",
+  DAY1_STATION_NOT_ASSIGNED: "Your Day 1 station has not been assigned yet.",
+  INVALID_DAY1_STATION: "Your assigned station is not available for Day 1.",
+  DAY1_REWARD_NOT_CONFIGURED: "Day 1 rewards have not been configured correctly.",
+  INVALID_REQUEST_ID: "This submission could not be identified. Please try again.",
 };
 
 
