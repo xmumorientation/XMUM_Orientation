@@ -617,154 +617,56 @@ export async function updateTokenLog(params: {
   newAmount: number;
   newNotes: string;
   newTransactionType: TransactionType;
+  correctionReason?: string;
 }): Promise<{ ok: boolean; error?: string }> {
-  const { logId, newGroupId, newAmount, newNotes, newTransactionType } = params;
+  const { logId, newGroupId, newAmount, newNotes, newTransactionType, correctionReason } = params;
   const supabase = supabaseBrowser();
-
-  const logs = await fetchTokenLogs();
-  const existingLog = logs.find((l) => l.log_id === logId);
-  if (!existingLog) {
-    return { ok: false, error: "Transaction log not found." };
-  }
-
-  const oldGroupId = existingLog.group_id;
-  const oldAmount = existingLog.amount;
-
-  const groups = await fetchTokenGroups();
-
-  if (oldGroupId === newGroupId) {
-    const delta = newAmount - oldAmount;
-    const g = groups.find((grp) => grp.group_id === oldGroupId);
-    if (!g) return { ok: false, error: "Group not found." };
-    if (g.current_tokens + delta < 0) {
-      return {
-        ok: false,
-        error: `Action denied: Group ${oldGroupId} only has ${g.current_tokens} tokens. Editing this log would result in a negative balance (${g.current_tokens + delta}).`,
-      };
-    }
-    g.current_tokens = g.current_tokens + delta;
-  } else {
-    const oldGroup = groups.find((grp) => grp.group_id === oldGroupId);
-    if (oldGroup && oldGroup.current_tokens - oldAmount < 0) {
-      return {
-        ok: false,
-        error: `Action denied: Group ${oldGroupId} does not have enough tokens (${oldGroup.current_tokens}) to reverse this transaction.`,
-      };
-    }
-    const newGroup = groups.find((grp) => grp.group_id === newGroupId);
-    if (newGroup && newGroup.current_tokens + newAmount < 0) {
-      return {
-        ok: false,
-        error: `Action denied: Group ${newGroupId} token balance cannot become negative.`,
-      };
-    }
-    if (oldGroup) oldGroup.current_tokens = oldGroup.current_tokens - oldAmount;
-    if (newGroup) newGroup.current_tokens = newGroup.current_tokens + newAmount;
-  }
-
-  existingLog.group_id = newGroupId;
-  existingLog.amount = newAmount;
-  existingLog.notes = newNotes;
-  existingLog.transaction_type = newTransactionType;
-
   try {
-    await supabase.from("token_logs").update({
-      group_id: newGroupId,
-      amount: newAmount,
-      notes: newNotes,
-      transaction_type: newTransactionType,
-    }).eq("log_id", logId);
-
-    if (oldGroupId === newGroupId) {
-      const g = groups.find((grp) => grp.group_id === oldGroupId);
-      if (g) {
-        await supabase.from("groups").update({
-          current_tokens: g.current_tokens,
-          token_balance: g.current_tokens,
-        }).or(`id.eq.${oldGroupId},group_id.eq.${oldGroupId}`);
-      }
-    } else {
-      const oldG = groups.find((grp) => grp.group_id === oldGroupId);
-      if (oldG) {
-        await supabase.from("groups").update({
-          current_tokens: oldG.current_tokens,
-          token_balance: oldG.current_tokens,
-        }).or(`id.eq.${oldGroupId},group_id.eq.${oldGroupId}`);
-      }
-      const newG = groups.find((grp) => grp.group_id === newGroupId);
-      if (newG) {
-        await supabase.from("groups").update({
-          current_tokens: newG.current_tokens,
-          token_balance: newG.current_tokens,
-        }).or(`id.eq.${newGroupId},group_id.eq.${newGroupId}`);
-      }
-    }
-  } catch (err) {
-    console.warn("Supabase updateTokenLog fallback:", err);
+    const { data, error } = await supabase.rpc("fn_correct_token_log", {
+      p_log_id: logId,
+      p_new_group_id: newGroupId,
+      p_new_amount: newAmount,
+      p_new_transaction_type: newTransactionType,
+      p_new_notes: newNotes.trim() || "Corrected transaction",
+      p_reason: correctionReason?.trim() || newNotes.trim() || "Admin ledger correction",
+    });
+    if (error) return { ok: false, error: error.message };
+    if (!data?.ok) return { ok: false, error: data?.error || "Correction failed." };
+    return { ok: true };
+  } catch (err: any) {
+    return { ok: false, error: err?.message || "Correction failed." };
   }
-
-  setLocalItem("groups", groups);
-  setLocalItem("logs", logs);
-
-  return { ok: true };
 }
 
-export async function deleteTokenLog(logId: string): Promise<{ ok: boolean; error?: string }> {
+export async function deleteTokenLog(logId: string, reason = "Admin reversal"): Promise<{ ok: boolean; error?: string }> {
   const supabase = supabaseBrowser();
-  const logs = await fetchTokenLogs();
-  const existingLog = logs.find((l) => l.log_id === logId);
-  if (!existingLog) {
-    return { ok: false, error: "Transaction log not found." };
-  }
-
-  const { group_id, amount } = existingLog;
-  const groups = await fetchTokenGroups();
-  const g = groups.find((grp) => grp.group_id === group_id);
-
-  if (g && amount > 0 && g.current_tokens < amount) {
-    return {
-      ok: false,
-      error: `Action denied: Cannot delete log. Group ${group_id} only has ${g.current_tokens} tokens, reversing ${amount} tokens would result in a negative balance.`,
-    };
-  }
-
-  if (g) {
-    g.current_tokens = g.current_tokens - amount;
-  }
-
-  const updatedLogs = logs.filter((l) => l.log_id !== logId);
-
   try {
-    await supabase.from("token_logs").delete().eq("log_id", logId);
-    if (g) {
-      await supabase.from("groups").update({
-        current_tokens: g.current_tokens,
-        token_balance: g.current_tokens,
-      }).or(`id.eq.${group_id},group_id.eq.${group_id}`);
-    }
-  } catch (err) {
-    console.warn("Supabase deleteTokenLog fallback:", err);
+    const { data, error } = await supabase.rpc("fn_reverse_token_log", {
+      p_log_id: logId,
+      p_reason: reason.trim() || "Admin reversal",
+    });
+    if (error) return { ok: false, error: error.message };
+    if (!data?.ok) return { ok: false, error: data?.error || "Reversal failed." };
+    return { ok: true };
+  } catch (err: any) {
+    return { ok: false, error: err?.message || "Reversal failed." };
   }
-
-  setLocalItem("groups", groups);
-  setLocalItem("logs", updatedLogs);
-
-  return { ok: true };
 }
 
 export async function resetAllTokensAndPuzzles(): Promise<{ ok: boolean }> {
   const supabase = supabaseBrowser();
   try {
-    await supabase.from("puzzle_inventory").delete().neq("inventory_id", -1);
-    await supabase.from("token_logs").delete().neq("group_id", -1);
-    await supabase.from("groups").update({ current_tokens: 0, token_balance: 0 }).neq("id", -1);
-  } catch (err) {
-    console.warn("Supabase reset fallback:", err);
+    const { data, error } = await supabase.rpc("fn_reset_token_state", {
+      p_reason: "Admin reset of Token and puzzle state",
+    });
+    if (error || !data?.ok) return { ok: false };
+  } catch (err: any) {
+    console.warn("Supabase reset failed:", err);
+    return { ok: false };
   }
 
   const freshGroups = generateInitial12Groups();
   setLocalItem("groups", freshGroups);
-  setLocalItem("logs", []);
   setLocalItem("puzzle_inv", []);
 
   return { ok: true };

@@ -7,7 +7,8 @@ import { supabaseBrowser } from "@/lib/supabase/client";
 
 interface Toast {
   id: number;
-  name: string;
+  message: string;
+  label: string;
 }
 
 // FR-6.3: "new item acquired" pop-up on Freshie clients within 5s of grant.
@@ -17,17 +18,15 @@ export function NewItemToast() {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
   useEffect(() => {
-    if (!profile.group_id) return;
-
     const channel = supabase
-      .channel(`inventory-toast-${profile.group_id}`)
+      .channel(`targeted-toast-${profile.id}-${crypto.randomUUID()}`)
       .on(
         "postgres_changes",
         {
           event: "INSERT",
           schema: "public",
           table: "inventory",
-          filter: `group_id=eq.${profile.group_id}`,
+          ...(profile.group_id ? { filter: `group_id=eq.${profile.group_id}` } : {}),
         },
         async (payload) => {
           const itemId = (payload.new as { item_id: number }).item_id;
@@ -38,7 +37,8 @@ export function NewItemToast() {
             .single();
           const toast: Toast = {
             id: Date.now() + Math.random(),
-            name: data?.name ?? "New item",
+            message: `New item acquired: ${data?.name ?? "New item"}`,
+            label: "NEW",
           };
           setToasts((t) => [...t, toast]);
           setTimeout(
@@ -47,12 +47,26 @@ export function NewItemToast() {
           );
         }
       )
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "token_notifications" },
+        (payload) => {
+          const row = payload.new as { message?: string };
+          const toast: Toast = {
+            id: Date.now() + Math.random(),
+            message: row.message ?? "Your group's Token balance was updated.",
+            label: "TOKEN",
+          };
+          setToasts((current) => [...current, toast]);
+          setTimeout(() => setToasts((current) => current.filter((item) => item.id !== toast.id)), 5000);
+        }
+      )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [supabase, profile.group_id]);
+  }, [supabase, profile.group_id, profile.id]);
 
   if (toasts.length === 0) return null;
 
@@ -64,10 +78,10 @@ export function NewItemToast() {
           className="card animate-floatup flex items-center gap-2 px-4 py-2 shadow-glow"
         >
           <span className="flex h-8 w-8 items-center justify-center rounded-full bg-ink text-[10px] font-black text-white">
-            NEW
+            {t.label}
           </span>
           <span className="text-sm font-semibold">
-            New item acquired: {t.name}
+            {t.message}
           </span>
         </div>
       ))}

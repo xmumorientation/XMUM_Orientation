@@ -111,6 +111,9 @@ export default function AdminTokenAllInOnePage() {
   // ── Audit Log Filters ─────────────────────────────────────────────────────
   const [auditGroupFilter, setAuditGroupFilter] = useState<string>("all");
   const [auditTypeFilter, setAuditTypeFilter] = useState<string>("all");
+  const [auditStationFilter, setAuditStationFilter] = useState<string>("all");
+  const [auditDayFilter, setAuditDayFilter] = useState<string>("all");
+  const [auditDateFilter, setAuditDateFilter] = useState<string>("");
   const [auditSearchQuery, setAuditSearchQuery] = useState<string>("");
 
   // ── Data Loader ───────────────────────────────────────────────────────────
@@ -138,7 +141,7 @@ export default function AdminTokenAllInOnePage() {
 
     // Supabase Realtime Channel
     const channel = supabase
-      .channel("token_all_in_one_realtime")
+      .channel(`token_all_in_one_realtime-${crypto.randomUUID()}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "groups" }, () => loadAllData())
       .on("postgres_changes", { event: "*", schema: "public", table: "token_logs" }, () => loadAllData())
       .on("postgres_changes", { event: "*", schema: "public", table: "puzzle_inventory" }, () => loadAllData())
@@ -205,6 +208,9 @@ export default function AdminTokenAllInOnePage() {
     return logs.filter((log) => {
       if (auditGroupFilter !== "all" && log.group_id !== Number(auditGroupFilter)) return false;
       if (auditTypeFilter !== "all" && log.transaction_type !== auditTypeFilter) return false;
+      if (auditStationFilter !== "all" && log.station_id !== Number(auditStationFilter)) return false;
+      if (auditDayFilter !== "all" && log.bonding_day !== Number(auditDayFilter)) return false;
+      if (auditDateFilter && new Date(log.created_at).toLocaleDateString("en-CA") !== auditDateFilter) return false;
       if (auditSearchQuery.trim()) {
         const q = auditSearchQuery.toLowerCase();
         const matchesNotes = log.notes?.toLowerCase().includes(q);
@@ -214,7 +220,7 @@ export default function AdminTokenAllInOnePage() {
       }
       return true;
     });
-  }, [logs, auditGroupFilter, auditTypeFilter, auditSearchQuery]);
+  }, [logs, auditGroupFilter, auditTypeFilter, auditStationFilter, auditDayFilter, auditDateFilter, auditSearchQuery]);
 
   // ──────────────────────────────────────────────────────────────────────────
   // PRESET CLICKS & MANAGEMENT
@@ -362,9 +368,9 @@ export default function AdminTokenAllInOnePage() {
 
     if (
       !window.confirm(
-        `Are you sure you want to delete this transaction?\n\nGroup ${log.group_id}: ${
+        `Are you sure you want to reverse this transaction? The original ledger row will be preserved.\n\nGroup ${log.group_id}: ${
           log.amount >= 0 ? `+${log.amount}` : log.amount
-        } tokens (${log.notes || log.transaction_type})\n\nThis will reverse ${
+        } tokens (${log.notes || log.transaction_type})\n\nThis will append a reversal of ${
           log.amount >= 0 ? `-${log.amount}` : `+${Math.abs(log.amount)}`
         } tokens from Group ${log.group_id}'s balance.`
       )
@@ -375,9 +381,11 @@ export default function AdminTokenAllInOnePage() {
     setBusy(true);
     setErrorMsg(null);
     try {
-      const res = await deleteTokenLog(log.log_id);
+      const reason = window.prompt("Reason for reversing this transaction:", "Admin correction");
+      if (!reason?.trim()) return;
+      const res = await deleteTokenLog(log.log_id, reason);
       if (res.ok) {
-        notifySuccess(`✓ Transaction deleted & Group ${log.group_id} balance adjusted!`);
+        notifySuccess(`✓ Reversal recorded & Group ${log.group_id} balance adjusted!`);
         await loadAllData();
       } else {
         notifyError(res.error || "Failed to delete transaction.");
@@ -930,7 +938,7 @@ export default function AdminTokenAllInOnePage() {
         </div>
 
         {/* Filters Bar */}
-        <div className="grid gap-2.5 sm:grid-cols-3">
+        <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-6">
           <div>
             <label className="mb-1 block text-xs font-bold text-slate-500 uppercase tracking-wider">
               Filter by Group
@@ -947,6 +955,28 @@ export default function AdminTokenAllInOnePage() {
                 </option>
               ))}
             </select>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-xs font-bold text-slate-500 uppercase tracking-wider">Station</label>
+            <select value={auditStationFilter} onChange={(e) => setAuditStationFilter(e.target.value)} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-900 focus:border-cyan-500 focus:bg-white focus:outline-none">
+              <option value="all">All Stations</option>
+              {Array.from(new Set(logs.map((log) => log.station_id).filter((id): id is number => id !== null))).sort((a,b) => a-b).map((id) => <option key={id} value={id}>Station {id}</option>)}
+            </select>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-xs font-bold text-slate-500 uppercase tracking-wider">Day</label>
+            <select value={auditDayFilter} onChange={(e) => setAuditDayFilter(e.target.value)} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-900 focus:border-cyan-500 focus:bg-white focus:outline-none">
+              <option value="all">All Days</option>
+              <option value="1">Day 1</option>
+              <option value="2">Day 2</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-xs font-bold text-slate-500 uppercase tracking-wider">Date</label>
+            <input type="date" value={auditDateFilter} onChange={(e) => setAuditDateFilter(e.target.value)} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-900 focus:border-cyan-500 focus:bg-white focus:outline-none" />
           </div>
 
           <div>
@@ -1044,7 +1074,7 @@ export default function AdminTokenAllInOnePage() {
                           <button
                             onClick={() => handleDeleteLog(log)}
                             className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600 transition"
-                            title="Delete log & reverse balance"
+                            title="Reverse transaction and preserve history"
                           >
                             <Trash2 size={14} />
                           </button>

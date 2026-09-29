@@ -7,7 +7,11 @@ export type TransactionType =
   | "DAY2_ENTRY"
   | "MANUAL_GM_ADJUST"
   | "MANUAL_ADMIN_ADJUST"
-  | "SYSTEM_RESET";
+  | "SYSTEM_RESET"
+  | "BLIND_BOX_CLAIM"
+  | "BLIND_BOX_REWARD"
+  | "TOKEN_CORRECTION"
+  | "TOKEN_REVERSAL";
 
 export interface TokenPreset {
   id: string;
@@ -52,6 +56,14 @@ export interface TokenLog {
   station_id: number | null;
   notes: string | null;
   created_at: string;
+  balance_before?: number | null;
+  balance_after?: number | null;
+  bonding_day?: 1 | 2 | null;
+  actor_user_id?: string | null;
+  reference_type?: string | null;
+  reference_id?: string | null;
+  reversed_by?: string | null;
+  correction_reason?: string | null;
 }
 
 export interface PuzzleInventoryItem {
