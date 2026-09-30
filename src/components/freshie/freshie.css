@@ -1,0 +1,328 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   Freshie Home + Freshie tab bar — Vortexa "Night Ticket" style.
+   Scoped under .fh / .fh-tabbar so staff pages are untouched.
+   --fh-accent / --fh-glow come from groupTheme.ts (per-group colours).
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.fh {
+  --fh-ink: #07060b;
+  --fh-ink-2: #0e0c15;
+  --fh-ink-3: #15121e;
+  --fh-line: #25202f;
+  --fh-line-2: #3a3448;
+  --fh-text: #f3f0fa;
+  --fh-text-2: #cfc9dc;
+  --fh-mute: #8d87a0;
+  --fh-pink: #fe06ab;
+  --fh-orange: #fc9e3d;
+  --fh-yellow: #f2ff0b;
+  --fh-lilac: #e0b4fc;
+  --fh-holo: linear-gradient(100deg, #0dfcfd 0%, #e0b4fc 35%, #fe06ab 65%, #fc9e3d 100%);
+  --fh-accent: #0dfcfd;
+  --fh-glow: #063a65;
+  /* Height of the fixed header + stop bar, and of the bottom tab bar. */
+  --fh-top: calc(96px + env(safe-area-inset-top, 0px));
+  --fh-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+
+  position: relative;
+  isolation: isolate;
+  color: var(--fh-text);
+}
+@media (min-width: 1024px) {
+  .fh { --fh-bottom: 0px; }
+}
+
+/* One stop per screen, this page only (class set by FreshieHome). */
+html.fh-snap { scroll-snap-type: y proximity; }
+@media (prefers-reduced-motion: reduce) {
+  html.fh-snap { scroll-snap-type: none; }
+}
+
+/* Full-bleed black ground (AppShell paints the root black on Freshie Home;
+   this adds the dots + glow). */
+.fh-bg { position: fixed; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; }
+.fh-bg::before {
+  content: ""; position: absolute; inset: 0;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+  background-size: 24px 24px;
+  -webkit-mask-image: radial-gradient(ellipse at center, #000 30%, transparent 80%);
+  mask-image: radial-gradient(ellipse at center, #000 30%, transparent 80%);
+}
+.fh-glow { position: absolute; border-radius: 50%; filter: blur(70px); }
+.fh-spark {
+  position: absolute; pointer-events: none;
+  clip-path: polygon(50% 0, 61% 39%, 100% 50%, 61% 61%, 50% 100%, 39% 61%, 0 50%, 39% 39%);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .fh-spark { animation: fh-twinkle 4s ease-in-out infinite; }
+}
+@keyframes fh-twinkle { 50% { transform: scale(0.8) rotate(20deg); opacity: 0.7; } }
+
+.fh-mono { font-family: var(--font-mono), "JetBrains Mono", ui-monospace, monospace; }
+.fh-slab { font-family: var(--font-vx-slab), Georgia, serif; font-weight: 400; }
+.fh-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.fh :focus-visible { outline: 2px solid var(--fh-accent); outline-offset: 3px; }
+
+/* ── Fixed header + stop bar ─────────────────────────────────────────────── */
+.fh-head {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 40;
+  padding-top: env(safe-area-inset-top, 0px);
+  background: linear-gradient(rgba(7, 6, 11, 0.94) 70%, rgba(7, 6, 11, 0));
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+}
+.fh-head-row, .fh-stopbar { max-width: 1000px; margin: 0 auto; padding-inline: 16px; }
+.fh-head-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; height: 60px; }
+.fh-brand {
+  font-family: var(--font-vx-display), Georgia, serif; font-size: 28px; line-height: 1.1;
+  background: var(--fh-holo); -webkit-background-clip: text; background-clip: text; color: transparent;
+  border: 0; padding: 0 4px 0 0; cursor: pointer;
+}
+.fh-head-r { display: flex; align-items: center; gap: 8px; }
+.fh-chip {
+  font-size: 10.5px; letter-spacing: 0.16em; text-transform: uppercase;
+  padding: 5px 10px; border-radius: 999px; border: 1px solid var(--fh-accent); color: var(--fh-accent);
+}
+.fh-avatar {
+  width: 40px; height: 40px; border-radius: 50%; border: 0; cursor: pointer;
+  background: var(--fh-holo); color: #0a0810; font-weight: 800; font-size: 14px;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 0 0 2px var(--fh-ink), 0 0 0 3px var(--fh-line-2);
+}
+.fh-menu {
+  position: absolute; right: 0; top: calc(100% + 8px); z-index: 50; width: 220px;
+  background: var(--fh-ink-3); border: 1px solid var(--fh-line-2); border-radius: 16px; padding: 14px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+}
+.fh-menu b { display: block; font-size: 15px; }
+.fh-menu span { display: block; font-size: 12.5px; color: var(--fh-mute); margin-top: 2px; }
+.fh-menu button {
+  margin-top: 12px; width: 100%; min-height: 44px; border-radius: 12px; cursor: pointer;
+  background: transparent; border: 1px solid var(--fh-line-2); color: var(--fh-text); font-weight: 700; font-size: 14px;
+}
+.fh-menu button:hover { border-color: var(--fh-pink); color: var(--fh-pink); }
+.fh-stopbar {
+  display: flex; align-items: center; gap: 10px; height: 30px; padding-bottom: 6px;
+  font-size: 11px; color: var(--fh-mute); letter-spacing: 0.08em;
+}
+.fh-stopbar b { color: #fff; }
+.fh-stopbar-track { flex: 1; height: 4px; border-radius: 4px; background: var(--fh-ink-3); overflow: hidden; }
+.fh-stopbar-track span { display: block; height: 100%; background: var(--fh-holo); transition: width 0.35s ease; }
+@media (min-width: 1024px) {
+  /* Sit beside AppShell's 16rem sidebar. */
+  .fh-head, .fh-bg { left: 16rem; }
+}
+
+/* ── Stops ───────────────────────────────────────────────────────────────── */
+.fh-stop {
+  min-height: calc(100svh - var(--fh-bottom));
+  max-width: 1000px; margin: 0 auto;
+  padding-block: calc(var(--fh-top) + 12px) 28px;
+  display: flex; flex-direction: column; justify-content: center; gap: 16px;
+  scroll-snap-align: start;
+}
+.fh-center { align-items: center; text-align: center; }
+.fh-stop-head { display: flex; flex-direction: column; gap: 4px; }
+.fh-stop-head-row { flex-direction: row; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+.fh-h2 { font-size: clamp(34px, 8vw, 56px); line-height: 1.02; margin: 0; }
+.fh-lead { margin: 0; font-size: 14.5px; color: var(--fh-mute); }
+.fh-eb { font-size: 10.5px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--fh-accent); }
+
+/* ── 01 Welcome ──────────────────────────────────────────────────────────── */
+.fh-eyebrow { font-size: 11.5px; letter-spacing: 0.28em; text-transform: uppercase; color: var(--fh-accent); }
+.fh-welcome-title { margin: 0; display: flex; flex-direction: column; align-items: center; }
+.fh-pre { font-size: clamp(17px, 4.6vw, 24px); letter-spacing: 0.1em; }
+.fh-mark {
+  font-family: var(--font-vx-display), Georgia, serif; font-weight: 400;
+  font-size: clamp(72px, 20vw, 168px); line-height: 1; padding: 0 0.08em 0.12em;
+  background: var(--fh-holo); background-size: 200% 100%;
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(0 8px 36px rgba(13, 252, 253, 0.18));
+}
+@media (prefers-reduced-motion: no-preference) {
+  .fh-mark { animation: fh-shimmer 8s linear infinite; }
+}
+@keyframes fh-shimmer { to { background-position: 200% 0; } }
+.fh-hello { margin: -6px 0 4px; font-size: 15px; color: var(--fh-text-2); }
+.fh-hello b { color: #fff; }
+
+.fh-countwrap { display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 440px; }
+.fh-clabel { font-size: 11px; letter-spacing: 0.24em; color: var(--fh-mute); }
+.fh-count { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.fh-cell {
+  position: relative; text-align: center; padding: 12px 0 10px; border-radius: 14px;
+  background: var(--fh-ink-2); border: 1px solid var(--fh-line);
+}
+.fh-cell::before, .fh-cell::after {
+  content: ""; position: absolute; top: 50%; width: 12px; height: 12px; border-radius: 50%;
+  background: var(--fh-ink); border: 1px solid var(--fh-line); transform: translateY(-50%);
+}
+.fh-cell::before { left: -7px; clip-path: inset(0 0 0 50%); }
+.fh-cell::after { right: -7px; clip-path: inset(0 50% 0 0); }
+.fh-cell b { display: block; font-size: clamp(28px, 8vw, 40px); line-height: 1; font-variant-numeric: tabular-nums; }
+.fh-cell span { font-size: 9.5px; letter-spacing: 0.2em; color: var(--fh-mute); }
+
+.fh-phasecard {
+  width: 100%; max-width: 440px; text-align: left; padding: 18px; border-radius: 22px;
+  background: var(--fh-ink-2); border: 1px solid var(--fh-line);
+}
+.fh-phasecard-top { display: flex; align-items: center; gap: 8px; font-size: 10.5px; letter-spacing: 0.2em; color: var(--fh-pink); }
+.fh-phasecard-top i { width: 8px; height: 8px; border-radius: 50%; background: var(--fh-pink); box-shadow: 0 0 8px var(--fh-pink); }
+.fh-phasecard > b { display: block; font-size: 26px; margin-top: 6px; }
+.fh-phasecard-time { font-size: clamp(44px, 12vw, 56px); line-height: 1; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.fh-phasecard-bar { height: 6px; border-radius: 6px; background: var(--fh-ink-3); overflow: hidden; margin-top: 12px; }
+.fh-phasecard-bar i { display: block; height: 100%; background: var(--fh-holo); transition: width 1s linear; }
+.fh-phasecard small { display: block; margin-top: 8px; font-size: 12.5px; color: var(--fh-mute); }
+.fh-phasecard[data-endgame="true"] { border-color: #bc071d; background: rgba(188, 7, 29, 0.16); }
+.fh-phasecard[data-endgame="true"] .fh-phasecard-top { color: #ff3b4f; }
+.fh-phasecard[data-endgame="true"] .fh-phasecard-top i { background: #ff3b4f; box-shadow: 0 0 10px #ff3b4f; }
+
+.fh-actions { display: flex; gap: 10px; width: 100%; max-width: 440px; margin-top: 6px; }
+.fh-actions .fh-btn { flex: 1; }
+.fh-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 0 20px;
+  border-radius: 999px; font-weight: 700; font-size: 15px; text-decoration: none; cursor: pointer;
+  border: 1px solid transparent; transition: transform 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.fh-btn:active { transform: scale(0.97); }
+.fh-btn-primary { background: var(--fh-yellow); color: #111; }
+.fh-btn-ghost { background: transparent; color: var(--fh-text); border-color: var(--fh-line-2); }
+.fh-btn-ghost:hover { border-color: var(--fh-accent); color: var(--fh-accent); }
+.fh-btn-block { width: 100%; }
+
+/* ── 02 Group pass ───────────────────────────────────────────────────────── */
+.fh-pass-grid { display: grid; gap: 14px; }
+.fh-pass-side { display: flex; flex-direction: column; gap: 12px; }
+.fh-pass {
+  position: relative; display: grid; grid-template-columns: 1fr 96px; border-radius: 22px;
+  background: var(--fh-ink-2); border: 1px solid var(--fh-line);
+}
+.fh-pass::before, .fh-pass::after {
+  content: ""; position: absolute; top: 50%; width: 20px; height: 20px; border-radius: 50%;
+  background: var(--fh-ink); border: 1px solid var(--fh-line); transform: translateY(-50%);
+}
+.fh-pass::before { left: -11px; clip-path: inset(0 0 0 50%); }
+.fh-pass::after { right: -11px; clip-path: inset(0 50% 0 0); }
+.fh-pass-main { padding: 20px; }
+.fh-pass-group { font-weight: 700; font-size: 17px; margin-top: 4px; }
+.fh-pass-num { font-size: clamp(64px, 18vw, 96px); line-height: 1; margin-top: 8px; font-variant-numeric: tabular-nums; }
+.fh-pass-unit { font-size: 13px; color: var(--fh-mute); margin-top: 2px; }
+.fh-pass-stub {
+  border-left: 2px dashed var(--fh-line-2);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  font-size: 10px; letter-spacing: 0.16em; color: var(--fh-mute); text-align: center; padding: 10px 6px;
+}
+.fh-pass-stub b { font-size: 24px; color: #fff; letter-spacing: 0; }
+.fh-live { display: inline-flex; align-items: center; gap: 6px; color: var(--fh-accent); }
+.fh-live i { width: 7px; height: 7px; border-radius: 50%; background: var(--fh-accent); box-shadow: 0 0 8px var(--fh-accent); }
+@media (prefers-reduced-motion: no-preference) {
+  .fh-live i { animation: fh-pulse 2s ease-in-out infinite; }
+}
+@keyframes fh-pulse { 50% { opacity: 0.35; } }
+
+.fh-pending { border-radius: 22px; padding: 18px 20px; border: 1px solid rgba(252, 158, 61, 0.5); background: rgba(252, 158, 61, 0.07); }
+.fh-pending .fh-eb { color: var(--fh-orange); }
+.fh-pending p { margin: 8px 0 0; font-size: 14px; color: #ffd6a8; line-height: 1.5; }
+.fh-skel { border-radius: 22px; background: var(--fh-ink-2); border: 1px solid var(--fh-line); min-height: 170px; }
+@media (prefers-reduced-motion: no-preference) {
+  .fh-skel { animation: fh-pulse 1.4s ease-in-out infinite; }
+}
+
+.fh-next {
+  display: flex; align-items: center; gap: 14px; padding: 18px; border-radius: 22px; text-decoration: none; color: inherit;
+  background: linear-gradient(var(--fh-ink-2), var(--fh-ink-2)) padding-box, var(--fh-holo) border-box;
+  border: 1.5px solid transparent; transition: transform 0.15s ease;
+}
+.fh-next:active { transform: scale(0.98); }
+.fh-next-ic {
+  width: 50px; height: 50px; border-radius: 50%; flex: none; color: #fff;
+  background: radial-gradient(circle at 30% 30%, #ffb1c1, #fe06ab); display: flex; align-items: center; justify-content: center;
+}
+.fh-next .fh-eb { color: var(--fh-pink); }
+.fh-next b { display: block; font-size: 20px; line-height: 1.1; margin-top: 3px; }
+.fh-next small { font-size: 13px; color: var(--fh-mute); }
+.fh-next-arr {
+  margin-left: auto; width: 40px; height: 40px; border-radius: 50%; flex: none;
+  background: var(--fh-yellow); color: #111; display: flex; align-items: center; justify-content: center;
+}
+.fh-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.fh-tile {
+  display: flex; align-items: center; gap: 10px; padding: 14px; min-height: 56px; border-radius: 16px;
+  text-decoration: none; color: inherit; background: var(--fh-ink-2); border: 1px solid var(--fh-line);
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+.fh-tile:hover { border-color: var(--fh-line-2); }
+.fh-tile:active { transform: scale(0.98); }
+.fh-tile-ic { width: 36px; height: 36px; border-radius: 11px; flex: none; display: flex; align-items: center; justify-content: center; }
+.fh-tile b { font-weight: 700; font-size: 14.5px; }
+
+/* ── 03 How it works ─────────────────────────────────────────────────────── */
+.fh-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.fh-step {
+  display: grid; grid-template-columns: 48px 1fr; column-gap: 14px; align-items: center;
+  padding: 14px 16px; border-radius: 18px; background: var(--fh-ink-2); border: 1px solid var(--fh-line);
+}
+.fh-step-ic { grid-row: span 2; width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #0a0810; }
+.fh-step b { font-size: 20px; }
+.fh-step-no { font-size: 11px; letter-spacing: 0.16em; color: var(--fh-mute); margin-right: 4px; }
+.fh-step small { font-size: 13.5px; color: var(--fh-mute); }
+
+/* ── 04 Scoreboard ───────────────────────────────────────────────────────── */
+.fh-pill { font-size: 10.5px; letter-spacing: 0.14em; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--fh-orange); color: var(--fh-orange); }
+.fh-board { list-style: none; margin: 0; padding: 0; display: grid; gap: 7px; }
+.fh-team {
+  display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-radius: 14px;
+  background: var(--fh-ink-2); border: 1px solid var(--fh-line);
+}
+.fh-team[data-me] { border-color: var(--fh-accent); background: color-mix(in srgb, var(--fh-accent) 9%, var(--fh-ink-2)); }
+.fh-team-rk { font-size: 11px; color: var(--fh-mute); width: 20px; }
+.fh-team-sw { width: 12px; height: 12px; border-radius: 50%; flex: none; }
+.fh-team b { flex: 1; font-weight: 600; font-size: 15px; display: flex; align-items: center; gap: 8px; }
+.fh-you { font-size: 9.5px; letter-spacing: 0.14em; padding: 3px 7px; border-radius: 999px; background: var(--fh-accent); color: #06121a; font-weight: 700; }
+.fh-team-sc { font-size: 18px; color: var(--fh-mute); font-variant-numeric: tabular-nums; }
+
+/* ── 05 Today ────────────────────────────────────────────────────────────── */
+.fh-tl { list-style: none; margin: 0; padding: 0 0 0 22px; border-left: 1px dashed var(--fh-line-2); display: flex; flex-direction: column; gap: 9px; }
+.fh-it { position: relative; padding: 12px 14px; border-radius: 14px; background: var(--fh-ink-2); border: 1px solid var(--fh-line); }
+.fh-it::before {
+  content: ""; position: absolute; left: -29px; top: 50%; width: 12px; height: 12px; border-radius: 50%;
+  background: var(--d); transform: translateY(-50%); box-shadow: 0 0 0 4px var(--fh-ink);
+}
+.fh-it b { display: block; font-size: 15px; }
+.fh-it small { font-size: 10.5px; letter-spacing: 0.12em; color: var(--fh-mute); }
+
+/* ── Desktop / landscape tablet ──────────────────────────────────────────── */
+@media (min-width: 1024px) {
+  .fh-pass-grid { grid-template-columns: 1.15fr 1fr; align-items: stretch; }
+  .fh-pass-side { justify-content: center; }
+  .fh-steps { grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  .fh-step { grid-template-columns: 1fr; row-gap: 8px; padding: 22px 20px; align-content: start; }
+  .fh-step-ic { grid-row: auto; width: 56px; height: 56px; }
+  .fh-board { grid-template-columns: 1fr 1fr; gap: 8px 16px; }
+  .fh-tl, .fh-btn-block { max-width: 640px; }
+}
+
+/* ── Freshie bottom tab bar (every Freshie page, phones/tablets) ────────── */
+.fh-tabbar {
+  position: fixed; inset: auto 0 0 0; z-index: 45;
+  display: flex; align-items: flex-end; padding: 6px 6px env(safe-area-inset-bottom, 0px);
+  background: rgba(10, 9, 15, 0.95); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+  border-top: 1px solid #25202f;
+  --fh-accent: #0dfcfd;
+}
+.fh-tab {
+  flex: 1; min-height: 58px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  color: #8d87a0; font-size: 11px; font-weight: 600; text-decoration: none;
+}
+.fh-tab[aria-current="page"] { color: var(--fh-accent); }
+.fh-tab-scan { color: #f3f0fa; justify-content: flex-end; padding-bottom: 6px; }
+.fh-tab-scan-btn {
+  width: 58px; height: 58px; margin-top: -30px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; background: #fff; color: #0a0810;
+  box-shadow: 0 0 0 4px #07060b, 0 0 0 6px rgba(13, 252, 253, 0.55), 0 8px 24px rgba(13, 252, 253, 0.25);
+  transition: transform 0.15s ease;
+}
+.fh-tab-scan:active .fh-tab-scan-btn { transform: scale(0.94); }
+.fh-tab:focus-visible { outline: 2px solid #0dfcfd; outline-offset: -4px; border-radius: 12px; }
+@media (min-width: 1024px) {
+  .fh-tabbar { display: none; }
+}

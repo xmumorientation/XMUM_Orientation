@@ -15,7 +15,7 @@ export function WelcomeSection() {
       <Spark size={34} color="linear-gradient(#FFB1C1, #FE06AB)" style={{ right: "14%", bottom: "22%" }} />
 
       <div className="vx-inner">
-        <div className="vx-eyebrow vx-rise">XMUM Orientation 2026</div>
+        <div className="vx-eyebrow vx-rise">XMUM 2612 Orientation</div>
 
         <h1 id="welcome-title" className="vx-rise" style={{ margin: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
           <span className="vx-welcome-pre">WELCOME TO</span>
