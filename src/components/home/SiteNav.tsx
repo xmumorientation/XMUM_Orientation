@@ -4,18 +4,33 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { CalendarDays, Gamepad2, Home, Menu, ScanLine, Trophy, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
 
 import { STOPS, scrollToSection, type StopId } from "./data";
 
-/** Sections listed in the desktop nav (Join lives on the yellow button). */
-const NAV_LINKS = STOPS.filter((s) => s.id !== "join");
+/**
+ * Public Welcome nav links (desktop + hamburger).
+ * Keep STOPS for scroll/IntersectionObserver — not every stop is a nav item.
+ * Welcome → Overview → Schedule → Games → Committees.
+ * Scoreboard & Join are page sections only (not listed in the menu).
+ */
+const NAV_LINKS: { id: StopId; label: string }[] = [
+  { id: "welcome", label: "Welcome" },
+  { id: "overview", label: "Overview" },
+  { id: "schedule", label: "Schedule" },
+  { id: "games", label: "Games" },
+  { id: "committees", label: "Committees" },
+];
+
+/** Same set for the mobile hamburger drawer. */
+const HAMBURGER_LINKS = NAV_LINKS;
 
 /**
- * Fixed top bar. On desktop: logo, section links, Join button. On phones and
- * tablets: logo, menu button, and a progress bar naming the current stop.
+ * Fixed top bar. On desktop: logo + section links + quiet Staff login.
+ * On phones and tablets: logo, hamburger, and a progress bar naming the
+ * current stop. Scan is not available on the public Welcome page.
  */
-export function SiteNav({ active, onScan }: { active: StopId; onScan?: () => void }) {
+export function SiteNav({ active }: { active: StopId }) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const index = Math.max(0, STOPS.findIndex((s) => s.id === active));
@@ -64,7 +79,7 @@ export function SiteNav({ active, onScan }: { active: StopId; onScan?: () => voi
           document.body
         )}
 
-      <nav className="vx-nav" data-open={open} aria-label="Homepage sections">
+      <nav className="vx-nav" data-open={open} aria-label="Welcome page sections">
       <div className="vx-nav-row">
         <button type="button" className="vx-nav-logo" onClick={() => go("welcome")} aria-label="Vortexa — back to top">
           <Image src="/vortexa-logo-sm.webp" alt="" width={320} height={184} priority style={{ width: "auto" }} />
@@ -82,18 +97,10 @@ export function SiteNav({ active, onScan }: { active: StopId; onScan?: () => voi
               {t.label}
             </button>
           ))}
+          <Link href="/login" className="vx-nav-staff">
+            Staff login
+          </Link>
         </div>
-
-        {/* DEV PREVIEW scanner entry (desktop) — see ScanPreview.tsx */}
-        {onScan && (
-          <button type="button" className="vx-btn vx-btn-ghost vx-nav-scan" onClick={onScan}>
-            <ScanLine size={16} aria-hidden /> Scan
-          </button>
-        )}
-
-        <Link href="/login" className="vx-btn vx-btn-primary vx-nav-cta">
-          Join the Game
-        </Link>
 
         <button
           type="button"
@@ -116,7 +123,7 @@ export function SiteNav({ active, onScan }: { active: StopId; onScan?: () => voi
       </div>
 
       <div id="vx-menu" className="vx-menu" data-open={open}>
-        {STOPS.map((t, i) => (
+        {HAMBURGER_LINKS.map((t, i) => (
           <button key={t.id} type="button" className="vx-menu-item" aria-current={active === t.id} onClick={() => go(t.id)}>
             <span>{t.label}</span>
             <span className="vx-mono" style={{ fontSize: 12, color: "var(--vx-mute)" }}>
@@ -124,8 +131,11 @@ export function SiteNav({ active, onScan }: { active: StopId; onScan?: () => voi
             </span>
           </button>
         ))}
-        <Link href="/login" className="vx-btn vx-btn-primary" onClick={() => setOpen(false)}>
-          Join the Game ★
+        <Link href="/register" className="vx-btn vx-btn-primary" onClick={() => setOpen(false)} style={{ marginTop: 16 }}>
+          Freshie Register
+        </Link>
+        <Link href="/login" className="vx-menu-staff" onClick={() => setOpen(false)}>
+          Staff login
         </Link>
       </div>
     </nav>
@@ -152,48 +162,6 @@ export function StopRail({ active }: { active: StopId }) {
           </span>
         </button>
       ))}
-    </div>
-  );
-}
-
-const TABS: { label: string; target: StopId; match: StopId[]; Icon: typeof Home }[] = [
-  { label: "Home", target: "welcome", match: ["welcome", "overview"], Icon: Home },
-  { label: "Games", target: "games", match: ["games"], Icon: Gamepad2 },
-  { label: "Score", target: "scoreboard", match: ["scoreboard"], Icon: Trophy },
-  { label: "Schedule", target: "schedule", match: ["schedule"], Icon: CalendarDays },
-];
-
-/**
- * Phone/tablet bottom tab bar for the four most-used stops. When `onScan` is
- * given, a raised Scan button sits in the middle (DEV PREVIEW — see
- * ScanPreview.tsx).
- */
-export function TabBar({ active, onScan }: { active: StopId; onScan?: () => void }) {
-  const tab = ({ label, target, match, Icon }: (typeof TABS)[number]) => (
-    <button
-      key={label}
-      type="button"
-      className="vx-tab"
-      aria-current={match.includes(active)}
-      onClick={() => scrollToSection(target)}
-    >
-      <Icon size={22} aria-hidden />
-      {label}
-    </button>
-  );
-
-  return (
-    <div className="vx-tabbar" role="navigation" aria-label="Quick sections">
-      {TABS.slice(0, 2).map(tab)}
-      {onScan && (
-        <button type="button" className="vx-tab vx-tab-scan" onClick={onScan} aria-label="Scan a QR code">
-          <span className="vx-tab-scan-btn" aria-hidden>
-            <ScanLine size={26} strokeWidth={2.2} />
-          </span>
-          Scan
-        </button>
-      )}
-      {TABS.slice(2).map(tab)}
     </div>
   );
 }

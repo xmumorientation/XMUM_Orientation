@@ -8,11 +8,10 @@ export function WelcomeSection() {
   return (
     <section id="welcome" className="vx-sec vx-welcome" aria-labelledby="welcome-title">
       <div className="vx-dots" />
-      <Glow size="min(520px, 90vw)" color="var(--vx-navy)" style={{ left: "-8%", top: "12%", opacity: 0.8 }} />
-      <Glow size="min(380px, 70vw)" color="var(--vx-pink)" style={{ right: "-4%", bottom: "-6%" }} />
-      <Spark size={26} color="var(--vx-yellow)" style={{ left: "16%", top: "24%" }} />
-      <Spark size={16} color="var(--vx-cyan)" style={{ right: "20%", top: "20%" }} />
-      <Spark size={34} color="linear-gradient(#FFB1C1, #FE06AB)" style={{ right: "14%", bottom: "22%" }} />
+      <Glow size="min(520px, 90vw)" color="var(--vx-navy)" style={{ left: "-8%", top: "12%", opacity: 0.45 }} />
+      <Glow size="min(380px, 70vw)" color="var(--vx-pink)" style={{ right: "-4%", bottom: "-6%", opacity: 0.28 }} />
+      <Spark size={18} color="var(--vx-yellow)" style={{ left: "16%", top: "24%", opacity: 0.55 }} />
+      <Spark size={14} color="var(--vx-cyan)" style={{ right: "18%", top: "22%", opacity: 0.45 }} />
 
       <div className="vx-inner">
         <div className="vx-eyebrow vx-rise">XMUM Orientation 2026</div>
@@ -30,8 +29,8 @@ export function WelcomeSection() {
         </p>
 
         <div className="vx-welcome-actions vx-rise-3">
-          <Link href="/login" className="vx-btn vx-btn-primary">
-            Join the Game ★
+          <Link href="/register" className="vx-btn vx-btn-primary">
+            Register
           </Link>
           <button type="button" className="vx-btn vx-btn-ghost" onClick={() => scrollToSection("overview")}>
             What&apos;s inside ↓

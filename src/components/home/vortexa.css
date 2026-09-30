@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   Vortexa "Night Ticket" homepage.
+   Vortexa "Night Ticket" Welcome page.
    Everything is scoped under .vx so nothing leaks into the authenticated app.
    Colour rules: yellow = primary action only, cyan = "you are here / selected".
    ═══════════════════════════════════════════════════════════════════════════ */
@@ -37,16 +37,16 @@
   .vx {
     --vx-nav-h: 56px;
     --vx-stopbar-h: 30px;
-    --vx-tabbar-h: calc(64px + env(safe-area-inset-bottom, 0px));
+    /* TabBar removed from Welcome — keep bottom inset at 0 */
+    --vx-tabbar-h: 0px;
   }
 }
 
-/* Section-by-section scrolling. Mandatory snap only where every stop fits one
-   screen (large landscape viewports); phones and tablets get gentle proximity
-   snapping so taller stops can still be read without fighting the scroll. */
-html.vx-snap { scroll-snap-type: y proximity; }
-@media (min-width: 1024px) and (min-height: 700px) {
-  html.vx-snap { scroll-snap-type: y mandatory; }
+/* Section scrolling: no snap on mobile (avoids fight with tall stops).
+   Desktop gets soft proximity snap; reduced-motion always off. */
+html.vx-snap { scroll-snap-type: none; }
+@media (min-width: 1024px) {
+  html.vx-snap { scroll-snap-type: y proximity; }
 }
 @media (prefers-reduced-motion: reduce) {
   html.vx-snap { scroll-snap-type: none; }
@@ -65,7 +65,8 @@ html.vx-snap { scroll-snap-type: y proximity; }
   isolation: isolate;
 }
 @media (max-width: 1023px) {
-  .vx-sec { padding-inline: 16px; padding-block: calc(var(--vx-nav-h) + var(--vx-stopbar-h) + 24px) calc(var(--vx-tabbar-h) + 32px); }
+  .vx-sec { padding-inline: 16px; padding-block: calc(var(--vx-nav-h) + var(--vx-stopbar-h) + 24px) calc(var(--vx-tabbar-h) + 32px); scroll-snap-align: none; }
+  .vx-footer { scroll-snap-align: none; }
 }
 .vx-inner { position: relative; z-index: 2; width: 100%; max-width: 1120px; margin: 0 auto; }
 
@@ -173,6 +174,13 @@ html.vx-snap { scroll-snap-type: y proximity; }
 }
 .vx-nav-link:hover { color: #fff; }
 .vx-nav-link[aria-current="true"] { color: #fff; border-bottom-color: var(--vx-cyan); }
+.vx-nav-staff {
+  margin-left: 8px; padding: 8px 10px;
+  font: 500 13px/1 var(--font-nexus-body), Outfit, sans-serif;
+  color: var(--vx-mute); text-decoration: none; border-bottom: 2px solid transparent;
+  transition: color 0.15s;
+}
+.vx-nav-staff:hover { color: var(--vx-text-2); }
 .vx-nav .vx-btn { min-height: 40px; padding: 0 20px; font-size: 14px; }
 .vx-nav .vx-nav-scan { padding: 0 16px; margin-right: -8px; }
 .vx-burger {
@@ -208,7 +216,7 @@ html.vx-snap { scroll-snap-type: y proximity; }
   }
   .vx-nav-row { padding: 0 12px 0 16px; }
   .vx-nav-logo img { height: 32px; }
-  .vx-nav-links, .vx-nav-cta, .vx-nav-scan { display: none; }
+  .vx-nav-links, .vx-nav-cta, .vx-nav-scan, .vx-nav-staff { display: none; }
   .vx-burger { display: inline-flex; }
   .vx-stopbar {
     display: flex; align-items: center; gap: 10px; height: var(--vx-stopbar-h); padding: 0 16px 8px;
@@ -248,6 +256,12 @@ html.vx-snap { scroll-snap-type: y proximity; }
   }
   .vx-menu-item[aria-current="true"] { color: var(--vx-cyan); }
   .vx-menu .vx-btn { width: 100%; margin-top: 16px; }
+  .vx-menu-staff {
+    display: block; width: 100%; margin-top: 12px; padding: 10px 0;
+    text-align: center; font: 500 13px/1.4 var(--font-nexus-body), Outfit, sans-serif;
+    color: var(--vx-mute); text-decoration: none; letter-spacing: 0.04em;
+  }
+  .vx-menu-staff:hover { color: var(--vx-text-2); }
 }
 
 /* ── Desktop progress rail ───────────────────────────────────────────────── */
@@ -272,7 +286,7 @@ html.vx-snap { scroll-snap-type: y proximity; }
 .vx-rail button:hover .vx-rail-tip, .vx-rail button:focus-visible .vx-rail-tip { opacity: 1; transform: none; }
 @media (max-width: 1023px) { .vx-rail { display: none; } }
 
-/* ── Mobile / tablet tab bar ─────────────────────────────────────────────── */
+/* ── Mobile / tablet tab bar (unused on Welcome; kept for possible reuse) ── */
 .vx-tabbar { display: none; }
 @media (max-width: 1023px) {
   .vx-tabbar {
@@ -364,6 +378,35 @@ html.vx-snap { scroll-snap-type: y proximity; }
   .vx-games-note { margin-top: 18px; font-size: 14px; }
 }
 @media (min-width: 640px) and (max-width: 1023px) { .vx-steps { grid-template-columns: 1fr 1fr; } }
+
+
+/* ── Honest empty / coming-soon cards ────────────────────────────────────── */
+.vx-coming {
+  padding: 28px 24px;
+  border-radius: 18px;
+  border: 1px solid var(--vx-line-2);
+  background: rgba(21, 18, 30, 0.72);
+}
+.vx-coming-title {
+  margin: 0 0 8px;
+  font-family: var(--font-vx-slab), Georgia, serif;
+  font-weight: 400;
+  font-size: clamp(22px, 3vw, 28px);
+  color: var(--vx-text);
+}
+.vx-coming-meta {
+  margin: 0 0 12px;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  color: var(--vx-cyan);
+}
+.vx-coming-note {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--vx-mute);
+  max-width: 42ch;
+}
 
 /* ── 04 Scoreboard ───────────────────────────────────────────────────────── */
 .vx-score .vx-inner { max-width: 920px; }

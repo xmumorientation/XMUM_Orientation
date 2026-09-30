@@ -13,9 +13,18 @@ const TYPE_STYLE: Record<string, { icon: React.ReactNode; color: string; label: 
 
 const WEEKDAY: Record<string, string> = { "28 Nov": "SAT", "29 Nov": "SUN" };
 
+function isAllTbd() {
+  return EVENTS.every(
+    (day) =>
+      day.items.length === 0 ||
+      day.items.every((item) => item.time === "TBD" && item.venue === "TBD")
+  );
+}
+
 export function Schedule() {
   const [activeDayIdx, setActiveDayIdx] = useState(0);
   const currentDay = EVENTS[activeDayIdx] ?? EVENTS[0];
+  const comingSoon = isAllTbd();
 
   return (
     <section id="schedule" className="vx-sec vx-sched" aria-labelledby="schedule-title">
@@ -46,30 +55,38 @@ export function Schedule() {
           </div>
         </div>
 
-        <ol
-          id="day-panel"
-          role="tabpanel"
-          aria-labelledby={`day-tab-${activeDayIdx}`}
-          className="vx-timeline vx-rise-2"
-        >
-          {currentDay.items.map((item, i) => {
-            const st = TYPE_STYLE[item.type] ?? TYPE_STYLE.info;
-            const when = item.time === "TBD" && item.venue === "TBD" ? "TO BE ANNOUNCED" : `${item.time} · ${item.venue}`;
-            return (
-              <li key={i} className="vx-card vx-item" style={{ "--dot": st.color } as React.CSSProperties}>
-                <b>{item.title}</b>
-                <small className="vx-mono">{when}</small>
-                <span className="vx-tag vx-mono" style={{ color: st.color }}>
-                  {st.icon}
-                  {st.label}
-                </span>
-              </li>
-            );
-          })}
-        </ol>
-        <p className="vx-mono vx-rise-3" style={{ fontSize: 12, letterSpacing: '0.1em', color: 'var(--vx-mute)', marginTop: 16, textAlign: 'center' }}>
-          Full schedule drops closer to the event.
-        </p>
+        {comingSoon ? (
+          <div id="day-panel" role="tabpanel" aria-labelledby={`day-tab-${activeDayIdx}`} className="vx-coming vx-rise-2">
+            <p className="vx-coming-title">Schedule coming soon</p>
+            <p className="vx-mono vx-coming-meta">
+              {currentDay.day} · {WEEKDAY[currentDay.date] ? `${WEEKDAY[currentDay.date]} · ` : ""}
+              {currentDay.date.toUpperCase()} 2026 · TBA
+            </p>
+            <p className="vx-coming-note">Full timetable drops closer to the event. Dates are locked — times and venues still TBA.</p>
+          </div>
+        ) : (
+          <ol
+            id="day-panel"
+            role="tabpanel"
+            aria-labelledby={`day-tab-${activeDayIdx}`}
+            className="vx-timeline vx-rise-2"
+          >
+            {currentDay.items.map((item, i) => {
+              const st = TYPE_STYLE[item.type] ?? TYPE_STYLE.info;
+              const when = item.time === "TBD" && item.venue === "TBD" ? "TO BE ANNOUNCED" : `${item.time} · ${item.venue}`;
+              return (
+                <li key={i} className="vx-card vx-item" style={{ "--dot": st.color } as React.CSSProperties}>
+                  <b>{item.title}</b>
+                  <small className="vx-mono">{when}</small>
+                  <span className="vx-tag vx-mono" style={{ color: st.color }}>
+                    {st.icon}
+                    {st.label}
+                  </span>
+                </li>
+              );
+            })}
+          </ol>
+        )}
       </div>
     </section>
   );

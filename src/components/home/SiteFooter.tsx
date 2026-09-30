@@ -10,7 +10,7 @@ export function SiteFooter() {
       <p>&ldquo;One ticket, One Ride, Discover adventure Inside.&rdquo;</p>
       <p className="vx-mono">NOVEMBER 28–29, 2026 · XIAMEN UNIVERSITY MALAYSIA</p>
       <Link href="/login" className="vx-mono">
-        STAFF &amp; STUDENT LOGIN →
+        Staff login →
       </Link>
     </footer>
   );

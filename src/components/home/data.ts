@@ -1,4 +1,4 @@
-// Centralized constants and placeholder data for the Vortexa homepage.
+// Centralized constants and placeholder data for the Vortexa Welcome page.
 // Items marked PLACEHOLDER should be replaced with real Supabase queries
 // once the backend data is available.
 
@@ -17,7 +17,7 @@ export const EVENT = {
 // Typography
 // ---------------------------------------------------------------------------
 
-/** Font-family shorthands mapped to the scoped homepage font variables. */
+/** Font-family shorthands mapped to the scoped Welcome page font variables. */
 export const FONT = {
   /** Brand title face (Brasika stand-in). */
   brand: "var(--font-vx-display), Georgia, serif",
@@ -53,7 +53,7 @@ export const TEAMS: Team[] = [
 ];
 
 // ---------------------------------------------------------------------------
-// Game phases — conceptual flow shown on the homepage
+// Game phases — conceptual flow shown on the Welcome page
 // ---------------------------------------------------------------------------
 
 export type GamePhase = {
@@ -109,30 +109,10 @@ export type EventItem = {
 
 export type EventDay = { day: string; date: string; items: EventItem[] };
 
-/** PLACEHOLDER — specific times, venues, and activities TBD. */
+/** Dates locked; detailed timetable still TBA — Schedule UI shows honest empty state. */
 export const EVENTS: EventDay[] = [
-  {
-    day: "Day 1",
-    date: "28 Nov",
-    items: [
-      { time: "TBD", title: "Registration & Check-in", venue: "TBD", type: "info" },
-      { time: "TBD", title: "Opening Ceremony", venue: "TBD", type: "star" },
-      { time: "TBD", title: "Ice-Breaking Activities", venue: "TBD", type: "game" },
-      { time: "TBD", title: "Team Formation & Briefing", venue: "TBD", type: "game" },
-      { time: "TBD", title: "Dinner", venue: "TBD", type: "food" },
-    ],
-  },
-  {
-    day: "Day 2",
-    date: "29 Nov",
-    items: [
-      { time: "TBD", title: "Morning Assembly", venue: "TBD", type: "star" },
-      { time: "TBD", title: "Game Stations Begin", venue: "TBD", type: "game" },
-      { time: "TBD", title: "Lunch Break", venue: "TBD", type: "food" },
-      { time: "TBD", title: "Final Challenge", venue: "TBD", type: "game" },
-      { time: "TBD", title: "Closing Ceremony & Awards", venue: "TBD", type: "star" },
-    ],
-  },
+  { day: "Day 1", date: "28 Nov", items: [] },
+  { day: "Day 2", date: "29 Nov", items: [] },
 ];
 
 // ---------------------------------------------------------------------------
@@ -170,20 +150,20 @@ export const COMMITTEES: Committee[] = [
 // Scroll navigation
 // ---------------------------------------------------------------------------
 
-/** The homepage "ride stops", in scroll order. Each id is a section element id. */
+/** The Welcome page "ride stops", in scroll order. Each id is a section element id. */
 export const STOPS = [
   { id: "welcome", label: "Welcome" },
   { id: "overview", label: "Overview" },
+  { id: "schedule", label: "Schedule" },
   { id: "games", label: "Games" },
   { id: "scoreboard", label: "Scoreboard" },
-  { id: "schedule", label: "Schedule" },
   { id: "committees", label: "Committees" },
   { id: "join", label: "Join" },
 ] as const;
 
 export type StopId = (typeof STOPS)[number]["id"];
 
-/** Scrolls to a homepage section. "home" is an alias for the first stop. */
+/** Scrolls to a Welcome page section. "home" is an alias for the first stop. */
 export function scrollToSection(id: string) {
   const target = id === "home" ? "welcome" : id;
   const el = document.getElementById(target);

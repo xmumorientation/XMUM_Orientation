@@ -4,10 +4,10 @@ import dynamic from "next/dynamic";
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
 
-// ─── DEV PREVIEW: QR scanner on the public homepage ─────────────────────────
-// The raised Scan button in the homepage's mobile tab bar (SiteNav.tsx,
+// ─── DEV PREVIEW: QR scanner on the public Welcome page ─────────────────────────
+// The raised Scan button in the Welcome page mobile UI (SiteNav.tsx,
 // TabBar) and the Scan button in the desktop nav open the scanner UI directly
-// on the homepage, so the UI/UX can be reviewed on a phone without logging
+// on the Welcome page, so the UI/UX can be reviewed on a phone without logging
 // in. It is UI only: no backend, nothing is claimed (QrScannerScreen runs
 // with `preview`).
 //
@@ -18,9 +18,9 @@ import { createPortal } from "react-dom";
 //
 // Phone-testing notes (HTTPS tunnel, NEXT_PUBLIC_SITE_URL) are at the top of
 // components/scan/QrScannerScreen.tsx.
-export const SHOW_SCAN_PREVIEW = true;
+export const SHOW_SCAN_PREVIEW = false;
 
-// Loaded only when opened, so the homepage bundle stays light.
+// Loaded only when opened, so the Welcome page bundle stays light.
 const QrScannerScreen = dynamic(
   () => import("@/components/scan/QrScannerScreen").then((m) => m.QrScannerScreen),
   { ssr: false }

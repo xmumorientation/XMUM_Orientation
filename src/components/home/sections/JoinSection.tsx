@@ -7,19 +7,18 @@ export function JoinSection() {
   return (
     <section id="join" className="vx-sec vx-join" aria-labelledby="join-title">
       <div className="vx-dots" />
-      <Glow size="min(480px, 90vw)" color="var(--vx-navy)" style={{ left: "8%", top: "14%", opacity: 0.8 }} />
-      <Glow size="min(320px, 70vw)" color="var(--vx-pink)" style={{ right: "10%", bottom: "6%" }} />
-      <Spark size={30} color="var(--vx-yellow)" style={{ left: "12%", bottom: "18%" }} />
-      <Spark size={18} color="var(--vx-cyan)" style={{ right: "14%", top: "18%" }} />
+      <Glow size="min(480px, 90vw)" color="var(--vx-navy)" style={{ left: "8%", top: "14%", opacity: 0.55 }} />
+      <Glow size="min(320px, 70vw)" color="var(--vx-pink)" style={{ right: "10%", bottom: "6%", opacity: 0.28 }} />
+      <Spark size={20} color="var(--vx-yellow)" style={{ left: "12%", bottom: "18%", opacity: 0.5 }} />
 
       <div className="vx-inner">
         <div className="vx-ticket vx-pass vx-rise">
           <div className="vx-pass-main">
             <div className="vx-eyebrow">Admit one · Freshie</div>
             <h2 id="join-title" className="vx-pass-title vx-holo">Your ride starts here</h2>
-            <p>One ticket, one ride. Sign in to see your team, your game stations and the live score.</p>
-            <Link href="/login" className="vx-btn vx-btn-primary">
-              Join the Game ★
+            <p>One ticket, one ride. Register to get your team, game stations, and live score access.</p>
+            <Link href="/register" className="vx-btn vx-btn-primary">
+              Register
             </Link>
           </div>
           <div className="vx-pass-stub vx-mono">
