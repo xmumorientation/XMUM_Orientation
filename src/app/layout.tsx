@@ -24,9 +24,32 @@ const mono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "XMUM Orientation 2026",
+  title: {
+    default: "XMUM Orientation 2026",
+    template: "%s | XMUM Orientation 2026",
+  },
   description:
-    "Official platform for XMUM Orientation — attendance, campus map and the Big Game.",
+    "One ticket, One Ride, Discover adventure Inside. The official XMUM Orientation 2026 platform.",
+  metadataBase: new URL("https://vortexa.xmum.edu.my"),
+  openGraph: {
+    title: "Vortexa | XMUM Orientation 2026",
+    description:
+      "Two days of campus games, teams, and new beginnings. 28 & 29 Nov 2026.",
+    siteName: "XMUM Orientation 2026",
+    locale: "en_MY",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Vortexa | XMUM Orientation 2026",
+    description:
+      "Two days of campus games, teams, and new beginnings. 28 & 29 Nov 2026.",
+  },
+  icons: {
+    icon: "/xmum-logo-badge.png",
+    apple: "/xmum-logo-badge.png",
+  },
+  manifest: "/manifest.json",
 };
 
 export const viewport: Viewport = {

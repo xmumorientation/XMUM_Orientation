@@ -75,16 +75,22 @@ export function Committees() {
                 </b>
                 <p>{activeCommittee.desc}</p>
               </div>
-              <dl>
-                <div>
-                  <dt className="vx-mono">Committee head</dt>
-                  <dd>{activeCommittee.head || "TBD"}</dd>
-                </div>
-                <div>
-                  <dt className="vx-mono">Members</dt>
-                  <dd>{activeCommittee.members !== null ? activeCommittee.members : "TBD"}</dd>
-                </div>
-              </dl>
+              {(activeCommittee.head || activeCommittee.members !== null) && (
+                <dl>
+                  {activeCommittee.head && (
+                    <div>
+                      <dt className="vx-mono">Committee head</dt>
+                      <dd>{activeCommittee.head}</dd>
+                    </div>
+                  )}
+                  {activeCommittee.members !== null && (
+                    <div>
+                      <dt className="vx-mono">Members</dt>
+                      <dd>{activeCommittee.members}</dd>
+                    </div>
+                  )}
+                </dl>
+              )}
             </div>
           )}
         </div>

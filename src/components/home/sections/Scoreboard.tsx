@@ -25,8 +25,14 @@ export function Scoreboard() {
             ? "Real-time standings across all orientation teams."
             : "The scoreboard goes live when the game begins. Here are the teams you'll be cheering for."}
         </p>
+        {!live && (
+          <p className="vx-mono" style={{ fontSize: "12px", letterSpacing: "0.1em", color: "var(--vx-mute)", marginTop: "8px" }}>
+            Live scores kick in on 28 Nov.
+          </p>
+        )}
 
-        <ol className="vx-board vx-rise-2">
+        <div className="vx-rise-2" style={!live ? { opacity: 0.5 } : undefined}>
+        <ol className="vx-board">
           {TEAMS.map((team, idx) => (
             <li key={team.id} className="vx-card vx-team">
               <span className="vx-team-rk vx-mono">0{idx + 1}</span>
@@ -39,6 +45,7 @@ export function Scoreboard() {
             </li>
           ))}
         </ol>
+        </div>
       </div>
     </section>
   );

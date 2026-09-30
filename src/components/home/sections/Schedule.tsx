@@ -54,7 +54,7 @@ export function Schedule() {
         >
           {currentDay.items.map((item, i) => {
             const st = TYPE_STYLE[item.type] ?? TYPE_STYLE.info;
-            const when = item.time === "TBD" && item.venue === "TBD" ? "TIME & VENUE TBD" : `${item.time} · ${item.venue}`;
+            const when = item.time === "TBD" && item.venue === "TBD" ? "TO BE ANNOUNCED" : `${item.time} · ${item.venue}`;
             return (
               <li key={i} className="vx-card vx-item" style={{ "--dot": st.color } as React.CSSProperties}>
                 <b>{item.title}</b>
@@ -67,6 +67,9 @@ export function Schedule() {
             );
           })}
         </ol>
+        <p className="vx-mono vx-rise-3" style={{ fontSize: 12, letterSpacing: '0.1em', color: 'var(--vx-mute)', marginTop: 16, textAlign: 'center' }}>
+          Full schedule drops closer to the event.
+        </p>
       </div>
     </section>
   );

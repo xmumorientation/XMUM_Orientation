@@ -86,14 +86,14 @@ export type Building = {
 };
 
 export const BUILDINGS: Building[] = [
-  { id: "lib", name: "Central Library", x: 48, y: 30, icon: "📚", color: "#00cfff", desc: "Open 7am–midnight. Study rooms, printing, and digital resources available." },
-  { id: "admin", name: "Admin Office", x: 30, y: 22, icon: "🏛️", color: "#d966ff", desc: "Registration, enrollment, and student records. Ground floor, Block A." },
-  { id: "canteen", name: "Main Canteen", x: 55, y: 56, icon: "🍜", color: "#f9d342", desc: "3 food courts, open 6am–10pm. Cashless payments accepted." },
-  { id: "sports", name: "Sports Complex", x: 76, y: 64, icon: "⚽", color: "#39ff14", desc: "Football, basketball, badminton, swimming pool." },
-  { id: "med", name: "Medical Center", x: 22, y: 54, icon: "🏥", color: "#ff3cac", desc: "24-hour clinic. Free consultation for registered students." },
-  { id: "dorm", name: "Student Dorms", x: 80, y: 28, icon: "🏠", color: "#ff6b35", desc: "Blocks D–H. Room assignments via student portal." },
-  { id: "cs", name: "CS & Engineering", x: 43, y: 70, icon: "💻", color: "#7b2fff", desc: "Faculties of Computing and Engineering. Labs open 8am–10pm." },
-  { id: "arts", name: "Arts & Social", x: 63, y: 38, icon: "🎨", color: "#ff3cac", desc: "Faculty of Arts, Humanities, and Social Sciences." },
+  { id: "lib", name: "Central Library", x: 48, y: 30, icon: "Library", color: "#00cfff", desc: "Open 7am–midnight. Study rooms, printing, and digital resources available." },
+  { id: "admin", name: "Admin Office", x: 30, y: 22, icon: "Landmark", color: "#d966ff", desc: "Registration, enrollment, and student records. Ground floor, Block A." },
+  { id: "canteen", name: "Main Canteen", x: 55, y: 56, icon: "UtensilsCrossed", color: "#f9d342", desc: "3 food courts, open 6am–10pm. Cashless payments accepted." },
+  { id: "sports", name: "Sports Complex", x: 76, y: 64, icon: "Dumbbell", color: "#39ff14", desc: "Football, basketball, badminton, swimming pool." },
+  { id: "med", name: "Medical Center", x: 22, y: 54, icon: "Cross", color: "#ff3cac", desc: "24-hour clinic. Free consultation for registered students." },
+  { id: "dorm", name: "Student Dorms", x: 80, y: 28, icon: "Home", color: "#ff6b35", desc: "Blocks D–H. Room assignments via student portal." },
+  { id: "cs", name: "CS & Engineering", x: 43, y: 70, icon: "Monitor", color: "#7b2fff", desc: "Faculties of Computing and Engineering. Labs open 8am–10pm." },
+  { id: "arts", name: "Arts & Social", x: 63, y: 38, icon: "Palette", color: "#ff3cac", desc: "Faculty of Arts, Humanities, and Social Sciences." },
 ];
 
 // ---------------------------------------------------------------------------
