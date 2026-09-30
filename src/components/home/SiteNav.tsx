@@ -12,7 +12,7 @@ import { STOPS, scrollToSection, type StopId } from "./data";
  * Public Welcome nav links (desktop + hamburger).
  * Keep STOPS for scroll/IntersectionObserver — not every stop is a nav item.
  * Welcome → Overview → Schedule → Games → Committees.
- * Scoreboard & Join are page sections only (not listed in the menu).
+ * Scoreboard & Check-in are page sections only (not listed in the menu).
  */
 const NAV_LINKS: { id: StopId; label: string }[] = [
   { id: "welcome", label: "Welcome" },
@@ -131,9 +131,9 @@ export function SiteNav({ active }: { active: StopId }) {
             </span>
           </button>
         ))}
-        <Link href="/register" className="vx-btn vx-btn-primary" onClick={() => setOpen(false)} style={{ marginTop: 16 }}>
-          Freshie Register
-        </Link>
+        <button type="button" className="vx-btn vx-btn-primary" onClick={() => go("check-in")} style={{ marginTop: 16 }}>
+          How to check in
+        </button>
         <Link href="/login" className="vx-menu-staff" onClick={() => setOpen(false)}>
           Staff login
         </Link>

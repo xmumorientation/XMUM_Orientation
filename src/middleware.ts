@@ -14,11 +14,17 @@ const PUBLIC_PATHS = [
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
 
-  // Public, backend-free routes: the Orientation homepage ("/") and the
-  // standalone cinematic prototype ("/park"). Short-circuit before touching
-  // Supabase so they render without auth or env. Authentication for every
-  // other route is unchanged below.
-  if (path === "/" || path.startsWith("/park")) {
+  // Public, backend-free routes: Welcome ("/"), park prototype, and D-day
+  // DEMO shells (counter draw + group Homepage). Short-circuit before
+  // Supabase so they render without auth or env.
+  // DEMO /check-in and /group are temporary — production needs signed/expiring
+  // Homepage pass; do not treat open URLs as real access control.
+  if (
+    path === "/" ||
+    path.startsWith("/park") ||
+    path.startsWith("/check-in") ||
+    path.startsWith("/group")
+  ) {
     return NextResponse.next({ request });
   }
 

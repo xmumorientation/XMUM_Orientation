@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { scrollToSection } from "../data";
 import { Glow, Spark } from "../decor";
 
@@ -29,9 +28,9 @@ export function WelcomeSection() {
         </p>
 
         <div className="vx-welcome-actions vx-rise-3">
-          <Link href="/register" className="vx-btn vx-btn-primary">
-            Register
-          </Link>
+          <button type="button" className="vx-btn vx-btn-primary" onClick={() => scrollToSection("check-in")}>
+            How to check in
+          </button>
           <button type="button" className="vx-btn vx-btn-ghost" onClick={() => scrollToSection("overview")}>
             What&apos;s inside ↓
           </button>

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import type { CSSProperties } from "react";
 
 import { NavIcon } from "@/components/NavIcon";
 import { useProfile } from "@/components/ProfileProvider";
@@ -14,6 +15,38 @@ type Action = {
   title: string;
   desc: string;
 };
+
+/** Wristband colour accents by group number (1-based cycle). Accent only. */
+const GROUP_ACCENTS = [
+  "#00cfff",
+  "#d966ff",
+  "#ff3cac",
+  "#39ff14",
+  "#f9d342",
+  "#ff6b35",
+] as const;
+
+function groupAccent(groupId: number | null | undefined): string {
+  if (!groupId || groupId < 1) return GROUP_ACCENTS[0];
+  return GROUP_ACCENTS[(groupId - 1) % GROUP_ACCENTS.length];
+}
+
+type HubCard = {
+  href: string;
+  code: string;
+  title: string;
+  hint: string;
+  primary?: boolean;
+};
+
+const FRESHIE_HUB: HubCard[] = [
+  { href: "/map", code: "MP", title: "Map", hint: "Stations", primary: true },
+  { href: "/schedule", code: "PL", title: "Plan", hint: "Today", primary: true },
+  { href: "/token", code: "TK", title: "Tokens", hint: "Balance", primary: true },
+  { href: "/inventory", code: "IT", title: "Items", hint: "Pieces" },
+  { href: "/faq", code: "FQ", title: "FAQ", hint: "Help" },
+  { href: "/transactions", code: "TX", title: "Log", hint: "History" },
+];
 
 function TokenBalanceCard() {
   const { group, loading } = useGroup();
@@ -128,7 +161,63 @@ function primaryAction(role: string): Action {
   };
 }
 
-export default function DashboardPage() {
+/** Phase 1 Freshie hub — single chrome (AppShell), glanceable cards, no Scan/Register. */
+function FreshieDashboard() {
+  const profile = useProfile();
+  const { group, loading } = useGroup();
+  const accent = groupAccent(group?.id ?? profile.group_id);
+  const style = { "--fd-accent": accent } as CSSProperties;
+
+  const heroTitle = loading
+    ? "Loading…"
+    : group
+      ? group.name
+      : "No group yet";
+  const heroSub = loading
+    ? "Fetching your wristband group"
+    : group
+      ? `${group.token_balance} tokens · Group ${group.id}`
+      : "Get your wristband at the counter";
+
+  return (
+    <div className="fd-hub" style={style}>
+      <section className="fd-hero" aria-label="Your group">
+        <span className="fd-hero-accent" aria-hidden />
+        <div className="fd-hero-body">
+          <p className="fd-hero-kicker">Your group</p>
+          <h1 className="fd-hero-title">{heroTitle}</h1>
+          <p className="fd-hero-sub" role="status">
+            {heroSub}
+          </p>
+        </div>
+      </section>
+
+      <nav className="fd-grid" aria-label="Freshie shortcuts">
+        {FRESHIE_HUB.map((card) => (
+          <Link
+            key={card.href}
+            href={card.href}
+            className={
+              card.primary ? "fd-card fd-card--primary" : "fd-card fd-card--secondary"
+            }
+          >
+            <span className="fd-card-icon" aria-hidden>
+              <NavIcon
+                code={card.code}
+                size={card.primary ? 28 : 22}
+                strokeWidth={1.75}
+              />
+            </span>
+            <span className="fd-card-title">{card.title}</span>
+            <span className="fd-card-hint">{card.hint}</span>
+          </Link>
+        ))}
+      </nav>
+    </div>
+  );
+}
+
+function StaffDashboard() {
   const profile = useProfile();
   const role = profile.role;
   const main = primaryAction(role);
@@ -163,10 +252,10 @@ export default function DashboardPage() {
         </div>
       </Link>
 
-      {(role === "freshie" || role === "faci") && <TokenBalanceCard />}
+      {role === "faci" && <TokenBalanceCard />}
 
       <div className="grid gap-3 sm:grid-cols-2">
-        {(role === "freshie" || role === "faci") && (
+        {role === "faci" && (
           <>
             <ActionCard
               href="/inventory"
@@ -181,11 +270,6 @@ export default function DashboardPage() {
               title="Token history"
               desc="Track every token earned & spent"
             />
-          </>
-        )}
-
-        {role === "faci" && (
-          <>
             <ActionCard
               href="/attendance"
               code="AT"
@@ -241,7 +325,12 @@ export default function DashboardPage() {
           />
         )}
 
-        {(role === "hof" || role === "hogm" || role === "faci" || role === "gm" || role === "committee" || role === "admin") && (
+        {(role === "hof" ||
+          role === "hogm" ||
+          role === "faci" ||
+          role === "gm" ||
+          role === "committee" ||
+          role === "admin") && (
           <ActionCard
             href="/booking"
             code="BK"
@@ -251,7 +340,10 @@ export default function DashboardPage() {
           />
         )}
 
-        {(role === "faci" || role === "gm" || role === "committee" || role === "admin") && (
+        {(role === "faci" ||
+          role === "gm" ||
+          role === "committee" ||
+          role === "admin") && (
           <ActionCard
             href="/reservations"
             code="RS"
@@ -290,4 +382,12 @@ export default function DashboardPage() {
       </div>
     </div>
   );
+}
+
+export default function DashboardPage() {
+  const profile = useProfile();
+  if (profile.role === "freshie") {
+    return <FreshieDashboard />;
+  }
+  return <StaffDashboard />;
 }

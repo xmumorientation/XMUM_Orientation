@@ -158,7 +158,7 @@ export const STOPS = [
   { id: "games", label: "Games" },
   { id: "scoreboard", label: "Scoreboard" },
   { id: "committees", label: "Committees" },
-  { id: "join", label: "Join" },
+  { id: "check-in", label: "Check-in" },
 ] as const;
 
 export type StopId = (typeof STOPS)[number]["id"];

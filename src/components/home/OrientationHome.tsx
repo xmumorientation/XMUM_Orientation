@@ -12,12 +12,12 @@ import { Games } from "./sections/Games";
 import { Scoreboard } from "./sections/Scoreboard";
 import { Schedule } from "./sections/Schedule";
 import { Committees } from "./sections/Committees";
-import { JoinSection } from "./sections/JoinSection";
+import { CheckInSection } from "./sections/CheckInSection";
 
 /**
  * Public Orientation 2026 Welcome page — "Night Ticket".
  *
- * Seven full-screen "ride stops" (Welcome → Overview → Schedule → Games → … → Join) on a black ground, read one
+ * Seven full-screen "ride stops" (Welcome → Overview → Schedule → Games → … → Check-in) on a black ground, read one
  * at a time with scroll snapping. A single IntersectionObserver tracks the
  * current stop for the nav and the desktop dot rail, and marks each stop
  * `data-seen` the first time it enters view so its entrance animation plays
@@ -89,7 +89,7 @@ export default function OrientationHome() {
         <Games />
         <Scoreboard />
         <Committees />
-        <JoinSection />
+        <CheckInSection />
       </main>
       <SiteFooter />
     </div>

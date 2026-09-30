@@ -36,3 +36,7 @@ supabase/.temp
 # supabase local CLI state
 supabase/.branches
 supabase/.temp
+
+# local preview / playwright artifacts
+.preview-shots/
+test-results/

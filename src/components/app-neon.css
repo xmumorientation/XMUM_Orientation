@@ -1,0 +1,759 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   App shell — Night Ticket neon (authenticated (app) routes only).
+   Scoped under .app-neon so Welcome (.vx) and Login (.sl) stay untouched.
+   Colour rules (match Welcome): yellow = primary action; cyan = selected/here.
+   Visual chrome only — does not change auth, RPC, RLS, or fetch logic.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.app-neon {
+  --an-ink: #07060b;
+  --an-ink-2: #0e0c15;
+  --an-ink-3: #15121e;
+  --an-line: #25202f;
+  --an-line-2: #3a3448;
+  --an-text: #f3f0fa;
+  --an-text-2: #cfc9dc;
+  --an-mute: #8d87a0;
+  --an-cyan: #0dfcfd;
+  --an-yellow: #f2ff0b;
+  --an-pink: #fe06ab;
+  --an-lilac: #e0b4fc;
+  --an-orange: #fc9e3d;
+  --an-holo: linear-gradient(100deg, #0dfcfd 0%, #e0b4fc 35%, #fe06ab 65%, #fc9e3d 100%);
+
+  /* Keep brand slots for runtime Admin → Brand accents */
+  background: var(--an-ink);
+  color: var(--an-text);
+  min-height: 100dvh;
+  font-family: var(--font-nexus-body), Outfit, var(--font-body), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.app-neon :focus-visible {
+  outline: 2px solid var(--an-cyan);
+  outline-offset: 3px;
+  border-radius: 8px;
+}
+
+/* ── Shell chrome ─────────────────────────────────────────────────────────── */
+.app-neon .app-aside {
+  background: color-mix(in srgb, var(--an-ink-2) 92%, transparent);
+  border-color: var(--an-line);
+  backdrop-filter: blur(12px);
+}
+
+.app-neon .app-brand-title {
+  color: var(--an-text);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.app-neon .app-brand-sub {
+  color: var(--an-mute);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.app-neon .app-monogram {
+  background: var(--an-ink-3) !important;
+  color: var(--an-cyan) !important;
+  border: 1px solid var(--an-line-2);
+  box-shadow: 0 0 18px rgba(13, 252, 253, 0.18);
+}
+
+.app-neon .app-nav-link {
+  color: var(--an-text-2);
+  border: 1px solid transparent;
+  border-radius: 999px;
+  transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.app-neon .app-nav-link:hover {
+  background: var(--an-ink-3);
+  color: var(--an-text);
+  border-color: var(--an-line);
+}
+
+.app-neon .app-nav-link.is-active {
+  background: color-mix(in srgb, var(--an-cyan) 12%, var(--an-ink-2));
+  color: var(--an-cyan);
+  border-color: color-mix(in srgb, var(--an-cyan) 45%, var(--an-line));
+  box-shadow: 0 0 22px rgba(13, 252, 253, 0.12);
+}
+
+.app-neon .app-nav-icon {
+  background: color-mix(in srgb, var(--an-cyan) 14%, transparent);
+  color: var(--an-cyan);
+}
+
+.app-neon .app-nav-link.is-active .app-nav-icon {
+  background: color-mix(in srgb, var(--an-cyan) 22%, transparent);
+  color: var(--an-cyan);
+}
+
+.app-neon .app-role-chip {
+  border-color: color-mix(in srgb, var(--an-cyan) 35%, transparent) !important;
+  background: color-mix(in srgb, var(--an-cyan) 12%, transparent) !important;
+  color: var(--an-cyan) !important;
+}
+
+.app-neon .app-logout {
+  color: var(--an-mute);
+}
+
+.app-neon .app-logout:hover {
+  color: var(--an-pink);
+}
+
+.app-neon .app-header {
+  background: color-mix(in srgb, var(--an-ink) 88%, transparent);
+  border-color: var(--an-line);
+  box-shadow: 0 1px 0 rgba(13, 252, 253, 0.06);
+  backdrop-filter: blur(14px);
+}
+
+.app-neon .app-menu-btn {
+  background: var(--an-ink-2);
+  border: 1px solid var(--an-line-2);
+  color: var(--an-text);
+  box-shadow: none;
+}
+
+.app-neon .app-menu-btn:hover {
+  background: var(--an-ink-3);
+  border-color: var(--an-cyan);
+  color: var(--an-cyan);
+}
+
+.app-neon .app-scan-fab {
+  background: var(--an-yellow);
+  color: #111;
+  box-shadow: 0 0 28px rgba(242, 255, 11, 0.35);
+  ring-color: transparent;
+}
+
+.app-neon .app-scan-fab-wrap {
+  /* keep FAB above content; label */
+}
+
+.app-neon .app-scan-label {
+  background: color-mix(in srgb, var(--an-ink-2) 92%, transparent);
+  color: var(--an-yellow);
+  border: 1px solid color-mix(in srgb, var(--an-yellow) 35%, transparent);
+}
+
+/* Phase timer */
+.app-neon .app-phase-timer {
+  border: 1px solid var(--an-line);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--an-cyan) 18%, transparent),
+    color-mix(in srgb, var(--an-pink) 14%, transparent),
+    color-mix(in srgb, var(--an-yellow) 12%, transparent)
+  ) !important;
+  color: var(--an-text) !important;
+  border-radius: 999px;
+}
+
+.app-neon .app-phase-timer.is-endgame {
+  background: color-mix(in srgb, #bc071d 85%, black) !important;
+  border-color: #bc071d;
+  color: #fff !important;
+}
+
+/* ── Page chrome overrides (cards, titles, buttons) ───────────────────────── */
+.app-neon main {
+  color: var(--an-text);
+}
+
+.app-neon h1,
+.app-neon h2,
+.app-neon h3 {
+  color: var(--an-text);
+}
+
+.app-neon .card {
+  background: color-mix(in srgb, var(--an-ink-2) 94%, transparent);
+  border-color: var(--an-line);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--an-cyan) 4%, transparent),
+    0 12px 40px rgba(0, 0, 0, 0.28);
+  color: var(--an-text);
+}
+
+.app-neon .starlight-rule {
+  background: var(--an-holo);
+}
+
+.app-neon .btn-primary {
+  background-image: none;
+  background: var(--an-yellow);
+  color: #111;
+  box-shadow: 0 0 24px rgba(242, 255, 11, 0.22);
+}
+
+.app-neon .btn-primary:hover {
+  box-shadow: 0 0 32px rgba(242, 255, 11, 0.4);
+}
+
+.app-neon .btn-secondary {
+  background: transparent;
+  border-color: var(--an-line-2);
+  color: var(--an-text);
+}
+
+.app-neon .btn-secondary:hover {
+  border-color: var(--an-cyan);
+  color: var(--an-cyan);
+  background: color-mix(in srgb, var(--an-cyan) 8%, transparent);
+}
+
+.app-neon .btn-danger {
+  background: #bc071d;
+}
+
+.app-neon .input {
+  background: var(--an-ink-3);
+  border-color: var(--an-line-2);
+  color: var(--an-text);
+}
+
+.app-neon .input:focus {
+  border-color: var(--an-cyan);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--an-cyan) 30%, transparent);
+}
+
+.app-neon .label {
+  color: var(--an-text-2);
+}
+
+.app-neon .chip {
+  border: 1px solid var(--an-line);
+}
+
+/* Common Tailwind utility remaps used by Freshie pages */
+.app-neon .text-ink {
+  color: var(--an-text) !important;
+}
+.app-neon .text-ink-soft {
+  color: var(--an-text-2) !important;
+}
+.app-neon .text-ink-faint,
+.app-neon .text-ink-muted {
+  color: var(--an-mute) !important;
+}
+.app-neon .text-brand-1 {
+  color: var(--an-cyan) !important;
+}
+.app-neon .border-paper-200,
+.app-neon .border-paper-200\/80,
+.app-neon .border-paper-300 {
+  border-color: var(--an-line) !important;
+}
+.app-neon .divide-paper-200 > :not([hidden]) ~ :not([hidden]) {
+  border-color: var(--an-line) !important;
+}
+.app-neon .bg-white,
+.app-neon .bg-white\/90 {
+  background-color: var(--an-ink-2) !important;
+}
+.app-neon .bg-paper-50,
+.app-neon .bg-paper-50\/95,
+.app-neon .bg-paper-100,
+.app-neon .bg-paper-200,
+.app-neon .bg-paper-200\/80 {
+  background-color: var(--an-ink-3) !important;
+}
+.app-neon .bg-brand-1\/20 {
+  background-color: color-mix(in srgb, var(--an-cyan) 16%, transparent) !important;
+}
+.app-neon .bg-brand-1\/10 {
+  background-color: color-mix(in srgb, var(--an-cyan) 10%, transparent) !important;
+}
+.app-neon .border-brand-1\/20,
+.app-neon .border-brand-1\/30,
+.app-neon .border-brand-1\/40,
+.app-neon .border-brand-1\/50,
+.app-neon .border-brand-1\/60,
+.app-neon .border-brand-1 {
+  border-color: color-mix(in srgb, var(--an-cyan) 45%, var(--an-line)) !important;
+}
+.app-neon .hover\:border-brand-1\/40:hover,
+.app-neon .hover\:border-brand-1\/60:hover,
+.app-neon .hover\:border-brand-1\/50:hover {
+  border-color: var(--an-cyan) !important;
+}
+
+/* Status / warning surfaces — keep readable on dark */
+.app-neon .bg-amber-50\/90,
+.app-neon .bg-amber-50 {
+  background-color: color-mix(in srgb, #fc9e3d 14%, var(--an-ink-2)) !important;
+}
+.app-neon .border-amber-200 {
+  border-color: color-mix(in srgb, #fc9e3d 40%, var(--an-line)) !important;
+}
+.app-neon .text-amber-900,
+.app-neon .text-amber-800,
+.app-neon .text-amber-500 {
+  color: var(--an-orange) !important;
+}
+.app-neon .bg-red-50 {
+  background-color: color-mix(in srgb, #bc071d 16%, var(--an-ink-2)) !important;
+}
+.app-neon .border-red-200 {
+  border-color: color-mix(in srgb, #bc071d 45%, var(--an-line)) !important;
+}
+.app-neon .text-red-700,
+.app-neon .text-red-600,
+.app-neon .text-red-800 {
+  color: #ff6b7a !important;
+}
+.app-neon .bg-green-50,
+.app-neon .bg-green-100 {
+  background-color: color-mix(in srgb, #16a34a 16%, var(--an-ink-2)) !important;
+}
+.app-neon .border-green-200 {
+  border-color: color-mix(in srgb, #16a34a 40%, var(--an-line)) !important;
+}
+.app-neon .text-green-800,
+.app-neon .text-green-600 {
+  color: #4ade80 !important;
+}
+.app-neon .bg-gray-200 {
+  background-color: var(--an-ink-3) !important;
+}
+.app-neon .text-gray-700 {
+  color: var(--an-mute) !important;
+}
+
+/* Badge tones inside shell */
+.app-neon [class*="border-brand-1"][class*="bg-brand-1"] {
+  color: var(--an-cyan);
+}
+
+/* Gradient hero strip on dashboard primary action */
+.app-neon [class*="linear-gradient(90deg,var(--brand-1)"] {
+  background-image: var(--an-holo) !important;
+}
+
+/* Skeleton / spinner */
+.app-neon [role="status"] {
+  border-color: var(--an-line-2);
+  border-top-color: var(--an-cyan);
+}
+
+/* Empty / error cards already use .card */
+.app-neon a.card:hover {
+  border-color: color-mix(in srgb, var(--an-cyan) 50%, var(--an-line));
+}
+
+/* Toast "NEW" mark */
+.app-neon .bg-ink {
+  background-color: var(--an-ink-3) !important;
+  color: var(--an-yellow) !important;
+}
+
+/* Soft decorative dots behind main (non-interactive) */
+.app-neon .app-main-wrap {
+  position: relative;
+  isolation: isolate;
+}
+.app-neon .app-main-wrap::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px);
+  background-size: 28px 28px;
+  -webkit-mask-image: radial-gradient(ellipse at center, #000 20%, transparent 75%);
+  mask-image: radial-gradient(ellipse at center, #000 20%, transparent 75%);
+}
+.app-neon .app-main-wrap > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Map stays a light "paper ticket" inset — only frame is neon */
+.app-neon main .card svg rect[width="100"] {
+  /* leave map fills as designed */
+}
+
+/* ── Mobile drawer (Radix portal — outside .app-neon tree) ────────────────── */
+.app-neon-drawer {
+  background: var(--an-ink-2, #0e0c15) !important;
+  color: var(--an-text, #f3f0fa);
+  border-right: 1px solid var(--an-line, #25202f);
+}
+.app-neon-drawer .app-nav-link {
+  color: var(--an-text-2, #cfc9dc);
+  border: 1px solid transparent;
+  border-radius: 999px;
+}
+.app-neon-drawer .app-nav-link:hover {
+  background: var(--an-ink-3, #15121e);
+  color: var(--an-text, #f3f0fa);
+}
+.app-neon-drawer .app-nav-link.is-active {
+  background: color-mix(in srgb, #0dfcfd 12%, #0e0c15);
+  color: #0dfcfd;
+  border-color: color-mix(in srgb, #0dfcfd 45%, #25202f);
+}
+.app-neon-drawer .app-nav-icon {
+  background: color-mix(in srgb, #0dfcfd 14%, transparent);
+  color: #0dfcfd;
+}
+.app-neon-drawer .app-menu-btn {
+  background: var(--an-ink-3, #15121e);
+  border: 1px solid var(--an-line-2, #3a3448);
+  color: var(--an-text, #f3f0fa);
+}
+.app-neon-drawer .app-logout-sheet {
+  background: var(--an-ink-3, #15121e);
+  border: 1px solid var(--an-line, #25202f);
+  color: var(--an-text-2, #cfc9dc);
+}
+.app-neon-drawer .app-brand-title {
+  color: var(--an-text, #f3f0fa);
+}
+.app-neon-drawer .app-brand-sub,
+.app-neon-drawer .text-ink-faint {
+  color: var(--an-mute, #8d87a0) !important;
+}
+.app-neon-drawer .app-monogram {
+  background: #15121e !important;
+  color: #0dfcfd !important;
+  border: 1px solid #3a3448;
+}
+
+
+/* ── Freshie shell chrome (logo, account, compact header) ─────────────────── */
+.app-neon .app-brand-logo {
+  display: flex;
+  align-items: center;
+  line-height: 0;
+}
+.app-neon .app-brand-logo img {
+  height: 28px;
+  width: auto;
+  display: block;
+}
+.app-neon .app-brand-logo--aside img {
+  height: 36px;
+}
+
+.app-neon .app-header--freshie .app-menu-btn {
+  background: transparent;
+  border-color: transparent;
+  color: var(--an-text-2);
+  box-shadow: none;
+}
+.app-neon .app-header--freshie .app-menu-btn:hover {
+  background: var(--an-ink-3);
+  border-color: var(--an-line-2);
+  color: var(--an-cyan);
+}
+.app-neon .app-header--fd .app-header-row--fd,
+.app-neon .app-header--fd > div:first-of-type {
+  min-height: 48px;
+}
+
+.app-neon .fd-shell-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 42vw;
+  min-width: 0;
+  padding: 4px 10px 4px 8px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--fd-accent, var(--an-cyan)) 35%, var(--an-line));
+  background: color-mix(in srgb, var(--fd-accent, var(--an-cyan)) 10%, var(--an-ink-2));
+}
+.app-neon .fd-shell-group-name {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--an-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.app-neon .app-account {
+  position: relative;
+}
+.app-neon .app-account-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  border-radius: 999px;
+  border: 1px solid var(--an-line-2);
+  background: var(--an-ink-2);
+  color: var(--an-text-2);
+  cursor: pointer;
+  transition: border-color 0.18s ease, color 0.18s ease, background 0.18s ease;
+}
+.app-neon .app-account-btn:hover,
+.app-neon .app-account-btn[aria-expanded="true"] {
+  border-color: var(--an-cyan);
+  color: var(--an-cyan);
+  background: color-mix(in srgb, var(--an-cyan) 10%, var(--an-ink-2));
+}
+.app-neon .app-account-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  z-index: 50;
+  width: min(220px, 70vw);
+  padding: 10px;
+  border-radius: 14px;
+  border: 1px solid var(--an-line);
+  background: var(--an-ink-2);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+}
+.app-neon .app-account-name {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--an-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.app-neon .app-account-meta {
+  margin: 2px 0 10px;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--an-mute);
+}
+.app-neon .app-account-logout {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 10px;
+  border-radius: 10px;
+  border: 1px solid var(--an-line);
+  background: var(--an-ink-3);
+  color: var(--an-text-2);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: border-color 0.18s ease, color 0.18s ease;
+}
+.app-neon .app-account-logout:hover {
+  border-color: var(--an-yellow);
+  color: var(--an-yellow);
+}
+
+/* ── Freshie dashboard hub (Phase 1) ─────────────────────────────────────── */
+/* Single top chrome lives in AppShell (--fd-dash). Hub = group hero + cards. */
+.app-neon .fd-hub {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  max-width: 32rem;
+  margin: 0 auto;
+  padding-bottom: 0.5rem;
+}
+
+.app-neon .fd-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  flex-shrink: 0;
+  box-shadow: 0 0 12px color-mix(in srgb, var(--fd-accent, var(--an-cyan)) 55%, transparent);
+}
+
+.app-neon .fd-hero {
+  position: relative;
+  display: flex;
+  gap: 0;
+  overflow: hidden;
+  border-radius: 18px;
+  border: 1px solid color-mix(in srgb, var(--fd-accent, var(--an-cyan)) 28%, var(--an-line));
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--fd-accent, var(--an-cyan)) 16%, var(--an-ink-2)),
+    var(--an-ink-2) 55%,
+    var(--an-ink-3)
+  );
+}
+.app-neon .fd-hero-accent {
+  width: 5px;
+  flex-shrink: 0;
+  background: var(--fd-accent, var(--an-cyan));
+  box-shadow: 0 0 18px color-mix(in srgb, var(--fd-accent, var(--an-cyan)) 55%, transparent);
+}
+.app-neon .fd-hero-body {
+  min-width: 0;
+  padding: 14px 16px 15px;
+}
+.app-neon .fd-hero-kicker {
+  margin: 0 0 4px;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--an-mute);
+}
+.app-neon .fd-hero-title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  color: var(--an-text);
+}
+.app-neon .fd-hero-sub {
+  margin: 6px 0 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--an-text-2);
+  line-height: 1.3;
+}
+
+.app-neon .fd-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.app-neon .fd-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  border-radius: 20px;
+  border: 1px solid var(--an-line);
+  background: linear-gradient(
+    160deg,
+    color-mix(in srgb, var(--an-ink-3) 88%, var(--fd-accent, var(--an-cyan)) 12%),
+    var(--an-ink-2)
+  );
+  color: var(--an-text);
+  text-decoration: none;
+  transition: border-color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.app-neon .fd-card--primary {
+  min-height: 132px;
+  padding: 18px 16px 16px;
+  border-color: color-mix(in srgb, var(--fd-accent, var(--an-cyan)) 32%, var(--an-line));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--fd-accent, var(--an-cyan)) 8%, transparent),
+    0 10px 28px rgba(0, 0, 0, 0.22);
+}
+.app-neon .fd-card--primary:first-child {
+  /* Map leads — slightly taller on mobile */
+  min-height: 148px;
+}
+
+.app-neon .fd-card--secondary {
+  min-height: 96px;
+  padding: 14px 12px 12px;
+  gap: 4px;
+  background: var(--an-ink-2);
+  border-color: var(--an-line);
+}
+
+.app-neon .fd-card:hover,
+.app-neon .fd-card:focus-visible {
+  border-color: color-mix(in srgb, var(--fd-accent, var(--an-cyan)) 60%, var(--an-line));
+  box-shadow: 0 0 28px color-mix(in srgb, var(--fd-accent, var(--an-cyan)) 20%, transparent);
+  transform: translateY(-2px);
+}
+
+.app-neon .fd-card:active {
+  transform: scale(0.98);
+}
+
+.app-neon .fd-card-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--fd-accent, var(--an-cyan)) 18%, var(--an-ink));
+  color: var(--fd-accent, var(--an-cyan));
+  border: 1px solid color-mix(in srgb, var(--fd-accent, var(--an-cyan)) 40%, var(--an-line));
+}
+.app-neon .fd-card--primary .fd-card-icon {
+  width: 48px;
+  height: 48px;
+}
+.app-neon .fd-card--secondary .fd-card-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+}
+
+.app-neon .fd-card-title {
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+.app-neon .fd-card--primary .fd-card-title {
+  font-size: 20px;
+  margin-top: 4px;
+}
+.app-neon .fd-card--secondary .fd-card-title {
+  font-size: 15px;
+  margin-top: 2px;
+}
+
+.app-neon .fd-card-hint {
+  font-weight: 500;
+  color: var(--an-mute);
+  line-height: 1.3;
+}
+.app-neon .fd-card--primary .fd-card-hint {
+  font-size: 13px;
+}
+.app-neon .fd-card--secondary .fd-card-hint {
+  font-size: 11px;
+}
+
+@media (min-width: 640px) {
+  .app-neon .fd-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+  .app-neon .fd-card--primary {
+    min-height: 148px;
+  }
+  .app-neon .fd-card--primary:first-child {
+    min-height: 148px;
+  }
+  .app-neon .fd-card--secondary {
+    min-height: 110px;
+  }
+  .app-neon .fd-hero-title {
+    font-size: 24px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-neon .fd-card {
+    transition: none;
+  }
+  .app-neon .fd-card:hover,
+  .app-neon .fd-card:focus-visible {
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-neon .app-nav-link,
+  .app-neon .btn-primary,
+  .app-neon .btn-secondary {
+    transition: none;
+  }
+}

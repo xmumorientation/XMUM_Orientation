@@ -41,19 +41,22 @@ export function useGroup() {
     }
     load();
 
-    const channel = supabase
-      .channel(`group-${profile.group_id}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "groups",
-          filter: `id=eq.${profile.group_id}`,
-        },
-        (payload) => setGroup(payload.new as Group)
-      )
-      .subscribe();
+    // Register every callback before starting the channel. Supabase returns
+    // an existing channel for a duplicate topic, so subscribing first can
+    // make a later consumer fail when it tries to add a postgres_changes
+    // handler.
+    const channel = supabase.channel(`group-${profile.group_id}`);
+    channel.on(
+      "postgres_changes",
+      {
+        event: "UPDATE",
+        schema: "public",
+        table: "groups",
+        filter: `id=eq.${profile.group_id}`,
+      },
+      (payload) => setGroup(payload.new as Group)
+    );
+    channel.subscribe();
 
     return () => {
       active = false;
