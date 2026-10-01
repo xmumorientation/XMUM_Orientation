@@ -1,11 +1,11 @@
 "use client";
 
 import { Coins, MapPin, ShieldCheck, Users } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 import { useProfile } from "@/components/ProfileProvider";
-import { ErrorBanner } from "@/components/ui";
+import { ErrorBanner, SuccessBanner } from "@/components/ui";
 import { InputBox, LoadingState, PageHeader, SectionCard, StatusBadge } from "@/components/ui/Shared";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { friendlyError } from "@/lib/utils";
@@ -14,7 +14,7 @@ interface GroupOption { id: number; name: string }
 interface Day2Station { id: number; code: string; name: string; difficulty: "EASY"|"MEDIUM"|"HARD"; token_cost: number; location_exclusion_limit: number; is_active: boolean }
 
 export default function GmDay2Page() {
-  const profile=useProfile(); const router=useRouter(); const supabase=useMemo(()=>supabaseBrowser(),[]);
+  const profile=useProfile(); const router=useRouter(); const searchParams=useSearchParams(); const supabase=useMemo(()=>supabaseBrowser(),[]);
   const [groups,setGroups]=useState<GroupOption[]>([]),[station,setStation]=useState<Day2Station|null>(null);
   const [groupValue,setGroupValue]=useState(""),[pendingGroup,setPendingGroup]=useState<number|null>(null);
   const [requestId,setRequestId]=useState<string|null>(null),[loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[error,setError]=useState<string|null>(null);
@@ -25,7 +25,9 @@ export default function GmDay2Page() {
   async function start(){if(!pendingGroup||!requestId)return;setBusy(true);setError(null);const {data,error:rpcError}=await supabase.rpc("fn_start_day2_attempt",{p_group_id:pendingGroup,p_request_id:requestId});setBusy(false);if(rpcError)return setError(friendlyError(rpcError));const attemptId=(data as {attempt_id:string}).attempt_id;router.push(`/gm/day-2/attempt/${attemptId}`)}
 
   if(loading)return <LoadingState label="Loading Day 2 station"/>;
-  return <div className="space-y-4"><PageHeader title="Day 2" subtitle={station?`${station.code} · ${station.name}`:"No Day 2 station assigned"}/><ErrorBanner message={error}/>
+  const reward=searchParams.get("reward"),completedGroup=searchParams.get("group"),lose=searchParams.get("result")==="lose";
+  const completionNotice=reward&&completedGroup?`Group ${completedGroup} received Puzzle ${reward}.`:lose?"Lose result recorded. No Puzzle was awarded.":null;
+  return <div className="space-y-4"><PageHeader title="Day 2" subtitle={station?`${station.code} · ${station.name}`:"No Day 2 station assigned"}/><ErrorBanner message={error}/><SuccessBanner message={completionNotice}/>
     {!station&&<div className="rounded-2xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900"><p className="font-black">Station assignment required</p><p className="mt-1">Ask an Admin to assign this GM account to a Day 2 station.</p></div>}
     {station&&<SectionCard title="Station configuration" description="Values are controlled by Admin and captured when an attempt starts."><div className="grid grid-cols-3 gap-2"><div className="rounded-xl bg-paper-100 p-3 text-center"><ShieldCheck className="mx-auto text-brand-1" size={20}/><p className="mt-1 text-xs text-ink-faint">Difficulty</p><p className="font-black">{station.difficulty}</p></div><div className="rounded-xl bg-paper-100 p-3 text-center"><Coins className="mx-auto text-amber-600" size={20}/><p className="mt-1 text-xs text-ink-faint">Entry</p><p className="font-black">{station.token_cost}</p></div><div className="rounded-xl bg-paper-100 p-3 text-center"><MapPin className="mx-auto text-brand-2" size={20}/><p className="mt-1 text-xs text-ink-faint">Exclusions</p><p className="font-black">{station.location_exclusion_limit}</p></div></div></SectionCard>}
     <SectionCard title="Group" description="Enter the group that is starting this station attempt."><div className="flex items-center gap-3"><span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-brand-1/10 text-brand-1"><Users size={23}/></span><InputBox id="day2-group" aria-label="Group number" inputMode="numeric" placeholder="Group number" value={groupValue} onChange={event=>setGroupValue(event.target.value)} className="min-h-[56px] text-lg font-black"/></div>{station&&<div className="mt-4 flex items-center justify-between rounded-xl border border-amber-200 bg-amber-50 px-4 py-3"><span className="text-sm font-bold text-amber-900">Configured entry cost</span><span className="text-xl font-black text-amber-800">-{station.token_cost} tokens</span></div>}</SectionCard>

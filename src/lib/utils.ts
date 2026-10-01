@@ -143,6 +143,13 @@ const ERROR_MESSAGES: Record<string, string> = {
   PUZZLE_REDEMPTION_DEPENDENCY: "This Puzzle has already been used by a redemption workflow.",
   INVALID_PUZZLE_STATUS: "Puzzle status must be COLLECTED or REDEEMED.",
   CONFIGURATION_CONFLICT: "Another Admin changed this configuration. Refresh and try again.",
+  DAY2_RESULT_REQUIRED: "Please select a result.",
+  DAY2_ATTEMPT_NOT_FOUND: "This Day 2 attempt could not be found.",
+  DAY2_ATTEMPT_NOT_ACTIVE: "This Day 2 attempt is no longer active.",
+  DAY2_DUPLICATE_EXCLUSION: "Select each excluded location only once.",
+  DAY2_EXCLUSION_LIMIT: "Too many locations were excluded for this station.",
+  DAY2_REWARD_NOT_READY: "This Puzzle reward is not ready to be added to the group.",
+  NO_ELIGIBLE_PUZZLE: "No new eligible Puzzle is available.",
 };
 
 
