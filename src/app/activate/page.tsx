@@ -35,6 +35,18 @@ const ERROR_SCREENS: Record<string, { title: string; message: string }> = {
     title: "Code already used",
     message: "This activation card has already been tapped.",
   },
+  NFC_PUZZLES_INCOMPLETE: {
+    title: "Puzzle set incomplete",
+    message: "Your group has not collected all required Puzzle pieces.",
+  },
+  NFC_HANDOVER_NOT_VERIFIED: {
+    title: "Card handover not verified",
+    message: "Ask the Guardian GM to verify the Puzzle set and card handover first.",
+  },
+  NFC_WRONG_EVENT: {
+    title: "Invalid card",
+    message: "This NFC card is invalid for this orientation.",
+  },
   ALREADY_ACTIVATED: {
     title: "Already revived!",
     message: "This projector has already been revived by another group.",
@@ -96,14 +108,11 @@ export default async function ActivatePage({
     redirect(`/login?next=${encodeURIComponent(`/activate?t=${t}`)}`);
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("group_id")
-    .eq("id", user!.id)
-    .single();
+  const { data: context } = await supabase.rpc("fn_current_user_context").single();
 
-  const { error } = await supabase.rpc("fn_activate_projector", {
+  const { error } = await supabase.rpc("fn_redeem_nfc_card", {
     p_token_hash: hashToken(t),
+    p_request_id: `nfc-url:${crypto.randomUUID()}`,
   });
 
   const location: ProjectorLocation = verified.location;
@@ -118,7 +127,7 @@ export default async function ActivatePage({
 
   const ownGroupWon =
     projector?.activated_by_group != null &&
-    projector.activated_by_group === profile?.group_id;
+    projector.activated_by_group === (context as {group_id?:number|null}|null)?.group_id;
 
   if (error && !ownGroupWon) {
     const code = Object.keys(ERROR_SCREENS).find((k) =>
@@ -134,11 +143,12 @@ export default async function ActivatePage({
   }
 
   let groupName: string | null = null;
-  if (profile?.group_id) {
+  const groupId=(context as {group_id?:number|null}|null)?.group_id;
+  if (groupId) {
     const { data: g } = await supabase
       .from("groups")
       .select("name")
-      .eq("id", profile.group_id)
+      .eq("id", groupId)
       .single();
     groupName = g?.name ?? null;
   }

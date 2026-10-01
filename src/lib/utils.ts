@@ -80,7 +80,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   ALREADY_REDEEMED: "This set has already been redeemed.",
   NFC_DISABLED: "NFC activation is currently disabled by Admin.",
   NOT_IN_GROUP: "Your account isn't assigned to a group yet.",
-  NOT_ENDGAME: "Projector activation is only possible during the Endgame.",
+  NOT_ENDGAME: "The bonding session does not currently permit NFC activation.",
   TOKEN_UNKNOWN: "This activation code isn't recognised.",
   TOKEN_USED: "This activation code has already been used.",
   SET_NOT_REDEEMED: "Your group's puzzle set hasn't been verified by a Guardian yet.",
@@ -150,6 +150,14 @@ const ERROR_MESSAGES: Record<string, string> = {
   DAY2_EXCLUSION_LIMIT: "Too many locations were excluded for this station.",
   DAY2_REWARD_NOT_READY: "This Puzzle reward is not ready to be added to the group.",
   NO_ELIGIBLE_PUZZLE: "No new eligible Puzzle is available.",
+  NFC_PUZZLES_INCOMPLETE: "Your group has not collected all required Puzzle pieces.",
+  NFC_HANDOVER_NOT_VERIFIED: "The Guardian GM has not verified this card handover yet.",
+  NFC_WRONG_EVENT: "This NFC card is invalid for this orientation.",
+  NFC_DUPLICATE_REDEMPTION: "This NFC redemption has already been completed.",
+  NFC_NOT_USED: "This NFC card has no activation to revert.",
+  INVALID_NFC_CONFIGURATION: "The NFC card configuration is invalid.",
+  NFC_USE_RESET_ACTION: "Use Reset NFC to make a used card available again.",
+  NFC_REVERT_BEFORE_REMAP: "Revert this card's activation before changing its Zone or requirements.",
 };
 
 

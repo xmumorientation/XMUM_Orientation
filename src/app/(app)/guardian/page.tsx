@@ -1,6 +1,5 @@
 "use client";
 
-import { TriangleAlert } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import {
@@ -35,6 +34,7 @@ export default function GuardianPage() {
   const [groupId, setGroupId] = useState<number | null>(null);
   const [location, setLocation] = useState<ProjectorLocation>("B1");
   const [status, setStatus] = useState<PuzzleStatus | null>(null);
+  const [handoverVerified, setHandoverVerified] = useState(false);
   const [projectors, setProjectors] = useState<Projector[]>([]);
   const [nfcNote, setNfcNote] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -61,17 +61,19 @@ export default function GuardianPage() {
   useEffect(() => {
     if (!groupId) {
       setStatus(null);
+      setHandoverVerified(false);
       return;
     }
+    setHandoverVerified(false);
     let active = true;
     async function check() {
-      const { data, error } = await supabase.rpc("fn_puzzle_status", {
-        p_group_id: groupId,
-        p_location: location,
-      });
+      const [{ data, error },{data:verification}] = await Promise.all([supabase.rpc("fn_puzzle_status", {
+        p_group_id: groupId,p_location: location,
+      }),supabase.from("nfc_guardian_verifications").select("verification_id,consumed_at").eq("group_id",groupId).eq("zone_location",location).maybeSingle()]);
       if (!active) return;
       if (error) setError(friendlyError(error));
       else setStatus(data as PuzzleStatus);
+      setHandoverVerified(Boolean(verification&&!verification.consumed_at));
     }
     check();
     return () => {
@@ -92,30 +94,9 @@ export default function GuardianPage() {
     if (error) {
       setError(friendlyError(error));
     } else {
-      setNotice(
-        `Set redeemed for ${PROJECTOR_LABELS[location]}. Hand over the NFC card now.`
-      );
-      setStatus((s) => (s ? { ...s, redeemed: true } : s));
+      setNotice(`Puzzle set verified for ${PROJECTOR_LABELS[location]}. Hand over the NFC card now.`);
+      setHandoverVerified(true);
     }
-  }
-
-  async function manualActivate() {
-    if (!groupId) return;
-    if (
-      !window.confirm(
-        `Manually activate ${PROJECTOR_LABELS[location]} for group ${groupId}? This is logged as a manual override.`
-      )
-    )
-      return;
-    setBusy(true);
-    setError(null);
-    const { error } = await supabase.rpc("fn_activate_projector_manual", {
-      p_location: location,
-      p_group_id: groupId,
-    });
-    setBusy(false);
-    if (error) setError(friendlyError(error));
-    else setNotice(`${PROJECTOR_LABELS[location]} activated (manual override).`);
   }
 
   return (
@@ -189,10 +170,9 @@ export default function GuardianPage() {
             <p className="text-sm font-semibold text-amber-500">
               This projector has already been revived.
             </p>
-          ) : status.redeemed ? (
+          ) : handoverVerified ? (
             <p className="text-sm font-semibold text-green-700">
-              Already redeemed - the group should tap the NFC sticker during
-              Endgame.
+              Card handover verified. Give the group the NFC card; the Puzzle pieces remain collected until they scan it.
             </p>
           ) : status.complete ? (
             <>
@@ -213,7 +193,7 @@ export default function GuardianPage() {
                 onClick={redeem}
                 className="btn-primary w-full"
               >
-                Confirm set and mark redeemed
+                Verify set and card handover
               </button>
             </>
           ) : (
@@ -224,16 +204,6 @@ export default function GuardianPage() {
             </p>
           )}
 
-          {status.redeemed && !status.projector_activated && (
-            <button
-              disabled={busy}
-              onClick={manualActivate}
-              className="btn-danger w-full"
-            >
-              <TriangleAlert size={20} strokeWidth={1.75} />
-              Manual activation (sticker damaged)
-            </button>
-          )}
         </Card>
       )}
 
