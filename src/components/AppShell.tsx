@@ -1,10 +1,10 @@
 "use client";
 
-import { LogOut, Menu, ScanLine, User, X } from "lucide-react";
+import { LogOut, Menu, ScanLine, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { NavIcon } from "@/components/NavIcon";
 import { NewItemToast } from "@/components/NewItemToast";
@@ -148,49 +148,25 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { brand } = useConfig();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [accountOpen, setAccountOpen] = useState(false);
-  const accountRef = useRef<HTMLDivElement>(null);
   // The dashboard owns the live group subscription. AppShell only needs the
   // server snapshot here; subscribing a second time would reuse the same
   // Supabase channel and attempt to add a handler after subscribe().
   const group = useInitialGroup();
 
   const isFreshie = profile.role === "freshie";
-  // Single chrome layer on Freshie /dashboard: compact AppShell bar owns menu+logo+account;
+  // Single chrome layer on Freshie /dashboard: compact AppShell bar owns menu+logo;
   // FreshieDashboard no longer renders a second fd-top strip.
   const isFreshieDashboard =
     isFreshie && (pathname === "/dashboard" || pathname.startsWith("/dashboard/"));
 
   const items = NAV.filter((n) => n.roles.includes(profile.role));
-  // Floating Scan button: Freshies only, phones/tablets only, hidden on the
-  // scanner itself (which is full-screen).
-  const showScanFab = isFreshie && pathname !== "/scan";
 
   // Close the drawer on route change so it never lingers over a new page.
   // Radix Dialog owns focus-trap/Escape/backdrop-dismiss/focus-return; route
   // change is the one thing it has no opinion on.
   useEffect(() => {
     setMenuOpen(false);
-    setAccountOpen(false);
   }, [pathname]);
-
-  useEffect(() => {
-    if (!accountOpen) return;
-    function onPointerDown(e: PointerEvent) {
-      if (!accountRef.current?.contains(e.target as Node)) {
-        setAccountOpen(false);
-      }
-    }
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") setAccountOpen(false);
-    }
-    document.addEventListener("pointerdown", onPointerDown);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("pointerdown", onPointerDown);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [accountOpen]);
 
   async function signOut() {
     await supabaseBrowser().auth.signOut();
@@ -321,52 +297,100 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 className="app-neon-drawer lg:hidden"
               >
                 <div className="flex h-full flex-col">
-                  <div className="flex items-center justify-between gap-3 p-2">
-                    <div className="flex min-w-0 items-center gap-2.5">
-                      <DialogClose asChild>
-                        <button
-                          aria-label="Close menu"
-                          className="app-menu-btn flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition active:scale-95"
-                        >
-                          <X size={20} strokeWidth={1.75} />
-                        </button>
-                      </DialogClose>
-                      <div className="flex min-w-0 items-center gap-2">
-                        {isFreshie ? (
-                          <span className="app-brand-logo">
-                            <Image
-                              src="/vortexa-logo-sm.webp"
-                              alt=""
-                              width={320}
-                              height={184}
-                              style={{ width: "auto" }}
+                  {/* Header: Student name/group (no duplicate Vortexa logo!) */}
+                  <div className="flex items-center justify-between border-b border-[var(--an-line)] px-3 py-3">
+                    <div className="min-w-0">
+                      {isFreshie ? (
+                        <>
+                          <p className="text-sm font-extrabold text-[var(--an-text)] truncate">
+                            {profile.full_name || "Freshie"}
+                          </p>
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <span
+                              className="inline-block h-2 w-2 rounded-full"
+                              style={{ background: groupAccent(group?.id ?? profile.group_id) }}
                             />
-                          </span>
-                        ) : (
+                            <span className="text-xs text-[var(--an-mute)] font-medium">
+                              {group ? group.name : "No group"}
+                            </span>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="flex items-center gap-2">
                           <Monogram name={brand.eventName} size="sm" className="app-monogram" />
-                        )}
-                        <div className="min-w-0">
-                          <p className="app-brand-title truncate text-sm font-bold">
-                            {isFreshie ? "Vortexa" : brand.eventName}
-                          </p>
-                          <p className="app-brand-sub truncate">
-                            {ROLE_LABELS[profile.role]}
-                          </p>
+                          <div className="min-w-0">
+                            <p className="app-brand-title truncate text-sm font-bold">
+                              {brand.eventName}
+                            </p>
+                            <p className="app-brand-sub truncate">
+                              {ROLE_LABELS[profile.role]}
+                            </p>
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </div>
+
+                    <DialogClose asChild>
+                      <button
+                        aria-label="Close menu"
+                        className="app-menu-btn flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition active:scale-95"
+                      >
+                        <X size={18} strokeWidth={1.75} />
+                      </button>
+                    </DialogClose>
                   </div>
 
-                  <nav className="mt-2 flex-1 space-y-1 overflow-y-auto px-1 pb-2">
-                    {navLinks("drawer")}
+                  {/* Navigation List: For Freshie, ONLY show features NOT in the bottom bar */}
+                  <nav className="mt-2 flex-1 space-y-1 overflow-y-auto px-2 pb-2">
+                    {isFreshie ? (
+                      <div className="space-y-1 pt-1">
+                        <p className="px-2 pt-1 pb-1 text-[10px] font-bold uppercase tracking-wider text-[var(--an-mute)]">
+                          Resources & History
+                        </p>
+
+                        <Link
+                          href="/faq"
+                          onClick={() => setMenuOpen(false)}
+                          className={cn(
+                            "app-nav-link flex min-h-[44px] items-center gap-3 px-3 text-sm font-bold transition",
+                            pathname === "/faq" && "is-active"
+                          )}
+                        >
+                          <span className="app-nav-icon flex h-8 w-8 shrink-0 items-center justify-center rounded-xl transition-colors">
+                            <NavIcon code="FQ" size={17} strokeWidth={1.75} />
+                          </span>
+                          <span>FAQ & Emergency</span>
+                        </Link>
+
+                        <Link
+                          href="/transactions"
+                          onClick={() => setMenuOpen(false)}
+                          className={cn(
+                            "app-nav-link flex min-h-[44px] items-center gap-3 px-3 text-sm font-bold transition",
+                            pathname === "/transactions" && "is-active"
+                          )}
+                        >
+                          <span className="app-nav-icon flex h-8 w-8 shrink-0 items-center justify-center rounded-xl transition-colors">
+                            <NavIcon code="TX" size={17} strokeWidth={1.75} />
+                          </span>
+                          <span>Token History</span>
+                        </Link>
+                      </div>
+                    ) : (
+                      navLinks("drawer")
+                    )}
                   </nav>
 
-                  <button
-                    onClick={signOut}
-                    className="app-logout-sheet mt-2 min-h-[48px] rounded-xl px-3 text-left text-sm font-bold"
-                  >
-                    Log out
-                  </button>
+                  {/* Footer: Sign out */}
+                  <div className="mt-auto border-t border-[var(--an-line)] p-2">
+                    <button
+                      onClick={signOut}
+                      className="app-logout-sheet flex w-full min-h-[44px] items-center gap-2.5 rounded-xl px-3 text-left text-sm font-bold transition"
+                    >
+                      <LogOut size={16} strokeWidth={1.75} />
+                      <span>Log out</span>
+                    </button>
+                  </div>
                 </div>
               </DialogContent>
             </Dialog>
@@ -383,11 +407,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <span className="app-brand-logo">
                   <Image
                     src="/vortexa-logo-sm.webp"
-                    alt=""
-                    width={320}
-                    height={184}
+                    alt="Vortexa"
+                    width={96}
+                    height={55}
+                    className="h-6 w-auto object-contain"
                     priority
-                    style={{ width: "auto" }}
                   />
                 </span>
               ) : (
@@ -407,7 +431,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
 
           <div className="flex shrink-0 items-center gap-1.5">
-            {isFreshieDashboard && (
+            {isFreshie && !isFreshieDashboard && (
               <div className="fd-shell-group" aria-live="polite">
                 <span
                   className="fd-dot"
@@ -420,37 +444,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </div>
             )}
 
-            {isFreshie ? (
-              <div className="app-account" ref={accountRef}>
-                <button
-                  type="button"
-                  className="app-account-btn"
-                  aria-label="Account menu"
-                  aria-expanded={accountOpen}
-                  aria-haspopup="menu"
-                  onClick={() => setAccountOpen((v) => !v)}
-                >
-                  <User size={16} strokeWidth={2} />
-                </button>
-                {accountOpen && (
-                  <div className="app-account-menu" role="menu">
-                    <p className="app-account-name">
-                      {profile.full_name || "Freshie"}
-                    </p>
-                    <p className="app-account-meta">{ROLE_LABELS[profile.role]}</p>
-                    <button
-                      type="button"
-                      role="menuitem"
-                      className="app-account-logout"
-                      onClick={() => void signOut()}
-                    >
-                      <LogOut size={14} strokeWidth={2} />
-                      Log out
-                    </button>
-                  </div>
-                )}
-              </div>
-            ) : (
+            {!isFreshie && (
               <span className="app-role-chip chip">
                 {ROLE_LABELS[profile.role]}
               </span>
@@ -464,28 +458,83 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         className={cn(
           "mx-auto min-h-dvh w-full max-w-6xl px-3 pb-[calc(1.25rem+env(safe-area-inset-bottom))] pt-3 sm:px-5 sm:pb-8 sm:pt-5 lg:px-8 lg:py-6",
           isFreshieDashboard && "pt-2 sm:pt-3",
-          showScanFab &&
-            "pb-[calc(6.5rem+env(safe-area-inset-bottom))] sm:pb-[calc(6.5rem+env(safe-area-inset-bottom))]"
+          isFreshie &&
+            pathname !== "/scan" &&
+            "app-main-freshie-clearance"
         )}
       >
         {children}
       </main>
+      </div>
 
-      {showScanFab && (
-        <Link
-          href="/scan"
-          aria-label="Scan a QR code"
-          className="app-scan-fab-wrap fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] left-1/2 z-40 flex -translate-x-1/2 flex-col items-center gap-1 lg:hidden"
+      {/* Mobile Bottom Navigation Bar: Home | Map | Center Scan QR | Items | Schedule */}
+      {isFreshie && pathname !== "/scan" && (
+        <nav
+          aria-label="Mobile navigation"
+          className="app-bottom-nav fixed bottom-0 inset-x-0 z-50 lg:hidden"
         >
-          <span className="app-scan-fab flex h-16 w-16 items-center justify-center rounded-full transition active:scale-95">
-            <ScanLine size={28} strokeWidth={2} />
-          </span>
-          <span className="app-scan-label rounded-full px-2 text-xs font-bold">Scan</span>
-        </Link>
+          <div className="app-bottom-nav-inner">
+            <Link
+              href="/dashboard"
+              className={cn(
+                "app-bottom-nav-item",
+                (pathname === "/dashboard" || pathname.startsWith("/dashboard/")) && "is-active"
+              )}
+            >
+              <NavIcon code="HM" size={19} strokeWidth={1.75} />
+              <span>Home</span>
+            </Link>
+
+            <Link
+              href="/map"
+              className={cn(
+                "app-bottom-nav-item",
+                (pathname === "/map" || pathname.startsWith("/map/")) && "is-active"
+              )}
+            >
+              <NavIcon code="MP" size={19} strokeWidth={1.75} />
+              <span>Map</span>
+            </Link>
+
+            <div className="app-bottom-nav-center">
+              <Link
+                href="/scan"
+                aria-label="Scan QR Code"
+                className="app-bottom-scan-btn"
+              >
+                <span className="app-bottom-scan-icon">
+                  <ScanLine size={22} strokeWidth={2} />
+                </span>
+                <span className="app-bottom-scan-text">Scan</span>
+              </Link>
+            </div>
+
+            <Link
+              href="/inventory"
+              className={cn(
+                "app-bottom-nav-item",
+                (pathname === "/inventory" || pathname.startsWith("/inventory/")) && "is-active"
+              )}
+            >
+              <NavIcon code="IT" size={19} strokeWidth={1.75} />
+              <span>Items</span>
+            </Link>
+
+            <Link
+              href="/schedule"
+              className={cn(
+                "app-bottom-nav-item",
+                (pathname === "/schedule" || pathname.startsWith("/schedule/")) && "is-active"
+              )}
+            >
+              <NavIcon code="PL" size={19} strokeWidth={1.75} />
+              <span>Schedule</span>
+            </Link>
+          </div>
+        </nav>
       )}
 
       <NewItemToast />
-      </div>
     </div>
   );
 }

@@ -127,21 +127,185 @@
   color: var(--an-cyan);
 }
 
-.app-neon .app-scan-fab {
+/* ── Mobile Bottom Navigation Bar (Responsive & Adaptive across all devices) ─ */
+.app-neon .app-bottom-nav,
+nav.app-bottom-nav {
+  position: fixed !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 9999 !important;
+  width: 100% !important;
+  background: color-mix(in srgb, var(--an-ink-2) 94%, transparent) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border-top: 1px solid var(--an-line) !important;
+  /* Adaptive padding for devices with or without home indicators */
+  padding-bottom: max(8px, calc(env(safe-area-inset-bottom, 0px) + 2px)) !important;
+  padding-left: max(6px, env(safe-area-inset-left, 0px)) !important;
+  padding-right: max(6px, env(safe-area-inset-right, 0px)) !important;
+  box-shadow: 0 -8px 28px rgba(0, 0, 0, 0.5) !important;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Equal 5-column grid track, ergonomically bounded on larger devices/tablets */
+.app-neon .app-bottom-nav-inner {
+  height: 58px;
+  max-width: min(500px, 100%);
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 4px;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  align-items: center;
+  position: relative;
+}
+
+.app-neon .app-bottom-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  height: 100%;
+  min-width: 0;
+  padding: 4px 1px;
+  color: var(--an-mute);
+  text-decoration: none;
+  font-size: clamp(9px, 2.5vw, 11px);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+  transition: color 0.18s ease, transform 0.15s ease;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  position: relative;
+}
+
+.app-neon .app-bottom-nav-item span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.app-neon .app-bottom-nav-item::after {
+  content: "";
+  display: block;
+  width: 4px;
+  height: 4px;
+  border-radius: 999px;
+  background: transparent;
+  transition: all 0.2s ease;
+  margin-top: 1px;
+}
+
+.app-neon .app-bottom-nav-item:hover {
+  color: var(--an-text);
+}
+
+.app-neon .app-bottom-nav-item.is-active {
+  color: var(--an-cyan);
+}
+
+.app-neon .app-bottom-nav-item.is-active::after {
+  background: var(--an-cyan);
+  box-shadow: 0 0 6px var(--an-cyan);
+}
+
+.app-neon .app-bottom-nav-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  min-width: 0;
+}
+
+/* Elevated center Scan QR button with responsive scaling */
+.app-neon .app-bottom-scan-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: clamp(46px, 12.5vw, 54px);
+  height: clamp(46px, 12.5vw, 54px);
+  margin-top: clamp(-16px, -4vw, -12px);
+  border-radius: 999px;
   background: var(--an-yellow);
-  color: #111;
-  box-shadow: 0 0 28px rgba(242, 255, 11, 0.35);
-  ring-color: transparent;
+  color: #07060b;
+  border: 3px solid var(--an-ink-2);
+  box-shadow: 0 0 20px rgba(242, 255, 11, 0.35), 0 4px 12px rgba(0, 0, 0, 0.5);
+  text-decoration: none;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+  flex-shrink: 0;
 }
 
-.app-neon .app-scan-fab-wrap {
-  /* keep FAB above content; label */
+.app-neon .app-bottom-scan-btn:hover {
+  transform: translateY(-2px) scale(1.04);
+  box-shadow: 0 0 28px rgba(242, 255, 11, 0.6), 0 6px 16px rgba(0, 0, 0, 0.6);
 }
 
-.app-neon .app-scan-label {
-  background: color-mix(in srgb, var(--an-ink-2) 92%, transparent);
-  color: var(--an-yellow);
-  border: 1px solid color-mix(in srgb, var(--an-yellow) 35%, transparent);
+.app-neon .app-bottom-scan-btn:active {
+  transform: translateY(0) scale(0.96);
+}
+
+.app-neon .app-bottom-scan-icon {
+  display: grid;
+  place-items: center;
+  line-height: 1;
+}
+
+.app-neon .app-bottom-scan-text {
+  font-size: clamp(8px, 2.2vw, 9.5px);
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  line-height: 1;
+  margin-top: 1px;
+}
+
+/* Dynamic clearance padding on main content to avoid bottom nav clipping on any device */
+.app-neon .app-main-freshie-clearance {
+  padding-bottom: calc(62px + max(14px, calc(env(safe-area-inset-bottom, 0px) + 8px))) !important;
+}
+
+/* Compact landscape mode adaptation for smartphones */
+@media (max-height: 480px) and (orientation: landscape) {
+  .app-neon .app-bottom-nav-inner {
+    height: 44px;
+  }
+  .app-neon .app-bottom-scan-btn {
+    width: 38px;
+    height: 38px;
+    margin-top: -6px;
+    border-width: 2px;
+  }
+  .app-neon .app-bottom-scan-icon svg {
+    width: 17px;
+    height: 17px;
+  }
+  .app-neon .app-bottom-scan-text {
+    display: none;
+  }
+  .app-neon .app-bottom-nav-item {
+    padding: 2px 1px;
+    gap: 1px;
+  }
+  .app-neon .app-bottom-nav-item svg {
+    width: 16px;
+    height: 16px;
+  }
+  .app-neon .app-bottom-nav-item span {
+    font-size: 8.5px;
+  }
+  .app-neon .app-bottom-nav-item::after {
+    display: none;
+  }
+  .app-neon .app-main-freshie-clearance {
+    padding-bottom: calc(48px + max(8px, calc(env(safe-area-inset-bottom, 0px) + 4px))) !important;
+  }
 }
 
 /* Phase timer */
@@ -357,7 +521,6 @@
 /* Soft decorative dots behind main (non-interactive) */
 .app-neon .app-main-wrap {
   position: relative;
-  isolation: isolate;
 }
 .app-neon .app-main-wrap::before {
   content: "";
@@ -370,7 +533,8 @@
   -webkit-mask-image: radial-gradient(ellipse at center, #000 20%, transparent 75%);
   mask-image: radial-gradient(ellipse at center, #000 20%, transparent 75%);
 }
-.app-neon .app-main-wrap > * {
+.app-neon .app-main-wrap > header,
+.app-neon .app-main-wrap > main {
   position: relative;
   z-index: 1;
 }
@@ -385,6 +549,9 @@
   background: var(--an-ink-2, #0e0c15) !important;
   color: var(--an-text, #f3f0fa);
   border-right: 1px solid var(--an-line, #25202f);
+  width: 72vw !important;
+  max-width: 270px !important;
+  box-shadow: 12px 0 36px rgba(0, 0, 0, 0.65) !important;
 }
 .app-neon-drawer .app-nav-link {
   color: var(--an-text-2, #cfc9dc);
@@ -428,19 +595,25 @@
 }
 
 
-/* ── Freshie shell chrome (logo, account, compact header) ─────────────────── */
+/* ── Freshie shell chrome (logo, group badge, compact header) ─────────────── */
+.app-brand-logo,
 .app-neon .app-brand-logo {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   line-height: 0;
 }
-.app-neon .app-brand-logo img {
-  height: 28px;
-  width: auto;
+.app-brand-logo img,
+.app-neon .app-brand-logo img,
+.app-neon-drawer .app-brand-logo img {
+  height: 24px !important;
+  max-height: 24px !important;
+  width: auto !important;
   display: block;
 }
 .app-neon .app-brand-logo--aside img {
-  height: 36px;
+  height: 30px !important;
+  max-height: 30px !important;
+  width: auto !important;
 }
 
 .app-neon .app-header--freshie .app-menu-btn {
@@ -480,89 +653,15 @@
   text-overflow: ellipsis;
 }
 
-.app-neon .app-account {
-  position: relative;
-}
-.app-neon .app-account-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  min-width: 44px;
-  min-height: 44px;
-  border-radius: 999px;
-  border: 1px solid var(--an-line-2);
-  background: var(--an-ink-2);
-  color: var(--an-text-2);
-  cursor: pointer;
-  transition: border-color 0.18s ease, color 0.18s ease, background 0.18s ease;
-}
-.app-neon .app-account-btn:hover,
-.app-neon .app-account-btn[aria-expanded="true"] {
-  border-color: var(--an-cyan);
-  color: var(--an-cyan);
-  background: color-mix(in srgb, var(--an-cyan) 10%, var(--an-ink-2));
-}
-.app-neon .app-account-menu {
-  position: absolute;
-  right: 0;
-  top: calc(100% + 8px);
-  z-index: 50;
-  width: min(220px, 70vw);
-  padding: 10px;
-  border-radius: 14px;
-  border: 1px solid var(--an-line);
-  background: var(--an-ink-2);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
-}
-.app-neon .app-account-name {
-  margin: 0;
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--an-text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.app-neon .app-account-meta {
-  margin: 2px 0 10px;
-  font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--an-mute);
-}
-.app-neon .app-account-logout {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  min-height: 44px;
-  padding: 0 10px;
-  border-radius: 10px;
-  border: 1px solid var(--an-line);
-  background: var(--an-ink-3);
-  color: var(--an-text-2);
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: border-color 0.18s ease, color 0.18s ease;
-}
-.app-neon .app-account-logout:hover {
-  border-color: var(--an-yellow);
-  color: var(--an-yellow);
-}
-
 /* ── Freshie dashboard hub (Phase 1) ─────────────────────────────────────── */
 /* Single top chrome lives in AppShell (--fd-dash). Hub = group hero + cards. */
 .app-neon .fd-hub {
   display: flex;
   flex-direction: column;
   gap: 18px;
-  max-width: 32rem;
+  max-width: 44rem;
   margin: 0 auto;
-  padding-bottom: 0.5rem;
+  padding-bottom: 2rem;
 }
 
 .app-neon .fd-dot {
@@ -573,180 +672,166 @@
   box-shadow: 0 0 12px color-mix(in srgb, var(--fd-accent, var(--an-cyan)) 55%, transparent);
 }
 
-.app-neon .fd-hero {
+/* ── 1. Holographic Cyber Wristband Pass ──────────────────────────────────── */
+.app-neon .fd-pass-card {
   position: relative;
-  display: flex;
-  gap: 0;
   overflow: hidden;
-  border-radius: 18px;
-  border: 1px solid color-mix(in srgb, var(--fd-accent, var(--an-cyan)) 28%, var(--an-line));
+  border-radius: 24px;
+  border: 1px solid color-mix(in srgb, var(--fd-accent, var(--an-cyan)) 35%, var(--an-line));
   background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--fd-accent, var(--an-cyan)) 16%, var(--an-ink-2)),
+    140deg,
+    color-mix(in srgb, var(--fd-accent, var(--an-cyan)) 16%, var(--an-ink-2)) 0%,
     var(--an-ink-2) 55%,
-    var(--an-ink-3)
+    var(--an-ink-3) 100%
   );
-}
-.app-neon .fd-hero-accent {
-  width: 5px;
-  flex-shrink: 0;
-  background: var(--fd-accent, var(--an-cyan));
-  box-shadow: 0 0 18px color-mix(in srgb, var(--fd-accent, var(--an-cyan)) 55%, transparent);
-}
-.app-neon .fd-hero-body {
-  min-width: 0;
-  padding: 14px 16px 15px;
-}
-.app-neon .fd-hero-kicker {
-  margin: 0 0 4px;
-  font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 10px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--an-mute);
-}
-.app-neon .fd-hero-title {
-  margin: 0;
-  font-size: 22px;
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  line-height: 1.15;
-  color: var(--an-text);
-}
-.app-neon .fd-hero-sub {
-  margin: 6px 0 0;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--an-text-2);
-  line-height: 1.3;
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--fd-accent, var(--an-cyan)) 12%, transparent),
+    0 16px 44px rgba(0, 0, 0, 0.45);
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
 }
 
-.app-neon .fd-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
+.app-neon .fd-pass-card:hover {
+  border-color: color-mix(in srgb, var(--fd-accent, var(--an-cyan)) 65%, var(--an-line));
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--fd-accent, var(--an-cyan)) 25%, transparent),
+    0 22px 56px rgba(0, 0, 0, 0.55),
+    0 0 36px color-mix(in srgb, var(--fd-accent, var(--an-cyan)) 16%, transparent);
 }
 
-.app-neon .fd-card {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 6px;
-  border-radius: 20px;
-  border: 1px solid var(--an-line);
-  background: linear-gradient(
-    160deg,
-    color-mix(in srgb, var(--an-ink-3) 88%, var(--fd-accent, var(--an-cyan)) 12%),
-    var(--an-ink-2)
-  );
-  color: var(--an-text);
-  text-decoration: none;
-  transition: border-color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
-  -webkit-tap-highlight-color: transparent;
+.app-neon .fd-pass-inner {
+  position: relative;
+  z-index: 2;
+  padding: 18px 20px 20px;
 }
 
-.app-neon .fd-card--primary {
-  min-height: 132px;
-  padding: 18px 16px 16px;
-  border-color: color-mix(in srgb, var(--fd-accent, var(--an-cyan)) 32%, var(--an-line));
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--fd-accent, var(--an-cyan)) 8%, transparent),
-    0 10px 28px rgba(0, 0, 0, 0.22);
-}
-.app-neon .fd-card--primary:first-child {
-  /* Map leads — slightly taller on mobile */
-  min-height: 148px;
-}
-
-.app-neon .fd-card--secondary {
-  min-height: 96px;
-  padding: 14px 12px 12px;
-  gap: 4px;
-  background: var(--an-ink-2);
-  border-color: var(--an-line);
-}
-
-.app-neon .fd-card:hover,
-.app-neon .fd-card:focus-visible {
-  border-color: color-mix(in srgb, var(--fd-accent, var(--an-cyan)) 60%, var(--an-line));
-  box-shadow: 0 0 28px color-mix(in srgb, var(--fd-accent, var(--an-cyan)) 20%, transparent);
-  transform: translateY(-2px);
-}
-
-.app-neon .fd-card:active {
-  transform: scale(0.98);
-}
-
-.app-neon .fd-card-icon {
-  display: flex;
+.app-neon .fd-pass-qr-btn {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 14px;
-  background: color-mix(in srgb, var(--fd-accent, var(--an-cyan)) 18%, var(--an-ink));
-  color: var(--fd-accent, var(--an-cyan));
-  border: 1px solid color-mix(in srgb, var(--fd-accent, var(--an-cyan)) 40%, var(--an-line));
-}
-.app-neon .fd-card--primary .fd-card-icon {
-  width: 48px;
-  height: 48px;
-}
-.app-neon .fd-card--secondary .fd-card-icon {
-  width: 36px;
-  height: 36px;
+  width: 38px;
+  height: 38px;
   border-radius: 12px;
+  background: var(--an-ink-3);
+  border: 1px solid var(--an-line-2);
+  color: var(--an-text);
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+.app-neon .fd-pass-qr-btn:hover {
+  border-color: var(--fd-accent, var(--an-cyan));
+  color: var(--fd-accent, var(--an-cyan));
+  background: color-mix(in srgb, var(--fd-accent, var(--an-cyan)) 12%, var(--an-ink-2));
+  transform: translateY(-1px);
+}
+.app-neon .fd-pass-qr-btn:active {
+  transform: scale(0.96);
 }
 
-.app-neon .fd-card-title {
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  line-height: 1.1;
+/* ── Clean Freshie Cards (Minimalist Glassmorphism, No AI Jargon) ───────── */
+.app-neon .fd-card-clean {
+  position: relative;
+  background: var(--an-ink-2);
+  border: 1px solid var(--an-line);
+  border-radius: 18px;
+  padding: 16px;
+  color: var(--an-text);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
 }
-.app-neon .fd-card--primary .fd-card-title {
-  font-size: 20px;
-  margin-top: 4px;
+.app-neon a.fd-card-clean:hover {
+  border-color: color-mix(in srgb, var(--fd-accent, var(--an-cyan)) 40%, var(--an-line));
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
 }
-.app-neon .fd-card--secondary .fd-card-title {
-  font-size: 15px;
-  margin-top: 2px;
+.app-neon a.fd-card-clean:active {
+  transform: scale(0.99);
 }
 
-.app-neon .fd-card-hint {
-  font-weight: 500;
-  color: var(--an-mute);
-  line-height: 1.3;
+
+
+/* ── Checkpoint QR Pass Dialog ───────────────────────────────────────────── */
+.fd-checkpoint-dialog {
+  background: var(--an-ink-2, #0e0c15) !important;
+  border: 1px solid var(--an-line-2, #3a3448) !important;
+  color: var(--an-text, #f3f0fa) !important;
+  border-radius: 24px !important;
 }
-.app-neon .fd-card--primary .fd-card-hint {
+
+.fd-qr-modal-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 14px;
+  padding: 10px 0 6px;
+}
+
+.fd-qr-frame {
+  padding: 12px;
+  border-radius: 20px;
+  background: #ffffff;
+  border: 2px solid var(--an-cyan);
+  box-shadow: 0 0 32px rgba(13, 252, 253, 0.25);
+}
+
+.fd-qr-img {
+  display: block;
+  border-radius: 8px;
+}
+
+.fd-qr-loading {
+  width: 240px;
+  height: 240px;
+  display: grid;
+  place-items: center;
   font-size: 13px;
-}
-.app-neon .fd-card--secondary .fd-card-hint {
-  font-size: 11px;
+  color: #111;
+  font-weight: 700;
 }
 
-@media (min-width: 640px) {
-  .app-neon .fd-grid {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
+.fd-qr-meta {
+  width: 100%;
+  border-radius: 14px;
+  background: var(--an-ink-3, #15121e);
+  border: 1px solid var(--an-line, #25202f);
+  padding: 12px 14px;
+  text-align: left;
+}
+
+.fd-qr-tip {
+  font-size: 12px;
+  color: var(--an-mute, #8d87a0);
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* ── Keyframes & Accessibility ───────────────────────────────────────────── */
+@keyframes fd-pulse-glow {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
   }
-  .app-neon .fd-card--primary {
-    min-height: 148px;
+  50% {
+    opacity: 0.45;
+    transform: scale(0.85);
   }
-  .app-neon .fd-card--primary:first-child {
-    min-height: 148px;
+}
+
+@keyframes fd-alert-pulse {
+  0%, 100% {
+    opacity: 1;
   }
-  .app-neon .fd-card--secondary {
-    min-height: 110px;
-  }
-  .app-neon .fd-hero-title {
-    font-size: 24px;
+  50% {
+    opacity: 0.55;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .app-neon .fd-card {
-    transition: none;
-  }
-  .app-neon .fd-card:hover,
-  .app-neon .fd-card:focus-visible {
-    transform: none;
+  .app-neon .fd-pass-card,
+  .app-neon .fd-card-clean {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
   }
 }
 
