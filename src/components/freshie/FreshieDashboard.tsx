@@ -11,7 +11,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import QRCode from "qrcode";
 
 import { usePhaseTimer } from "@/components/PhaseTimerProvider";
@@ -130,8 +130,37 @@ function FreshiePassCard({
   colorHex: string;
   colorName: string;
 }) {
+  const cardRef = useRef<HTMLElement>(null);
+  const [coords, setCoords] = useState<{ x: number; y: number } | null>(null);
+
+  const handlePointerMove = useCallback((e: React.PointerEvent<HTMLElement>) => {
+    const el = cardRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const x = Math.round(((e.clientX - rect.left) / rect.width) * 100);
+    const y = Math.round(((e.clientY - rect.top) / rect.height) * 100);
+    setCoords({ x, y });
+  }, []);
+
+  const handlePointerLeave = useCallback(() => {
+    setCoords(null);
+  }, []);
+
   return (
-    <section className="fd-pass-card" style={{ "--fd-accent": colorHex } as React.CSSProperties}>
+    <section
+      ref={cardRef}
+      onPointerMove={handlePointerMove}
+      onPointerLeave={handlePointerLeave}
+      className="fd-pass-card"
+      style={
+        {
+          "--fd-accent": colorHex,
+          "--pass-x": coords ? `${coords.x}%` : "50%",
+          "--pass-y": coords ? `${coords.y}%` : "50%",
+          "--pass-opacity": coords ? "1" : "0",
+        } as React.CSSProperties
+      }
+    >
       <div className="fd-pass-inner">
         <div className="flex items-center justify-between gap-3 border-b border-[var(--an-line)] pb-3">
           <div className="min-w-0">
@@ -343,7 +372,7 @@ function ScoreAndProgress({
             <Coins size={15} strokeWidth={1.75} className="text-[var(--an-yellow)]" />
             <span>Group Tokens</span>
           </div>
-          <ArrowUpRight size={14} strokeWidth={1.75} />
+          <ArrowUpRight size={14} strokeWidth={1.75} className="fd-card-arrow" />
         </div>
 
         <div className="my-2">
@@ -368,9 +397,12 @@ function ScoreAndProgress({
             <Layers size={15} strokeWidth={1.75} className="text-[var(--an-cyan)]" />
             <span>Puzzle Pieces</span>
           </div>
-          <span className="font-mono text-xs font-bold text-[var(--an-text)]">
-            {totalPieces} / {PROJECTOR_LOCATIONS.length * PIECES_PER_SET}
-          </span>
+          <div className="flex items-center gap-1 font-mono text-xs font-bold text-[var(--an-text)]">
+            <span>
+              {totalPieces} / {PROJECTOR_LOCATIONS.length * PIECES_PER_SET}
+            </span>
+            <ArrowUpRight size={14} strokeWidth={1.75} className="fd-card-arrow" />
+          </div>
         </div>
 
         <div className="my-2 space-y-1.5">
@@ -430,7 +462,7 @@ function CampusHelpNotice() {
       </div>
       <Link
         href="/faq"
-        className="shrink-0 inline-flex items-center gap-1 text-[var(--an-yellow)] font-semibold hover:underline"
+        className="shrink-0 inline-flex items-center gap-1 text-[var(--an-yellow)] font-semibold hover:underline active:scale-95 transition-transform"
       >
         <PhoneCall size={12} strokeWidth={1.75} />
         <span>FAQ</span>

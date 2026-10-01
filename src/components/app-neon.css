@@ -119,12 +119,19 @@
   border: 1px solid var(--an-line-2);
   color: var(--an-text);
   box-shadow: none;
+  transition: transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1), background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .app-neon .app-menu-btn:hover {
   background: var(--an-ink-3);
   border-color: var(--an-cyan);
   color: var(--an-cyan);
+}
+
+.app-neon .app-menu-btn:active {
+  transform: scale(0.90);
+  transition-duration: 0.06s;
 }
 
 /* ── Mobile Bottom Navigation Bar (Responsive & Adaptive across all devices) ─ */
@@ -177,10 +184,25 @@ nav.app-bottom-nav {
   font-weight: 700;
   letter-spacing: -0.01em;
   line-height: 1.1;
-  transition: color 0.18s ease, transform 0.15s ease;
+  transition: color 0.15s ease, transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1);
   user-select: none;
   -webkit-tap-highlight-color: transparent;
   position: relative;
+}
+
+.app-neon .app-bottom-nav-item svg {
+  transition: transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.app-neon .app-bottom-nav-item:active {
+  transform: scale(0.95);
+  color: var(--an-text);
+  transition-duration: 0.06s;
+}
+
+.app-neon .app-bottom-nav-item:active svg {
+  transform: scale(0.85);
+  transition-duration: 0.06s;
 }
 
 .app-neon .app-bottom-nav-item span {
@@ -197,7 +219,8 @@ nav.app-bottom-nav {
   height: 4px;
   border-radius: 999px;
   background: transparent;
-  transition: all 0.2s ease;
+  transform: scale(0);
+  transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), background-color 0.2s ease, box-shadow 0.2s ease;
   margin-top: 1px;
 }
 
@@ -211,6 +234,7 @@ nav.app-bottom-nav {
 
 .app-neon .app-bottom-nav-item.is-active::after {
   background: var(--an-cyan);
+  transform: scale(1);
   box-shadow: 0 0 6px var(--an-cyan);
 }
 
@@ -237,18 +261,30 @@ nav.app-bottom-nav {
   border: 3px solid var(--an-ink-2);
   box-shadow: 0 0 20px rgba(242, 255, 11, 0.35), 0 4px 12px rgba(0, 0, 0, 0.5);
   text-decoration: none;
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
+  transition: transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.18s ease;
   -webkit-tap-highlight-color: transparent;
   flex-shrink: 0;
+  will-change: transform;
 }
 
 .app-neon .app-bottom-scan-btn:hover {
-  transform: translateY(-2px) scale(1.04);
+  transform: translateY(-2px) scale(1.05);
   box-shadow: 0 0 28px rgba(242, 255, 11, 0.6), 0 6px 16px rgba(0, 0, 0, 0.6);
 }
 
 .app-neon .app-bottom-scan-btn:active {
-  transform: translateY(0) scale(0.96);
+  transform: translateY(1px) scale(0.91);
+  box-shadow: 0 0 10px rgba(242, 255, 11, 0.25), 0 2px 6px rgba(0, 0, 0, 0.5);
+  transition-duration: 0.06s;
+}
+
+.app-neon .app-bottom-scan-icon svg {
+  transition: transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.app-neon .app-bottom-scan-btn:active .app-bottom-scan-icon svg {
+  transform: scale(0.90);
+  transition-duration: 0.06s;
 }
 
 .app-neon .app-bottom-scan-icon {
@@ -557,10 +593,17 @@ nav.app-bottom-nav {
   color: var(--an-text-2, #cfc9dc);
   border: 1px solid transparent;
   border-radius: 999px;
+  transition: transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1), background 0.15s ease, color 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
 }
 .app-neon-drawer .app-nav-link:hover {
   background: var(--an-ink-3, #15121e);
   color: var(--an-text, #f3f0fa);
+}
+.app-neon-drawer .app-nav-link:active {
+  transform: scale(0.96);
+  background: var(--an-ink-3, #15121e);
+  transition-duration: 0.06s;
 }
 .app-neon-drawer .app-nav-link.is-active {
   background: color-mix(in srgb, #0dfcfd 12%, #0e0c15);
@@ -570,6 +613,11 @@ nav.app-bottom-nav {
 .app-neon-drawer .app-nav-icon {
   background: color-mix(in srgb, #0dfcfd 14%, transparent);
   color: #0dfcfd;
+  transition: transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.app-neon-drawer .app-nav-link:active .app-nav-icon {
+  transform: scale(0.90);
+  transition-duration: 0.06s;
 }
 .app-neon-drawer .app-menu-btn {
   background: var(--an-ink-3, #15121e);
@@ -580,6 +628,13 @@ nav.app-bottom-nav {
   background: var(--an-ink-3, #15121e);
   border: 1px solid var(--an-line, #25202f);
   color: var(--an-text-2, #cfc9dc);
+  transition: transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1), background 0.15s ease, color 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.app-neon-drawer .app-logout-sheet:active {
+  transform: scale(0.96);
+  background: var(--an-ink-3, #15121e);
+  transition-duration: 0.06s;
 }
 .app-neon-drawer .app-brand-title {
   color: var(--an-text, #f3f0fa);
@@ -687,7 +742,26 @@ nav.app-bottom-nav {
   box-shadow:
     0 0 0 1px color-mix(in srgb, var(--fd-accent, var(--an-cyan)) 12%, transparent),
     0 16px 44px rgba(0, 0, 0, 0.45);
-  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+/* Subtle holographic touch sheen that glides under the user's finger */
+.app-neon .fd-pass-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    circle at var(--pass-x, 50%) var(--pass-y, 50%),
+    color-mix(in srgb, var(--fd-accent, #ffffff) 20%, transparent),
+    transparent 65%
+  );
+  opacity: var(--pass-opacity, 0);
+  transition: opacity 0.3s ease;
+  mix-blend-mode: screen;
+  z-index: 1;
 }
 
 .app-neon .fd-pass-card:hover {
@@ -696,6 +770,11 @@ nav.app-bottom-nav {
     0 0 0 1px color-mix(in srgb, var(--fd-accent, var(--an-cyan)) 25%, transparent),
     0 22px 56px rgba(0, 0, 0, 0.55),
     0 0 36px color-mix(in srgb, var(--fd-accent, var(--an-cyan)) 16%, transparent);
+}
+
+.app-neon .fd-pass-card:active {
+  transform: scale(0.988);
+  transition-duration: 0.06s;
 }
 
 .app-neon .fd-pass-inner {
@@ -715,16 +794,21 @@ nav.app-bottom-nav {
   border: 1px solid var(--an-line-2);
   color: var(--an-text);
   cursor: pointer;
-  transition: all 0.18s ease;
+  transition: transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1), border-color 0.15s ease, color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+  position: relative;
 }
 .app-neon .fd-pass-qr-btn:hover {
   border-color: var(--fd-accent, var(--an-cyan));
   color: var(--fd-accent, var(--an-cyan));
   background: color-mix(in srgb, var(--fd-accent, var(--an-cyan)) 12%, var(--an-ink-2));
   transform: translateY(-1px);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--fd-accent, var(--an-cyan)) 30%, transparent);
 }
 .app-neon .fd-pass-qr-btn:active {
-  transform: scale(0.96);
+  transform: scale(0.88);
+  transition-duration: 0.06s;
+  box-shadow: 0 0 4px color-mix(in srgb, var(--fd-accent, var(--an-cyan)) 40%, transparent);
 }
 
 /* ── Clean Freshie Cards (Minimalist Glassmorphism, No AI Jargon) ───────── */
@@ -736,7 +820,8 @@ nav.app-bottom-nav {
   padding: 16px;
   color: var(--an-text);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
+  -webkit-tap-highlight-color: transparent;
 }
 .app-neon a.fd-card-clean:hover {
   border-color: color-mix(in srgb, var(--fd-accent, var(--an-cyan)) 40%, var(--an-line));
@@ -744,7 +829,22 @@ nav.app-bottom-nav {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
 }
 .app-neon a.fd-card-clean:active {
-  transform: scale(0.99);
+  transform: translateY(1px) scale(0.975);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+  border-color: color-mix(in srgb, var(--fd-accent, var(--an-cyan)) 60%, var(--an-line));
+  transition-duration: 0.06s;
+}
+
+/* Micro-interaction: Arrow icon subtle nudge on touch/hover */
+.app-neon a.fd-card-clean .fd-card-arrow {
+  transition: transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.app-neon a.fd-card-clean:hover .fd-card-arrow {
+  transform: translate(2px, -2px);
+}
+.app-neon a.fd-card-clean:active .fd-card-arrow {
+  transform: translate(3px, -3px) scale(0.95);
+  transition-duration: 0.06s;
 }
 
 
@@ -828,17 +928,21 @@ nav.app-bottom-nav {
 
 @media (prefers-reduced-motion: reduce) {
   .app-neon .fd-pass-card,
-  .app-neon .fd-card-clean {
-    animation: none !important;
-    transition: none !important;
-    transform: none !important;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
+  .app-neon .fd-card-clean,
+  .app-neon .app-bottom-nav-item,
+  .app-neon .app-bottom-nav-item svg,
+  .app-neon .app-bottom-scan-btn,
+  .app-neon .app-bottom-scan-icon svg,
+  .app-neon .app-menu-btn,
+  .app-neon .fd-pass-qr-btn,
+  .app-neon a.fd-card-clean .fd-card-arrow,
+  .app-neon-drawer .app-nav-link,
+  .app-neon-drawer .app-logout-sheet,
   .app-neon .app-nav-link,
   .app-neon .btn-primary,
   .app-neon .btn-secondary {
-    transition: none;
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
   }
 }
