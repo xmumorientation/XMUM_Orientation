@@ -95,7 +95,7 @@ export default async function GroupPassDeniedPage({ searchParams }: Props) {
         ) : null}
         <div style={{ marginTop: 22, display: "flex", gap: 10, flexWrap: "wrap" }}>
           <Link
-            href="/check-in/draw"
+            href="/#check-in"
             style={{
               display: "inline-flex",
               alignItems: "center",
@@ -109,24 +109,18 @@ export default async function GroupPassDeniedPage({ searchParams }: Props) {
               textDecoration: "none",
             }}
           >
-            Backup draw
+            Back to Welcome
           </Link>
           <Link
-            href="/"
+            href="/check-in/draw"
             style={{
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: "10px 14px",
-              borderRadius: 10,
-              border: "1px solid rgba(255,255,255,0.18)",
-              color: "#f4f2ff",
-              fontWeight: 550,
+              color: "rgba(244,242,255,0.7)",
               fontSize: 14,
-              textDecoration: "none",
+              textDecoration: "underline",
+              textUnderlineOffset: 3,
             }}
           >
-            Back to Welcome
+            Website draw (backup)
           </Link>
         </div>
       </div>
