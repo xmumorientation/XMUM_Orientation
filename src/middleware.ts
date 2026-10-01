@@ -1,6 +1,11 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+import {
+  GROUP_PASS_COOKIE,
+  verifyGroupPassToken,
+} from "@/lib/group-pass";
+
 const PUBLIC_PATHS = [
   "/login",
   "/register",
@@ -9,24 +14,59 @@ const PUBLIC_PATHS = [
   "/auth/callback",
 ];
 
+function denyGroupPass(request: NextRequest, reason: string, groupId?: string) {
+  const url = request.nextUrl.clone();
+  url.pathname = "/group-pass/denied";
+  url.search = "";
+  url.searchParams.set("reason", reason);
+  if (groupId) url.searchParams.set("g", groupId);
+  return NextResponse.redirect(url);
+}
+
 // Session refresh + coarse auth gate. Fine-grained role checks live in the
 // (app) layout and — authoritatively — in RLS/RPCs server-side (NFR-4).
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
 
-  // Public, backend-free routes: Welcome ("/"), park prototype, and D-day
-  // DEMO shells (counter draw + group Homepage). Short-circuit before
-  // Supabase so they render without auth or env.
-  // DEMO /check-in and /group are temporary — production needs signed/expiring
-  // Homepage pass; do not treat open URLs as real access control.
+  // Public, backend-free routes (no Supabase). Group pages are NOT open URLs —
+  // they require a signed expiring pass (see below).
+  // /check-in/draw stays reachable as the backup website draw only; it must
+  // not grant access to /group/* (redeem issues the pass, draw does not).
   if (
     path === "/" ||
     path.startsWith("/park") ||
-    path.startsWith("/check-in") ||
-    path.startsWith("/group")
+    path === "/check-in/draw" ||
+    path.startsWith("/check-in/draw/") ||
+    path.startsWith("/group-pass") ||
+    path.startsWith("/api/group-pass")
   ) {
     return NextResponse.next({ request });
   }
+
+  // ── Group Homepage: signed pass required ─────────────────────────────
+  // Blanket public short-circuit for /group* and /check-in* removed.
+  if (path.startsWith("/group")) {
+    const match = path.match(/^\/group\/([^/]+)\/?$/);
+    const groupId = match?.[1] ? decodeURIComponent(match[1]) : null;
+    if (!groupId) {
+      return denyGroupPass(request, "missing");
+    }
+
+    const token = request.cookies.get(GROUP_PASS_COOKIE)?.value;
+    const verified = await verifyGroupPassToken(token);
+    if (!verified.ok) {
+      return denyGroupPass(request, verified.reason, groupId);
+    }
+    if (verified.pass.g !== groupId) {
+      return denyGroupPass(request, "wrong_group", groupId);
+    }
+    // Version/jti revoke checked in the page (Node store). Middleware
+    // blocks unsigned / expired / wrong-group access.
+    return NextResponse.next({ request });
+  }
+
+  // Other /check-in* paths are not blanket-public (draw is allowlisted above).
+  // Fall through to normal auth gating.
 
   let response = NextResponse.next({ request });
 

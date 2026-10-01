@@ -1,9 +1,9 @@
 /**
- * DEMO-ONLY group shells for D-day walkthrough.
+ * Group shell content for D-day walkthrough (`/group/demo-*`).
  *
- * Production must replace these open routes with a signed, expiring Homepage pass
- * issued after Facilitator group-QR scan. Access is NOT by secret URL alone.
- * Do not ship these `/group/demo-*` paths as the real freshie entry.
+ * Access is gated by a signed, expiring Homepage pass (see `src/lib/group-pass.ts`)
+ * issued after wristband/ticket QR redeem — not by secret URL alone.
+ * Demo redeem codes (DEMO-GROUP-*) work only when ENABLE_DEMO_GROUP_CODES=true.
  */
 
 export type DemoGroup = {

@@ -1,9 +1,9 @@
 "use client";
 
 /**
- * DEMO: Counter QR landing — fake group draw only.
- * Production: server assigns the group after counter scan; this page must not
- * be reachable by secret URL alone. Replace with signed/expiring pass flow.
+ * DEMO: Counter QR landing — fake group draw only (website backup).
+ * Does NOT issue a group Homepage pass — scanning a wristband/ticket QR
+ * (POST/GET /api/group-pass/redeem) is what grants /group/* access.
  * No QR scanner on this public demo page.
  */
 
