@@ -195,17 +195,14 @@ Full background: the "Issues Found" section in [permission-matrix.md](permission
 
 ## Done
 
-Add an entry here when you finish work, newest first. Keep the original item above, but mark it with "(Done)" or "(Partly done)" in its heading.
+When you finish something, add a few lines here: your name, the date, and the main points of what you did and what is left. Newest at the top.
 
-Template:
+Example:
 
 ```
-### YYYY-MM-DD: <what was done> (<your name>)
-- Item: <item number and name>
-- Branch: <branch name>, merged into main: yes / no
-- Done: <what now works>
-- Not done / left over: <what is still missing, or "nothing">
-- Notes for the next person: <anything they should know>
+### David, 2026-10-10
+- Moved Day 1 and Day 2 GM pages from bonding-session. Pushed to main.
+- Blind box not done yet.
 ```
 
 (No entries yet.)
