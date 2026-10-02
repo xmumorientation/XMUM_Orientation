@@ -90,7 +90,7 @@ function Countdown() {
       <div className="fh-count" role="timer" aria-label="Time until orientation begins">
         {units.map((u, i) => (
           <div key={u.label} className="fh-cell">
-            <b className="fh-slab" style={i === 0 ? { color: "var(--fh-accent)" } : undefined}>
+            <b className="fh-slab" style={i === 0 ? { color: "var(--fh-blue-light)" } : undefined}>
               {t === null ? "00" : pad(u.val)}
             </b>
             <span className="fh-mono">{u.label}</span>
@@ -459,10 +459,11 @@ export function FreshieHome() {
       style={{ "--fh-accent": theme.accent, "--fh-glow": theme.glow } as React.CSSProperties}
     >
       <div className="fh-bg" aria-hidden>
-        <div className="fh-glow" style={{ width: 380, height: 380, background: "var(--fh-glow)", left: -150, top: 80, opacity: 0.8 }} />
-        <div className="fh-glow" style={{ width: 300, height: 300, background: "#FE06AB", right: -150, bottom: 80, opacity: 0.25 }} />
+        <div className="fh-glow" style={{ width: 380, height: 380, background: "var(--fh-glow)", left: -150, top: 80, opacity: 0.35 }} />
+        <div className="fh-glow" style={{ width: 300, height: 300, background: "#FE06AB", right: -150, bottom: 80, opacity: 0.16 }} />
         <i className="fh-spark" style={{ width: 18, height: 18, background: "#F2FF0B", left: "10%", top: "30%" }} />
         <i className="fh-spark" style={{ width: 24, height: 24, background: "linear-gradient(#FFB1C1, #FE06AB)", right: "9%", top: "58%" }} />
+        <i className="fh-spark" style={{ width: 14, height: 14, background: "#0DFCFD", right: "24%", top: "18%" }} />
       </div>
 
       <header className="fh-head">

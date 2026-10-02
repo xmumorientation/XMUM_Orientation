@@ -2,24 +2,34 @@
    Freshie Home + Freshie tab bar — Vortexa "Night Ticket" style.
    Scoped under .fh / .fh-tabbar so staff pages are untouched.
    --fh-accent / --fh-glow come from groupTheme.ts (per-group colours).
+
+   "Blue Hour" palette (60 / 30 / 10):
+     60% deep-blue night  — --fh-ink*, --fh-line*
+     30% theme blue        — #008CFF (--fh-blue): buttons, "you are here"
+     10% Vortexa colours   — pink / yellow / orange / lilac / cyan, used only
+                             for decoration and categories, never buttons.
+   Orange (group pending) and red (endgame) stay as status colours.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 .fh {
-  --fh-ink: #07060b;
-  --fh-ink-2: #0e0c15;
-  --fh-ink-3: #15121e;
-  --fh-line: #25202f;
-  --fh-line-2: #3a3448;
-  --fh-text: #f3f0fa;
-  --fh-text-2: #cfc9dc;
-  --fh-mute: #8d87a0;
+  --fh-ink: #030b1c;
+  --fh-ink-2: #071a38;
+  --fh-ink-3: #0b2246;
+  --fh-line: #16305a;
+  --fh-line-2: #22457a;
+  --fh-text: #eef5ff;
+  --fh-text-2: #c4d6ee;
+  --fh-mute: #8ba3c4;
+  --fh-blue: #008cff;
+  --fh-blue-light: #5cb8ff;
+  --fh-on-blue: #001629; /* text on a blue fill, 5:1+ contrast */
   --fh-pink: #fe06ab;
   --fh-orange: #fc9e3d;
   --fh-yellow: #f2ff0b;
   --fh-lilac: #e0b4fc;
-  --fh-holo: linear-gradient(100deg, #0dfcfd 0%, #e0b4fc 35%, #fe06ab 65%, #fc9e3d 100%);
-  --fh-accent: #0dfcfd;
-  --fh-glow: #063a65;
+  --fh-holo: linear-gradient(100deg, #008cff 0%, #0dfcfd 28%, #e0b4fc 52%, #fe06ab 76%, #fc9e3d 100%);
+  --fh-accent: #008cff;
+  --fh-glow: #008cff;
   /* Height of the fixed header + stop bar, and of the bottom tab bar. */
   --fh-top: calc(96px + env(safe-area-inset-top, 0px));
   --fh-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
@@ -40,10 +50,16 @@ html.fh-snap { scroll-snap-type: y proximity; }
 
 /* Full-bleed black ground (AppShell paints the root black on Freshie Home;
    this adds the dots + glow). */
-.fh-bg { position: fixed; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; }
+.fh-bg {
+  position: fixed; inset: 0; z-index: -1; pointer-events: none; overflow: hidden;
+  /* Blue-hour sky: #008CFF light from the top, fading into deep blue. */
+  background:
+    radial-gradient(120% 55% at 50% -8%, rgba(0, 140, 255, 0.42), rgba(0, 140, 255, 0.08) 55%, transparent 75%),
+    linear-gradient(#030b1c, #06142d);
+}
 .fh-bg::before {
   content: ""; position: absolute; inset: 0;
-  background-image: radial-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+  background-image: radial-gradient(rgba(140, 190, 255, 0.1) 1px, transparent 1px);
   background-size: 24px 24px;
   -webkit-mask-image: radial-gradient(ellipse at center, #000 30%, transparent 80%);
   mask-image: radial-gradient(ellipse at center, #000 30%, transparent 80%);
@@ -67,7 +83,7 @@ html.fh-snap { scroll-snap-type: y proximity; }
 .fh-head {
   position: fixed; top: 0; left: 0; right: 0; z-index: 40;
   padding-top: env(safe-area-inset-top, 0px);
-  background: linear-gradient(rgba(7, 6, 11, 0.94) 70%, rgba(7, 6, 11, 0));
+  background: linear-gradient(rgba(3, 11, 28, 0.94) 70%, rgba(3, 11, 28, 0));
   -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
 }
 .fh-head-row, .fh-stopbar { max-width: 1000px; margin: 0 auto; padding-inline: 16px; }
@@ -136,7 +152,7 @@ html.fh-snap { scroll-snap-type: y proximity; }
   font-size: clamp(72px, 20vw, 168px); line-height: 1; padding: 0 0.08em 0.12em;
   background: var(--fh-holo); background-size: 200% 100%;
   -webkit-background-clip: text; background-clip: text; color: transparent;
-  filter: drop-shadow(0 8px 36px rgba(13, 252, 253, 0.18));
+  filter: drop-shadow(0 8px 36px rgba(0, 140, 255, 0.35));
 }
 @media (prefers-reduced-motion: no-preference) {
   .fh-mark { animation: fh-shimmer 8s linear infinite; }
@@ -158,6 +174,7 @@ html.fh-snap { scroll-snap-type: y proximity; }
 }
 .fh-cell::before { left: -7px; clip-path: inset(0 0 0 50%); }
 .fh-cell::after { right: -7px; clip-path: inset(0 50% 0 0); }
+.fh-cell:first-child { border-color: var(--fh-blue); background: #08254f; }
 .fh-cell b { display: block; font-size: clamp(28px, 8vw, 40px); line-height: 1; font-variant-numeric: tabular-nums; }
 .fh-cell span { font-size: 9.5px; letter-spacing: 0.2em; color: var(--fh-mute); }
 
@@ -165,8 +182,8 @@ html.fh-snap { scroll-snap-type: y proximity; }
   width: 100%; max-width: 440px; text-align: left; padding: 18px; border-radius: 22px;
   background: var(--fh-ink-2); border: 1px solid var(--fh-line);
 }
-.fh-phasecard-top { display: flex; align-items: center; gap: 8px; font-size: 10.5px; letter-spacing: 0.2em; color: var(--fh-pink); }
-.fh-phasecard-top i { width: 8px; height: 8px; border-radius: 50%; background: var(--fh-pink); box-shadow: 0 0 8px var(--fh-pink); }
+.fh-phasecard-top { display: flex; align-items: center; gap: 8px; font-size: 10.5px; letter-spacing: 0.2em; color: var(--fh-blue-light); }
+.fh-phasecard-top i { width: 8px; height: 8px; border-radius: 50%; background: var(--fh-blue-light); box-shadow: 0 0 8px var(--fh-blue-light); }
 .fh-phasecard > b { display: block; font-size: 26px; margin-top: 6px; }
 .fh-phasecard-time { font-size: clamp(44px, 12vw, 56px); line-height: 1; margin-top: 4px; font-variant-numeric: tabular-nums; }
 .fh-phasecard-bar { height: 6px; border-radius: 6px; background: var(--fh-ink-3); overflow: hidden; margin-top: 12px; }
@@ -184,7 +201,8 @@ html.fh-snap { scroll-snap-type: y proximity; }
   border: 1px solid transparent; transition: transform 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 .fh-btn:active { transform: scale(0.97); }
-.fh-btn-primary { background: var(--fh-yellow); color: #111; }
+.fh-btn-primary { background: var(--fh-blue); color: var(--fh-on-blue); box-shadow: 0 0 24px rgba(0, 140, 255, 0.45); }
+.fh-btn-primary:hover { background: var(--fh-blue-light); }
 .fh-btn-ghost { background: transparent; color: var(--fh-text); border-color: var(--fh-line-2); }
 .fh-btn-ghost:hover { border-color: var(--fh-accent); color: var(--fh-accent); }
 .fh-btn-block { width: 100%; }
@@ -194,11 +212,11 @@ html.fh-snap { scroll-snap-type: y proximity; }
 .fh-pass-side { display: flex; flex-direction: column; gap: 12px; }
 .fh-pass {
   position: relative; display: grid; grid-template-columns: 1fr 96px; border-radius: 22px;
-  background: var(--fh-ink-2); border: 1px solid var(--fh-line);
+  background: linear-gradient(135deg, #0a2350, var(--fh-ink-2) 60%); border: 1px solid var(--fh-line-2);
 }
 .fh-pass::before, .fh-pass::after {
   content: ""; position: absolute; top: 50%; width: 20px; height: 20px; border-radius: 50%;
-  background: var(--fh-ink); border: 1px solid var(--fh-line); transform: translateY(-50%);
+  background: var(--fh-ink); border: 1px solid var(--fh-accent); transform: translateY(-50%);
 }
 .fh-pass::before { left: -11px; clip-path: inset(0 0 0 50%); }
 .fh-pass::after { right: -11px; clip-path: inset(0 50% 0 0); }
@@ -207,7 +225,7 @@ html.fh-snap { scroll-snap-type: y proximity; }
 .fh-pass-num { font-size: clamp(64px, 18vw, 96px); line-height: 1; margin-top: 8px; font-variant-numeric: tabular-nums; }
 .fh-pass-unit { font-size: 13px; color: var(--fh-mute); margin-top: 2px; }
 .fh-pass-stub {
-  border-left: 2px dashed var(--fh-line-2);
+  border-left: 2px dashed var(--fh-accent);
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
   font-size: 10px; letter-spacing: 0.16em; color: var(--fh-mute); text-align: center; padding: 10px 6px;
 }
@@ -242,7 +260,7 @@ html.fh-snap { scroll-snap-type: y proximity; }
 .fh-next small { font-size: 13px; color: var(--fh-mute); }
 .fh-next-arr {
   margin-left: auto; width: 40px; height: 40px; border-radius: 50%; flex: none;
-  background: var(--fh-yellow); color: #111; display: flex; align-items: center; justify-content: center;
+  background: var(--fh-blue); color: var(--fh-on-blue); display: flex; align-items: center; justify-content: center;
 }
 .fh-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .fh-tile {
@@ -267,17 +285,17 @@ html.fh-snap { scroll-snap-type: y proximity; }
 .fh-step small { font-size: 13.5px; color: var(--fh-mute); }
 
 /* ── 04 Scoreboard ───────────────────────────────────────────────────────── */
-.fh-pill { font-size: 10.5px; letter-spacing: 0.14em; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--fh-orange); color: var(--fh-orange); }
+.fh-pill { font-size: 10.5px; letter-spacing: 0.14em; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--fh-blue-light); color: var(--fh-blue-light); }
 .fh-board { list-style: none; margin: 0; padding: 0; display: grid; gap: 7px; }
 .fh-team {
   display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-radius: 14px;
   background: var(--fh-ink-2); border: 1px solid var(--fh-line);
 }
-.fh-team[data-me] { border-color: var(--fh-accent); background: color-mix(in srgb, var(--fh-accent) 9%, var(--fh-ink-2)); }
+.fh-team[data-me] { border-color: var(--fh-accent); background: color-mix(in srgb, var(--fh-accent) 14%, var(--fh-ink-2)); }
 .fh-team-rk { font-size: 11px; color: var(--fh-mute); width: 20px; }
 .fh-team-sw { width: 12px; height: 12px; border-radius: 50%; flex: none; }
 .fh-team b { flex: 1; font-weight: 600; font-size: 15px; display: flex; align-items: center; gap: 8px; }
-.fh-you { font-size: 9.5px; letter-spacing: 0.14em; padding: 3px 7px; border-radius: 999px; background: var(--fh-accent); color: #06121a; font-weight: 700; }
+.fh-you { font-size: 9.5px; letter-spacing: 0.14em; padding: 3px 7px; border-radius: 999px; background: var(--fh-accent); color: var(--fh-on-blue); font-weight: 700; }
 .fh-team-sc { font-size: 18px; color: var(--fh-mute); font-variant-numeric: tabular-nums; }
 
 /* ── 05 Today ────────────────────────────────────────────────────────────── */
@@ -305,24 +323,24 @@ html.fh-snap { scroll-snap-type: y proximity; }
 .fh-tabbar {
   position: fixed; inset: auto 0 0 0; z-index: 45;
   display: flex; align-items: flex-end; padding: 6px 6px env(safe-area-inset-bottom, 0px);
-  background: rgba(10, 9, 15, 0.95); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
-  border-top: 1px solid #25202f;
-  --fh-accent: #0dfcfd;
+  background: rgba(3, 11, 28, 0.95); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+  border-top: 1px solid #16305a;
+  --fh-accent: #008cff;
 }
 .fh-tab {
   flex: 1; min-height: 58px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
-  color: #8d87a0; font-size: 11px; font-weight: 600; text-decoration: none;
+  color: #8ba3c4; font-size: 11px; font-weight: 600; text-decoration: none;
 }
 .fh-tab[aria-current="page"] { color: var(--fh-accent); }
-.fh-tab-scan { color: #f3f0fa; justify-content: flex-end; padding-bottom: 6px; }
+.fh-tab-scan { color: #eef5ff; justify-content: flex-end; padding-bottom: 6px; }
 .fh-tab-scan-btn {
   width: 58px; height: 58px; margin-top: -30px; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center; background: #fff; color: #0a0810;
-  box-shadow: 0 0 0 4px #07060b, 0 0 0 6px rgba(13, 252, 253, 0.55), 0 8px 24px rgba(13, 252, 253, 0.25);
+  display: flex; align-items: center; justify-content: center; background: #008cff; color: #fff;
+  box-shadow: 0 0 0 4px #030b1c, 0 0 0 6px rgba(0, 140, 255, 0.55), 0 8px 24px rgba(0, 140, 255, 0.4);
   transition: transform 0.15s ease;
 }
 .fh-tab-scan:active .fh-tab-scan-btn { transform: scale(0.94); }
-.fh-tab:focus-visible { outline: 2px solid #0dfcfd; outline-offset: -4px; border-radius: 12px; }
+.fh-tab:focus-visible { outline: 2px solid #008cff; outline-offset: -4px; border-radius: 12px; }
 @media (min-width: 1024px) {
   .fh-tabbar { display: none; }
 }

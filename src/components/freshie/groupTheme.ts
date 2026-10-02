@@ -16,7 +16,8 @@ export type GroupTheme = {
   glow: string;
 };
 
-export const DEFAULT_GROUP_THEME: GroupTheme = { accent: "#0DFCFD", glow: "#063A65" };
+// Default = "Blue Hour" theme blue #008CFF (see freshie.css).
+export const DEFAULT_GROUP_THEME: GroupTheme = { accent: "#008CFF", glow: "#008CFF" };
 
 export const GROUP_THEMES: Record<number, GroupTheme> = {
   // 1: { accent: "#0DFCFD", glow: "#063A65" },

@@ -190,7 +190,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div
       className={cn(
         "min-h-dvh w-full lg:grid lg:grid-cols-[16rem_minmax(0,1fr)]",
-        isFreshieHome && "bg-[#07060b]"
+        isFreshieHome && "bg-[#030b1c]"
       )}
       style={
         {
