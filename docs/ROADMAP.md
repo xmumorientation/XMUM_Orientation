@@ -1,7 +1,9 @@
 # Roadmap: Planned Work
 
 This file lists work we have agreed on or are still discussing, but have not built yet.
-Read it before starting a new round of development. When an item ships, delete it from this file. When a decision changes, update the item.
+Read it before starting a new round of development. When a decision changes, update the item.
+
+> **From Ben:** when you finish your work, write down what you completed in the "Done" section at the end of this file, so the next teammate can see it. Do this for partly finished items too: say which parts are done and which are left.
 
 Last updated: 2026-10-03
 
@@ -188,3 +190,22 @@ Full background: the "Issues Found" section in [permission-matrix.md](permission
 1. Get the Figma link and add it to this item.
 2. Compare the current map with the Figma design, and list the gaps.
 3. Build the gaps. Station status should update live, without a page refresh.
+
+---
+
+## Done
+
+Add an entry here when you finish work, newest first. Keep the original item above, but mark it with "(Done)" or "(Partly done)" in its heading.
+
+Template:
+
+```
+### YYYY-MM-DD: <what was done> (<your name>)
+- Item: <item number and name>
+- Branch: <branch name>, merged into main: yes / no
+- Done: <what now works>
+- Not done / left over: <what is still missing, or "nothing">
+- Notes for the next person: <anything they should know>
+```
+
+(No entries yet.)

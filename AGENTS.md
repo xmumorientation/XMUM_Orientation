@@ -10,7 +10,7 @@ Before starting any new development work in this repo, read [docs/ROADMAP.md](do
 - known security gaps that are parked for now.
 
 When the user asks what to work on next, start from that file.
-When you finish an item from it, remove the item from the file, or update it.
+When you finish work from it, record what was done in its "Done" section.
 
 ## Rules
 
