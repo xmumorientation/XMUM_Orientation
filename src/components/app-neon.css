@@ -708,8 +708,14 @@ nav.app-bottom-nav {
   text-overflow: ellipsis;
 }
 
+/* Freshie /dashboard is FreshieHome. Match its night-ticket ground so the
+   shell doesn't show a different black around the snap stops. */
+.app-neon.app-neon--fd-dash {
+  background: #030b1c;
+}
+
 /* ── Freshie dashboard hub (Phase 1) ─────────────────────────────────────── */
-/* Single top chrome lives in AppShell (--fd-dash). Hub = group hero + cards. */
+/* Hub styles below belong to FreshieDashboard, kept for that component. */
 .app-neon .fd-hub {
   display: flex;
   flex-direction: column;

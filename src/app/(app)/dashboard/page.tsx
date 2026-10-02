@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 
-import { FreshieDashboard } from "@/components/freshie/FreshieDashboard";
+import { FreshieHome } from "@/components/freshie/FreshieHome";
 import { NavIcon } from "@/components/NavIcon";
 import { useProfile } from "@/components/ProfileProvider";
 import { useGroup } from "@/components/useGroup";
@@ -299,8 +299,10 @@ function StaffDashboard() {
 
 export default function DashboardPage() {
   const profile = useProfile();
+  // Freshies get the Vortexa night-ticket Home. Every other role keeps
+  // StaffDashboard below — do not route staff through FreshieHome.
   if (profile.role === "freshie") {
-    return <FreshieDashboard />;
+    return <FreshieHome />;
   }
   return <StaffDashboard />;
 }
