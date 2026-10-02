@@ -127,6 +127,17 @@ export function SiteNav({ active, onScan }: { active: StopId; onScan?: () => voi
         <Link href="/login" className="vx-btn vx-btn-primary" onClick={() => setOpen(false)}>
           Join the Game ★
         </Link>
+        {/* TODO(auth): each role will get its own login page later, e.g.
+            /login/freshie and /login/staff (Committee, Faci, GM). Both buttons
+            point at the shared /login page until those exist. */}
+        <div className="vx-menu-logins">
+          <Link href="/login" className="vx-btn vx-btn-ghost" onClick={() => setOpen(false)}>
+            Freshie Login
+          </Link>
+          <Link href="/login" className="vx-btn vx-btn-ghost" onClick={() => setOpen(false)}>
+            Committee and Faci GM Login
+          </Link>
+        </div>
       </div>
     </nav>
     </>

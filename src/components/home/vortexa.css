@@ -24,6 +24,10 @@
   --vx-lilac: #e0b4fc;
 
   --vx-holo: linear-gradient(100deg, #0dfcfd 0%, #e0b4fc 35%, #fe06ab 65%, #fc9e3d 100%);
+  /* Same colours, but ends where it starts so the shimmer tiles without a seam.
+     90deg keeps the tile edges matching; lilac bridges orange back to cyan
+     (a direct orange→cyan blend goes muddy grey). */
+  --vx-holo-loop: linear-gradient(90deg, #0dfcfd 0%, #e0b4fc 22%, #fe06ab 44%, #fc9e3d 66%, #e0b4fc 84%, #0dfcfd 100%);
   --vx-nav-h: 60px;
   --vx-stopbar-h: 0px;
   --vx-tabbar-h: 0px;
@@ -248,6 +252,8 @@ html.vx-snap { scroll-snap-type: y proximity; }
   }
   .vx-menu-item[aria-current="true"] { color: var(--vx-cyan); }
   .vx-menu .vx-btn { width: 100%; margin-top: 16px; }
+  .vx-menu-logins { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+  .vx-menu-logins .vx-btn { margin-top: 0; }
 }
 
 /* ── Desktop progress rail ───────────────────────────────────────────────── */
@@ -307,7 +313,7 @@ html.vx-snap { scroll-snap-type: y proximity; }
 .vx-welcome-mark {
   font-family: var(--font-vx-display), Georgia, serif; font-weight: 400;
   font-size: clamp(64px, 18vw, 200px); line-height: 1; padding: 0 0.08em 0.12em;
-  background-size: 200% 100%;
+  background-image: var(--vx-holo-loop); background-size: 200% 100%;
   filter: drop-shadow(0 8px 36px rgba(13, 252, 253, 0.18));
 }
 @media (prefers-reduced-motion: no-preference) {

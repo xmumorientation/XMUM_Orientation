@@ -28,6 +28,10 @@
   --fh-yellow: #f2ff0b;
   --fh-lilac: #e0b4fc;
   --fh-holo: linear-gradient(100deg, #008cff 0%, #0dfcfd 28%, #e0b4fc 52%, #fe06ab 76%, #fc9e3d 100%);
+  /* Same colours, but ends where it starts so the shimmer tiles without a seam.
+     90deg keeps the tile edges matching; lilac bridges orange back to blue
+     (a direct orange→blue blend goes muddy grey). */
+  --fh-holo-loop: linear-gradient(90deg, #008cff 0%, #0dfcfd 18%, #e0b4fc 36%, #fe06ab 54%, #fc9e3d 72%, #e0b4fc 86%, #008cff 100%);
   --fh-accent: #008cff;
   --fh-glow: #008cff;
   /* Height of the fixed header + stop bar, and of the bottom tab bar. */
@@ -88,10 +92,11 @@ html.fh-snap { scroll-snap-type: y proximity; }
 }
 .fh-head-row, .fh-stopbar { max-width: 1000px; margin: 0 auto; padding-inline: 16px; }
 .fh-head-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; height: 60px; }
-.fh-brand {
-  font-family: var(--font-vx-display), Georgia, serif; font-size: 28px; line-height: 1.1;
-  background: var(--fh-holo); -webkit-background-clip: text; background-clip: text; color: transparent;
-  border: 0; padding: 0 4px 0 0; cursor: pointer;
+/* Same logo image and sizes as the public site's nav (.vx-nav-logo). */
+.fh-brand { display: flex; align-items: center; background: none; border: 0; padding: 0; cursor: pointer; }
+.fh-brand img { height: 38px; width: auto; display: block; }
+@media (max-width: 1023px) {
+  .fh-brand img { height: 32px; }
 }
 .fh-head-r { display: flex; align-items: center; gap: 8px; }
 .fh-chip {
@@ -150,7 +155,7 @@ html.fh-snap { scroll-snap-type: y proximity; }
 .fh-mark {
   font-family: var(--font-vx-display), Georgia, serif; font-weight: 400;
   font-size: clamp(72px, 20vw, 168px); line-height: 1; padding: 0 0.08em 0.12em;
-  background: var(--fh-holo); background-size: 200% 100%;
+  background: var(--fh-holo-loop); background-size: 200% 100%;
   -webkit-background-clip: text; background-clip: text; color: transparent;
   filter: drop-shadow(0 8px 36px rgba(0, 140, 255, 0.35));
 }

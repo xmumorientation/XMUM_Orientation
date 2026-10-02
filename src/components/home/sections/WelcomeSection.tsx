@@ -15,14 +15,14 @@ export function WelcomeSection() {
       <Spark size={34} color="linear-gradient(#FFB1C1, #FE06AB)" style={{ right: "14%", bottom: "22%" }} />
 
       <div className="vx-inner">
-        <div className="vx-eyebrow vx-rise">XMUM 2612 Orientation</div>
+        <div className="vx-eyebrow vx-rise">XMUM 26/12 Orientation</div>
 
         <h1 id="welcome-title" className="vx-rise" style={{ margin: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
           <span className="vx-welcome-pre">WELCOME TO</span>
           <span className="vx-welcome-mark vx-holo">Vortexa</span>
         </h1>
 
-        <p className="vx-welcome-slogan vx-rise-2">One ticket, one ride. Discover the adventure inside.</p>
+        <p className="vx-welcome-slogan vx-rise-2">One Ticket, One Ride. Discover the Adventure Inside.</p>
 
         <p className="vx-lead vx-rise-2">
           Vortexa is the official theme of XMUM Orientation 2026 — a neon carnival where new beginnings take flight. Over two

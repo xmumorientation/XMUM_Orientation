@@ -11,6 +11,7 @@ import {
   ScanLine,
   Trophy,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
@@ -468,8 +469,8 @@ export function FreshieHome() {
 
       <header className="fh-head">
         <div className="fh-head-row">
-          <button type="button" className="fh-brand" onClick={() => goTo("fh-welcome")} aria-label="Back to top">
-            Vortexa
+          <button type="button" className="fh-brand" onClick={() => goTo("fh-welcome")} aria-label="Vortexa — back to top">
+            <Image src="/vortexa-logo-sm.webp" alt="" width={320} height={184} priority style={{ width: "auto" }} />
           </button>
           <div className="fh-head-r">
             <span className="fh-chip fh-mono">Freshie</span>
