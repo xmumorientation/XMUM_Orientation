@@ -299,8 +299,8 @@ function StaffDashboard() {
 
 export default function DashboardPage() {
   const profile = useProfile();
-  // Freshies get the Vortexa night-ticket Home. Every other role keeps
-  // StaffDashboard below — do not route staff through FreshieHome.
+  // Freshies get the day-of hub. Every other role keeps StaffDashboard
+  // below — do not route staff through FreshieHome.
   if (profile.role === "freshie") {
     return <FreshieHome />;
   }

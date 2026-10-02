@@ -154,11 +154,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const group = useInitialGroup();
 
   const isFreshie = profile.role === "freshie";
-  // Single chrome layer on Freshie /dashboard: compact AppShell bar owns menu+logo;
-  // FreshieDashboard no longer renders a second fd-top strip.
-  // FreshieHome (/dashboard) draws its own night-ticket header. The mobile
-  // bar below is skipped on that route only so the two headers don't stack.
-  // Drawer, avatar, and FAQ markup are otherwise unchanged.
+  // Freshie /dashboard is a scroll hub inside this shell. The mobile header
+  // (menu + logo) and the bottom nav stay. The page's status block already
+  // shows the group and the live phase, so this route skips the header's
+  // group chip and phase pill — they would repeat the same facts.
   const isFreshieDashboard =
     isFreshie && (pathname === "/dashboard" || pathname.startsWith("/dashboard/"));
 
@@ -269,7 +268,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </aside>
 
       <div className="app-main-wrap min-w-0">
-      {!isFreshieDashboard && (
       <header
         className={cn(
           "app-header sticky top-0 z-40 border-b pt-[env(safe-area-inset-top)] lg:hidden",
@@ -455,21 +453,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             )}
           </div>
         </div>
-        <PhaseTimer />
+        {!isFreshieDashboard && <PhaseTimer />}
       </header>
-      )}
 
       <main
         className={cn(
           "mx-auto min-h-dvh w-full max-w-6xl px-3 pb-[calc(1.25rem+env(safe-area-inset-bottom))] pt-3 sm:px-5 sm:pb-8 sm:pt-5 lg:px-8 lg:py-6",
-          // FreshieHome stops pad for their own fixed header and for the
-          // bottom nav (--fh-bottom). Drop this shell's vertical padding
-          // on that route so the snap stops line up.
-          isFreshieDashboard && "pt-0 pb-0 sm:pt-0 sm:pb-0 lg:py-0",
-          isFreshie &&
-            pathname !== "/scan" &&
-            !isFreshieDashboard &&
-            "app-main-freshie-clearance"
+          isFreshie && pathname !== "/scan" && "app-main-freshie-clearance"
         )}
       >
         {children}
