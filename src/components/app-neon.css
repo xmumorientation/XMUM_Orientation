@@ -671,17 +671,6 @@ nav.app-bottom-nav {
   width: auto !important;
 }
 
-.app-neon .app-header--freshie .app-menu-btn {
-  background: transparent;
-  border-color: transparent;
-  color: var(--an-text-2);
-  box-shadow: none;
-}
-.app-neon .app-header--freshie .app-menu-btn:hover {
-  background: var(--an-ink-3);
-  border-color: var(--an-line-2);
-  color: var(--an-cyan);
-}
 .app-neon .app-header--fd .app-header-row--fd,
 .app-neon .app-header--fd > div:first-of-type {
   min-height: 48px;
@@ -706,6 +695,136 @@ nav.app-bottom-nav {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* Freshie account button — top-right of the mobile header. */
+.app-neon .fd-account {
+  position: relative;
+  flex-shrink: 0;
+}
+.app-neon .fd-account-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--fd-accent, var(--an-cyan)) 55%, var(--an-line));
+  background:
+    radial-gradient(circle at 32% 28%, color-mix(in srgb, white 22%, transparent), transparent 46%),
+    color-mix(in srgb, var(--fd-accent, var(--an-cyan)) 28%, var(--an-ink-2));
+  color: var(--an-text);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--an-ink) 70%, transparent);
+  -webkit-tap-highlight-color: transparent;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+.app-neon .fd-account-btn:hover,
+.app-neon .fd-account-btn[aria-expanded="true"] {
+  border-color: var(--fd-accent, var(--an-cyan));
+}
+.app-neon .fd-account-btn:active {
+  transform: scale(0.94);
+}
+.app-neon .fd-account-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 70;
+  width: max-content;
+  min-width: 188px;
+  max-width: 240px;
+  padding: 6px;
+  border-radius: 16px;
+  border: 1px solid var(--an-line-2);
+  background: color-mix(in srgb, var(--an-ink-2) 96%, transparent);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(16px);
+}
+.app-neon .fd-account-name {
+  margin: 0;
+  padding: 8px 10px 6px;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--an-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.app-neon .fd-account-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--an-text);
+  font-size: 14px;
+  font-weight: 700;
+  text-align: left;
+  text-decoration: none;
+}
+.app-neon .fd-account-item:hover {
+  background: var(--an-ink-3);
+}
+.app-neon .fd-account-logout {
+  color: #ffd0ea;
+}
+
+.app-neon .fd-profile {
+  max-width: 28rem;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.app-neon .fd-profile h1 {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+.app-neon .fd-profile-card {
+  border-radius: 20px;
+  border: 1px solid var(--an-line);
+  background: var(--an-ink-2);
+  padding: 4px 16px;
+}
+.app-neon .fd-profile-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--an-line);
+  font-size: 14px;
+}
+.app-neon .fd-profile-row:last-child {
+  border-bottom: 0;
+}
+.app-neon .fd-profile-row span {
+  color: var(--an-mute);
+}
+.app-neon .fd-profile-row b {
+  font-weight: 700;
+  text-align: right;
+}
+.app-neon .fd-profile-logout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  border-radius: 14px;
+  border: 1px solid var(--an-line-2);
+  background: var(--an-ink-3);
+  color: var(--an-text);
+  font-size: 14px;
+  font-weight: 700;
 }
 
 /* ── Freshie dashboard hub (Phase 1) ─────────────────────────────────────── */
@@ -934,6 +1053,7 @@ nav.app-bottom-nav {
   .app-neon .app-bottom-scan-btn,
   .app-neon .app-bottom-scan-icon svg,
   .app-neon .app-menu-btn,
+  .app-neon .fd-account-btn,
   .app-neon .fd-pass-qr-btn,
   .app-neon a.fd-card-clean .fd-card-arrow,
   .app-neon-drawer .app-nav-link,

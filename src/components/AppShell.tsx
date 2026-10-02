@@ -1,10 +1,10 @@
 "use client";
 
-import { LogOut, Menu, ScanLine, X } from "lucide-react";
+import { LogOut, Menu, ScanLine, UserRound, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { NavIcon } from "@/components/NavIcon";
 import { NewItemToast } from "@/components/NewItemToast";
@@ -16,7 +16,7 @@ import { Monogram } from "@/components/ui/Monogram";
 import { nexusBody } from "@/components/home/fonts";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { ROLE_LABELS, type UserRole } from "@/lib/types";
-import { cn, hexToRgbChannels } from "@/lib/utils";
+import { cn, hexToRgbChannels, initialsFrom } from "@/lib/utils";
 
 import "./app-neon.css";
 
@@ -143,6 +143,84 @@ function groupAccent(groupId: number | null | undefined): string {
   return GROUP_ACCENTS[(groupId - 1) % GROUP_ACCENTS.length];
 }
 
+/** Mobile account control. Freshies have no photo field, so the button shows initials. */
+function FreshieAccountMenu({
+  name,
+  onSignOut,
+}: {
+  name: string;
+  onSignOut: () => void;
+}) {
+  const pathname = usePathname();
+  const rootRef = useRef<HTMLDivElement>(null);
+  const [open, setOpen] = useState(false);
+  const label = name.trim() || "Freshie";
+
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!open) return;
+    function onPointer(event: MouseEvent) {
+      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
+    }
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("mousedown", onPointer);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onPointer);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  return (
+    <div className="fd-account" ref={rootRef}>
+      <button
+        type="button"
+        className="fd-account-btn"
+        aria-label={`Account, ${label}`}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-controls="freshie-account-menu"
+        onClick={() => setOpen((value) => !value)}
+      >
+        <span aria-hidden>{initialsFrom(label)}</span>
+      </button>
+      {open && (
+        <div
+          id="freshie-account-menu"
+          className="fd-account-menu"
+          role="menu"
+          aria-label="Account"
+        >
+          <p className="fd-account-name">{label}</p>
+          <Link
+            href="/profile"
+            role="menuitem"
+            className="fd-account-item"
+            onClick={() => setOpen(false)}
+          >
+            <UserRound size={16} strokeWidth={1.75} aria-hidden />
+            Profile
+          </Link>
+          <button
+            type="button"
+            role="menuitem"
+            className="fd-account-item fd-account-logout"
+            onClick={onSignOut}
+          >
+            <LogOut size={16} strokeWidth={1.75} aria-hidden />
+            Log out
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function AppShell({ children }: { children: React.ReactNode }) {
   const profile = useProfile();
   const pathname = usePathname();
@@ -154,10 +232,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const group = useInitialGroup();
 
   const isFreshie = profile.role === "freshie";
-  // Freshie /dashboard is a scroll hub inside this shell. The mobile header
-  // (menu + logo) and the bottom nav stay. The page's status block already
-  // shows the group and the live phase, so this route skips the header's
-  // group chip and phase pill — they would repeat the same facts.
+  // Freshie /dashboard is a scroll hub inside this shell. Mobile chrome is
+  // the logo, a tappable account button, and the bottom nav — no menu
+  // drawer. The page's status block already shows the group and the live
+  // phase, so this route skips the header's group chip and phase pill.
   const isFreshieDashboard =
     isFreshie && (pathname === "/dashboard" || pathname.startsWith("/dashboard/"));
 
@@ -214,7 +292,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           "--brand-2": brand.brandSecondary,
           "--brand-1-rgb": hexToRgbChannels(brand.brandPrimary),
           "--brand-2-rgb": hexToRgbChannels(brand.brandSecondary),
-          ...(isFreshieDashboard
+          ...(isFreshie
             ? { "--fd-accent": groupAccent(group?.id ?? profile.group_id) }
             : {}),
         } as React.CSSProperties
@@ -258,6 +336,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <span className="app-role-chip chip">
             {ROLE_LABELS[profile.role]}
           </span>
+          {isFreshie && (
+            <Link
+              href="/profile"
+              className="app-logout flex min-h-[44px] items-center text-sm font-semibold transition"
+            >
+              Profile
+            </Link>
+          )}
           <button
             onClick={signOut}
             className="app-logout flex min-h-[44px] items-center text-sm font-semibold transition"
@@ -282,13 +368,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           )}
         >
           <div className="flex min-w-0 items-center gap-1.5">
+            {!isFreshie && (
             <Dialog open={menuOpen} onOpenChange={setMenuOpen}>
               <DialogTrigger asChild>
                 <button
                   aria-label="Open menu"
                   className="app-menu-btn flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition active:scale-95"
                 >
-                  <Menu size={isFreshie ? 18 : 20} strokeWidth={1.75} />
+                  <Menu size={20} strokeWidth={1.75} />
                 </button>
               </DialogTrigger>
               <DialogContent
@@ -299,37 +386,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 className="app-neon-drawer lg:hidden"
               >
                 <div className="flex h-full flex-col">
-                  {/* Header: Student name/group (no duplicate Vortexa logo!) */}
                   <div className="flex items-center justify-between border-b border-[var(--an-line)] px-3 py-3">
                     <div className="min-w-0">
-                      {isFreshie ? (
-                        <>
-                          <p className="text-sm font-extrabold text-[var(--an-text)] truncate">
-                            {profile.full_name || "Freshie"}
+                      <div className="flex items-center gap-2">
+                        <Monogram name={brand.eventName} size="sm" className="app-monogram" />
+                        <div className="min-w-0">
+                          <p className="app-brand-title truncate text-sm font-bold">
+                            {brand.eventName}
                           </p>
-                          <div className="flex items-center gap-1.5 mt-0.5">
-                            <span
-                              className="inline-block h-2 w-2 rounded-full"
-                              style={{ background: groupAccent(group?.id ?? profile.group_id) }}
-                            />
-                            <span className="text-xs text-[var(--an-mute)] font-medium">
-                              {group ? group.name : "No group"}
-                            </span>
-                          </div>
-                        </>
-                      ) : (
-                        <div className="flex items-center gap-2">
-                          <Monogram name={brand.eventName} size="sm" className="app-monogram" />
-                          <div className="min-w-0">
-                            <p className="app-brand-title truncate text-sm font-bold">
-                              {brand.eventName}
-                            </p>
-                            <p className="app-brand-sub truncate">
-                              {ROLE_LABELS[profile.role]}
-                            </p>
-                          </div>
+                          <p className="app-brand-sub truncate">
+                            {ROLE_LABELS[profile.role]}
+                          </p>
                         </div>
-                      )}
+                      </div>
                     </div>
 
                     <DialogClose asChild>
@@ -342,48 +411,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     </DialogClose>
                   </div>
 
-                  {/* Navigation List: For Freshie, ONLY show features NOT in the bottom bar */}
                   <nav className="mt-2 flex-1 space-y-1 overflow-y-auto px-2 pb-2">
-                    {isFreshie ? (
-                      <div className="space-y-1 pt-1">
-                        <p className="px-2 pt-1 pb-1 text-[10px] font-bold uppercase tracking-wider text-[var(--an-mute)]">
-                          Resources & History
-                        </p>
-
-                        <Link
-                          href="/faq"
-                          onClick={() => setMenuOpen(false)}
-                          className={cn(
-                            "app-nav-link flex min-h-[44px] items-center gap-3 px-3 text-sm font-bold transition",
-                            pathname === "/faq" && "is-active"
-                          )}
-                        >
-                          <span className="app-nav-icon flex h-8 w-8 shrink-0 items-center justify-center rounded-xl transition-colors">
-                            <NavIcon code="FQ" size={17} strokeWidth={1.75} />
-                          </span>
-                          <span>FAQ & Emergency</span>
-                        </Link>
-
-                        <Link
-                          href="/transactions"
-                          onClick={() => setMenuOpen(false)}
-                          className={cn(
-                            "app-nav-link flex min-h-[44px] items-center gap-3 px-3 text-sm font-bold transition",
-                            pathname === "/transactions" && "is-active"
-                          )}
-                        >
-                          <span className="app-nav-icon flex h-8 w-8 shrink-0 items-center justify-center rounded-xl transition-colors">
-                            <NavIcon code="TX" size={17} strokeWidth={1.75} />
-                          </span>
-                          <span>Token History</span>
-                        </Link>
-                      </div>
-                    ) : (
-                      navLinks("drawer")
-                    )}
+                    {navLinks("drawer")}
                   </nav>
 
-                  {/* Footer: Sign out */}
                   <div className="mt-auto border-t border-[var(--an-line)] p-2">
                     <button
                       onClick={signOut}
@@ -396,6 +427,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 </div>
               </DialogContent>
             </Dialog>
+            )}
 
             <Link
               href="/dashboard"
@@ -450,6 +482,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <span className="app-role-chip chip">
                 {ROLE_LABELS[profile.role]}
               </span>
+            )}
+
+            {isFreshie && (
+              <FreshieAccountMenu
+                name={profile.full_name || "Freshie"}
+                onSignOut={signOut}
+              />
             )}
           </div>
         </div>
