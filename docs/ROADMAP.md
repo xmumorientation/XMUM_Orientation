@@ -30,6 +30,7 @@ Item 3 has no owner yet.
 > **From Ben: this is a priority.**
 > `bonding-session` grew out of an older `main`, so a direct merge will clash with the newer work in other branches.
 > David: bring the important features from `bonding-session` into the current code with your own prompts, instead of merging the branch as it is. Use the "What it adds" list below as the checklist, and read the branch's code and docs for the details.
+> When the work is done, push it to `main`.
 
 The `bonding-session` branch (12 commits by `yxyan07-gif`, 2026-10-01, about 90 files and 16 new migrations, `0015` to `0030`) adds most of the Big Game system. It is not merged into `main` yet. It changes some basics that other items in this file depend on, so align with its author before merging it or building on top of it.
 
