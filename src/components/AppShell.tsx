@@ -93,6 +93,7 @@ const NAV: NavItem[] = [
       "admin",
     ],
   },
+  { href: "/faq", label: "FAQ", code: "FQ", roles: ["freshie"] },
   {
     href: "/committee",
     label: "Ops",
@@ -153,9 +154,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const group = useInitialGroup();
 
   const isFreshie = profile.role === "freshie";
-  // Freshie /dashboard is FreshieHome (night-ticket header + snap stops).
-  // Hide this shell's mobile header there so the two bars don't stack.
-  // Desktop sidebar and the bottom nav still wrap the page.
+  // Single chrome layer on Freshie /dashboard: compact AppShell bar owns menu+logo;
+  // FreshieDashboard no longer renders a second fd-top strip.
+  // FreshieHome (/dashboard) draws its own night-ticket header. The mobile
+  // bar below is skipped on that route only so the two headers don't stack.
+  // Drawer, avatar, and FAQ markup are otherwise unchanged.
   const isFreshieDashboard =
     isFreshie && (pathname === "/dashboard" || pathname.startsWith("/dashboard/"));
 
@@ -270,10 +273,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <header
         className={cn(
           "app-header sticky top-0 z-40 border-b pt-[env(safe-area-inset-top)] lg:hidden",
-          isFreshie && "app-header--freshie"
+          isFreshie && "app-header--freshie",
+          isFreshieDashboard && "app-header--fd"
         )}
       >
-        <div className="flex items-center justify-between gap-2 px-2.5 py-1.5 sm:px-4 sm:py-2">
+        <div
+          className={cn(
+            "flex items-center justify-between gap-2 px-2.5 py-1.5 sm:px-4 sm:py-2",
+            isFreshieDashboard && "app-header-row--fd"
+          )}
+        >
           <div className="flex min-w-0 items-center gap-1.5">
             <Dialog open={menuOpen} onOpenChange={setMenuOpen}>
               <DialogTrigger asChild>
@@ -342,6 +351,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                         <p className="px-2 pt-1 pb-1 text-[10px] font-bold uppercase tracking-wider text-[var(--an-mute)]">
                           Resources & History
                         </p>
+
+                        <Link
+                          href="/faq"
+                          onClick={() => setMenuOpen(false)}
+                          className={cn(
+                            "app-nav-link flex min-h-[44px] items-center gap-3 px-3 text-sm font-bold transition",
+                            pathname === "/faq" && "is-active"
+                          )}
+                        >
+                          <span className="app-nav-icon flex h-8 w-8 shrink-0 items-center justify-center rounded-xl transition-colors">
+                            <NavIcon code="FQ" size={17} strokeWidth={1.75} />
+                          </span>
+                          <span>FAQ & Emergency</span>
+                        </Link>
 
                         <Link
                           href="/transactions"
@@ -439,11 +462,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <main
         className={cn(
           "mx-auto min-h-dvh w-full max-w-6xl px-3 pb-[calc(1.25rem+env(safe-area-inset-bottom))] pt-3 sm:px-5 sm:pb-8 sm:pt-5 lg:px-8 lg:py-6",
-          // FreshieHome stops are full-viewport and pad for their own fixed
-          // header. Drop the shell's vertical padding so snap stops line up;
-          // keep the horizontal inset. Bottom nav clearance is --fh-bottom.
-          isFreshieDashboard &&
-            "pt-0 pb-0 sm:pt-0 sm:pb-0 lg:py-0",
+          // FreshieHome stops pad for their own fixed header and for the
+          // bottom nav (--fh-bottom). Drop this shell's vertical padding
+          // on that route so the snap stops line up.
+          isFreshieDashboard && "pt-0 pb-0 sm:pt-0 sm:pb-0 lg:py-0",
           isFreshie &&
             pathname !== "/scan" &&
             !isFreshieDashboard &&
