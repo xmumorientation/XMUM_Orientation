@@ -572,6 +572,13 @@ nav.app-bottom-nav {
 .app-neon .app-main-wrap > header,
 .app-neon .app-main-wrap > main {
   position: relative;
+}
+/* Header sits above page content so the account menu can open over the hub.
+   Main stays under it. The bottom nav uses a higher fixed layer. */
+.app-neon .app-main-wrap > header {
+  z-index: 40;
+}
+.app-neon .app-main-wrap > main {
   z-index: 1;
 }
 
