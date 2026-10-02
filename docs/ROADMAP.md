@@ -20,6 +20,7 @@ Last updated: 2026-10-03
 | David | **Priority:** bring the important `bonding-session` features into the current code | [Read before merging `bonding-session`](#read-before-merging-bonding-session) |
 | David | Merge the design work from the different branches | [4](#4-merge-design-branches-ready) |
 | Jiamin | Freshie and staff login pages | [1](#1-separate-login-pages-per-role-ready) |
+| Jiamin | Faci updates group name and slogan, HOF can see them | [6](#6-faci-updates-group-name-and-slogan-ready) |
 | Zichien | Everything on the map: Figma design, game station status, and so on | [5](#5-map-ready) |
 | Ben | Per-group colour themes on Freshie Home | [2](#2-per-group-colour-themes-on-freshie-home-later) |
 
@@ -190,6 +191,23 @@ Full background: the "Issues Found" section in [permission-matrix.md](permission
 1. Get the Figma link and add it to this item.
 2. Compare the current map with the Figma design, and list the gaps.
 3. Build the gaps. Station status should update live, without a page refresh.
+
+## 6. Faci updates group name and slogan (Ready)
+
+**Owner:** Jiamin
+
+**Goal:** a Faci can update their group's name and slogan, and HOF can see every group's name and slogan.
+
+**Current state:**
+- The `groups` table has a `name` column (unique), but no slogan column yet. See [0001_schema.sql](../supabase/migrations/0001_schema.sql).
+- Today only Admin can update `groups`. A Faci can read only their own group.
+
+**To do:**
+1. Add a `slogan` column to `groups` in a new migration.
+2. Let a Faci update the name and slogan of **their own group only**. Use an RPC that checks the caller is a Faci of that group, rather than opening `groups` for direct updates (the table also holds `token_balance`).
+3. Build a simple form for the Faci to edit the name and slogan.
+4. Show all groups' names and slogans to HOF.
+   - Note: in `bonding-session`, HOF is an `admin` account with `admin_team` set. Check which role model is in use when you build this.
 
 ---
 
