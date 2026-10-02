@@ -49,7 +49,12 @@ This summary comes from the branch's commit messages, its docs (`docs/FOUNDATION
 
 ### Conflicts with this file
 
-1. **Freshies have no login accounts in that branch.** Its docs say Freshies exist only in the registration roster (`freshies` table) and get no Supabase Auth account, and it removes the Freshie test accounts. Items 1 and 2 and Freshie Home all assume that Freshies log in. **The team must decide whether Freshies log in before Jiamin builds the Freshie login page (item 1).**
+1. **Freshies have no login accounts in that branch.** Its docs say Freshies exist only in the registration roster (`freshies` table) and get no Supabase Auth account, and it removes the Freshie test accounts.
+   **Decision (Ben): Freshies do log in.** A Freshie reaches Freshie Home in one of two ways:
+   - scan their QR code, which goes straight to Freshie Home;
+   - log in as a Freshie from the welcome page ("Freshie Login" button, item 1).
+
+   When porting `bonding-session`, keep the Freshie role able to log in. Do not port its "Freshies have no Auth account" model, or the removal of the Freshie test accounts. Features that assume no Freshie login (for example inventory and group lookups) need to work for a logged-in Freshie, too.
 2. **There is no Committee role in that branch.** It keeps four roles: `freshie`, `faci`, `gm`, `admin`. Committee, HOF and HOGM become `admin`, with an optional `admin_team` label. Guardian GM becomes `gm`. `/committee` redirects to `/admin/operations`. If it is merged:
    - rename the "Committee and Faci GM Login" button and the staff login page in item 1;
    - update the roles mentioned in item 5 (map);
