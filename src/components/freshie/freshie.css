@@ -33,9 +33,9 @@
   --fh-accent: #008cff;
   --fh-glow: #008cff;
   /* Height of this page's fixed header + stop bar, and of David's
-     bottom nav (58px track + its own bottom padding). */
+     bottom nav including the raised Scan button that sits above the bar. */
   --fh-top: calc(96px + env(safe-area-inset-top, 0px));
-  --fh-bottom: calc(58px + max(8px, env(safe-area-inset-bottom, 0px) + 2px));
+  --fh-bottom: calc(84px + env(safe-area-inset-bottom, 0px));
 
   position: relative;
   isolation: isolate;
@@ -140,8 +140,13 @@ html.fh-snap { scroll-snap-type: y proximity; }
   min-height: calc(100svh - var(--fh-bottom));
   max-width: 1000px; margin: 0 auto;
   padding-block: calc(var(--fh-top) + 12px) 28px;
-  display: flex; flex-direction: column; justify-content: center; gap: 16px;
+  display: flex; flex-direction: column; justify-content: safe center; gap: 16px;
   scroll-snap-align: start;
+}
+/* Short phones: don't let the welcome title push the actions under the nav. */
+@media (max-height: 740px) {
+  .fh-mark { font-size: clamp(56px, 16vw, 96px); }
+  .fh-stop { justify-content: flex-start; gap: 12px; padding-bottom: 16px; }
 }
 .fh-center { align-items: center; text-align: center; }
 .fh-stop-head { display: flex; flex-direction: column; gap: 4px; }
