@@ -372,9 +372,9 @@ html.vx-snap { scroll-snap-type: y mandatory; }
   .vx-scrollhint-line::after { animation: vx-scroll-line 1.6s ease-in-out infinite; }
 }
 @keyframes vx-scroll-line {
-  0% { transform: translateY(-120%); opacity: 0; }
+  0% { transform: translateY(280%); opacity: 0; }
   25% { opacity: 1; }
-  100% { transform: translateY(280%); opacity: 0; }
+  100% { transform: translateY(-120%); opacity: 0; }
 }
 @media (max-width: 1023px) {
   .vx-welcome .vx-lead { font-size: 15px; }
