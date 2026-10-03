@@ -37,6 +37,7 @@ export async function middleware(request: NextRequest) {
     path.startsWith("/park") ||
     path === "/check-in/draw" ||
     path.startsWith("/check-in/draw/") ||
+    path === "/login/freshie" ||
     path.startsWith("/group-pass") ||
     path.startsWith("/api/group-pass")
   ) {

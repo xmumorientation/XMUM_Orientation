@@ -26,7 +26,7 @@ const NAV_LINKS: { id: StopId; label: string }[] = [
 const HAMBURGER_LINKS = NAV_LINKS;
 
 /**
- * Fixed top bar. On desktop: logo + section links + quiet Staff login.
+ * Fixed top bar. On desktop: logo + section links + Freshie and Committee login.
  * On phones and tablets: logo, hamburger, and a progress bar naming the
  * current stop. Scan is not available on the public Welcome page.
  */
@@ -97,9 +97,14 @@ export function SiteNav({ active }: { active: StopId }) {
               {t.label}
             </button>
           ))}
-          <Link href="/login" className="vx-nav-staff">
-            Staff login
-          </Link>
+          <div className="vx-nav-logins">
+            <Link href="/login/freshie" className="vx-nav-staff">
+              Freshie Login
+            </Link>
+            <Link href="/login" className="vx-nav-staff">
+              Committee Login
+            </Link>
+          </div>
         </div>
 
         <button
@@ -134,9 +139,14 @@ export function SiteNav({ active }: { active: StopId }) {
         <button type="button" className="vx-btn vx-btn-primary" onClick={() => go("check-in")} style={{ marginTop: 16 }}>
           How to check in
         </button>
-        <Link href="/login" className="vx-menu-staff" onClick={() => setOpen(false)}>
-          Staff login
-        </Link>
+        <div className="vx-menu-logins">
+          <Link href="/login/freshie" className="vx-menu-staff" onClick={() => setOpen(false)}>
+            Freshie Login
+          </Link>
+          <Link href="/login" className="vx-menu-staff" onClick={() => setOpen(false)}>
+            Committee Login
+          </Link>
+        </div>
       </div>
     </nav>
     </>

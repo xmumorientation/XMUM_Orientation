@@ -87,6 +87,29 @@ export const DEMO_GROUP_CODES: Record<string, GroupCodeEntry> = {
  */
 export const STATIC_GROUP_CODES: Record<string, GroupCodeEntry> = {};
 
+/**
+ * Group passwords from GROUP_PASSWORDS.
+ * Format: `password:groupId` or `password:groupId:version`, comma-separated.
+ * Each password opens exactly one group (`/group/{groupId}`).
+ * Passwords are matched exactly after trim (case-sensitive).
+ */
+export function groupPasswordsFromEnv(
+  raw: string | undefined = process.env.GROUP_PASSWORDS
+): Record<string, GroupCodeEntry> {
+  if (!raw?.trim()) return {};
+  const out: Record<string, GroupCodeEntry> = {};
+  for (const part of raw.split(",")) {
+    const bits = part.split(":").map((s) => s.trim());
+    const code = bits[0];
+    const groupId = bits[1];
+    if (!code || !groupId) continue;
+    const version = bits[2] ? Number(bits[2]) : 1;
+    if (!Number.isFinite(version) || version < 1) continue;
+    out[code] = { groupId, version: Math.floor(version) };
+  }
+  return out;
+}
+
 export function groupPassSecret(): string {
   const s = process.env.GROUP_PASS_SECRET?.trim();
   if (s && s.length >= 16) return s;
@@ -210,7 +233,8 @@ export async function verifyGroupPassToken(
  * Look up a redeemable group code.
  * 1) Demo table when ENABLE_DEMO_GROUP_CODES is on
  * 2) Static allowlist
- * 3) Signed QR payload: gcode.<body>.<sig> with { k:"gcode", g, v }
+ * 3) GROUP_PASSWORDS env (`password:groupId`)
+ * 4) Signed QR payload: gcode.<body>.<sig> with { k:"gcode", g, v }
  */
 export async function lookupGroupCode(
   code: string
@@ -225,6 +249,9 @@ export async function lookupGroupCode(
 
   const staticHit = STATIC_GROUP_CODES[trimmed];
   if (staticHit) return staticHit;
+
+  const envHit = groupPasswordsFromEnv()[trimmed];
+  if (envHit) return envHit;
 
   // Signed wristband/ticket payload
   if (trimmed.startsWith("gcode.")) {
