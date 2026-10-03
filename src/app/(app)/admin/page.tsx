@@ -93,14 +93,23 @@ export default function AdminControlRoomPage() {
     { key: "day2_map_layer", label: "Day 2 map layer", danger: "Reveals projectors on everyone's map" },
   ];
 
+  const onSwitches = SWITCHES.filter((s) => boolOf(s.key));
+
   return (
     <div className="space-y-4">
       <PageTitle title="Control room" subtitle="Live ops, phases & kill-switches" />
       <ErrorBanner message={error} />
       <SuccessBanner message={notice} />
 
+      {onSwitches.length > 0 && (
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-800">
+          <strong>{onSwitches.length} kill-switch{onSwitches.length > 1 ? "es" : ""} ON:</strong>{" "}
+          {onSwitches.map((s) => s.label).join(" · ")}
+        </div>
+      )}
+
       {ops && (
-        <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-7">
           {[
             ["Tokens in circulation", ops.tokens_in_circulation],
             ["Transactions", ops.transactions_count],
@@ -118,22 +127,22 @@ export default function AdminControlRoomPage() {
         </div>
       )}
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.25fr)_minmax(20rem,0.75fr)]">
-      <section>
-        <h2 className="mb-2 font-semibold">Phase control</h2>
-        <div className="space-y-2">
-          {phases.map((p) => (
-            <Card key={p.id} className="space-y-2 p-3">
-              <div className="flex items-center justify-between">
-                <span className="font-semibold">
-                  {p.name}{" "}
-                  <span className="text-xs text-ink-faint">
-                    ({p.duration_minutes} min)
-                  </span>
-                </span>
+      <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1.4fr)_minmax(20rem,0.6fr)]">
+        <section>
+          <h2 className="mb-2 font-semibold">Phase control</h2>
+          <Card className="divide-y divide-paper-200 p-0">
+            {phases.map((p) => (
+              <div
+                key={p.id}
+                className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3"
+              >
+                <div className="min-w-[10rem] flex-1">
+                  <p className="font-semibold">{p.name}</p>
+                  <p className="text-xs text-ink-faint">{p.duration_minutes} min</p>
+                </div>
                 <span
                   className={cn(
-                    "chip",
+                    "chip w-20 justify-center",
                     p.state === "active"
                       ? "bg-green-100 text-green-800"
                       : p.state === "paused"
@@ -145,77 +154,87 @@ export default function AdminControlRoomPage() {
                 >
                   {p.state}
                 </span>
-              </div>
-              <div className="flex flex-wrap gap-1.5">
-                <button
-                  disabled={busy}
-                  onClick={() => phaseAction(p.key, "start")}
-                  className="btn-secondary min-h-[36px] px-3 text-xs"
-                >
-                  ▶ Start
-                </button>
-                <button
-                  disabled={busy || p.state !== "active"}
-                  onClick={() => phaseAction(p.key, "pause")}
-                  className="btn-secondary min-h-[36px] px-3 text-xs"
-                >
-                  ⏸ Pause
-                </button>
-                <button
-                  disabled={busy || p.state !== "paused"}
-                  onClick={() => phaseAction(p.key, "resume")}
-                  className="btn-secondary min-h-[36px] px-3 text-xs"
-                >
-                  ⏵ Resume
-                </button>
-                <button
-                  disabled={busy || p.state !== "active"}
-                  onClick={() => phaseAction(p.key, "extend", 5)}
-                  className="btn-secondary min-h-[36px] px-3 text-xs"
-                >
-                  +5 min
-                </button>
-                <button
-                  disabled={busy}
-                  onClick={() => phaseAction(p.key, "end")}
-                  className="btn-danger min-h-[36px] px-3 text-xs"
-                >
-                  ■ End
-                </button>
-              </div>
-            </Card>
-          ))}
-        </div>
-      </section>
-
-      <section>
-        <h2 className="mb-2 font-semibold">Kill-switches</h2>
-        <Card className="divide-y divide-paper-200 p-0">
-          {SWITCHES.map((s) => {
-            const on = boolOf(s.key);
-            return (
-              <div key={s.key} className="flex items-center gap-3 px-4 py-3">
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold">{s.label}</p>
-                  <p className="text-xs text-ink-faint">{s.danger}</p>
+                <div className="flex flex-wrap gap-1.5">
+                  <button
+                    disabled={busy}
+                    onClick={() => phaseAction(p.key, "start")}
+                    className="btn-secondary min-h-[36px] px-3 text-xs"
+                  >
+                    ▶ Start
+                  </button>
+                  <button
+                    disabled={busy || p.state !== "active"}
+                    onClick={() => phaseAction(p.key, "pause")}
+                    className="btn-secondary min-h-[36px] px-3 text-xs"
+                  >
+                    ⏸ Pause
+                  </button>
+                  <button
+                    disabled={busy || p.state !== "paused"}
+                    onClick={() => phaseAction(p.key, "resume")}
+                    className="btn-secondary min-h-[36px] px-3 text-xs"
+                  >
+                    ⏵ Resume
+                  </button>
+                  <button
+                    disabled={busy || p.state !== "active"}
+                    onClick={() => phaseAction(p.key, "extend", 5)}
+                    className="btn-secondary min-h-[36px] px-3 text-xs"
+                  >
+                    +5 min
+                  </button>
+                  <button
+                    disabled={busy}
+                    onClick={() => phaseAction(p.key, "end")}
+                    className="btn-danger min-h-[36px] px-3 text-xs"
+                  >
+                    ■ End
+                  </button>
                 </div>
-                <button
-                  disabled={busy}
-                  onClick={() => toggleConfig(s.key, on)}
-                  className={cn(
-                    "btn min-w-[64px] text-sm",
-                    on ? "bg-red-600 text-white" : "border border-paper-300 bg-white"
-                  )}
-                >
-                  {on ? "ON" : "off"}
-                </button>
               </div>
-            );
-          })}
-        </Card>
-      </section>
-      </div>
+            ))}
+            {phases.length === 0 && (
+              <p className="px-4 py-6 text-center text-sm text-ink-faint">No phases yet.</p>
+            )}
+          </Card>
+        </section>
 
+        <section>
+          <h2 className="mb-2 font-semibold">Kill-switches</h2>
+          <Card className="divide-y divide-paper-200 p-0">
+            {SWITCHES.map((s) => {
+              const on = boolOf(s.key);
+              return (
+                <div key={s.key} className="flex items-center gap-3 px-4 py-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold">{s.label}</p>
+                    <p className="text-xs text-ink-faint">{s.danger}</p>
+                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={on}
+                    aria-label={s.label}
+                    disabled={busy}
+                    onClick={() => toggleConfig(s.key, on)}
+                    className={cn(
+                      "relative h-7 w-12 shrink-0 rounded-full transition disabled:opacity-60",
+                      on ? "bg-red-600" : "bg-paper-300"
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        "absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-all",
+                        on ? "left-6" : "left-1"
+                      )}
+                    />
+                  </button>
+                </div>
+              );
+            })}
+          </Card>
+        </section>
+      </div>
     </div>
   );
 }

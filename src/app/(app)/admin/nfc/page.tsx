@@ -73,42 +73,6 @@ export default function AdminNfcPage() {
       />
       <ErrorBanner message={error} />
 
-      <Card className="space-y-3">
-        <div className="grid grid-cols-3 gap-2">
-          {PROJECTOR_LOCATIONS.map((loc) => (
-            <button
-              key={loc}
-              onClick={() => setLocation(loc)}
-              className={cn(
-                "btn text-sm",
-                location === loc
-                  ? "bg-brand-2 text-white"
-                  : "border border-paper-300 bg-white"
-              )}
-            >
-              {PROJECTOR_LABELS[loc]}
-            </button>
-          ))}
-        </div>
-        <div className="flex items-center gap-2">
-          <label className="label mb-0 flex-1" htmlFor="count">
-            How many stickers (incl. spares)?
-          </label>
-          <input
-            id="count"
-            type="number"
-            min="1"
-            max="20"
-            className="input w-20"
-            value={count}
-            onChange={(e) => setCount(Number(e.target.value))}
-          />
-        </div>
-        <button disabled={busy} onClick={mint} className="btn-primary w-full">
-          Generate {count} token{count > 1 ? "s" : ""}
-        </button>
-      </Card>
-
       {minted.length > 0 && (
         <Card className="space-y-2 border-2 border-amber-400">
           <p className="flex items-start gap-1.5 text-sm font-semibold text-red-600">
@@ -117,45 +81,99 @@ export default function AdminNfcPage() {
             (NFC Tools → Write → URL record), then keep this list somewhere
             safe offline.
           </p>
-          {minted.map((t) => (
-            <div key={t.label} className="rounded-lg bg-paper-100 p-2">
-              <p className="text-xs font-bold">{t.label}</p>
-              <p className="break-all font-mono text-[10px] text-ink-soft">
-                {t.url}
-              </p>
-            </div>
-          ))}
+          <div className="grid gap-2 lg:grid-cols-2">
+            {minted.map((t) => (
+              <div key={t.label} className="rounded-lg bg-paper-100 p-2">
+                <p className="text-xs font-bold">{t.label}</p>
+                <p className="break-all font-mono text-[10px] text-ink-soft">
+                  {t.url}
+                </p>
+              </div>
+            ))}
+          </div>
         </Card>
       )}
 
-      <Card className="p-0">
-        <p className="border-b border-paper-200 px-4 py-2 text-sm font-semibold">
-          Issued tokens ({existing.length})
-        </p>
-        <div className="max-h-[320px] divide-y divide-paper-200 overflow-y-auto">
-          {existing.map((t) => (
-            <div
-              key={t.id}
-              className="flex items-center justify-between px-4 py-2 text-sm"
-            >
-              <span>
-                {t.label}{" "}
-                <span className="text-xs text-ink-faint">({t.location})</span>
-              </span>
-              <span
+      <div className="grid items-start gap-4 lg:grid-cols-[22rem_minmax(0,1fr)]">
+        <Card className="space-y-3">
+          <h2 className="font-semibold">Generate tokens</h2>
+          <div className="grid grid-cols-3 gap-2">
+            {PROJECTOR_LOCATIONS.map((loc) => (
+              <button
+                key={loc}
+                onClick={() => setLocation(loc)}
                 className={cn(
-                  "chip",
-                  t.used_at
-                    ? "bg-red-100 text-red-700"
-                    : "bg-green-100 text-green-700"
+                  "btn text-sm",
+                  location === loc
+                    ? "bg-brand-2 text-white"
+                    : "border border-paper-300 bg-white"
                 )}
               >
-                {t.used_at ? `used by G${t.used_by_group}` : "unused"}
-              </span>
-            </div>
-          ))}
-        </div>
-      </Card>
+                {PROJECTOR_LABELS[loc]}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="label mb-0 flex-1" htmlFor="count">
+              How many stickers (incl. spares)?
+            </label>
+            <input
+              id="count"
+              type="number"
+              min="1"
+              max="20"
+              className="input w-20"
+              value={count}
+              onChange={(e) => setCount(Number(e.target.value))}
+            />
+          </div>
+          <button disabled={busy} onClick={mint} className="btn-primary w-full">
+            Generate {count} token{count > 1 ? "s" : ""}
+          </button>
+        </Card>
+
+        <Card className="overflow-x-auto p-0">
+          <p className="border-b border-paper-200 px-4 py-3 text-sm font-semibold">
+            Issued tokens ({existing.length})
+          </p>
+          <table className="w-full min-w-[420px] text-left text-sm">
+            <thead>
+              <tr className="border-b border-paper-200 text-xs font-bold uppercase tracking-wide text-ink-faint">
+                <th className="px-4 py-2.5">Label</th>
+                <th className="w-28 px-4 py-2.5">Location</th>
+                <th className="w-40 px-4 py-2.5">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-paper-200">
+              {existing.map((t) => (
+                <tr key={t.id}>
+                  <td className="px-4 py-2 font-medium">{t.label}</td>
+                  <td className="px-4 py-2 text-ink-soft">{t.location}</td>
+                  <td className="px-4 py-2">
+                    <span
+                      className={cn(
+                        "chip",
+                        t.used_at
+                          ? "bg-red-100 text-red-700"
+                          : "bg-green-100 text-green-700"
+                      )}
+                    >
+                      {t.used_at ? `used by G${t.used_by_group}` : "unused"}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+              {existing.length === 0 && (
+                <tr>
+                  <td colSpan={3} className="px-4 py-8 text-center text-ink-faint">
+                    No tokens issued yet.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </Card>
+      </div>
     </div>
   );
 }
