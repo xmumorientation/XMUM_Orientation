@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 
 // FR-2.1: sessions are named time blocks created by Admin.
 // FR-2.4: closing a session locks its records.
-export default function AdminSessionsPage() {
+export default function SessionsPage() {
   const supabase = useMemo(() => supabaseBrowser(), []);
   const [sessions, setSessions] = useState<AttendanceSession[]>([]);
   const [name, setName] = useState("");

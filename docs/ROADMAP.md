@@ -216,6 +216,8 @@ Full background: the "Issues Found" section in [permission-matrix.md](permission
 When you finish something, add a few lines here: your name, the date, and the main points of what you did and what is left. Newest at the top.
 
 ### Jiamin, 2026-10-04
+- Moved Admin "Sessions" and "Headcount" into Freshie control (`/freshie-control/sessions`, `/freshie-control/headcount`).
+- Removed Interview Booking (`/booking`) and Practice Reservations (`/reservations`) for every role: pages, nav, dashboard cards. Migration `0039` drops any leftover booking tables, functions and types.
 - Facilitators set a group name and slogan on the home checklist. "Group 1" stays the number. HOF still cannot see the list.
 
 Example:

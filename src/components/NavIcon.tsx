@@ -1,9 +1,7 @@
 import {
   Activity,
   Calendar,
-  CalendarCheck,
   ClipboardCheck,
-  Clock,
   Coins,
   Gamepad2,
   HelpCircle,
@@ -36,8 +34,6 @@ export type NavIconCode =
   | "AD"
   | "PL"
   | "FQ"
-  | "BK"
-  | "RS"
   | "RC"
   | "SC"
   | "CD";
@@ -83,10 +79,6 @@ export function NavIcon({
       return <Calendar {...iconProps} />;
     case "FQ":
       return <HelpCircle {...iconProps} />;
-    case "BK":
-      return <CalendarCheck {...iconProps} />;
-    case "RS":
-      return <Clock {...iconProps} />;
     case "RC":
       return <UserCheck {...iconProps} />;
     case "SC":

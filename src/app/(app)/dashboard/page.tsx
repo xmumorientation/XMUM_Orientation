@@ -174,28 +174,9 @@ export default function DashboardPage() {
           />
         )}
 
-        {(role === "hof" || role === "hogm" || role === "gm" || role === "committee" || role === "admin") && (
-          <ActionCard
-            href="/booking"
-            code="BK"
-            title="Interview Booking"
-            desc="Degree Week 1 — HOF & HOGM interview selection slots"
-            tone="primary"
-          />
-        )}
-
-        {(role === "gm" || role === "committee" || role === "admin") && (
-          <ActionCard
-            href="/reservations"
-            code="RS"
-            title="Practice Reservations"
-            desc="Degree Week 3 — Rehearsal hall group bookings"
-          />
-        )}
-
         {role === "admin" && (
           <ActionCard
-            href="/register-counter"
+            href="/freshie-control"
             code="RC"
             title="Freshie control"
             desc="Set the number of groups and each group's color"
