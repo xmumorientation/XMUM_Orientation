@@ -215,6 +215,10 @@ Full background: the "Issues Found" section in [permission-matrix.md](permission
 
 When you finish something, add a few lines here: your name, the date, and the main points of what you did and what is left. Newest at the top.
 
+### XMUM, 2026-10-03
+- Freshie Home (`/dashboard`) now opens with one heading: "Welcome to Vortexa" and the signed-in group's name in that group's colour (`--fh-accent`).
+- The countdown, buttons, and the other stops stay as they were. The public Welcome page was not changed.
+
 Example:
 
 ```
