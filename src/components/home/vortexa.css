@@ -181,8 +181,6 @@ html.vx-snap { scroll-snap-type: none; }
   transition: color 0.15s;
 }
 .vx-nav-staff:hover { color: var(--vx-text-2); }
-.vx-nav-logins { display: flex; align-items: center; margin-left: 4px; }
-.vx-nav-logins .vx-nav-staff { margin-left: 0; white-space: nowrap; }
 .vx-nav .vx-btn { min-height: 40px; padding: 0 20px; font-size: 14px; }
 .vx-nav .vx-nav-scan { padding: 0 16px; margin-right: -8px; }
 .vx-burger {
@@ -218,7 +216,7 @@ html.vx-snap { scroll-snap-type: none; }
   }
   .vx-nav-row { padding: 0 12px 0 16px; }
   .vx-nav-logo img { height: 32px; }
-  .vx-nav-links, .vx-nav-cta, .vx-nav-scan, .vx-nav-staff, .vx-nav-logins { display: none; }
+  .vx-nav-links, .vx-nav-cta, .vx-nav-scan, .vx-nav-staff { display: none; }
   .vx-burger { display: inline-flex; }
   .vx-stopbar {
     display: flex; align-items: center; gap: 10px; height: var(--vx-stopbar-h); padding: 0 16px 8px;
@@ -264,10 +262,6 @@ html.vx-snap { scroll-snap-type: none; }
     color: var(--vx-mute); text-decoration: none; letter-spacing: 0.04em;
   }
   .vx-menu-staff:hover { color: var(--vx-text-2); }
-  .vx-menu-logins { display: flex; flex-direction: column; margin-top: 4px; }
-  .vx-menu-logins .vx-menu-staff {
-    margin-top: 0; min-height: 44px; display: flex; align-items: center; justify-content: center;
-  }
 }
 
 /* ── Desktop progress rail ───────────────────────────────────────────────── */
