@@ -31,6 +31,8 @@ export interface Group {
   id: number;
   name: string;
   token_balance: number;
+  /** Freshie accent. Null until migration 0031 is applied. */
+  color?: string | null;
 }
 
 export type RiskTier = "low" | "medium" | "high";

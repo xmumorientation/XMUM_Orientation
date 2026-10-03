@@ -1,9 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { Glow, Spark } from "../decor";
 
-export function JoinSection() {
+export function JoinSection({ onJoin }: { onJoin: () => void }) {
   return (
     <section id="join" className="vx-sec vx-join" aria-labelledby="join-title">
       <div className="vx-dots" />
@@ -18,9 +17,9 @@ export function JoinSection() {
             <div className="vx-eyebrow">Admit one · Freshie</div>
             <h2 id="join-title" className="vx-pass-title vx-holo">Your ride starts here</h2>
             <p>One ticket, one ride. Sign in to see your team, your game stations and the live score.</p>
-            <Link href="/login" className="vx-btn vx-btn-primary">
+            <button type="button" className="vx-btn vx-btn-primary" onClick={onJoin}>
               Join the Game ★
-            </Link>
+            </button>
           </div>
           <div className="vx-pass-stub vx-mono">
             <span>GATE OPENS</span>

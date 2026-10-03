@@ -25,7 +25,7 @@ import type { Group } from "@/lib/types";
 import { formatCountdown } from "@/lib/utils";
 
 import "./freshie.css";
-import { GROUP_COUNT, groupSwatch, groupTheme } from "./groupTheme";
+import { GROUP_COUNT, groupSwatch, themeFromColor } from "./groupTheme";
 
 // Freshie Home (/dashboard for the Freshie role only) — the logged-in
 // version of the public welcome page, in the Vortexa "Night Ticket" style.
@@ -41,7 +41,7 @@ import { GROUP_COUNT, groupSwatch, groupTheme } from "./groupTheme";
 //
 // Data: stops 01–02 use live data (event date, PhaseTimerProvider, useGroup).
 // Stops 03–05 show placeholder content for now — see the TODO(backend) notes.
-// Per-group colours: --fh-accent / --fh-glow come from groupTheme.ts.
+// Per-group colour: --fh-accent / --fh-glow / --fh-blue come from groups.color.
 
 const STOPS = [
   { id: "fh-welcome", label: "Welcome" },
@@ -394,10 +394,9 @@ function AccountMenu({ name, groupName }: { name: string; groupName: string | nu
     };
   }, [open]);
 
-  // Same sign-out as AppShell.
   async function signOut() {
     await supabaseBrowser().auth.signOut();
-    window.location.href = "/login";
+    window.location.href = "/";
   }
 
   return (
@@ -427,10 +426,8 @@ function AccountMenu({ name, groupName }: { name: string; groupName: string | nu
 
 export function FreshieHome() {
   const profile = useProfile();
-  // Call useGroup() once per page: each call opens its own realtime channel
-  // (group-<id>), and Supabase rejects a second subscription to that name.
   const { group, loading } = useGroup();
-  const theme = groupTheme(profile.group_id);
+  const theme = themeFromColor(group?.color);
   const [active, setActive] = useState(0);
 
   // Section-by-section snapping, this page only (same idea as the homepage).
@@ -457,7 +454,15 @@ export function FreshieHome() {
   return (
     <div
       className={`fh ${vxDisplay.variable} ${vxSlab.variable}`}
-      style={{ "--fh-accent": theme.accent, "--fh-glow": theme.glow } as React.CSSProperties}
+      style={
+        {
+          "--fh-accent": theme.accent,
+          "--fh-glow": theme.glow,
+          "--fh-blue": theme.accent,
+          "--fh-blue-light": theme.accentLight,
+          "--fh-on-blue": theme.onAccent,
+        } as React.CSSProperties
+      }
     >
       <div className="fh-bg" aria-hidden>
         <div className="fh-glow" style={{ width: 380, height: 380, background: "var(--fh-glow)", left: -150, top: 80, opacity: 0.35 }} />

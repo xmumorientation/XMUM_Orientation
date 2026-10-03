@@ -41,8 +41,10 @@ export function useGroup() {
     }
     load();
 
+    // AppShell and the page can both call useGroup. Supabase rejects a second
+    // subscription on the same channel name, so each caller gets its own.
     const channel = supabase
-      .channel(`group-${profile.group_id}`)
+      .channel(`group-${profile.group_id}-${crypto.randomUUID()}`)
       .on(
         "postgres_changes",
         {
