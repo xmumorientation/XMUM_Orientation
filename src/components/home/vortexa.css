@@ -264,6 +264,8 @@ html.vx-snap { scroll-snap-type: none; }
   }
   .vx-menu-item[aria-current="true"] { color: var(--vx-cyan); }
   .vx-menu .vx-btn { width: 100%; margin-top: 16px; }
+  .vx-menu-logins { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+  .vx-menu-logins .vx-btn { margin-top: 0; }
   .vx-menu-staff {
     display: block; width: 100%; margin-top: 12px; padding: 10px 0;
     text-align: center; font: 500 13px/1.4 var(--font-nexus-body), Outfit, sans-serif;

@@ -28,7 +28,8 @@ const HAMBURGER_LINKS = NAV_LINKS;
 /**
  * Fixed top bar. On desktop: logo + section links + quiet Staff login.
  * On phones and tablets: logo, hamburger, and a progress bar naming the
- * current stop. Scan is not available on the public Welcome page.
+ * current stop. The menu login row is Freshie Login and Committee and
+ * Faci GM Login. Scan is not available on the public Welcome page.
  */
 export function SiteNav({ active }: { active: StopId }) {
   const [open, setOpen] = useState(false);
@@ -134,9 +135,17 @@ export function SiteNav({ active }: { active: StopId }) {
         <button type="button" className="vx-btn vx-btn-primary" onClick={() => go("check-in")} style={{ marginTop: 16 }}>
           How to check in
         </button>
-        <Link href="/login" className="vx-menu-staff" onClick={() => setOpen(false)}>
-          Staff login
-        </Link>
+        {/* TODO(auth): each role will get its own login page later, e.g.
+            /login/freshie and /login/staff (Committee, Faci, GM). Both buttons
+            point at the shared /login page until those exist. */}
+        <div className="vx-menu-logins">
+          <Link href="/login" className="vx-btn vx-btn-ghost" onClick={() => setOpen(false)}>
+            Freshie Login
+          </Link>
+          <Link href="/login" className="vx-btn vx-btn-ghost" onClick={() => setOpen(false)}>
+            Committee and Faci GM Login
+          </Link>
+        </div>
       </div>
     </nav>
     </>
