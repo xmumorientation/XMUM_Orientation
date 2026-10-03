@@ -82,7 +82,7 @@ export function SiteNav({ active }: { active: StopId }) {
 
       <nav className="vx-nav" data-open={open} aria-label="Welcome page sections">
       <div className="vx-nav-row">
-        <button type="button" className="vx-nav-logo" onClick={() => go("welcome")} aria-label="Vortexa — back to top">
+        <button type="button" className="vx-nav-logo" onClick={() => go("welcome")} aria-label="Vortexa, back to top">
           <Image src="/vortexa-logo-sm.webp" alt="" width={320} height={184} priority style={{ width: "auto" }} />
         </button>
 
