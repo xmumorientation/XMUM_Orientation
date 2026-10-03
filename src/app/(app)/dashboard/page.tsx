@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 
+import { FreshieHome } from "@/components/freshie/FreshieHome";
 import { NavIcon } from "@/components/NavIcon";
 import { useProfile } from "@/components/ProfileProvider";
 import { useGroup } from "@/components/useGroup";
@@ -133,6 +134,9 @@ export default function DashboardPage() {
   const role = profile.role;
   const main = primaryAction(role);
 
+  // Freshies get the Vortexa-styled Home; every other role keeps this page.
+  if (role === "freshie") return <FreshieHome />;
+
   return (
     <div className="space-y-4">
       <PageTitle
@@ -163,10 +167,10 @@ export default function DashboardPage() {
         </div>
       </Link>
 
-      {(role === "freshie" || role === "faci") && <TokenBalanceCard />}
+      {role === "faci" && <TokenBalanceCard />}
 
       <div className="grid gap-3 sm:grid-cols-2">
-        {(role === "freshie" || role === "faci") && (
+        {role === "faci" && (
           <>
             <ActionCard
               href="/inventory"

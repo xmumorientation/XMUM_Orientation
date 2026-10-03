@@ -11,6 +11,9 @@ without code changes — 2026 is "Vortexa".
 **Stack:** Next.js (App Router) + Tailwind CSS + Supabase (Postgres, Auth,
 Realtime) · deployed on Vercel.
 
+> **Before you start developing:** read [`docs/ROADMAP.md`](docs/ROADMAP.md).
+> It lists planned work, and known security gaps that are parked for now.
+
 📄 See [`docs/SETUP.md`](docs/SETUP.md) for the full setup guide
 (Supabase migrations, env vars, first admin, NFC stickers).
 

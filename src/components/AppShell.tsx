@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import { FreshieTabBar } from "@/components/freshie/FreshieTabBar";
 import { NavIcon } from "@/components/NavIcon";
 import { NewItemToast } from "@/components/NewItemToast";
 import { PhaseTimer } from "@/components/PhaseTimer";
@@ -41,6 +42,8 @@ const NAV: NavItem[] = [
       "admin",
     ],
   },
+  // Web QR scanner (blind boxes). Mobile also gets a floating button below.
+  { href: "/scan", label: "Scan", code: "SC", roles: ["freshie"] },
   {
     href: "/map",
     label: "Map",
@@ -131,6 +134,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [menuOpen, setMenuOpen] = useState(false);
 
   const items = NAV.filter((n) => n.roles.includes(profile.role));
+  // Freshie-only shell changes (phones/tablets); every other role is untouched:
+  //   - no ☰ drawer; a bottom tab bar (with raised Scan) replaces it,
+  //     hidden on the full-screen /scan page;
+  //   - on Home (/dashboard) the light mobile header is hidden and the page
+  //     is painted black — FreshieHome renders its own dark header.
+  const isFreshie = profile.role === "freshie";
+  const isFreshieHome = isFreshie && pathname === "/dashboard";
+  const showFreshieTabBar = isFreshie && pathname !== "/scan";
 
   // Close the drawer on route change so it never lingers over a new page.
   // Radix Dialog owns focus-trap/Escape/backdrop-dismiss/focus-return; route
@@ -177,7 +188,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div
-      className="min-h-dvh w-full lg:grid lg:grid-cols-[16rem_minmax(0,1fr)]"
+      className={cn(
+        "min-h-dvh w-full lg:grid lg:grid-cols-[16rem_minmax(0,1fr)]",
+        isFreshieHome && "bg-[#030b1c]"
+      )}
       style={
         {
           "--brand-1": brand.brandPrimary,
@@ -220,9 +234,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </aside>
 
       <div className="min-w-0">
+      {!isFreshieHome && (
       <header className="sticky top-0 z-40 border-b border-paper-200 bg-paper-50/95 pt-[env(safe-area-inset-top)] shadow-[0_1px_0_rgba(28,26,23,0.03)] backdrop-blur lg:hidden">
         <div className="flex items-center justify-between gap-3 px-3 py-2.5 sm:px-5 sm:py-3">
           <div className="flex min-w-0 items-center gap-2.5">
+            {!isFreshie && (
             <Dialog open={menuOpen} onOpenChange={setMenuOpen}>
               <DialogTrigger asChild>
                 <button
@@ -277,6 +293,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 </div>
               </DialogContent>
             </Dialog>
+            )}
 
             <Link href="/dashboard" className="flex min-w-0 items-center gap-2">
               <Monogram name={brand.eventName} size="sm" />
@@ -299,10 +316,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
         <PhaseTimer />
       </header>
+      )}
 
-      <main className="mx-auto min-h-dvh w-full max-w-6xl px-3 pb-[calc(1.25rem+env(safe-area-inset-bottom))] pt-3 sm:px-5 sm:pb-8 sm:pt-5 lg:px-8 lg:py-6">
+      <main
+        className={cn(
+          "mx-auto min-h-dvh w-full max-w-6xl px-3 pb-[calc(1.25rem+env(safe-area-inset-bottom))] pt-3 sm:px-5 sm:pb-8 sm:pt-5 lg:px-8 lg:py-6",
+          showFreshieTabBar &&
+            "pb-[calc(6.5rem+env(safe-area-inset-bottom))] sm:pb-[calc(6.5rem+env(safe-area-inset-bottom))]"
+        )}
+      >
         {children}
       </main>
+
+      {showFreshieTabBar && <FreshieTabBar />}
 
       <NewItemToast />
       </div>

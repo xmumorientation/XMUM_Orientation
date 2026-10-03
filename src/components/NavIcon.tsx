@@ -13,6 +13,7 @@ import {
   Monitor,
   Navigation,
   Package,
+  ScanLine,
   ShieldCheck,
   Sliders,
   UserCheck,
@@ -36,7 +37,8 @@ export type NavIconCode =
   | "FQ"
   | "BK"
   | "RS"
-  | "RC";
+  | "RC"
+  | "SC";
 
 interface NavIconProps extends Omit<LucideProps, "ref"> {
   code: NavIconCode | string;
@@ -85,6 +87,8 @@ export function NavIcon({
       return <Clock {...iconProps} />;
     case "RC":
       return <UserCheck {...iconProps} />;
+    case "SC":
+      return <ScanLine {...iconProps} />;
     default:
       return <Home {...iconProps} />;
   }
