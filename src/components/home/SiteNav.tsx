@@ -26,10 +26,10 @@ const NAV_LINKS: { id: StopId; label: string }[] = [
 const HAMBURGER_LINKS = NAV_LINKS;
 
 /**
- * Fixed top bar. On desktop: logo + section links + quiet Staff login.
- * On phones and tablets: logo, hamburger, and a progress bar naming the
- * current stop. The menu login row is Freshie Login and Committee and
- * Faci GM Login. Scan is not available on the public Welcome page.
+ * Fixed top bar. On desktop: logo, section links, and the two login
+ * buttons. On phones and tablets: logo, hamburger, and a progress bar
+ * naming the current stop. The menu keeps the same two login buttons.
+ * Scan is not available on the public Welcome page.
  */
 export function SiteNav({ active }: { active: StopId }) {
   const [open, setOpen] = useState(false);
@@ -98,8 +98,14 @@ export function SiteNav({ active }: { active: StopId }) {
               {t.label}
             </button>
           ))}
-          <Link href="/login" className="vx-nav-staff">
-            Staff login
+        </div>
+
+        <div className="vx-nav-logins">
+          <Link href="/login" className="vx-btn vx-btn-ghost">
+            Freshie Login
+          </Link>
+          <Link href="/login" className="vx-btn vx-btn-ghost">
+            Committee and Faci GM Login
           </Link>
         </div>
 
