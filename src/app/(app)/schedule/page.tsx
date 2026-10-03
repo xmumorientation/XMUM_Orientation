@@ -3,13 +3,21 @@
 import { MapPin, Pencil, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { FreshieSchedule } from "@/components/freshie/FreshieSchedule";
 import { useProfile } from "@/components/ProfileProvider";
 import { Card, EmptyState, ErrorBanner, PageTitle, Spinner, SuccessBanner } from "@/components/ui";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import type { ScheduleItem } from "@/lib/types";
 
-// Event rundown. Freshies see where to be. Admins edit the same list here.
+// Event rundown. Freshies and facilitators share the night schedule.
+// Admins edit the same list here.
 export default function SchedulePage() {
+  const profile = useProfile();
+  if (profile.role === "freshie" || profile.role === "faci") return <FreshieSchedule />;
+  return <StaffSchedule />;
+}
+
+function StaffSchedule() {
   const profile = useProfile();
   const isAdmin = profile.role === "admin";
   const supabase = useMemo(() => supabaseBrowser(), []);

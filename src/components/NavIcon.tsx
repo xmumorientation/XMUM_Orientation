@@ -8,6 +8,7 @@ import {
   Gamepad2,
   HelpCircle,
   History,
+  KeyRound,
   Home,
   Map,
   Monitor,
@@ -38,7 +39,8 @@ export type NavIconCode =
   | "BK"
   | "RS"
   | "RC"
-  | "SC";
+  | "SC"
+  | "CD";
 
 interface NavIconProps extends Omit<LucideProps, "ref"> {
   code: NavIconCode | string;
@@ -89,6 +91,8 @@ export function NavIcon({
       return <UserCheck {...iconProps} />;
     case "SC":
       return <ScanLine {...iconProps} />;
+    case "CD":
+      return <KeyRound {...iconProps} />;
     default:
       return <Home {...iconProps} />;
   }

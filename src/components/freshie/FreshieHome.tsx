@@ -7,25 +7,28 @@ import {
   Gamepad2,
   HelpCircle,
   History,
+  KeyRound,
+  Menu,
   Package,
   ScanLine,
   Trophy,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { EVENT, EVENTS, GAME_PHASES } from "@/components/home/data";
 import { vxDisplay, vxSlab } from "@/components/home/fonts";
 import { usePhaseTimer } from "@/components/PhaseTimerProvider";
 import { useProfile } from "@/components/ProfileProvider";
+import { useOpenShellMenu } from "@/components/ShellMenu";
 import { useGroup } from "@/components/useGroup";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import type { Group } from "@/lib/types";
 import { formatCountdown } from "@/lib/utils";
 
 import "./freshie.css";
-import { GROUP_COUNT, groupSwatch, themeFromColor } from "./groupTheme";
+import { groupSwatch, themeFromColor } from "./groupTheme";
 
 // Freshie Home (/dashboard for the Freshie role only) — the logged-in
 // version of the public welcome page, in the Vortexa "Night Ticket" style.
@@ -39,8 +42,8 @@ import { GROUP_COUNT, groupSwatch, themeFromColor } from "./groupTheme";
 // Staff roles still get the original light dashboard
 // (see app/(app)/dashboard/page.tsx).
 //
-// Data: stops 01–02 use live data (event date, PhaseTimerProvider, useGroup).
-// Stops 03–05 show placeholder content for now — see the TODO(backend) notes.
+// Data: stops 01–02 and the scoreboard use live data. The scoreboard reads
+// fn_scoreboard(), the same token_balance the admin token board shows.
 // Per-group colour: --fh-accent / --fh-glow / --fh-blue come from groups.color.
 
 const STOPS = [
@@ -138,7 +141,15 @@ function PhaseCard() {
   );
 }
 
-function WelcomeStop({ name, group }: { name: string; group: Group | null }) {
+function WelcomeStop({
+  name,
+  group,
+  isFaci,
+}: {
+  name: string;
+  group: Group | null;
+  isFaci: boolean;
+}) {
   const { phases } = usePhaseTimer();
   const live = phases.some((p) => p.state === "active" || p.state === "paused");
   return (
@@ -159,8 +170,9 @@ function WelcomeStop({ name, group }: { name: string; group: Group | null }) {
       </p>
       {live ? <PhaseCard /> : <Countdown />}
       <div className="fh-actions">
-        <Link href="/scan" className="fh-btn fh-btn-primary">
-          <ScanLine size={18} aria-hidden /> Scan a QR
+        <Link href={isFaci ? "/code" : "/scan"} className="fh-btn fh-btn-primary">
+          {isFaci ? <KeyRound size={18} aria-hidden /> : <ScanLine size={18} aria-hidden />}
+          {isFaci ? "Group code" : "Scan a QR"}
         </Link>
         <button type="button" className="fh-btn fh-btn-ghost" onClick={() => goTo("fh-pass")}>
           My group ↓
@@ -291,11 +303,40 @@ function GameStop() {
 
 // ── 04 Scoreboard ────────────────────────────────────────────────────────────
 
+type ScoreRow = { id: number; name: string; color: string | null; token_balance: number };
+
 function ScoresStop({ groupId }: { groupId: number | null }) {
-  // TODO(backend): replace the placeholder rows with the real groups (name,
-  // score, rank) once the scoreboard data source is decided. Scores show "—"
-  // until then; the Freshie's own group is highlighted.
-  const rows = Array.from({ length: GROUP_COUNT }, (_, i) => i + 1);
+  const supabase = useMemo(() => supabaseBrowser(), []);
+  const [rows, setRows] = useState<ScoreRow[]>([]);
+
+  useEffect(() => {
+    let active = true;
+    async function load() {
+      const { data } = await supabase.rpc("fn_scoreboard");
+      if (!active || !data) return;
+      const next = (data as ScoreRow[])
+        .map((row) => ({
+          id: row.id,
+          name: row.name,
+          color: row.color,
+          token_balance: row.token_balance ?? 0,
+        }))
+        .sort((a, b) => b.token_balance - a.token_balance || a.id - b.id);
+      setRows(next);
+    }
+    load();
+    const timer = window.setInterval(load, 4000);
+    const channel = supabase
+      .channel(`fh-scores-${crypto.randomUUID()}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "groups" }, load)
+      .subscribe();
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+      supabase.removeChannel(channel);
+    };
+  }, [supabase]);
+
   return (
     <section id="fh-scores" className="fh-stop" aria-labelledby="fh-scores-title">
       <div className="fh-stop-head fh-stop-head-row">
@@ -303,19 +344,17 @@ function ScoresStop({ groupId }: { groupId: number | null }) {
         <span className="fh-pill fh-mono">● LIVE FROM 28 NOV</span>
       </div>
       <ol className="fh-board">
-        {rows.map((id, i) => {
-          const me = id === groupId;
+        {rows.map((row, i) => {
+          const me = row.id === groupId;
           return (
-            <li key={id} className="fh-team" data-me={me || undefined}>
+            <li key={row.id} className="fh-team" data-me={me || undefined}>
               <span className="fh-team-rk fh-mono">{String(i + 1).padStart(2, "0")}</span>
-              <i className="fh-team-sw" style={{ background: groupSwatch(id) }} aria-hidden />
+              <i className="fh-team-sw" style={{ background: groupSwatch(row.id, row.color) }} aria-hidden />
               <b>
-                Group {id}
+                {row.name}
                 {me && <span className="fh-you fh-mono">YOU</span>}
               </b>
-              <span className="fh-team-sc fh-slab">
-                —<span className="fh-sr">No score yet</span>
-              </span>
+              <span className="fh-team-sc fh-slab">{row.token_balance}</span>
             </li>
           );
         })}
@@ -371,7 +410,17 @@ function TodayStop() {
 
 // ── Chrome: header, account menu, stop bar ───────────────────────────────────
 
-function AccountMenu({ name, groupName }: { name: string; groupName: string | null }) {
+function AccountMenu({
+  name,
+  groupName,
+  roleLabel,
+  logoutHref,
+}: {
+  name: string;
+  groupName: string | null;
+  roleLabel: string;
+  logoutHref: string;
+}) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const initials =
@@ -396,7 +445,7 @@ function AccountMenu({ name, groupName }: { name: string; groupName: string | nu
 
   async function signOut() {
     await supabaseBrowser().auth.signOut();
-    window.location.href = "/";
+    window.location.href = logoutHref;
   }
 
   return (
@@ -413,8 +462,11 @@ function AccountMenu({ name, groupName }: { name: string; groupName: string | nu
       </button>
       {open && (
         <div id="fh-account" className="fh-menu" role="menu">
-          <b>{name || "Freshie"}</b>
-          <span>Freshie{groupName ? ` · ${groupName}` : ""}</span>
+          <b>{name || roleLabel}</b>
+          <span>
+            {roleLabel}
+            {groupName ? ` · ${groupName}` : ""}
+          </span>
           <button type="button" role="menuitem" onClick={signOut}>
             Log out
           </button>
@@ -428,6 +480,9 @@ export function FreshieHome() {
   const profile = useProfile();
   const { group, loading } = useGroup();
   const theme = themeFromColor(group?.color);
+  const openMenu = useOpenShellMenu();
+  const isFaci = profile.role === "faci";
+  const roleLabel = isFaci ? "Facilitator" : "Freshie";
   const [active, setActive] = useState(0);
 
   // Section-by-section snapping, this page only (same idea as the homepage).
@@ -474,12 +529,24 @@ export function FreshieHome() {
 
       <header className="fh-head">
         <div className="fh-head-row">
-          <button type="button" className="fh-brand" onClick={() => goTo("fh-welcome")} aria-label="Vortexa — back to top">
-            <Image src="/vortexa-logo-sm.webp" alt="" width={320} height={184} priority style={{ width: "auto" }} />
-          </button>
+          <div className="fh-head-l">
+            {isFaci && (
+              <button type="button" className="fh-navbtn" aria-label="Open menu" onClick={() => openMenu?.()}>
+                <Menu size={20} strokeWidth={1.75} />
+              </button>
+            )}
+            <button type="button" className="fh-brand" onClick={() => goTo("fh-welcome")} aria-label="Vortexa — back to top">
+              <Image src="/vortexa-logo-sm.webp" alt="" width={320} height={184} priority style={{ width: "auto" }} />
+            </button>
+          </div>
           <div className="fh-head-r">
-            <span className="fh-chip fh-mono">Freshie</span>
-            <AccountMenu name={profile.full_name ?? ""} groupName={group?.name ?? null} />
+            <span className="fh-chip fh-mono">{roleLabel}</span>
+            <AccountMenu
+              name={profile.full_name ?? ""}
+              groupName={group?.name ?? null}
+              roleLabel={roleLabel}
+              logoutHref={isFaci ? "/login" : "/"}
+            />
           </div>
         </div>
         <div className="fh-stopbar fh-mono" aria-hidden>
@@ -491,7 +558,7 @@ export function FreshieHome() {
         </div>
       </header>
 
-      <WelcomeStop name={profile.full_name ?? ""} group={group} />
+      <WelcomeStop name={profile.full_name ?? ""} group={group} isFaci={isFaci} />
       <PassStop group={group} loading={loading} />
       <GameStop />
       <ScoresStop groupId={profile.group_id} />

@@ -1,6 +1,7 @@
 "use client";
 
 import { Calendar, Clock, MapPin, Plus } from "lucide-react";
+import { redirect } from "next/navigation";
 import { useState } from "react";
 
 import { useProfile } from "@/components/ProfileProvider";
@@ -26,6 +27,7 @@ export default function ReservationsPage() {
   const [venue, setVenue] = useState("Main Auditorium A1");
   const [timeSlot, setTimeSlot] = useState("08:00 PM - 10:00 PM");
   const [groupName, setGroupName] = useState("");
+  if (profile.role === "faci") redirect("/dashboard");
 
   function handleReserve(e: React.FormEvent) {
     e.preventDefault();

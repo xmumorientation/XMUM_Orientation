@@ -1,6 +1,7 @@
 "use client";
 
 import { CalendarCheck, Clock, Plus, Users } from "lucide-react";
+import { redirect } from "next/navigation";
 import { useState } from "react";
 
 import { useProfile } from "@/components/ProfileProvider";
@@ -25,6 +26,7 @@ export default function BookingPage() {
   const profile = useProfile();
   const [slots, setSlots] = useState<TimeSlot[]>(INITIAL_SLOTS);
   const [notice, setNotice] = useState<string | null>(null);
+  if (profile.role === "faci") redirect("/dashboard");
 
   function handleBook(id: string) {
     setSlots((prev) =>

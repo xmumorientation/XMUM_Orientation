@@ -92,7 +92,17 @@ html.fh-snap { scroll-snap-type: y proximity; }
 }
 .fh-head-row, .fh-stopbar { max-width: 1000px; margin: 0 auto; padding-inline: 16px; }
 .fh-head-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; height: 60px; }
+.fh-head-l { display: flex; align-items: center; gap: 8px; min-width: 0; }
 /* Same logo image and sizes as the public site's nav (.vx-nav-logo). */
+.fh-navbtn {
+  display: none;
+  width: 40px; height: 40px; flex: none; align-items: center; justify-content: center;
+  border-radius: 12px; border: 1px solid var(--fh-line-2); background: transparent;
+  color: var(--fh-text); cursor: pointer;
+}
+@media (max-width: 1023px) {
+  .fh-navbtn { display: flex; }
+}
 .fh-brand { display: flex; align-items: center; background: none; border: 0; padding: 0; cursor: pointer; }
 .fh-brand img { height: 38px; width: auto; display: block; }
 @media (max-width: 1023px) {
@@ -312,6 +322,66 @@ html.fh-snap { scroll-snap-type: y proximity; }
 }
 .fh-it b { display: block; font-size: 15px; }
 .fh-it small { font-size: 10.5px; letter-spacing: 0.12em; color: var(--fh-mute); }
+
+/* ── Freshie schedule page (welcome schedule layout) ─────────────────────── */
+.fh-sched {
+  position: relative;
+  min-height: calc(100dvh - 3rem);
+  display: flex;
+  align-items: center;
+}
+.fh-sched-inner {
+  display: grid; grid-template-columns: 240px 1fr; gap: 48px; align-items: start;
+  max-width: 980px; margin: 0 auto; padding-block: 12px 8px;
+}
+.fh-sched-side { display: flex; flex-direction: column; gap: 18px; }
+.fh-sched .fh-h2 { font-size: clamp(38px, 4.2vw, 52px); }
+.fh-days { display: flex; flex-direction: column; gap: 10px; }
+.fh-day {
+  text-align: left; padding: 14px 18px; border-radius: 14px; cursor: pointer;
+  background: transparent; border: 1px solid var(--fh-line-2); color: var(--fh-text);
+  transition: background-color 0.15s, border-color 0.15s;
+}
+.fh-day b { display: block; font-family: var(--font-vx-slab), Georgia, serif; font-weight: 400; font-size: 20px; }
+.fh-day span { font-size: 11px; letter-spacing: 0.14em; color: var(--fh-mute); }
+.fh-day:hover { border-color: var(--fh-accent); }
+.fh-day[aria-selected="true"] { background: var(--fh-accent); border-color: var(--fh-accent); color: var(--fh-on-blue); }
+.fh-day[aria-selected="true"] span { color: var(--fh-on-blue); }
+.fh-timeline {
+  list-style: none; margin: 0; padding: 0 0 0 28px;
+  border-left: 1px dashed var(--fh-line-2);
+  display: flex; flex-direction: column; gap: 12px;
+}
+.fh-sched-item {
+  position: relative; display: grid; grid-template-columns: 1fr auto; align-items: center;
+  gap: 4px 14px; padding: 14px 18px; border-radius: 14px;
+  background: var(--fh-ink-2); border: 1px solid var(--fh-line);
+}
+.fh-sched-item::before {
+  content: ""; position: absolute; left: -35px; top: 50%; width: 13px; height: 13px; border-radius: 50%;
+  background: var(--dot); transform: translateY(-50%); box-shadow: 0 0 0 4px var(--fh-ink);
+}
+.fh-sched-item b { font-weight: 600; font-size: 16px; }
+.fh-sched-item small { grid-column: 1; font-size: 11px; letter-spacing: 0.14em; color: var(--fh-mute); }
+.fh-sched-tag {
+  grid-row: 1 / span 2; grid-column: 2;
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 10.5px; letter-spacing: 0.14em; padding: 5px 10px; border-radius: 999px;
+  border: 1px solid currentColor; white-space: nowrap;
+}
+.fh-sched-empty { margin: 0; color: var(--fh-mute); font-size: 14.5px; }
+@media (max-width: 1023px) {
+  .fh-sched { min-height: 0; display: block; padding-top: 8px; }
+  .fh-sched-inner { grid-template-columns: 1fr; gap: 20px; }
+  .fh-days { flex-direction: row; padding: 4px; background: var(--fh-ink-3); border-radius: 999px; gap: 4px; }
+  .fh-day { flex: 1; text-align: center; border: 0; border-radius: 999px; padding: 10px 8px; min-height: 44px; }
+  .fh-day b { display: inline; font-family: var(--font-nexus-body), Outfit, sans-serif; font-weight: 700; font-size: 14px; }
+  .fh-day span { margin-left: 6px; letter-spacing: 0.04em; }
+  .fh-timeline { padding-left: 22px; gap: 8px; }
+  .fh-sched-item { padding: 12px 14px; }
+  .fh-sched-item::before { left: -29px; width: 11px; height: 11px; }
+  .fh-sched-item b { font-size: 15px; }
+}
 
 /* ── Desktop / landscape tablet ──────────────────────────────────────────── */
 @media (min-width: 1024px) {

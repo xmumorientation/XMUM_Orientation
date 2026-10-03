@@ -88,7 +88,7 @@ export default function AttendancePage() {
 
   return (
     <div className="space-y-4">
-      <PageTitle title="Headcount" subtitle="How many people are in your group" />
+      <PageTitle title="Attendance" subtitle="How many people are in your group" />
       <ErrorBanner message={error} />
 
       {activeSession ? (
