@@ -215,6 +215,9 @@ Full background: the "Issues Found" section in [permission-matrix.md](permission
 
 When you finish something, add a few lines here: your name, the date, and the main points of what you did and what is left. Newest at the top.
 
+### Jiamin, 2026-10-04
+- Facilitators set a group name and slogan on the home checklist. "Group 1" stays the number. HOF still cannot see the list.
+
 Example:
 
 ```

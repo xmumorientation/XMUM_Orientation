@@ -63,7 +63,6 @@ const NAV: NavItem[] = [
     ],
   },
   { href: "/inventory", label: "Items", code: "IT", roles: ["freshie", "faci"] },
-  { href: "/attendance", label: "Attendance", code: "AT", roles: ["faci"] },
   { href: "/gm", label: "Station", code: "GM", roles: ["gm", "guardian_gm"] },
   {
     href: "/token",

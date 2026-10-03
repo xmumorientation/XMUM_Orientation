@@ -8,6 +8,7 @@ import {
   HelpCircle,
   History,
   KeyRound,
+  MapPin,
   Menu,
   Package,
   ScanLine,
@@ -24,8 +25,8 @@ import { useProfile } from "@/components/ProfileProvider";
 import { useOpenShellMenu } from "@/components/ShellMenu";
 import { useGroup } from "@/components/useGroup";
 import { supabaseBrowser } from "@/lib/supabase/client";
-import type { Group } from "@/lib/types";
-import { formatCountdown } from "@/lib/utils";
+import type { AttendanceSession, Group } from "@/lib/types";
+import { formatCountdown, friendlyError } from "@/lib/utils";
 
 import "./freshie.css";
 import { groupSwatch, themeFromColor } from "./groupTheme";
@@ -35,10 +36,11 @@ import { groupSwatch, themeFromColor } from "./groupTheme";
 // Five full-screen stops read one at a time (scroll snapping), each about
 // the Freshie's own group:
 //   01 Welcome + countdown (switches to the live phase timer on the day)
-//   02 Group pass (token balance, next action, shortcuts)
-//   03 How the game works
-//   04 Scoreboard (own group highlighted)
-//   05 Today's schedule
+//   02 Checklist (facilitator only: name, attendance, location)
+//   03 Group pass (token balance, next action, shortcuts)
+//   04 How the game works
+//   05 Scoreboard (own group highlighted)
+//   06 Today's schedule
 // Staff roles still get the original light dashboard
 // (see app/(app)/dashboard/page.tsx).
 //
@@ -53,6 +55,13 @@ const STOPS = [
   { id: "fh-scores", label: "Scores" },
   { id: "fh-today", label: "Today" },
 ] as const;
+
+const CHECK_STOP = { id: "fh-check", label: "Checklist" };
+
+function homeStops(isFaci: boolean) {
+  if (!isFaci) return [...STOPS];
+  return [STOPS[0], CHECK_STOP, ...STOPS.slice(1)];
+}
 
 function goTo(id: string) {
   const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -178,6 +187,184 @@ function WelcomeStop({
           My group ↓
         </button>
       </div>
+    </section>
+  );
+}
+
+// ── Checklist (facilitator only, between Welcome and Your pass) ─────────────
+
+function ChecklistStop({ group, groupId }: { group: Group | null; groupId: number | null }) {
+  const supabase = useMemo(() => supabaseBrowser(), []);
+  const [displayName, setDisplayName] = useState("");
+  const [slogan, setSlogan] = useState("");
+  const [seeded, setSeeded] = useState(false);
+  const [nameError, setNameError] = useState<string | null>(null);
+  const [nameNotice, setNameNotice] = useState<string | null>(null);
+  const [savingName, setSavingName] = useState(false);
+
+  const [sessions, setSessions] = useState<AttendanceSession[]>([]);
+  const [headcount, setHeadcount] = useState("");
+  const [countError, setCountError] = useState<string | null>(null);
+  const [countNotice, setCountNotice] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!group || seeded) return;
+    setDisplayName(group.display_name ?? "");
+    setSlogan(group.slogan ?? "");
+    setSeeded(true);
+  }, [group, seeded]);
+
+  useEffect(() => {
+    let active = true;
+    supabase
+      .from("attendance_sessions")
+      .select("*")
+      .order("id", { ascending: false })
+      .then(({ data }) => {
+        if (active) setSessions((data as AttendanceSession[]) ?? []);
+      });
+    return () => {
+      active = false;
+    };
+  }, [supabase]);
+
+  const session = useMemo(
+    () => sessions.find((row) => !row.closed) ?? sessions[0] ?? null,
+    [sessions],
+  );
+
+  useEffect(() => {
+    if (!session || !groupId) return;
+    let active = true;
+    supabase
+      .from("attendance_headcounts")
+      .select("headcount")
+      .eq("session_id", session.id)
+      .eq("group_id", groupId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!active) return;
+        const count = (data as { headcount: number } | null)?.headcount;
+        setHeadcount(count == null ? "" : String(count));
+      });
+    return () => {
+      active = false;
+    };
+  }, [supabase, session, groupId]);
+
+  async function saveProfile(e: React.FormEvent) {
+    e.preventDefault();
+    setNameError(null);
+    setNameNotice(null);
+    setSavingName(true);
+    const { error } = await supabase.rpc("fn_set_group_profile", {
+      p_display_name: displayName,
+      p_slogan: slogan,
+    });
+    setSavingName(false);
+    if (error) setNameError(friendlyError(error));
+    else setNameNotice("Saved.");
+  }
+
+  async function saveHeadcount(e: React.FormEvent) {
+    e.preventDefault();
+    if (!session) return;
+    setCountError(null);
+    setCountNotice(null);
+    const count = parseInt(headcount, 10);
+    const { error } = await supabase.rpc("fn_record_headcount", {
+      p_session_id: session.id,
+      p_count: count,
+    });
+    if (error) setCountError(friendlyError(error));
+    else setCountNotice("Saved.");
+  }
+
+  return (
+    <section id="fh-check" className="fh-stop fh-check-stop" aria-labelledby="fh-check-title">
+      <div className="fh-stop-head">
+        <h2 id="fh-check-title" className="fh-h2 fh-slab">Checklist</h2>
+        <p className="fh-lead">Three things to do with your group.</p>
+      </div>
+      <ol className="fh-checks">
+        <li className="fh-check">
+          <span className="fh-check-no fh-mono">01</span>
+          <div>
+            <b>Group name and slogan</b>
+            <p>
+              {group ? `${group.name} is your number.` : "You are not in a group yet."} Choose the name your group goes by.
+            </p>
+            <form onSubmit={saveProfile}>
+              <label>
+                Name
+                <input
+                  className="fh-input"
+                  required
+                  maxLength={40}
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  placeholder="Group name"
+                />
+              </label>
+              <label>
+                Slogan
+                <input
+                  className="fh-input"
+                  maxLength={80}
+                  value={slogan}
+                  onChange={(e) => setSlogan(e.target.value)}
+                  placeholder="A short slogan"
+                />
+              </label>
+              <button type="submit" className="fh-btn fh-btn-primary" disabled={savingName || !group}>
+                Save
+              </button>
+              {nameError && <small className="fh-check-msg" role="alert">{nameError}</small>}
+              {nameNotice && <small className="fh-check-msg">{nameNotice}</small>}
+            </form>
+          </div>
+        </li>
+        <li className="fh-check">
+          <span className="fh-check-no fh-mono">02</span>
+          <div>
+            <b>Take attendance</b>
+            <p>{session ? session.name : "No attendance session yet."}</p>
+            {session && (
+              <form onSubmit={saveHeadcount}>
+                <label>
+                  Headcount
+                  <input
+                    className="fh-input"
+                    type="number"
+                    min={0}
+                    required
+                    value={headcount}
+                    disabled={session.closed}
+                    onChange={(e) => setHeadcount(e.target.value)}
+                    placeholder="How many people"
+                  />
+                </label>
+                <button type="submit" className="fh-btn fh-btn-primary" disabled={session.closed}>
+                  Save
+                </button>
+                {session.closed && <small className="fh-check-msg">This attendance session is closed.</small>}
+                {countError && <small className="fh-check-msg" role="alert">{countError}</small>}
+                {countNotice && <small className="fh-check-msg">{countNotice}</small>}
+              </form>
+            )}
+          </div>
+        </li>
+        <li className="fh-check">
+          <span className="fh-check-no fh-mono">03</span>
+          <div>
+            <b>Update location</b>
+            <p>Open the map and check your group in.</p>
+            <Link href="/checkin" className="fh-btn fh-btn-ghost">
+              <MapPin size={18} aria-hidden /> Update location
+            </Link>
+          </div>
+        </li>
+      </ol>
     </section>
   );
 }
@@ -483,6 +670,7 @@ export function FreshieHome() {
   const openMenu = useOpenShellMenu();
   const isFaci = profile.role === "faci";
   const roleLabel = isFaci ? "Facilitator" : "Freshie";
+  const stops = useMemo(() => homeStops(isFaci), [isFaci]);
   const [active, setActive] = useState(0);
 
   // Section-by-section snapping, this page only (same idea as the homepage).
@@ -493,18 +681,18 @@ export function FreshieHome() {
   }, []);
 
   useEffect(() => {
-    const els = STOPS.map((s) => document.getElementById(s.id)).filter((el): el is HTMLElement => !!el);
+    const els = stops.map((s) => document.getElementById(s.id)).filter((el): el is HTMLElement => !!el);
     const io = new IntersectionObserver(
       (entries) => {
         for (const e of entries) {
-          if (e.isIntersecting) setActive(STOPS.findIndex((s) => s.id === e.target.id));
+          if (e.isIntersecting) setActive(stops.findIndex((s) => s.id === e.target.id));
         }
       },
       { rootMargin: "-45% 0px -50% 0px", threshold: 0 }
     );
     els.forEach((el) => io.observe(el));
     return () => io.disconnect();
-  }, []);
+  }, [stops]);
 
   return (
     <div
@@ -552,13 +740,14 @@ export function FreshieHome() {
         <div className="fh-stopbar fh-mono" aria-hidden>
           <b>{String(active + 1).padStart(2, "0")}</b>
           <span className="fh-stopbar-track">
-            <span style={{ width: `${((active + 1) / STOPS.length) * 100}%` }} />
+            <span style={{ width: `${((active + 1) / stops.length) * 100}%` }} />
           </span>
-          <span>{STOPS[active]?.label}</span>
+          <span>{stops[active]?.label}</span>
         </div>
       </header>
 
       <WelcomeStop name={profile.full_name ?? ""} group={group} isFaci={isFaci} />
+      {isFaci && <ChecklistStop group={group} groupId={profile.group_id} />}
       <PassStop group={group} loading={loading} />
       <GameStop />
       <ScoresStop groupId={profile.group_id} />

@@ -29,10 +29,14 @@ export interface Profile {
 
 export interface Group {
   id: number;
+  /** Group number label, for example "Group 1". Not the name the group chooses. */
   name: string;
   token_balance: number;
   /** Freshie accent. Null until migration 0031 is applied. */
   color?: string | null;
+  /** Name the facilitator chose. Null until they save one. */
+  display_name?: string | null;
+  slogan?: string | null;
 }
 
 export type RiskTier = "low" | "medium" | "high";
