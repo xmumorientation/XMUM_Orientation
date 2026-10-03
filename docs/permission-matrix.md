@@ -58,9 +58,7 @@ This reflects only the migration files in the repo. Any manual changes made to t
 | Big Screen | — | — | — | — | ✓ | ✓ | ✓ | ✓ | UI + DB |
 | Live Ops stats | — | — | — | — | — | † | † | ✓ | DB |
 | Audit Log | — | — | — | — | — | † | † | ✓ | DB |
-| Register Counter (/register-counter) | — | — | — | — | — | — | — | ✓ | ⚠ UI |
-| Interview Booking (in-memory mock data) | — | Book | Book | — | Book | Manage | Manage | Manage | UI |
-| Practice Reservations (in-memory mock data) | — | ✓ | ✓ | — | ✓ | — | — | ✓ | UI |
+| Freshie control (/freshie-control: groups, sessions, headcount) | — | — | — | — | — | — | — | ✓ | ⚠ UI |
 | **Token System (/token)** | | | | | | | | | |
 | View and operate (Day 1 / Day 2 / manual add and deduct) | — | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ⚠ UI |
 | Edit / delete logs, Reset All, manage Presets | — | — | — | — | — | — | — | ✓ | ⚠ UI |

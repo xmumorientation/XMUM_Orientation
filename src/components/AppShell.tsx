@@ -2,18 +2,19 @@
 
 import { Menu, X } from "lucide-react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { FreshieTabBar } from "@/components/freshie/FreshieTabBar";
 import { themeFromColor } from "@/components/freshie/groupTheme";
+import { ShellMenuProvider } from "@/components/ShellMenu";
 import { NavIcon } from "@/components/NavIcon";
 import { NewItemToast } from "@/components/NewItemToast";
 import { PhaseTimer } from "@/components/PhaseTimer";
 import { useConfig } from "@/components/useConfig";
 import { useProfile } from "@/components/ProfileProvider";
 import { useGroup } from "@/components/useGroup";
-import { Dialog, DialogClose, DialogContent, DialogTrigger } from "@/components/ui/Dialog";
+import { Dialog, DialogClose, DialogContent } from "@/components/ui/Dialog";
 import { Monogram } from "@/components/ui/Monogram";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { ROLE_LABELS, type UserRole } from "@/lib/types";
@@ -62,20 +63,12 @@ const NAV: NavItem[] = [
     ],
   },
   { href: "/inventory", label: "Items", code: "IT", roles: ["freshie", "faci"] },
-  { href: "/attendance", label: "Headcount", code: "AT", roles: ["faci"] },
   { href: "/gm", label: "Station", code: "GM", roles: ["gm", "guardian_gm"] },
   {
     href: "/token",
     label: "Token System",
     code: "TK",
-    roles: [
-      "gm",
-      "guardian_gm",
-      "faci",
-      "hof",
-      "hogm",
-      "committee",
-    ],
+    roles: ["gm", "guardian_gm", "hof", "hogm", "committee"],
   },
   {
     href: "/schedule",
@@ -105,20 +98,9 @@ const NAV: NavItem[] = [
     code: "BS",
     roles: ["hof", "hogm", "committee", "admin"],
   },
+  { href: "/code", label: "Code", code: "CD", roles: ["faci"] },
   {
-    href: "/booking",
-    label: "Booking",
-    code: "BK",
-    roles: ["hof", "hogm", "faci", "gm", "committee", "admin"],
-  },
-  {
-    href: "/reservations",
-    label: "Reservations",
-    code: "RS",
-    roles: ["faci", "gm", "committee", "admin"],
-  },
-  {
-    href: "/register-counter",
+    href: "/freshie-control",
     label: "Freshie control",
     code: "RC",
     roles: ["admin"],
@@ -131,21 +113,23 @@ const NAV: NavItem[] = [
 export function AppShell({ children }: { children: React.ReactNode }) {
   const profile = useProfile();
   const pathname = usePathname();
-  const router = useRouter();
   const { brand } = useConfig();
   const [menuOpen, setMenuOpen] = useState(false);
 
-  const items = NAV.filter((n) => n.roles.includes(profile.role));
-  // Freshie-only shell changes (phones/tablets); every other role is untouched:
-  //   - no ☰ drawer; a bottom tab bar (with raised Scan) replaces it,
-  //     hidden on the full-screen /scan page;
-  //   - on Home (/dashboard) the light mobile header is hidden and the page
-  //     is painted black — FreshieHome renders its own dark header.
-  const { group } = useGroup();
   const isFreshie = profile.role === "freshie";
-  const freshieTheme = isFreshie ? themeFromColor(group?.color) : null;
-  const isFreshieHome = isFreshie && pathname === "/dashboard";
-  const showFreshieTabBar = isFreshie && pathname !== "/scan";
+  const isFaci = profile.role === "faci";
+  const items = NAV.filter((n) => n.roles.includes(profile.role)).map((item) =>
+    isFaci && item.href === "/map" ? { ...item, href: "/checkin" } : item
+  );
+  // Freshie and facilitator phones share the night tab bar. Freshie Scan is
+  // the raised center button; a facilitator gets Code there instead.
+  // Home and Schedule hide the light mobile header for both roles.
+  const { group } = useGroup();
+  const groupTheme = isFreshie || isFaci ? themeFromColor(group?.color) : null;
+  const isNight =
+    (isFreshie || isFaci) &&
+    (pathname === "/dashboard" || pathname === "/schedule");
+  const showTabBar = (isFreshie || isFaci) && !(isFreshie && pathname === "/scan");
 
   // Close the drawer on route change so it never lingers over a new page.
   // Radix Dialog owns focus-trap/Escape/backdrop-dismiss/focus-return; route
@@ -194,21 +178,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div
       className={cn(
         "min-h-dvh w-full lg:grid lg:grid-cols-[16rem_minmax(0,1fr)]",
-        isFreshieHome && "bg-[#030b1c]"
+        isNight && "bg-[#030b1c]"
       )}
       style={
         {
-          "--brand-1": freshieTheme?.accent ?? brand.brandPrimary,
+          "--brand-1": groupTheme?.accent ?? brand.brandPrimary,
           "--brand-2": brand.brandSecondary,
-          "--brand-1-rgb": hexToRgbChannels(freshieTheme?.accent ?? brand.brandPrimary),
+          "--brand-1-rgb": hexToRgbChannels(groupTheme?.accent ?? brand.brandPrimary),
           "--brand-2-rgb": hexToRgbChannels(brand.brandSecondary),
-          ...(freshieTheme
+          ...(groupTheme
             ? {
-                "--fh-accent": freshieTheme.accent,
-                "--fh-glow": freshieTheme.glow,
-                "--fh-blue": freshieTheme.accent,
-                "--fh-blue-light": freshieTheme.accentLight,
-                "--fh-on-blue": freshieTheme.onAccent,
+                "--fh-accent": groupTheme.accent,
+                "--fh-glow": groupTheme.glow,
+                "--fh-blue": groupTheme.accent,
+                "--fh-blue-light": groupTheme.accentLight,
+                "--fh-on-blue": groupTheme.onAccent,
               }
             : {}),
         } as React.CSSProperties
@@ -247,65 +231,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </aside>
 
       <div className="min-w-0">
-      {!isFreshieHome && (
+      {!isNight && (
       <header className="sticky top-0 z-40 border-b border-paper-200 bg-paper-50/95 pt-[env(safe-area-inset-top)] shadow-[0_1px_0_rgba(28,26,23,0.03)] backdrop-blur lg:hidden">
         <div className="flex items-center justify-between gap-3 px-3 py-2.5 sm:px-5 sm:py-3">
           <div className="flex min-w-0 items-center gap-2.5">
             {!isFreshie && (
-            <Dialog open={menuOpen} onOpenChange={setMenuOpen}>
-              <DialogTrigger asChild>
                 <button
+                  type="button"
                   aria-label="Open menu"
+                  onClick={() => setMenuOpen(true)}
                   className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-paper-300 bg-white text-ink shadow-raised transition hover:bg-paper-100 active:scale-95"
                 >
                   <Menu size={20} strokeWidth={1.75} />
                 </button>
-              </DialogTrigger>
-              <DialogContent
-                layout="sheet"
-                title="Navigation menu"
-                titleVisuallyHidden
-                showClose={false}
-                className="lg:hidden"
-              >
-                <div className="flex h-full flex-col">
-                  <div className="flex items-center justify-between gap-3 p-2">
-                    <div className="flex min-w-0 items-center gap-2.5">
-                      <DialogClose asChild>
-                        <button
-                          aria-label="Close menu"
-                          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-paper-300 text-ink-soft transition hover:bg-paper-100 hover:text-ink active:scale-95"
-                        >
-                          <X size={20} strokeWidth={1.75} />
-                        </button>
-                      </DialogClose>
-                      <div className="flex min-w-0 items-center gap-2">
-                        <Monogram name={brand.eventName} size="sm" />
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-bold">
-                            {brand.eventName}
-                          </p>
-                          <p className="truncate text-xs text-ink-faint">
-                            {ROLE_LABELS[profile.role]}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <nav className="mt-2 flex-1 space-y-1 overflow-y-auto px-1 pb-2">
-                    {navLinks("drawer")}
-                  </nav>
-
-                  <button
-                    onClick={signOut}
-                    className="mt-2 min-h-[48px] rounded-xl border border-paper-300 bg-paper-100 px-3 text-left text-sm font-bold text-ink-soft"
-                  >
-                    Log out
-                  </button>
-                </div>
-              </DialogContent>
-            </Dialog>
             )}
 
             <Link href="/dashboard" className="flex min-w-0 items-center gap-2">
@@ -331,17 +269,68 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </header>
       )}
 
+      {!isFreshie && (
+        <Dialog open={menuOpen} onOpenChange={setMenuOpen}>
+          <DialogContent
+            layout="sheet"
+            title="Navigation menu"
+            titleVisuallyHidden
+            showClose={false}
+            className="lg:hidden"
+          >
+            <div className="flex h-full flex-col">
+              <div className="flex items-center justify-between gap-3 p-2">
+                <div className="flex min-w-0 items-center gap-2.5">
+                  <DialogClose asChild>
+                    <button
+                      aria-label="Close menu"
+                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-paper-300 text-ink-soft transition hover:bg-paper-100 hover:text-ink active:scale-95"
+                    >
+                      <X size={20} strokeWidth={1.75} />
+                    </button>
+                  </DialogClose>
+                  <div className="flex min-w-0 items-center gap-2">
+                    <Monogram name={brand.eventName} size="sm" />
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-bold">
+                        {brand.eventName}
+                      </p>
+                      <p className="truncate text-xs text-ink-faint">
+                        {ROLE_LABELS[profile.role]}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <nav className="mt-2 flex-1 space-y-1 overflow-y-auto px-1 pb-2">
+                {navLinks("drawer")}
+              </nav>
+
+              <button
+                onClick={signOut}
+                className="mt-2 min-h-[48px] rounded-xl border border-paper-300 bg-paper-100 px-3 text-left text-sm font-bold text-ink-soft"
+              >
+                Log out
+              </button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      <ShellMenuProvider openMenu={() => setMenuOpen(true)}>
       <main
         className={cn(
           "mx-auto min-h-dvh w-full max-w-6xl px-3 pb-[calc(1.25rem+env(safe-area-inset-bottom))] pt-3 sm:px-5 sm:pb-8 sm:pt-5 lg:px-8 lg:py-6",
-          showFreshieTabBar &&
+          showTabBar &&
             "pb-[calc(6.5rem+env(safe-area-inset-bottom))] sm:pb-[calc(6.5rem+env(safe-area-inset-bottom))]"
         )}
       >
         {children}
       </main>
+      </ShellMenuProvider>
 
-      {showFreshieTabBar && <FreshieTabBar />}
+      {showTabBar && <FreshieTabBar />}
 
       <NewItemToast />
       </div>

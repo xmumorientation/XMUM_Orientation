@@ -7,7 +7,7 @@ import { supabaseBrowser } from "@/lib/supabase/client";
 import type { AttendanceSession, Group } from "@/lib/types";
 import { cn, friendlyError } from "@/lib/utils";
 
-export default function AdminRosterPage() {
+export default function HeadcountPage() {
   const supabase = useMemo(() => supabaseBrowser(), []);
   const [sessions, setSessions] = useState<AttendanceSession[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);

@@ -795,8 +795,7 @@ export default function AdminTokenAllInOnePage() {
           </div>
         </div>
 
-        {/* 12 Groups Scoreboard Grid (Clean White Background with Border) */}
-        <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="flex flex-col gap-2">
           {sortedGroups.map((grp, index) => {
             const isTop1 = index === 0 && scoreSortBy === "tokens";
             const isTop2 = index === 1 && scoreSortBy === "tokens";
@@ -807,106 +806,73 @@ export default function AdminTokenAllInOnePage() {
               <div
                 key={grp.group_id}
                 className={cn(
-                  "relative overflow-hidden rounded-2xl border p-4.5 transition-all duration-200 bg-white shadow-sm hover:shadow-md",
+                  "flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl border bg-white px-3 py-3 shadow-sm",
                   isTargeted
-                    ? "ring-2 ring-amber-500 border-amber-500/90 bg-amber-50/20"
+                    ? "border-amber-500 ring-2 ring-amber-500"
                     : isTop1
-                    ? "border-amber-300 ring-1 ring-amber-400/50 bg-gradient-to-b from-amber-50/40 to-white"
-                    : isTop2
-                    ? "border-slate-300 bg-gradient-to-b from-slate-50/60 to-white"
-                    : isTop3
-                    ? "border-amber-200 bg-gradient-to-b from-amber-50/20 to-white"
-                    : "border-slate-200/90 hover:border-slate-300"
+                    ? "border-amber-300"
+                    : "border-slate-200"
                 )}
               >
-                {/* Header Rank Badge & Select for Action */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={cn(
-                        "flex h-7 w-7 items-center justify-center rounded-lg text-xs font-black shadow-sm",
-                        isTop1
-                          ? "bg-amber-400 text-slate-950"
-                          : isTop2
-                          ? "bg-slate-200 text-slate-800"
-                          : isTop3
-                          ? "bg-amber-100 text-amber-900 border border-amber-300"
-                          : "bg-slate-100 text-slate-700"
-                      )}
-                    >
-                      #{index + 1}
-                    </span>
-                    <span className="font-black text-slate-900 text-base tracking-tight">{grp.group_name}</span>
-                  </div>
-
-                  <button
-                    onClick={() => {
-                      setSelectedGroupId(grp.group_id);
-                      window.scrollTo({ top: 0, behavior: "smooth" });
-                    }}
+                <div className="flex min-w-0 flex-1 items-center gap-2">
+                  <span
                     className={cn(
-                      "rounded-lg px-2.5 py-1 text-[11px] font-black transition-all border",
-                      isTargeted
-                        ? "border-amber-500 bg-amber-500 text-slate-950 shadow-sm"
-                        : "border-slate-200 bg-slate-50 text-slate-700 hover:border-amber-400 hover:bg-amber-50 hover:text-amber-900"
+                      "flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-black",
+                      isTop1
+                        ? "bg-amber-400 text-slate-950"
+                        : isTop2
+                        ? "bg-slate-200 text-slate-800"
+                        : isTop3
+                        ? "border border-amber-300 bg-amber-100 text-amber-900"
+                        : "bg-slate-100 text-slate-700"
                     )}
                   >
-                    {isTargeted ? "● Selected" : "Select"}
-                  </button>
-                </div>
-
-                {/* Token Balance Box */}
-                <div className="my-3 flex items-baseline justify-between rounded-xl bg-slate-50 px-3.5 py-2.5 border border-slate-100">
-                  <div>
-                    <span className="text-[10px] uppercase tracking-wider font-bold text-slate-500">
-                      Token Balance
-                    </span>
-                    <div className="flex items-center gap-1.5 text-2xl font-black text-amber-600 tabular-nums">
-                      <Coins size={20} className="text-amber-500" />
-                      <span>{grp.current_tokens}</span>
-                    </div>
-                  </div>
-
-                  <div className="text-right">
-                    <span className="text-[10px] uppercase tracking-wider font-bold text-slate-500">
-                      Puzzle Pieces
-                    </span>
-                    <div className="flex items-center justify-end gap-1 text-lg font-black text-indigo-600 tabular-nums">
-                      <Layers size={16} />
-                      <span>{grp.puzzles_count || 0} / 15</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* 3 Locations Blueprint Matrix */}
-                <div className="space-y-1.5">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                    Location Blueprint Pieces:
+                    {index + 1}
                   </span>
-                  <div className="grid grid-cols-3 gap-1.5 text-center">
-                    {[1, 2, 3].map((locId) => {
-                      const locPieces = grp.location_pieces?.[locId] || [];
-                      const count = locPieces.length;
-                      const meta = LOCATION_NAMES[locId];
-                      return (
-                        <div
-                          key={locId}
-                          className={cn(
-                            "rounded-lg border p-1.5 text-xs transition-colors",
-                            count > 0
-                              ? "border-indigo-200 bg-indigo-50/80 text-indigo-900"
-                              : "border-slate-100 bg-slate-50 text-slate-400"
-                          )}
-                        >
-                          <div className="font-bold text-[10px] text-slate-600">{meta.short}</div>
-                          <div className={cn("font-black text-xs", count > 0 ? "text-indigo-700" : "text-slate-400")}>
-                            {count} pcs
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                  <span className="truncate font-black text-slate-900">{grp.group_name}</span>
                 </div>
+
+                <div className="flex items-center gap-1.5 text-lg font-black tabular-nums text-amber-600">
+                  <Coins size={16} className="text-amber-500" />
+                  {grp.current_tokens}
+                </div>
+                <div className="flex items-center gap-1 text-sm font-black tabular-nums text-indigo-600">
+                  <Layers size={14} />
+                  {grp.puzzles_count || 0}/15
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  {[1, 2, 3].map((locId) => {
+                    const count = grp.location_pieces?.[locId]?.length || 0;
+                    const meta = LOCATION_NAMES[locId];
+                    return (
+                      <span
+                        key={locId}
+                        className={cn(
+                          "rounded-md border px-1.5 py-0.5 text-[10px] font-bold",
+                          count > 0
+                            ? "border-indigo-200 bg-indigo-50 text-indigo-800"
+                            : "border-slate-100 bg-slate-50 text-slate-400"
+                        )}
+                      >
+                        {meta.short} {count}
+                      </span>
+                    );
+                  })}
+                </div>
+                <button
+                  onClick={() => {
+                    setSelectedGroupId(grp.group_id);
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }}
+                  className={cn(
+                    "ml-auto rounded-lg border px-2.5 py-1 text-[11px] font-black",
+                    isTargeted
+                      ? "border-amber-500 bg-amber-500 text-slate-950"
+                      : "border-slate-200 bg-slate-50 text-slate-700 hover:border-amber-400 hover:bg-amber-50"
+                  )}
+                >
+                  {isTargeted ? "Selected" : "Select"}
+                </button>
               </div>
             );
           })}
