@@ -42,11 +42,16 @@
   }
 }
 
-/* Section scrolling: no snap on mobile (avoids fight with tall stops).
-   Desktop gets soft proximity snap; reduced-motion always off. */
+/* Section scrolling.
+   Desktop keeps soft proximity snap.
+   Narrow viewports use mandatory snap: releasing past the halfway point
+   between stops settles on the next stop. Reduced-motion always off. */
 html.vx-snap { scroll-snap-type: none; }
 @media (min-width: 1024px) {
   html.vx-snap { scroll-snap-type: y proximity; }
+}
+@media (max-width: 1023px) {
+  html.vx-snap { scroll-snap-type: y mandatory; }
 }
 @media (prefers-reduced-motion: reduce) {
   html.vx-snap { scroll-snap-type: none; }
@@ -65,8 +70,7 @@ html.vx-snap { scroll-snap-type: none; }
   isolation: isolate;
 }
 @media (max-width: 1023px) {
-  .vx-sec { padding-inline: 16px; padding-block: calc(var(--vx-nav-h) + var(--vx-stopbar-h) + 24px) calc(var(--vx-tabbar-h) + 32px); scroll-snap-align: none; }
-  .vx-footer { scroll-snap-align: none; }
+  .vx-sec { padding-inline: 16px; padding-block: calc(var(--vx-nav-h) + var(--vx-stopbar-h) + 24px) calc(var(--vx-tabbar-h) + 32px); }
 }
 .vx-inner { position: relative; z-index: 2; width: 100%; max-width: 1120px; margin: 0 auto; }
 
