@@ -36,7 +36,7 @@ export function Scoreboard() {
             </ol>
           </>
         ) : (
-          <div className="vx-coming vx-rise-2" style={{ maxWidth: 520 }}>
+          <div className="vx-coming vx-rise-2">
             <p className="vx-coming-title">Teams &amp; scores publish later</p>
             <p className="vx-mono vx-coming-meta">Coming soon · Live from 28 Nov 2026</p>
             <p className="vx-coming-note">
