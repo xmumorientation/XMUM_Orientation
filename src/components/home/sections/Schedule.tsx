@@ -47,7 +47,7 @@ export function Schedule() {
               >
                 <b>{ev.day}</b>
                 <span className="vx-mono">
-                  {WEEKDAY[ev.date] ? `${WEEKDAY[ev.date]} · ` : ""}
+                  {WEEKDAY[ev.date] ? `${WEEKDAY[ev.date]}, ` : ""}
                   {ev.date.toUpperCase()}
                 </span>
               </button>
@@ -59,10 +59,10 @@ export function Schedule() {
           <div id="day-panel" role="tabpanel" aria-labelledby={`day-tab-${activeDayIdx}`} className="vx-coming vx-rise-2">
             <p className="vx-coming-title">Schedule coming soon</p>
             <p className="vx-mono vx-coming-meta">
-              {currentDay.day} · {WEEKDAY[currentDay.date] ? `${WEEKDAY[currentDay.date]} · ` : ""}
-              {currentDay.date.toUpperCase()} 2026 · TBA
+              {currentDay.day}, {WEEKDAY[currentDay.date] ? `${WEEKDAY[currentDay.date]}, ` : ""}
+              {currentDay.date.toUpperCase()} 2026, TBA
             </p>
-            <p className="vx-coming-note">Full timetable drops closer to the event. Dates are locked — times and venues still TBA.</p>
+            <p className="vx-coming-note">Full timetable drops closer to the event. Dates are locked, and times and venues are still TBA.</p>
           </div>
         ) : (
           <ol
@@ -73,7 +73,7 @@ export function Schedule() {
           >
             {currentDay.items.map((item, i) => {
               const st = TYPE_STYLE[item.type] ?? TYPE_STYLE.info;
-              const when = item.time === "TBD" && item.venue === "TBD" ? "TO BE ANNOUNCED" : `${item.time} · ${item.venue}`;
+              const when = item.time === "TBD" && item.venue === "TBD" ? "TO BE ANNOUNCED" : `${item.time}, ${item.venue}`;
               return (
                 <li key={i} className="vx-card vx-item" style={{ "--dot": st.color } as React.CSSProperties}>
                   <b>{item.title}</b>

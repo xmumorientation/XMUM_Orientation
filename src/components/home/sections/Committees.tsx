@@ -71,7 +71,7 @@ export function Committees() {
             <div className="vx-card vx-cdetail" style={{ borderColor: activeCommittee.color }}>
               <div className="vx-cdetail-main">
                 <b>
-                  {activeCommittee.name} · {activeCommittee.fullName}
+                  {activeCommittee.name}, {activeCommittee.fullName}
                 </b>
                 <p>{activeCommittee.desc}</p>
               </div>
