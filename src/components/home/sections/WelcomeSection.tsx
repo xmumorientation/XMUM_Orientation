@@ -13,7 +13,7 @@ export function WelcomeSection() {
       <Spark size={14} color="var(--vx-cyan)" style={{ right: "18%", top: "22%", opacity: 0.45 }} />
 
       <div className="vx-inner">
-        <div className="vx-eyebrow vx-rise">XMUM Orientation 2026</div>
+        <div className="vx-eyebrow vx-rise">XMUM 26/12 Orientation</div>
 
         <h1 id="welcome-title" className="vx-rise" style={{ margin: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
           <span className="vx-welcome-pre">WELCOME TO</span>
