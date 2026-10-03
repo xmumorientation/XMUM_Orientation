@@ -28,10 +28,6 @@
   --fh-yellow: #f2ff0b;
   --fh-lilac: #e0b4fc;
   --fh-holo: linear-gradient(100deg, #008cff 0%, #0dfcfd 28%, #e0b4fc 52%, #fe06ab 76%, #fc9e3d 100%);
-  /* Same colours, but ends where it starts so the shimmer tiles without a seam.
-     90deg keeps the tile edges matching; lilac bridges orange back to blue
-     (a direct orange→blue blend goes muddy grey). */
-  --fh-holo-loop: linear-gradient(90deg, #008cff 0%, #0dfcfd 18%, #e0b4fc 36%, #fe06ab 54%, #fc9e3d 72%, #e0b4fc 86%, #008cff 100%);
   --fh-accent: #008cff;
   --fh-glow: #008cff;
   /* Height of the fixed header + stop bar, and of the bottom tab bar. */
@@ -160,21 +156,11 @@ html.fh-snap { scroll-snap-type: y proximity; }
 
 /* ── 01 Welcome ──────────────────────────────────────────────────────────── */
 .fh-eyebrow { font-size: 11.5px; letter-spacing: 0.28em; text-transform: uppercase; color: var(--fh-accent); }
-.fh-welcome-title { margin: 0; display: flex; flex-direction: column; align-items: center; }
-.fh-pre { font-size: clamp(17px, 4.6vw, 24px); letter-spacing: 0.1em; }
-.fh-mark {
-  font-family: var(--font-vx-display), Georgia, serif; font-weight: 400;
-  font-size: clamp(72px, 20vw, 168px); line-height: 1; padding: 0 0.08em 0.12em;
-  background: var(--fh-holo-loop); background-size: 200% 100%;
-  -webkit-background-clip: text; background-clip: text; color: transparent;
-  filter: drop-shadow(0 8px 36px rgba(0, 140, 255, 0.35));
+.fh-welcome-line {
+  margin: 0; width: 100%; max-width: 100%; padding-inline: 16px; box-sizing: border-box;
+  font-size: clamp(22px, 5.4vw, 40px); font-weight: 700; line-height: 1.2; letter-spacing: -0.02em;
 }
-@media (prefers-reduced-motion: no-preference) {
-  .fh-mark { animation: fh-shimmer 8s linear infinite; }
-}
-@keyframes fh-shimmer { to { background-position: 200% 0; } }
-.fh-hello { margin: -6px 0 4px; font-size: 15px; color: var(--fh-text-2); }
-.fh-hello b { color: #fff; }
+.fh-welcome-group { color: var(--fh-accent); }
 
 .fh-countwrap { display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 440px; }
 .fh-clabel { font-size: 11px; letter-spacing: 0.24em; color: var(--fh-mute); }

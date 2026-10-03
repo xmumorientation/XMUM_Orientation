@@ -19,7 +19,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { EVENT, EVENTS, GAME_PHASES } from "@/components/home/data";
-import { vxDisplay, vxSlab } from "@/components/home/fonts";
+import { vxSlab } from "@/components/home/fonts";
 import { usePhaseTimer } from "@/components/PhaseTimerProvider";
 import { useProfile } from "@/components/ProfileProvider";
 import { useOpenShellMenu } from "@/components/ShellMenu";
@@ -31,11 +31,10 @@ import { formatCountdown, friendlyError } from "@/lib/utils";
 import "./freshie.css";
 import { groupSwatch, themeFromColor } from "./groupTheme";
 
-// Freshie Home (/dashboard for the Freshie role only) — the logged-in
-// version of the public welcome page, in the Vortexa "Night Ticket" style.
+// Freshie Home (/dashboard for the Freshie role only).
 // Five full-screen stops read one at a time (scroll snapping), each about
 // the Freshie's own group:
-//   01 Welcome + countdown (switches to the live phase timer on the day)
+//   01 One welcome line + countdown (switches to the live phase timer on the day)
 //   02 Checklist (facilitator only: name, attendance, location)
 //   03 Group pass (token balance, next action, shortcuts)
 //   04 How the game works
@@ -151,11 +150,9 @@ function PhaseCard() {
 }
 
 function WelcomeStop({
-  name,
   group,
   isFaci,
 }: {
-  name: string;
   group: Group | null;
   isFaci: boolean;
 }) {
@@ -164,19 +161,10 @@ function WelcomeStop({
   return (
     <section id="fh-welcome" className="fh-stop fh-center" aria-labelledby="fh-welcome-title">
       <div className="fh-eyebrow fh-mono">XMUM Orientation 2026</div>
-      <h1 id="fh-welcome-title" className="fh-welcome-title">
-        <span className="fh-pre fh-slab">WELCOME TO</span>
-        <span className="fh-mark">Vortexa</span>
+      <h1 id="fh-welcome-title" className="fh-welcome-line">
+        Welcome to Vortexa
+        {group ? <span className="fh-welcome-group"> {group.name}</span> : null}
       </h1>
-      <p className="fh-hello">
-        Hi <b>{name || "there"}</b>
-        {group && (
-          <>
-            {" "}
-            · you&apos;re in <b>{group.name}</b>
-          </>
-        )}
-      </p>
       {live ? <PhaseCard /> : <Countdown />}
       <div className="fh-actions">
         <Link href={isFaci ? "/code" : "/scan"} className="fh-btn fh-btn-primary">
@@ -696,7 +684,7 @@ export function FreshieHome() {
 
   return (
     <div
-      className={`fh ${vxDisplay.variable} ${vxSlab.variable}`}
+      className={`fh ${vxSlab.variable}`}
       style={
         {
           "--fh-accent": theme.accent,
@@ -746,7 +734,7 @@ export function FreshieHome() {
         </div>
       </header>
 
-      <WelcomeStop name={profile.full_name ?? ""} group={group} isFaci={isFaci} />
+      <WelcomeStop group={group} isFaci={isFaci} />
       {isFaci && <ChecklistStop group={group} groupId={profile.group_id} />}
       <PassStop group={group} loading={loading} />
       <GameStop />

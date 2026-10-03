@@ -220,6 +220,10 @@ When you finish something, add a few lines here: your name, the date, and the ma
 - Removed Interview Booking (`/booking`) and Practice Reservations (`/reservations`) for every role: pages, nav, dashboard cards. Migration `0039` drops any leftover booking tables, functions and types.
 - Facilitators set a group name and slogan on the home checklist. "Group 1" stays the number. HOF still cannot see the list.
 
+### XMUM, 2026-10-03
+- Freshie Home (`/dashboard`) now opens with one heading: "Welcome to Vortexa" and the signed-in group's name in that group's colour (`--fh-accent`).
+- The countdown, buttons, and the other stops stay as they were. The public Welcome page was not changed.
+
 Example:
 
 ```
