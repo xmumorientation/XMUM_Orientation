@@ -15,7 +15,15 @@ const NAV_LINKS = STOPS.filter((s) => s.id !== "join");
  * Fixed top bar. On desktop: logo, section links, Join button. On phones and
  * tablets: logo, menu button, and a progress bar naming the current stop.
  */
-export function SiteNav({ active, onScan }: { active: StopId; onScan?: () => void }) {
+export function SiteNav({
+  active,
+  onScan,
+  onJoin,
+}: {
+  active: StopId;
+  onScan?: () => void;
+  onJoin?: () => void;
+}) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const index = Math.max(0, STOPS.findIndex((s) => s.id === active));
@@ -91,9 +99,9 @@ export function SiteNav({ active, onScan }: { active: StopId; onScan?: () => voi
           </button>
         )}
 
-        <Link href="/login" className="vx-btn vx-btn-primary vx-nav-cta">
+        <button type="button" className="vx-btn vx-btn-primary vx-nav-cta" onClick={onJoin}>
           Join the Game
-        </Link>
+        </button>
 
         <button
           type="button"
@@ -124,14 +132,18 @@ export function SiteNav({ active, onScan }: { active: StopId; onScan?: () => voi
             </span>
           </button>
         ))}
-        <Link href="/login" className="vx-btn vx-btn-primary" onClick={() => setOpen(false)}>
+        <button
+          type="button"
+          className="vx-btn vx-btn-primary"
+          onClick={() => {
+            setOpen(false);
+            onJoin?.();
+          }}
+        >
           Join the Game ★
-        </Link>
-        {/* TODO(auth): each role will get its own login page later, e.g.
-            /login/freshie and /login/staff (Committee, Faci, GM). Both buttons
-            point at the shared /login page until those exist. */}
+        </button>
         <div className="vx-menu-logins">
-          <Link href="/login" className="vx-btn vx-btn-ghost" onClick={() => setOpen(false)}>
+          <Link href="/login/freshie" className="vx-btn vx-btn-ghost" onClick={() => setOpen(false)}>
             Freshie Login
           </Link>
           <Link href="/login" className="vx-btn vx-btn-ghost" onClick={() => setOpen(false)}>

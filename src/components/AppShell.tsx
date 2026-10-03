@@ -6,11 +6,13 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { FreshieTabBar } from "@/components/freshie/FreshieTabBar";
+import { themeFromColor } from "@/components/freshie/groupTheme";
 import { NavIcon } from "@/components/NavIcon";
 import { NewItemToast } from "@/components/NewItemToast";
 import { PhaseTimer } from "@/components/PhaseTimer";
 import { useConfig } from "@/components/useConfig";
 import { useProfile } from "@/components/ProfileProvider";
+import { useGroup } from "@/components/useGroup";
 import { Dialog, DialogClose, DialogContent, DialogTrigger } from "@/components/ui/Dialog";
 import { Monogram } from "@/components/ui/Monogram";
 import { supabaseBrowser } from "@/lib/supabase/client";
@@ -60,7 +62,7 @@ const NAV: NavItem[] = [
     ],
   },
   { href: "/inventory", label: "Items", code: "IT", roles: ["freshie", "faci"] },
-  { href: "/attendance", label: "Roster", code: "AT", roles: ["faci"] },
+  { href: "/attendance", label: "Headcount", code: "AT", roles: ["faci"] },
   { href: "/gm", label: "Station", code: "GM", roles: ["gm", "guardian_gm"] },
   {
     href: "/token",
@@ -117,7 +119,7 @@ const NAV: NavItem[] = [
   },
   {
     href: "/register-counter",
-    label: "Freshies Register Counter",
+    label: "Freshie control",
     code: "RC",
     roles: ["admin"],
   },
@@ -139,7 +141,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   //     hidden on the full-screen /scan page;
   //   - on Home (/dashboard) the light mobile header is hidden and the page
   //     is painted black — FreshieHome renders its own dark header.
+  const { group } = useGroup();
   const isFreshie = profile.role === "freshie";
+  const freshieTheme = isFreshie ? themeFromColor(group?.color) : null;
   const isFreshieHome = isFreshie && pathname === "/dashboard";
   const showFreshieTabBar = isFreshie && pathname !== "/scan";
 
@@ -152,7 +156,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   async function signOut() {
     await supabaseBrowser().auth.signOut();
-    window.location.href = "/login";
+    window.location.href = isFreshie ? "/" : "/login";
   }
 
   const navLinks = (mode: "sidebar" | "drawer") =>
@@ -194,10 +198,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       )}
       style={
         {
-          "--brand-1": brand.brandPrimary,
+          "--brand-1": freshieTheme?.accent ?? brand.brandPrimary,
           "--brand-2": brand.brandSecondary,
-          "--brand-1-rgb": hexToRgbChannels(brand.brandPrimary),
+          "--brand-1-rgb": hexToRgbChannels(freshieTheme?.accent ?? brand.brandPrimary),
           "--brand-2-rgb": hexToRgbChannels(brand.brandSecondary),
+          ...(freshieTheme
+            ? {
+                "--fh-accent": freshieTheme.accent,
+                "--fh-glow": freshieTheme.glow,
+                "--fh-blue": freshieTheme.accent,
+                "--fh-blue-light": freshieTheme.accentLight,
+                "--fh-on-blue": freshieTheme.onAccent,
+              }
+            : {}),
         } as React.CSSProperties
       }
     >

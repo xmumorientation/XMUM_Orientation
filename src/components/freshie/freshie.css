@@ -1,7 +1,7 @@
 /* ═══════════════════════════════════════════════════════════════════════════
    Freshie Home + Freshie tab bar — Vortexa "Night Ticket" style.
    Scoped under .fh / .fh-tabbar so staff pages are untouched.
-   --fh-accent / --fh-glow come from groupTheme.ts (per-group colours).
+   --fh-accent / --fh-glow / --fh-blue come from the group's one color.
 
    "Blue Hour" palette (60 / 30 / 10):
      60% deep-blue night  — --fh-ink*, --fh-line*
@@ -58,7 +58,7 @@ html.fh-snap { scroll-snap-type: y proximity; }
   position: fixed; inset: 0; z-index: -1; pointer-events: none; overflow: hidden;
   /* Blue-hour sky: #008CFF light from the top, fading into deep blue. */
   background:
-    radial-gradient(120% 55% at 50% -8%, rgba(0, 140, 255, 0.42), rgba(0, 140, 255, 0.08) 55%, transparent 75%),
+    radial-gradient(120% 55% at 50% -8%, color-mix(in srgb, var(--fh-glow) 42%, transparent), color-mix(in srgb, var(--fh-glow) 8%, transparent) 55%, transparent 75%),
     linear-gradient(#030b1c, #06142d);
 }
 .fh-bg::before {
@@ -206,7 +206,7 @@ html.fh-snap { scroll-snap-type: y proximity; }
   border: 1px solid transparent; transition: transform 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 .fh-btn:active { transform: scale(0.97); }
-.fh-btn-primary { background: var(--fh-blue); color: var(--fh-on-blue); box-shadow: 0 0 24px rgba(0, 140, 255, 0.45); }
+.fh-btn-primary { background: var(--fh-blue); color: var(--fh-on-blue); box-shadow: 0 0 24px color-mix(in srgb, var(--fh-blue) 45%, transparent); }
 .fh-btn-primary:hover { background: var(--fh-blue-light); }
 .fh-btn-ghost { background: transparent; color: var(--fh-text); border-color: var(--fh-line-2); }
 .fh-btn-ghost:hover { border-color: var(--fh-accent); color: var(--fh-accent); }
@@ -330,22 +330,21 @@ html.fh-snap { scroll-snap-type: y proximity; }
   display: flex; align-items: flex-end; padding: 6px 6px env(safe-area-inset-bottom, 0px);
   background: rgba(3, 11, 28, 0.95); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
   border-top: 1px solid #16305a;
-  --fh-accent: #008cff;
 }
 .fh-tab {
   flex: 1; min-height: 58px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
   color: #8ba3c4; font-size: 11px; font-weight: 600; text-decoration: none;
 }
-.fh-tab[aria-current="page"] { color: var(--fh-accent); }
+.fh-tab[aria-current="page"] { color: var(--fh-accent, #008cff); }
 .fh-tab-scan { color: #eef5ff; justify-content: flex-end; padding-bottom: 6px; }
 .fh-tab-scan-btn {
   width: 58px; height: 58px; margin-top: -30px; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center; background: #008cff; color: #fff;
-  box-shadow: 0 0 0 4px #030b1c, 0 0 0 6px rgba(0, 140, 255, 0.55), 0 8px 24px rgba(0, 140, 255, 0.4);
+  display: flex; align-items: center; justify-content: center; background: var(--fh-blue, #008cff); color: #fff;
+  box-shadow: 0 0 0 4px #030b1c, 0 0 0 6px color-mix(in srgb, var(--fh-blue, #008cff) 55%, transparent), 0 8px 24px color-mix(in srgb, var(--fh-blue, #008cff) 40%, transparent);
   transition: transform 0.15s ease;
 }
 .fh-tab-scan:active .fh-tab-scan-btn { transform: scale(0.94); }
-.fh-tab:focus-visible { outline: 2px solid #008cff; outline-offset: -4px; border-radius: 12px; }
+.fh-tab:focus-visible { outline: 2px solid var(--fh-accent, #008cff); outline-offset: -4px; border-radius: 12px; }
 @media (min-width: 1024px) {
   .fh-tabbar { display: none; }
 }

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import "./vortexa.css";
+import { JoinChooser } from "./JoinChooser";
 import { ScanPreview, SHOW_SCAN_PREVIEW } from "./ScanPreview";
 import { SiteFooter } from "./SiteFooter";
 import { SiteNav, StopRail, TabBar } from "./SiteNav";
@@ -28,8 +29,11 @@ export default function OrientationHome() {
   const [active, setActive] = useState<StopId>("welcome");
   // DEV PREVIEW scanner overlay — see ScanPreview.tsx.
   const [scanOpen, setScanOpen] = useState(false);
+  const [joinOpen, setJoinOpen] = useState(false);
   const openScan = useCallback(() => setScanOpen(true), []);
   const closeScan = useCallback(() => setScanOpen(false), []);
+  const openJoin = useCallback(() => setJoinOpen(true), []);
+  const closeJoin = useCallback(() => setJoinOpen(false), []);
   const onScan = SHOW_SCAN_PREVIEW ? openScan : undefined;
 
   // Land at the top on reload rather than a restored mid-page position.
@@ -84,22 +88,23 @@ export default function OrientationHome() {
 
   return (
     <div className="vx nexus relative text-white" style={{ fontFamily: FONT.body }}>
-      <SiteNav active={active} onScan={onScan} />
+      <SiteNav active={active} onScan={onScan} onJoin={openJoin} />
       <StopRail active={active} />
 
       <main>
-        <WelcomeSection />
+        <WelcomeSection onJoin={openJoin} />
         <OverviewSection />
         <Games />
         <Scoreboard />
         <Schedule />
         <Committees />
-        <JoinSection />
+        <JoinSection onJoin={openJoin} />
       </main>
       <SiteFooter />
 
       <TabBar active={active} onScan={onScan} />
       {SHOW_SCAN_PREVIEW && scanOpen && <ScanPreview onClose={closeScan} />}
+      <JoinChooser open={joinOpen} onClose={closeJoin} />
     </div>
   );
 }

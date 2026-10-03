@@ -176,7 +176,10 @@ export function QrScannerScreen({ onClose, closeHref = "/dashboard", preview = f
   const showCamera = phase === "starting" || phase === "scanning" || phase === "detected";
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-[#07060b] text-white">
+    <div
+      className="fixed inset-0 z-50 flex flex-col text-white"
+      style={{ background: "color-mix(in srgb, var(--fh-accent, #008CFF) 22%, #07060b)" }}
+    >
       <style>{"@keyframes scanline{from{top:8%}to{top:88%}}"}</style>
       <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={onFile} />
 
@@ -197,10 +200,17 @@ export function QrScannerScreen({ onClose, closeHref = "/dashboard", preview = f
           style={{ height: "min(70vw, 340px)" }}
         >
           {["left-0 top-0 border-l-4 border-t-4 rounded-tl-2xl", "right-0 top-0 border-r-4 border-t-4 rounded-tr-2xl", "left-0 bottom-0 border-l-4 border-b-4 rounded-bl-2xl", "right-0 bottom-0 border-r-4 border-b-4 rounded-br-2xl"].map((c) => (
-            <span key={c} className={`absolute h-10 w-10 border-[#0DFCFD] drop-shadow-[0_0_8px_rgba(13,252,253,0.6)] ${c}`} />
+            <span
+              key={c}
+              className={`absolute h-10 w-10 ${c}`}
+              style={{ borderColor: "var(--fh-accent, #008CFF)", filter: "drop-shadow(0 0 8px var(--fh-accent, #008CFF))" }}
+            />
           ))}
           {phase === "scanning" && (
-            <span className="absolute inset-x-[6%] top-1/2 h-[3px] rounded-full bg-[#0DFCFD] shadow-[0_0_16px_4px_rgba(13,252,253,0.55)] motion-safe:animate-[scanline_2.2s_ease-in-out_infinite_alternate]" />
+            <span
+              className="absolute inset-x-[6%] top-1/2 h-[3px] rounded-full motion-safe:animate-[scanline_2.2s_ease-in-out_infinite_alternate]"
+              style={{ background: "var(--fh-accent, #008CFF)", boxShadow: "0 0 16px 4px var(--fh-accent, #008CFF)" }}
+            />
           )}
         </div>
       </div>

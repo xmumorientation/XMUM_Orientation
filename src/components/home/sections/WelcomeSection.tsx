@@ -1,10 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { scrollToSection } from "../data";
 import { Glow, Spark } from "../decor";
 
-export function WelcomeSection() {
+export function WelcomeSection({ onJoin }: { onJoin?: () => void }) {
   return (
     <section id="welcome" className="vx-sec vx-welcome" aria-labelledby="welcome-title">
       <div className="vx-dots" />
@@ -30,9 +29,9 @@ export function WelcomeSection() {
         </p>
 
         <div className="vx-welcome-actions vx-rise-3">
-          <Link href="/login" className="vx-btn vx-btn-primary">
+          <button type="button" className="vx-btn vx-btn-primary" onClick={() => onJoin?.()}>
             Join the Game ★
-          </Link>
+          </button>
           <button type="button" className="vx-btn vx-btn-ghost" onClick={() => scrollToSection("overview")}>
             What&apos;s inside ↓
           </button>

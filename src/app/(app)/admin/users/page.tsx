@@ -12,7 +12,6 @@ import {
 import { supabaseBrowser } from "@/lib/supabase/client";
 import {
   ROLE_LABELS,
-  type Group,
   type Profile,
   type Station,
   type UserRole,
@@ -36,7 +35,6 @@ export default function AdminUsersPage() {
   const [csv, setCsv] = useState("");
   const [result, setResult] = useState<ImportResult | null>(null);
   const [users, setUsers] = useState<Profile[]>([]);
-  const [groups, setGroups] = useState<Group[]>([]);
   const [stations, setStations] = useState<Station[]>([]);
   const [filter, setFilter] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -45,13 +43,11 @@ export default function AdminUsersPage() {
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
-    const [{ data: us }, { data: gs }, { data: sts }] = await Promise.all([
+    const [{ data: us }, { data: sts }] = await Promise.all([
       supabase.from("profiles").select("*").order("role").order("full_name"),
-      supabase.from("groups").select("*").order("id"),
       supabase.from("stations").select("*").order("id"),
     ]);
     setUsers((us as Profile[]) ?? []);
-    setGroups((gs as Group[]) ?? []);
     setStations((sts as Station[]) ?? []);
     setLoading(false);
   }, [supabase]);
@@ -214,7 +210,7 @@ export default function AdminUsersPage() {
                 <p className="text-xs text-ink-faint">
                   {u.email} {u.student_id ? `· ${u.student_id}` : ""}
                 </p>
-                <div className="mt-2 grid grid-cols-3 gap-1.5">
+                <div className="mt-2 grid grid-cols-2 gap-1.5">
                   <select
                     className="input min-h-[36px] text-xs"
                     value={u.role}
@@ -225,22 +221,6 @@ export default function AdminUsersPage() {
                     {ALL_ROLES.map((r) => (
                       <option key={r} value={r}>
                         {ROLE_LABELS[r]}
-                      </option>
-                    ))}
-                  </select>
-                  <select
-                    className="input min-h-[36px] text-xs"
-                    value={u.group_id ?? ""}
-                    onChange={(e) =>
-                      updateUser(u.id, {
-                        group_id: e.target.value ? Number(e.target.value) : null,
-                      })
-                    }
-                  >
-                    <option value="">No group</option>
-                    {groups.map((g) => (
-                      <option key={g.id} value={g.id}>
-                        {g.name}
                       </option>
                     ))}
                   </select>
