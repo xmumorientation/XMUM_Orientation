@@ -23,7 +23,7 @@ export function WelcomeSection() {
         <p className="vx-welcome-slogan vx-rise-2">One ticket, one ride. Discover the adventure inside.</p>
 
         <p className="vx-lead vx-rise-2">
-          Vortexa is the official theme of XMUM Orientation 2026 — a neon carnival where new beginnings take flight. Over two
+          Vortexa is the official theme of XMUM Orientation 2026, a neon carnival where new beginnings take flight. Over two
           days, discover campus, bond with your team, and step into university life with energy and purpose.
         </p>
 
@@ -43,8 +43,9 @@ export function WelcomeSection() {
         </div>
       </div>
 
-      <button type="button" className="vx-scrollhint vx-mono" onClick={() => scrollToSection("overview")}>
-        SCROLL · NEXT STOP: OVERVIEW
+      <button type="button" className="vx-scrollhint" onClick={() => scrollToSection("overview")}>
+        <span className="vx-scrollhint-line" aria-hidden="true" />
+        <span>Scroll</span>
       </button>
     </section>
   );
