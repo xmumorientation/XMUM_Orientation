@@ -2,6 +2,7 @@
 
 import {
   ArrowRight,
+  ChevronDown,
   Coins,
   Compass,
   Gamepad2,
@@ -206,6 +207,9 @@ function ChecklistStop({ group, groupId }: { group: Group | null; groupId: numbe
   const [headcount, setHeadcount] = useState("");
   const [countError, setCountError] = useState<string | null>(null);
   const [countNotice, setCountNotice] = useState<string | null>(null);
+  // Tap a row to open it; one at a time so the checklist stays on one screen.
+  const [open, setOpen] = useState<1 | 2 | null>(null);
+  const toggle = (n: 1 | 2) => setOpen((cur) => (cur === n ? null : n));
 
   useEffect(() => {
     if (!group || seeded) return;
@@ -287,10 +291,22 @@ function ChecklistStop({ group, groupId }: { group: Group | null; groupId: numbe
         <p className="fh-lead">Three things to do with your group.</p>
       </div>
       <ol className="fh-checks">
-        <li className="fh-check">
-          <span className="fh-check-no fh-mono">01</span>
-          <div>
-            <b>Group name and slogan</b>
+        <li className={`fh-check${open === 1 ? " is-open" : ""}`}>
+          <button
+            type="button"
+            className="fh-check-head"
+            aria-expanded={open === 1}
+            aria-controls="fh-check-1"
+            onClick={() => toggle(1)}
+          >
+            <span className="fh-check-no fh-mono">01</span>
+            <span className="fh-check-title">
+              <b>Group name and slogan</b>
+              <small>{group?.display_name ? group.display_name : "Not set yet"}</small>
+            </span>
+            <ChevronDown size={20} aria-hidden className="fh-check-chev" />
+          </button>
+          <div id="fh-check-1" className="fh-check-body" hidden={open !== 1}>
             <p>
               {group ? `${group.name} is your number.` : "You are not in a group yet."} Choose the name your group goes by.
             </p>
@@ -324,10 +340,24 @@ function ChecklistStop({ group, groupId }: { group: Group | null; groupId: numbe
             </form>
           </div>
         </li>
-        <li className="fh-check">
-          <span className="fh-check-no fh-mono">02</span>
-          <div>
-            <b>Take attendance</b>
+        <li className={`fh-check${open === 2 ? " is-open" : ""}`}>
+          <button
+            type="button"
+            className="fh-check-head"
+            aria-expanded={open === 2}
+            aria-controls="fh-check-2"
+            onClick={() => toggle(2)}
+          >
+            <span className="fh-check-no fh-mono">02</span>
+            <span className="fh-check-title">
+              <b>Take attendance</b>
+              <small>
+                {session ? `${session.name}${headcount !== "" ? ` · ${headcount} people` : ""}` : "No session yet"}
+              </small>
+            </span>
+            <ChevronDown size={20} aria-hidden className="fh-check-chev" />
+          </button>
+          <div id="fh-check-2" className="fh-check-body" hidden={open !== 2}>
             <p>{session ? session.name : "No attendance session yet."}</p>
             {session && (
               <form onSubmit={saveHeadcount}>
@@ -355,14 +385,14 @@ function ChecklistStop({ group, groupId }: { group: Group | null; groupId: numbe
           </div>
         </li>
         <li className="fh-check">
-          <span className="fh-check-no fh-mono">03</span>
-          <div>
-            <b>Update location</b>
-            <p>Open the map and check your group in.</p>
-            <Link href="/checkin" className="fh-btn fh-btn-ghost">
-              <MapPin size={18} aria-hidden /> Update location
-            </Link>
-          </div>
+          <Link href="/checkin" className="fh-check-head">
+            <span className="fh-check-no fh-mono">03</span>
+            <span className="fh-check-title">
+              <b>Update location</b>
+              <small>Open the map and check your group in</small>
+            </span>
+            <MapPin size={20} aria-hidden className="fh-check-chev" />
+          </Link>
         </li>
       </ol>
     </section>

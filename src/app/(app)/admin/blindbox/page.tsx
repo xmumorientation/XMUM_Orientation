@@ -38,6 +38,7 @@ export default function AdminBlindBoxPage() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [tab, setTab] = useState<"members" | "gm">("members");
 
   const load = useCallback(async () => {
     const [{ data: st }, { data: allocs }, { data: claims }, { count }] =
@@ -164,156 +165,207 @@ export default function AdminBlindBoxPage() {
       <ErrorBanner message={error} />
       <SuccessBanner message={notice} />
 
-      <Card className="space-y-2">
-        <h2 className="font-semibold">Assign / regenerate a member QR</h2>
-        <form onSubmit={allocate} className="space-y-2">
-          <select
-            className="input"
-            required
-            value={form.profileId}
-            onChange={(e) => setForm({ ...form, profileId: e.target.value })}
+      <div role="tablist" className="flex gap-1 border-b border-paper-200">
+        {(
+          [
+            ["members", "Member QRs"],
+            ["gm", "GM-sold box"],
+          ] as [typeof tab, string][]
+        ).map(([key, label]) => (
+          <button
+            key={key}
+            role="tab"
+            aria-selected={tab === key}
+            onClick={() => setTab(key)}
+            className={cn(
+              "-mb-px border-b-2 px-4 py-2 text-sm font-semibold",
+              tab === key
+                ? "border-ink text-ink"
+                : "border-transparent text-ink-faint hover:text-ink"
+            )}
           >
-            <option value="">Select committee member…</option>
-            {staff.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.full_name} ({ROLE_LABELS[s.role]})
-                {allocated.has(s.id) ? " — has QR" : ""}
-              </option>
-            ))}
-          </select>
-          <div className="grid grid-cols-4 gap-2">
-            <select
-              className="input text-sm"
-              value={form.boxType}
-              onChange={(e) =>
-                setForm({
-                  ...form,
-                  boxType: e.target.value as "normal" | "special",
-                })
-              }
-            >
-              <option value="normal">Normal</option>
-              <option value="special">Special</option>
-            </select>
-            <input
-              type="number"
-              min="0"
-              className="input text-sm"
-              title="Min tokens"
-              value={form.minTokens}
-              onChange={(e) =>
-                setForm({ ...form, minTokens: Number(e.target.value) })
-              }
-            />
-            <input
-              type="number"
-              min="0"
-              className="input text-sm"
-              title="Max tokens"
-              value={form.maxTokens}
-              onChange={(e) =>
-                setForm({ ...form, maxTokens: Number(e.target.value) })
-              }
-            />
-            <input
-              type="number"
-              min="0"
-              className="input text-sm"
-              title="Number of boxes"
-              value={form.totalBoxes}
-              onChange={(e) =>
-                setForm({ ...form, totalBoxes: Number(e.target.value) })
-              }
-            />
-          </div>
-          <p className="text-xs text-ink-faint">
-            Type · min tokens · max tokens · box count. HOGM spec: HOF/HOGM 2
-            boxes of 1–2, OC 1 box of 1–2, special OC boxes 4–6.
-            Regenerating invalidates the member&apos;s previous QR.
-          </p>
-          <button disabled={busy} type="submit" className="btn-primary w-full">
-            <QrCode size={20} strokeWidth={1.75} />
-            Generate QR
+            {label}
           </button>
-        </form>
-      </Card>
+        ))}
+      </div>
 
-      <Card className="p-0">
-        <p className="border-b border-paper-200 px-4 py-2 text-sm font-semibold">
-          Allocations ({allocations.length})
-        </p>
-        <div className="max-h-[360px] divide-y divide-paper-200 overflow-y-auto">
-          {allocations.map((a) => {
-            const member = staff.find((s) => s.id === a.profile_id);
-            return (
-              <div key={a.id} className="flex items-center gap-2 px-4 py-2.5">
-                <div className="min-w-0 flex-1">
-                  <p className="flex items-center gap-1 truncate text-sm font-medium">
-                    {member?.full_name ?? a.profile_id.slice(0, 8)}
-                    {a.box_type === "special" && (
-                      <Sparkles size={14} strokeWidth={1.75} className="shrink-0 text-amber-500" />
-                    )}
-                  </p>
-                  <p className="text-xs text-ink-faint">
-                    {claimCounts[a.id] ?? 0}/{a.total_boxes} used ·{" "}
-                    {a.min_tokens}–{a.max_tokens} tokens
-                  </p>
-                </div>
-                <button
-                  onClick={() => showQr(a)}
-                  className="btn-secondary min-h-[36px] px-3 text-xs"
+      {tab === "members" && (
+        <div className="grid items-start gap-4 lg:grid-cols-[24rem_minmax(0,1fr)]">
+          <Card className="space-y-2">
+            <h2 className="font-semibold">Assign / regenerate a member QR</h2>
+            <form onSubmit={allocate} className="space-y-2">
+              <select
+                className="input"
+                required
+                value={form.profileId}
+                onChange={(e) => setForm({ ...form, profileId: e.target.value })}
+              >
+                <option value="">Select committee member…</option>
+                {staff.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.full_name} ({ROLE_LABELS[s.role]})
+                    {allocated.has(s.id) ? " — has QR" : ""}
+                  </option>
+                ))}
+              </select>
+              <div className="grid grid-cols-4 gap-2">
+                <select
+                  className="input text-sm"
+                  value={form.boxType}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      boxType: e.target.value as "normal" | "special",
+                    })
+                  }
                 >
-                  QR
-                </button>
-                <button
-                  onClick={() => toggleActive(a)}
-                  className={cn(
-                    "btn min-h-[36px] min-w-[64px] px-3 text-xs",
-                    a.active
-                      ? "bg-green-600 text-white"
-                      : "border border-paper-300 bg-white text-ink-faint"
-                  )}
-                >
-                  {a.active ? "Active" : "Off"}
-                </button>
+                  <option value="normal">Normal</option>
+                  <option value="special">Special</option>
+                </select>
+                <input
+                  type="number"
+                  min="0"
+                  className="input text-sm"
+                  title="Min tokens"
+                  value={form.minTokens}
+                  onChange={(e) =>
+                    setForm({ ...form, minTokens: Number(e.target.value) })
+                  }
+                />
+                <input
+                  type="number"
+                  min="0"
+                  className="input text-sm"
+                  title="Max tokens"
+                  value={form.maxTokens}
+                  onChange={(e) =>
+                    setForm({ ...form, maxTokens: Number(e.target.value) })
+                  }
+                />
+                <input
+                  type="number"
+                  min="0"
+                  className="input text-sm"
+                  title="Number of boxes"
+                  value={form.totalBoxes}
+                  onChange={(e) =>
+                    setForm({ ...form, totalBoxes: Number(e.target.value) })
+                  }
+                />
               </div>
-            );
-          })}
-          {allocations.length === 0 && (
-            <p className="px-4 py-6 text-center text-sm text-ink-faint">
-              No QRs assigned yet.
-            </p>
-          )}
-        </div>
-      </Card>
+              <p className="text-xs text-ink-faint">
+                Type · min tokens · max tokens · box count. HOGM spec: HOF/HOGM 2
+                boxes of 1–2, OC 1 box of 1–2, special OC boxes 4–6.
+                Regenerating invalidates the member&apos;s previous QR.
+              </p>
+              <button disabled={busy} type="submit" className="btn-primary w-full">
+                <QrCode size={20} strokeWidth={1.75} />
+                Generate QR
+              </button>
+            </form>
+          </Card>
 
-      <Card className="space-y-2">
-        <h2 className="font-semibold">GM-sold box settings</h2>
-        <p className="text-xs text-ink-faint">
-          {salesCount} sold so far. Price / min / max / total stock:
-        </p>
-        <div className="grid grid-cols-4 gap-2">
-          {(
-            [
-              ["gm_blindbox_price", "Price"],
-              ["gm_blindbox_min", "Min"],
-              ["gm_blindbox_max", "Max"],
-              ["gm_blindbox_stock", "Stock"],
-            ] as [string, string][]
-          ).map(([key, label]) => (
-            <div key={key}>
-              <label className="label text-xs">{label}</label>
-              <input
-                type="number"
-                min="0"
-                className="input text-sm"
-                defaultValue={Number(config[key] ?? 0)}
-                onBlur={(e) => saveGmConfig(key, Number(e.target.value))}
-              />
-            </div>
-          ))}
+          <Card className="overflow-x-auto p-0">
+            <p className="border-b border-paper-200 px-4 py-3 text-sm font-semibold">
+              Allocations ({allocations.length})
+            </p>
+            <table className="w-full min-w-[520px] text-left text-sm">
+              <thead>
+                <tr className="border-b border-paper-200 text-xs font-bold uppercase tracking-wide text-ink-faint">
+                  <th className="px-4 py-2.5">Member</th>
+                  <th className="w-24 px-4 py-2.5">Used</th>
+                  <th className="w-28 px-4 py-2.5">Tokens</th>
+                  <th className="w-40 px-4 py-2.5" />
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-paper-200">
+                {allocations.map((a) => {
+                  const member = staff.find((s) => s.id === a.profile_id);
+                  return (
+                    <tr key={a.id}>
+                      <td className="px-4 py-2.5">
+                        <p className="flex items-center gap-1 truncate font-medium">
+                          {member?.full_name ?? a.profile_id.slice(0, 8)}
+                          {a.box_type === "special" && (
+                            <Sparkles size={14} strokeWidth={1.75} className="shrink-0 text-amber-500" />
+                          )}
+                        </p>
+                        <p className="text-xs text-ink-faint">
+                          {member ? ROLE_LABELS[member.role] : ""}
+                        </p>
+                      </td>
+                      <td className="px-4 py-2.5 tabular-nums">
+                        {claimCounts[a.id] ?? 0}/{a.total_boxes}
+                      </td>
+                      <td className="px-4 py-2.5 tabular-nums">
+                        {a.min_tokens}–{a.max_tokens}
+                      </td>
+                      <td className="px-4 py-2.5">
+                        <div className="flex justify-end gap-1.5">
+                          <button
+                            onClick={() => showQr(a)}
+                            className="btn-secondary min-h-[36px] px-3 text-xs"
+                          >
+                            QR
+                          </button>
+                          <button
+                            onClick={() => toggleActive(a)}
+                            className={cn(
+                              "btn min-h-[36px] min-w-[64px] px-3 text-xs",
+                              a.active
+                                ? "bg-green-600 text-white"
+                                : "border border-paper-300 bg-white text-ink-faint"
+                            )}
+                          >
+                            {a.active ? "Active" : "Off"}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+                {allocations.length === 0 && (
+                  <tr>
+                    <td colSpan={4} className="px-4 py-8 text-center text-ink-faint">
+                      No QRs assigned yet.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </Card>
         </div>
-      </Card>
+      )}
+
+      {tab === "gm" && (
+        <Card className="max-w-2xl space-y-2">
+          <h2 className="font-semibold">GM-sold box settings</h2>
+          <p className="text-xs text-ink-faint">
+            {salesCount} sold so far. Price / min / max / total stock:
+          </p>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {(
+              [
+                ["gm_blindbox_price", "Price"],
+                ["gm_blindbox_min", "Min"],
+                ["gm_blindbox_max", "Max"],
+                ["gm_blindbox_stock", "Stock"],
+              ] as [string, string][]
+            ).map(([key, label]) => (
+              <div key={key}>
+                <label className="label text-xs">{label}</label>
+                <input
+                  type="number"
+                  min="0"
+                  className="input text-sm"
+                  defaultValue={Number(config[key] ?? 0)}
+                  onBlur={(e) => saveGmConfig(key, Number(e.target.value))}
+                />
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
 
       {qrPreview && (
         <div

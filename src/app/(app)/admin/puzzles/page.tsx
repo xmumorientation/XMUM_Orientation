@@ -57,6 +57,7 @@ export default function AdminPuzzlesPage() {
       <ErrorBanner message={error} />
       <SuccessBanner message={notice} />
 
+      <div className="grid items-start gap-4 lg:grid-cols-2 xl:grid-cols-3">
       {PROJECTOR_LOCATIONS.map((loc) => {
         const url = puzzleImageUrl(config, loc);
         return (
@@ -98,6 +99,7 @@ export default function AdminPuzzlesPage() {
           </Card>
         );
       })}
+      </div>
     </div>
   );
 }

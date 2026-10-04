@@ -176,7 +176,7 @@ export default function DashboardPage() {
 
         {role === "admin" && (
           <ActionCard
-            href="/freshie-control"
+            href="/admin/freshies"
             code="RC"
             title="Freshie control"
             desc="Set the number of groups and each group's color"

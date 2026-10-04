@@ -216,7 +216,7 @@ Full background: the "Issues Found" section in [permission-matrix.md](permission
 When you finish something, add a few lines here: your name, the date, and the main points of what you did and what is left. Newest at the top.
 
 ### Jiamin, 2026-10-04
-- Moved Admin "Sessions" and "Headcount" into Freshie control (`/freshie-control/sessions`, `/freshie-control/headcount`).
+- Admin redesign step A: Admin nav is now 4 sections (Live, Freshies, Game, Settings) with sub-tabs; Freshie control moved to `/admin/freshies` (old `/freshie-control` redirects); admin sidebar can collapse to icons. UI only. Step B done: Users (role chips, group filter, table, CSV import in a pop-up), Audit (action and role chips, table), Control room (phase rows, switches). Step C done: Stations (table, add in pop-up), Blind box (two tabs, table), NFC, Puzzles, FAQ (grouped, add in pop-up), Brand, Tokens (full width, layout only). Admin redesign complete.
 - Removed Interview Booking (`/booking`) and Practice Reservations (`/reservations`) for every role: pages, nav, dashboard cards. Migration `0039` drops any leftover booking tables, functions and types.
 - Facilitators set a group name and slogan on the home checklist. "Group 1" stays the number. HOF still cannot see the list.
 

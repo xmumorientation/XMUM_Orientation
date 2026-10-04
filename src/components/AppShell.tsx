@@ -1,6 +1,6 @@
 "use client";
 
-import { Menu, X } from "lucide-react";
+import { Menu, PanelLeftClose, PanelLeftOpen, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -99,14 +99,6 @@ const NAV: NavItem[] = [
     roles: ["hof", "hogm", "committee", "admin"],
   },
   { href: "/code", label: "Code", code: "CD", roles: ["faci"] },
-  {
-    href: "/freshie-control",
-    label: "Freshie control",
-    code: "RC",
-    roles: ["admin"],
-  },
-
-
   { href: "/admin", label: "Admin", code: "AD", roles: ["admin"] },
 ];
 
@@ -115,9 +107,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { brand } = useConfig();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
 
   const isFreshie = profile.role === "freshie";
   const isFaci = profile.role === "faci";
+  const isAdmin = profile.role === "admin";
+  // Only the admin account can shrink the sidebar to icons.
+  const slim = isAdmin && collapsed;
   const items = NAV.filter((n) => n.roles.includes(profile.role)).map((item) =>
     isFaci && item.href === "/map" ? { ...item, href: "/checkin" } : item
   );
@@ -131,6 +127,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     (pathname === "/dashboard" || pathname === "/schedule");
   const showTabBar = (isFreshie || isFaci) && !(isFreshie && pathname === "/scan");
 
+  useEffect(() => {
+    try {
+      setCollapsed(localStorage.getItem("sidebar-collapsed") === "1");
+    } catch {}
+  }, []);
+
+  function toggleCollapsed() {
+    setCollapsed((c) => {
+      try {
+        localStorage.setItem("sidebar-collapsed", c ? "0" : "1");
+      } catch {}
+      return !c;
+    });
+  }
+
   // Close the drawer on route change so it never lingers over a new page.
   // Radix Dialog owns focus-trap/Escape/backdrop-dismiss/focus-return; route
   // change is the one thing it has no opinion on.
@@ -143,7 +154,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     window.location.href = isFreshie ? "/" : "/login";
   }
 
-  const navLinks = (mode: "sidebar" | "drawer") =>
+  const navLinks = (mode: "sidebar" | "drawer", iconsOnly = false) =>
     items.map((item) => {
       const active =
         pathname === item.href || pathname.startsWith(item.href + "/");
@@ -152,8 +163,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           key={item.href}
           href={item.href}
           onClick={() => mode === "drawer" && setMenuOpen(false)}
+          title={iconsOnly ? item.label : undefined}
+          aria-label={iconsOnly ? item.label : undefined}
           className={cn(
             "flex min-h-[48px] items-center gap-3 rounded-2xl px-3 text-sm font-bold transition",
+            iconsOnly && "justify-center px-0",
             active
               ? "bg-ink text-white shadow-card"
               : "text-ink-soft hover:bg-paper-100 hover:text-ink"
@@ -169,7 +183,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           >
             <NavIcon code={item.code} size={18} strokeWidth={1.75} />
           </span>
-          <span>{item.label}</span>
+          {!iconsOnly && <span>{item.label}</span>}
         </Link>
       );
     });
@@ -177,7 +191,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div
       className={cn(
-        "min-h-dvh w-full lg:grid lg:grid-cols-[16rem_minmax(0,1fr)]",
+        "min-h-dvh w-full lg:grid",
+        slim ? "lg:grid-cols-[4.5rem_minmax(0,1fr)]" : "lg:grid-cols-[16rem_minmax(0,1fr)]",
         isNight && "bg-[#030b1c]"
       )}
       style={
@@ -198,34 +213,70 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         } as React.CSSProperties
       }
     >
-      <aside className="sticky top-0 hidden h-dvh border-r border-paper-200 bg-paper-50/95 px-4 py-5 lg:flex lg:flex-col">
-        <Link href="/dashboard" className="flex items-center gap-3">
+      <aside
+        className={cn(
+          "sticky top-0 hidden h-dvh border-r border-paper-200 bg-paper-50/95 py-5 lg:flex lg:flex-col",
+          slim ? "px-2" : "px-4"
+        )}
+      >
+        <Link
+          href="/dashboard"
+          title={slim ? brand.eventName : undefined}
+          className={cn("flex items-center gap-3", slim && "justify-center")}
+        >
           <Monogram name={brand.eventName} />
-          <span className="min-w-0">
-            <span className="block truncate text-base font-black tracking-tight">
-              {brand.eventName}
+          {!slim && (
+            <span className="min-w-0">
+              <span className="block truncate text-base font-black tracking-tight">
+                {brand.eventName}
+              </span>
+              <span className="block truncate text-xs text-ink-faint">
+                XMUM Orientation 2026
+              </span>
             </span>
-            <span className="block truncate text-xs text-ink-faint">
-              XMUM Orientation 2026
-            </span>
-          </span>
+          )}
         </Link>
 
-        <div className="mt-5">
-          <PhaseTimer compact />
-        </div>
+        {!slim && (
+          <div className="mt-5">
+            <PhaseTimer compact />
+          </div>
+        )}
 
-        <nav className="mt-5 space-y-1">{navLinks("sidebar")}</nav>
+        <nav className="mt-5 space-y-1">{navLinks("sidebar", slim)}</nav>
 
-        <div className="mt-auto space-y-3 border-t border-paper-200 pt-4">
-          <span className="chip border border-brand-1/20 bg-brand-1/20 text-brand-1">
-            {ROLE_LABELS[profile.role]}
-          </span>
+        <div
+          className={cn(
+            "mt-auto space-y-3 border-t border-paper-200 pt-4",
+            slim && "flex flex-col items-center"
+          )}
+        >
+          {isAdmin && (
+            <button
+              type="button"
+              onClick={toggleCollapsed}
+              aria-label={slim ? "Expand sidebar" : "Collapse sidebar"}
+              title={slim ? "Expand sidebar" : "Collapse sidebar"}
+              className="flex h-10 w-10 items-center justify-center rounded-xl border border-paper-300 bg-white text-ink-soft transition hover:bg-paper-100 hover:text-ink"
+            >
+              {slim ? (
+                <PanelLeftOpen size={18} strokeWidth={1.75} />
+              ) : (
+                <PanelLeftClose size={18} strokeWidth={1.75} />
+              )}
+            </button>
+          )}
+          {!slim && (
+            <span className="chip border border-brand-1/20 bg-brand-1/20 text-brand-1">
+              {ROLE_LABELS[profile.role]}
+            </span>
+          )}
           <button
             onClick={signOut}
+            title="Log out"
             className="flex min-h-[44px] items-center text-sm font-semibold text-ink-faint transition hover:text-ink"
           >
-            Log out
+            {slim ? "Exit" : "Log out"}
           </button>
         </div>
       </aside>
@@ -321,7 +372,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <ShellMenuProvider openMenu={() => setMenuOpen(true)}>
       <main
         className={cn(
-          "mx-auto min-h-dvh w-full max-w-6xl px-3 pb-[calc(1.25rem+env(safe-area-inset-bottom))] pt-3 sm:px-5 sm:pb-8 sm:pt-5 lg:px-8 lg:py-6",
+          "mx-auto min-h-dvh w-full px-3 pb-[calc(1.25rem+env(safe-area-inset-bottom))] pt-3 sm:px-5 sm:pb-8 sm:pt-5 lg:px-8 lg:py-6",
+          isAdmin ? "max-w-[96rem]" : "max-w-6xl",
           showTabBar &&
             "pb-[calc(6.5rem+env(safe-area-inset-bottom))] sm:pb-[calc(6.5rem+env(safe-area-inset-bottom))]"
         )}
