@@ -215,6 +215,11 @@ Full background: the "Issues Found" section in [permission-matrix.md](permission
 
 When you finish something, add a few lines here: your name, the date, and the main points of what you did and what is left. Newest at the top.
 
+### XMUM, 2026-10-04
+- Folded the Welcome snap, scroll cue, and copy polish onto `David/welcome-login-dashboard`.
+- Freshie Home opens with one line: "Welcome to Vortexa" and the group name in that group's colour. Facilitators still see the Vortexa lockup and the "you're in" line.
+- `bonding-session` is still separate. A direct merge conflicts in the app shell, login, dashboard, middleware, token, committee, and the removed booking page.
+
 ### Jiamin, 2026-10-04
 - Moved Admin "Sessions" and "Headcount" into Freshie control (`/freshie-control/sessions`, `/freshie-control/headcount`).
 - Removed Interview Booking (`/booking`) and Practice Reservations (`/reservations`) for every role: pages, nav, dashboard cards. Migration `0039` drops any leftover booking tables, functions and types.

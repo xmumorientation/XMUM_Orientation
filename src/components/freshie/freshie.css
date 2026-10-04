@@ -175,6 +175,12 @@ html.fh-snap { scroll-snap-type: y proximity; }
 @keyframes fh-shimmer { to { background-position: 200% 0; } }
 .fh-hello { margin: -6px 0 4px; font-size: 15px; color: var(--fh-text-2); }
 .fh-hello b { color: #fff; }
+/* Freshie only. One line; a long group name may wrap. Faci keeps the lockup above. */
+.fh-welcome-line {
+  margin: 0; min-width: 0; max-width: 100%; padding-inline: 16px; box-sizing: border-box;
+  font-size: clamp(16px, 4.7vw, 36px); font-weight: 700; line-height: 1.15; letter-spacing: -0.03em;
+}
+.fh-welcome-group { color: var(--fh-accent); }
 
 .fh-countwrap { display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 440px; }
 .fh-clabel { font-size: 11px; letter-spacing: 0.24em; color: var(--fh-mute); }
