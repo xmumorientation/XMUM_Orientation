@@ -33,6 +33,7 @@ export const ROLE_NAVIGATION: Record<UserRole, NavigationItem[]> = {
   admin: [
     { href: "/admin", label: "Control Room", code: "AD", permission: "admin.access" },
     { href: "/admin/operations", label: "Operations", code: "OP", permission: "operations.manage" },
+    { href: "/admin/logs", label: "Logs & Corrections", code: "LG", permission: "logs.audit" },
     { href: "/admin/roster", label: "Freshie Roster", code: "RC", permission: "accounts.manage" },
     { href: "/admin/token", label: "Token Log", code: "TK", permission: "token.manage" },
     { href: "/admin/accounts", label: "Accounts", code: "AC", permission: "accounts.manage" },

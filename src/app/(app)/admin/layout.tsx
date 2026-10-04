@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 const TABS = [
   { href: "/admin", label: "Control room" },
   { href: "/admin/operations", label: "Operations" },
+  { href: "/admin/logs", label: "Logs & corrections" },
   { href: "/admin/token", label: "Tokens" },
   { href: "/admin/accounts", label: "Accounts & allocation" },
   { href: "/admin/configuration", label: "Configuration" },
