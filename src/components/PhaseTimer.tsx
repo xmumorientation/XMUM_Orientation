@@ -24,20 +24,20 @@ export function PhaseTimer({ compact = false }: { compact?: boolean }) {
         ? (new Date(current.ends_at).getTime() - serverNow) / 1000
         : 0;
 
-  const isEndgame = current.is_endgame;
+  const isWarning = current.is_endgame || remaining <= 30 * 60;
 
   return (
     <div
       className={cn(
         "flex items-center gap-2 px-3 py-1.5 text-sm font-semibold",
         compact ? "justify-start rounded-2xl" : "justify-center",
-        isEndgame
+        isWarning
           ? "animate-pulseglow bg-red-600 text-white"
           : "bg-gradient-to-r from-amber-400/30 via-brand-1/30 to-brand-2/30 text-ink"
       )}
     >
       <span className="text-[10px] font-black tracking-[0.18em]">
-        {isEndgame ? "END" : "NOW"}
+        {current.is_endgame ? "END" : remaining <= 30 * 60 ? "30M" : "NOW"}
       </span>
       <span>{current.name}</span>
       <span className="tabular-nums">

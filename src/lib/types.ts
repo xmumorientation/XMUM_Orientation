@@ -132,6 +132,10 @@ export interface Phase {
   started_at: string | null;
   ends_at: string | null;
   paused_remaining: number | null;
+  paused_at?: string | null;
+  updated_by?: string | null;
+  updated_at?: string;
+  version?: number;
   is_endgame: boolean;
   sort_order: number;
 }
