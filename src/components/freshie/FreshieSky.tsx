@@ -83,7 +83,8 @@ const SPARKS: { left: number; top: number; size: number; bg: string }[] = [
 ];
 
 // ── City (wide skyline, cropped to the screen) ───────────────────────────────
-const CITY_W = 1600;
+// Wide enough that big screens show more city instead of a zoomed-in one.
+const CITY_W = 3200;
 const CITY_H = 300;
 const GROUND = 230;
 
@@ -264,7 +265,7 @@ export function FreshieSky({ cabins, myGroupId }: { cabins: SkyCabin[]; myGroupI
           ))}
           <rect x="0" y="150" width={CITY_W} height={CITY_H - 150} fill="url(#fh-sky-fade)" />
           <path
-            d="M-20 296 C 300 240, 560 228, 800 252 S 1240 276, 1620 226"
+            d="M-20 296 C 600 240, 1120 228, 1600 252 S 2480 276, 3220 226"
             fill="none"
             stroke="url(#fh-sky-ribbon)"
             strokeWidth="10"
@@ -272,7 +273,7 @@ export function FreshieSky({ cabins, myGroupId }: { cabins: SkyCabin[]; myGroupI
             opacity=".8"
             filter="url(#fh-sky-glow)"
           />
-          {Array.from({ length: 31 }, (_, i) => (
+          {Array.from({ length: 62 }, (_, i) => (
             <rect
               key={i}
               className="fh-sky-lamp"

@@ -135,9 +135,25 @@ html.vx-snap { scroll-snap-type: y proximity; }
 }
 .vx-star { position: absolute; border-radius: 50%; }
 .vx-orb { position: absolute; border-radius: 50%; }
+/* City: two wide skyline layers (cropped at the sides on narrow screens) with
+   the ferris wheel between them. The wheel is sized from the city height, so
+   it always matches the buildings' scale, and placed so it is never cut off. */
 .vx-city {
-  position: absolute; left: 0; bottom: 0; width: 100%; display: block;
-  height: clamp(300px, 47.5vw, 760px);
+  --vx-city-h: clamp(300px, 47.5vw, 760px);
+  --vx-wheel-x: 68%; /* wheel centre, from the left */
+  position: absolute; left: 0; bottom: 0; width: 100%; height: var(--vx-city-h);
+}
+@media (min-width: 1024px) {
+  .vx-city { --vx-wheel-x: 76%; }
+}
+.vx-city-layer { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.vx-wheel {
+  position: absolute;
+  /* 600 wheel units at the city's scale (city is 760 units tall). */
+  width: calc(var(--vx-city-h) * 600 / 760); height: auto;
+  left: calc(var(--vx-wheel-x) - var(--vx-city-h) * 300 / 760);
+  /* Wheel's bottom edge sits 40 units under the ground line (y 560 of 760). */
+  bottom: calc(var(--vx-city-h) * 160 / 760);
 }
 .vx-city-wheel { transform-box: fill-box; transform-origin: center; }
 @media (prefers-reduced-motion: no-preference) {
