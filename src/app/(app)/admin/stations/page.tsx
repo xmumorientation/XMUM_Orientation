@@ -11,11 +11,13 @@ import {
   SuccessBanner,
 } from "@/components/ui";
 import { supabaseBrowser } from "@/lib/supabase/client";
+import { useCurrentUserContext } from "@/components/ProfileProvider";
 import type { Group, RiskTier, Station, StationStatus } from "@/lib/types";
 
 // FR-11.3: station management (count/IDs still open per D-2 — fully
 // editable here without redeploy). Also group creation.
 export default function AdminStationsPage() {
+  const context = useCurrentUserContext();
   const supabase = useMemo(() => supabaseBrowser(), []);
   const [stations, setStations] = useState<Station[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
@@ -190,7 +192,7 @@ export default function AdminStationsPage() {
         </form>
       </Card>
 
-      <Card className="space-y-2">
+      {context.role === "admin" && <Card className="space-y-2">
         <h2 className="font-semibold">Groups ({groups.length})</h2>
         <div className="grid grid-cols-2 gap-2">
           {groups.map((g) => (
@@ -217,7 +219,7 @@ export default function AdminStationsPage() {
             + Add
           </button>
         </form>
-      </Card>
+      </Card>}
     </div>
   );
 }

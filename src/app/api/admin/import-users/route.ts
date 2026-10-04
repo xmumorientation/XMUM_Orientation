@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
 //   station= station id (optional, GMs)
 // Returns generated credentials so Admin can distribute them centrally.
 
-const STAFF_ROLES: UserRole[] = ["faci", "gm", "admin"];
+const STAFF_ROLES: UserRole[] = ["faci", "gm", "committee", "hof", "hogm", "admin"];
 
 interface CsvRow {
   line: number;

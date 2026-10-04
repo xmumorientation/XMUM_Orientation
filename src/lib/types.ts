@@ -1,6 +1,6 @@
 // Shared domain types mirroring the Supabase schema (migration 0001).
 
-export type UserRole = "freshie" | "faci" | "gm" | "admin";
+export type UserRole = "freshie" | "faci" | "gm" | "committee" | "hof" | "hogm" | "admin";
 
 export type AdminTeam = "HOF" | "HOGM" | "TECH";
 
@@ -232,10 +232,13 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   freshie: "Freshie",
   faci: "Facilitator",
   gm: "Game Master",
+  committee: "Committee",
+  hof: "HOF",
+  hogm: "HOGM",
   admin: "Admin",
 };
 
-export const ADMIN_TIER: UserRole[] = ["admin"];
+export const ADMIN_TIER: UserRole[] = ["committee", "hof", "hogm", "admin"];
 
 // ── Freshie Registration & Group Assignment (D-Day desk) ─────────────────
 // Freshies have no authentication accounts. Their roster and group allocation

@@ -104,6 +104,30 @@ function primaryAction(role: string): Action {
       desc: "Grant tokens, sell blind boxes & update stations.",
     };
   }
+  if (role === "committee") {
+    return {
+      href: "/admin/operations",
+      code: "OP",
+      title: "Open operations",
+      desc: "Monitor live locations and event operations.",
+    };
+  }
+  if (role === "hof") {
+    return {
+      href: "/admin/accounts",
+      code: "FA",
+      title: "Manage Faci allocation",
+      desc: "Assign facilitators and review participant operations.",
+    };
+  }
+  if (role === "hogm") {
+    return {
+      href: "/admin/stations",
+      code: "ST",
+      title: "Manage gameplay stations",
+      desc: "Configure stations, GM assignments and gameplay values.",
+    };
+  }
   if (role === "admin") {
     return {
       href: "/admin",
@@ -155,10 +179,10 @@ export default function DashboardPage() {
         </div>
       </Link>
 
-      {(role === "freshie" || role === "faci") && <TokenBalanceCard />}
+      {role === "faci" && <TokenBalanceCard />}
 
       <div className="grid gap-3 sm:grid-cols-2">
-        {(role === "freshie" || role === "faci") && (
+        {role === "faci" && (
           <>
             <ActionCard
               href="/inventory"

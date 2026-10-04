@@ -28,7 +28,7 @@ import {
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 
 import { Card, PageTitle } from "@/components/ui";
-import { useProfile } from "@/components/ProfileProvider";
+import { useCurrentUserContext, useProfile } from "@/components/ProfileProvider";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import {
   fetchPuzzleInventory,
@@ -56,7 +56,10 @@ import { cn } from "@/lib/utils";
 
 export default function AdminTokenAllInOnePage() {
   const profile = useProfile();
+  const context = useCurrentUserContext();
   const isAdmin = profile.role === "admin";
+  const canCorrect = context.permissions.includes("token.correct.any");
+  const canManagePresets = context.permissions.includes("token.presets.manage");
   const supabase = useMemo(() => supabaseBrowser(), []);
 
   // Core Data
@@ -64,6 +67,7 @@ export default function AdminTokenAllInOnePage() {
   const [logs, setLogs] = useState<TokenLog[]>([]);
   const [inventory, setInventory] = useState<PuzzleInventoryItem[]>([]);
   const [presets, setPresets] = useState<TokenPreset[]>(DEFAULT_TOKEN_PRESETS);
+  const [correctionReasons, setCorrectionReasons] = useState<string[]>([]);
 
   // Loading & Action State
   const [loading, setLoading] = useState(true);
@@ -119,22 +123,26 @@ export default function AdminTokenAllInOnePage() {
   // ── Data Loader ───────────────────────────────────────────────────────────
   const loadAllData = useCallback(async () => {
     try {
-      const [gData, lData, iData, pData] = await Promise.all([
+      const [gData, lData, iData, pData, reasonResult] = await Promise.all([
         fetchTokenGroups(),
         fetchTokenLogs(),
         fetchPuzzleInventory(),
         fetchTokenPresets(),
+        canCorrect
+          ? supabase.from("correction_reason_presets").select("label").eq("is_active", true).order("sort_order")
+          : Promise.resolve({ data: [], error: null }),
       ]);
       setGroups(gData);
       setLogs(lData);
       setInventory(iData);
       if (pData && pData.length > 0) setPresets(pData);
+      if (!reasonResult.error) setCorrectionReasons((reasonResult.data ?? []).map((row) => row.label));
     } catch (e: any) {
       console.error("Error loading token data:", e);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [canCorrect, supabase]);
 
   useEffect(() => {
     loadAllData();
@@ -340,6 +348,7 @@ export default function AdminTokenAllInOnePage() {
         newAmount: newAmt,
         newNotes: editLogForm.notes.trim(),
         newTransactionType: editLogForm.transactionType,
+        correctionReason: editLogForm.notes.trim(),
       });
 
       if (res.ok) {
@@ -630,7 +639,7 @@ export default function AdminTokenAllInOnePage() {
               <Sparkles size={14} className="text-amber-400" />
               Quick Presets (Click to Auto-Fill):
             </span>
-            {isAdmin && (
+            {canManagePresets && (
               <button
                 onClick={() => {
                   setEditingPreset(null);
@@ -1020,13 +1029,13 @@ export default function AdminTokenAllInOnePage() {
                 <th className="pb-2.5">Delta</th>
                 <th className="pb-2.5">Type</th>
                 <th className="pb-2.5">Notes</th>
-                {isAdmin && <th className="pb-2.5 text-right">Actions</th>}
+                {canCorrect && <th className="pb-2.5 text-right">Actions</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-slate-700">
               {filteredLogs.length === 0 ? (
                 <tr>
-                  <td colSpan={isAdmin ? 6 : 5} className="py-8 text-center text-slate-400">
+                  <td colSpan={canCorrect ? 6 : 5} className="py-8 text-center text-slate-400">
                     No transactions recorded yet.
                   </td>
                 </tr>
@@ -1061,7 +1070,7 @@ export default function AdminTokenAllInOnePage() {
                       </span>
                     </td>
                     <td className="py-2.5 text-slate-600">{log.notes || "—"}</td>
-                    {isAdmin && (
+                    {canCorrect && (
                       <td className="py-2.5 text-right">
                         <div className="flex items-center justify-end gap-1">
                           <button
@@ -1092,7 +1101,7 @@ export default function AdminTokenAllInOnePage() {
       {/* ────────────────────────────────────────────────────────────────────────── */}
       {/* MODAL: EDIT AUDIT LOG (Admin Only)                                        */}
       {/* ────────────────────────────────────────────────────────────────────────── */}
-      {isAdmin && editLogModalOpen && editingLog && (
+      {canCorrect && editLogModalOpen && editingLog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm animate-fade-in">
           <div className="w-full max-w-lg rounded-2xl border border-slate-700 bg-slate-900 p-6 shadow-2xl space-y-5 text-white">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
@@ -1164,8 +1173,19 @@ export default function AdminTokenAllInOnePage() {
 
               <div>
                 <label className="mb-1 block text-xs font-bold text-slate-400">Audit Notes / Reason</label>
+                {correctionReasons.length > 0 && (
+                  <select
+                    value=""
+                    onChange={(e) => e.target.value && setEditLogForm({ ...editLogForm, notes: e.target.value })}
+                    className="mb-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-white focus:border-amber-500 focus:outline-none"
+                  >
+                    <option value="">Choose a common reason...</option>
+                    {correctionReasons.map((reason) => <option key={reason} value={reason}>{reason}</option>)}
+                  </select>
+                )}
                 <input
                   type="text"
+                  required
                   placeholder="Audit notes..."
                   value={editLogForm.notes}
                   onChange={(e) => setEditLogForm({ ...editLogForm, notes: e.target.value })}
@@ -1200,7 +1220,7 @@ export default function AdminTokenAllInOnePage() {
       {/* ────────────────────────────────────────────────────────────────────────── */}
       {/* MODAL: ADMIN PRESET MANAGER (Create, Edit, Delete Presets)                */}
       {/* ────────────────────────────────────────────────────────────────────────── */}
-      {isAdmin && presetModalOpen && (
+      {canManagePresets && presetModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm animate-fade-in">
           <div className="w-full max-w-xl rounded-2xl border border-slate-700 bg-slate-900 p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto text-white">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">

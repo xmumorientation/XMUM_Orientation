@@ -14,7 +14,7 @@ export default async function ScreenLayout({
 }) {
   const context = await resolveCurrentUserContext();
   if (!context) redirect("/login");
-  if (!hasPermission(context.permissions, "admin.access")) {
+  if (!hasPermission(context.permissions, "admin.access") && !hasPermission(context.permissions, "bigscreen.view")) {
     redirect("/dashboard");
   }
 

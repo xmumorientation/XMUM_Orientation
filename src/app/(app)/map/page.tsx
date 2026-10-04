@@ -7,10 +7,11 @@ import { hasPermission } from "@/lib/permissions";
 
 export default function MapPage() {
   const context = useCurrentUserContext();
-  // Admin sees all group pins; Faci sees their own group only (the RPC
-  // enforces this server-side - the flag just requests pins).
+  // Management sees all group pins; Faci/Freshie see only their own group.
+  // The RPC enforces the scope server-side; this flag only requests pins.
   const showPins =
-    hasPermission(context.permissions, "operations.manage") ||
+    hasPermission(context.permissions, "group.locations.view_all") ||
+    hasPermission(context.permissions, "group.locations.view_own") ||
     hasPermission(context.permissions, "map.update");
 
   return (

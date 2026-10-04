@@ -74,12 +74,15 @@ export async function fetchTokenPresets(): Promise<TokenPreset[]> {
   try {
     const { data, error } = await supabase
       .from("game_config_rules")
-      .select("rule_value")
+      .select("rule_value, description")
       .eq("rule_key", "APP_TOKEN_PRESETS_JSON")
       .single();
 
-    if (!error && data && data.rule_value) {
-      const parsed = typeof data.rule_value === "string" ? JSON.parse(data.rule_value) : data.rule_value;
+    if (!error && data) {
+      // game_config_rules.rule_value is numeric. The teammate preset editor
+      // stores its JSON payload in description, so read that field first.
+      const raw = data.description || data.rule_value;
+      const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
       if (Array.isArray(parsed) && parsed.length > 0) {
         setLocalItem("presets", parsed);
         return parsed;
@@ -96,12 +99,16 @@ export async function saveTokenPresets(presets: TokenPreset[]): Promise<{ ok: bo
   setLocalItem("presets", presets);
   const supabase = supabaseBrowser();
   try {
-    await supabase.from("game_config_rules").upsert({
-      rule_key: "APP_TOKEN_PRESETS_JSON",
-      rule_value: 0,
-      description: JSON.stringify(presets),
-      updated_at: new Date().toISOString(),
-    });
+    const { error } = await supabase.from("game_config_rules").upsert(
+      {
+        rule_key: "APP_TOKEN_PRESETS_JSON",
+        rule_value: 0,
+        description: JSON.stringify(presets),
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "rule_key" }
+    );
+    if (error) return { ok: false };
   } catch (err) {
     console.warn("Supabase saveTokenPresets fallback:", err);
   }
