@@ -19,8 +19,6 @@ export function Schedule() {
 
   return (
     <section id="schedule" className="vx-sec vx-sched" aria-labelledby="schedule-title">
-      <div className="vx-dots" />
-
       <div className="vx-inner">
         <div className="vx-sched-side vx-rise">
           <h2 id="schedule-title" className="vx-h2">Schedule</h2>

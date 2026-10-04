@@ -1,6 +1,6 @@
 "use client";
 
-import { Countdown, Spark } from "../decor";
+import { Countdown } from "../decor";
 
 const STATS = [
   { value: "28–29 Nov", label: "Main D-Day", color: "var(--vx-cyan)" },
@@ -12,9 +12,6 @@ const STATS = [
 export function OverviewSection() {
   return (
     <section id="overview" className="vx-sec vx-overview" aria-labelledby="overview-title">
-      <div className="vx-dots" />
-      <Spark size={20} color="var(--vx-lilac)" style={{ right: "7%", top: "18%" }} />
-
       <div className="vx-inner">
         <div className="vx-overview-copy">
           <h2 id="overview-title" className="vx-h2 vx-rise">Overview</h2>

@@ -2,16 +2,12 @@
 
 import React from "react";
 import { TEAMS } from "../data";
-import { Spark } from "../decor";
 
 export function Scoreboard() {
   const live = TEAMS.some((t) => t.score !== null);
 
   return (
     <section id="scoreboard" className="vx-sec vx-score" aria-labelledby="scoreboard-title">
-      <div className="vx-dots" />
-      <Spark size={24} color="var(--vx-orange)" style={{ left: "6%", bottom: "14%" }} />
-
       <div className="vx-inner">
         <div className="vx-score-head vx-rise">
           <h2 id="scoreboard-title" className="vx-h2">Scoreboard</h2>

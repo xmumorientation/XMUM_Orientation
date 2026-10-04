@@ -1,16 +1,8 @@
 "use client";
 
-import { Glow, Spark } from "../decor";
-
 export function JoinSection({ onJoin }: { onJoin: () => void }) {
   return (
     <section id="join" className="vx-sec vx-join" aria-labelledby="join-title">
-      <div className="vx-dots" />
-      <Glow size="min(480px, 90vw)" color="var(--vx-navy)" style={{ left: "8%", top: "14%", opacity: 0.8 }} />
-      <Glow size="min(320px, 70vw)" color="var(--vx-pink)" style={{ right: "10%", bottom: "6%" }} />
-      <Spark size={30} color="var(--vx-yellow)" style={{ left: "12%", bottom: "18%" }} />
-      <Spark size={18} color="var(--vx-cyan)" style={{ right: "14%", top: "18%" }} />
-
       <div className="vx-inner">
         <div className="vx-ticket vx-pass vx-rise">
           <div className="vx-pass-main">

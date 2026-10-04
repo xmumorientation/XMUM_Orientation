@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import "./vortexa.css";
 import { JoinChooser } from "./JoinChooser";
+import { NightSkyline } from "./NightSkyline";
 import { ScanPreview, SHOW_SCAN_PREVIEW } from "./ScanPreview";
 import { SiteFooter } from "./SiteFooter";
 import { SiteNav, StopRail, TabBar } from "./SiteNav";
@@ -19,8 +20,9 @@ import { JoinSection } from "./sections/JoinSection";
 /**
  * Public Orientation 2026 homepage — "Night Ticket".
  *
- * Seven full-screen "ride stops" (Welcome → Join) on a black ground, read one
- * at a time with scroll snapping. A single IntersectionObserver tracks the
+ * Seven full-screen "ride stops" (Welcome → Join) over one continuous
+ * background (NightSkyline: night sky → dusk → city), read one at a time with
+ * scroll snapping. A single IntersectionObserver tracks the
  * current stop for the nav, the desktop dot rail and the mobile tab bar, and
  * marks each stop `data-seen` the first time it enters view so its entrance
  * animation plays once.
@@ -91,7 +93,8 @@ export default function OrientationHome() {
       <SiteNav active={active} onScan={onScan} onJoin={openJoin} />
       <StopRail active={active} />
 
-      <main>
+      <main className="vx-main">
+        <NightSkyline />
         <WelcomeSection onJoin={openJoin} />
         <OverviewSection />
         <Games />

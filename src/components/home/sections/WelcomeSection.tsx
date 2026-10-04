@@ -1,18 +1,10 @@
 "use client";
 
 import { scrollToSection } from "../data";
-import { Glow, Spark } from "../decor";
 
 export function WelcomeSection({ onJoin }: { onJoin?: () => void }) {
   return (
     <section id="welcome" className="vx-sec vx-welcome" aria-labelledby="welcome-title">
-      <div className="vx-dots" />
-      <Glow size="min(520px, 90vw)" color="var(--vx-navy)" style={{ left: "-8%", top: "12%", opacity: 0.8 }} />
-      <Glow size="min(380px, 70vw)" color="var(--vx-pink)" style={{ right: "-4%", bottom: "-6%" }} />
-      <Spark size={26} color="var(--vx-yellow)" style={{ left: "16%", top: "24%" }} />
-      <Spark size={16} color="var(--vx-cyan)" style={{ right: "20%", top: "20%" }} />
-      <Spark size={34} color="linear-gradient(#FFB1C1, #FE06AB)" style={{ right: "14%", bottom: "22%" }} />
-
       <div className="vx-inner">
         <div className="vx-eyebrow vx-rise">XMUM 26/12 Orientation</div>
 
