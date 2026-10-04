@@ -215,6 +215,14 @@ Full background: the "Issues Found" section in [permission-matrix.md](permission
 
 When you finish something, add a few lines here: your name, the date, and the main points of what you did and what is left. Newest at the top.
 
+### Ben, 2026-10-04
+- Freshie Home background redesign ([FreshieSky.tsx](../src/components/freshie/FreshieSky.tsx)). It scrolls with the page instead of staying fixed: night sky, then deeper sky, then a city with a ferris wheel at the last stop. The night colours are the same for every group. The group colour shows only as light: soft lights, windows, wheel rim, lamp bars. The wheel has one cabin per group, coloured from the scoreboard rows, and the viewer's group cabin has a halo. Frontend only, no backend change.
+- [groupTheme.ts](../src/components/freshie/groupTheme.ts) now works out `glowStrength`, `glowSpread` and `partner` from `groups.color`. Bright colours (yellow, cyan, green) get a smaller, fainter light and dark colours a wider one, so every group looks about as bright. The partner is a Vortexa colour about a third of the colour wheel away. These are exposed as `--fh-glow-strength`, `--fh-glow-spread` and `--fh-partner`.
+- Left: Freshie Schedule (`/schedule`) still uses the old fixed background.
+- Public homepage background redesign: one continuous background behind all seven stops ([NightSkyline.tsx](../src/components/home/NightSkyline.tsx)). Near-black night with sparse stars at the top, slowly turning indigo, ending in a city skyline with a slow ferris wheel, a coaster ribbon and neon lamp bars at the Join stop. Per-section glows, sparkles and dot grids were removed from the section files.
+- Ticket notches (`.vx-ticket`) are now real cut-outs (CSS mask), so the background colour shows through them.
+- Left: the Join and Freshie login pages (`/join`, `/login/freshie`) still use the old per-page glows.
+
 ### Jiamin, 2026-10-04
 - Admin redesign step A: Admin nav is now 4 sections (Live, Freshies, Game, Settings) with sub-tabs; Freshie control moved to `/admin/freshies` (old `/freshie-control` redirects); admin sidebar can collapse to icons. UI only. Step B done: Users (role chips, group filter, table, CSV import in a pop-up), Audit (action and role chips, table), Control room (phase rows, switches). Step C done: Stations (table, add in pop-up), Blind box (two tabs, table), NFC, Puzzles, FAQ (grouped, add in pop-up), Brand, Tokens (full width, layout only). Admin redesign complete.
 - Removed Interview Booking (`/booking`) and Practice Reservations (`/reservations`) for every role: pages, nav, dashboard cards. Migration `0039` drops any leftover booking tables, functions and types.

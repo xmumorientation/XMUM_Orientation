@@ -30,6 +30,7 @@ import type { AttendanceSession, Group } from "@/lib/types";
 import { formatCountdown, friendlyError } from "@/lib/utils";
 
 import "./freshie.css";
+import { FreshieSky, type SkyCabin } from "./FreshieSky";
 import { groupSwatch, themeFromColor } from "./groupTheme";
 
 // Freshie Home (/dashboard for the Freshie role only) — the logged-in
@@ -48,6 +49,8 @@ import { groupSwatch, themeFromColor } from "./groupTheme";
 // Data: stops 01–02 and the scoreboard use live data. The scoreboard reads
 // fn_scoreboard(), the same token_balance the admin token board shows.
 // Per-group colour: --fh-accent / --fh-glow / --fh-blue come from groups.color.
+// Background: FreshieSky (scrolls with the page, ends in a city whose ferris
+// wheel has one cabin per group, coloured from the scoreboard rows).
 
 const STOPS = [
   { id: "fh-welcome", label: "Welcome" },
@@ -522,7 +525,7 @@ function GameStop() {
 
 type ScoreRow = { id: number; name: string; color: string | null; token_balance: number };
 
-function ScoresStop({ groupId }: { groupId: number | null }) {
+function ScoresStop({ groupId, onRows }: { groupId: number | null; onRows?: (rows: ScoreRow[]) => void }) {
   const supabase = useMemo(() => supabaseBrowser(), []);
   const [rows, setRows] = useState<ScoreRow[]>([]);
 
@@ -540,6 +543,7 @@ function ScoresStop({ groupId }: { groupId: number | null }) {
         }))
         .sort((a, b) => b.token_balance - a.token_balance || a.id - b.id);
       setRows(next);
+      onRows?.(next);
     }
     load();
     const timer = window.setInterval(load, 4000);
@@ -552,7 +556,7 @@ function ScoresStop({ groupId }: { groupId: number | null }) {
       window.clearInterval(timer);
       supabase.removeChannel(channel);
     };
-  }, [supabase]);
+  }, [supabase, onRows]);
 
   return (
     <section id="fh-scores" className="fh-stop" aria-labelledby="fh-scores-title">
@@ -702,6 +706,8 @@ export function FreshieHome() {
   const roleLabel = isFaci ? "Facilitator" : "Freshie";
   const stops = useMemo(() => homeStops(isFaci), [isFaci]);
   const [active, setActive] = useState(0);
+  // Scoreboard rows double as the ferris wheel's cabins (one per group).
+  const [cabins, setCabins] = useState<SkyCabin[]>([]);
 
   // Section-by-section snapping, this page only (same idea as the homepage).
   useEffect(() => {
@@ -734,16 +740,13 @@ export function FreshieHome() {
           "--fh-blue": theme.accent,
           "--fh-blue-light": theme.accentLight,
           "--fh-on-blue": theme.onAccent,
+          "--fh-glow-strength": theme.glowStrength,
+          "--fh-glow-spread": theme.glowSpread,
+          "--fh-partner": theme.partner,
         } as React.CSSProperties
       }
     >
-      <div className="fh-bg" aria-hidden>
-        <div className="fh-glow" style={{ width: 380, height: 380, background: "var(--fh-glow)", left: -150, top: 80, opacity: 0.35 }} />
-        <div className="fh-glow" style={{ width: 300, height: 300, background: "#FE06AB", right: -150, bottom: 80, opacity: 0.16 }} />
-        <i className="fh-spark" style={{ width: 18, height: 18, background: "#F2FF0B", left: "10%", top: "30%" }} />
-        <i className="fh-spark" style={{ width: 24, height: 24, background: "linear-gradient(#FFB1C1, #FE06AB)", right: "9%", top: "58%" }} />
-        <i className="fh-spark" style={{ width: 14, height: 14, background: "#0DFCFD", right: "24%", top: "18%" }} />
-      </div>
+      <FreshieSky cabins={cabins} myGroupId={profile.group_id} />
 
       <header className="fh-head">
         <div className="fh-head-row">
@@ -780,7 +783,7 @@ export function FreshieHome() {
       {isFaci && <ChecklistStop group={group} groupId={profile.group_id} />}
       <PassStop group={group} loading={loading} />
       <GameStop />
-      <ScoresStop groupId={profile.group_id} />
+      <ScoresStop groupId={profile.group_id} onRows={setCabins} />
       <TodayStop />
     </div>
   );

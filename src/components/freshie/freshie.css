@@ -34,6 +34,10 @@
   --fh-holo-loop: linear-gradient(90deg, #008cff 0%, #0dfcfd 18%, #e0b4fc 36%, #fe06ab 54%, #fc9e3d 72%, #e0b4fc 86%, #008cff 100%);
   --fh-accent: #008cff;
   --fh-glow: #008cff;
+  /* Background light tuning; FreshieHome sets these from groupTheme.ts. */
+  --fh-glow-strength: 0.53;
+  --fh-glow-spread: 1;
+  --fh-partner: #fc9e3d;
   /* Height of the fixed header + stop bar, and of the bottom tab bar. */
   --fh-top: calc(96px + env(safe-area-inset-top, 0px));
   --fh-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
@@ -77,6 +81,51 @@ html.fh-snap { scroll-snap-type: y proximity; }
   .fh-spark { animation: fh-twinkle 4s ease-in-out infinite; }
 }
 @keyframes fh-twinkle { 50% { transform: scale(0.8) rotate(20deg); opacity: 0.7; } }
+
+/* ── Freshie Home sky (FreshieSky.tsx) ─────────────────────────────────────
+   Scrolls with the page instead of staying fixed: night → deeper sky → city.
+   Base colours are the same for every group; the group colour only appears as
+   light (--fh-glow, --fh-glow-strength, --fh-glow-spread, --fh-partner).
+   It spans the full width of the content column, past <main>'s padding. */
+html.fh-snap { overflow-x: hidden; }
+.fh-sky {
+  position: absolute; top: 0; bottom: 0; z-index: -1; overflow: hidden; pointer-events: none;
+  left: calc(50% - 50vw); width: 100vw;
+  background: linear-gradient(180deg, #030b1c 0%, #04102a 30%, #071334 52%, #0d1240 70%, #160f44 84%, #160f44 100%);
+}
+@media (min-width: 1024px) {
+  /* Beside AppShell's 16rem sidebar. */
+  .fh-sky { left: calc(50% - (100vw - 16rem) / 2); width: calc(100vw - 16rem); }
+}
+.fh-sky-dots {
+  position: absolute; inset: 0;
+  background-image: radial-gradient(rgba(170, 200, 255, 0.09) 1px, transparent 1px);
+  background-size: 24px 24px;
+  -webkit-mask-image: linear-gradient(#000 0 60%, transparent 85%);
+  mask-image: linear-gradient(#000 0 60%, transparent 85%);
+}
+.fh-sky-star { position: absolute; border-radius: 50%; background: #fff; }
+.fh-sky-light { position: absolute; border-radius: 50%; filter: blur(60px); mix-blend-mode: screen; }
+.fh-sky-city { position: absolute; left: 0; right: 0; bottom: 0; height: clamp(240px, 26vw, 340px); }
+/* Leave room under the last stop so its content sits above the city. */
+.fh > .fh-stop:last-of-type { padding-bottom: clamp(270px, 26vw, 340px); }
+.fh-sky-layer { position: absolute; inset: 0; width: 100%; height: 100%; }
+.fh-sky-wheel { position: absolute; right: 4%; bottom: 18%; width: clamp(190px, 20vw, 260px); height: auto; }
+@media (min-width: 1024px) {
+  .fh-sky-wheel { right: 12%; }
+}
+.fh-sky-spin { transform-box: view-box; transform-origin: 120px 110px; }
+.fh-sky-cab { transform-box: fill-box; transform-origin: 50% 0; }
+.fh-sky-halo { transform-box: fill-box; transform-origin: center; }
+@media (prefers-reduced-motion: no-preference) {
+  .fh-sky-spin { animation: fh-spin 80s linear infinite; }
+  .fh-sky-cab { animation: fh-spin 80s linear infinite reverse; }
+  .fh-sky-halo { animation: fh-halo 2.4s ease-in-out infinite; }
+  .fh-sky-lamp { animation: fh-lamp 4s ease-in-out infinite; }
+}
+@keyframes fh-spin { to { transform: rotate(360deg); } }
+@keyframes fh-halo { 50% { opacity: 0.35; transform: scale(1.35); } }
+@keyframes fh-lamp { 50% { opacity: 0.5; } }
 
 .fh-mono { font-family: var(--font-mono), "JetBrains Mono", ui-monospace, monospace; }
 .fh-slab { font-family: var(--font-vx-slab), Georgia, serif; font-weight: 400; }
@@ -443,7 +492,7 @@ html.fh-snap { scroll-snap-type: y proximity; }
 .fh-tab-scan { color: #eef5ff; justify-content: flex-end; padding-bottom: 6px; }
 .fh-tab-scan-btn {
   width: 58px; height: 58px; margin-top: -30px; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center; background: var(--fh-blue, #008cff); color: #fff;
+  display: flex; align-items: center; justify-content: center; background: var(--fh-blue, #008cff); color: var(--fh-on-blue, #fff);
   box-shadow: 0 0 0 4px #030b1c, 0 0 0 6px color-mix(in srgb, var(--fh-blue, #008cff) 55%, transparent), 0 8px 24px color-mix(in srgb, var(--fh-blue, #008cff) 40%, transparent);
   transition: transform 0.15s ease;
 }
