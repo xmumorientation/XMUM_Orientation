@@ -5,8 +5,7 @@ import Link from "next/link";
 import { FreshieHome } from "@/components/freshie/FreshieHome";
 import { NavIcon } from "@/components/NavIcon";
 import { useProfile } from "@/components/ProfileProvider";
-import { useGroup } from "@/components/useGroup";
-import { Card, PageTitle, Skeleton, StatusPill } from "@/components/ui";
+import { PageTitle, StatusPill } from "@/components/ui";
 import { ROLE_LABELS } from "@/lib/types";
 
 type Action = {
@@ -15,39 +14,6 @@ type Action = {
   title: string;
   desc: string;
 };
-
-function TokenBalanceCard() {
-  const { group, loading } = useGroup();
-  if (loading) return <Skeleton className="h-[132px]" />;
-  if (!group) {
-    return (
-      <Card className="border-amber-200 bg-amber-50/90">
-        <StatusPill tone="warning">Group pending</StatusPill>
-        <p className="mt-3 text-sm leading-5 text-amber-900">
-          You have not been assigned to a group yet. Check again after the
-          registration counter finishes your check-in.
-        </p>
-      </Card>
-    );
-  }
-  return (
-    <Card className="overflow-hidden border-brand-1/20 bg-white p-0">
-      <div className="flex items-center justify-between border-b border-paper-200 bg-brand-1/20 px-4 py-3">
-        <div>
-          <p className="text-sm font-semibold text-ink-soft">{group.name}</p>
-          <p className="text-xs text-ink-faint">Current group balance</p>
-        </div>
-        <StatusPill tone="info">Live</StatusPill>
-      </div>
-      <div className="px-4 py-5">
-        <p className="text-6xl font-black leading-none tracking-tight tabular-nums">
-          {group.token_balance}
-        </p>
-        <p className="mt-2 text-sm font-semibold text-ink-faint">tokens</p>
-      </div>
-    </Card>
-  );
-}
 
 function ActionCard({
   href,
@@ -93,8 +59,8 @@ function primaryAction(role: string): Action {
     return {
       href: "/attendance",
       code: "AT",
-      title: "Mark attendance",
-      desc: "Mark your group members present.",
+      title: "Record headcount",
+      desc: "Enter how many people are in your group.",
     };
   }
   if (role === "gm" || role === "guardian_gm") {
@@ -129,10 +95,13 @@ function primaryAction(role: string): Action {
   };
 }
 
-
-function StaffDashboard() {
+export default function DashboardPage() {
   const profile = useProfile();
   const role = profile.role;
+
+  // Freshies and facilitators share the night home. Other roles keep this page.
+  if (role === "freshie" || role === "faci") return <FreshieHome />;
+
   const main = primaryAction(role);
 
   return (
@@ -165,40 +134,7 @@ function StaffDashboard() {
         </div>
       </Link>
 
-      {role === "faci" && <TokenBalanceCard />}
-
       <div className="grid gap-3 sm:grid-cols-2">
-        {role === "faci" && (
-          <>
-            <ActionCard
-              href="/inventory"
-              code="IT"
-              title="Inventory"
-              desc="See your group's collected pieces & rank"
-              tone="primary"
-            />
-            <ActionCard
-              href="/transactions"
-              code="TX"
-              title="Token history"
-              desc="Track every token earned & spent"
-            />
-            <ActionCard
-              href="/attendance"
-              code="AT"
-              title="Attendance"
-              desc="Mark your group members present"
-              tone="primary"
-            />
-            <ActionCard
-              href="/checkin"
-              code="CK"
-              title="Location check-in"
-              desc="Update group location for committee"
-            />
-          </>
-        )}
-
         {(role === "gm" || role === "guardian_gm") && (
           <ActionCard
             href="/gm"
@@ -238,39 +174,12 @@ function StaffDashboard() {
           />
         )}
 
-        {(role === "hof" ||
-          role === "hogm" ||
-          role === "faci" ||
-          role === "gm" ||
-          role === "committee" ||
-          role === "admin") && (
+        {role === "admin" && (
           <ActionCard
-            href="/booking"
-            code="BK"
-            title="Interview Booking"
-            desc="Degree Week 1 — HOF & HOGM interview selection slots"
-            tone="primary"
-          />
-        )}
-
-        {(role === "faci" ||
-          role === "gm" ||
-          role === "committee" ||
-          role === "admin") && (
-          <ActionCard
-            href="/reservations"
-            code="RS"
-            title="Practice Reservations"
-            desc="Degree Week 3 — Rehearsal hall group bookings"
-          />
-        )}
-
-        {(role === "faci" || role === "committee" || role === "admin") && (
-          <ActionCard
-            href="/register-counter"
+            href="/freshie-control"
             code="RC"
-            title="Register Counter"
-            desc="D-Day — Onboarding registration & group assignment"
+            title="Freshie control"
+            desc="Set the number of groups and each group's color"
           />
         )}
 
@@ -295,14 +204,4 @@ function StaffDashboard() {
       </div>
     </div>
   );
-}
-
-export default function DashboardPage() {
-  const profile = useProfile();
-  // Freshies get the day-of hub. Every other role keeps StaffDashboard
-  // below — do not route staff through FreshieHome.
-  if (profile.role === "freshie") {
-    return <FreshieHome />;
-  }
-  return <StaffDashboard />;
 }

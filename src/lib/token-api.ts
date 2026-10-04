@@ -134,7 +134,7 @@ export async function fetchTokenGroups(): Promise<TokenGroup[]> {
       const groups: TokenGroup[] = groupsData.map((row: any) => {
         const id = row.group_id ?? row.id;
         const name = row.group_name ?? row.name ?? `Group ${id}`;
-        const tokens = row.current_tokens ?? row.token_balance ?? 0;
+        const tokens = row.token_balance ?? row.current_tokens ?? 0;
         const inv = invByGroup[id] || { count: 0, locs: { 1: [], 2: [], 3: [] } };
         return {
           group_id: id,

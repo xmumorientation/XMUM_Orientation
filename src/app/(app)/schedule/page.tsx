@@ -1,46 +1,136 @@
 "use client";
 
-import { MapPin } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { MapPin, Pencil, Trash2 } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
-import { Card, EmptyState, PageTitle, Spinner } from "@/components/ui";
+import { FreshieSchedule } from "@/components/freshie/FreshieSchedule";
+import { useProfile } from "@/components/ProfileProvider";
+import { Card, EmptyState, ErrorBanner, PageTitle, Spinner, SuccessBanner } from "@/components/ui";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import type { ScheduleItem } from "@/lib/types";
 
-// Event rundown — Freshies check "where should I be right now?".
+// Event rundown. Freshies and facilitators share the night schedule.
+// Admins edit the same list here.
 export default function SchedulePage() {
+  const profile = useProfile();
+  if (profile.role === "freshie" || profile.role === "faci") return <FreshieSchedule />;
+  return <StaffSchedule />;
+}
+
+function StaffSchedule() {
+  const profile = useProfile();
+  const isAdmin = profile.role === "admin";
   const supabase = useMemo(() => supabaseBrowser(), []);
   const [items, setItems] = useState<ScheduleItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const blank = {
+    day_label: "Day 1",
+    time_label: "",
+    title: "",
+    location: "",
+    description: "",
+  };
+  const [form, setForm] = useState(blank);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    const { data } = await supabase
+      .from("schedule_items")
+      .select("*")
+      .order("day_label")
+      .order("sort_order")
+      .order("id");
+    return (data as ScheduleItem[]) ?? [];
+  }, [supabase]);
 
   useEffect(() => {
     let active = true;
-    async function load() {
-      const { data } = await supabase
-        .from("schedule_items")
-        .select("*")
-        .order("day_label")
-        .order("sort_order")
-        .order("id");
-      if (active) {
-        setItems((data as ScheduleItem[]) ?? []);
-        setLoading(false);
-      }
+    async function run() {
+      const next = await load();
+      if (!active) return;
+      setItems(next);
+      setLoading(false);
     }
-    load();
+    run();
     const channel = supabase
       .channel("schedule-live")
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "schedule_items" },
-        load
+        run
       )
       .subscribe();
     return () => {
       active = false;
       supabase.removeChannel(channel);
     };
-  }, [supabase]);
+  }, [load, supabase]);
+
+  function flash(msg: string) {
+    setNotice(msg);
+    setTimeout(() => setNotice(null), 1500);
+  }
+
+  function startEdit(item: ScheduleItem) {
+    setEditingId(item.id);
+    setForm({
+      day_label: item.day_label,
+      time_label: item.time_label,
+      title: item.title,
+      location: item.location,
+      description: item.description,
+    });
+    setError(null);
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setForm(blank);
+    setError(null);
+  }
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    if (editingId != null) {
+      const { error } = await supabase
+        .from("schedule_items")
+        .update({
+          day_label: form.day_label,
+          time_label: form.time_label,
+          title: form.title,
+          location: form.location,
+          description: form.description,
+        })
+        .eq("id", editingId);
+      if (error) setError(error.message);
+      else {
+        setEditingId(null);
+        setForm(blank);
+        flash("Updated.");
+        setItems(await load());
+      }
+      return;
+    }
+    const { error } = await supabase.from("schedule_items").insert({
+      ...form,
+      sort_order: items.filter((i) => i.day_label === form.day_label).length,
+    });
+    if (error) setError(error.message);
+    else {
+      setForm({ ...blank, day_label: form.day_label });
+      flash("Added.");
+      setItems(await load());
+    }
+  }
+
+  async function remove(id: number) {
+    const { error } = await supabase.from("schedule_items").delete().eq("id", id);
+    if (error) setError(error.message);
+    else setItems(await load());
+  }
 
   if (loading) {
     return (
@@ -55,8 +145,67 @@ export default function SchedulePage() {
   return (
     <div className="space-y-4">
       <PageTitle title="Schedule" subtitle="The full event rundown" />
+      {isAdmin && (
+        <>
+          <ErrorBanner message={error} />
+          <SuccessBanner message={notice} />
+          <Card>
+            <form onSubmit={save} className="space-y-2">
+              <div className="grid grid-cols-2 gap-2">
+                <input
+                  className="input text-sm"
+                  placeholder='Day, e.g. "Day 1"'
+                  required
+                  value={form.day_label}
+                  onChange={(e) => setForm({ ...form, day_label: e.target.value })}
+                />
+                <input
+                  className="input text-sm"
+                  placeholder="09:00 – 10:30"
+                  required
+                  value={form.time_label}
+                  onChange={(e) => setForm({ ...form, time_label: e.target.value })}
+                />
+              </div>
+              <input
+                className="input text-sm"
+                placeholder="Activity title"
+                required
+                value={form.title}
+                onChange={(e) => setForm({ ...form, title: e.target.value })}
+              />
+              <div className="grid grid-cols-2 gap-2">
+                <input
+                  className="input text-sm"
+                  placeholder="Location (optional)"
+                  value={form.location}
+                  onChange={(e) => setForm({ ...form, location: e.target.value })}
+                />
+                <input
+                  className="input text-sm"
+                  placeholder="Note (optional)"
+                  value={form.description}
+                  onChange={(e) => setForm({ ...form, description: e.target.value })}
+                />
+              </div>
+              <div className="flex gap-2">
+                <button type="submit" className="btn-primary flex-1">
+                  {editingId != null ? "Save changes" : "+ Add item"}
+                </button>
+                {editingId != null && (
+                  <button type="button" className="btn-secondary px-4" onClick={cancelEdit}>
+                    Cancel
+                  </button>
+                )}
+              </div>
+            </form>
+          </Card>
+        </>
+      )}
       {items.length === 0 ? (
-        <EmptyState message="The schedule will appear here once the committee publishes it." />
+        isAdmin ? null : (
+          <EmptyState message="The schedule will appear here once the committee publishes it." />
+        )
       ) : (
         days.map((day) => (
           <Card key={day} className="p-0">
@@ -71,7 +220,7 @@ export default function SchedulePage() {
                     <span className="w-24 shrink-0 text-sm font-semibold tabular-nums text-brand-1">
                       {i.time_label}
                     </span>
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium">{i.title}</p>
                       {(i.location || i.description) && (
                         <p className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-ink-faint">
@@ -88,6 +237,26 @@ export default function SchedulePage() {
                         </p>
                       )}
                     </div>
+                    {isAdmin && (
+                      <div className="flex shrink-0 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => startEdit(i)}
+                          className="text-ink-soft"
+                          aria-label={`Edit ${i.title}`}
+                        >
+                          <Pencil size={16} strokeWidth={1.75} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => remove(i.id)}
+                          className="text-red-500"
+                          aria-label={`Delete ${i.title}`}
+                        >
+                          <Trash2 size={16} strokeWidth={1.75} />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ))}
             </div>

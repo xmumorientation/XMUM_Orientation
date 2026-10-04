@@ -7,19 +7,12 @@ import { useProfile } from "@/components/ProfileProvider";
 import { cn } from "@/lib/utils";
 
 const TABS = [
-  { href: "/admin", label: "Control room" },
-  { href: "/admin/token", label: "Tokens" },
-  { href: "/admin/users", label: "Users" },
-  { href: "/admin/stations", label: "Stations" },
-  { href: "/admin/blindbox", label: "Blind box" },
-  { href: "/admin/puzzles", label: "Puzzles" },
-  { href: "/admin/faq", label: "FAQ" },
-  { href: "/admin/brand", label: "Brand" },
-  { href: "/admin/nfc", label: "NFC" },
-  { href: "/admin/audit", label: "Audit" },
+  { href: "/freshie-control", label: "Groups" },
+  { href: "/freshie-control/sessions", label: "Sessions" },
+  { href: "/freshie-control/headcount", label: "Headcount" },
 ];
 
-export default function AdminLayout({
+export default function FreshieControlLayout({
   children,
 }: {
   children: React.ReactNode;
@@ -36,19 +29,19 @@ export default function AdminLayout({
   }
 
   return (
-    <div className="lg:grid lg:grid-cols-[12rem_minmax(0,1fr)] lg:gap-5">
-      <div className="-mx-3 mb-4 flex gap-1 overflow-x-auto px-3 pb-1 sm:-mx-5 sm:px-5 lg:sticky lg:top-6 lg:mx-0 lg:block lg:self-start lg:overflow-visible lg:px-0">
+    <div>
+      <div className="-mx-3 mb-4 flex gap-1 overflow-x-auto px-3 pb-1 sm:-mx-5 sm:px-5">
         {TABS.map((t) => {
           const active =
-            t.href === "/admin"
-              ? pathname === "/admin"
+            t.href === "/freshie-control"
+              ? pathname === "/freshie-control"
               : pathname.startsWith(t.href);
           return (
             <Link
               key={t.href}
               href={t.href}
               className={cn(
-                "whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-semibold lg:mb-1 lg:flex lg:min-h-[40px] lg:items-center lg:rounded-xl",
+                "whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-semibold",
                 active
                   ? "bg-ink text-white"
                   : "bg-white text-ink-soft shadow-card hover:text-ink"

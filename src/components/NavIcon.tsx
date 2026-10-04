@@ -1,13 +1,12 @@
 import {
   Activity,
   Calendar,
-  CalendarCheck,
   ClipboardCheck,
-  Clock,
   Coins,
   Gamepad2,
   HelpCircle,
   History,
+  KeyRound,
   Home,
   Map,
   Monitor,
@@ -35,10 +34,9 @@ export type NavIconCode =
   | "AD"
   | "PL"
   | "FQ"
-  | "BK"
-  | "RS"
   | "RC"
-  | "SC";
+  | "SC"
+  | "CD";
 
 interface NavIconProps extends Omit<LucideProps, "ref"> {
   code: NavIconCode | string;
@@ -81,14 +79,12 @@ export function NavIcon({
       return <Calendar {...iconProps} />;
     case "FQ":
       return <HelpCircle {...iconProps} />;
-    case "BK":
-      return <CalendarCheck {...iconProps} />;
-    case "RS":
-      return <Clock {...iconProps} />;
     case "RC":
       return <UserCheck {...iconProps} />;
     case "SC":
       return <ScanLine {...iconProps} />;
+    case "CD":
+      return <KeyRound {...iconProps} />;
     default:
       return <Home {...iconProps} />;
   }
