@@ -101,7 +101,7 @@ export function SiteNav({ active }: { active: StopId }) {
         </div>
 
         <div className="vx-nav-logins">
-          <Link href="/login" className="vx-btn vx-btn-ghost">
+          <Link href="/login/freshie" className="vx-btn vx-btn-ghost">
             Freshie Login
           </Link>
           <Link href="/login" className="vx-btn vx-btn-ghost">
@@ -141,11 +141,8 @@ export function SiteNav({ active }: { active: StopId }) {
         <button type="button" className="vx-btn vx-btn-primary" onClick={() => go("check-in")} style={{ marginTop: 16 }}>
           How to check in
         </button>
-        {/* TODO(auth): each role will get its own login page later, e.g.
-            /login/freshie and /login/staff (Committee, Faci, GM). Both buttons
-            point at the shared /login page until those exist. */}
         <div className="vx-menu-logins">
-          <Link href="/login" className="vx-btn vx-btn-ghost" onClick={() => setOpen(false)}>
+          <Link href="/login/freshie" className="vx-btn vx-btn-ghost" onClick={() => setOpen(false)}>
             Freshie Login
           </Link>
           <Link href="/login" className="vx-btn vx-btn-ghost" onClick={() => setOpen(false)}>
