@@ -68,7 +68,15 @@ export async function POST(req: NextRequest) {
   // The signup trigger created the profile; set the assignment fields.
   const { error: updErr } = await service
     .from("profiles")
-    .update({ role, full_name: name, email, group_id: group, station_id: station })
+    .update({
+      role,
+      full_name: name,
+      email,
+      group_id: group,
+      station_id: station,
+      approved: true,
+      requested_role: null,
+    })
     .eq("id", data.user.id);
   if (updErr) {
     await service.auth.admin.deleteUser(data.user.id);

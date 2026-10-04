@@ -9,15 +9,18 @@ import {
   Lock,
   ShieldCheck,
   Sparkles,
-  UserCheck,
   Users,
 } from "lucide-react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 
 import { ErrorBanner, Spinner } from "@/components/ui";
 import { supabaseBrowser } from "@/lib/supabase/client";
+import { ROLE_LABELS, type UserRole } from "@/lib/types";
+
+const REQUESTED_ROLE_KEY = "xmum-requested-role";
+const GOOGLE_ROLES = (Object.keys(ROLE_LABELS) as UserRole[]).filter((role) => role !== "freshie");
 
 const DEMO_PRESETS = [
   { label: "Freshie", email: "freshie.test@xmu.edu.my", pass: "TestPass123!", icon: GraduationCap },
@@ -28,14 +31,16 @@ const DEMO_PRESETS = [
 ];
 
 function LoginForm() {
-  const router = useRouter();
   const params = useSearchParams();
   const nextUrl = params.get("next");
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [requestedRole, setRequestedRole] = useState<UserRole | "">("");
+  const [error, setError] = useState<string | null>(
+    params.get("error") === "google" ? "Google sign-in did not finish. Try again." : null,
+  );
   const [busy, setBusy] = useState(false);
 
   async function performLogin(loginEmail: string, loginPass: string) {
@@ -65,6 +70,24 @@ function LoginForm() {
     performLogin(presetEmail, presetPass);
   }
 
+  async function continueWithGoogle() {
+    if (!requestedRole) return;
+    setBusy(true);
+    setError(null);
+    sessionStorage.setItem(REQUESTED_ROLE_KEY, requestedRole);
+    const supabase = supabaseBrowser();
+    const { error: oauthError } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+    if (oauthError) {
+      setError(oauthError.message);
+      setBusy(false);
+    }
+  }
+
   return (
     <form onSubmit={onSubmit} className="auth-card">
       <div className="auth-card-inner space-y-5">
@@ -85,6 +108,33 @@ function LoginForm() {
           <p className="mt-1 text-sm leading-5 text-ink-faint">
             Enter your XMUM student or staff email to continue.
           </p>
+        </div>
+
+        <div className="space-y-2">
+          <label className="label" htmlFor="google-role">
+            Continue with Google
+          </label>
+          <select
+            id="google-role"
+            className="input"
+            value={requestedRole}
+            onChange={(e) => setRequestedRole(e.target.value as UserRole | "")}
+          >
+            <option value="">Choose a role</option>
+            {GOOGLE_ROLES.map((role) => (
+              <option key={role} value={role}>
+                {ROLE_LABELS[role]}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            disabled={busy || !requestedRole}
+            onClick={continueWithGoogle}
+            className="auth-submit disabled:opacity-50"
+          >
+            Continue with Google
+          </button>
         </div>
 
         {/* Quick Demo Switcher Control */}
@@ -166,23 +216,13 @@ function LoginForm() {
           )}
         </button>
 
-        <div className="flex flex-col gap-2 pt-1 text-center text-sm">
-          <Link
-            href="/register"
-            className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-brand-1/30 bg-brand-1/10 px-4 py-2.5 font-bold text-brand-1 transition hover:bg-brand-1/20 active:scale-95"
-          >
-            <UserCheck size={16} />
-            New Freshie? Register Account
+        <div className="flex justify-between gap-4 pt-1 text-center text-xs font-semibold text-ink-faint">
+          <Link href="/forgot-password" className="hover:text-ink">
+            Forgot password?
           </Link>
-
-          <div className="flex justify-between gap-4 pt-2 text-xs font-semibold text-ink-faint">
-            <Link href="/forgot-password" className="hover:text-ink">
-              Forgot password?
-            </Link>
-            <Link href="/activate" className="hover:text-ink">
-              Staff invite activation
-            </Link>
-          </div>
+          <Link href="/activate" className="hover:text-ink">
+            Staff invite activation
+          </Link>
         </div>
       </div>
     </form>

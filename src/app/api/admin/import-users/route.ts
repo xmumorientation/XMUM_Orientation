@@ -162,6 +162,8 @@ export async function POST(req: NextRequest) {
         full_name: row.name,
         group_id: row.group ? Number(row.group) : null,
         station_id: row.station ? Number(row.station) : null,
+        approved: true,
+        requested_role: null,
       })
       .eq("id", data.user.id);
     if (updErr) {

@@ -13,6 +13,7 @@ import {
 } from "@/components/ui";
 import { Dialog, DialogContent } from "@/components/ui/Dialog";
 import { supabaseBrowser } from "@/lib/supabase/client";
+import { friendlyError } from "@/lib/utils";
 import {
   ROLE_LABELS,
   type Group,
@@ -211,6 +212,17 @@ export default function AdminUsersPage() {
     setBusy(false);
   }
 
+  async function approveUser(u: Profile) {
+    setError(null);
+    const { error: rpcError } = await supabase.rpc("fn_approve_account", { p_user_id: u.id });
+    if (rpcError) {
+      setError(friendlyError(rpcError));
+      return;
+    }
+    flash(`${u.full_name || u.email} can sign in as ${ROLE_LABELS[u.requested_role ?? u.role]}.`);
+    load();
+  }
+
   async function deleteUser(u: Profile) {
     if (!window.confirm(`Delete ${u.full_name || u.email}? This removes their login and cannot be undone.`))
       return;
@@ -224,24 +236,27 @@ export default function AdminUsersPage() {
     }
   }
 
+  const accounts = useMemo(() => users.filter((u) => u.approved !== false), [users]);
+  const pending = useMemo(() => users.filter((u) => u.approved === false), [users]);
+
   const roleOptions = useMemo(() => {
     const counts = new Map<UserRole, number>();
-    for (const u of users) counts.set(u.role, (counts.get(u.role) ?? 0) + 1);
+    for (const u of accounts) counts.set(u.role, (counts.get(u.role) ?? 0) + 1);
     return [
-      { value: "all", label: "All", count: users.length },
+      { value: "all", label: "All", count: accounts.length },
       ...ALL_ROLES.map((r) => ({
         value: r,
         label: ROLE_LABELS[r],
         count: counts.get(r) ?? 0,
       })),
     ];
-  }, [users]);
+  }, [accounts]);
 
   const groupLabel = (g: Group) =>
     g.display_name ? `${g.name} · ${g.display_name}` : g.name;
 
   const q = filter.trim().toLowerCase();
-  const visible = users.filter(
+  const visible = accounts.filter(
     (u) =>
       (roleFilter === "all" || u.role === roleFilter) &&
       (groupFilter === "all" ||
@@ -278,6 +293,36 @@ export default function AdminUsersPage() {
       />
       <ErrorBanner message={error} />
       <SuccessBanner message={notice} />
+
+      {pending.length > 0 && (
+        <Card className="space-y-3">
+          <h2 className="font-semibold">Waiting for approval</h2>
+          <ul className="divide-y divide-paper-200">
+            {pending.map((u) => (
+              <li key={u.id} className="flex flex-wrap items-center gap-3 py-3">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-semibold">{u.full_name || u.email}</p>
+                  <p className="truncate text-xs text-ink-faint">
+                    {u.email}
+                    {u.requested_role ? ` · ${ROLE_LABELS[u.requested_role]}` : " · No role chosen yet"}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="btn-primary px-4"
+                  disabled={!u.requested_role}
+                  onClick={() => approveUser(u)}
+                >
+                  Approve
+                </button>
+                <button type="button" className="btn-secondary px-4" onClick={() => deleteUser(u)}>
+                  Reject
+                </button>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
 
       <Card className="space-y-3">
         <FilterChips
@@ -442,7 +487,7 @@ export default function AdminUsersPage() {
         )}
         {!loading && (
           <p className="border-t border-paper-200 px-4 py-2 text-xs text-ink-faint">
-            Showing {visible.length} of {users.length}. Freshie group logins are managed in
+            Showing {visible.length} of {accounts.length}. Freshie group logins are managed in
             Admin → Freshies.
           </p>
         )}
