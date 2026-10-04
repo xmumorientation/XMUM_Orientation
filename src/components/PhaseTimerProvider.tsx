@@ -59,6 +59,8 @@ export function PhaseTimerProvider({ children }: { children: React.ReactNode }) 
 
     syncClock();
     loadPhases();
+    const recover = () => { void syncClock(); void loadPhases(); };
+    window.addEventListener("orientation:reconnect", recover);
 
     const channel = supabase
       .channel("phases-timer")
@@ -77,6 +79,7 @@ export function PhaseTimerProvider({ children }: { children: React.ReactNode }) 
       supabase.removeChannel(channel);
       clearInterval(interval);
       clearInterval(resync);
+      window.removeEventListener("orientation:reconnect", recover);
     };
   }, [supabase]);
 
