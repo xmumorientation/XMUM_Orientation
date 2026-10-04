@@ -8,6 +8,7 @@ import {
 
 const PUBLIC_PATHS = [
   "/login",
+  "/join",
   "/register",
   "/forgot-password",
   "/reset-password",

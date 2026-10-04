@@ -584,3 +584,43 @@ html.vx-snap { scroll-snap-type: y mandatory; }
 .vx-footer p { margin: 0; font-size: 12px; color: var(--vx-mute); letter-spacing: 0.08em; }
 .vx-footer a { font-size: 12px; letter-spacing: 0.14em; color: var(--vx-text-2); text-decoration: none; padding: 10px 18px; border-radius: 999px; border: 1px solid var(--vx-line-2); margin-top: 6px; }
 .vx-footer a:hover { border-color: var(--vx-cyan); color: var(--vx-cyan); }
+
+/* ── Join chooser + Freshie login ────────────────────────────────────────── */
+.vx-join-pop {
+  position: fixed; inset: 0; z-index: 80;
+  display: grid; place-items: center; padding: 24px;
+}
+.vx-join-pop-backdrop {
+  position: absolute; inset: 0; border: 0; padding: 0;
+  background: rgba(7, 6, 11, 0.72); cursor: pointer;
+}
+.vx-join-pop-card {
+  position: relative; z-index: 1; width: min(420px, 100%);
+  display: flex; flex-direction: column; gap: 12px;
+  padding: 28px 22px 22px; border-radius: 28px;
+  background: var(--vx-ink-2); border: 1px solid var(--vx-line-2);
+}
+.vx-join-pop-card .vx-btn { width: 100%; }
+.vx-login {
+  min-height: 100dvh; display: grid; place-items: center;
+  padding: 32px 20px; position: relative; overflow: hidden;
+}
+.vx-login-card {
+  position: relative; width: min(440px, 100%);
+  display: flex; flex-direction: column; align-items: center; text-align: center; gap: 16px;
+}
+.vx-login-card .vx-welcome-mark { font-size: clamp(48px, 8vw, 72px); }
+.vx-login-form { width: 100%; display: flex; flex-direction: column; gap: 12px; margin-top: 8px; }
+.vx-login-form label { display: flex; flex-direction: column; gap: 6px; text-align: left; font-size: 13px; color: var(--vx-text-2); }
+.vx-login-form select,
+.vx-login-form input {
+  min-height: 48px; width: 100%; border-radius: 999px; padding: 0 18px;
+  background: var(--vx-ink); color: var(--vx-text);
+  border: 1px solid var(--vx-line-2); font: inherit; font-size: 16px;
+}
+.vx-login-form input { letter-spacing: 0.4em; text-align: center; }
+.vx-login-form select:focus,
+.vx-login-form input:focus { outline: 2px solid var(--vx-cyan); outline-offset: 2px; }
+.vx-login-error { margin: 0; color: var(--vx-blush); font-size: 14px; }
+.vx-login-back { color: var(--vx-mute); font-size: 13px; text-decoration: none; }
+.vx-login-back:hover { color: var(--vx-cyan); }
