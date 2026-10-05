@@ -46,7 +46,9 @@ export function BondingSessionTimer() {
   const selected = sessions.find((phase) => phase.key === selectedKey) ?? sessions[0];
   const serverNow = Date.now() + offsetMs;
   const configuredMinutes = Number(config[`bonding_session_duration_${selected?.key}`] ?? selected?.duration_minutes ?? 0);
-  const remaining = selected?.state === "pending" ? Math.max(0, configuredMinutes * 60) : selected ? remainingSeconds(selected, serverNow) : 0;
+  const remaining = selected?.state === "pending" || selected?.state === "ended"
+    ? Math.max(0, configuredMinutes * 60)
+    : selected ? remainingSeconds(selected, serverNow) : 0;
   const status = selected ? statusOf(selected, remaining) : "pending";
   const warning = status === "active" && remaining <= 30 * 60;
 
@@ -108,7 +110,7 @@ export function BondingSessionTimer() {
             className={cn(
               phase.state === "active" && "border-green-600 bg-green-600 text-white hover:bg-green-700",
               phase.state === "paused" && "border-amber-500 bg-amber-100 text-amber-900",
-              phase.key === selected.key && phase.state !== "active" && "ring-2 ring-brand-1/40"
+              phase.key === selected.key && "ring-2 ring-sky-700 ring-offset-2 ring-offset-paper-50"
             )}
           >
             {phase.name}
@@ -130,7 +132,7 @@ export function BondingSessionTimer() {
         <p className="mt-4 text-sm font-semibold opacity-75">
           {status === "pending" && "Configured countdown — waiting for Admin to start."}
           {status === "paused" && "The bonding session is currently paused."}
-          {status === "ended" && "The bonding session has ended."}
+          {status === "ended" && "Session ended — showing the configured duration for the next run."}
           {status === "active" && warning && "Final 30 minutes."}
           {status === "active" && !warning && "Session in progress."}
         </p>

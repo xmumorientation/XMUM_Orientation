@@ -1,6 +1,65 @@
 "use client";
-import Link from "next/link";import {useCallback,useEffect,useMemo,useState} from "react";
-import {Card,EmptyState,ErrorBanner,PageTitle,Spinner} from "@/components/ui";import {supabaseBrowser} from "@/lib/supabase/client";import type {AuditEntry} from "@/lib/types";import {friendlyError} from "@/lib/utils";
-type AuditRow=AuditEntry&{reason?:string|null;before_state?:unknown;after_state?:unknown};
-const DOMAINS=[["TOKEN","/admin/token","Atomic balance correction"],["PUZZLE","/admin/puzzles","Dependency-safe ownership correction"],["BLIND BOX","/admin/blindbox-log","Box, owner and reward correction"],["NFC","/admin/nfc","Reset or linked activation rollback"],["GAME","/admin/token","Result effects and Token references"],["AUDIT","/admin/audit","Full immutable history"]] as const;
-export default function AdminLogsPage(){const db=useMemo(()=>supabaseBrowser(),[]);const[rows,setRows]=useState<AuditRow[]>([]);const[q,setQ]=useState("");const[action,setAction]=useState("");const[actor,setActor]=useState("");const[from,setFrom]=useState("");const[to,setTo]=useState("");const[loading,setLoading]=useState(false);const[error,setError]=useState<string|null>(null);const load=useCallback(async()=>{setLoading(true);setError(null);const{data,error:e}=await db.rpc("fn_admin_search_audit",{p_query:q||null,p_action:action||null,p_actor:actor||null,p_from:from||null,p_to:to||null,p_limit:200});setLoading(false);if(e)setError(friendlyError(e));else setRows((data as AuditRow[])??[])},[db,q,action,actor,from,to]);useEffect(()=>{void load()},[load]);return <div className="space-y-4"><PageTitle title="Logs" subtitle="Unified search and safe correction entry points"/><div className="grid grid-cols-2 gap-2 sm:grid-cols-3">{DOMAINS.map(([label,href,desc])=><Link key={label} href={href}><Card className="h-full p-3 hover:border-brand-1"><p className="font-black">{label}</p><p className="mt-1 text-xs text-ink-faint">{desc}</p></Card></Link>)}</div><Card className="space-y-3"><h2 className="font-black">Filter audit history</h2><div className="grid gap-2 sm:grid-cols-2"><input className="input" placeholder="Group, station, item or reference" value={q} onChange={e=>setQ(e.target.value)}/><input className="input" placeholder="Action" value={action} onChange={e=>setAction(e.target.value)}/><input className="input" placeholder="User UUID" value={actor} onChange={e=>setActor(e.target.value)}/><div className="grid grid-cols-2 gap-2"><input className="input" type="date" value={from} onChange={e=>setFrom(e.target.value)}/><input className="input" type="date" value={to} onChange={e=>setTo(e.target.value)}/></div></div><button className="btn-primary w-full" onClick={()=>void load()}>Filter</button></Card><ErrorBanner message={error}/>{loading?<div className="flex justify-center py-10"><Spinner/></div>:rows.length===0?<EmptyState title="No records" message="No audit records match these combined filters."/>:<div className="space-y-2">{rows.map(r=><Card key={r.id} className="p-3"><div className="flex justify-between gap-2"><p className="font-semibold">{r.action}</p><time className="text-xs text-ink-faint">{new Date(r.created_at).toLocaleString()}</time></div><p className="text-xs text-ink-faint">{r.actor_role??"system"} · {r.target??"—"}</p>{r.reason&&<p className="mt-2 text-sm">Reason: {r.reason}</p>}<details className="mt-2 text-xs"><summary className="cursor-pointer font-semibold">Before / after / details</summary><pre className="mt-2 overflow-auto rounded-xl bg-paper-100 p-2">{JSON.stringify({before:r.before_state,after:r.after_state,detail:r.detail},null,2)}</pre></details></Card>)}</div>}</div>}
+
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Card, EmptyState, ErrorBanner, PageTitle, Spinner } from "@/components/ui";
+import { supabaseBrowser } from "@/lib/supabase/client";
+import type { AuditEntry } from "@/lib/types";
+import { friendlyError } from "@/lib/utils";
+
+type AuditRow = AuditEntry & { reason?: string | null; before_state?: unknown; after_state?: unknown };
+
+export default function AdminLogsPage() {
+  const db = useMemo(() => supabaseBrowser(), []);
+  const [rows, setRows] = useState<AuditRow[]>([]);
+  const [query, setQuery] = useState("");
+  const [action, setAction] = useState("");
+  const [actor, setActor] = useState("");
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    const { data, error: requestError } = await db.rpc("fn_admin_search_audit", {
+      p_query: query || null, p_action: action || null, p_actor: actor || null,
+      p_from: from || null, p_to: to || null, p_limit: 200,
+    });
+    setLoading(false);
+    if (requestError) setError(friendlyError(requestError));
+    else setRows((data as AuditRow[]) ?? []);
+  }, [db, query, action, actor, from, to]);
+
+  useEffect(() => { void load(); }, [load]);
+
+  return (
+    <div className="space-y-4">
+      <PageTitle title="Logs & Corrections" subtitle="Choose a section above, or search the complete audit history here." />
+      <Card className="space-y-3">
+        <h2 className="font-black">Filter audit history</h2>
+        <div className="grid gap-2 sm:grid-cols-2">
+          <input className="input" placeholder="Group, station, item or reference" value={query} onChange={(event) => setQuery(event.target.value)} />
+          <input className="input" placeholder="Action" value={action} onChange={(event) => setAction(event.target.value)} />
+          <input className="input" placeholder="User UUID" value={actor} onChange={(event) => setActor(event.target.value)} />
+          <div className="grid grid-cols-2 gap-2">
+            <input className="input" type="date" value={from} onChange={(event) => setFrom(event.target.value)} />
+            <input className="input" type="date" value={to} onChange={(event) => setTo(event.target.value)} />
+          </div>
+        </div>
+        <button className="btn-primary w-full" onClick={() => void load()}>Filter</button>
+      </Card>
+      <ErrorBanner message={error} />
+      {loading ? <div className="flex justify-center py-10"><Spinner /></div> : rows.length === 0 ? (
+        <EmptyState title="No records" message="No audit records match these combined filters." />
+      ) : <div className="space-y-2">{rows.map((row) => (
+        <Card key={row.id} className="p-3">
+          <div className="flex justify-between gap-2"><p className="font-semibold">{row.action}</p><time className="text-xs text-ink-faint">{new Date(row.created_at).toLocaleString()}</time></div>
+          <p className="text-xs text-ink-faint">{row.actor_role ?? "system"} · {row.target ?? "—"}</p>
+          {row.reason && <p className="mt-2 text-sm">Reason: {row.reason}</p>}
+          <details className="mt-2 text-xs"><summary className="cursor-pointer font-semibold">Before / after / details</summary><pre className="mt-2 overflow-auto rounded-xl bg-paper-100 p-2">{JSON.stringify({ before: row.before_state, after: row.after_state, detail: row.detail }, null, 2)}</pre></details>
+        </Card>
+      ))}</div>}
+    </div>
+  );
+}
