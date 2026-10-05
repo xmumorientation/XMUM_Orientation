@@ -173,6 +173,8 @@ export interface FaqItem {
   question: string;
   answer: string;
   sort_order: number;
+  // Roles that can see the entry. Empty means everyone.
+  roles: UserRole[];
 }
 
 export const PIECES_PER_SET = 5;
