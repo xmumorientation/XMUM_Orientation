@@ -167,6 +167,24 @@ export const COMMITTEES: Committee[] = [
 ];
 
 // ---------------------------------------------------------------------------
+// Organiser and sponsors (Welcome stop)
+// ---------------------------------------------------------------------------
+
+export type Sponsor = {
+  name: string;
+  /** Logo in /public. Without one, the name shows as a placeholder chip. */
+  logo?: string;
+  href?: string;
+};
+
+// TODO(sponsors): list confirmed sponsors here. Logos are shown in their own
+// colours, as supplied.
+export const SPONSORS: Sponsor[] = [{ name: "Coca-Cola", logo: "/sponsor-cocacola.png" }];
+
+/** True while SPONSORS holds sample logos, not real sponsors. Adds "(Example)" to the label. */
+export const SPONSORS_ARE_EXAMPLES = true;
+
+// ---------------------------------------------------------------------------
 // Scroll navigation
 // ---------------------------------------------------------------------------
 

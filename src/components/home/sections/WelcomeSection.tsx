@@ -1,6 +1,8 @@
 "use client";
 
-import { scrollToSection } from "../data";
+import Image from "next/image";
+
+import { SPONSORS, SPONSORS_ARE_EXAMPLES, scrollToSection } from "../data";
 
 export function WelcomeSection({ onJoin }: { onJoin?: () => void }) {
   return (
@@ -15,10 +17,7 @@ export function WelcomeSection({ onJoin }: { onJoin?: () => void }) {
 
         <p className="vx-welcome-slogan vx-rise-2">One Ticket, One Ride. Discover the Adventure Inside.</p>
 
-        <p className="vx-lead vx-rise-2">
-          Vortexa is the official theme of XMUM Orientation 2026 — a neon carnival where new beginnings take flight. Over two
-          days, discover campus, bond with your team, and step into university life with energy and purpose.
-        </p>
+        <p className="vx-lead vx-rise-2">Vortexa is the official theme of XMUM Orientation 2026</p>
 
         <div className="vx-welcome-actions vx-rise-3">
           <button type="button" className="vx-btn vx-btn-primary" onClick={() => onJoin?.()}>
@@ -33,6 +32,49 @@ export function WelcomeSection({ onJoin }: { onJoin?: () => void }) {
           <span><b>28–29 NOV</b>2026</span>
           <span><b>2 DAYS</b>on campus</span>
           <span><b>XMUM</b>Sepang, Selangor</span>
+        </div>
+
+        {/* Organiser on the left, sponsors on the right. */}
+        <div className="vx-credits vx-rise-3">
+          <div className="vx-credits-col">
+            <span className="vx-credits-label vx-mono">Organised by</span>
+            <Image
+              src="/xmum-logo-horizontal-white.png"
+              alt="Xiamen University Malaysia"
+              width={1024}
+              height={211}
+              className="vx-credits-xmum"
+            />
+          </div>
+          <span className="vx-credits-sep" aria-hidden />
+          <div className="vx-credits-col vx-credits-sponsors">
+            <span className="vx-credits-label vx-mono">
+              Supported by{SPONSORS_ARE_EXAMPLES && <span className="vx-credits-example"> (Example)</span>}
+            </span>
+            <ul>
+              {SPONSORS.map((s, i) => {
+                const body = s.logo ? (
+                  <Image src={s.logo} alt={s.name} width={240} height={102} className="vx-sponsor-logo" />
+                ) : (
+                  <span className="vx-sponsor-ph">
+                    <i aria-hidden />
+                    {s.name}
+                  </span>
+                );
+                return (
+                  <li key={i}>
+                    {s.href ? (
+                      <a href={s.href} target="_blank" rel="noopener noreferrer">
+                        {body}
+                      </a>
+                    ) : (
+                      body
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
         </div>
       </div>
 

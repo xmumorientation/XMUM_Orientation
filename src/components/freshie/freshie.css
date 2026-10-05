@@ -50,8 +50,14 @@
   .fh { --fh-bottom: 0px; }
 }
 
-/* One stop per screen, this page only (class set by FreshieHome). */
+/* One stop per screen, this page only (class set by FreshieHome). Same rule
+   as the public homepage: mandatory snap (one scroll = next stop) on large
+   screens, gentle proximity snap on phones and tablets so taller stops can
+   still be read. */
 html.fh-snap { scroll-snap-type: y proximity; }
+@media (min-width: 1024px) and (min-height: 700px) {
+  html.fh-snap { scroll-snap-type: y mandatory; }
+}
 @media (prefers-reduced-motion: reduce) {
   html.fh-snap { scroll-snap-type: none; }
 }
@@ -107,6 +113,26 @@ html.fh-snap { overflow-x: hidden; }
 .fh-sky-star { position: absolute; border-radius: 50%; background: #fff; }
 .fh-sky-light { position: absolute; border-radius: 50%; filter: blur(60px); mix-blend-mode: screen; }
 .fh-sky-city { position: absolute; left: 0; right: 0; bottom: 0; height: clamp(240px, 26vw, 340px); }
+/* Organiser + sponsors under the Welcome buttons: divider line, then
+   organiser on the left and sponsors on the right with a thin line between. */
+.fh-credits {
+  width: min(560px, 100%); display: flex; align-items: stretch; justify-content: center;
+  margin-top: 4px; padding-top: 14px; border-top: 1px solid var(--fh-line); text-align: center;
+}
+.fh-credits-col {
+  flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 8px; padding: 0 clamp(8px, 3vw, 24px);
+}
+.fh-credits-sep { width: 1px; flex: none; background: var(--fh-line-2); }
+.fh-credits-label { font-size: clamp(9px, 2.4vw, 10.5px); letter-spacing: 0.24em; text-transform: uppercase; color: var(--fh-mute); white-space: nowrap; }
+.fh-credits-example { text-transform: none; letter-spacing: 0.08em; }
+@media (max-width: 479px) { .fh-credits-example { display: block; margin-top: 2px; } }
+/* White-on-transparent copy of public/xmum-logo-horizontal.png. */
+.fh-credits-xmum { height: clamp(24px, 6.5vw, 38px); width: auto; max-width: 100%; object-fit: contain; opacity: 0.92; }
+.fh-credits-sponsors { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px 16px; }
+/* Sponsor logos keep their own colours, as supplied. */
+.fh-sponsor-logo { height: clamp(32px, 8.5vw, 46px); width: auto; max-width: 180px; object-fit: contain; border-radius: 7px; }
+.fh-sponsor-ph { font-weight: 600; font-size: 14px; color: var(--fh-mute); }
 /* Leave room under the last stop so its content sits above the city. */
 .fh > .fh-stop:last-of-type { padding-bottom: clamp(270px, 26vw, 340px); }
 .fh-sky-layer { position: absolute; inset: 0; width: 100%; height: 100%; }

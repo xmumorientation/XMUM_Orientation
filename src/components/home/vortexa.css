@@ -391,7 +391,44 @@ html.vx-snap { scroll-snap-type: y proximity; }
 .vx-welcome-actions { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; margin-top: 6px; }
 .vx-welcome-strip { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 28px; margin-top: 18px; font-size: 12px; color: var(--vx-mute); letter-spacing: 0.08em; }
 .vx-welcome-strip b { color: #fff; margin-right: 6px; }
+
+/* Organiser + sponsors under the date strip: a divider line, then organiser
+   on the left and sponsors on the right with a thin line between (same as
+   Freshie Home). Logo sizes follow the screen width (clamp) so it stays on
+   one row from phones to desktops. */
+.vx-credits {
+  margin-top: 24px; padding-top: 18px; width: min(560px, 100%);
+  display: flex; align-items: stretch; justify-content: center;
+  border-top: 1px solid var(--vx-line);
+}
+.vx-credits-col {
+  flex: 1 1 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 10px; padding: 0 clamp(12px, 3vw, 32px); min-width: 0;
+}
+.vx-credits-sep { width: 1px; background: var(--vx-line-2); flex: none; }
+.vx-credits-label { font-size: clamp(9px, 2.4vw, 11px); letter-spacing: 0.24em; text-transform: uppercase; color: var(--vx-mute); white-space: nowrap; }
+.vx-credits-example { text-transform: none; letter-spacing: 0.08em; }
+@media (max-width: 479px) { .vx-credits-example { display: block; margin-top: 2px; } }
+/* White-on-transparent copy of public/xmum-logo-horizontal.png (which is navy on white). */
+.vx-credits-xmum { height: clamp(24px, 6.5vw, 42px); width: auto; max-width: 100%; object-fit: contain; opacity: 0.92; }
+.vx-credits-sponsors ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px 16px; }
+.vx-sponsor-ph { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; font-size: 14px; color: var(--vx-mute); }
+.vx-sponsor-ph i { width: 12px; height: 12px; border-radius: 50%; background: var(--vx-line-2); }
+/* Sponsor logos keep their own colours, as supplied. */
+.vx-sponsor-logo {
+  height: clamp(32px, 8.5vw, 48px); width: auto; max-width: 180px; object-fit: contain;
+  border-radius: 7px; transition: transform 0.15s;
+}
+.vx-credits a:hover .vx-sponsor-logo { transform: translateY(-1px); }
+@media (max-width: 1023px) {
+  .vx-credits { margin-top: 18px; padding-top: 14px; }
+  .vx-credits-col { gap: 7px; }
+}
 .vx-scrollhint { position: absolute; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 2; font-size: 11px; letter-spacing: 0.22em; color: var(--vx-mute); background: none; border: 0; cursor: pointer; padding: 8px; }
+/* Short screens: the organiser/sponsor rows reach the bottom, so drop the hint. */
+@media (max-height: 1000px) {
+  .vx-scrollhint { display: none; }
+}
 @media (max-width: 1023px) {
   .vx-scrollhint { display: none; }
   .vx-welcome .vx-lead { font-size: 15px; }
