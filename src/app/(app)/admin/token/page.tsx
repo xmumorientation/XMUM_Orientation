@@ -464,7 +464,7 @@ export default function AdminTokenAllInOnePage() {
   };
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6 pb-20">
+    <div className="space-y-6 pb-6">
       {/* ── Top Header & Global Actions ────────────────────────────────────────── */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>

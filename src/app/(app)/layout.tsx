@@ -32,6 +32,7 @@ export default async function AppLayout({
   if (!row) redirect("/login");
 
   const { group, ...profile } = row as Profile & { group: Group | null };
+  if (profile.approved === false) redirect("/login/pending");
 
   return (
     <ProfileProvider profile={profile as Profile} initialGroup={group}>

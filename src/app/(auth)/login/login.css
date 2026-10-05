@@ -214,6 +214,62 @@
   clip-path: inset(0 50% 0 0);
 }
 
+.sl-google {
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--sl-line);
+}
+
+.sl-select {
+  color-scheme: dark;
+  cursor: pointer;
+}
+
+.sl-google-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  width: 100%;
+  min-height: 48px;
+  margin-top: 0.65rem;
+  border-radius: 9999px;
+  border: 1px solid var(--sl-line-2);
+  background: #fff;
+  color: #1a1a1a;
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+.sl-google-btn:hover:not(:disabled) {
+  box-shadow: 0 0 22px rgba(255, 255, 255, 0.16);
+  transform: translateY(-1px);
+}
+.sl-google-btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+.sl-google-btn:disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.sl-google-logo {
+  display: inline-flex;
+  height: 1.25rem;
+  width: 1.25rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: #fff;
+}
+
+.sl-google-svg {
+  height: 0.95rem;
+  width: 0.95rem;
+}
+
 .sl-demo {
   border-radius: 14px;
   border: 1px solid rgba(224, 180, 252, 0.28);
@@ -443,7 +499,8 @@
 @media (prefers-reduced-motion: reduce) {
   .sl-submit,
   .sl-ghost,
-  .sl-chip {
+  .sl-chip,
+  .sl-google-btn {
     transition: none;
   }
 }

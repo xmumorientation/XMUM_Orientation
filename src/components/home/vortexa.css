@@ -41,8 +41,7 @@
   .vx {
     --vx-nav-h: 56px;
     --vx-stopbar-h: 30px;
-    /* TabBar removed from Welcome — keep bottom inset at 0 */
-    --vx-tabbar-h: 0px;
+    --vx-tabbar-h: calc(64px + env(safe-area-inset-bottom, 0px));
   }
 }
 
@@ -74,12 +73,12 @@ html.vx-snap { scroll-snap-type: y mandatory; }
 .vx-score,
 .vx-sched {
   height: 100svh;
-  padding-block: calc(var(--vx-nav-h) + var(--vx-stopbar-h) + 40px);
+  padding-block: calc(var(--vx-nav-h) + var(--vx-stopbar-h) + 40px) calc(var(--vx-tabbar-h) + 40px);
 }
 @media (max-width: 1023px) {
   .vx-score,
   .vx-sched {
-    padding-block: calc(var(--vx-nav-h) + var(--vx-stopbar-h) + 24px);
+    padding-block: calc(var(--vx-nav-h) + var(--vx-stopbar-h) + 24px) calc(var(--vx-tabbar-h) + 24px);
   }
 }
 .vx-inner { position: relative; z-index: 2; width: 100%; max-width: 1120px; margin: 0 auto; }
@@ -121,6 +120,61 @@ html.vx-snap { scroll-snap-type: y mandatory; }
   50% { transform: scale(0.8) rotate(20deg); opacity: 0.7; }
 }
 
+/* ── Night skyline: one background behind all seven stops ────────────────── */
+/* Stays near-black for the first stops, warms to indigo, ends in a city. */
+.vx-main { position: relative; isolation: isolate; }
+.vx-main > .vx-sec { z-index: 1; }
+.vx-world {
+  position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none;
+  background: linear-gradient(180deg,
+    var(--vx-ink) 0%,
+    var(--vx-ink) 30%,
+    #060816 48%,
+    #080b22 62%,
+    #0d0f33 74%,
+    #17154a 84%,
+    #241a5e 90%,
+    #241a5e 100%);
+}
+.vx-world-dots {
+  position: absolute; inset: 0;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+  background-size: 28px 28px;
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 70%, transparent 90%);
+  mask-image: linear-gradient(180deg, #000 0%, #000 70%, transparent 90%);
+}
+.vx-star { position: absolute; border-radius: 50%; }
+.vx-orb { position: absolute; border-radius: 50%; }
+/* City: two wide skyline layers (cropped at the sides on narrow screens) with
+   the ferris wheel between them. The wheel is sized from the city height, so
+   it always matches the buildings' scale, and placed so it is never cut off. */
+.vx-city {
+  --vx-city-h: clamp(300px, 47.5vw, 760px);
+  --vx-wheel-x: 68%; /* wheel centre, from the left */
+  position: absolute; left: 0; bottom: 0; width: 100%; height: var(--vx-city-h);
+}
+@media (min-width: 1024px) {
+  .vx-city { --vx-wheel-x: 76%; }
+}
+.vx-city-layer { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.vx-wheel {
+  position: absolute;
+  /* 600 wheel units at the city's scale (city is 760 units tall). */
+  width: calc(var(--vx-city-h) * 600 / 760); height: auto;
+  left: calc(var(--vx-wheel-x) - var(--vx-city-h) * 300 / 760);
+  /* Wheel's bottom edge sits 40 units under the ground line (y 560 of 760). */
+  bottom: calc(var(--vx-city-h) * 160 / 760);
+}
+.vx-city-wheel { transform-box: fill-box; transform-origin: center; }
+@media (prefers-reduced-motion: no-preference) {
+  .vx-city-wheel { animation: vx-spin 90s linear infinite; }
+  .vx-city-lamp { animation: vx-lamp 4s ease-in-out infinite; }
+  .vx-orb { animation: vx-bob 7s ease-in-out infinite alternate; }
+}
+@keyframes vx-spin { to { transform: rotate(360deg); } }
+@keyframes vx-lamp { 50% { opacity: 0.55; } }
+@keyframes vx-bob { to { transform: translateY(-14px); } }
+
 /* ── Type ────────────────────────────────────────────────────────────────── */
 .vx-holo {
   background: var(--vx-holo);
@@ -160,11 +214,22 @@ html.vx-snap { scroll-snap-type: y mandatory; }
 /* ── Surfaces ────────────────────────────────────────────────────────────── */
 .vx-card { background: var(--vx-ink-2); border: 1px solid var(--vx-line); border-radius: 18px; }
 
-/* Ticket: two half-circle notches cut into the sides */
-.vx-ticket { position: relative; background: var(--vx-ink-2); border: 1px solid var(--vx-line); }
+/* Ticket: two half-circle notches cut into the sides. The mask makes them real
+   holes, so the page background (which changes colour down the page) shows
+   through; the pseudo-elements only draw the notch outline. */
+.vx-ticket {
+  --vx-notch-y: 50%;
+  position: relative; background: var(--vx-ink-2); border: 1px solid var(--vx-line);
+  -webkit-mask:
+    radial-gradient(circle 8px at 0 var(--vx-notch-y), #0000 98%, #000) left / 51% 100% no-repeat,
+    radial-gradient(circle 8px at 100% var(--vx-notch-y), #0000 98%, #000) right / 51% 100% no-repeat;
+  mask:
+    radial-gradient(circle 8px at 0 var(--vx-notch-y), #0000 98%, #000) left / 51% 100% no-repeat,
+    radial-gradient(circle 8px at 100% var(--vx-notch-y), #0000 98%, #000) right / 51% 100% no-repeat;
+}
 .vx-ticket::before, .vx-ticket::after {
-  content: ""; position: absolute; top: 50%; width: 18px; height: 18px; border-radius: 50%;
-  background: var(--vx-ink); border: 1px solid var(--vx-line); transform: translateY(-50%);
+  content: ""; position: absolute; top: var(--vx-notch-y); width: 18px; height: 18px; border-radius: 50%;
+  background: transparent; border: 1px solid var(--vx-line); transform: translateY(-50%);
 }
 .vx-ticket::before { left: -10px; clip-path: inset(0 0 0 50%); }
 .vx-ticket::after { right: -10px; clip-path: inset(0 50% 0 0); }
@@ -304,7 +369,7 @@ html.vx-snap { scroll-snap-type: y mandatory; }
 .vx-rail button:hover .vx-rail-tip, .vx-rail button:focus-visible .vx-rail-tip { opacity: 1; transform: none; }
 @media (max-width: 1023px) { .vx-rail { display: none; } }
 
-/* ── Mobile / tablet tab bar (unused on Welcome; kept for possible reuse) ── */
+/* ── Mobile / tablet tab bar ─────────────────────────────────────────────── */
 .vx-tabbar { display: none; }
 @media (max-width: 1023px) {
   .vx-tabbar {
@@ -378,6 +443,7 @@ html.vx-snap { scroll-snap-type: y mandatory; }
 }
 @media (max-width: 1023px) {
   .vx-welcome .vx-lead { font-size: 15px; }
+  .vx-scrollhint { bottom: calc(var(--vx-tabbar-h) + 8px); }
 }
 
 /* ── 02 Overview ─────────────────────────────────────────────────────────── */
@@ -556,6 +622,8 @@ html.vx-snap { scroll-snap-type: y mandatory; }
 .vx-pass-main > p { margin: 0 0 6px; color: var(--vx-text-2); font-size: 15.5px; max-width: 42ch; }
 
 /* ── 07 Join ─────────────────────────────────────────────────────────────── */
+/* Pass sits high so the city skyline below it stays visible. */
+.vx-join { align-items: flex-start; }
 .vx-join .vx-inner { display: flex; justify-content: center; }
 .vx-pass { width: min(720px, 100%); display: grid; grid-template-columns: 1fr 190px; border-radius: 24px; }
 .vx-pass-main { padding: 40px 40px 36px; display: flex; flex-direction: column; gap: 14px; align-items: flex-start; }
@@ -565,7 +633,7 @@ html.vx-snap { scroll-snap-type: y mandatory; }
 .vx-pass-stub .vx-num { font-size: 32px; color: var(--vx-yellow); letter-spacing: 0; }
 @media (max-width: 1023px) {
   .vx-pass { grid-template-columns: 1fr; }
-  .vx-pass::before, .vx-pass::after { top: auto; bottom: 64px; transform: translateY(50%); }
+  .vx-pass { --vx-notch-y: calc(100% - 64px); }
   .vx-pass-main { padding: 28px 22px 22px; }
   .vx-pass-main .vx-btn { width: 100%; }
   .vx-pass-stub { border-left: 0; border-top: 2px dashed var(--vx-line-2); flex-direction: row; justify-content: space-between; height: 64px; padding: 0 22px; }

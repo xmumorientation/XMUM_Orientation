@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { Menu, X } from "lucide-react";
+import { CalendarDays, Gamepad2, Home, Menu, ScanLine, Trophy, X } from "lucide-react";
 
 import { STOPS, scrollToSection, type StopId } from "./data";
 
@@ -152,6 +152,48 @@ export function SiteNav({ active }: { active: StopId }) {
       </div>
     </nav>
     </>
+  );
+}
+
+const TABS: { label: string; target: StopId; match: StopId[]; Icon: typeof Home }[] = [
+  { label: "Home", target: "welcome", match: ["welcome", "overview"], Icon: Home },
+  { label: "Games", target: "games", match: ["games"], Icon: Gamepad2 },
+  { label: "Score", target: "scoreboard", match: ["scoreboard"], Icon: Trophy },
+  { label: "Schedule", target: "schedule", match: ["schedule"], Icon: CalendarDays },
+];
+
+/**
+ * Phone/tablet bottom tab bar for the four most-used stops. When `onScan` is
+ * given, a raised Scan button sits in the middle (DEV PREVIEW — see
+ * ScanPreview.tsx). The public Welcome page does not pass `onScan`.
+ */
+export function TabBar({ active, onScan }: { active: StopId; onScan?: () => void }) {
+  const tab = ({ label, target, match, Icon }: (typeof TABS)[number]) => (
+    <button
+      key={label}
+      type="button"
+      className="vx-tab"
+      aria-current={match.includes(active)}
+      onClick={() => scrollToSection(target)}
+    >
+      <Icon size={22} aria-hidden />
+      {label}
+    </button>
+  );
+
+  return (
+    <div className="vx-tabbar" role="navigation" aria-label="Quick sections">
+      {TABS.slice(0, 2).map(tab)}
+      {onScan && (
+        <button type="button" className="vx-tab vx-tab-scan" onClick={onScan} aria-label="Scan a QR code">
+          <span className="vx-tab-scan-btn" aria-hidden>
+            <ScanLine size={26} strokeWidth={2.2} />
+          </span>
+          Scan
+        </button>
+      )}
+      {TABS.slice(2).map(tab)}
+    </div>
   );
 }
 

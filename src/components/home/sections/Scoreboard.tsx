@@ -15,7 +15,7 @@ export function Scoreboard() {
           <h2 id="scoreboard-title" className="vx-h2">Scoreboard</h2>
           <span className="vx-pill vx-mono">
             <i aria-hidden />
-            {live ? "LIVE NOW" : "COMING SOON"}
+            {live ? "LIVE NOW" : "LIVE FROM 28 NOV"}
           </span>
         </div>
 

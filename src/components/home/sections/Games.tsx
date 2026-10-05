@@ -2,7 +2,6 @@
 
 import React from "react";
 import { GAME_PHASES } from "../data";
-import { Glow } from "../decor";
 import { Compass, Gamepad2, Coins, Trophy } from "lucide-react";
 
 const PHASE_ICONS: Record<string, React.ReactNode> = {
@@ -23,9 +22,6 @@ const PHASE_STYLE: Record<string, { color: string; fill: string }> = {
 export function Games() {
   return (
     <section id="games" className="vx-sec" aria-labelledby="games-title">
-      <div className="vx-dots" />
-      <Glow size="min(460px, 80vw)" color="var(--vx-navy)" style={{ right: "-6%", top: "-8%", opacity: 0.8 }} />
-
       <div className="vx-inner">
         <div className="vx-games-head vx-rise">
           <h2 id="games-title" className="vx-h2">How the game works</h2>

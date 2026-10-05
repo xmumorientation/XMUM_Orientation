@@ -9,7 +9,6 @@ import {
 const PUBLIC_PATHS = [
   "/login",
   "/join",
-  "/register",
   "/forgot-password",
   "/reset-password",
   "/auth/callback",
@@ -112,11 +111,24 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  if (user && (path === "/login" || path === "/register")) {
+  if (user && !path.startsWith("/auth/callback")) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("approved")
+      .eq("id", user.id)
+      .maybeSingle();
+    const approved = profile?.approved !== false;
     const url = request.nextUrl.clone();
-    url.pathname = "/dashboard";
     url.search = "";
-    return NextResponse.redirect(url);
+
+    if (!approved && path !== "/login/pending") {
+      url.pathname = "/login/pending";
+      return NextResponse.redirect(url);
+    }
+    if (approved && (path === "/login" || path === "/login/pending")) {
+      url.pathname = "/dashboard";
+      return NextResponse.redirect(url);
+    }
   }
 
   return response;

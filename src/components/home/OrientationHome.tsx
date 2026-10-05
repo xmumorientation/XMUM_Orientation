@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react";
 
 import "./vortexa.css";
+import { NightSkyline } from "./NightSkyline";
 import { SiteFooter } from "./SiteFooter";
-import { SiteNav, StopRail } from "./SiteNav";
+import { SiteNav, StopRail, TabBar } from "./SiteNav";
 import { FONT, STOPS, type StopId } from "./data";
 import { WelcomeSection } from "./sections/WelcomeSection";
 import { OverviewSection } from "./sections/OverviewSection";
@@ -17,12 +18,13 @@ import { CheckInSection } from "./sections/CheckInSection";
 /**
  * Public Orientation 2026 Welcome page — "Night Ticket".
  *
- * Seven full-screen "ride stops" (Welcome → Overview → Schedule → Games → … → Check-in) on a black ground, read one
+ * Seven full-screen "ride stops" (Welcome → Overview → Schedule → Games → … → Check-in)
+ * over one continuous background (NightSkyline: night sky → dusk → city), read one
  * at a time with scroll snapping. A single IntersectionObserver tracks the
- * current stop for the nav and the desktop dot rail, and marks each stop
- * `data-seen` the first time it enters view so its entrance animation plays
- * once. Scan / QR is gated behind login — not shown on this public page.
- * Mobile uses top bar + hamburger only (no bottom TabBar).
+ * current stop for the nav, the desktop dot rail, and the mobile tab bar, and
+ * marks each stop `data-seen` the first time it enters view so its entrance
+ * animation plays once. Scan / QR is gated behind login — not shown on this
+ * public page.
  */
 export default function OrientationHome() {
   const [active, setActive] = useState<StopId>("welcome");
@@ -82,7 +84,8 @@ export default function OrientationHome() {
       <SiteNav active={active} />
       <StopRail active={active} />
 
-      <main>
+      <main className="vx-main">
+        <NightSkyline />
         <WelcomeSection />
         <OverviewSection />
         <Schedule />
@@ -92,6 +95,7 @@ export default function OrientationHome() {
         <CheckInSection />
       </main>
       <SiteFooter />
+      <TabBar active={active} />
     </div>
   );
 }

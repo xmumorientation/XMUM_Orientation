@@ -36,8 +36,11 @@ export function useConfig() {
       setLoaded(true);
     }
     load();
+    // Unique name per mount: the browser client is shared, so two components
+    // using this hook would otherwise get the same, already-subscribed channel,
+    // and adding .on() to it throws.
     const channel = supabase
-      .channel("config-live")
+      .channel(`config-live-${crypto.randomUUID()}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "game_config" },

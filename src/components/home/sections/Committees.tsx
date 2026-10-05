@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import { COMMITTEES, type Committee } from "../data";
-import { Spark } from "../decor";
 import {
   Code,
   Calendar,
@@ -34,9 +33,6 @@ export function Committees() {
 
   return (
     <section id="committees" className="vx-sec" aria-labelledby="committees-title">
-      <div className="vx-dots" />
-      <Spark size={22} color="var(--vx-cyan)" style={{ right: "6%", bottom: "10%" }} />
-
       <div className="vx-inner">
         <div className="vx-comm-head vx-rise">
           <h2 id="committees-title" className="vx-h2">Meet the crew</h2>

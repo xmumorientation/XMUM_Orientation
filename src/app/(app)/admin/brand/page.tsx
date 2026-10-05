@@ -63,7 +63,7 @@ export default function AdminBrandPage() {
       <ErrorBanner message={error} />
       <SuccessBanner message={notice} />
 
-      <Card>
+      <Card className="max-w-2xl">
         <form onSubmit={save} className="space-y-3">
           <div>
             <label className="label" htmlFor="name">
