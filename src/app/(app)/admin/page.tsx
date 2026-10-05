@@ -123,7 +123,7 @@ export default function AdminControlRoomPage() {
         <h2 className="mb-2 font-semibold">Phase control</h2>
         <div className="space-y-2">
           {phases.map((p) => (
-            <Card key={p.id} className="space-y-2 p-3">
+            <Card key={p.id} className={cn("space-y-2 border-2 p-3 transition-colors",p.state==="active"&&"border-green-500 bg-green-50",p.state==="paused"&&"border-amber-400 bg-amber-50")}>
               <div className="flex items-center justify-between">
                 <span className="font-semibold">
                   {p.name}{" "}
@@ -148,9 +148,9 @@ export default function AdminControlRoomPage() {
               </div>
               <div className="flex flex-wrap gap-1.5">
                 <button
-                  disabled={busy}
+                  disabled={busy || p.state === "active" || p.state === "paused"}
                   onClick={() => phaseAction(p.key, "start")}
-                  className="btn-secondary min-h-[36px] px-3 text-xs"
+                  className="btn-secondary min-h-[36px] px-3 text-xs disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   ▶ Start
                 </button>

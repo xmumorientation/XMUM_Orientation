@@ -38,6 +38,7 @@ export default function AdminBlindBoxPage() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [gmDraft, setGmDraft] = useState<Record<string, number>>({});
 
   const load = useCallback(async () => {
     const [{ data: st }, { data: allocs }, { data: claims }, { count }] =
@@ -68,6 +69,15 @@ export default function AdminBlindBoxPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    setGmDraft({
+      gm_blindbox_price: Number(config.gm_blindbox_price ?? 0),
+      gm_blindbox_min: Number(config.gm_blindbox_min ?? 0),
+      gm_blindbox_max: Number(config.gm_blindbox_max ?? 0),
+      gm_blindbox_stock: Number(config.gm_blindbox_stock ?? 0),
+    });
+  }, [config]);
 
   function flash(msg: string) {
     setNotice(msg);
@@ -144,16 +154,18 @@ export default function AdminBlindBoxPage() {
     }
   }
 
-  async function saveGmConfig(key: string, value: number) {
-    const { error } = await supabase.rpc("fn_set_config", {
-      p_key: key,
-      p_value: value,
-    });
-    if (error) setError(friendlyError(error));
-    else flash("Saved.");
+  async function saveGmConfig() {
+    if (gmDraft.gm_blindbox_min > gmDraft.gm_blindbox_max) return setError("Minimum reward cannot exceed maximum reward.");
+    setBusy(true);setError(null);
+    for (const [key,value] of Object.entries(gmDraft)) {
+      const { error } = await supabase.rpc("fn_set_config", { p_key:key,p_value:value });
+      if (error) { setBusy(false);return setError(friendlyError(error)); }
+    }
+    setBusy(false);flash("GM Blind Box settings saved.");
   }
 
   const allocated = new Set(allocations.map((a) => a.profile_id));
+  const gmDirty = Object.entries(gmDraft).some(([key,value])=>value!==Number(config[key]??0));
 
   return (
     <div className="space-y-4">
@@ -307,12 +319,13 @@ export default function AdminBlindBoxPage() {
                 type="number"
                 min="0"
                 className="input text-sm"
-                defaultValue={Number(config[key] ?? 0)}
-                onBlur={(e) => saveGmConfig(key, Number(e.target.value))}
+                value={gmDraft[key] ?? 0}
+                onChange={(e) => setGmDraft({...gmDraft,[key]:Number(e.target.value)})}
               />
             </div>
           ))}
         </div>
+        <button disabled={busy||!gmDirty} className="btn-primary mt-3 w-full disabled:cursor-not-allowed disabled:opacity-40" onClick={()=>void saveGmConfig()}>{busy?"Saving…":"Save GM Blind Box settings"}</button>
       </Card>
 
       {qrPreview && (

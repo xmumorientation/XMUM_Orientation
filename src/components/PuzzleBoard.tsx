@@ -18,11 +18,13 @@ export function PuzzleBoard({
   imageUrl,
   complete,
   groupName,
+  pieceImages = {},
 }: {
   ownedIndices: number[];
   imageUrl: string | null;
   complete: boolean;
   groupName?: string | null;
+  pieceImages?: Record<number, string>;
 }) {
   if (complete && imageUrl) {
     return (
@@ -56,7 +58,10 @@ export function PuzzleBoard({
                 : "border-dashed border-paper-300 bg-paper-100"
             )}
           >
-            {owned && imageUrl ? (
+            {owned && pieceImages[idx] ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={pieceImages[idx]} alt={`Puzzle piece ${idx}`} className="h-full w-full object-cover" />
+            ) : owned && imageUrl ? (
               <div
                 className="absolute inset-0 bg-cover"
                 style={{

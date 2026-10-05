@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { usePhaseTimer } from "@/components/PhaseTimerProvider";
 import { useCurrentUserContext } from "@/components/ProfileProvider";
 import { useToast } from "@/components/ToastProvider";
+import { useConfig } from "@/components/useConfig";
 import {
   DangerButton,
   InputBox,
@@ -20,6 +21,7 @@ type SessionAction = "start" | "pause" | "resume" | "extend" | "reset" | "end";
 
 function remainingSeconds(phase: Phase, serverNow: number) {
   if (phase.state === "paused") return Math.max(0, phase.paused_remaining ?? 0);
+  if (phase.state === "pending") return Math.max(0, phase.duration_minutes * 60);
   if (phase.state !== "active" || !phase.ends_at) return 0;
   return Math.max(0, (new Date(phase.ends_at).getTime() - serverNow) / 1000);
 }
@@ -31,6 +33,7 @@ function statusOf(phase: Phase, remaining: number) {
 export function BondingSessionTimer() {
   const { role } = useCurrentUserContext();
   const { phases, offsetMs, tick } = usePhaseTimer();
+  const { config } = useConfig();
   const toast = useToast();
   const supabase = useMemo(() => supabaseBrowser(), []);
   const sessions = phases.filter((phase) => phase.key === "day1" || phase.key === "day2");
@@ -42,7 +45,8 @@ export function BondingSessionTimer() {
 
   const selected = sessions.find((phase) => phase.key === selectedKey) ?? sessions[0];
   const serverNow = Date.now() + offsetMs;
-  const remaining = selected ? remainingSeconds(selected, serverNow) : 0;
+  const configuredMinutes = Number(config[`bonding_session_duration_${selected?.key}`] ?? selected?.duration_minutes ?? 0);
+  const remaining = selected?.state === "pending" ? Math.max(0, configuredMinutes * 60) : selected ? remainingSeconds(selected, serverNow) : 0;
   const status = selected ? statusOf(selected, remaining) : "pending";
   const warning = status === "active" && remaining <= 30 * 60;
 
@@ -101,7 +105,11 @@ export function BondingSessionTimer() {
             role="tab"
             aria-selected={phase.key === selected.key}
             onClick={() => setSelectedKey(phase.key)}
-            className={cn(phase.key === selected.key && "border-brand-1 bg-brand-1/10 text-brand-1")}
+            className={cn(
+              phase.state === "active" && "border-green-600 bg-green-600 text-white hover:bg-green-700",
+              phase.state === "paused" && "border-amber-500 bg-amber-100 text-amber-900",
+              phase.key === selected.key && phase.state !== "active" && "ring-2 ring-brand-1/40"
+            )}
           >
             {phase.name}
           </SecondaryButton>
@@ -120,7 +128,7 @@ export function BondingSessionTimer() {
           {formatCountdown(remaining)}
         </p>
         <p className="mt-4 text-sm font-semibold opacity-75">
-          {status === "pending" && "Waiting for Admin to start the session."}
+          {status === "pending" && "Configured countdown — waiting for Admin to start."}
           {status === "paused" && "The bonding session is currently paused."}
           {status === "ended" && "The bonding session has ended."}
           {status === "active" && warning && "Final 30 minutes."}
