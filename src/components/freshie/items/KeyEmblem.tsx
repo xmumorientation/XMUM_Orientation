@@ -2,14 +2,14 @@
 
 import { useId } from "react";
 
-import { PIECES_PER_SET, PROJECTOR_LABELS, type ProjectorLocation } from "@/lib/types";
+import { PIECES_PER_SET, type ProjectorLocation } from "@/lib/types";
 
 // One location's puzzle drawn as a round key head cut into 5 slices, one per
 // piece. Owned slices show the art; missing ones are a dark outline. With all
 // 5 in, a blade can be drawn under it so it reads as a whole key.
 //   B1 Star Key: a star lantern, one point per piece
 //   A3 Wheel Key: a ferris wheel, one cabin per piece
-//   TF Track Key: a running track, one arrow per piece
+//   TF Orbit Key: a circling track, one arrow per piece
 // Each location keeps fixed colours so every group sees the same key.
 
 export type KeyMode = "normal" | "lit" | "idle";
@@ -17,7 +17,7 @@ export type KeyMode = "normal" | "lit" | "idle";
 export const KEY_NAMES: Record<ProjectorLocation, string> = {
   B1: "Star Key",
   A3: "Wheel Key",
-  TF: "Track Key",
+  TF: "Orbit Key",
 };
 
 const KEY_COLORS: Record<ProjectorLocation, { main: string; light: string; stops: [string, string, string] }> = {
@@ -152,7 +152,7 @@ export function KeyEmblem({
       className={[className, celebrate ? "fi-celebrate" : ""].filter(Boolean).join(" ")}
       viewBox={blade ? "0 0 100 150" : "0 0 100 100"}
       role="img"
-      aria-label={`${PROJECTOR_LABELS[loc]} ${KEY_NAMES[loc]}: ${owned.length} of ${PIECES_PER_SET} pieces`}
+      aria-label={`${KEY_NAMES[loc]}: ${owned.length} of ${PIECES_PER_SET} pieces`}
       data-mode={mode}
       data-complete={complete}
       style={{ "--fi-key": gold ? GOLD : colors.main } as React.CSSProperties}

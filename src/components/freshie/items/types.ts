@@ -29,6 +29,7 @@ export type HistoryEntry = {
   id: string;
   kind: HistoryKind;
   day: 1 | 2;
+  /** May contain {B1}, {A3} or {TF}; shown as the code name until the map unlocks. */
   title: string;
   detail: string;
   /** Token change. 0 for entries that only move pieces or light a projector. */
@@ -51,6 +52,8 @@ export type ItemsData = {
   /** Remaining time on the current phase, e.g. "1:05:12". Null when not running. */
   timeLeft: string | null;
   group: { id: number; name: string };
+  /** False until the full map unlocks: locations show as code names and the Guardian spot stays hidden. */
+  mapUnlocked: boolean;
   tokens: { balance: number };
   /** Day 2 entry costs by risk tier. */
   costs: { low: number; medium: number; high: number };

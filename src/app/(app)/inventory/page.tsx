@@ -95,7 +95,7 @@ function ItemsPreview() {
       />
       {scenario === "complete" && (
         <button type="button" className="fi-replay" onClick={() => setRun((n) => n + 1)}>
-          Replay T&amp;F
+          Replay demo
         </button>
       )}
     </>

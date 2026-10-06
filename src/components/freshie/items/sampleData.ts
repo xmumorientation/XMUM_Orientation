@@ -10,6 +10,8 @@ import type { HistoryEntry, ItemsData } from "./types";
 //
 // /inventory with no ?demo plays "complete": the T&F key completing (the 5th
 // piece arrives). Add ?demo=day1|day2|ready|taken|won to see the other states.
+// Locations show as code names (Star, Wheel, Orbit) until the map unlocks;
+// only "ready" and "won" are unlocked here.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const SAMPLE_SCENARIOS = ["day1", "day2", "ready", "taken", "won", "complete"] as const;
@@ -31,15 +33,15 @@ const DAY1_HISTORY: HistoryEntry[] = [
 ];
 
 const DAY2_HISTORY: HistoryEntry[] = [
-  { id: "d2-9", kind: "piece", day: 2, title: "Won B1 piece #4", detail: "Station 11 · HOGM picked B1", amount: 0, time: "14:51" },
+  { id: "d2-9", kind: "piece", day: 2, title: "Won {B1} piece #4", detail: "Station 11 · HOGM picked {B1}", amount: 0, time: "14:51" },
   { id: "d2-8", kind: "entry", day: 2, title: "Station 11 · High risk", detail: "Entry fee", amount: -6, time: "14:36" },
-  { id: "d2-7", kind: "piece", day: 2, title: "Won T&F piece #2", detail: "Station 6 · HOGM picked B1 + T&F", amount: 0, time: "14:30" },
+  { id: "d2-7", kind: "piece", day: 2, title: "Won {TF} piece #2", detail: "Station 6 · HOGM picked {B1} + {TF}", amount: 0, time: "14:30" },
   { id: "d2-6", kind: "entry", day: 2, title: "Station 6 · Medium risk", detail: "Entry fee", amount: -4, time: "14:14" },
   { id: "d2-5", kind: "game", day: 2, title: "Station 1 · Lost", detail: "No piece this time", amount: 0, time: "14:09" },
   { id: "d2-4", kind: "entry", day: 2, title: "Station 1 · Low risk", detail: "Entry fee", amount: -2, time: "13:58" },
-  { id: "d2-3", kind: "piece", day: 2, title: "Won B1 piece #2", detail: "Station 10 · HOGM picked B1 + T&F", amount: 0, time: "13:49" },
+  { id: "d2-3", kind: "piece", day: 2, title: "Won {B1} piece #2", detail: "Station 10 · HOGM picked {B1} + {TF}", amount: 0, time: "13:49" },
   { id: "d2-2", kind: "entry", day: 2, title: "Station 10 · Medium risk", detail: "Entry fee", amount: -4, time: "13:33" },
-  { id: "d2-1", kind: "piece", day: 2, title: "Won B1 piece #1", detail: "Station 2 · Random region", amount: 0, time: "13:20" },
+  { id: "d2-1", kind: "piece", day: 2, title: "Won {B1} piece #1", detail: "Station 2 · Random region", amount: 0, time: "13:20" },
   { id: "d2-0", kind: "entry", day: 2, title: "Station 2 · Low risk", detail: "Entry fee", amount: -2, time: "13:08" },
 ];
 
@@ -48,6 +50,7 @@ function base(): ItemsData {
     phase: "day2",
     timeLeft: "1:05:12",
     group: { id: 7, name: "Group 7" },
+    mapUnlocked: false,
     tokens: { balance: 14 },
     costs: { low: 2, medium: 4, high: 6 },
     projectors: { B1: null, A3: null, TF: null },
@@ -76,10 +79,11 @@ export function sampleItems(scenario: SampleScenario = "day2"): ItemsData {
         ...data,
         phase: "endgame",
         timeLeft: "24:51",
+        mapUnlocked: true,
         tokens: { balance: 8 },
         pieces: { B1: [1, 2, 3, 4, 5], A3: [3], TF: [2] },
         history: [
-          { id: "r-2", kind: "piece", day: 2, title: "Won B1 piece #5", detail: "Station 12 · HOGM picked B1", amount: 0, time: "15:40" },
+          { id: "r-2", kind: "piece", day: 2, title: "Won {B1} piece #5", detail: "Station 12 · HOGM picked {B1}", amount: 0, time: "15:40" },
           { id: "r-1", kind: "entry", day: 2, title: "Station 12 · High risk", detail: "Entry fee", amount: -6, time: "15:24" },
           ...data.history,
         ],
@@ -87,8 +91,7 @@ export function sampleItems(scenario: SampleScenario = "day2"): ItemsData {
     case "complete":
       return {
         ...data,
-        phase: "endgame",
-        timeLeft: "27:40",
+        timeLeft: "48:10",
         pieces: { B1: [1, 2, 4], A3: [3], TF: [1, 2, 4, 5] },
       };
     case "taken":
@@ -101,6 +104,7 @@ export function sampleItems(scenario: SampleScenario = "day2"): ItemsData {
         ...data,
         phase: "endgame",
         timeLeft: "12:05",
+        mapUnlocked: true,
         tokens: { balance: 8 },
         pieces: { B1: [1, 2, 3, 4, 5], A3: [3], TF: [2] },
         projectors: {
@@ -109,7 +113,7 @@ export function sampleItems(scenario: SampleScenario = "day2"): ItemsData {
           TF: null,
         },
         history: [
-          { id: "w-1", kind: "lit", day: 2, title: "B1 projector lit", detail: "Part card scanned", amount: 0, time: "15:58" },
+          { id: "w-1", kind: "lit", day: 2, title: "{B1} projector lit", detail: "Part card scanned", amount: 0, time: "15:58" },
           ...data.history,
         ],
       };
@@ -125,7 +129,7 @@ export function withLastTrackPiece(data: ItemsData): ItemsData {
     ...data,
     pieces: { ...data.pieces, TF: [...data.pieces.TF, 3].sort((a, b) => a - b) },
     history: [
-      { id: `tf3-${Date.now()}`, kind: "piece", day: 2, title: "Won T&F piece #3", detail: "Station 8 · HOGM picked T&F", amount: 0, time: "15:32" },
+      { id: `tf3-${Date.now()}`, kind: "piece", day: 2, title: "Won {TF} piece #3", detail: "Station 8 · HOGM picked {TF}", amount: 0, time: "15:32" },
       ...data.history,
     ],
   };

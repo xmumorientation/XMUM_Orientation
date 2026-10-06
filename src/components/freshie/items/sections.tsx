@@ -15,12 +15,11 @@ import { useEffect, useRef, useState } from "react";
 
 import {
   PIECES_PER_SET,
-  PROJECTOR_LABELS,
   PROJECTOR_LOCATIONS,
   type ProjectorLocation,
 } from "@/lib/types";
 
-import { SHORT_LABEL, cardState, lampState, ourLitLocation, type CardState } from "./derive";
+import { cardState, fillZones, lampState, ourLitLocation, zoneNames, type CardState, type ZoneName } from "./derive";
 import { KEY_NAMES, KeyEmblem, type KeyMode } from "./KeyEmblem";
 import type { Arrivals } from "./useNewPieces";
 import type { BoxKind, HistoryEntry, ItemsData } from "./types";
@@ -64,6 +63,7 @@ export function ProjectorKeys({
       </h2>
       <div className="fi-grid" data-endgame={data.phase === "endgame"}>
         {PROJECTOR_LOCATIONS.map((loc) => {
+          const name = zoneNames(data)[loc];
           const lamp = lampState(data, loc);
           const card = cardState(data, loc);
           const owned = data.pieces[loc];
@@ -80,7 +80,7 @@ export function ProjectorKeys({
               data-celebrate={arrival?.completed || undefined}
               style={other ? ({ "--fi-other": other } as React.CSSProperties) : undefined}
               onClick={() => onSelect(loc)}
-              aria-label={`${PROJECTOR_LABELS[loc]}: ${owned.length} of ${PIECES_PER_SET} pieces, ${label}. Show details.`}
+              aria-label={`${name.long}: ${owned.length} of ${PIECES_PER_SET} pieces, ${label}. Show details.`}
             >
               <span className="fi-bulb" aria-hidden>
                 <Lightbulb size={18} strokeWidth={1.9} />
@@ -95,7 +95,7 @@ export function ProjectorKeys({
                 fresh={arrival?.piece ?? null}
                 celebrate={arrival?.completed ?? false}
               />
-              <b>{SHORT_LABEL[loc]}</b>
+              <b>{name.short}</b>
               <small className={card === "collecting" ? "fh-mono" : undefined}>{label}</small>
             </button>
           );
@@ -125,7 +125,7 @@ export function KeyBanner({
         <KeyRound size={20} strokeWidth={2} />
       </span>
       <span className="fi-keyban-text">
-        <b>{SHORT_LABEL[loc]} key unlocked</b>
+        <b>{zoneNames(data)[loc].short} key unlocked</b>
         <span>
           {data.phase === "endgame"
             ? "Go to the Guardian and scan the part card."
@@ -296,14 +296,17 @@ export function BlueprintDetail({ data, loc }: { data: ItemsData; loc: Projector
   const missing = PIECES.filter((i) => !owned.includes(i));
   const lit = data.projectors[loc];
   const ours = ourLitLocation(data);
+  const names = zoneNames(data);
 
   return (
     <div className="fi-detail" data-state={state}>
       <header className="fi-detail-head">
         <div>
           <span className="fi-eb fh-mono">{CARD_STATUS[state]}</span>
-          <h2>{PROJECTOR_LABELS[loc]}</h2>
-          <span className="fi-detail-key-name">{KEY_NAMES[loc]}</span>
+          <h2>{names[loc].long}</h2>
+          <span className="fi-detail-key-name">
+            {data.mapUnlocked ? KEY_NAMES[loc] : "Location revealed when the map unlocks"}
+          </span>
         </div>
         <span className="fi-count fh-mono">
           {state === "locked" ? "–" : owned.length}/{PIECES_PER_SET}
@@ -331,12 +334,14 @@ export function BlueprintDetail({ data, loc }: { data: ItemsData; loc: Projector
             {owned.length ? `Your ${owned.length} piece${owned.length === 1 ? " is" : "s are"} now idle.` : "This projector is closed."}
           </>
         )}
-        {state === "done" && ours && `Your group already lit ${SHORT_LABEL[ours]}. These pieces are idle.`}
+        {state === "done" && ours && `Your group already lit ${names[ours].short}. These pieces are idle.`}
       </p>
 
-      <Link href={`/map?focus=${loc}`} className="fh-btn fh-btn-ghost fh-btn-block">
-        <MapPin size={16} aria-hidden /> Show on map
-      </Link>
+      {data.mapUnlocked && (
+        <Link href={`/map?focus=${loc}`} className="fh-btn fh-btn-ghost fh-btn-block">
+          <MapPin size={16} aria-hidden /> Show on map
+        </Link>
+      )}
     </div>
   );
 }
@@ -359,7 +364,13 @@ const KIND_ICON: Record<HistoryEntry["kind"], React.ReactNode> = {
   lit: <Lightbulb size={16} />,
 };
 
-export function ActivityList({ entries }: { entries: HistoryEntry[] }) {
+export function ActivityList({
+  entries,
+  names,
+}: {
+  entries: HistoryEntry[];
+  names: Record<ProjectorLocation, ZoneName>;
+}) {
   const [filter, setFilter] = useState<Filter>("all");
   const rows = entries.filter(
     (e) =>
@@ -386,9 +397,9 @@ export function ActivityList({ entries }: { entries: HistoryEntry[] }) {
                 {KIND_ICON[e.kind]}
               </span>
               <span className="fi-hist-text">
-                <b>{e.title}</b>
+                <b>{fillZones(e.title, names)}</b>
                 <small>
-                  {e.detail} · {e.time}
+                  {fillZones(e.detail, names)} · {e.time}
                 </small>
               </span>
               <span className="fi-hist-amt fh-mono" data-sign={e.amount > 0 ? "up" : e.amount < 0 ? "down" : "zero"}>
