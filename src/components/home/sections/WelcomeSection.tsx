@@ -31,7 +31,6 @@ export function WelcomeSection({ onJoin }: { onJoin?: () => void }) {
   return (
     <section ref={sectionRef} id="welcome" className="vx-sec vx-welcome" aria-labelledby="welcome-title">
       <div className="vx-dots" />
-      <div className="vx-welcome-stars" aria-hidden />
       <Glow size="min(520px, 90vw)" color="var(--vx-navy)" style={{ left: "-8%", top: "12%", opacity: 0.45 }} />
       <Glow size="min(380px, 70vw)" color="var(--vx-pink)" style={{ right: "-4%", bottom: "-6%", opacity: 0.28 }} />
       <Spark size={18} color="var(--vx-yellow)" style={{ left: "16%", top: "24%", opacity: 0.55 }} />

@@ -452,24 +452,6 @@ html.vx-snap { scroll-snap-type: y mandatory; }
   .vx-credits-col { gap: 7px; }
 }
 
-/* A few small white stars behind the Welcome stop, on top of the night sky. */
-.vx-welcome-stars {
-  position: absolute; inset: 0; z-index: 0; pointer-events: none;
-  background-image:
-    radial-gradient(1.5px 1.5px at 8% 18%, rgba(255, 255, 255, 0.85), transparent),
-    radial-gradient(1px 1px at 22% 9%, rgba(255, 255, 255, 0.7), transparent),
-    radial-gradient(2px 2px at 31% 34%, rgba(255, 255, 255, 0.55), transparent),
-    radial-gradient(1px 1px at 44% 14%, rgba(255, 255, 255, 0.75), transparent),
-    radial-gradient(1.5px 1.5px at 58% 28%, rgba(255, 255, 255, 0.6), transparent),
-    radial-gradient(1px 1px at 67% 8%, rgba(255, 255, 255, 0.8), transparent),
-    radial-gradient(2px 2px at 79% 38%, rgba(255, 255, 255, 0.5), transparent),
-    radial-gradient(1.5px 1.5px at 88% 16%, rgba(255, 255, 255, 0.8), transparent),
-    radial-gradient(1px 1px at 93% 52%, rgba(255, 255, 255, 0.6), transparent),
-    radial-gradient(1.5px 1.5px at 4% 56%, rgba(255, 255, 255, 0.55), transparent),
-    radial-gradient(1px 1px at 15% 72%, rgba(255, 255, 255, 0.5), transparent),
-    radial-gradient(1.5px 1.5px at 85% 70%, rgba(255, 255, 255, 0.5), transparent);
-}
-
 .vx-scrollhint {
   position: absolute; left: 50%; bottom: 22px; transform: translateX(-50%); z-index: 2;
   display: flex; flex-direction: column; align-items: center; gap: 8px;
