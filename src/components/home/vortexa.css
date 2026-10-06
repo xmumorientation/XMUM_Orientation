@@ -337,8 +337,6 @@ html.vx-snap { scroll-snap-type: y mandatory; }
   }
   .vx-menu-item[aria-current="true"] { color: var(--vx-cyan); }
   .vx-menu .vx-btn { width: 100%; margin-top: 16px; }
-  .vx-menu-logins { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
-  .vx-menu-logins .vx-btn { margin-top: 0; }
   .vx-menu-staff {
     display: block; width: 100%; margin-top: 12px; padding: 10px 0;
     text-align: center; font: 500 13px/1.4 var(--font-nexus-body), Outfit, sans-serif;
@@ -382,7 +380,7 @@ html.vx-snap { scroll-snap-type: y mandatory; }
   .vx-tab {
     flex: 1; min-height: 58px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
     background: none; border: 0; cursor: pointer; color: var(--vx-mute);
-    font: 600 11px var(--font-nexus-body), Outfit, sans-serif; letter-spacing: 0.02em;
+    font: 600 12px var(--font-nexus-body), Outfit, sans-serif; letter-spacing: 0.02em;
   }
   .vx-tab[aria-current="true"] { color: var(--vx-cyan); }
 
@@ -433,7 +431,7 @@ html.vx-snap { scroll-snap-type: y mandatory; }
   gap: 10px; padding: 0 clamp(12px, 3vw, 32px); min-width: 0;
 }
 .vx-credits-sep { width: 1px; background: var(--vx-line-2); flex: none; }
-.vx-credits-label { font-size: clamp(9px, 2.4vw, 11px); letter-spacing: 0.24em; text-transform: uppercase; color: var(--vx-mute); white-space: nowrap; }
+.vx-credits-label { font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--vx-mute); white-space: nowrap; }
 .vx-credits-example { text-transform: none; letter-spacing: 0.08em; }
 @media (max-width: 479px) { .vx-credits-example { display: block; margin-top: 2px; } }
 /* White-on-transparent copy of public/xmum-logo-horizontal.png (which is navy on white). */
@@ -697,45 +695,119 @@ html.vx-snap { scroll-snap-type: y mandatory; }
 .vx-footer a { font-size: 12px; letter-spacing: 0.14em; color: var(--vx-text-2); text-decoration: none; padding: 10px 18px; border-radius: 999px; border: 1px solid var(--vx-line-2); margin-top: 6px; }
 .vx-footer a:hover { border-color: var(--vx-cyan); color: var(--vx-cyan); }
 
-/* ── Join chooser + Freshie login ────────────────────────────────────────── */
+/* ── Join chooser + login pages (Freshie and Committee, Faci, GM) ────────── */
 .vx-join-pop {
-  position: fixed; inset: 0; z-index: 80;
+  position: fixed; inset: 0; z-index: 80; min-height: 0;
   display: grid; place-items: center; padding: 24px;
+  background: transparent;
 }
 .vx-join-pop-backdrop {
   position: absolute; inset: 0; border: 0; padding: 0;
-  background: rgba(7, 6, 11, 0.72); cursor: pointer;
+  background: rgba(3, 2, 6, 0.78); cursor: pointer;
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
 }
 .vx-join-pop-card {
   position: relative; z-index: 1; width: min(420px, 100%);
   display: flex; flex-direction: column; gap: 12px;
-  padding: 28px 22px 22px; border-radius: 28px;
+  padding: 16px 20px 22px; border-radius: 28px;
   background: var(--vx-ink-2); border: 1px solid var(--vx-line-2);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
 }
+.vx-join-pop-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-right: -10px; }
+.vx-join-pop-head .vx-eyebrow { margin: 0; font-size: 13px; font-weight: 400; }
+.vx-join-pop-close {
+  display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; flex: none;
+  border: 0; border-radius: 999px; background: transparent; color: var(--vx-text-2); cursor: pointer;
+}
+.vx-join-pop-close:hover { color: #fff; background: var(--vx-ink-3); }
+.vx-join-pop-note { margin: 0 0 6px; font-size: 15px; line-height: 1.5; color: var(--vx-text-2); }
 .vx-join-pop-card .vx-btn { width: 100%; }
+
+.vx-btn:disabled, .vx-btn[aria-disabled="true"] {
+  background: var(--vx-ink-3); color: var(--vx-mute); border-color: var(--vx-line-2);
+  box-shadow: none; transform: none; cursor: not-allowed;
+}
+
 .vx-login {
   min-height: 100dvh; display: grid; place-items: center;
-  padding: 32px 20px; position: relative; overflow: hidden;
+  padding: calc(32px + env(safe-area-inset-top, 0px)) 20px calc(32px + env(safe-area-inset-bottom, 0px));
+  position: relative; overflow: hidden;
 }
 .vx-login-card {
   position: relative; width: min(440px, 100%);
   display: flex; flex-direction: column; align-items: center; text-align: center; gap: 16px;
 }
 .vx-login-card .vx-welcome-mark { font-size: clamp(48px, 8vw, 72px); }
-.vx-login-form { width: 100%; display: flex; flex-direction: column; gap: 12px; margin-top: 8px; }
-.vx-login-form label { display: flex; flex-direction: column; gap: 6px; text-align: left; font-size: 13px; color: var(--vx-text-2); }
+.vx-login-role { margin: 0; font-size: 18px; font-weight: 700; color: var(--vx-cyan); letter-spacing: 0.01em; }
+.vx-login-form { width: 100%; display: flex; flex-direction: column; gap: 14px; margin-top: 8px; }
+.vx-login-form label, .vx-login-label { display: flex; flex-direction: column; gap: 6px; text-align: left; font-size: 14px; font-weight: 600; color: var(--vx-text-2); }
 .vx-login-form select,
 .vx-login-form input {
   min-height: 48px; width: 100%; border-radius: 999px; padding: 0 18px;
   background: var(--vx-ink); color: var(--vx-text);
-  border: 1px solid var(--vx-line-2); font: inherit; font-size: 16px;
+  border: 1px solid var(--vx-line-2); font: inherit; font-size: 16px; font-weight: 400; letter-spacing: normal;
 }
-.vx-login-form input { letter-spacing: 0.4em; text-align: center; }
+.vx-login-form input::placeholder { color: var(--vx-mute); opacity: 1; }
+.vx-login-form select {
+  -webkit-appearance: none; appearance: none; color-scheme: dark; cursor: pointer;
+  padding-right: 48px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23cfc9dc' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 18px center; background-size: 20px 20px;
+}
+.vx-login-form select:invalid, .vx-login-form select[data-empty="true"] { color: var(--vx-mute); }
+.vx-login-form select option { color: var(--vx-text); background: var(--vx-ink-2); }
+.vx-login-form .vx-login-code { letter-spacing: 0.4em; text-align: center; }
 .vx-login-form select:focus,
 .vx-login-form input:focus { outline: 2px solid var(--vx-cyan); outline-offset: 2px; }
-.vx-login-error { margin: 0; color: var(--vx-blush); font-size: 14px; }
-.vx-login-back { color: var(--vx-mute); font-size: 13px; text-decoration: none; }
-.vx-login-back:hover { color: var(--vx-cyan); }
+.vx-login-pass { position: relative; display: block; }
+.vx-login-form .vx-login-pass input { padding-right: 56px; }
+.vx-login-eye {
+  position: absolute; right: 2px; top: 50%; transform: translateY(-50%);
+  display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px;
+  border: 0; border-radius: 999px; background: transparent; color: var(--vx-text-2); cursor: pointer;
+}
+.vx-login-eye:hover { color: #fff; }
+.vx-login-error {
+  margin: 0; padding: 10px 14px; border-radius: 14px; text-align: left;
+  border: 1px solid rgba(255, 177, 193, 0.4); background: rgba(188, 7, 29, 0.18);
+  color: #ffc7d2; font-size: 14px; line-height: 1.45;
+}
+.vx-login-notice {
+  margin: 0; padding: 10px 14px; border-radius: 14px; text-align: left;
+  border: 1px solid rgba(13, 252, 253, 0.35); background: rgba(13, 252, 253, 0.08);
+  color: var(--vx-cyan); font-size: 14px; line-height: 1.45;
+}
+.vx-login-link {
+  display: inline-flex; align-items: center; justify-content: center; align-self: center; min-height: 44px; padding: 0 12px;
+  color: var(--vx-text-2); font-size: 14px; font-weight: 600; text-decoration: underline; text-underline-offset: 3px;
+}
+.vx-login-link:hover { color: var(--vx-cyan); }
+.vx-login-divider {
+  display: flex; align-items: center; gap: 12px; width: 100%; margin: 4px 0;
+  color: var(--vx-mute); font-size: 14px;
+}
+.vx-login-divider::before, .vx-login-divider::after { content: ""; flex: 1; height: 1px; background: var(--vx-line-2); }
+.vx-login-google {
+  display: inline-flex; align-items: center; justify-content: center; gap: 10px; width: 100%; min-height: 48px;
+  border-radius: 999px; border: 1px solid var(--vx-line-2); background: #fff; color: #1a1a1a;
+  font: inherit; font-size: 15px; font-weight: 700; cursor: pointer;
+}
+.vx-login-google:disabled { opacity: 0.6; cursor: progress; }
+.vx-login-google svg { width: 18px; height: 18px; flex: none; }
+.vx-login-google-role { width: 100%; display: flex; flex-direction: column; gap: 10px; margin-top: 2px; }
+.vx-login-hint { margin: 0; font-size: 14px; line-height: 1.45; color: var(--vx-text-2); text-align: left; }
+.vx-login-demo { width: 100%; margin-top: 4px; color: var(--vx-text-2); font-size: 14px; }
+.vx-login-demo > summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; justify-content: center; text-decoration: underline; text-underline-offset: 3px; }
+.vx-login-demo-box { margin-top: 8px; padding: 14px; border-radius: 18px; border: 1px solid rgba(224, 180, 252, 0.3); background: rgba(224, 180, 252, 0.07); text-align: left; }
+.vx-login-demo-box p { margin: 0 0 10px; font-size: 13px; color: var(--vx-text-2); }
+.vx-login-demo-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.vx-login-demo-row button {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 16px; border-radius: 999px;
+  border: 1px solid var(--vx-line-2); background: var(--vx-ink-3); color: var(--vx-text); font: inherit; font-size: 14px; font-weight: 700; cursor: pointer;
+}
+.vx-login-demo-row button:hover { border-color: var(--vx-cyan); color: var(--vx-cyan); }
+.vx-login-demo-row button:disabled { opacity: 0.5; cursor: progress; }
+.vx-login-foot { margin: 8px 0 0; font-size: 13px; color: var(--vx-mute); }
 
 /* Welcome trial: one park identity, restrained light around readable content. */
 .vx-h2, .vx-pass-title { font-family: var(--font-vx-display), Georgia, serif; font-weight: 400; }
@@ -790,4 +862,18 @@ html.vx-snap { scroll-snap-type: none; }
   .vx-planet-a { top: 1.5%; left: 2%; width: 48px; opacity: .4; }
   .vx-plane { top: 30%; }.vx-helicopter { top: 44%; }
   .vx-park-balloons { right: 2%; width: 32px; }
+}
+
+/* Progress bar: fixed label width so the track never changes length between
+   stops (the Games to Scoreboard label change used to shrink it by ~40px and
+   made the bar look like it reset). The fill scales instead of resizing. */
+@media (max-width: 1023px) {
+  .vx-stopbar b { flex: none; }
+  .vx-stopbar-label { flex: none; width: 11ch; text-align: right; white-space: nowrap; }
+  .vx-stopbar-fill { width: 100%; transform-origin: left center; transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1); will-change: transform; }
+  .vx-menu-actions { display: flex; flex-direction: column; gap: 12px; margin-top: 20px; }
+  .vx-menu .vx-menu-actions .vx-btn { min-height: 48px; margin-top: 0; font-size: 16px; }
+}
+@media (max-width: 1023px) and (prefers-reduced-motion: reduce) {
+  .vx-stopbar-fill { transition: none; }
 }

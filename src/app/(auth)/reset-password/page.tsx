@@ -3,7 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-import { ErrorBanner, Spinner } from "@/components/ui";
+import { AuthShell } from "@/components/auth/AuthShell";
+import { Spinner } from "@/components/ui";
 import { supabaseBrowser } from "@/lib/supabase/client";
 
 export default function ResetPasswordPage() {
@@ -28,40 +29,29 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="auth-card">
-      <div className="auth-card-inner space-y-5">
-        <div>
-          <p className="text-xs font-black uppercase tracking-[0.22em] text-brand-1">
-            New credentials
+    <AuthShell role="Set a new password" backHref="/login" backLabel="Back to login">
+      <form onSubmit={onSubmit} className="vx-login-form">
+        {error && (
+          <p className="vx-login-error" role="alert">
+            {error}
           </p>
-          <h2 className="mt-3 text-3xl font-black tracking-[-0.03em] text-ink">
-            Set a new password.
-          </h2>
-        </div>
-        <ErrorBanner message={error} />
-        <div>
-          <label className="label" htmlFor="password">
-            New password (min 8 chars)
-          </label>
+        )}
+        <label htmlFor="password">
+          New password (min 8 characters)
           <input
             id="password"
             type="password"
             required
             minLength={8}
             autoComplete="new-password"
-            className="input"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
-        </div>
-        <button type="submit" disabled={busy} className="group auth-submit">
-          {busy ? (
-            <Spinner className="border-white/40 border-t-white" />
-          ) : (
-            "Set new password"
-          )}
+        </label>
+        <button type="submit" disabled={busy} className="vx-btn vx-btn-primary">
+          {busy ? <Spinner className="border-black/25 border-t-black" /> : "Set new password"}
         </button>
-      </div>
-    </form>
+      </form>
+    </AuthShell>
   );
 }
