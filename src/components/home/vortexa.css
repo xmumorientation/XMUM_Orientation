@@ -399,6 +399,9 @@ html.vx-snap { scroll-snap-type: y mandatory; }
 }
 
 /* ── 01 Welcome ──────────────────────────────────────────────────────────── */
+/* Clip the Welcome glows at the sides only, so the pink glow fades into the
+   next stop instead of ending in a straight line at the section edge. */
+.vx-welcome { overflow-x: clip; overflow-y: visible; }
 .vx-welcome .vx-inner { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 18px; }
 .vx-welcome-pre { font-family: var(--font-vx-slab), Georgia, serif; font-size: clamp(18px, 2.4vw, 26px); letter-spacing: 0.1em; margin: 0; }
 .vx-welcome-mark {
