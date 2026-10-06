@@ -8,8 +8,8 @@ import type { HistoryEntry, ItemsData } from "./types";
 // fn_group_blind_boxes and fn_lighting_zones from bonding-session.
 // TODO: replace with live data before the event; keep ?demo for previews.
 //
-// Add ?demo=day1|day2|ready|taken|won|complete to /inventory to see each
-// state. "complete" plays the T&F key completing (the 5th piece arrives).
+// /inventory with no ?demo plays "complete": the T&F key completing (the 5th
+// piece arrives). Add ?demo=day1|day2|ready|taken|won to see the other states.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const SAMPLE_SCENARIOS = ["day1", "day2", "ready", "taken", "won", "complete"] as const;

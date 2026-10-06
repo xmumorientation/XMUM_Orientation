@@ -37,15 +37,16 @@ export default function InventoryPage() {
 
 // SAMPLE DATA: Freshie and facilitator Items page. Everything shown here comes
 // from sampleData.ts, not from the game. TODO: wire to the bonding-session game
-// data before the event. ?demo=day1|day2|ready|taken|won|complete picks a
-// state; "complete" adds the last T&F piece after a moment, with a Replay
-// button. Opening a box only changes the sample in this browser.
+// data before the event. With no ?demo it plays "complete": the last T&F
+// piece arrives after a moment, with a Replay button. ?demo=day1|day2|ready|
+// taken|won picks another state. Opening a box only changes the sample in
+// this browser.
 function ItemsPreview() {
   const profile = useProfile();
   const { group } = useGroup();
   const params = useSearchParams();
   const asked = params.get("demo");
-  const scenario: SampleScenario = SAMPLE_SCENARIOS.includes(asked as SampleScenario) ? (asked as SampleScenario) : "day2";
+  const scenario: SampleScenario = SAMPLE_SCENARIOS.includes(asked as SampleScenario) ? (asked as SampleScenario) : "complete";
 
   const [data, setData] = useState<ItemsData>(() => sampleItems(scenario));
   const [run, setRun] = useState(0);

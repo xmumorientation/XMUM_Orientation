@@ -219,7 +219,7 @@ When you finish something, add a few lines here: your name, the date, and the ma
 - New Freshie and Faci Items page (`/inventory`), in [src/components/freshie/items/](../src/components/freshie/items/). **It shows SAMPLE DATA only** ("Sample data" in the header): nothing comes from the game yet.
 - Layout: three projector lamps, each over its puzzle key (B1 Star Key, A3 Wheel Key, T&F Track Key; 5 slices, one per piece). Then a shelf with Tokens, Gold box and Standard box. Tapping a key, a tile or Activity opens a sheet. A completed key opens the key and Guardian spot. Faci can open boxes; Freshies only see them.
 - When a piece arrives while the page is open, its slice pops in. The 5th piece plays the completion effect (slices flash, ring and sparks, light runs up to the lamp, key banner slides in).
-- Preview each state with `/inventory?demo=day1|day2|ready|taken|won|complete`. `complete` plays the T&F key completing and has a Replay button.
+- `/inventory` on its own plays the T&F key completing, with a Replay button. Add `?demo=day1|day2|ready|taken|won` to see the other states.
 - Left: read live data from bonding-session (`fn_my_inventory_group`, `fn_my_puzzle_inventory`, `fn_group_blind_boxes`, `fn_lighting_zones`) and keep `?demo` for previews; NFC part-card scanning; a Guardian spot photo that Admin can upload; `/map?focus=` on the map (Zichien).
 
 ### Ben, 2026-10-06
