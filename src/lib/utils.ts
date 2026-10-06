@@ -95,6 +95,8 @@ const ERROR_MESSAGES: Record<string, string> = {
   UNDO_WINDOW_EXPIRED: "The 2-minute undo window has passed.",
   UNDO_WOULD_GO_NEGATIVE: "Undo rejected: it would make the balance negative.",
   NO_STATION_ASSIGNED: "Your account has no station assigned — ask Admin.",
+  WRONG_DAY_STATION: "Your station isn't set up for this day — ask Admin.",
+  INVALID_RESULT: "Pick Win or Lose.",
   NEED_TWO_LOCATIONS: "Pick exactly 2 locations for a medium-risk station.",
   NEED_ONE_LOCATION: "Pick exactly 1 location for a high-risk station.",
   POOL_EXHAUSTED:

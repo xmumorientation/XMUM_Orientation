@@ -34,9 +34,10 @@ const TASKS: Record<Tab, { title: string; desc: string }> = {
 };
 
 // GM control panel v2 (HOGM redesign):
-//  Day 1 - win/lose rewards (+2/+1)
+//  Day 1 - win/lose rewards. Amounts are the admin's token rules
+//          (Token page); the server reads them, the GM cannot pick one.
 //  Day 2 - pick group + result (+ tier locations); the system deducts the
-//          station's entry fee and auto-grants a random non-duplicate piece
+//          tier's entry fee and auto-grants a random non-duplicate piece
 //  Box   - sell one of the limited GM blind boxes
 // All submissions carry idempotency keys and queue offline (NFR-6).
 export default function GmPanelPage() {
@@ -55,6 +56,8 @@ export default function GmPanelPage() {
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [boxesSold, setBoxesSold] = useState<number>(0);
+  // Shown on the buttons only; the server applies the current rule.
+  const [day1, setDay1] = useState({ win: 2, lose: 1 });
 
   useEffect(() => {
     let active = true;
@@ -74,7 +77,11 @@ export default function GmPanelPage() {
           .select("*")
           .eq("id", profile.station_id)
           .single();
-        if (active) setStation((st as Station) ?? null);
+        if (active) {
+          setStation((st as Station) ?? null);
+          // open on the tab for this station's day
+          if ((st as Station | null)?.day === 2) setTab((t) => (t === "day1" ? "day2" : t));
+        }
       }
     }
     load();
@@ -83,31 +90,67 @@ export default function GmPanelPage() {
     };
   }, [supabase, profile.station_id]);
 
+  // Token rules can change during the event; keep the labels and the
+  // station's entry fee (synced from its tier) current.
+  useEffect(() => {
+    let active = true;
+    async function loadRules() {
+      const { data } = await supabase
+        .from("game_config_rules")
+        .select("rule_key, rule_value")
+        .in("rule_key", ["DAY1_WIN_TOKENS", "DAY1_LOSE_TOKENS"]);
+      if (!active || !data) return;
+      const value = (key: string, fallback: number) =>
+        data.find((r) => r.rule_key === key)?.rule_value ?? fallback;
+      setDay1({ win: value("DAY1_WIN_TOKENS", 2), lose: value("DAY1_LOSE_TOKENS", 1) });
+      if (profile.station_id) {
+        const { data: st } = await supabase
+          .from("stations")
+          .select("entry_cost")
+          .eq("id", profile.station_id)
+          .single();
+        if (active && st) {
+          setStation((cur) => (cur ? { ...cur, entry_cost: st.entry_cost } : cur));
+        }
+      }
+    }
+    loadRules();
+    const channel = supabase
+      .channel(`gm_token_rules_${profile.id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "game_config_rules" }, loadRules)
+      .subscribe();
+    return () => {
+      active = false;
+      supabase.removeChannel(channel);
+    };
+  }, [supabase, profile.id, profile.station_id]);
+
   function flash(msg: string) {
     setNotice(msg);
     setError(null);
     setTimeout(() => setNotice(null), 4000);
   }
 
-  async function day1Reward(delta: number, reason: string) {
+  async function day1Reward(result: "win" | "lose") {
     if (!groupId) return setError("先选组别 Select a group first.");
+    const label = result === "win" ? "Station win" : "Station participation";
     setBusy(true);
     setError(null);
     const res = await submit(
-      "fn_adjust_tokens",
+      "fn_gm_day1_reward",
       {
         p_group_id: groupId,
-        p_delta: delta,
-        p_reason: reason,
+        p_result: result,
         p_idempotency_key: idemKey(),
       },
-      `${delta > 0 ? "+" : ""}${delta} to group ${groupId}`
+      `Day 1 ${result} to group ${groupId}`
     );
     setBusy(false);
     if (res.status === "confirmed") {
-      const bal = (res.data as { balance?: number })?.balance;
+      const d = res.data as { delta?: number; balance?: number; duplicate?: boolean };
+      if (d?.duplicate) return flash("Duplicate ignored (already recorded).");
       flash(
-        `${reason}: ${delta > 0 ? "+" : ""}${delta}${bal !== undefined ? ` · balance ${bal}` : ""}`
+        `${label}: +${d?.delta ?? "?"}${d?.balance !== undefined ? ` · balance ${d.balance}` : ""}`
       );
     } else if (res.status === "queued") {
       flash("Offline. Queued and will send automatically.");
@@ -204,6 +247,13 @@ export default function GmPanelPage() {
     else setStation({ ...station, status });
   }
 
+  // a station runs either Day 1 or Day 2, not both
+  const tabs = (Object.keys(TASKS) as Tab[]).filter(
+    (t) =>
+      !station ||
+      ((t !== "day1" || station.day === 1) && (t !== "day2" || station.day === 2))
+  );
+
   const boxPrice = Number(config["gm_blindbox_price"] ?? 2);
   const boxStock = Number(config["gm_blindbox_stock"] ?? 8);
 
@@ -258,7 +308,7 @@ export default function GmPanelPage() {
         </div>
       )}
 
-      <Card className="sticky top-[8.75rem] z-20 border-brand-1/20">
+      <Card className="border-brand-1/20">
         <label className="label" htmlFor="group">
           Active group
         </label>
@@ -277,8 +327,13 @@ export default function GmPanelPage() {
         </select>
       </Card>
 
-      <div className="grid grid-cols-2 gap-2 rounded-[1.5rem] bg-paper-200 p-1.5 sm:grid-cols-4">
-        {(Object.keys(TASKS) as Tab[]).map((t) => (
+      <div
+        className={cn(
+          "grid grid-cols-2 gap-2 rounded-[1.5rem] bg-paper-200 p-1.5",
+          tabs.length === 3 ? "sm:grid-cols-3" : "sm:grid-cols-4"
+        )}
+      >
+        {tabs.map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -306,18 +361,18 @@ export default function GmPanelPage() {
           <div className="grid grid-cols-2 gap-2">
             <button
               disabled={busy}
-              onClick={() => day1Reward(2, "Station win")}
+              onClick={() => day1Reward("win")}
               className="btn min-h-[92px] flex-col bg-green-600 text-white"
             >
-              <span className="text-2xl font-black">+2</span>
+              <span className="text-2xl font-black">+{day1.win}</span>
               <span className="text-sm">Win</span>
             </button>
             <button
               disabled={busy}
-              onClick={() => day1Reward(1, "Station participation")}
+              onClick={() => day1Reward("lose")}
               className="btn min-h-[92px] flex-col bg-green-500 text-white"
             >
-              <span className="text-2xl font-black">+1</span>
+              <span className="text-2xl font-black">+{day1.lose}</span>
               <span className="text-sm">Participation</span>
             </button>
           </div>

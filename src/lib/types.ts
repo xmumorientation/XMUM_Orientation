@@ -55,6 +55,7 @@ export interface Station {
   map_y: number;
   risk_tier: RiskTier;
   entry_cost: number;
+  day: 1 | 2;
 }
 
 export const RISK_TIER_META: Record<
