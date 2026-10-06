@@ -1,10 +1,14 @@
 "use client";
 
+import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
-import { ErrorBanner, Spinner, SuccessBanner } from "@/components/ui";
+import { nexusBody, vxDisplay, vxSlab } from "@/components/home/fonts";
+import { Spinner } from "@/components/ui";
 import { supabaseBrowser } from "@/lib/supabase/client";
+
+import "../login/login.css";
 
 // FR-1.5: password reset via email link
 export default function ForgotPasswordPage() {
@@ -17,6 +21,7 @@ export default function ForgotPasswordPage() {
     e.preventDefault();
     setBusy(true);
     setError(null);
+    setNotice(null);
     const supabase = supabaseBrowser();
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/reset-password`,
@@ -27,44 +32,55 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="auth-card">
-      <div className="auth-card-inner space-y-5">
-        <div>
-          <p className="text-xs font-black uppercase tracking-[0.22em] text-brand-1">
-            Account recovery
-          </p>
-          <h2 className="mt-3 text-3xl font-black tracking-[-0.03em] text-ink">
-            Reset your password.
-          </h2>
-        </div>
-        <ErrorBanner message={error} />
-        <SuccessBanner message={notice} />
-        <div>
-          <label className="label" htmlFor="email">
-            Email
-          </label>
-          <input
-            id="email"
-            type="email"
-            required
-            className="input"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-        </div>
-        <button type="submit" disabled={busy} className="group auth-submit">
-          {busy ? (
-            <Spinner className="border-white/40 border-t-white" />
-          ) : (
-            "Send reset link"
-          )}
-        </button>
-        <p className="text-center text-sm">
-          <Link href="/login" className="font-bold text-brand-1">
-            Back to login
-          </Link>
-        </p>
+    <main className={`sl ${vxDisplay.variable} ${vxSlab.variable} ${nexusBody.variable}`}>
+      <div className="sl-bg" aria-hidden>
+        <div className="sl-dots" />
+        <div className="sl-glow sl-glow-a" />
+        <div className="sl-glow sl-glow-b" />
+        <div className="sl-glow sl-glow-c" />
       </div>
-    </form>
+
+      <div className="sl-shell">
+        <div className="sl-panel">
+          <header className="sl-brand">
+            <h1 className="sl-title sl-title-trial">
+              <span className="sl-title-roles">Account recovery</span>
+              <span className="sl-title-login">Reset password</span>
+            </h1>
+            <p className="sl-lead">We’ll email you a link to choose a new password.</p>
+          </header>
+
+          <form onSubmit={onSubmit} className="sl-card">
+            {error && <p className="sl-message sl-message-error" role="alert">{error}</p>}
+            {notice && <p className="sl-message sl-message-success" role="status">{notice}</p>}
+
+            <div className="sl-field">
+              <label className="sl-label" htmlFor="email">Campus email</label>
+              <input
+                id="email"
+                type="email"
+                required
+                autoComplete="email"
+                placeholder="you@xmu.edu.my"
+                className="sl-input"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+
+            <button type="submit" disabled={busy} className="sl-submit">
+              {busy ? <Spinner className="border-black/25 border-t-black" /> : "Send reset link"}
+            </button>
+
+            <div className="sl-actions">
+              <Link href="/login" className="sl-ghost">
+                <ArrowLeft size={16} aria-hidden />
+                Back to login
+              </Link>
+            </div>
+          </form>
+        </div>
+      </div>
+    </main>
   );
 }
