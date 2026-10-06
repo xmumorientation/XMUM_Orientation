@@ -1,14 +1,10 @@
 "use client";
 
-import { ArrowLeft } from "lucide-react";
-import Link from "next/link";
 import { useState } from "react";
 
-import { nexusBody, vxDisplay, vxSlab } from "@/components/home/fonts";
+import { AuthShell } from "@/components/auth/AuthShell";
 import { Spinner } from "@/components/ui";
 import { supabaseBrowser } from "@/lib/supabase/client";
-
-import "../login/login.css";
 
 // FR-1.5: password reset via email link
 export default function ForgotPasswordPage() {
@@ -32,55 +28,41 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <main className={`sl ${vxDisplay.variable} ${vxSlab.variable} ${nexusBody.variable}`}>
-      <div className="sl-bg" aria-hidden>
-        <div className="sl-dots" />
-        <div className="sl-glow sl-glow-a" />
-        <div className="sl-glow sl-glow-b" />
-        <div className="sl-glow sl-glow-c" />
-      </div>
+    <AuthShell
+      role="Reset password"
+      lead="We’ll email you a link to choose a new password."
+      backHref="/login"
+      backLabel="Back to login"
+    >
+      <form onSubmit={onSubmit} className="vx-login-form">
+        {error && (
+          <p className="vx-login-error" role="alert">
+            {error}
+          </p>
+        )}
+        {notice && (
+          <p className="vx-login-notice" role="status">
+            {notice}
+          </p>
+        )}
 
-      <div className="sl-shell">
-        <div className="sl-panel">
-          <header className="sl-brand">
-            <h1 className="sl-title sl-title-trial">
-              <span className="sl-title-roles">Account recovery</span>
-              <span className="sl-title-login">Reset password</span>
-            </h1>
-            <p className="sl-lead">We’ll email you a link to choose a new password.</p>
-          </header>
+        <label htmlFor="email">
+          Campus email
+          <input
+            id="email"
+            type="email"
+            required
+            autoComplete="email"
+            placeholder="you@xmu.edu.my"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+        </label>
 
-          <form onSubmit={onSubmit} className="sl-card">
-            {error && <p className="sl-message sl-message-error" role="alert">{error}</p>}
-            {notice && <p className="sl-message sl-message-success" role="status">{notice}</p>}
-
-            <div className="sl-field">
-              <label className="sl-label" htmlFor="email">Campus email</label>
-              <input
-                id="email"
-                type="email"
-                required
-                autoComplete="email"
-                placeholder="you@xmu.edu.my"
-                className="sl-input"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
-
-            <button type="submit" disabled={busy} className="sl-submit">
-              {busy ? <Spinner className="border-black/25 border-t-black" /> : "Send reset link"}
-            </button>
-
-            <div className="sl-actions">
-              <Link href="/login" className="sl-ghost">
-                <ArrowLeft size={16} aria-hidden />
-                Back to login
-              </Link>
-            </div>
-          </form>
-        </div>
-      </div>
-    </main>
+        <button type="submit" disabled={busy} className="vx-btn vx-btn-primary">
+          {busy ? <Spinner className="border-black/25 border-t-black" /> : "Send reset link"}
+        </button>
+      </form>
+    </AuthShell>
   );
 }

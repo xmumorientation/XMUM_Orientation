@@ -214,6 +214,14 @@ Full background: the "Issues Found" section in [permission-matrix.md](permission
 ## Done
 
 ### David, 2026-10-06
+- One primary action: "Join the Game ★" opens the login chooser from the Welcome page, the mobile menu and the desktop top bar. "How to check in" is an outline button everywhere. Removed the separate Freshie and Committee login buttons from the menu, top bar and footer. Menu buttons are 48px tall.
+- Login chooser: Freshie Login is the yellow button, Committee, Faci, GM login is outline, with one line of explanation, a close (X) button, scroll lock and the site font.
+- Freshie, Committee/Faci/GM, forgot password, reset password and pending approval pages share one dark layout (`AuthShell`): centred Vortexa wordmark, pill inputs, dark selects with a chevron, a disabled style for buttons, `role="alert"` errors. The (auth) layout no longer adds the light "Welcome to XMUM" header. Committee/Faci/GM login puts email sign-in first, with Continue with Google under it and no role picker (main's flow: Admin assigns the role on approval). Freshie login asks "Choose your group" instead of preselecting the first group.
+- Demo quick logins show only on local dev and Vercel preview, not on production. Their passwords moved to a server-only file, so they are no longer in the browser bundle. Test accounts unchanged.
+- Welcome progress bar: the stop label now has a fixed width, so the bar no longer jumps between Games and Scoreboard; the fill animates smoothly. Credits labels and tab labels are 12px. Logo images have `sizes`.
+- Left: Coca-Cola example logo and the Score tab (owner decision).
+
+### David, 2026-10-06
 - Safari bands follow-up: the closed Welcome menu backdrop stays `display: none` until it opens, so it cannot tint the toolbar. The staff dashboard header pads below the status bar. Staff uses the shell navy `#030b1c`; Welcome and login stay `#07060b`. Light pages keep the paper background.
 
 ### David, 2026-10-06

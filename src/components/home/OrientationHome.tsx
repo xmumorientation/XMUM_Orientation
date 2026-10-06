@@ -24,8 +24,9 @@ import { CheckInSection } from "./sections/CheckInSection";
  * at a time with scroll snapping. A single IntersectionObserver tracks the
  * current stop for the nav, the desktop dot rail, and the mobile tab bar, and
  * marks each stop `data-seen` the first time it enters view so its entrance
- * animation plays once. "Join the Game" on the Welcome stop opens the login
- * chooser. Scan / QR is gated behind login — not shown on this public page.
+ * animation plays once. "Join the Game" (Welcome stop, top bar and menu)
+ * opens the login chooser. Scan / QR is gated behind login — not shown on
+ * this public page.
  */
 export default function OrientationHome() {
   const [active, setActive] = useState<StopId>("welcome");
@@ -93,7 +94,7 @@ export default function OrientationHome() {
 
   return (
     <div className="vx nexus relative text-white" style={{ fontFamily: FONT.body }}>
-      <SiteNav active={active} />
+      <SiteNav active={active} onJoin={openJoin} />
       <StopRail active={active} />
 
       <main className="vx-main">

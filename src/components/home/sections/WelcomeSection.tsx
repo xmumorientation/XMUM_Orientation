@@ -43,6 +43,7 @@ export function WelcomeSection({ onJoin }: { onJoin?: () => void }) {
               alt="Xiamen University Malaysia"
               width={1024}
               height={211}
+              sizes="(max-width: 640px) 160px, 210px"
               className="vx-credits-xmum"
             />
           </div>
