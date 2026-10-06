@@ -16,7 +16,7 @@ export function OverviewSection() {
         <div className="vx-overview-copy">
           <h2 id="overview-title" className="vx-h2 vx-rise">Overview</h2>
           <p className="vx-lead vx-rise">
-            XMUM Orientation 2026 brings together freshies, facilitators, and game masters across campus for two days of
+            XMUM 26/12 Orientation brings together freshies, facilitators, and game masters across campus for two days of
             shared challenges and discovery.
           </p>
           <div className="vx-rise-2" style={{ display: "flex", flexDirection: "column", gap: 10 }}>

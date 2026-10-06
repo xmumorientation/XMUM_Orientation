@@ -74,7 +74,7 @@ export function HoloSticker({
 export function MarqueeBanner() {
   const items = [
     "VORTEXA",
-    "XMUM ORIENTATION 2026",
+    "XMUM 26/12 Orientation",
     "★ ONE TICKET, ONE RIDE ★",
     "28–29 NOV 2026",
     "2 DAYS",

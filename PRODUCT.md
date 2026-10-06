@@ -6,7 +6,7 @@ product
 
 ## Users
 
-XMUM Orientation 2026 freshies, facilitators, game masters, guardian game masters, committee members, HOF/HOGM, and admins. They use the app on phones during a live campus event, often while moving, handling queues, checking group status, or resolving game operations under time pressure.
+XMUM 26/12 Orientation freshies, facilitators, game masters, guardian game masters, committee members, HOF/HOGM, and admins. They use the app on phones during a live campus event, often while moving, handling queues, checking group status, or resolving game operations under time pressure.
 
 ## Product Purpose
 

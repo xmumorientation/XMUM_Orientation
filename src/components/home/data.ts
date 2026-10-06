@@ -7,7 +7,7 @@
 // ---------------------------------------------------------------------------
 
 export const EVENT = {
-  name: "XMUM Orientation 2026",
+  name: "XMUM 26/12 Orientation",
   theme: "Vortexa",
   slogan: "One ticket, One Ride, Discover adventure Inside.",
   dates: { day1: "2026-11-28T08:00:00+08:00", day2: "2026-11-29T08:00:00+08:00" },
