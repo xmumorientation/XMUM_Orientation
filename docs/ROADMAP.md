@@ -214,6 +214,9 @@ Full background: the "Issues Found" section in [permission-matrix.md](permission
 ## Done
 
 ### David, 2026-10-06
+- iPhone Safari was showing white bands above the header and below the tab bar. Safari 26 takes that colour from the page background and ignores theme-color; the root was still the light paper colour, and the blurred bars are not sampled. Dark pages now paint the root with their own dark background, and the staff dashboard keeps its content below the status bar.
+
+### David, 2026-10-06
 - Increased staff-menu outside dimming to 88%. Prepared the approved Vortexa UI/dashboard/admin performance work for a local main commit. Unrelated pre-existing notes and separate event-name/migration edits are excluded; no push requested.
 
 ### David, 2026-10-06
