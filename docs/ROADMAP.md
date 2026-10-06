@@ -251,6 +251,9 @@ Full background: the "Issues Found" section in [permission-matrix.md](permission
 - Removed Freshie full-screen stops and observer work; below-fold sections use content visibility. Scoreboard retains realtime updates with a 30-second foreground-only reconciliation interval instead of unconditional 4-second polling. Click latency root cause and real-device improvement remain unverified. Backups: /private/tmp/FreshieHome-before-redesign.tsx and /private/tmp/freshie-before-redesign.css.
 
 ### David, 2026-10-06
+- Removed the Committee invite activation link from the staff login form. The activation route remains available for invitation flows.
+
+### David, 2026-10-06
 - Moved the upper yellow star left, changed check-in device guidance and removed the redundant note. Simplified scoreboard empty-state copy and standardized wristband ticket wording in source text. Web-app icons now use the supplied square Vortexa artwork; existing transparent page logos depict the same identity.
 
 ### David, 2026-10-06

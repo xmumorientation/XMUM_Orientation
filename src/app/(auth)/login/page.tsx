@@ -205,7 +205,6 @@ function LoginForm() {
               </Link>
               <div className="sl-links">
                 <Link href="/forgot-password">Forgot password?</Link>
-                <Link href="/activate">Committee invite activation</Link>
               </div>
             </div>
           </form>
