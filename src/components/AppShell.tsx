@@ -119,12 +119,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   );
   // Freshie and facilitator phones share the night tab bar. Freshie Scan is
   // the raised center button; a facilitator gets Code there instead.
-  // Home and Schedule hide the light mobile header for both roles.
+  // Home, Schedule and Items hide the light mobile header for both roles.
   const { group } = useGroup();
   const groupTheme = isFreshie || isFaci ? themeFromColor(group?.color) : null;
   const isNight =
     (isFreshie || isFaci) &&
-    (pathname === "/dashboard" || pathname === "/schedule");
+    (pathname === "/dashboard" || pathname === "/schedule" || pathname === "/inventory");
   const showTabBar = (isFreshie || isFaci) && !(isFreshie && pathname === "/scan");
 
   useEffect(() => {

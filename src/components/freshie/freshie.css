@@ -498,6 +498,275 @@ html.fh-snap { overflow-x: hidden; }
   .fh-sched-item b { font-size: 15px; }
 }
 
+/* ── Freshie Items page (items/FreshieItems.tsx) ─────────────────────────────
+   Projectors over their puzzle keys → key banner → item shelf (tokens, boxes).
+   A location's puzzle, the key, item details and Activity open in sheets.
+   Group colour comes in through --fh-accent / --fh-glow, set on .fi. Lit
+   projectors use gold for "the light is back" and the lighting group's own
+   colour for "who lit it". */
+.fi, .fi-sheet {
+  --fi-gold: #ffd66b;
+  --fi-up: #3ddc97;
+  --fi-down: #ff5c7a;
+}
+.fi { max-width: 640px; margin: 0 auto; padding-bottom: 8px; }
+.fi-sec { margin-top: 18px; }
+.fi-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin: 0 2px 8px; }
+.fi-head h2 { margin: 0; font-size: 16px; font-weight: 700; }
+.fi-eb { margin: 0; font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--fh-mute); }
+.fi-note { margin: 8px 2px 0; font-size: 13px; color: var(--fh-mute); }
+
+.fi-top { display: grid; gap: 4px; padding-top: 6px; }
+.fi-top-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; min-width: 0; }
+.fi-top h1 { margin: 0; font-size: clamp(30px, 8vw, 40px); line-height: 1.05; }
+.fi-group { display: inline-flex; align-items: center; gap: 7px; min-width: 0; font-size: 13px; color: var(--fh-text-2); }
+.fi-group i { width: 9px; height: 9px; border-radius: 50%; flex: none; background: var(--fh-accent); box-shadow: 0 0 8px var(--fh-accent); }
+.fi-phase { font-size: 11px; padding: 6px 10px; border-radius: 999px; border: 1px solid var(--fh-line-2); color: var(--fh-text-2); white-space: nowrap; }
+.fi-phase[data-phase="endgame"] { border-color: #ff3b4f; color: #ffd0d9; background: rgba(188, 7, 29, 0.18); }
+.fi-activity-btn {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 14px; border-radius: 999px; cursor: pointer;
+  font-size: 13px; font-weight: 600; color: var(--fh-text); background: var(--fh-ink-2); border: 1px solid var(--fh-line-2);
+}
+.fi-activity-btn:hover { border-color: var(--fh-accent); color: var(--fh-accent); }
+.fi-sample { margin-left: 4px; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--fh-orange); }
+
+/* 1 · Projectors over their puzzle keys */
+.fi-grid {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; padding: 16px 6px 14px;
+  border-radius: 22px; border: 1px solid var(--fh-line); background: color-mix(in srgb, var(--fh-ink-2) 85%, transparent);
+}
+.fi-grid[data-endgame="true"] { border-color: rgba(255, 59, 79, 0.55); }
+.fi-lamp {
+  display: flex; flex-direction: column; align-items: center; gap: 0; min-width: 0; padding: 2px;
+  border: 0; border-radius: 16px; background: none; color: inherit; font: inherit; cursor: pointer;
+}
+.fi-lamp:active { transform: scale(0.97); }
+.fi-bulb {
+  --c: var(--fh-line-2);
+  width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; flex: none;
+  border: 1.5px solid var(--c); color: var(--c); transition: background-color 0.3s, box-shadow 0.3s;
+}
+/* Thin light from the key up to the lamp. */
+.fi-beam { width: 2px; height: 10px; background: linear-gradient(var(--fh-line-2), transparent); }
+.fi-lamp[data-state="ready"] .fi-beam { background: linear-gradient(var(--fh-accent), transparent); }
+.fi-lamp[data-state="ours"] .fi-beam { background: linear-gradient(var(--fi-gold), transparent); }
+.fi-key-emblem { width: min(88px, 100%); height: auto; overflow: visible; }
+.fi-grid[data-endgame="true"] .fi-key-emblem { width: min(96px, 100%); }
+.fi-key-emblem[data-complete="true"]:not([data-mode="idle"]) { filter: drop-shadow(0 0 8px var(--fi-key)); }
+.fi-lamp b { font-size: 13.5px; margin-top: 6px; }
+.fi-lamp small { font-size: 11.5px; line-height: 1.25; color: var(--fh-mute); text-align: center; overflow-wrap: anywhere; }
+.fi-lamp[data-card="collecting"] small { color: var(--fh-text-2); font-weight: 600; }
+.fi-lamp[data-state="sleep"] .fi-bulb, .fi-lamp[data-card="locked"] .fi-key-emblem { opacity: 0.5; }
+.fi-lamp[data-state="sleep"] .fi-bulb { border-style: dashed; }
+.fi-lamp[data-state="dark"] .fi-bulb { --c: #4d6a94; }
+.fi-lamp[data-state="ready"] .fi-bulb { --c: var(--fh-accent); background: color-mix(in srgb, var(--fh-accent) 16%, transparent); }
+.fi-lamp[data-state="ready"] small { color: var(--fh-accent); font-weight: 600; }
+.fi-lamp[data-state="ours"] .fi-bulb {
+  --c: var(--fi-gold); color: #1a1200;
+  background: radial-gradient(circle, #fff6cf, var(--fi-gold) 60%);
+  box-shadow: 0 0 18px var(--fi-gold);
+}
+.fi-lamp[data-state="ours"] small { color: var(--fi-gold); font-weight: 600; }
+.fi-lamp[data-state="other"] .fi-bulb { --c: var(--fi-other); color: #0b0b0b; background: var(--fi-other); box-shadow: 0 0 14px var(--fi-other); }
+@media (prefers-reduced-motion: no-preference) {
+  .fi-lamp[data-state="dark"] .fi-bulb { animation: fh-pulse 3.2s ease-in-out infinite; }
+  .fi-lamp[data-state="ready"] .fi-bulb { animation: fi-ready 1.4s ease-out infinite; }
+  .fi-lamp[data-state="ready"] .fi-key-emblem { animation: fi-key-glow 1.6s ease-in-out infinite; }
+}
+@keyframes fi-ready {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--fh-accent) 60%, transparent); }
+  70%, 100% { box-shadow: 0 0 0 10px transparent; }
+}
+@keyframes fi-key-glow { 50% { filter: drop-shadow(0 0 14px var(--fi-key)); } }
+
+/* A piece arriving, and a key completing (useNewPieces → KeyEmblem). Timeline
+   of a completion: new slice pops (0s) → all 5 flash in turn (0.5s) → key
+   pops with a ring and sparks (1s) → light runs up to the lamp (1.5s) →
+   key banner slides in (1.9s). Reduced motion skips straight to the result. */
+.fi-slice, .fi-burst, .fi-spark { transform-box: view-box; transform-origin: 50px 50px; }
+.fi-burst { opacity: 0; }
+@media (prefers-reduced-motion: no-preference) {
+  .fi-slice-new { animation: fi-slice-in 0.7s cubic-bezier(0.2, 1.4, 0.4, 1) both; }
+  .fi-celebrate .fi-slice { animation: fi-slice-flash 0.5s calc(0.5s + var(--i) * 0.09s) ease-out both; }
+  .fi-celebrate .fi-slice-new { animation: fi-slice-in 0.7s cubic-bezier(0.2, 1.4, 0.4, 1) both, fi-slice-flash 0.5s calc(0.5s + var(--i) * 0.09s) ease-out; }
+  .fi-key-emblem.fi-celebrate { animation: fi-key-pop 0.6s 1s cubic-bezier(0.2, 1.5, 0.4, 1) both; }
+  .fi-celebrate .fi-burst { animation: fi-burst 1s 1s ease-out both; }
+  .fi-celebrate .fi-spark { transform-box: fill-box; transform-origin: center; animation: fi-spark 0.9s 1.05s ease-out both; }
+  .fi-lamp[data-celebrate] .fi-beam { animation: fi-beam 0.5s 1.5s ease-out both; }
+  .fi-lamp[data-celebrate] .fi-bulb { animation: fi-bulb-on 0.7s 1.7s ease-out both, fi-ready 1.4s 2.4s ease-out infinite; }
+  .fi-lamp[data-celebrate] small { animation: fi-label 0.4s 1.8s ease-out both; }
+  .fi-keyban[data-celebrate] { animation: fi-up 0.5s 1.9s cubic-bezier(0.2, 0.9, 0.3, 1) both; }
+}
+@keyframes fi-slice-in { 0% { transform: scale(0.3); opacity: 0; filter: brightness(2.5); } 60% { opacity: 1; } 100% { transform: none; filter: none; } }
+@keyframes fi-slice-flash { 0% { filter: brightness(1); } 35% { filter: brightness(2.2) saturate(1.3); } 100% { filter: brightness(1); } }
+@keyframes fi-key-pop { 0% { transform: scale(1); } 45% { transform: scale(1.14); } 100% { transform: scale(1); } }
+@keyframes fi-burst { 0% { opacity: 0.9; transform: scale(1); } 100% { opacity: 0; transform: scale(1.45); } }
+@keyframes fi-spark { 0% { opacity: 0; transform: translate(0, 0) scale(0.4); } 30% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(1.1) rotate(45deg); } }
+@keyframes fi-beam { from { transform: scaleY(0); transform-origin: bottom; } to { transform: scaleY(1); transform-origin: bottom; } }
+@keyframes fi-bulb-on { 0% { border-color: #4d6a94; color: #4d6a94; background: transparent; box-shadow: none; } 40% { box-shadow: 0 0 0 8px color-mix(in srgb, var(--fh-accent) 45%, transparent), 0 0 24px var(--fh-accent); } 100% { box-shadow: 0 0 0 0 transparent; } }
+@keyframes fi-label { from { opacity: 0; transform: translateY(4px); } }
+
+/* Sample-data only: replays the "complete" demo. */
+.fi-replay {
+  position: fixed; right: 16px; bottom: calc(var(--fh-bottom, 72px) + 16px); z-index: 50;
+  min-height: 40px; padding: 0 16px; border-radius: 999px; cursor: pointer;
+  font: 600 13px var(--font-mono), monospace; color: #1a1200; background: #ffd66b; border: 0;
+  box-shadow: 0 8px 24px -8px #000;
+}
+@media (max-width: 1023px) { .fi-replay { bottom: calc(96px + env(safe-area-inset-bottom, 0px)); } }
+
+/* 2 · Key banner */
+.fi-keyban {
+  display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 14px; border-radius: 18px; text-align: left;
+  color: inherit; cursor: pointer; border: 1px solid var(--fh-accent);
+  background: linear-gradient(110deg, color-mix(in srgb, var(--fh-accent) 22%, var(--fh-ink-2)), var(--fh-ink-2) 70%);
+}
+.fi-keyban-ic { width: 42px; height: 42px; border-radius: 12px; flex: none; display: grid; place-items: center; background: var(--fh-accent); color: var(--fh-on-blue); }
+.fi-keyban-text { min-width: 0; display: grid; gap: 2px; }
+.fi-keyban-text b { font-size: 15.5px; }
+.fi-keyban-text span { font-size: 12.5px; color: var(--fh-text-2); }
+.fi-keyban-go { margin-left: auto; flex: none; color: var(--fh-accent); }
+
+/* 3 · Item shelf (tokens, gold box, standard box) */
+.fi-shelf { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.fi-tile {
+  position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; padding: 14px 6px 12px;
+  border-radius: 20px; border: 1px solid var(--fh-line-2); background: color-mix(in srgb, var(--fh-ink-2) 88%, transparent);
+  color: inherit; font: inherit; cursor: pointer;
+}
+.fi-tile:active { transform: scale(0.97); }
+.fi-tile[data-item="gold"] { border-color: color-mix(in srgb, var(--fi-gold) 50%, transparent); }
+.fi-tile-ic, .fi-item-art { display: grid; place-items: center; border-radius: 50%; color: #fff; background: linear-gradient(140deg, var(--fh-blue), #6b4dff); }
+.fi-tile-ic { width: 44px; height: 44px; }
+[data-item="tokens"] > .fi-tile-ic, .fi-item-art[data-item="tokens"] {
+  color: #6b4300; background: radial-gradient(circle at 35% 30%, #fff3b8, var(--fi-gold) 45%, #c98a12);
+  box-shadow: inset 0 -2px 0 #8a5a00, 0 0 18px color-mix(in srgb, var(--fi-gold) 40%, transparent);
+}
+[data-item="gold"] > .fi-tile-ic, .fi-item-art[data-item="gold"] { color: #2a1600; background: linear-gradient(140deg, var(--fi-gold), #ff7a3d); }
+.fi-tile-num { font-size: 28px; line-height: 1; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.fi-tile-name { font-size: 12px; color: var(--fh-text-2); text-align: center; }
+.fi-delta {
+  position: absolute; top: 8px; right: 8px; font-size: 12px; font-weight: 700; padding: 2px 6px; border-radius: 7px; opacity: 0;
+  color: var(--fi-down); background: color-mix(in srgb, var(--fi-down) 15%, transparent);
+}
+.fi-delta[data-up="true"] { color: var(--fi-up); background: color-mix(in srgb, var(--fi-up) 15%, transparent); }
+@media (prefers-reduced-motion: no-preference) {
+  .fi-delta { animation: fi-pop 1.6s ease-out; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fi-delta { opacity: 1; }
+}
+@keyframes fi-pop { 0% { opacity: 0; transform: translateY(6px); } 15%, 70% { opacity: 1; transform: none; } 100% { opacity: 0; transform: translateY(-6px); } }
+
+/* Token and box details (sheet) */
+.fi-item-detail { display: flex; flex-direction: column; align-items: center; text-align: center; padding-top: 8px; }
+.fi-item-art { width: 72px; height: 72px; margin-bottom: 8px; }
+.fi-item-detail .fi-sheet-title b { font-size: 34px; margin-right: 4px; }
+.fi-item-detail .fi-eb { margin: 6px 0 8px; }
+.fi-item-detail .fi-tiers { width: 100%; text-align: left; margin-top: 0; }
+.fi-facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; width: 100%; margin: 0 0 14px; }
+.fi-facts div { padding: 10px 6px; border-radius: 14px; border: 1px solid var(--fh-line); background: color-mix(in srgb, var(--fh-ink) 55%, transparent); }
+.fi-facts dt { font-size: 11px; color: var(--fh-mute); }
+.fi-facts dd { margin: 2px 0 0; font-size: 22px; }
+.fi-tiers { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-top: 6px; }
+.fi-tier { padding: 9px; border-radius: 14px; border: 1px solid var(--fh-line); background: color-mix(in srgb, var(--fh-ink) 55%, transparent); min-width: 0; }
+.fi-tier span { display: flex; align-items: center; gap: 5px; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--fh-mute); white-space: nowrap; }
+.fi-tier span i { width: 6px; height: 6px; border-radius: 50%; flex: none; }
+.fi-tier[data-tier="low"] i { background: var(--fi-up); }
+.fi-tier[data-tier="medium"] i { background: var(--fh-orange); }
+.fi-tier[data-tier="high"] i { background: var(--fi-down); }
+.fi-tier b { font-size: 19px; margin-right: 3px; }
+.fi-tier small { font-size: 11px; color: var(--fh-mute); }
+.fi-tier[data-none="true"] b { color: var(--fh-mute); }
+
+/* 4 · One location's puzzle (sheet) */
+.fi-detail-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 8px; margin: 4px 44px 12px 0; }
+.fi-detail-head h2 { margin: 2px 0 0; font-size: 22px; }
+.fi-detail-head div { display: grid; }
+.fi-count { font-size: 13px; font-weight: 700; padding: 3px 9px; border-radius: 8px; background: var(--fh-ink-3); color: var(--fh-text-2); }
+.fi-detail-key-name { font-size: 12.5px; color: var(--fh-mute); }
+.fi-detail-key { display: block; width: min(180px, 60%); height: auto; margin: 4px auto 0; overflow: visible; }
+.fi-detail-key[data-complete="true"]:not([data-mode="idle"]), .fi-key-big { filter: drop-shadow(0 0 10px var(--fi-key)); }
+.fi-detail[data-state="idle"] .fi-count, .fi-detail[data-state="done"] .fi-count { text-decoration: line-through; color: var(--fh-mute); }
+.fi-detail-note { margin: 12px 2px 14px; font-size: 13.5px; color: var(--fh-text-2); }
+.fi-tag { display: inline-flex; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 8px; color: var(--fi-tag); background: color-mix(in srgb, var(--fi-tag) 20%, transparent); }
+
+/* Activity sheet */
+.fi-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.fi-chip { border: 1px solid var(--fh-line-2); background: none; color: var(--fh-text-2); border-radius: 999px; padding: 6px 12px; font-size: 12.5px; cursor: pointer; min-height: 32px; }
+.fi-chip[aria-pressed="true"] { background: var(--fh-text); color: var(--fh-ink); border-color: var(--fh-text); }
+.fi-hist { list-style: none; margin: 0; padding: 0; border-radius: 18px; border: 1px solid var(--fh-line); overflow: hidden; }
+.fi-hist li { display: grid; grid-template-columns: 32px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 10px 12px; border-top: 1px solid var(--fh-line); background: color-mix(in srgb, var(--fh-ink-2) 75%, transparent); }
+.fi-hist li:first-child { border-top: 0; }
+.fi-hist-ic { width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center; background: var(--fh-ink-3); color: var(--fh-text-2); }
+.fi-hist-text { min-width: 0; display: grid; }
+.fi-hist-text b { font-size: 13.5px; font-weight: 600; overflow-wrap: anywhere; }
+.fi-hist-text small { font-size: 11.5px; color: var(--fh-mute); }
+.fi-hist-amt { font-size: 13px; font-weight: 600; white-space: nowrap; color: var(--fh-mute); }
+.fi-hist-amt[data-sign="up"] { color: var(--fi-up); }
+.fi-hist-amt[data-sign="down"] { color: var(--fi-down); }
+
+/* Sheets (key, box opened) */
+.fi-overlay { position: fixed; inset: 0; z-index: 60; background: rgba(1, 5, 14, 0.7); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); }
+.fi-sheet {
+  position: fixed; z-index: 61; left: 0; right: 0; bottom: 0; max-height: 92dvh; overflow-y: auto;
+  margin: 0 auto; width: min(560px, 100%);
+  padding: 10px 18px calc(22px + env(safe-area-inset-bottom, 0px));
+  border-radius: 26px 26px 0 0; border-top: 1px solid var(--fh-line-2); background: var(--fh-ink-2);
+  font-family: var(--font-nexus-body), Outfit, system-ui, sans-serif;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .fi-sheet[data-state="open"] { animation: fi-up 0.32s cubic-bezier(0.2, 0.9, 0.3, 1); }
+}
+@keyframes fi-up { from { transform: translateY(40px); opacity: 0.4; } }
+.fi-grab { display: block; width: 40px; height: 4px; border-radius: 4px; background: var(--fh-line-2); margin: 0 auto 12px; }
+.fi-x { position: absolute; right: 14px; top: 14px; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; border: 1px solid var(--fh-line-2); background: var(--fh-ink-3); color: var(--fh-text); cursor: pointer; }
+
+.fi-sheet-title { margin: 4px 0 2px; font-size: 22px; }
+.fi-sheet-sub { margin: 0 0 12px; font-size: 13px; color: var(--fh-text-2); }
+.fi-key-title { margin: 4px 0 2px; font-size: 22px; }
+.fi-key-sub { margin: 0 0 12px; font-size: 13.5px; color: var(--fh-text-2); }
+.fi-key-big { display: block; width: min(150px, 50%); height: auto; margin: 0 auto; overflow: visible; }
+@media (prefers-reduced-motion: no-preference) {
+  .fi-key-big { animation: fi-forge 0.7s 0.1s both cubic-bezier(0.2, 1.3, 0.4, 1); }
+  .fi-ticket { animation: fi-forge 0.7s 0.5s both cubic-bezier(0.2, 1.3, 0.4, 1); }
+}
+@keyframes fi-forge { from { transform: scale(0.6) rotate(-6deg); opacity: 0; } }
+.fi-ticket {
+  display: flex; align-items: center; gap: 12px; margin-top: 12px; padding: 14px 16px; border-radius: 16px; color: var(--fh-on-blue);
+  background: linear-gradient(120deg, var(--fh-accent), color-mix(in srgb, var(--fh-accent) 45%, var(--fi-gold)));
+  -webkit-mask: radial-gradient(circle 9px at 0 50%, transparent 98%, #000) left / 51% 100% no-repeat, radial-gradient(circle 9px at 100% 50%, transparent 98%, #000) right / 51% 100% no-repeat;
+  mask: radial-gradient(circle 9px at 0 50%, transparent 98%, #000) left / 51% 100% no-repeat, radial-gradient(circle 9px at 100% 50%, transparent 98%, #000) right / 51% 100% no-repeat;
+}
+.fi-ticket span { display: grid; }
+.fi-ticket b { font-size: 16.5px; }
+.fi-ticket small { font-size: 11px; opacity: 0.8; }
+.fi-spot { margin: 14px 0 0; border-radius: 16px; overflow: hidden; border: 1px solid var(--fh-line-2); }
+.fi-spot img { display: block; width: 100%; aspect-ratio: 2 / 1; object-fit: cover; }
+.fi-spot-ph { aspect-ratio: 2 / 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; color: var(--fh-mute); font-size: 11px; background: repeating-linear-gradient(135deg, var(--fh-ink-3) 0 12px, var(--fh-ink-2) 12px 24px); }
+.fi-spot figcaption { display: grid; gap: 2px; padding: 10px 12px; background: var(--fh-ink-3); font-size: 13px; color: var(--fh-text-2); }
+.fi-spot figcaption b { font-size: 14px; color: var(--fh-text); }
+.fi-warn { display: flex; gap: 8px; margin: 12px 0 0; padding: 10px 12px; border-radius: 14px; font-size: 12.5px; color: var(--fh-text-2); background: var(--fh-ink-3); }
+.fi-warn svg { flex: none; margin-top: 1px; color: var(--fh-orange); }
+.fi-key-actions { display: grid; gap: 8px; margin-top: 14px; }
+@media (min-width: 480px) {
+  .fi-key-actions { grid-template-columns: 1fr 1fr; }
+}
+.fi-key-actions .fh-btn { white-space: nowrap; }
+.fi-key-foot { margin: 8px 2px 0; font-size: 12px; color: var(--fh-mute); text-align: center; }
+
+.fi-reveal { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 24px 0 4px; }
+.fi-reveal-box { width: 96px; height: 96px; border-radius: 24px; display: grid; place-items: center; color: #fff; background: linear-gradient(140deg, var(--fh-blue), #6b4dff); }
+.fi-reveal-box[data-kind="gold"] { color: #2a1600; background: linear-gradient(140deg, var(--fi-gold), #ff7a3d); }
+.fi-reveal-num { margin-top: 14px; font-size: 48px; line-height: 1; color: var(--fi-gold); }
+.fi-reveal p { margin: 8px 0 18px; font-size: 13.5px; color: var(--fh-text-2); }
+@media (prefers-reduced-motion: no-preference) {
+  .fi-reveal-box { animation: fi-shake 0.5s 2; }
+  .fi-reveal-num { animation: fi-pop-in 0.6s 0.9s both cubic-bezier(0.2, 1.5, 0.4, 1); }
+}
+@keyframes fi-shake { 25% { transform: rotate(-8deg); } 75% { transform: rotate(8deg); } }
+@keyframes fi-pop-in { from { transform: scale(0); opacity: 0; } }
+
 /* ── Desktop / landscape tablet ──────────────────────────────────────────── */
 @media (min-width: 1024px) {
   .fh-pass-grid { grid-template-columns: 1.15fr 1fr; align-items: stretch; }
