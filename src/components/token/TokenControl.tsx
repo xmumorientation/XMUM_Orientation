@@ -49,6 +49,8 @@ import {
 } from "@/lib/token-types";
 import { cn } from "@/lib/utils";
 
+import "./token-control.css";
+
 // Admin Token page (/admin/token) shows everything. Other staff (/token)
 // get scoreboardOnly: the live leaderboard, without the rules and the log.
 export default function TokenControl({ scoreboardOnly = false }: { scoreboardOnly?: boolean }) {
@@ -379,7 +381,7 @@ export default function TokenControl({ scoreboardOnly = false }: { scoreboardOnl
   };
 
   return (
-    <div className="space-y-6 pb-6" aria-busy={loading}>
+    <div className="tk space-y-6 pb-6" aria-busy={loading}>
       {/* ── Top Header & Global Actions ────────────────────────────────────────── */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -586,6 +588,8 @@ export default function TokenControl({ scoreboardOnly = false }: { scoreboardOnl
               ].map((s) => (
                 <button
                   key={s.id}
+                  type="button"
+                  aria-pressed={scoreSortBy === s.id}
                   onClick={() => setScoreSortBy(s.id as any)}
                   className={cn(
                     "px-3 py-1 text-xs font-bold rounded-lg transition-all",

@@ -153,6 +153,8 @@ export default function CommitteePage() {
         {tabs.map((tab) => (
             <button
               key={tab.key}
+              type="button"
+              aria-pressed={view === tab.key}
               onClick={() => setView(tab.key)}
               className={cn(
                 "min-h-[64px] rounded-[1.15rem] px-3 text-left transition",

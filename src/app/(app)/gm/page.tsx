@@ -336,6 +336,8 @@ export default function GmPanelPage() {
         {tabs.map((t) => (
           <button
             key={t}
+            type="button"
+            aria-pressed={tab === t}
             onClick={() => setTab(t)}
             className={cn(
               "min-h-[72px] rounded-[1.15rem] px-3 text-left transition active:scale-[0.99]",
@@ -362,7 +364,7 @@ export default function GmPanelPage() {
             <button
               disabled={busy}
               onClick={() => day1Reward("win")}
-              className="btn min-h-[92px] flex-col bg-green-600 text-white"
+              className="btn min-h-[92px] flex-col bg-green-800 text-white"
             >
               <span className="text-2xl font-black">+{day1.win}</span>
               <span className="text-sm">Win</span>
@@ -370,7 +372,7 @@ export default function GmPanelPage() {
             <button
               disabled={busy}
               onClick={() => day1Reward("lose")}
-              className="btn min-h-[92px] flex-col bg-green-500 text-white"
+              className="btn min-h-[92px] flex-col bg-green-700 text-white"
             >
               <span className="text-2xl font-black">+{day1.lose}</span>
               <span className="text-sm">Participation</span>
@@ -395,11 +397,13 @@ export default function GmPanelPage() {
 
           <div className="grid grid-cols-2 gap-2">
             <button
+              type="button"
+              aria-pressed={success}
               onClick={() => setSuccess(true)}
               className={cn(
                 "btn min-h-[76px] flex-col text-base",
                 success
-                  ? "bg-green-600 text-white"
+                  ? "bg-green-700 text-white"
                   : "border border-paper-300 bg-white text-ink-soft"
               )}
             >
@@ -407,6 +411,8 @@ export default function GmPanelPage() {
               <span className="text-xs">Charge + grant</span>
             </button>
             <button
+              type="button"
+              aria-pressed={!success}
               onClick={() => setSuccess(false)}
               className={cn(
                 "btn min-h-[76px] flex-col text-base",
@@ -429,6 +435,8 @@ export default function GmPanelPage() {
                 {PROJECTOR_LOCATIONS.map((loc) => (
                   <button
                     key={loc}
+                    type="button"
+                    aria-pressed={locations.includes(loc)}
                     onClick={() => toggleLocation(loc)}
                     className={cn(
                       "btn min-h-[64px] text-sm",
@@ -490,7 +498,7 @@ export default function GmPanelPage() {
                 <button
                   disabled={busy}
                   onClick={() => setStatus("available")}
-                  className="btn min-h-[72px] bg-green-600 text-sm text-white"
+                  className="btn min-h-[72px] bg-green-700 text-sm text-white"
                 >
                   Available
                 </button>
@@ -504,7 +512,7 @@ export default function GmPanelPage() {
                 <button
                   disabled={busy}
                   onClick={() => setStatus("closed")}
-                  className="btn min-h-[72px] bg-gray-500 text-sm text-white"
+                  className="btn min-h-[72px] bg-gray-600 text-sm text-white"
                 >
                   Closed
                 </button>

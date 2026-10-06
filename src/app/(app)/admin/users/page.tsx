@@ -639,7 +639,7 @@ export default function AdminUsersPage() {
       {/* CSV import */}
       <Dialog open={importOpen} onOpenChange={setImportOpen}>
         <DialogContent
-          title="Import staff from CSV"
+          title="Import Committee, Faci, GM from CSV"
           description="Always dry-run first. Passwords are shown once after a real import."
           className="max-h-[90dvh] max-w-2xl"
         >

@@ -220,6 +220,9 @@ Full background: the "Issues Found" section in [permission-matrix.md](permission
 - Demo quick logins show only on local dev and Vercel preview, not on production. Their passwords moved to a server-only file, so they are no longer in the browser bundle. Test accounts unchanged.
 - Welcome progress bar: the stop label now has a fixed width, so the bar no longer jumps between Games and Scoreboard; the fill animates smoothly. Credits labels and tab labels are 12px. Logo images have `sizes`.
 - Left: Coca-Cola example logo and the Score tab (owner decision).
+- Committee, Faci, GM pages share the dark navy design on mobile and desktop: /dashboard, /committee, /gm, /guardian, /schedule, /attendance, /checkin, /code, /token and Ops. The map and Items pages keep their own design. Subpages get a top bar with a back link to Home, the role name and one menu button on the right; the side menu now highlights the current page.
+- Token page (TokenControl: the /token scoreboard and /admin/token): 16px inputs, 44px targets, 14px labels, dark selects, light text on navy; sort buttons expose aria-pressed.
+- GM: darker green buttons for readable white text; tabs and toggles expose aria-pressed. Faci: lighter group colour text and the checklist lines up with the other blocks. Stale timestamp and status colours readable on dark. Schedule edit and delete buttons are 44px. UI only, behaviour unchanged.
 
 ### David, 2026-10-06
 - Safari bands follow-up: the closed Welcome menu backdrop stays `display: none` until it opens, so it cannot tint the toolbar. The staff dashboard header pads below the status bar. Staff uses the shell navy `#030b1c`; Welcome and login stay `#07060b`. Light pages keep the paper background.
