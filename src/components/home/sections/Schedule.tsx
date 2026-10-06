@@ -18,6 +18,26 @@ const TAG_STYLE: Record<string, { icon: React.ReactNode; color: string; label: s
 
 const WEEKDAY: Record<string, string> = { "28 Nov": "SAT", "29 Nov": "SUN" };
 
+// "SAT, 28 NOV": the day's date set in Admin (schedule_days), else its first
+// planned time, else the fixed date in EVENTS.
+function dayDateLine(
+  day: { day: string; date: string },
+  items: ScheduleItem[] | null,
+  dates: Record<string, string>
+) {
+  const first = (items ?? [])
+    .filter((i) => i.day_label === day.day && i.starts_at)
+    .sort((a, b) => (a.starts_at as string).localeCompare(b.starts_at as string))[0];
+  const iso = dates[day.day] ? `${dates[day.day]}T00:00` : first?.starts_at;
+  if (iso) {
+    const d = new Date(iso);
+    const weekday = d.toLocaleDateString("en-GB", { weekday: "short" });
+    const date = d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+    return `${weekday}, ${date}`.toUpperCase();
+  }
+  return `${WEEKDAY[day.date] ? `${WEEKDAY[day.date]}, ` : ""}${day.date.toUpperCase()}`;
+}
+
 function whenLabel(item: ScheduleItem) {
   const time = item.time_label.trim();
   const venue = item.location.trim();
@@ -35,6 +55,7 @@ export function Schedule() {
   const [activeDayIdx, setActiveDayIdx] = useState(0);
   // null while loading. A failed load counts as "no entries yet".
   const [items, setItems] = useState<ScheduleItem[] | null>(null);
+  const [dates, setDates] = useState<Record<string, string>>({});
   const currentDay = EVENTS[activeDayIdx] ?? EVENTS[0];
 
   useEffect(() => {
@@ -47,10 +68,16 @@ export function Schedule() {
         .order("id");
       if (active) setItems((data as ScheduleItem[]) ?? []);
     }
+    async function loadDates() {
+      const { data } = await supabase.from("schedule_days").select("day_label, day_date");
+      if (active && data) setDates(Object.fromEntries(data.map((d) => [d.day_label, d.day_date as string])));
+    }
     load();
+    loadDates();
     const channel = supabase
       .channel("vx-schedule")
       .on("postgres_changes", { event: "*", schema: "public", table: "schedule_items" }, load)
+      .on("postgres_changes", { event: "*", schema: "public", table: "schedule_days" }, loadDates)
       .subscribe();
     return () => {
       active = false;
@@ -59,7 +86,7 @@ export function Schedule() {
   }, [supabase]);
 
   const dayItems = (items ?? []).filter((item) => item.day_label === currentDay.day);
-  const dateLine = `${WEEKDAY[currentDay.date] ? `${WEEKDAY[currentDay.date]}, ` : ""}${currentDay.date.toUpperCase()}`;
+  const dateLine = dayDateLine(currentDay, items, dates);
 
   return (
     <section id="schedule" className="vx-sec vx-sched" aria-labelledby="schedule-title">
@@ -79,10 +106,7 @@ export function Schedule() {
                 onClick={() => setActiveDayIdx(i)}
               >
                 <b>{ev.day}</b>
-                <span className="vx-mono">
-                  {WEEKDAY[ev.date] ? `${WEEKDAY[ev.date]}, ` : ""}
-                  {ev.date.toUpperCase()}
-                </span>
+                <span className="vx-mono">{dayDateLine(ev, items, dates)}</span>
               </button>
             ))}
           </div>
