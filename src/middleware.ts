@@ -134,8 +134,10 @@ export async function middleware(request: NextRequest) {
   return response;
 }
 
+// Static files (images, the web manifest, robots.txt, sitemap.xml) skip the
+// auth gate, so the browser can fetch them without a session or Supabase env.
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|api/time|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|api/time|manifest.json|robots.txt|sitemap.xml|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

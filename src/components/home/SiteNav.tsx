@@ -164,8 +164,8 @@ const TABS: { label: string; target: StopId; match: StopId[]; Icon: typeof Home 
 
 /**
  * Phone/tablet bottom tab bar for the four most-used stops. When `onScan` is
- * given, a raised Scan button sits in the middle (DEV PREVIEW — see
- * ScanPreview.tsx). The public Welcome page does not pass `onScan`.
+ * given, a raised Scan button sits in the middle. The public Welcome page
+ * does not pass `onScan`, because scanning needs a login.
  */
 export function TabBar({ active, onScan }: { active: StopId; onScan?: () => void }) {
   const tab = ({ label, target, match, Icon }: (typeof TABS)[number]) => (

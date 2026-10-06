@@ -215,6 +215,15 @@ Full background: the "Issues Found" section in [permission-matrix.md](permission
 
 When you finish something, add a few lines here: your name, the date, and the main points of what you did and what is left. Newest at the top.
 
+### Ben, 2026-10-06
+- Merged the latest `main` into `David/welcome-login-dashboard` so it can go to `main` by PR. Welcome stop: main's slogan (title case), short intro line, and organiser and sponsor logos; David's glows, sparks and animated Scroll line, plus a few small white stars. Buttons are "Join the Game ★" (opens the login chooser) and "How to check in"; "What's inside" is gone. The Scroll hint hides whenever it would touch the logo row (measured, not a fixed screen height).
+- Kept David's section order (Schedule before Games), the two login buttons in the top bar, and the Check-in stop. Removed the Join stop, the scan preview (`ScanPreview.tsx`) and the unused `FreshieDashboard.tsx`.
+- Welcome page Schedule now reads `schedule_items`, the same entries Admin edits, and updates live. Migration `0045` lets visitors who are not logged in read the schedule (read only). **Run `0045` in Supabase**; until then the Welcome page shows "Schedule coming soon".
+- Middleware no longer runs on `manifest.json`, `robots.txt` and `sitemap.xml`, so the Welcome page no longer errors when Supabase env is missing.
+
+### Jiamin, 2026-10-06
+- FAQ by role. Migration `0044` adds `faq_items.roles` (empty means everyone), limits what each role can read, and adds starter entries for Freshie, Faci, GM, Guardian, Committee and Admin. Admin → FAQ has role filter chips, a role picker in the add form, and an edit button. Run `0044` in Supabase before using it. Left: the `/faq` page still lists entries by category only; the database already hides entries from other roles.
+
 ### Ben, 2026-10-04
 - Freshie Home background redesign ([FreshieSky.tsx](../src/components/freshie/FreshieSky.tsx)). It scrolls with the page instead of staying fixed: night sky, then deeper sky, then a city with a ferris wheel at the last stop. The night colours are the same for every group. The group colour shows only as light: soft lights, windows, wheel rim, lamp bars. The wheel has one cabin per group, coloured from the scoreboard rows, and the viewer's group cabin has a halo. Frontend only, no backend change.
 - [groupTheme.ts](../src/components/freshie/groupTheme.ts) now works out `glowStrength`, `glowSpread` and `partner` from `groups.color`. Bright colours (yellow, cyan, green) get a smaller, fainter light and dark colours a wider one, so every group looks about as bright. The partner is a Vortexa colour about a third of the colour wheel away. These are exposed as `--fh-glow-strength`, `--fh-glow-spread` and `--fh-partner`.

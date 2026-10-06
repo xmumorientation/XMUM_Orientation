@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import "./vortexa.css";
+import { JoinChooser } from "./JoinChooser";
 import { NightSkyline } from "./NightSkyline";
 import { SiteFooter } from "./SiteFooter";
 import { SiteNav, StopRail, TabBar } from "./SiteNav";
@@ -23,11 +24,14 @@ import { CheckInSection } from "./sections/CheckInSection";
  * at a time with scroll snapping. A single IntersectionObserver tracks the
  * current stop for the nav, the desktop dot rail, and the mobile tab bar, and
  * marks each stop `data-seen` the first time it enters view so its entrance
- * animation plays once. Scan / QR is gated behind login — not shown on this
- * public page.
+ * animation plays once. "Join the Game" on the Welcome stop opens the login
+ * chooser. Scan / QR is gated behind login — not shown on this public page.
  */
 export default function OrientationHome() {
   const [active, setActive] = useState<StopId>("welcome");
+  const [joinOpen, setJoinOpen] = useState(false);
+  const openJoin = useCallback(() => setJoinOpen(true), []);
+  const closeJoin = useCallback(() => setJoinOpen(false), []);
 
   // Land at the top on reload rather than a restored mid-page position.
   useEffect(() => {
@@ -86,7 +90,7 @@ export default function OrientationHome() {
 
       <main className="vx-main">
         <NightSkyline />
-        <WelcomeSection />
+        <WelcomeSection onJoin={openJoin} />
         <OverviewSection />
         <Schedule />
         <Games />
@@ -96,6 +100,7 @@ export default function OrientationHome() {
       </main>
       <SiteFooter />
       <TabBar active={active} />
+      <JoinChooser open={joinOpen} onClose={closeJoin} />
     </div>
   );
 }

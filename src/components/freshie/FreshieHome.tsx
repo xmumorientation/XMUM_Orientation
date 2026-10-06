@@ -19,7 +19,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { EVENT, EVENTS, GAME_PHASES } from "@/components/home/data";
+import { EVENT, EVENTS, GAME_PHASES, SPONSORS, SPONSORS_ARE_EXAMPLES } from "@/components/home/data";
 import { vxDisplay, vxSlab } from "@/components/home/fonts";
 import { usePhaseTimer } from "@/components/PhaseTimerProvider";
 import { useProfile } from "@/components/ProfileProvider";
@@ -202,6 +202,7 @@ function WelcomeStop({
           My group ↓
         </button>
       </div>
+      <Credits />
     </section>
   );
 }
@@ -637,6 +638,50 @@ function TodayStop() {
         Full schedule →
       </Link>
     </section>
+  );
+}
+
+/** Organiser + sponsors, under the Welcome buttons. Same list as the public homepage. */
+function Credits() {
+  return (
+    <div className="fh-credits">
+      <div className="fh-credits-col">
+        <span className="fh-credits-label fh-mono">Organised by</span>
+        <Image
+          src="/xmum-logo-horizontal-white.png"
+          alt="Xiamen University Malaysia"
+          width={1024}
+          height={211}
+          className="fh-credits-xmum"
+        />
+      </div>
+      <span className="fh-credits-sep" aria-hidden />
+      <div className="fh-credits-col">
+        <span className="fh-credits-label fh-mono">
+          Supported by{SPONSORS_ARE_EXAMPLES && <span className="fh-credits-example"> (Example)</span>}
+        </span>
+        <ul className="fh-credits-sponsors">
+          {SPONSORS.map((s, i) => {
+            const body = s.logo ? (
+              <Image src={s.logo} alt={s.name} width={240} height={102} className="fh-sponsor-logo" />
+            ) : (
+              <span className="fh-sponsor-ph">{s.name}</span>
+            );
+            return (
+              <li key={i}>
+                {s.href ? (
+                  <a href={s.href} target="_blank" rel="noopener noreferrer">
+                    {body}
+                  </a>
+                ) : (
+                  body
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    </div>
   );
 }
 

@@ -386,7 +386,7 @@ html.vx-snap { scroll-snap-type: y mandatory; }
   }
   .vx-tab[aria-current="true"] { color: var(--vx-cyan); }
 
-  /* Raised centre Scan button (DEV PREVIEW — see ScanPreview.tsx) */
+  /* Raised centre Scan button (only when TabBar gets onScan) */
   .vx-tab-scan { justify-content: flex-end; color: var(--vx-text); padding-bottom: 6px; }
   .vx-tab-scan-btn {
     width: 58px; height: 58px; margin-top: -30px; border-radius: 50%;
@@ -416,6 +416,57 @@ html.vx-snap { scroll-snap-type: y mandatory; }
 .vx-welcome-actions { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; margin-top: 6px; }
 .vx-welcome-strip { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 28px; margin-top: 18px; font-size: 12px; color: var(--vx-mute); letter-spacing: 0.08em; }
 .vx-welcome-strip b { color: #fff; margin-right: 6px; }
+/* Organiser + sponsors under the date strip: a divider line, then organiser
+   on the left and sponsors on the right with a thin line between (same as
+   Freshie Home). Logo sizes follow the screen width (clamp) so it stays on
+   one row from phones to desktops. */
+.vx-credits {
+  margin-top: 24px; padding-top: 18px; width: min(560px, 100%);
+  display: flex; align-items: stretch; justify-content: center;
+  border-top: 1px solid var(--vx-line);
+}
+.vx-credits-col {
+  flex: 1 1 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 10px; padding: 0 clamp(12px, 3vw, 32px); min-width: 0;
+}
+.vx-credits-sep { width: 1px; background: var(--vx-line-2); flex: none; }
+.vx-credits-label { font-size: clamp(9px, 2.4vw, 11px); letter-spacing: 0.24em; text-transform: uppercase; color: var(--vx-mute); white-space: nowrap; }
+.vx-credits-example { text-transform: none; letter-spacing: 0.08em; }
+@media (max-width: 479px) { .vx-credits-example { display: block; margin-top: 2px; } }
+/* White-on-transparent copy of public/xmum-logo-horizontal.png (which is navy on white). */
+.vx-credits-xmum { height: clamp(24px, 6.5vw, 42px); width: auto; max-width: 100%; object-fit: contain; opacity: 0.92; }
+.vx-credits-sponsors ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px 16px; }
+.vx-sponsor-ph { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; font-size: 14px; color: var(--vx-mute); }
+.vx-sponsor-ph i { width: 12px; height: 12px; border-radius: 50%; background: var(--vx-line-2); }
+/* Sponsor logos keep their own colours, as supplied. */
+.vx-sponsor-logo {
+  height: clamp(32px, 8.5vw, 48px); width: auto; max-width: 180px; object-fit: contain;
+  border-radius: 7px; transition: transform 0.15s;
+}
+.vx-credits a:hover .vx-sponsor-logo { transform: translateY(-1px); }
+@media (max-width: 1023px) {
+  .vx-credits { margin-top: 18px; padding-top: 14px; }
+  .vx-credits-col { gap: 7px; }
+}
+
+/* A few small white stars behind the Welcome stop, on top of the night sky. */
+.vx-welcome-stars {
+  position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  background-image:
+    radial-gradient(1.5px 1.5px at 8% 18%, rgba(255, 255, 255, 0.85), transparent),
+    radial-gradient(1px 1px at 22% 9%, rgba(255, 255, 255, 0.7), transparent),
+    radial-gradient(2px 2px at 31% 34%, rgba(255, 255, 255, 0.55), transparent),
+    radial-gradient(1px 1px at 44% 14%, rgba(255, 255, 255, 0.75), transparent),
+    radial-gradient(1.5px 1.5px at 58% 28%, rgba(255, 255, 255, 0.6), transparent),
+    radial-gradient(1px 1px at 67% 8%, rgba(255, 255, 255, 0.8), transparent),
+    radial-gradient(2px 2px at 79% 38%, rgba(255, 255, 255, 0.5), transparent),
+    radial-gradient(1.5px 1.5px at 88% 16%, rgba(255, 255, 255, 0.8), transparent),
+    radial-gradient(1px 1px at 93% 52%, rgba(255, 255, 255, 0.6), transparent),
+    radial-gradient(1.5px 1.5px at 4% 56%, rgba(255, 255, 255, 0.55), transparent),
+    radial-gradient(1px 1px at 15% 72%, rgba(255, 255, 255, 0.5), transparent),
+    radial-gradient(1.5px 1.5px at 85% 70%, rgba(255, 255, 255, 0.5), transparent);
+}
+
 .vx-scrollhint {
   position: absolute; left: 50%; bottom: 22px; transform: translateX(-50%); z-index: 2;
   display: flex; flex-direction: column; align-items: center; gap: 8px;
@@ -424,6 +475,8 @@ html.vx-snap { scroll-snap-type: y mandatory; }
   font-family: var(--font-mono), "JetBrains Mono", ui-monospace, monospace;
   font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase;
 }
+/* Hidden but still measured, so it comes back when the screen grows. */
+.vx-scrollhint[data-fits="false"] { visibility: hidden; }
 .vx-scrollhint-line {
   display: block; width: 1px; height: 46px; position: relative; overflow: hidden;
   background: rgba(255, 255, 255, 0.16);
@@ -554,6 +607,12 @@ html.vx-snap { scroll-snap-type: y mandatory; }
 .vx-item::before { content: ""; position: absolute; left: -35px; top: 50%; width: 13px; height: 13px; border-radius: 50%; background: var(--dot); transform: translateY(-50%); box-shadow: 0 0 0 4px var(--vx-ink); }
 .vx-item b { font-weight: 600; font-size: 16px; }
 .vx-item small { grid-column: 1; font-size: 11px; letter-spacing: 0.14em; color: var(--vx-mute); }
+/* Placeholder rows while the schedule loads. */
+.vx-item-skel { min-height: 62px; --dot: var(--vx-line-2); opacity: 0.55; }
+@media (prefers-reduced-motion: no-preference) {
+  .vx-item-skel { animation: vx-skel 1.4s ease-in-out infinite alternate; }
+}
+@keyframes vx-skel { to { opacity: 0.25; } }
 .vx-tag { grid-row: 1 / span 2; grid-column: 2; display: inline-flex; align-items: center; gap: 6px; font-size: 10.5px; letter-spacing: 0.14em; padding: 5px 10px; border-radius: 999px; border: 1px solid currentColor; }
 @media (max-width: 1023px) {
   .vx-sched .vx-inner { grid-template-columns: 1fr; gap: 20px; }

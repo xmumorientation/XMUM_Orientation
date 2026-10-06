@@ -63,7 +63,19 @@ export async function POST(req: NextRequest) {
     user_metadata: { full_name: name },
     app_metadata: { role },
   });
-  if (error || !data.user) return fail(error?.message ?? "Could not create the account");
+  if (error || !data.user) {
+    console.error("[admin/users] createUser failed", error);
+    const msg = error?.message?.trim();
+    const detail = !msg || msg === "{}" ? "" : msg;
+    const status = (error as { status?: number } | null)?.status;
+    const code = (error as { code?: string } | null)?.code;
+    return fail(
+      detail ||
+        `Could not create the account (auth ${status ?? "no response"}${code ? `, ${code}` : ""}). ` +
+          "Check SUPABASE_SERVICE_ROLE_KEY and that migrations 0041-0043 are applied.",
+      500
+    );
+  }
 
   // The signup trigger created the profile; set the assignment fields.
   const { error: updErr } = await service
