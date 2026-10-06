@@ -1,7 +1,7 @@
 "use client";
 
 import * as Dialog from "@radix-ui/react-dialog";
-import { Gift, History, Info, KeyRound, Lock, MapPin, Nfc, X } from "lucide-react";
+import { History, Info, KeyRound, Lock, MapPin, Nfc, X } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -10,16 +10,17 @@ import { PROJECTOR_LABELS, type ProjectorLocation } from "@/lib/types";
 
 import "../freshie.css";
 import { themeFromColor } from "../groupTheme";
+import { BlindBox } from "./BlindBox";
 import { cardState, keyLocations, zoneNames } from "./derive";
 import { KEY_NAMES, KeyEmblem } from "./KeyEmblem";
-import { ActivityList, BlueprintDetail, BoxDetail, ItemShelf, KeyBanner, ProjectorKeys, TokenDetail, type ShelfItem } from "./sections";
-import type { BoxKind, ItemsData } from "./types";
+import { ActivityList, BlueprintDetail, ItemShelf, KeyBanner, ProjectorKeys, TokenDetail, type ShelfItem } from "./sections";
+import type { BoxKind, BoxReward, ItemsData } from "./types";
 import { useNewPieces } from "./useNewPieces";
 
 // Freshie and facilitator Items page. Top: the three projectors, each over its
 // puzzle key (the group's 5 pieces for it; tap for details or, once all 5 are
-// in, the key and Guardian spot). Then a shelf of tokens and blind boxes (tap a tile for
-// details). Activity opens in a sheet.
+// in, the key and Guardian spot). Then a shelf of tokens and blind boxes: tap
+// tokens for details, or a box to unlock it (BlindBox). Activity opens in a sheet.
 
 const PHASE_LABEL: Record<ItemsData["phase"], string> = {
   day1: "Day 1",
@@ -39,8 +40,8 @@ export function FreshieItems({
   groupColor: string | null | undefined;
   /** Facilitators open boxes; Freshies only see them. */
   canOpenBoxes: boolean;
-  /** Opens one box and returns the tokens it gave, or null if it failed. */
-  onOpenBox: (kind: BoxKind) => Promise<number | null>;
+  /** Opens one box and returns what it gave, or null if it failed. */
+  onOpenBox: (kind: BoxKind) => Promise<BoxReward | null>;
   /** Shows a "Sample data" label while the page is not on live data. */
   sample?: boolean;
 }) {
@@ -56,19 +57,12 @@ export function FreshieItems({
   const [keyFor, setKeyFor] = useState<ProjectorLocation | null>(null);
   const [detailFor, setDetailFor] = useState<ProjectorLocation | null>(null);
   const [activityOpen, setActivityOpen] = useState(false);
-  const [shelfFor, setShelfFor] = useState<ShelfItem | null>(null);
-  const [opened, setOpened] = useState<{ kind: BoxKind; amount: number } | null>(null);
-  const [busy, setBusy] = useState(false);
+  const [tokensOpen, setTokensOpen] = useState(false);
+  const [boxFor, setBoxFor] = useState<BoxKind | null>(null);
 
-  async function openBox(kind: BoxKind) {
-    if (busy) return;
-    setBusy(true);
-    const amount = await onOpenBox(kind);
-    setBusy(false);
-    if (amount !== null) {
-      setShelfFor(null);
-      setOpened({ kind, amount });
-    }
+  function selectShelf(item: ShelfItem) {
+    if (item === "tokens") setTokensOpen(true);
+    else setBoxFor(item);
   }
 
   const keys = keyLocations(data);
@@ -111,12 +105,14 @@ export function FreshieItems({
       <ProjectorKeys data={data} arrivals={arrivals} onSelect={selectLocation} />
 
       {keys.map((loc) => (
-        <div key={loc} className="fi-sec">
-          <KeyBanner data={data} loc={loc} justCompleted={arrivals[loc]?.completed} onOpen={() => setKeyFor(loc)} />
+        <div key={loc} className="fi-sec fi-keyban-slot" data-celebrate={arrivals[loc]?.completed || undefined}>
+          <div className="fi-keyban-clip">
+            <KeyBanner data={data} loc={loc} justCompleted={arrivals[loc]?.completed} onOpen={() => setKeyFor(loc)} />
+          </div>
         </div>
       ))}
 
-      <ItemShelf data={data} onSelect={setShelfFor} />
+      <ItemShelf data={data} onSelect={selectShelf} />
 
       <Sheet open={keyFor !== null} onClose={() => setKeyFor(null)} themeVars={themeVars} title={keyFor ? `${names[keyFor].short} key unlocked` : ""}>
         {keyFor && <KeySheet data={data} loc={keyFor} />}
@@ -126,34 +122,23 @@ export function FreshieItems({
         {detailFor && <BlueprintDetail data={data} loc={detailFor} />}
       </Sheet>
 
-      <Sheet open={shelfFor !== null} onClose={() => setShelfFor(null)} themeVars={themeVars} title={shelfFor === "tokens" ? "Tokens" : "Blind box"}>
-        {shelfFor === "tokens" && <TokenDetail data={data} />}
-        {shelfFor && shelfFor !== "tokens" && (
-          <BoxDetail data={data} kind={shelfFor} canOpen={canOpenBoxes} busy={busy} onOpen={() => openBox(shelfFor)} />
-        )}
+      <Sheet open={tokensOpen} onClose={() => setTokensOpen(false)} themeVars={themeVars} title="Tokens">
+        <TokenDetail data={data} />
       </Sheet>
+
+      <BlindBox
+        kind={boxFor}
+        data={data}
+        canOpen={canOpenBoxes}
+        onOpenBox={onOpenBox}
+        onClose={() => setBoxFor(null)}
+        themeVars={themeVars}
+      />
 
       <Sheet open={activityOpen} onClose={() => setActivityOpen(false)} themeVars={themeVars} title="Activity">
         <h2 className="fi-sheet-title">Activity</h2>
         <p className="fi-sheet-sub">Every token, piece and box for {data.group.name}, newest first.</p>
         <ActivityList entries={data.history} names={names} />
-      </Sheet>
-
-      <Sheet open={opened !== null} onClose={() => setOpened(null)} themeVars={themeVars} title="Box opened">
-        {opened && (
-          <div className="fi-reveal">
-            <span className="fi-reveal-box" data-kind={opened.kind} aria-hidden>
-              <Gift size={44} strokeWidth={1.7} />
-            </span>
-            <b className="fi-reveal-num fh-slab">+{opened.amount}</b>
-            <p>{opened.kind === "gold" ? "Gold box" : "Standard box"} · added to your group&apos;s tokens</p>
-            <Dialog.Close asChild>
-              <button type="button" className="fh-btn fh-btn-primary fh-btn-block">
-                Nice
-              </button>
-            </Dialog.Close>
-          </div>
-        )}
       </Sheet>
     </div>
   );

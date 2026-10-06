@@ -56,7 +56,7 @@ function base(): ItemsData {
     projectors: { B1: null, A3: null, TF: null },
     pieces: { B1: [1, 2, 4], A3: [3], TF: [2] },
     guardian: GUARDIAN,
-    boxes: { gold: { unopened: 1, opened: [5] }, standard: { unopened: 2, opened: [2, 1, 1, 2] } },
+    boxes: { gold: { unopened: 5, opened: [5] }, standard: { unopened: 2, opened: [2, 1, 1, 2] } },
     history: [...DAY2_HISTORY, ...DAY1_HISTORY],
   };
 }
@@ -71,7 +71,7 @@ export function sampleItems(scenario: SampleScenario = "day2"): ItemsData {
         timeLeft: "1:48:20",
         tokens: { balance: 14 },
         pieces: { B1: [], A3: [], TF: [] },
-        boxes: { gold: { unopened: 1, opened: [5] }, standard: { unopened: 1, opened: [2] } },
+        boxes: { gold: { unopened: 5, opened: [5] }, standard: { unopened: 1, opened: [2] } },
         history: DAY1_HISTORY,
       };
     case "ready":

@@ -19,6 +19,7 @@ import {
   type ProjectorLocation,
 } from "@/lib/types";
 
+import { BOX_INFO } from "./BlindBox";
 import { cardState, fillZones, lampState, ourLitLocation, zoneNames, type CardState, type ZoneName } from "./derive";
 import { KEY_NAMES, KeyEmblem, type KeyMode } from "./KeyEmblem";
 import type { Arrivals } from "./useNewPieces";
@@ -138,14 +139,9 @@ export function KeyBanner({
 }
 
 // ── 3. Item shelf: tokens and the two kinds of box ─────────────────────────
-// Icon, name and count only. Tap a tile for details (and, for a Faci, Open).
+// Icon, name and count only. Tap tokens for details, or a box to unlock it.
 
 export type ShelfItem = "tokens" | BoxKind;
-
-const BOX_INFO: Record<BoxKind, { name: string; range: string }> = {
-  gold: { name: "Gold box", range: "4–6 tokens each" },
-  standard: { name: "Standard box", range: "1–2 tokens each" },
-};
 
 export function ItemShelf({ data, onSelect }: { data: ItemsData; onSelect: (item: ShelfItem) => void }) {
   const balance = data.tokens.balance;
@@ -228,53 +224,6 @@ export function TokenDetail({ data }: { data: ItemsData }) {
           );
         })}
       </div>
-    </div>
-  );
-}
-
-export function BoxDetail({
-  data,
-  kind,
-  canOpen,
-  busy,
-  onOpen,
-}: {
-  data: ItemsData;
-  kind: BoxKind;
-  canOpen: boolean;
-  busy: boolean;
-  onOpen: () => void;
-}) {
-  const stock = data.boxes[kind];
-  const got = stock.opened.reduce((sum, v) => sum + v, 0);
-  return (
-    <div className="fi-item-detail">
-      <span className="fi-item-art" data-item={kind} aria-hidden>
-        <Gift size={34} strokeWidth={1.9} />
-      </span>
-      <h2 className="fi-sheet-title">{BOX_INFO[kind].name}</h2>
-      <p className="fi-sheet-sub">{BOX_INFO[kind].range}</p>
-      <dl className="fi-facts">
-        <div>
-          <dt>To open</dt>
-          <dd className="fh-slab">{stock.unopened}</dd>
-        </div>
-        <div>
-          <dt>Opened</dt>
-          <dd className="fh-slab">{stock.opened.length}</dd>
-        </div>
-        <div>
-          <dt>Tokens from them</dt>
-          <dd className="fh-slab">+{got}</dd>
-        </div>
-      </dl>
-      {canOpen ? (
-        <button type="button" className="fh-btn fh-btn-primary fh-btn-block" disabled={stock.unopened === 0 || busy} onClick={onOpen}>
-          {stock.unopened === 0 ? "No boxes to open" : "Open a box"}
-        </button>
-      ) : (
-        <p className="fi-note">Your Faci opens the boxes. The tokens go straight to your group.</p>
-      )}
     </div>
   );
 }

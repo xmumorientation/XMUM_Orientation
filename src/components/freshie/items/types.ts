@@ -19,9 +19,14 @@ export type BoxKind = "gold" | "standard";
 export type BoxStock = {
   /** Claimed but not opened yet. */
   unopened: number;
-  /** Tokens each opened box gave, oldest first. */
+  /** Tokens each opened box gave, oldest first (0 for a box that gave a piece). */
   opened: number[];
 };
+
+/** What one opened box gave: tokens, or a puzzle piece. */
+export type BoxReward =
+  | { type: "tokens"; amount: number }
+  | { type: "piece"; loc: ProjectorLocation; piece: number };
 
 export type HistoryKind = "game" | "entry" | "piece" | "box" | "fix" | "lit";
 
