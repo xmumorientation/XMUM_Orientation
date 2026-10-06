@@ -1,4 +1,4 @@
-// Centralized constants and placeholder data for the Vortexa homepage.
+// Centralized constants and placeholder data for the Vortexa Welcome page.
 // Items marked PLACEHOLDER should be replaced with real Supabase queries
 // once the backend data is available.
 
@@ -17,7 +17,7 @@ export const EVENT = {
 // Typography
 // ---------------------------------------------------------------------------
 
-/** Font-family shorthands mapped to the scoped homepage font variables. */
+/** Font-family shorthands mapped to the scoped Welcome page font variables. */
 export const FONT = {
   /** Brand title face (Brasika stand-in). */
   brand: "var(--font-vx-display), Georgia, serif",
@@ -53,7 +53,7 @@ export const TEAMS: Team[] = [
 ];
 
 // ---------------------------------------------------------------------------
-// Game phases — conceptual flow shown on the homepage
+// Game phases — conceptual flow shown on the Welcome page
 // ---------------------------------------------------------------------------
 
 export type GamePhase = {
@@ -86,14 +86,14 @@ export type Building = {
 };
 
 export const BUILDINGS: Building[] = [
-  { id: "lib", name: "Central Library", x: 48, y: 30, icon: "📚", color: "#00cfff", desc: "Open 7am–midnight. Study rooms, printing, and digital resources available." },
-  { id: "admin", name: "Admin Office", x: 30, y: 22, icon: "🏛️", color: "#d966ff", desc: "Registration, enrollment, and student records. Ground floor, Block A." },
-  { id: "canteen", name: "Main Canteen", x: 55, y: 56, icon: "🍜", color: "#f9d342", desc: "3 food courts, open 6am–10pm. Cashless payments accepted." },
-  { id: "sports", name: "Sports Complex", x: 76, y: 64, icon: "⚽", color: "#39ff14", desc: "Football, basketball, badminton, swimming pool." },
-  { id: "med", name: "Medical Center", x: 22, y: 54, icon: "🏥", color: "#ff3cac", desc: "24-hour clinic. Free consultation for registered students." },
-  { id: "dorm", name: "Student Dorms", x: 80, y: 28, icon: "🏠", color: "#ff6b35", desc: "Blocks D–H. Room assignments via student portal." },
-  { id: "cs", name: "CS & Engineering", x: 43, y: 70, icon: "💻", color: "#7b2fff", desc: "Faculties of Computing and Engineering. Labs open 8am–10pm." },
-  { id: "arts", name: "Arts & Social", x: 63, y: 38, icon: "🎨", color: "#ff3cac", desc: "Faculty of Arts, Humanities, and Social Sciences." },
+  { id: "lib", name: "Central Library", x: 48, y: 30, icon: "Library", color: "#00cfff", desc: "Open 7am–midnight. Study rooms, printing, and digital resources available." },
+  { id: "admin", name: "Admin Office", x: 30, y: 22, icon: "Landmark", color: "#d966ff", desc: "Registration, enrollment, and student records. Ground floor, Block A." },
+  { id: "canteen", name: "Main Canteen", x: 55, y: 56, icon: "UtensilsCrossed", color: "#f9d342", desc: "3 food courts, open 6am–10pm. Cashless payments accepted." },
+  { id: "sports", name: "Sports Complex", x: 76, y: 64, icon: "Dumbbell", color: "#39ff14", desc: "Football, basketball, badminton, swimming pool." },
+  { id: "med", name: "Medical Center", x: 22, y: 54, icon: "Cross", color: "#ff3cac", desc: "24-hour clinic. Free consultation for registered students." },
+  { id: "dorm", name: "Student Dorms", x: 80, y: 28, icon: "Home", color: "#ff6b35", desc: "Blocks D–H. Room assignments via student portal." },
+  { id: "cs", name: "CS & Engineering", x: 43, y: 70, icon: "Monitor", color: "#7b2fff", desc: "Faculties of Computing and Engineering. Labs open 8am–10pm." },
+  { id: "arts", name: "Arts & Social", x: 63, y: 38, icon: "Palette", color: "#ff3cac", desc: "Faculty of Arts, Humanities, and Social Sciences." },
 ];
 
 // ---------------------------------------------------------------------------
@@ -109,30 +109,10 @@ export type EventItem = {
 
 export type EventDay = { day: string; date: string; items: EventItem[] };
 
-/** PLACEHOLDER — specific times, venues, and activities TBD. */
+/** Dates locked; detailed timetable still TBA — Schedule UI shows honest empty state. */
 export const EVENTS: EventDay[] = [
-  {
-    day: "Day 1",
-    date: "28 Nov",
-    items: [
-      { time: "TBD", title: "Registration & Check-in", venue: "TBD", type: "info" },
-      { time: "TBD", title: "Opening Ceremony", venue: "TBD", type: "star" },
-      { time: "TBD", title: "Ice-Breaking Activities", venue: "TBD", type: "game" },
-      { time: "TBD", title: "Team Formation & Briefing", venue: "TBD", type: "game" },
-      { time: "TBD", title: "Dinner", venue: "TBD", type: "food" },
-    ],
-  },
-  {
-    day: "Day 2",
-    date: "29 Nov",
-    items: [
-      { time: "TBD", title: "Morning Assembly", venue: "TBD", type: "star" },
-      { time: "TBD", title: "Game Stations Begin", venue: "TBD", type: "game" },
-      { time: "TBD", title: "Lunch Break", venue: "TBD", type: "food" },
-      { time: "TBD", title: "Final Challenge", venue: "TBD", type: "game" },
-      { time: "TBD", title: "Closing Ceremony & Awards", venue: "TBD", type: "star" },
-    ],
-  },
+  { day: "Day 1", date: "28 Nov", items: [] },
+  { day: "Day 2", date: "29 Nov", items: [] },
 ];
 
 // ---------------------------------------------------------------------------
@@ -188,20 +168,20 @@ export const SPONSORS_ARE_EXAMPLES = true;
 // Scroll navigation
 // ---------------------------------------------------------------------------
 
-/** The homepage "ride stops", in scroll order. Each id is a section element id. */
+/** The Welcome page "ride stops", in scroll order. Each id is a section element id. */
 export const STOPS = [
   { id: "welcome", label: "Welcome" },
   { id: "overview", label: "Overview" },
+  { id: "schedule", label: "Schedule" },
   { id: "games", label: "Games" },
   { id: "scoreboard", label: "Scoreboard" },
-  { id: "schedule", label: "Schedule" },
   { id: "committees", label: "Committees" },
-  { id: "join", label: "Join" },
+  { id: "check-in", label: "Check-in" },
 ] as const;
 
 export type StopId = (typeof STOPS)[number]["id"];
 
-/** Scrolls to a homepage section. "home" is an alias for the first stop. */
+/** Scrolls to a Welcome page section. "home" is an alias for the first stop. */
 export function scrollToSection(id: string) {
   const target = id === "home" ? "welcome" : id;
   const el = document.getElementById(target);

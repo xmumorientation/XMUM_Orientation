@@ -5,7 +5,6 @@ import { useCallback, useEffect, useState } from "react";
 import "./vortexa.css";
 import { JoinChooser } from "./JoinChooser";
 import { NightSkyline } from "./NightSkyline";
-import { ScanPreview, SHOW_SCAN_PREVIEW } from "./ScanPreview";
 import { SiteFooter } from "./SiteFooter";
 import { SiteNav, StopRail, TabBar } from "./SiteNav";
 import { FONT, STOPS, type StopId } from "./data";
@@ -15,28 +14,24 @@ import { Games } from "./sections/Games";
 import { Scoreboard } from "./sections/Scoreboard";
 import { Schedule } from "./sections/Schedule";
 import { Committees } from "./sections/Committees";
-import { JoinSection } from "./sections/JoinSection";
+import { CheckInSection } from "./sections/CheckInSection";
 
 /**
- * Public Orientation 2026 homepage — "Night Ticket".
+ * Public Orientation 2026 Welcome page — "Night Ticket".
  *
- * Seven full-screen "ride stops" (Welcome → Join) over one continuous
- * background (NightSkyline: night sky → dusk → city), read one at a time with
- * scroll snapping. A single IntersectionObserver tracks the
- * current stop for the nav, the desktop dot rail and the mobile tab bar, and
+ * Seven full-screen "ride stops" (Welcome → Overview → Schedule → Games → … → Check-in)
+ * over one continuous background (NightSkyline: night sky → dusk → city), read one
+ * at a time with scroll snapping. A single IntersectionObserver tracks the
+ * current stop for the nav, the desktop dot rail, and the mobile tab bar, and
  * marks each stop `data-seen` the first time it enters view so its entrance
- * animation plays once.
+ * animation plays once. "Join the Game" on the Welcome stop opens the login
+ * chooser. Scan / QR is gated behind login — not shown on this public page.
  */
 export default function OrientationHome() {
   const [active, setActive] = useState<StopId>("welcome");
-  // DEV PREVIEW scanner overlay — see ScanPreview.tsx.
-  const [scanOpen, setScanOpen] = useState(false);
   const [joinOpen, setJoinOpen] = useState(false);
-  const openScan = useCallback(() => setScanOpen(true), []);
-  const closeScan = useCallback(() => setScanOpen(false), []);
   const openJoin = useCallback(() => setJoinOpen(true), []);
   const closeJoin = useCallback(() => setJoinOpen(false), []);
-  const onScan = SHOW_SCAN_PREVIEW ? openScan : undefined;
 
   // Land at the top on reload rather than a restored mid-page position.
   useEffect(() => {
@@ -90,23 +85,21 @@ export default function OrientationHome() {
 
   return (
     <div className="vx nexus relative text-white" style={{ fontFamily: FONT.body }}>
-      <SiteNav active={active} onScan={onScan} onJoin={openJoin} />
+      <SiteNav active={active} />
       <StopRail active={active} />
 
       <main className="vx-main">
         <NightSkyline />
         <WelcomeSection onJoin={openJoin} />
         <OverviewSection />
+        <Schedule />
         <Games />
         <Scoreboard />
-        <Schedule />
         <Committees />
-        <JoinSection onJoin={openJoin} />
+        <CheckInSection />
       </main>
       <SiteFooter />
-
-      <TabBar active={active} onScan={onScan} />
-      {SHOW_SCAN_PREVIEW && scanOpen && <ScanPreview onClose={closeScan} />}
+      <TabBar active={active} />
       <JoinChooser open={joinOpen} onClose={closeJoin} />
     </div>
   );

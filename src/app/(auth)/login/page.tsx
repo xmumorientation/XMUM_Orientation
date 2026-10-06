@@ -1,11 +1,11 @@
 "use client";
 
 import {
+  ArrowLeft,
   CalendarCheck,
   Eye,
   EyeOff,
   Gamepad2,
-  GraduationCap,
   Lock,
   ShieldCheck,
   Sparkles,
@@ -15,15 +15,17 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 
-import { ErrorBanner, Spinner } from "@/components/ui";
+import { nexusBody, vxDisplay, vxSlab } from "@/components/home/fonts";
+import { Spinner } from "@/components/ui";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { ROLE_LABELS, type UserRole } from "@/lib/types";
+
+import "./login.css";
 
 const REQUESTED_ROLE_KEY = "xmum-requested-role";
 const GOOGLE_ROLES = (Object.keys(ROLE_LABELS) as UserRole[]).filter((role) => role !== "freshie");
 
 const DEMO_PRESETS = [
-  { label: "Freshie", email: "freshie.test@xmu.edu.my", pass: "TestPass123!", icon: GraduationCap },
   { label: "Admin", email: "admin.test@xmu.edu.my", pass: "TestPass123!", icon: ShieldCheck },
   { label: "Faci", email: "faci.test@xmu.edu.my", pass: "TestPass123!", icon: Users },
   { label: "GM", email: "gm.test@xmu.edu.my", pass: "TestPass123!", icon: Gamepad2 },
@@ -89,151 +91,178 @@ function LoginForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="auth-card">
-      <div className="auth-card-inner space-y-5">
-        <div>
-          <div className="flex items-center justify-between">
-            <p className="text-xs font-black uppercase tracking-[0.2em] text-brand-1">
-              Account Login
+    <div
+      className={`sl ${vxDisplay.variable} ${vxSlab.variable} ${nexusBody.variable}`}
+    >
+      <div className="sl-bg" aria-hidden>
+        <div className="sl-dots" />
+        <div className="sl-glow sl-glow-a" />
+        <div className="sl-glow sl-glow-b" />
+        <div className="sl-glow sl-glow-c" />
+      </div>
+
+      <div className="sl-shell">
+        <div className="sl-panel">
+          <header className="sl-brand">
+            <p className="sl-eyebrow">Staff Login</p>
+            <h1 className="sl-title">
+              Committee · <span className="sl-holo">Facilitator</span> · GM
+            </h1>
+            <p className="sl-lead">
+              Sign in with your staff email to open the orientation control room.
+              Freshie check-in lives on the Welcome page — not here.
             </p>
+            <div className="sl-roles" aria-label="Staff roles">
+              <span className="sl-role">Committee</span>
+              <span className="sl-role">Facilitator</span>
+              <span className="sl-role">GM</span>
+              <span className="sl-role">HOF</span>
+            </div>
             {nextUrl && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-bold text-amber-800">
-                <Lock size={12} /> Sign-in required
+              <span className="sl-gate">
+                <Lock size={12} aria-hidden /> Sign-in required
               </span>
             )}
-          </div>
-          <h2 className="mt-2 text-2xl font-black tracking-tight text-ink sm:text-3xl">
-            Sign in to your account
-          </h2>
-          <p className="mt-1 text-sm leading-5 text-ink-faint">
-            Enter your XMUM student or staff email to continue.
-          </p>
-        </div>
+          </header>
 
-        <div className="space-y-2">
-          <label className="label" htmlFor="google-role">
-            Continue with Google
-          </label>
-          <select
-            id="google-role"
-            className="input"
-            value={requestedRole}
-            onChange={(e) => setRequestedRole(e.target.value as UserRole | "")}
-          >
-            <option value="">Choose a role</option>
-            {GOOGLE_ROLES.map((role) => (
-              <option key={role} value={role}>
-                {ROLE_LABELS[role]}
-              </option>
-            ))}
-          </select>
-          <button
-            type="button"
-            disabled={busy || !requestedRole}
-            onClick={continueWithGoogle}
-            className="auth-submit gap-2.5 disabled:opacity-50"
-          >
-            <GoogleLogo />
-            Continue with Google
-          </button>
-        </div>
+          <form onSubmit={onSubmit} className="sl-card">
+            <div className="sl-google">
+              <label className="sl-label" htmlFor="google-role">
+                Continue with Google
+              </label>
+              <select
+                id="google-role"
+                className="sl-input sl-select"
+                value={requestedRole}
+                onChange={(e) => setRequestedRole(e.target.value as UserRole | "")}
+              >
+                <option value="">Choose a role</option>
+                {GOOGLE_ROLES.map((role) => (
+                  <option key={role} value={role}>
+                    {ROLE_LABELS[role]}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                disabled={busy || !requestedRole}
+                onClick={continueWithGoogle}
+                className="sl-google-btn"
+              >
+                <GoogleLogo />
+                Continue with Google
+              </button>
+            </div>
 
-        {/* Quick Demo Switcher Control */}
-        <div className="rounded-2xl border border-brand-1/20 bg-brand-1/5 p-3 sm:p-3.5">
-          <div className="flex items-center justify-between gap-2 text-xs font-bold text-ink-soft">
-            <span className="flex items-center gap-1.5 text-brand-1">
-              <Sparkles size={14} />
-              <span>Demo Quick Login</span>
-            </span>
-            <span className="text-[10px] font-medium text-ink-faint">One-click sign in</span>
-          </div>
-          <div className="mt-2.5 flex flex-wrap gap-1.5 sm:gap-2">
-            {DEMO_PRESETS.map((p) => {
-              const Icon = p.icon;
-              return (
+            {/* DEMO ONLY — disable one-click presets before production. */}
+            <div className="sl-demo">
+              <div className="sl-demo-head">
+                <span className="sl-demo-title">
+                  <Sparkles size={14} aria-hidden />
+                  Demo Quick Login
+                </span>
+              </div>
+              <p className="sl-demo-note">
+                Demo only — turn off before production.
+              </p>
+              <div className="sl-demo-row">
+                {DEMO_PRESETS.map((p) => {
+                  const Icon = p.icon;
+                  return (
+                    <button
+                      key={p.label}
+                      type="button"
+                      disabled={busy}
+                      onClick={() => applyPreset(p.email, p.pass)}
+                      className="sl-chip"
+                    >
+                      <Icon size={14} aria-hidden />
+                      <span>{p.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {error && (
+              <p className="sl-error" role="alert">
+                {error}
+              </p>
+            )}
+
+            <div className="sl-field">
+              <label className="sl-label" htmlFor="email">
+                Staff email
+              </label>
+              <input
+                id="email"
+                type="email"
+                required
+                placeholder="you@xmu.edu.my"
+                autoComplete="email"
+                className="sl-input"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+
+            <div className="sl-field">
+              <label className="sl-label" htmlFor="password">
+                Password
+              </label>
+              <div className="sl-input-wrap">
+                <input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  required
+                  placeholder="••••••••"
+                  autoComplete="current-password"
+                  className="sl-input"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
                 <button
-                  key={p.label}
                   type="button"
-                  onClick={() => applyPreset(p.email, p.pass)}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-paper-300 bg-white px-3 py-1.5 text-xs font-bold text-ink shadow-[0_1px_2px_rgba(0,0,0,0.05)] transition-all duration-base ease-snappy hover:border-brand-1/60 hover:bg-brand-1/10 hover:text-brand-1 active:scale-95"
+                  onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  className="sl-eye"
                 >
-                  <Icon size={14} className="text-brand-1" />
-                  <span>{p.label}</span>
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
-              );
-            })}
-          </div>
-        </div>
+              </div>
+            </div>
 
-        <ErrorBanner message={error} />
-
-        <div>
-          <label className="label" htmlFor="email">
-            Email address
-          </label>
-          <input
-            id="email"
-            type="email"
-            required
-            placeholder="student@xmu.edu.my"
-            autoComplete="email"
-            className="input"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-        </div>
-
-        <div>
-          <label className="label" htmlFor="password">
-            Password
-          </label>
-          <div className="relative">
-            <input
-              id="password"
-              type={showPassword ? "text" : "password"}
-              required
-              placeholder="••••••••"
-              autoComplete="current-password"
-              className="input pr-10"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              aria-label={showPassword ? "Hide password" : "Show password"}
-              className="absolute right-3 top-3 text-ink-faint transition hover:text-ink"
-            >
-              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            <button type="submit" disabled={busy} className="sl-submit">
+              {busy ? (
+                <Spinner className="border-black/25 border-t-black" />
+              ) : (
+                "Sign in"
+              )}
             </button>
-          </div>
-        </div>
 
-        <button type="submit" disabled={busy} className="group auth-submit">
-          {busy ? (
-            <Spinner className="border-white/40 border-t-white" />
-          ) : (
-            "Sign In"
-          )}
-        </button>
+            <div className="sl-actions">
+              <Link href="/" className="sl-ghost">
+                <ArrowLeft size={16} aria-hidden />
+                Back to Welcome
+              </Link>
+              <div className="sl-links">
+                <Link href="/forgot-password">Forgot password?</Link>
+                <Link href="/activate">Staff invite activation</Link>
+              </div>
+            </div>
+          </form>
 
-        <div className="flex justify-between gap-4 pt-1 text-center text-xs font-semibold text-ink-faint">
-          <Link href="/forgot-password" className="hover:text-ink">
-            Forgot password?
-          </Link>
-          <Link href="/activate" className="hover:text-ink">
-            Staff invite activation
-          </Link>
+          <p className="sl-foot">XMUM · Official Orientation Platform</p>
         </div>
       </div>
-    </form>
+    </div>
   );
 }
 
 function GoogleLogo() {
   return (
-    <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white">
-      <svg viewBox="0 0 48 48" className="h-3.5 w-3.5" aria-hidden="true">
+    <span className="sl-google-logo" aria-hidden>
+      <svg viewBox="0 0 48 48" className="sl-google-svg">
         <path
           fill="#FFC107"
           d="M43.611 20.083H42V20H24v8h11.303C33.654 32.657 29.223 36 24 36c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"

@@ -215,6 +215,12 @@ Full background: the "Issues Found" section in [permission-matrix.md](permission
 
 When you finish something, add a few lines here: your name, the date, and the main points of what you did and what is left. Newest at the top.
 
+### Ben, 2026-10-06
+- Merged the latest `main` into `David/welcome-login-dashboard` so it can go to `main` by PR. Welcome stop: main's slogan (title case), short intro line, and organiser and sponsor logos; David's glows, sparks and animated Scroll line, plus a few small white stars. Buttons are "Join the Game ★" (opens the login chooser) and "How to check in"; "What's inside" is gone. The Scroll hint hides whenever it would touch the logo row (measured, not a fixed screen height).
+- Kept David's section order (Schedule before Games), the two login buttons in the top bar, and the Check-in stop. Removed the Join stop, the scan preview (`ScanPreview.tsx`) and the unused `FreshieDashboard.tsx`.
+- Welcome page Schedule now reads `schedule_items`, the same entries Admin edits, and updates live. Migration `0045` lets visitors who are not logged in read the schedule (read only). **Run `0045` in Supabase**; until then the Welcome page shows "Schedule coming soon".
+- Middleware no longer runs on `manifest.json`, `robots.txt` and `sitemap.xml`, so the Welcome page no longer errors when Supabase env is missing.
+
 ### Jiamin, 2026-10-06
 - FAQ by role. Migration `0044` adds `faq_items.roles` (empty means everyone), limits what each role can read, and adds starter entries for Freshie, Faci, GM, Guardian, Committee and Admin. Admin → FAQ has role filter chips, a role picker in the add form, and an edit button. Run `0044` in Supabase before using it. Left: the `/faq` page still lists entries by category only; the database already hides entries from other roles.
 
@@ -225,6 +231,10 @@ When you finish something, add a few lines here: your name, the date, and the ma
 - Public homepage background redesign: one continuous background behind all seven stops ([NightSkyline.tsx](../src/components/home/NightSkyline.tsx)). Near-black night with sparse stars at the top, slowly turning indigo, ending in a city skyline with a slow ferris wheel, a coaster ribbon and neon lamp bars at the Join stop. Per-section glows, sparkles and dot grids were removed from the section files.
 - Ticket notches (`.vx-ticket`) are now real cut-outs (CSS mask), so the background colour shows through them.
 - Left: the Join and Freshie login pages (`/join`, `/login/freshie`) still use the old per-page glows.
+
+### XMUM, 2026-10-04
+- Welcome page on this branch: snap, scroll-line cue, and copy polish. The last public stop is Check-in ("How to check in"), so the skyline city sits behind Check-in.
+- Freshie Home opens with one line: "Welcome to Vortexa" and the group name in that group's colour. Facilitators still see the Vortexa lockup and the "you're in" line.
 
 ### Jiamin, 2026-10-04
 - Admin redesign step A: Admin nav is now 4 sections (Live, Freshies, Game, Settings) with sub-tabs; Freshie control moved to `/admin/freshies` (old `/freshie-control` redirects); admin sidebar can collapse to icons. UI only. Step B done: Users (role chips, group filter, table, CSV import in a pop-up), Audit (action and role chips, table), Control room (phase rows, switches). Step C done: Stations (table, add in pop-up), Blind box (two tabs, table), NFC, Puzzles, FAQ (grouped, add in pop-up), Brand, Tokens (full width, layout only). Admin redesign complete.

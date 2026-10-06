@@ -1,0 +1,21 @@
+{
+  "name": "Vortexa — XMUM Orientation 2026",
+  "short_name": "Vortexa",
+  "description": "One ticket, One Ride, Discover adventure Inside.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#07060b",
+  "theme_color": "#07060b",
+  "icons": [
+    {
+      "src": "/xmum-logo-badge.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/xmum-logo-badge.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

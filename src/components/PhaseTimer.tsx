@@ -29,10 +29,10 @@ export function PhaseTimer({ compact = false }: { compact?: boolean }) {
   return (
     <div
       className={cn(
-        "flex items-center gap-2 px-3 py-1.5 text-sm font-semibold",
+        "app-phase-timer flex items-center gap-2 px-3 py-1.5 text-sm font-semibold",
         compact ? "justify-start rounded-2xl" : "justify-center",
         isEndgame
-          ? "animate-pulseglow bg-red-600 text-white"
+          ? "is-endgame animate-pulseglow bg-red-600 text-white"
           : "bg-gradient-to-r from-amber-400/30 via-brand-1/30 to-brand-2/30 text-ink"
       )}
     >

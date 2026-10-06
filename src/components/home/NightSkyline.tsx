@@ -5,7 +5,7 @@ import { Glow, Spark } from "./decor";
  *
  * Top to bottom: near-black night with sparse stars (as the page looked
  * before), a sky that slowly turns indigo, and a city skyline with a ferris
- * wheel at the bottom of the Join stop. Positions are percentages of the whole
+ * wheel at the bottom of the last stop. Positions are percentages of the whole
  * page, so the layer stretches with however tall the sections render.
  *
  * Everything is generated from a fixed seed, so server and client markup match.
@@ -23,16 +23,16 @@ type Star = { x: number; y: number; size: number; opacity: number; lilac: boolea
 function makeStars(): Star[] {
   const rnd = seeded(11);
   const stars: Star[] = [];
-  while (stars.length < 140) {
+  while (stars.length < 230) {
     const y = rnd() * 70; // % of page height; none below the dusk
     const fade = y / 70;
     if (rnd() < fade) continue; // thinner the further down
     stars.push({
       x: r1(rnd() * 100),
       y: r1(y),
-      size: rnd() < 0.08 ? 2 : 1,
-      opacity: r1((1 - fade) * (0.3 + rnd() * 0.5)),
-      lilac: rnd() < 0.15,
+      size: rnd() < 0.18 ? 2 : 1,
+      opacity: r1((1 - fade) * (0.45 + rnd() * 0.5)),
+      lilac: rnd() < 0.1,
     });
   }
   return stars;

@@ -8,6 +8,8 @@ export function Scoreboard() {
 
   return (
     <section id="scoreboard" className="vx-sec vx-score" aria-labelledby="scoreboard-title">
+      <div className="vx-dots" />
+
       <div className="vx-inner">
         <div className="vx-score-head vx-rise">
           <h2 id="scoreboard-title" className="vx-h2">Scoreboard</h2>
@@ -16,25 +18,32 @@ export function Scoreboard() {
             {live ? "LIVE NOW" : "LIVE FROM 28 NOV"}
           </span>
         </div>
-        <p className="vx-lead vx-rise">
-          {live
-            ? "Real-time standings across all orientation teams."
-            : "The scoreboard goes live when the game begins. Here are the teams you'll be cheering for."}
-        </p>
 
-        <ol className="vx-board vx-rise-2">
-          {TEAMS.map((team, idx) => (
-            <li key={team.id} className="vx-card vx-team">
-              <span className="vx-team-rk vx-mono">0{idx + 1}</span>
-              <i className="vx-team-sw" style={{ background: team.color }} aria-hidden />
-              <b>{team.name}</b>
-              <span className="vx-num" data-live={team.score !== null}>
-                {team.score ?? "—"}
-                {team.score === null && <span className="vx-sr">No score yet</span>}
-              </span>
-            </li>
-          ))}
-        </ol>
+        {live ? (
+          <>
+            <p className="vx-lead vx-rise">Real-time standings across all orientation teams.</p>
+            <ol className="vx-board vx-rise-2">
+              {TEAMS.map((team, idx) => (
+                <li key={team.id} className="vx-card vx-team">
+                  <span className="vx-team-rk vx-mono">{String(idx + 1).padStart(2, "0")}</span>
+                  <i className="vx-team-sw" style={{ background: team.color }} aria-hidden />
+                  <b>{team.name}</b>
+                  <span className="vx-num" data-live="true">
+                    {team.score}
+                  </span>
+                </li>
+              ))}
+            </ol>
+          </>
+        ) : (
+          <div className="vx-coming vx-rise-2" style={{ maxWidth: 520 }}>
+            <p className="vx-coming-title">Teams &amp; scores publish later</p>
+            <p className="vx-mono vx-coming-meta">Coming soon, live from 28 Nov 2026</p>
+            <p className="vx-coming-note">
+              The live ranking opens when orientation games begin. Check back once the ride is underway.
+            </p>
+          </div>
+        )}
       </div>
     </section>
   );

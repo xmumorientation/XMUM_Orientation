@@ -37,7 +37,9 @@ import { groupSwatch, themeFromColor } from "./groupTheme";
 // version of the public welcome page, in the Vortexa "Night Ticket" style.
 // Five full-screen stops read one at a time (scroll snapping), each about
 // the Freshie's own group:
-//   01 Welcome + countdown (switches to the live phase timer on the day)
+//   01 Welcome + countdown (switches to the live phase timer on the day).
+//      Freshies see one line: "Welcome to Vortexa" plus the group name.
+//      Facilitators keep the Vortexa lockup and the "you're in" line.
 //   02 Checklist (facilitator only: name, attendance, location)
 //   03 Group pass (token balance, next action, shortcuts)
 //   04 How the game works
@@ -168,19 +170,28 @@ function WelcomeStop({
   return (
     <section id="fh-welcome" className="fh-stop fh-center" aria-labelledby="fh-welcome-title">
       <div className="fh-eyebrow fh-mono">XMUM Orientation 2026</div>
-      <h1 id="fh-welcome-title" className="fh-welcome-title">
-        <span className="fh-pre fh-slab">WELCOME TO</span>
-        <span className="fh-mark">Vortexa</span>
-      </h1>
-      <p className="fh-hello">
-        Hi <b>{name || "there"}</b>
-        {group && (
-          <>
-            {" "}
-            · you&apos;re in <b>{group.name}</b>
-          </>
-        )}
-      </p>
+      {isFaci ? (
+        <>
+          <h1 id="fh-welcome-title" className="fh-welcome-title">
+            <span className="fh-pre fh-slab">WELCOME TO</span>
+            <span className="fh-mark">Vortexa</span>
+          </h1>
+          <p className="fh-hello">
+            Hi <b>{name || "there"}</b>
+            {group && (
+              <>
+                {" "}
+                · you&apos;re in <b>{group.name}</b>
+              </>
+            )}
+          </p>
+        </>
+      ) : (
+        <h1 id="fh-welcome-title" className="fh-welcome-line">
+          Welcome to Vortexa
+          {group ? <span className="fh-welcome-group"> {group.name}</span> : null}
+        </h1>
+      )}
       {live ? <PhaseCard /> : <Countdown />}
       <div className="fh-actions">
         <Link href={isFaci ? "/code" : "/scan"} className="fh-btn fh-btn-primary">

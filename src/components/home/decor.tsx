@@ -146,7 +146,7 @@ export function Countdown() {
   ];
 
   return (
-    <div className="vx-count" role="timer" aria-label="Time until orientation begins">
+    <div className="vx-count" role="timer" aria-label="Time until orientation begins" aria-atomic="true" aria-live="off">
       {units.map((u, i) => (
         <div key={u.label} className="vx-count-cell vx-ticket">
           <b className="vx-num" style={{ color: i === 0 ? "var(--vx-cyan)" : "#fff" }}>
