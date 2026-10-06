@@ -17,12 +17,9 @@ import { Suspense, useState } from "react";
 import { nexusBody, vxDisplay, vxSlab } from "@/components/home/fonts";
 import { Spinner } from "@/components/ui";
 import { supabaseBrowser } from "@/lib/supabase/client";
-import { ROLE_LABELS, type UserRole } from "@/lib/types";
 
 import "./login.css";
 
-const REQUESTED_ROLE_KEY = "xmum-requested-role";
-const GOOGLE_ROLES = (Object.keys(ROLE_LABELS) as UserRole[]).filter((role) => role !== "freshie");
 
 const DEMO_PRESETS = [
   { label: "Admin", email: "admin.test@xmu.edu.my", pass: "TestPass123!", icon: ShieldCheck },
@@ -38,7 +35,6 @@ function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [requestedRole, setRequestedRole] = useState<UserRole | "">("");
   const [error, setError] = useState<string | null>(
     params.get("error") === "google" ? "Google sign-in did not finish. Try again." : null,
   );
@@ -72,10 +68,8 @@ function LoginForm() {
   }
 
   async function continueWithGoogle() {
-    if (!requestedRole) return;
     setBusy(true);
     setError(null);
-    sessionStorage.setItem(REQUESTED_ROLE_KEY, requestedRole);
     const supabase = supabaseBrowser();
     const { error: oauthError } = await supabase.auth.signInWithOAuth({
       provider: "google",
@@ -107,41 +101,11 @@ function LoginForm() {
               <span className="sl-title-roles">Committee, FACI and GM</span>
               <span className="sl-title-login">Login</span>
             </h1>
-            <p className="sl-lead">Continue with Google or sign in with your campus email.</p>
+            <p className="sl-lead">Sign in with your campus email or continue with Google.</p>
 
           </header>
 
           <form onSubmit={onSubmit} className="sl-card">
-            <div className="sl-google">
-              <label className="sl-label" htmlFor="google-role">
-                Your role for Google login
-              </label>
-              <select
-                id="google-role"
-                className="sl-input sl-select"
-                value={requestedRole}
-                onChange={(e) => setRequestedRole(e.target.value as UserRole | "")}
-              >
-                <option value="">Choose a role</option>
-                {GOOGLE_ROLES.map((role) => (
-                  <option key={role} value={role}>
-                    {ROLE_LABELS[role]}
-                  </option>
-                ))}
-              </select>
-              <button
-                type="button"
-                disabled={busy || !requestedRole}
-                onClick={continueWithGoogle}
-                className="sl-google-btn"
-              >
-                <GoogleLogo />
-                Continue with Google
-              </button>
-            </div>
-
-            <p className="sl-divider">or use your campus email</p>
-
             {error && (
               <p className="sl-error" role="alert">
                 {error}
@@ -196,6 +160,18 @@ function LoginForm() {
               ) : (
                 "Sign in"
               )}
+            </button>
+
+            <p className="sl-divider sl-or">or</p>
+
+            <button
+              type="button"
+              disabled={busy}
+              onClick={continueWithGoogle}
+              className="sl-google-btn"
+            >
+              <GoogleLogo />
+              Continue with Google
             </button>
 
             <div className="sl-actions">

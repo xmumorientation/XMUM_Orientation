@@ -442,7 +442,7 @@ export default function AdminUsersPage() {
                           <option value="">No station</option>
                           {stations.map((s) => (
                             <option key={s.id} value={s.id}>
-                              {s.code}
+                              {s.name} · Day {s.day} · {s.code}
                             </option>
                           ))}
                         </select>
@@ -573,7 +573,7 @@ export default function AdminUsersPage() {
                   <option value="">No station yet</option>
                   {stations.map((s) => (
                     <option key={s.id} value={s.id}>
-                      {s.code} · {s.name}
+                      {s.name} · Day {s.day} · {s.code}
                     </option>
                   ))}
                 </select>

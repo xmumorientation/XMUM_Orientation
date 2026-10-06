@@ -1,5 +1,5 @@
-/* Token control (/token for GM, HOGM, HOF, Committee and /admin/token) on the
-   dark staff design. Readability only: 16px fields so iOS does not zoom,
+/* Token control (TokenControl: /token scoreboard for staff and /admin/token)
+   on the dark staff design. Readability only: 16px fields so iOS does not zoom,
    44px tap targets, 14px labels, dark selects, light text on navy. */
 .tk { color: #eef5ff; }
 

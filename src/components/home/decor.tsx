@@ -1,6 +1,9 @@
 "use client";
 
-import { useEffect, useState, type CSSProperties } from "react";
+import type { CSSProperties } from "react";
+
+import { countdownParts, useEventCountdown } from "@/components/useEventCountdown";
+
 import { FONT } from "./data";
 
 export function StarSparkle({
@@ -118,24 +121,10 @@ export function Glow({ size, color, style = {} }: { size: number | string; color
   return <div className="vx-glow" aria-hidden style={{ width: size, height: size, background: color, ...style }} />;
 }
 
+/** Event countdown: D-day, then the live game phase. See useEventCountdown. */
 export function Countdown() {
-  const calc = () => {
-    const diff = new Date("2026-11-28T08:00:00+08:00").getTime() - Date.now();
-    if (diff <= 0) return { d: 0, h: 0, m: 0, s: 0 };
-    return {
-      d: Math.floor(diff / 86400000),
-      h: Math.floor((diff % 86400000) / 3600000),
-      m: Math.floor((diff % 3600000) / 60000),
-      s: Math.floor((diff % 60000) / 1000),
-    };
-  };
-  // Start null to keep SSR/CSR markup identical, then hydrate on the client.
-  const [t, setT] = useState<ReturnType<typeof calc> | null>(null);
-  useEffect(() => {
-    setT(calc());
-    const i = setInterval(() => setT(calc()), 1000);
-    return () => clearInterval(i);
-  }, []);
+  const { label, seconds, paused } = useEventCountdown();
+  const t = countdownParts(seconds);
 
   const pad = (n: number) => String(n).padStart(2, "0");
   const units = [
@@ -146,7 +135,9 @@ export function Countdown() {
   ];
 
   return (
-    <div className="vx-count" role="timer" aria-label="Time until orientation begins" aria-atomic="true" aria-live="off">
+    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+    <div className="vx-count-label vx-mono">{label}</div>
+    <div className="vx-count" role="timer" aria-label={label.toLowerCase()} aria-atomic="true" aria-live="off" data-paused={paused || undefined}>
       {units.map((u, i) => (
         <div key={u.label} className="vx-count-cell vx-ticket">
           <b className="vx-num" style={{ color: i === 0 ? "var(--vx-cyan)" : "#fff" }}>
@@ -155,6 +146,7 @@ export function Countdown() {
           <span className="vx-mono">{u.label}</span>
         </div>
       ))}
+    </div>
     </div>
   );
 }

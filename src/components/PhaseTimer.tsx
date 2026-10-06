@@ -43,7 +43,9 @@ export function PhaseTimer({ compact = false }: { compact?: boolean }) {
       <span className="tabular-nums">
         {current.state === "paused"
           ? `paused · ${formatCountdown(remaining)}`
-          : formatCountdown(remaining)}
+          : current.ends_at
+            ? formatCountdown(remaining)
+            : "live"}
       </span>
     </div>
   );

@@ -214,17 +214,6 @@
   clip-path: inset(0 50% 0 0);
 }
 
-.sl-google {
-  margin-bottom: 1rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid var(--sl-line);
-}
-
-.sl-select {
-  color-scheme: dark;
-  cursor: pointer;
-}
-
 .sl-google-btn {
   display: inline-flex;
   align-items: center;
@@ -526,6 +515,7 @@
 /* Compact mobile login hierarchy. */
 .sl-title-clean { font-family: var(--font-nexus-body), Outfit, system-ui, sans-serif; font-size: 28px; line-height: 1.2; letter-spacing: -0.02em; }
 .sl-divider { margin: 0; text-align: center; color: var(--sl-text-2); font-size: 14px; }
+.sl-or { margin-top: 0.85rem; }
 .sl-demo-details { margin-top: 20px; color: var(--sl-text-2); font-size: 14px; }
 .sl-demo-details > summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; justify-content: center; text-decoration: underline; }
 .sl-demo-details .sl-demo { margin-top: 8px; }

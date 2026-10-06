@@ -70,7 +70,7 @@ const NAV: NavItem[] = [
   { href: "/gm", label: "Station", code: "GM", roles: ["gm", "guardian_gm"] },
   {
     href: "/token",
-    label: "Token System",
+    label: "Scoreboard",
     code: "TK",
     roles: ["gm", "guardian_gm", "hof", "hogm", "committee"],
   },

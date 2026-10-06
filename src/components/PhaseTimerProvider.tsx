@@ -80,6 +80,21 @@ export function PhaseTimerProvider({ children }: { children: React.ReactNode }) 
     };
   }, [supabase]);
 
+  // A game whose time is up ends now (closing its stations), rather than at
+  // the database's next minute check (fn_game_expire, migration 0052).
+  const expired = useRef(new Set<string>());
+  useEffect(() => {
+    const serverNow = Date.now() + offsetMs;
+    const due = phases.find(
+      (p) => p.state === "active" && p.ends_at && new Date(p.ends_at).getTime() <= serverNow
+    );
+    if (!due) return;
+    const key = `${due.id}-${due.ends_at}`;
+    if (expired.current.has(key)) return;
+    expired.current.add(key);
+    void supabase.rpc("fn_game_expire");
+  }, [phases, offsetMs, tick, supabase]);
+
   const value = useMemo(
     () => ({ phases, offsetMs, tick }),
     [phases, offsetMs, tick]
@@ -97,4 +112,10 @@ export function usePhaseTimer(): PhaseTimerValue {
   if (!v)
     throw new Error("usePhaseTimer must be used inside PhaseTimerProvider");
   return v;
+}
+
+// For components that also render outside the app shell (the public Welcome
+// page has no provider). Returns null there.
+export function usePhaseTimerOptional(): PhaseTimerValue | null {
+  return useContext(PhaseTimerContext);
 }

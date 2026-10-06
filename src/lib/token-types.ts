@@ -9,16 +9,6 @@ export type TransactionType =
   | "MANUAL_ADMIN_ADJUST"
   | "SYSTEM_RESET";
 
-export interface TokenPreset {
-  id: string;
-  name: string;
-  amount: number; // positive number (e.g. 1, 2, 4, 5, 6)
-  action: "add" | "deduct";
-  defaultNote: string;
-  tag?: string; // e.g. "Day 1", "Day 2", "Bonus", "Penalty"
-  icon?: string;
-}
-
 export interface TokenGroup {
   group_id: number;
   group_name: string;
@@ -78,63 +68,30 @@ export const DEFAULT_RULES: GameConfigRule[] = [
   { rule_id: 5, day: 2, rule_key: "HARD_COST", rule_value: 6, description: "Entry fee for Hard station in Day 2" },
 ];
 
-export const DEFAULT_TOKEN_PRESETS: TokenPreset[] = [
-  {
-    id: "preset_d1_win",
-    name: "Day 1 Win Payout",
-    amount: 2,
-    action: "add",
-    defaultNote: "Day 1 Station Win Payout",
-    tag: "Day 1",
-  },
-  {
-    id: "preset_d1_lose",
-    name: "Day 1 Lose Payout",
-    amount: 1,
-    action: "add",
-    defaultNote: "Day 1 Station Participation Payout",
-    tag: "Day 1",
-  },
-  {
-    id: "preset_d2_easy",
-    name: "Day 2 Easy Entry",
-    amount: 2,
-    action: "deduct",
-    defaultNote: "Day 2 Easy Station Entry Fee",
-    tag: "Day 2",
-  },
-  {
-    id: "preset_d2_med",
-    name: "Day 2 Medium Entry",
-    amount: 4,
-    action: "deduct",
-    defaultNote: "Day 2 Medium Station Entry Fee",
-    tag: "Day 2",
-  },
-  {
-    id: "preset_d2_hard",
-    name: "Day 2 Hard Entry",
-    amount: 6,
-    action: "deduct",
-    defaultNote: "Day 2 Hard Station Entry Fee",
-    tag: "Day 2",
-  },
-  {
-    id: "preset_bonus_cheer",
-    name: "Cheer & Spirit Bonus",
-    amount: 5,
-    action: "add",
-    defaultNote: "Orientation Cheer & Spirit Bonus",
-    tag: "Bonus",
-  },
-  {
-    id: "preset_penalty",
-    name: "Rule Violation Penalty",
-    amount: 2,
-    action: "deduct",
-    defaultNote: "Rule violation penalty",
-    tag: "Penalty",
-  },
+// The five token rules (game_config_rules). Admin sets them on the Token
+// page; the GM Station page and the database read them. Day 2 fees are per
+// station tier (stations.risk_tier), kept in stations.entry_cost.
+export type TokenRuleKey =
+  | "DAY1_WIN_TOKENS"
+  | "DAY1_LOSE_TOKENS"
+  | "EASY_COST"
+  | "MEDIUM_COST"
+  | "HARD_COST";
+
+export const TOKEN_RULES: {
+  key: TokenRuleKey;
+  day: 1 | 2;
+  label: string;
+  hint: string;
+  sign: 1 | -1;
+  min: number;
+  fallback: number;
+}[] = [
+  { key: "DAY1_WIN_TOKENS", day: 1, label: "Win", hint: "GM Day 1 Win button", sign: 1, min: 1, fallback: 2 },
+  { key: "DAY1_LOSE_TOKENS", day: 1, label: "Lose / participation", hint: "GM Day 1 Participation button", sign: 1, min: 1, fallback: 1 },
+  { key: "EASY_COST", day: 2, label: "Easy entry", hint: "Low risk stations", sign: -1, min: 0, fallback: 2 },
+  { key: "MEDIUM_COST", day: 2, label: "Medium entry", hint: "Medium risk stations", sign: -1, min: 0, fallback: 4 },
+  { key: "HARD_COST", day: 2, label: "Hard entry", hint: "High risk stations", sign: -1, min: 0, fallback: 6 },
 ];
 
 export const LOCATION_NAMES: Record<number, { name: string; short: string; code: string }> = {

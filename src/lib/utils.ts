@@ -95,6 +95,13 @@ const ERROR_MESSAGES: Record<string, string> = {
   UNDO_WINDOW_EXPIRED: "The 2-minute undo window has passed.",
   UNDO_WOULD_GO_NEGATIVE: "Undo rejected: it would make the balance negative.",
   NO_STATION_ASSIGNED: "Your account has no station assigned — ask Admin.",
+  SESSION_NOT_OPEN: "This session hasn't been opened yet.",
+  NO_END_TIME: "Set an end time first (here, or the planned end on the Schedule page).",
+  END_TIME_PASSED: "That end time has already passed. Pick a later time.",
+  TIMER_ALREADY_RUNNING: "This timer is already running.",
+  ANOTHER_TIMER_RUNNING: "Another timer is running. End it first.",
+  WRONG_DAY_STATION: "Your station isn't set up for this day — ask Admin.",
+  INVALID_RESULT: "Pick Win or Lose.",
   NEED_TWO_LOCATIONS: "Pick exactly 2 locations for a medium-risk station.",
   NEED_ONE_LOCATION: "Pick exactly 1 location for a high-risk station.",
   POOL_EXHAUSTED:
