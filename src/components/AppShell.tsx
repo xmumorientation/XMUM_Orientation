@@ -287,7 +287,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       <div className="min-w-0">
       {!isNight && (
-      <header className="sticky top-0 z-40 border-b border-paper-200 bg-paper-50 pt-[env(safe-area-inset-top)] shadow-[0_1px_0_rgba(28,26,23,0.03)] lg:hidden">
+      <header className="sticky top-0 z-40 border-b border-paper-200 bg-paper-50/95 pt-[env(safe-area-inset-top)] shadow-[0_1px_0_rgba(28,26,23,0.03)] backdrop-blur lg:hidden">
         {isStaffArea ? <div className="flex items-center justify-between gap-3 px-3 py-2.5 sm:px-5 sm:py-3">
           <Link href="/dashboard" className="font-semibold">Vortexa</Link>
           <div className="flex items-center gap-2"><span className="text-sm">{ROLE_LABELS[profile.role]}</span><button type="button" aria-label="Open menu" onClick={() => setMenuOpen(true)} className="flex h-11 w-11 items-center justify-center"><Menu size={20} aria-hidden /></button></div>
@@ -382,10 +382,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <ShellMenuProvider openMenu={() => setMenuOpen(true)}>
       <main
         className={cn(
-          "mx-auto min-h-dvh w-full px-3 pb-[calc(1.25rem+env(safe-area-inset-bottom))] sm:px-5 sm:pb-8 lg:px-8 lg:py-6",
-          isStaffDashboard
-            ? "pt-[calc(0.75rem+env(safe-area-inset-top,0px))] sm:pt-[calc(1.25rem+env(safe-area-inset-top,0px))]"
-            : "pt-3 sm:pt-5",
+          "mx-auto min-h-dvh w-full px-3 pb-[calc(1.25rem+env(safe-area-inset-bottom))] pt-3 sm:px-5 sm:pb-8 sm:pt-5 lg:px-8 lg:py-6",
           isAdmin ? "max-w-[96rem]" : "max-w-6xl",
           showTabBar &&
             "pb-[calc(6.5rem+env(safe-area-inset-bottom))] sm:pb-[calc(6.5rem+env(safe-area-inset-bottom))]"

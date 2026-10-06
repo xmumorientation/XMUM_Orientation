@@ -214,6 +214,9 @@ Full background: the "Issues Found" section in [permission-matrix.md](permission
 ## Done
 
 ### David, 2026-10-06
+- Safari bands follow-up: the closed Welcome menu backdrop stays `display: none` until it opens, so it cannot tint the toolbar. The staff dashboard header pads below the status bar. Staff uses the shell navy `#030b1c`; Welcome and login stay `#07060b`. Light pages keep the paper background.
+
+### David, 2026-10-06
 - iPhone Safari was showing white bands above the header and below the tab bar. Safari 26 takes that colour from the page background and ignores theme-color; the root was still the light paper colour, and the blurred bars are not sampled. Dark pages now paint the root with their own dark background, and the staff dashboard keeps its content below the status bar.
 
 ### David, 2026-10-06
