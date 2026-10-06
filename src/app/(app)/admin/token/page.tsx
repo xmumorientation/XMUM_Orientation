@@ -54,6 +54,8 @@ import {
 } from "@/lib/token-types";
 import { cn } from "@/lib/utils";
 
+import "./token-control.css";
+
 export default function AdminTokenAllInOnePage() {
   const profile = useProfile();
   const isAdmin = profile.role === "admin";
@@ -487,7 +489,7 @@ export default function AdminTokenAllInOnePage() {
   };
 
   return (
-    <div className="space-y-6 pb-6" aria-busy={loading}>
+    <div className="tk space-y-6 pb-6" aria-busy={loading}>
       {/* ── Top Header & Global Actions ────────────────────────────────────────── */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -629,9 +631,10 @@ export default function AdminTokenAllInOnePage() {
                   setTokenAmount(Math.max(1, Number(e.target.value)));
                   setActivePresetId(null);
                 }}
-                className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2.5 text-base font-black text-amber-300 focus:border-amber-500 focus:outline-none shadow-inner tabular-nums"
+                className="w-full rounded-xl border border-slate-700 bg-slate-950 py-2.5 pl-3.5 pr-24 text-base font-black text-amber-300 focus:border-amber-500 focus:outline-none shadow-inner tabular-nums"
               />
-              <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-500">
+              {/* Sits left of the number spinner so the two never overlap. */}
+              <span className="pointer-events-none absolute right-10 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">
                 tokens
               </span>
             </div>
@@ -803,6 +806,8 @@ export default function AdminTokenAllInOnePage() {
               ].map((s) => (
                 <button
                   key={s.id}
+                  type="button"
+                  aria-pressed={scoreSortBy === s.id}
                   onClick={() => setScoreSortBy(s.id as any)}
                   className={cn(
                     "px-3 py-1 text-xs font-bold rounded-lg transition-all",

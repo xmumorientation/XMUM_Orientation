@@ -238,11 +238,11 @@ function StaffSchedule() {
                       )}
                     </div>
                     {isAdmin && (
-                      <div className="flex shrink-0 gap-2">
+                      <div className="-my-2 flex shrink-0 gap-1">
                         <button
                           type="button"
                           onClick={() => startEdit(i)}
-                          className="text-ink-soft"
+                          className="grid h-11 w-11 place-items-center rounded-lg text-ink-soft"
                           aria-label={`Edit ${i.title}`}
                         >
                           <Pencil size={16} strokeWidth={1.75} />
@@ -250,7 +250,7 @@ function StaffSchedule() {
                         <button
                           type="button"
                           onClick={() => remove(i.id)}
-                          className="text-red-500"
+                          className="grid h-11 w-11 place-items-center rounded-lg text-red-500"
                           aria-label={`Delete ${i.title}`}
                         >
                           <Trash2 size={16} strokeWidth={1.75} />

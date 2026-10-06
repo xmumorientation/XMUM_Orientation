@@ -214,6 +214,11 @@ Full background: the "Issues Found" section in [permission-matrix.md](permission
 ## Done
 
 ### David, 2026-10-06
+- Committee, Faci, GM pages share the dark navy design on mobile and desktop: /dashboard, /committee, /gm, /guardian, /schedule, /attendance, /checkin, /code, /token and Ops. The map and Items pages keep their own design. Subpages get a top bar with a back link to Home, the role name and one menu button on the right; the side menu now highlights the current page.
+- Token control (/token and /admin/token): 16px inputs, 44px targets, 14px labels, dark selects, and the "tokens" suffix no longer overlaps the number arrows.
+- GM: darker green buttons for readable white text, sticky group card sits below the new top bar. Faci: lighter group colour text and the checklist lines up with the other blocks. Stale timestamp and status colours readable on dark. Schedule edit and delete buttons are 44px. UI only, behaviour unchanged.
+
+### David, 2026-10-06
 - Increased staff-menu outside dimming to 88%. Prepared the approved Vortexa UI/dashboard/admin performance work for a local main commit. Unrelated pre-existing notes and separate event-name/migration edits are excluded; no push requested.
 
 ### David, 2026-10-06
