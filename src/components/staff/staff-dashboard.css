@@ -5,7 +5,7 @@
 .staff-dashboard-shell > aside nav a:hover { background: #0b2246; color: #fff; }
 .staff-dashboard-shell > aside nav a[href="/dashboard"] { background: #0b2246; color: #0dfcfd; }
 .sd { position: relative; min-height: calc(100dvh - 40px); max-width: 900px; margin: auto; padding: 0 4px 24px; font-family: var(--font-nexus-body), Outfit, sans-serif; background: radial-gradient(ellipse at 100% 0, color-mix(in srgb, var(--fh-glow) 9%, transparent), transparent 45%); }
-.sd-header { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 8px 0 24px; }
+.sd-header { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: calc(8px + env(safe-area-inset-top, 0px)) 0 24px; }
 .sd-header > img { width: 88px; height: auto; }
 .sd-header > div { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--fh-text-2); }
 .sd-header button { display: grid; place-items: center; width: 44px; height: 44px; border: 0; border-radius: 10px; background: transparent; color: var(--fh-text); }

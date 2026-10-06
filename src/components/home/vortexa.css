@@ -278,21 +278,16 @@ html.vx-snap { scroll-snap-type: y mandatory; }
     background: rgba(7, 6, 11, 0.96);
   }
   .vx-menu-backdrop {
-    display: block;
     position: fixed;
     inset: 0;
     z-index: 55;
     background: rgba(3, 2, 6, 0.72);
     -webkit-backdrop-filter: blur(12px);
     backdrop-filter: blur(12px);
-    opacity: 0;
     pointer-events: none;
-    transition: opacity 0.22s cubic-bezier(0.16, 1, 0.3, 1),
-                backdrop-filter 0.22s cubic-bezier(0.16, 1, 0.3, 1),
-                -webkit-backdrop-filter 0.22s cubic-bezier(0.16, 1, 0.3, 1);
   }
   .vx-menu-backdrop[data-open="true"] {
-    opacity: 1;
+    display: block;
     pointer-events: auto;
   }
   .vx-nav-row { padding: 0 12px 0 16px; }
