@@ -55,12 +55,19 @@ export default function OrientationHome() {
   useEffect(() => {
     const els = STOPS.map((s) => document.getElementById(s.id)).filter((el): el is HTMLElement => !!el);
 
-    const current = new IntersectionObserver(
-      (entries) => {
-        for (const e of entries) if (e.isIntersecting) setActive(e.target.id as StopId);
-      },
-      { rootMargin: "-45% 0px -50% 0px", threshold: 0 }
-    );
+    let frame = 0;
+    const updateCurrent = () => {
+      const anchor = window.innerHeight * 0.35;
+      const section = [...els].reverse().find(el => el.getBoundingClientRect().top <= anchor) ?? els[0];
+      if (section) setActive(section.id as StopId);
+    };
+    const onScroll = () => {
+      if (frame) return;
+      frame = requestAnimationFrame(() => { frame = 0; updateCurrent(); });
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    updateCurrent();
     const seen = new IntersectionObserver(
       (entries) => {
         for (const e of entries) {
@@ -74,11 +81,12 @@ export default function OrientationHome() {
     );
 
     els.forEach((el) => {
-      current.observe(el);
       seen.observe(el);
     });
     return () => {
-      current.disconnect();
+      cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
       seen.disconnect();
     };
   }, []);

@@ -1,11 +1,11 @@
 "use client";
 
 import * as Dialog from "@radix-ui/react-dialog";
-import { History, Info, KeyRound, Lock, MapPin, Nfc, X } from "lucide-react";
+import { Clock3, History, Info, KeyRound, Lock, MapPin, Nfc, X } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
-import { vxSlab } from "@/components/home/fonts";
+import { vxSlab, vxDisplay, nexusBody } from "@/components/home/fonts";
 import { PROJECTOR_LABELS, type ProjectorLocation } from "@/lib/types";
 
 import "../freshie.css";
@@ -34,7 +34,6 @@ export function FreshieItems({
   groupColor,
   canOpenBoxes,
   onOpenBox,
-  sample = false,
 }: {
   data: ItemsData;
   groupColor: string | null | undefined;
@@ -75,7 +74,7 @@ export function FreshieItems({
   }
 
   return (
-    <div className={`fh fi ${vxSlab.variable}`} style={themeVars}>
+    <div className={`fh fi ${vxSlab.variable} ${vxDisplay.variable} ${nexusBody.variable}`} style={themeVars}>
       <div className="fh-bg" aria-hidden>
         <div className="fh-glow" style={{ width: 380, height: 380, background: "var(--fh-glow)", left: -150, top: 40, opacity: 0.32 }} />
         <div className="fh-glow" style={{ width: 280, height: 280, background: "#FE06AB", right: -140, bottom: 80, opacity: 0.14 }} />
@@ -83,22 +82,15 @@ export function FreshieItems({
 
       <header className="fi-top">
         <div className="fi-top-row">
-          <span className="fi-group">
-            <i aria-hidden />
-            {data.group.name}
-            {sample && <span className="fi-sample fh-mono">Sample data</span>}
-          </span>
-          <span className="fi-phase fh-mono" data-phase={data.phase}>
-            {PHASE_LABEL[data.phase]}
-            {data.timeLeft ? ` · ${data.timeLeft}` : ""}
-          </span>
-        </div>
-        <div className="fi-top-row">
           <h1 className="fh-slab">Items</h1>
           <button type="button" className="fi-activity-btn" onClick={() => setActivityOpen(true)}>
             <History size={16} aria-hidden />
             Activity
           </button>
+        </div>
+        <div className="fi-game-status" data-phase={data.phase}>
+          <span>{PHASE_LABEL[data.phase]}</span>
+          {data.timeLeft && <span className="fi-game-clock"><Clock3 size={15} aria-hidden /><strong>{data.timeLeft}</strong><span>left to play</span></span>}
         </div>
       </header>
 

@@ -18,7 +18,7 @@ export const dynamic = "force-dynamic";
 type RedeemBody = { code?: unknown; redirect?: unknown };
 
 /**
- * Redeem a wristband/ticket group code → httpOnly signed pass cookie.
+ * Redeem a wristband ticket group code → httpOnly signed pass cookie.
  *
  * POST JSON { code: string, redirect?: boolean }
  * GET  ?code=...&redirect=1  (QR deep-link; redirects to /group/{id})
@@ -32,7 +32,7 @@ async function redeem(code: string, wantsRedirect: boolean, req: NextRequest) {
     const err = {
       error: "invalid_code",
       message:
-        "That code isn’t recognised. Use the wristband or ticket QR from check-in.",
+        "That code isn’t recognised. Use the wristband ticket QR from check-in.",
     };
     if (wantsRedirect) {
       const url = req.nextUrl.clone();

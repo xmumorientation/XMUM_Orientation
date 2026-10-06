@@ -204,7 +204,7 @@ export default function FreshieControlPage() {
 
       {groups.length > 0 && (
         <Card className="overflow-x-auto p-0">
-          <table className="w-full min-w-[640px] text-left text-sm">
+          <table className="av-groups w-full min-w-[640px] text-left text-sm">
             <thead>
               <tr className="border-b border-paper-200 text-xs font-bold uppercase tracking-wide text-ink-faint">
                 <th className="w-16 px-4 py-3 text-center">No.</th>
@@ -241,7 +241,7 @@ export default function FreshieControlPage() {
                         <p className="text-xs italic text-ink-faint">No slogan yet</p>
                       )}
                     </td>
-                    <td className="px-4 py-3">
+                    <td data-label="Password" className="px-4 py-3">
                       {codes[group.id] ? (
                         <span className="rounded-lg bg-paper-100 px-2.5 py-1 font-mono text-lg font-bold tracking-[0.2em] text-ink">
                           {codes[group.id]}
@@ -250,7 +250,7 @@ export default function FreshieControlPage() {
                         <span className="text-xs italic text-ink-faint">None</span>
                       )}
                     </td>
-                    <td className="px-4 py-3">
+                    <td data-label="Colour" className="px-4 py-3">
                       <div className="flex items-center gap-2">
                         <input
                           type="color"
@@ -269,7 +269,7 @@ export default function FreshieControlPage() {
                         </button>
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-right">
+                    <td data-label="QR code" className="px-4 py-3 text-right">
                       {codes[group.id] && (
                         <button
                           type="button"
@@ -297,7 +297,7 @@ export default function FreshieControlPage() {
           if (!open) setResetText("");
         }}
       >
-        <DialogContent
+        <DialogContent className="av-dialog"
           title="Delete all groups?"
           description="This deletes all groups with their tokens, puzzles, headcounts, passwords and QR codes. Facilitators and Freshies lose their group. This cannot be undone."
         >
@@ -331,7 +331,7 @@ export default function FreshieControlPage() {
 
       <Dialog open={preview != null} onOpenChange={(open) => !open && setPreviewId(null)}>
         {preview && (
-          <DialogContent title={`${preview.name} QR`}>
+          <DialogContent className="av-dialog" title={`${preview.name} QR`}>
             {/* eslint-disable-next-line @next/next/no-img-element -- local data URL */}
             <img
               src={qrFiles[preview.id]}

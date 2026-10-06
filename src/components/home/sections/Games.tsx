@@ -25,7 +25,7 @@ export function Games() {
       <div className="vx-inner">
         <div className="vx-games-head vx-rise">
           <h2 id="games-title" className="vx-h2">How the game works</h2>
-          <p className="vx-lead">What do you actually do during Orientation? Four steps, played as a team.</p>
+          <p className="vx-lead">Four steps. One team.</p>
         </div>
 
         <ol className="vx-steps vx-rise-2">
@@ -46,10 +46,6 @@ export function Games() {
           })}
         </ol>
 
-        <p className="vx-games-note vx-rise-3">
-          Throughout the campus, Game Masters run challenge stations. Freshies team up with facilitators to conquer physical
-          and mental challenges, earn tokens and puzzle pieces, and lift their team on the live orientation scoreboard.
-        </p>
       </div>
     </section>
   );

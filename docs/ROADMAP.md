@@ -213,6 +213,68 @@ Full background: the "Issues Found" section in [permission-matrix.md](permission
 
 ## Done
 
+### David, 2026-10-06
+- Increased staff-menu outside dimming to 88%. Prepared the approved Vortexa UI/dashboard/admin performance work for a local main commit. Unrelated pre-existing notes and separate event-name/migration edits are excluded; no push requested.
+
+### David, 2026-10-06
+- Staff menu close moves to the right, matching the trigger side; menu outside area uses a 72% black overlay. Ambient dashboard background fills the shell, with responsive content checked at 320/393/768/1280px (no horizontal overflow).
+- Admin Token refresh shares the inventory read, merges in-flight requests and batches realtime bursts, with a 30-second visible-only fallback and immediate post-action refresh. Added sync feedback and admin route loading UI. Network baseline: 15 REST requests over 8 seconds idle; after settled load, 0 over 8.5 seconds. A refresh batch now has four reads rather than five. Mutation/realtime burst behavior and physical-device click latency remain unverified.
+
+### David, 2026-10-06
+- Public background now descends from rocket/planets and sparse stars through aircraft/clouds into park balloons, booths and path lights. Celestial stars end before the park region. Added lightweight static SVG decorations; existing content and wheel motion retained.
+
+### David, 2026-10-06
+- Staff menu uses a compact top sheet without monogram; dashboard logo reduced and footer centred. Freshie return link matches the staff outlined button. Admin surfaces and shared navigation adopt Vortexa typography/dark palette; mobile group table becomes labelled per-group cards. Existing admin actions and confirmations preserved. Preview checks are read-only; no phase or group mutations performed.
+
+### David, 2026-10-06
+- Reverted the last public progress/entrance animation adjustment on request. Progress markup remains in SiteNav.tsx, styles in vortexa.css, section tracking in OrientationHome.tsx.
+- Added a shared Vortexa staff dashboard for Faci, GM/Guardian, Committee/HOF/HOGM and Admin, with role-specific primary actions and existing navigation. Faci checklist forms and backend submission logic reused. Dashboard sidebar/drawer follows the dark palette. Admin mobile view and menu interaction checked; other role views and physical devices remain unverified. No commit or push.
+
+### David, 2026-10-06
+- Removed the login Sign-in required badge and Items group/sample header row on request; inventory still uses sample data. Schedule dates use commas. Public stopbar progress now follows scroll with a transform rather than a delayed width transition; mobile entrance rise animations removed. Physical-device scroll performance remains unverified.
+
+### David, 2026-10-06
+- Schedule restored directly from the original Git version, with only the display heading font added. Freshie account trigger now shows Freshie to avoid repeating group identity. Items timer moved beneath the title into a single phase/status row; sample data and animations preserved.
+
+### David, 2026-10-06
+- Restored Schedule card/timeline and filled day tabs, retaining the display heading and keyboard navigation. Dashboard partner logos use a quiet strip with accessible role labels. Items sample label uses the shared body font; phase time has an explicit game-time caption. Inventory timer remains sample data.
+
+### David, 2026-10-06
+- Removed Freshie account border and duplicate greeting. Rules show directly; small organiser/sponsor credits now sit beneath the arrival area. Schedule uses plain date tabs with keyboard navigation and a single unconfirmed-times notice. Items keeps animations and structure with shared fonts and plain phase/activity controls. Group avatar upload is a proposal only.
+
+### David, 2026-10-06
+- Mobile polish: reserved space for the public ferris wheel, moved scoreboard sparkle upward, made section tracking deterministic and removed conflicting scroll snapping. Login has more top space and plain footer wording.
+- Freshie header now has one group menu instead of role pill plus gradient avatar; guide opens from a labelled disclosure. Dashboard uses production copy while Items retains its real sample-data marker. Schedule switches to a simple programme list and scanner copy is shortened.
+
+### David, 2026-10-06
+- Freshie dashboard trial: compact group-colour arrival, live phase timer, shared database schedule with retry state, map action, real token balance, shortcuts and lower-page scoreboard. Rules collapse and sponsor credits move down; Items is explicitly a demo. Faci checklist/home preserved.
+- Removed Freshie full-screen stops and observer work; below-fold sections use content visibility. Scoreboard retains realtime updates with a 30-second foreground-only reconciliation interval instead of unconditional 4-second polling. Click latency root cause and real-device improvement remain unverified. Backups: /private/tmp/FreshieHome-before-redesign.tsx and /private/tmp/freshie-before-redesign.css.
+
+### David, 2026-10-06
+- Moved the upper yellow star left, changed check-in device guidance and removed the redundant note. Simplified scoreboard empty-state copy and standardized wristband ticket wording in source text. Web-app icons now use the supplied square Vortexa artwork; existing transparent page logos depict the same identity.
+
+### David, 2026-10-06
+- Removed the rejected Welcome coaster trails, keeping the continuous space-to-park background and adding one small static rocket in the upper sky. Freshie login keeps its layout with shared theme lettering and Back to Welcome copy.
+
+### David, 2026-10-06
+- Removed Welcome Scroll hint and its measurement effect, restored theme lettering for Welcome To, and added static neon coaster trails behind the hero. Games keeps four steps and drops duplicate explanatory prose.
+- Set root/home metadata and web-app manifest to Vortexa with description XMUM 26/12 Orientation. Generated square PNG icons from the existing Vortexa logo and replaced the old route icon. Local changes only.
+
+### David, 2026-10-06
+- Welcome visual trial: theme-font section headings, readable Outfit supporting text, sparser stars without the repeating dot grid, and proximity scrolling on mobile. Schedule and Scoreboard can grow with content. Previous background/CSS saved in /private/tmp/xmum-welcome-before-trial for review.
+- Removed login logo and changed role copy to "Committee, FACI and GM". Trial remains local pending visual review.
+
+### David, 2026-10-06
+- Login-only visual trial: Vortexa logo, compact role line and cyan theme-font Login heading; quieter background glow. Previous login files backed up at /private/tmp/xmum-login-before-trial. Full-site rollout awaits visual review.
+
+### David, 2026-10-06
+- Reordered public mobile navigation to Home, Schedule, Games, Score. Simplified Committee FACI GM login to one heading, removed decorative role chips, updated campus-email and Committee invitation copy, and moved demo presets into a collapsed section below the main form. Authentication behavior unchanged.
+
+### David, 2026-10-06
+- Welcome UI polish: removed duplicate local stars/glows and the theme introduction, tightened slogan spacing, and added a line break before Discover. Removed the decorative sparkle behind the Schedule tabs.
+- Unified login entry labels as "Committee FACI GM login" across the welcome navigation, chooser, footer, check-in copy and login heading.
+- Verified TypeScript and a 393px browser preview. Broader welcome/login background redesign remains open; changes are local and have not been committed or pushed.
+
 When you finish something, add a few lines here: your name, the date, and the main points of what you did and what is left. Newest at the top.
 
 ### Ben, 2026-10-06

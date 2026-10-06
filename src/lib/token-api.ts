@@ -108,12 +108,12 @@ export async function saveTokenPresets(presets: TokenPreset[]): Promise<{ ok: bo
 
 // ── Read APIs ─────────────────────────────────────────────────────────────
 
-export async function fetchTokenGroups(): Promise<TokenGroup[]> {
+export async function fetchTokenGroups(inventory?: Promise<PuzzleInventoryItem[]>): Promise<TokenGroup[]> {
   const supabase = supabaseBrowser();
   try {
     const [{ data: groupsData, error: gErr }, { data: invData, error: iErr }] = await Promise.all([
       supabase.from("groups").select("*").order("id"),
-      supabase.from("puzzle_inventory").select("*"),
+      inventory ? inventory.then(data => ({ data, error: null })) : supabase.from("puzzle_inventory").select("*"),
     ]);
 
     if (!gErr && groupsData && groupsData.length > 0) {

@@ -6,7 +6,6 @@ import {
   Eye,
   EyeOff,
   Gamepad2,
-  Lock,
   ShieldCheck,
   Sparkles,
   Users,
@@ -104,31 +103,18 @@ function LoginForm() {
       <div className="sl-shell">
         <div className="sl-panel">
           <header className="sl-brand">
-            <p className="sl-eyebrow">Staff Login</p>
-            <h1 className="sl-title">
-              Committee · <span className="sl-holo">Facilitator</span> · GM
+            <h1 className="sl-title sl-title-trial">
+              <span className="sl-title-roles">Committee, FACI and GM</span>
+              <span className="sl-title-login">Login</span>
             </h1>
-            <p className="sl-lead">
-              Sign in with your staff email to open the orientation control room.
-              Freshie check-in lives on the Welcome page — not here.
-            </p>
-            <div className="sl-roles" aria-label="Staff roles">
-              <span className="sl-role">Committee</span>
-              <span className="sl-role">Facilitator</span>
-              <span className="sl-role">GM</span>
-              <span className="sl-role">HOF</span>
-            </div>
-            {nextUrl && (
-              <span className="sl-gate">
-                <Lock size={12} aria-hidden /> Sign-in required
-              </span>
-            )}
+            <p className="sl-lead">Continue with Google or sign in with your campus email.</p>
+
           </header>
 
           <form onSubmit={onSubmit} className="sl-card">
             <div className="sl-google">
               <label className="sl-label" htmlFor="google-role">
-                Continue with Google
+                Your role for Google login
               </label>
               <select
                 id="google-role"
@@ -154,35 +140,7 @@ function LoginForm() {
               </button>
             </div>
 
-            {/* DEMO ONLY — disable one-click presets before production. */}
-            <div className="sl-demo">
-              <div className="sl-demo-head">
-                <span className="sl-demo-title">
-                  <Sparkles size={14} aria-hidden />
-                  Demo Quick Login
-                </span>
-              </div>
-              <p className="sl-demo-note">
-                Demo only — turn off before production.
-              </p>
-              <div className="sl-demo-row">
-                {DEMO_PRESETS.map((p) => {
-                  const Icon = p.icon;
-                  return (
-                    <button
-                      key={p.label}
-                      type="button"
-                      disabled={busy}
-                      onClick={() => applyPreset(p.email, p.pass)}
-                      className="sl-chip"
-                    >
-                      <Icon size={14} aria-hidden />
-                      <span>{p.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+            <p className="sl-divider">or use your campus email</p>
 
             {error && (
               <p className="sl-error" role="alert">
@@ -192,7 +150,7 @@ function LoginForm() {
 
             <div className="sl-field">
               <label className="sl-label" htmlFor="email">
-                Staff email
+                Campus Email
               </label>
               <input
                 id="email"
@@ -247,12 +205,46 @@ function LoginForm() {
               </Link>
               <div className="sl-links">
                 <Link href="/forgot-password">Forgot password?</Link>
-                <Link href="/activate">Staff invite activation</Link>
+                <Link href="/activate">Committee invite activation</Link>
               </div>
             </div>
           </form>
 
-          <p className="sl-foot">XMUM · Official Orientation Platform</p>
+          <details className="sl-demo-details">
+            <summary>Demo Quick Login</summary>
+            {/* DEMO ONLY — disable one-click presets before production. */}
+            <div className="sl-demo">
+              <div className="sl-demo-head">
+                <span className="sl-demo-title">
+                  <Sparkles size={14} aria-hidden />
+                  Demo Quick Login
+                </span>
+              </div>
+              <p className="sl-demo-note">
+                Demo only — turn off before production.
+              </p>
+              <div className="sl-demo-row">
+                {DEMO_PRESETS.map((p) => {
+                  const Icon = p.icon;
+                  return (
+                    <button
+                      key={p.label}
+                      type="button"
+                      disabled={busy}
+                      onClick={() => applyPreset(p.email, p.pass)}
+                      className="sl-chip"
+                    >
+                      <Icon size={14} aria-hidden />
+                      <span>{p.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+          </details>
+
+          <p className="sl-foot">XMUM Orientation Platform</p>
         </div>
       </div>
     </div>

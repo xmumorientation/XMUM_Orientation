@@ -25,7 +25,7 @@ import {
   Users,
   Zap,
 } from "lucide-react";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Card, PageTitle } from "@/components/ui";
 import { useProfile } from "@/components/ProfileProvider";
@@ -113,42 +113,65 @@ export default function AdminTokenAllInOnePage() {
   const [auditTypeFilter, setAuditTypeFilter] = useState<string>("all");
   const [auditSearchQuery, setAuditSearchQuery] = useState<string>("");
 
-  // ── Data Loader ───────────────────────────────────────────────────────────
-  const loadAllData = useCallback(async () => {
-    try {
-      const [gData, lData, iData, pData] = await Promise.all([
-        fetchTokenGroups(),
-        fetchTokenLogs(),
-        fetchPuzzleInventory(),
-        fetchTokenPresets(),
-      ]);
-      setGroups(gData);
-      setLogs(lData);
-      setInventory(iData);
-      if (pData && pData.length > 0) setPresets(pData);
-    } catch (e: any) {
-      console.error("Error loading token data:", e);
-    } finally {
-      setLoading(false);
+  // A refresh is shared across callers; a change during a request queues one fresh pass.
+  const refreshInFlight = useRef<Promise<void> | null>(null);
+  const refreshQueued = useRef(false);
+  const mounted = useRef(false);
+  const loadAllData = useCallback((freshAfterFlight = false): Promise<void> => {
+    if (refreshInFlight.current) {
+      if (freshAfterFlight) refreshQueued.current = true;
+      return refreshInFlight.current;
     }
+    setLoading(true);
+    const request = (async () => {
+      do {
+        refreshQueued.current = false;
+        try {
+          const inventoryRequest = fetchPuzzleInventory();
+          const [gData, lData, iData, pData] = await Promise.all([
+            fetchTokenGroups(inventoryRequest), fetchTokenLogs(), inventoryRequest, fetchTokenPresets(),
+          ]);
+          if (!mounted.current) return;
+          setGroups(gData);
+          setLogs(lData);
+          setInventory(iData);
+          if (pData.length > 0) setPresets(pData);
+        } catch (error: unknown) {
+          console.error("Error loading token data:", error);
+        }
+      } while (refreshQueued.current && mounted.current);
+    })();
+    refreshInFlight.current = request;
+    void request.finally(() => { refreshInFlight.current = null; if (mounted.current) setLoading(false); });
+    return request;
   }, []);
 
   useEffect(() => {
-    loadAllData();
-
-    // Supabase Realtime Channel
+    mounted.current = true;
+    let refreshTimer: ReturnType<typeof setTimeout> | undefined;
+    const refreshSoon = () => {
+      if (document.visibilityState !== "visible") return;
+      clearTimeout(refreshTimer);
+      refreshTimer = setTimeout(() => { void loadAllData(true); }, 180);
+    };
+    void loadAllData();
     const channel = supabase
       .channel("token_all_in_one_realtime")
-      .on("postgres_changes", { event: "*", schema: "public", table: "groups" }, () => loadAllData())
-      .on("postgres_changes", { event: "*", schema: "public", table: "token_logs" }, () => loadAllData())
-      .on("postgres_changes", { event: "*", schema: "public", table: "puzzle_inventory" }, () => loadAllData())
+      .on("postgres_changes", { event: "*", schema: "public", table: "groups" }, refreshSoon)
+      .on("postgres_changes", { event: "*", schema: "public", table: "token_logs" }, refreshSoon)
+      .on("postgres_changes", { event: "*", schema: "public", table: "puzzle_inventory" }, refreshSoon)
+      .on("postgres_changes", { event: "*", schema: "public", table: "game_config_rules" }, refreshSoon)
       .subscribe();
-
-    const interval = setInterval(loadAllData, 4000);
-
+    const interval = setInterval(() => {
+      if (document.visibilityState === "visible") void loadAllData();
+    }, 30_000);
+    document.addEventListener("visibilitychange", refreshSoon);
     return () => {
-      supabase.removeChannel(channel);
+      mounted.current = false;
+      clearTimeout(refreshTimer);
+      void supabase.removeChannel(channel);
       clearInterval(interval);
+      document.removeEventListener("visibilitychange", refreshSoon);
     };
   }, [loadAllData, supabase]);
 
@@ -340,7 +363,7 @@ export default function AdminTokenAllInOnePage() {
         notifySuccess("✓ Transaction log updated & group balance synchronized!");
         setEditLogModalOpen(false);
         setEditingLog(null);
-        await loadAllData();
+        await loadAllData(true);
       } else {
         notifyError(res.error || "Failed to update transaction log.");
       }
@@ -378,7 +401,7 @@ export default function AdminTokenAllInOnePage() {
       const res = await deleteTokenLog(log.log_id);
       if (res.ok) {
         notifySuccess(`✓ Transaction deleted & Group ${log.group_id} balance adjusted!`);
-        await loadAllData();
+        await loadAllData(true);
       } else {
         notifyError(res.error || "Failed to delete transaction.");
       }
@@ -435,7 +458,7 @@ export default function AdminTokenAllInOnePage() {
             actionType === "add" ? "to" : "from"
           } Group ${selectedGroupId}. New balance: ${res.newTokens} tokens.`
         );
-        await loadAllData();
+        await loadAllData(true);
       } else {
         notifyError(res.error || "Failed to update group tokens.");
       }
@@ -455,7 +478,7 @@ export default function AdminTokenAllInOnePage() {
     try {
       await resetAllTokensAndPuzzles();
       notifySuccess("All group tokens, puzzle inventory, and transaction logs have been reset.");
-      await loadAllData();
+      await loadAllData(true);
     } catch (e: any) {
       notifyError(e.message || "Reset failed.");
     } finally {
@@ -464,7 +487,7 @@ export default function AdminTokenAllInOnePage() {
   };
 
   return (
-    <div className="space-y-6 pb-6">
+    <div className="space-y-6 pb-6" aria-busy={loading}>
       {/* ── Top Header & Global Actions ────────────────────────────────────────── */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -482,11 +505,11 @@ export default function AdminTokenAllInOnePage() {
         <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={() => loadAllData()}
-            disabled={busy}
+            disabled={busy || loading}
             className="btn-secondary min-h-[38px] px-3.5 text-xs font-semibold"
           >
-            <RefreshCw size={14} className={cn(busy && "animate-spin")} />
-            Sync Now
+            <RefreshCw size={14} className={cn((busy || loading) && "animate-spin")} />
+            {loading ? "Syncing…" : "Sync Now"}
           </button>
           {isAdmin && (
             <button

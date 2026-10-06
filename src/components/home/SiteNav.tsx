@@ -105,7 +105,7 @@ export function SiteNav({ active }: { active: StopId }) {
             Freshie Login
           </Link>
           <Link href="/login" className="vx-btn vx-btn-ghost">
-            Committee and Faci GM Login
+            Committee FACI GM login
           </Link>
         </div>
 
@@ -146,7 +146,7 @@ export function SiteNav({ active }: { active: StopId }) {
             Freshie Login
           </Link>
           <Link href="/login" className="vx-btn vx-btn-ghost" onClick={() => setOpen(false)}>
-            Committee and Faci GM Login
+            Committee FACI GM login
           </Link>
         </div>
       </div>
@@ -157,9 +157,9 @@ export function SiteNav({ active }: { active: StopId }) {
 
 const TABS: { label: string; target: StopId; match: StopId[]; Icon: typeof Home }[] = [
   { label: "Home", target: "welcome", match: ["welcome", "overview"], Icon: Home },
+  { label: "Schedule", target: "schedule", match: ["schedule"], Icon: CalendarDays },
   { label: "Games", target: "games", match: ["games"], Icon: Gamepad2 },
   { label: "Score", target: "scoreboard", match: ["scoreboard"], Icon: Trophy },
-  { label: "Schedule", target: "schedule", match: ["schedule"], Icon: CalendarDays },
 ];
 
 /**

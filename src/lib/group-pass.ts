@@ -4,7 +4,7 @@
  * Cookie (httpOnly): base64url(JSON).base64url(HMAC-SHA256)
  *   { g: groupId, e: expUnixSeconds, j: jti, v: version }
  *
- * Wristband/ticket QR → redeem API → sets cookie. Guessing /group/N without
+ * wristband ticket QR → redeem API → sets cookie. Guessing /group/N without
  * a valid pass is denied. Edge-safe (Web Crypto) so middleware can verify.
  *
  * Revoke/rotate: bump per-group version (see group-pass-store). Cookies and
@@ -226,7 +226,7 @@ export async function lookupGroupCode(
   const staticHit = STATIC_GROUP_CODES[trimmed];
   if (staticHit) return staticHit;
 
-  // Signed wristband/ticket payload
+  // Signed wristband ticket payload
   if (trimmed.startsWith("gcode.")) {
     const raw = trimmed.slice("gcode.".length);
     const parts = raw.split(".");

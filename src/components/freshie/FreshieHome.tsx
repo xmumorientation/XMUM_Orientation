@@ -30,6 +30,7 @@ import type { AttendanceSession, Group } from "@/lib/types";
 import { formatCountdown, friendlyError } from "@/lib/utils";
 
 import "./freshie.css";
+import { GroupDashboard } from "./GroupDashboard";
 import { FreshieSky, type SkyCabin } from "./FreshieSky";
 import { groupSwatch, themeFromColor } from "./groupTheme";
 
@@ -121,7 +122,7 @@ function Countdown() {
 }
 
 /** Live phase card (same data as <PhaseTimer/>). Null when no phase is running. */
-function PhaseCard() {
+export function PhaseCard() {
   const { phases, offsetMs, tick } = usePhaseTimer();
   void tick;
   const activeIdx = phases.findIndex((p) => p.state === "active");
@@ -169,7 +170,7 @@ function WelcomeStop({
   const live = phases.some((p) => p.state === "active" || p.state === "paused");
   return (
     <section id="fh-welcome" className="fh-stop fh-center" aria-labelledby="fh-welcome-title">
-      <div className="fh-eyebrow fh-mono">XMUM Orientation 2026</div>
+      <div className="fh-eyebrow fh-mono">XMUM 26/12 Orientation</div>
       {isFaci ? (
         <>
           <h1 id="fh-welcome-title" className="fh-welcome-title">
@@ -209,7 +210,7 @@ function WelcomeStop({
 
 // ── Checklist (facilitator only, between Welcome and Your pass) ─────────────
 
-function ChecklistStop({ group, groupId }: { group: Group | null; groupId: number | null }) {
+export function ChecklistStop({ group, groupId }: { group: Group | null; groupId: number | null }) {
   const supabase = useMemo(() => supabaseBrowser(), []);
   const [displayName, setDisplayName] = useState("");
   const [slogan, setSlogan] = useState("");
@@ -558,7 +559,9 @@ function ScoresStop({ groupId, onRows }: { groupId: number | null; onRows?: (row
       onRows?.(next);
     }
     load();
-    const timer = window.setInterval(load, 4000);
+    const refreshVisible = () => { if (document.visibilityState === "visible") void load(); };
+    const timer = window.setInterval(refreshVisible, 30000);
+    document.addEventListener("visibilitychange", refreshVisible);
     const channel = supabase
       .channel(`fh-scores-${crypto.randomUUID()}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "groups" }, load)
@@ -566,6 +569,7 @@ function ScoresStop({ groupId, onRows }: { groupId: number | null; onRows?: (row
     return () => {
       active = false;
       window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", refreshVisible);
       supabase.removeChannel(channel);
     };
   }, [supabase, onRows]);
@@ -644,7 +648,7 @@ function TodayStop() {
 /** Organiser + sponsors, under the Welcome buttons. Same list as the public homepage. */
 function Credits() {
   return (
-    <div className="fh-credits">
+    <div className="fh-credits" data-example-sponsors={SPONSORS_ARE_EXAMPLES || undefined}>
       <div className="fh-credits-col">
         <span className="fh-credits-label fh-mono">Organised by</span>
         <Image
@@ -735,14 +739,14 @@ function AccountMenu({
         aria-controls="fh-account"
         onClick={() => setOpen(!open)}
       >
-        {initials}
+        {roleLabel === "Freshie" ? <>Freshie<ChevronDown size={14} aria-hidden /></> : initials}
       </button>
       {open && (
         <div id="fh-account" className="fh-menu" role="menu">
           <b>{name || roleLabel}</b>
           <span>
             {roleLabel}
-            {groupName ? ` · ${groupName}` : ""}
+            {groupName && roleLabel !== "Freshie" ? `, ${groupName}` : ""}
           </span>
           <button type="button" role="menuitem" onClick={signOut}>
             Log out
@@ -768,11 +772,13 @@ export function FreshieHome() {
   // Section-by-section snapping, this page only (same idea as the homepage).
   useEffect(() => {
     const root = document.documentElement;
+    if (!isFaci) return;
     root.classList.add("fh-snap");
     return () => root.classList.remove("fh-snap");
-  }, []);
+  }, [isFaci]);
 
   useEffect(() => {
+    if (!isFaci) return;
     const els = stops.map((s) => document.getElementById(s.id)).filter((el): el is HTMLElement => !!el);
     const io = new IntersectionObserver(
       (entries) => {
@@ -784,11 +790,11 @@ export function FreshieHome() {
     );
     els.forEach((el) => io.observe(el));
     return () => io.disconnect();
-  }, [stops]);
+  }, [stops, isFaci]);
 
   return (
     <div
-      className={`fh ${vxDisplay.variable} ${vxSlab.variable}`}
+      className={`fh ${isFaci ? "" : "fh-operational"} ${vxDisplay.variable} ${vxSlab.variable}`}
       style={
         {
           "--fh-accent": theme.accent,
@@ -817,7 +823,7 @@ export function FreshieHome() {
             </button>
           </div>
           <div className="fh-head-r">
-            <span className="fh-chip fh-mono">{roleLabel}</span>
+            {isFaci && <span className="fh-chip fh-mono">{roleLabel}</span>}
             <AccountMenu
               name={profile.full_name ?? ""}
               groupName={group?.name ?? null}
@@ -826,21 +832,26 @@ export function FreshieHome() {
             />
           </div>
         </div>
-        <div className="fh-stopbar fh-mono" aria-hidden>
+        {isFaci && <div className="fh-stopbar fh-mono" aria-hidden>
           <b>{String(active + 1).padStart(2, "0")}</b>
           <span className="fh-stopbar-track">
             <span style={{ width: `${((active + 1) / stops.length) * 100}%` }} />
           </span>
           <span>{stops[active]?.label}</span>
-        </div>
+        </div>}
       </header>
 
+      {isFaci ? <>
       <WelcomeStop name={profile.full_name ?? ""} group={group} isFaci={isFaci} />
       {isFaci && <ChecklistStop group={group} groupId={profile.group_id} />}
       <PassStop group={group} loading={loading} />
       <GameStop />
       <ScoresStop groupId={profile.group_id} onRows={setCabins} />
       <TodayStop />
+      </> : <>
+        <GroupDashboard group={group} loading={loading} phase={<PhaseCard />} credits={<Credits />} />
+        <div className="gd-secondary"><ScoresStop groupId={profile.group_id} onRows={setCabins} /><GameStop /></div>
+      </>}
     </div>
   );
 }

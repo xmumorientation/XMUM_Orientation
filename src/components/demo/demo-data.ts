@@ -2,7 +2,7 @@
  * Group shell content for D-day walkthrough (`/group/demo-*`).
  *
  * Access is gated by a signed, expiring Homepage pass (see `src/lib/group-pass.ts`)
- * issued after wristband/ticket QR redeem — not by secret URL alone.
+ * issued after wristband ticket QR redeem — not by secret URL alone.
  * Demo redeem codes (DEMO-GROUP-*) work only when ENABLE_DEMO_GROUP_CODES=true.
  */
 

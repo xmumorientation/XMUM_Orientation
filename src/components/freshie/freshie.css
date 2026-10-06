@@ -949,3 +949,91 @@ html.fh-snap { overflow-x: hidden; }
 @media (min-width: 1024px) {
   .fh-tabbar { display: none; }
 }
+
+/* Group dashboard trial: team light above a compact event workspace. */
+.fh-operational { --fh-top: calc(60px + env(safe-area-inset-top, 0px)); min-height: 100dvh; }
+.fh-operational .fh-chip { color: var(--fh-text-2); border-color: var(--fh-line-2); }
+.gd { position: relative; max-width: 680px; margin: auto; padding: calc(var(--fh-top) + 20px) 16px 0; }
+.gd-arrival { padding: 24px 20px; border-radius: 24px; background: radial-gradient(ellipse at top right, color-mix(in srgb, var(--fh-glow) 22%, transparent), transparent 75%), #07101f; border: 1px solid color-mix(in srgb, var(--fh-accent) 45%, var(--fh-line)); box-shadow: 0 0 32px color-mix(in srgb, var(--fh-glow) 10%, transparent); }
+.gd-kicker { margin: 0 0 6px; color: var(--fh-text-2); font-size: 14px; }
+.gd-arrival h1 { margin: 0; font-size: 18px; font-weight: 500; }
+.gd-arrival h1 > span { display: block; font-family: var(--font-vx-display), Georgia, serif; font-size: 48px; line-height: 1.2; color: var(--fh-blue-light); }
+.gd-identity { display: flex; align-items: center; gap: 14px; margin-top: 20px; }
+.gd-number { flex-shrink: 0; display: grid; place-items: center; height: 52px; width: 52px; border-radius: 16px; color: var(--fh-on-blue); background: var(--fh-accent); font-size: 24px; font-weight: 700; }
+.gd-group { margin: 0; font-size: 18px; font-weight: 700; overflow-wrap: anywhere; }
+.gd-slogan { margin: 4px 0 0; font-size: 14px; color: var(--fh-text-2); overflow-wrap: anywhere; }
+.gd-plan { margin-top: 20px; padding: 18px; border-radius: 20px; border: 1px solid var(--fh-line-2); background: #07101f; }
+.gd-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.gd h2 { margin: 0; font-size: 18px; font-weight: 700; }
+.gd-heading a { display: inline-flex; align-items: center; gap: 4px; min-height: 44px; color: var(--fh-text-2); font-size: 14px; }
+.gd-plan > p { font-size: 15px; line-height: 1.5; color: var(--fh-text-2); }
+.gd-plan .gd-plan-title { color: var(--fh-text); font-size: 18px; font-weight: 600; margin-bottom: 4px; }
+.gd-primary { display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 48px; border-radius: 999px; margin-top: 16px; background: var(--fh-yellow); color: #111; font-weight: 700; font-size: 15px; text-decoration: none; }
+.gd-primary:active, .gd-tools a:active { transform: scale(0.98); }
+.gd-progress { display: flex; align-items: center; justify-content: space-between; padding: 20px 4px; gap: 16px; }
+.gd-progress p { margin: 5px 0 0; font-size: 14px; color: var(--fh-text-2); }
+.gd-tokens { display: flex; flex-direction: column; align-items: flex-end; font-size: 34px; font-weight: 700; color: var(--fh-blue-light); min-width: 64px; text-decoration: none; }
+.gd-tokens span { display: flex; align-items: center; gap: 5px; font-size: 13px; color: var(--fh-text-2); }
+.gd-tools { display: grid; gap: 8px; }
+.gd-tools a { display: flex; align-items: center; gap: 14px; padding: 14px 16px; min-height: 64px; border: 1px solid var(--fh-line); background: #07101f; border-radius: 16px; color: var(--fh-text); text-decoration: none; }
+.gd-tools a > svg:first-child { color: var(--fh-blue-light); }
+.gd-tools a > svg:last-child { margin-left: auto; flex-shrink: 0; }
+.gd-tools span { font-size: 16px; font-weight: 600; }
+.gd-tools b { display: block; margin-top: 3px; font-size: 13px; font-weight: 400; color: var(--fh-text-2); }
+.gd-demo-note { font-size: 13px; line-height: 1.5; color: var(--fh-text-2); }
+.gd-agenda { padding: 0; list-style: none; margin: 10px 0; }
+.gd-agenda li { display: grid; gap: 4px; padding: 12px 0; border-bottom: 1px solid var(--fh-line); }
+.gd-agenda span, .gd-agenda small { color: var(--fh-text-2); font-size: 14px; }
+.gd-secondary { position: relative; max-width: 680px; margin: auto; padding: 16px 16px calc(var(--fh-bottom) + 24px); }
+.gd-secondary .fh-stop { min-height: 0; padding: 20px 0; scroll-snap-align: none; content-visibility: auto; contain-intrinsic-size: auto 450px; }
+.gd-secondary .fh-h2 { font-size: 28px; }
+.gd-rules { margin-top: 20px; }
+.gd-rules summary { min-height: 48px; cursor: pointer; font-size: 16px; padding: 14px 0; }
+.gd-secondary .fh-credits { margin-top: 32px; }
+@media (prefers-reduced-motion: reduce) { .gd-primary:active, .gd-tools a:active { transform: none; } }
+
+.fh-operational .fh-sky { opacity: 0.5; }
+.fh-operational .fh-sky-dots { display: none; }
+.gd > .fh-phasecard { margin: 16px 0 0; width: 100%; }
+
+/* Quiet group identity and a readable guide entry. */
+.gd-kicker { font-family: var(--font-vx-slab), Georgia, serif; font-size: 16px; color: var(--fh-text); }
+.fh-operational .fh-avatar { display: flex; align-items: center; gap: 8px; width: auto; min-height: 44px; height: auto; padding: 8px 12px; border-radius: 12px; background: var(--fh-ink-2); color: var(--fh-text); border: 1px solid color-mix(in srgb, var(--fh-accent) 50%, var(--fh-line)); box-shadow: none; font-size: 14px; }
+.fh-operational .fh-menu { background: #07101f; border-color: var(--fh-line-2); border-radius: 18px; box-shadow: 0 12px 32px rgb(0 0 0 / 35%); }
+.gd-rules summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; border: 1px solid var(--fh-line-2); border-radius: 16px; background: #07101f; padding: 16px; list-style: none; }
+.gd-rules summary::-webkit-details-marker { display: none; }
+.gd-rules summary small { display: block; margin-top: 5px; font-size: 14px; color: var(--fh-text-2); }
+.gd-rules[open] summary > svg { transform: rotate(180deg); }
+.fh-sched .fh-h2 { font-family: var(--font-vx-display), Georgia, serif; }
+/* Identity stays in team light, not in every control border. */
+.fh-operational .fh-avatar { border: 0; background: transparent; }
+.gd-credits .fh-credits { margin-top: 12px; padding-top: 0; border-top: 0; width: 100%; gap: 10px; align-items: center; }
+.gd-credits .fh-credits-label { font-family: var(--font-nexus-body), Outfit, sans-serif; letter-spacing: 0; text-transform: none; font-size: 11px; color: var(--fh-text-2); }
+.gd-credits .fh-credits-xmum { max-width: 100px; opacity: 0.8; }
+.gd-credits .fh-sponsor-logo { max-width: 52px; max-height: 24px; }
+.gd-credits .fh-credits-sep { height: 28px; }
+.gd-credits .fh-credits-col { gap: 5px; }
+.fi { font-family: var(--font-nexus-body), Outfit, sans-serif; }
+.fi-top h1 { font-family: var(--font-vx-display), Georgia, serif; font-weight: 400; }
+.fi .fi-phase { border: 0; border-radius: 0; background: transparent; padding: 4px 0; font-family: var(--font-nexus-body), Outfit, sans-serif; letter-spacing: 0; font-size: 13px; color: var(--fh-text-2); }
+.fi .fi-activity-btn { border: 0; background: transparent; border-radius: 8px; padding: 10px 4px 10px 12px; min-height: 44px; color: var(--fh-text); font-family: inherit; }
+.fi .fi-activity-btn:hover { background: var(--fh-ink-2); }
+
+/* Quiet partner strip; roles remain available to screen readers. */
+.gd-credits .fh-credits-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.gd-credits .fh-credits-example { position: static; display: block; }
+.gd-credits .fh-credits-sep { display: none; }
+.gd-credits .fh-credits { justify-content: center; gap: 24px; }
+.gd-credits .fh-credits-col { flex: none; }
+.fi .fi-group, .fi .fi-sample { font-family: var(--font-nexus-body), Outfit, sans-serif; }
+.fi .fi-sample { letter-spacing: 0; text-transform: none; font-size: 11px; }
+.fi .fi-phase { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; line-height: 1.25; }
+.fi .fi-phase strong { color: var(--fh-text); font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.fi .fi-phase small { font-size: 10px; color: var(--fh-mute); }
+
+.gd-credits .fh-credits[data-example-sponsors="true"] .fh-credits-sponsors::after { content: "Example sponsor"; display: block; font-size: 10px; color: var(--fh-mute); }
+
+.fi-game-status { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 14px; padding: 12px 0; border-top: 1px solid var(--fh-line); border-bottom: 1px solid var(--fh-line); font-size: 13px; color: var(--fh-text-2); }
+.fi-game-clock { display: inline-flex; align-items: center; gap: 7px; }
+.fi-game-clock strong { color: var(--fh-text); font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.fi-game-status[data-phase="endgame"] .fi-game-clock strong { color: var(--fh-orange); }

@@ -25,6 +25,9 @@ const contentVariants = cva(
         sheet:
           "inset-y-0 left-0 mr-auto h-dvh w-full max-w-sm rounded-r-2xl p-2 pt-[calc(0.75rem+env(safe-area-inset-top))] " +
           "data-[state=open]:slide-in-from-left data-[state=closed]:slide-out-to-left",
+        sheetTop:
+          "inset-x-0 top-0 mx-auto w-[calc(100%-1.5rem)] max-w-lg max-h-[85dvh] overflow-y-auto rounded-b-2xl p-3 pt-[calc(0.75rem+env(safe-area-inset-top))] " +
+          "data-[state=open]:slide-in-from-top data-[state=closed]:slide-out-to-top",
         sheetBottom:
           "inset-x-0 bottom-0 w-full rounded-t-2xl p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] " +
           "data-[state=open]:slide-in-from-bottom data-[state=closed]:slide-out-to-bottom",
@@ -41,6 +44,7 @@ export interface DialogContentProps
   description?: string;
   showClose?: boolean;
   className?: string;
+  overlayClassName?: string;
   children: React.ReactNode;
 }
 
@@ -51,11 +55,12 @@ export function DialogContent({
   description,
   showClose = true,
   className,
+  overlayClassName,
   children,
 }: DialogContentProps) {
   return (
     <RadixDialog.Portal>
-      <RadixDialog.Overlay className={overlayVariants} />
+      <RadixDialog.Overlay className={cn(overlayVariants, overlayClassName)} />
       <RadixDialog.Content className={cn(contentVariants({ layout }), className)}>
         <RadixDialog.Title
           className={

@@ -3,7 +3,7 @@
 import { Gamepad2, Info, Star, UtensilsCrossed, type LucideIcon } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { vxSlab } from "@/components/home/fonts";
+import { vxSlab, vxDisplay } from "@/components/home/fonts";
 import { useGroup } from "@/components/useGroup";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import type { ScheduleItem } from "@/lib/types";
@@ -92,7 +92,7 @@ export function FreshieSchedule() {
 
   return (
     <div
-      className={`fh fh-sched ${vxSlab.variable}`}
+      className={`fh fh-sched ${vxSlab.variable} ${vxDisplay.variable}`}
       style={
         {
           "--fh-accent": theme.accent,
@@ -129,7 +129,7 @@ export function FreshieSchedule() {
                     <b>{label}</b>
                     {meta && (
                       <span className="fh-mono">
-                        {meta.weekday} · {meta.date.toUpperCase()}
+                        {meta.weekday}, {meta.date.toUpperCase()}
                       </span>
                     )}
                   </button>

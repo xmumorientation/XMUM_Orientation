@@ -250,7 +250,7 @@ export function QrScannerScreen({ onClose, closeHref = "/dashboard", preview = f
         <>
           <div className="absolute inset-x-0 z-10 px-8 text-center" style={{ top: "calc(24% + min(70vw, 340px) + 1.5rem)" }}>
             <p className="text-lg font-bold">{phase === "starting" ? "Starting camera…" : "Fit the QR code inside the frame"}</p>
-            <p className="mt-1 text-sm text-white/70">It scans automatically — no need to tap.</p>
+            <p className="mt-1 text-sm text-white/70">Hold your phone steady. Scanning is automatic.</p>
           </div>
           <div className="relative z-10 mt-auto space-y-2 px-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
             {uploadError && <p className="text-center text-sm text-[#FC9E3D]">{uploadError}</p>}

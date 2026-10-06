@@ -415,7 +415,7 @@ html.vx-snap { scroll-snap-type: y mandatory; }
 }
 @keyframes vx-shimmer { to { background-position: 200% 0; } }
 .vx-welcome-slogan { font-family: var(--font-vx-slab), Georgia, serif; font-size: clamp(16px, 2vw, 20px); color: #fff; margin: 0; }
-.vx-welcome .vx-lead { max-width: 56ch; }
+.vx-welcome .vx-welcome-slogan { margin-top: -8px; line-height: 1.5; }
 .vx-welcome-actions { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; margin-top: 6px; }
 .vx-welcome-strip { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 28px; margin-top: 18px; font-size: 12px; color: var(--vx-mute); letter-spacing: 0.08em; }
 .vx-welcome-strip b { color: #fff; margin-right: 6px; }
@@ -736,3 +736,58 @@ html.vx-snap { scroll-snap-type: y mandatory; }
 .vx-login-error { margin: 0; color: var(--vx-blush); font-size: 14px; }
 .vx-login-back { color: var(--vx-mute); font-size: 13px; text-decoration: none; }
 .vx-login-back:hover { color: var(--vx-cyan); }
+
+/* Welcome trial: one park identity, restrained light around readable content. */
+.vx-h2, .vx-pass-title { font-family: var(--font-vx-display), Georgia, serif; font-weight: 400; }
+.vx-welcome-pre { font-family: var(--font-nexus-body), Outfit, sans-serif; font-weight: 600; font-size: clamp(16px, 2.4vw, 22px); letter-spacing: 0.1em; }
+.vx-welcome-slogan { font-family: var(--font-nexus-body), Outfit, sans-serif; font-weight: 600; }
+.vx-sec > .vx-dots { display: none; }
+.vx-lead { font-size: 16px; }
+.vx-btn { transition: background-color 180ms ease, border-color 180ms ease, transform 180ms ease; }
+.vx :focus-visible { outline: 2px solid var(--vx-cyan); outline-offset: 4px; }
+@media (max-width: 1023px) {
+  html.vx-snap { scroll-snap-type: y proximity; }
+  .vx-score, .vx-sched { height: auto; min-height: 100svh; overflow: visible; }
+  .vx-h2 { font-size: clamp(32px, 9vw, 44px); line-height: 1.15; }
+  .vx-welcome .vx-inner { gap: 16px; }
+  .vx-welcome .vx-welcome-slogan { margin-top: -6px; font-size: 16px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html.vx-snap { scroll-snap-type: none; }
+  .vx-btn { transition: none; }
+}
+
+/* Shared theme lettering for the park entrance and Freshie login. */
+.vx-welcome .vx-welcome-pre, .vx-login .vx-welcome-pre { font-family: var(--font-vx-slab), Georgia, serif; font-weight: 400; letter-spacing: 0.06em; font-size: clamp(18px, 2.4vw, 26px); }
+.vx-welcome .vx-welcome-mark { filter: drop-shadow(0 8px 36px rgb(13 252 253 / 28%)); }
+
+/* A small park-themed rocket in the upper sky, away from the reading column. */
+.vx-space-rocket { position: absolute; right: 5%; top: 2.6%; width: clamp(24px, 6vw, 42px); height: auto; transform: rotate(22deg); opacity: 0.7; filter: drop-shadow(0 0 7px rgb(13 252 253 / 18%)); }
+.vx-login .vx-welcome-slogan { font-family: var(--font-nexus-body), Outfit, sans-serif; font-weight: 600; }
+
+@media (max-width: 1023px) {
+  .vx-checkin { padding-bottom: calc(var(--vx-tabbar-h) + 240px); }
+  .vx-city { --vx-city-h: 320px; --vx-wheel-x: 50%; }
+}
+
+/* Programmatic navigation must not fight section snapping. */
+html.vx-snap { scroll-snap-type: none; }
+
+.vx-login-back { display: inline-flex; align-items: center; justify-content: center; gap: 0.45rem; width: 100%; min-height: 48px; margin-top: 8px; border-radius: 9999px; border: 1px solid #3b354c; background: transparent; color: var(--vx-text); font-size: 14px; font-weight: 700; text-decoration: none; transition: border-color 0.15s, color 0.15s, transform 0.15s; }
+.vx-login-back:hover { border-color: var(--vx-cyan); color: var(--vx-cyan); }
+.vx-login-back:active { transform: scale(0.97); }
+
+/* Descent: orbit, lower sky, then park. Decoration stays at the page edges. */
+.vx-planet, .vx-aircraft, .vx-cloud, .vx-park-balloons { position: absolute; height: auto; }
+.vx-planet-a { left: 3%; top: 1.6%; width: clamp(54px, 9vw, 110px); opacity: .5; transform: rotate(-8deg); }
+.vx-planet-b { right: 6%; top: 19%; width: clamp(30px, 5vw, 60px); opacity: .35; }
+.vx-plane { left: 2%; top: 32%; width: clamp(56px, 9vw, 115px); opacity: .45; transform: rotate(-14deg); }
+.vx-helicopter { right: 3%; top: 47%; width: clamp(62px, 10vw, 120px); opacity: .45; }
+.vx-cloud { width: clamp(110px, 20vw, 260px); opacity: .055; }
+.vx-cloud-0 { right: -3%; }.vx-cloud-1 { left: -4%; }.vx-cloud-2 { right: -5%; }.vx-cloud-3 { left: -3%; }
+.vx-park-balloons { right: 3%; top: 77%; width: clamp(36px, 5vw, 70px); opacity: .35; }
+@media (max-width: 600px) {
+  .vx-planet-a { top: 1.5%; left: 2%; width: 48px; opacity: .4; }
+  .vx-plane { top: 30%; }.vx-helicopter { top: 44%; }
+  .vx-park-balloons { right: 2%; width: 32px; }
+}

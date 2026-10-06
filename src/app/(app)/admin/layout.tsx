@@ -1,6 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { nexusBody, vxDisplay } from "@/components/home/fonts";
+import "@/components/staff/staff-dashboard.css";
+import "./admin-vortexa.css";
 import { usePathname } from "next/navigation";
 
 import { useProfile } from "@/components/ProfileProvider";
@@ -87,7 +90,7 @@ export default function AdminLayout({
     SECTIONS[0];
 
   return (
-    <div>
+    <div className={`av ${nexusBody.variable} ${vxDisplay.variable}`}>
       <nav aria-label="Admin sections" className="mb-4 space-y-2">
         <div className="-mx-3 flex gap-1 overflow-x-auto px-3 pb-1 sm:-mx-5 sm:px-5 lg:mx-0 lg:px-0">
           {SECTIONS.map((s) => (

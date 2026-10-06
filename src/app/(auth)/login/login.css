@@ -504,3 +504,21 @@
     transition: none;
   }
 }
+
+/* Compact mobile login hierarchy. */
+.sl-title-clean { font-family: var(--font-nexus-body), Outfit, system-ui, sans-serif; font-size: 28px; line-height: 1.2; letter-spacing: -0.02em; }
+.sl-divider { margin: 0; text-align: center; color: var(--sl-text-2); font-size: 14px; }
+.sl-demo-details { margin-top: 20px; color: var(--sl-text-2); font-size: 14px; }
+.sl-demo-details > summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; justify-content: center; text-decoration: underline; }
+.sl-demo-details .sl-demo { margin-top: 8px; }
+
+/* Login trial: Vortexa's park identity, with readable form typography. */
+.sl-title-trial { display: flex; flex-direction: column; gap: 8px; margin: 0; }
+.sl-title-roles { font-family: var(--font-nexus-body), Outfit, sans-serif; font-size: 16px; font-weight: 600; line-height: 1.4; letter-spacing: 0.01em; color: var(--sl-text-2); }
+.sl-title-login { font-family: var(--font-vx-display), Georgia, serif; font-size: 52px; line-height: 1.15; font-weight: 400; color: var(--sl-cyan); text-shadow: 0 0 24px rgb(13 252 253 / 18%); }
+.sl-brand:has(.sl-title-trial) { margin-bottom: 22px; }
+.sl-brand:has(.sl-title-trial) .sl-lead { margin-top: 12px; }
+.sl:has(.sl-title-trial) .sl-glow { opacity: 0.22; }
+.sl:has(.sl-title-trial) .sl-card { border-color: var(--sl-line-2); }
+
+.sl-shell { padding-top: calc(2.5rem + env(safe-area-inset-top, 0px)); }

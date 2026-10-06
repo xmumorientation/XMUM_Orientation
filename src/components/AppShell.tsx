@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import { nexusBody } from "@/components/home/fonts";
 import { FreshieTabBar } from "@/components/freshie/FreshieTabBar";
 import { themeFromColor } from "@/components/freshie/groupTheme";
 import { ShellMenuProvider } from "@/components/ShellMenu";
@@ -112,6 +113,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const isFreshie = profile.role === "freshie";
   const isFaci = profile.role === "faci";
   const isAdmin = profile.role === "admin";
+  const isStaffDashboard = !isFreshie && pathname === "/dashboard";
+  const isStaffArea = isStaffDashboard || (isAdmin && pathname.startsWith("/admin"));
   // Only the admin account can shrink the sidebar to icons.
   const slim = isAdmin && collapsed;
   const items = NAV.filter((n) => n.roles.includes(profile.role)).map((item) =>
@@ -122,9 +125,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   // Home, Schedule and Items hide the light mobile header for both roles.
   const { group } = useGroup();
   const groupTheme = isFreshie || isFaci ? themeFromColor(group?.color) : null;
-  const isNight =
+  const isNight = isStaffDashboard || (
     (isFreshie || isFaci) &&
-    (pathname === "/dashboard" || pathname === "/schedule" || pathname === "/inventory");
+    (pathname === "/dashboard" || pathname === "/schedule" || pathname === "/inventory"));
   const showTabBar = (isFreshie || isFaci) && !(isFreshie && pathname === "/scan");
 
   useEffect(() => {
@@ -193,7 +196,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       className={cn(
         "min-h-dvh w-full lg:grid",
         slim ? "lg:grid-cols-[4.5rem_minmax(0,1fr)]" : "lg:grid-cols-[16rem_minmax(0,1fr)]",
-        isNight && "bg-[#030b1c]"
+        isNight && "bg-[#030b1c]",
+        isStaffArea && `staff-dashboard-shell ${nexusBody.variable}`
       )}
       style={
         {
@@ -231,7 +235,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 {brand.eventName}
               </span>
               <span className="block truncate text-xs text-ink-faint">
-                XMUM Orientation 2026
+                XMUM 26/12 Orientation
               </span>
             </span>
           )}
@@ -284,6 +288,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <div className="min-w-0">
       {!isNight && (
       <header className="sticky top-0 z-40 border-b border-paper-200 bg-paper-50/95 pt-[env(safe-area-inset-top)] shadow-[0_1px_0_rgba(28,26,23,0.03)] backdrop-blur lg:hidden">
+        {isStaffArea ? <div className="flex items-center justify-between gap-3 px-3 py-2.5 sm:px-5 sm:py-3">
+          <Link href="/dashboard" className="font-semibold">Vortexa</Link>
+          <div className="flex items-center gap-2"><span className="text-sm">{ROLE_LABELS[profile.role]}</span><button type="button" aria-label="Open menu" onClick={() => setMenuOpen(true)} className="flex h-11 w-11 items-center justify-center"><Menu size={20} aria-hidden /></button></div>
+        </div> : (
         <div className="flex items-center justify-between gap-3 px-3 py-2.5 sm:px-5 sm:py-3">
           <div className="flex min-w-0 items-center gap-2.5">
             {!isFreshie && (
@@ -304,7 +312,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   {brand.eventName}
                 </span>
                 <span className="block truncate text-xs text-ink-faint">
-                  XMUM Orientation 2026
+                  XMUM 26/12 Orientation
                 </span>
               </span>
             </Link>
@@ -316,6 +324,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </span>
           </div>
         </div>
+        )}
         <PhaseTimer />
       </header>
       )}
@@ -323,15 +332,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {!isFreshie && (
         <Dialog open={menuOpen} onOpenChange={setMenuOpen}>
           <DialogContent
-            layout="sheet"
+            layout={isStaffArea ? "sheetTop" : "sheet"}
             title="Navigation menu"
             titleVisuallyHidden
             showClose={false}
-            className="lg:hidden"
+            className={cn("lg:hidden", isStaffArea && "sd-drawer sd-top-menu")}
+            overlayClassName={isStaffArea ? "sd-menu-overlay" : undefined}
           >
-            <div className="flex h-full flex-col">
+            <div className={cn("flex flex-col", !isStaffArea && "h-full")}>
               <div className="flex items-center justify-between gap-3 p-2">
-                <div className="flex min-w-0 items-center gap-2.5">
+                <div className={cn("flex min-w-0 items-center gap-2.5", isStaffArea && "sd-menu-heading")}>
                   <DialogClose asChild>
                     <button
                       aria-label="Close menu"
@@ -341,7 +351,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     </button>
                   </DialogClose>
                   <div className="flex min-w-0 items-center gap-2">
-                    <Monogram name={brand.eventName} size="sm" />
+                    {!isStaffArea && <Monogram name={brand.eventName} size="sm" />}
                     <div className="min-w-0">
                       <p className="truncate text-sm font-bold">
                         {brand.eventName}

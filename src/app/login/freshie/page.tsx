@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { nexusBody, vxDisplay, vxSlab } from "@/components/home/fonts";
@@ -97,7 +98,7 @@ export default function FreshieLoginPage() {
           </form>
 
           <Link href="/" className="vx-login-back">
-            Back to Vortexa
+            <ArrowLeft size={18} aria-hidden /> Back to Welcome
           </Link>
         </div>
       </div>

@@ -11,7 +11,7 @@ import { isGroupPassCurrent } from "@/lib/group-pass-store";
  * Group Homepage (`/group/demo-1`, `/group/demo-3`, …).
  *
  * Access requires a signed, expiring Homepage pass (cookie) issued after
- * wristband/ticket QR redeem. URL alone is not access control.
+ * wristband ticket QR redeem. URL alone is not access control.
  * No Register CTA. No public Scan / QR scanner UI.
  */
 
