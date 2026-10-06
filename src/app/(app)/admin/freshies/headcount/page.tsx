@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Card, ErrorBanner, PageTitle, Spinner, SuccessBanner } from "@/components/ui";
 import { supabaseBrowser } from "@/lib/supabase/client";
@@ -14,11 +14,15 @@ export default function HeadcountPage() {
   const [sessionId, setSessionId] = useState<number | null>(null);
   const [counts, setCounts] = useState<Record<number, string>>({});
   const [saved, setSaved] = useState<Record<number, number>>({});
+  const savedRef = useRef<Record<number, number>>({});
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<number | null>(null);
+  // Follow the newest open session until the admin picks one by hand.
+  const pickedByHand = useRef(false);
 
+  // Sessions are opened and closed in Live control; follow them live.
   useEffect(() => {
     let active = true;
     async function load() {
@@ -30,13 +34,20 @@ export default function HeadcountPage() {
       const sessionsList = (sess as AttendanceSession[]) ?? [];
       setSessions(sessionsList);
       setGroups((grps as Group[]) ?? []);
-      const open = sessionsList.find((s) => !s.closed);
-      setSessionId(open?.id ?? sessionsList[0]?.id ?? null);
+      if (!pickedByHand.current) {
+        const open = sessionsList.find((s) => !s.closed);
+        setSessionId(open?.id ?? sessionsList[0]?.id ?? null);
+      }
       setLoading(false);
     }
     load();
+    const channel = supabase
+      .channel("admin-headcount-sessions")
+      .on("postgres_changes", { event: "*", schema: "public", table: "attendance_sessions" }, load)
+      .subscribe();
     return () => {
       active = false;
+      supabase.removeChannel(channel);
     };
   }, [supabase]);
 
@@ -57,11 +68,30 @@ export default function HeadcountPage() {
         nextCounts[rec.group_id] = String(rec.headcount);
       }
       setSaved(nextSaved);
-      setCounts(nextCounts);
+      // keep what the admin is typing; take the latest for everything else
+      setCounts((cur) => {
+        const merged = { ...nextCounts };
+        for (const [id, val] of Object.entries(cur)) {
+          const gid = Number(id);
+          if (val !== "" && val !== String(savedRef.current[gid] ?? "")) merged[gid] = val;
+        }
+        return merged;
+      });
+      savedRef.current = nextSaved;
     }
     loadCounts();
+    // Faci headcounts (and other admins) show up live.
+    const channel = supabase
+      .channel(`admin-headcount-${sessionId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "attendance_headcounts", filter: `session_id=eq.${sessionId}` },
+        loadCounts
+      )
+      .subscribe();
     return () => {
       active = false;
+      supabase.removeChannel(channel);
     };
   }, [supabase, sessionId]);
 
@@ -84,6 +114,7 @@ export default function HeadcountPage() {
       return;
     }
     setSaved((s) => ({ ...s, [groupId]: countVal }));
+    savedRef.current = { ...savedRef.current, [groupId]: countVal };
     setNotice(`${groups.find((g) => g.id === groupId)?.name ?? "Group"} headcount saved.`);
     setTimeout(() => setNotice(null), 2500);
   }
@@ -116,12 +147,15 @@ export default function HeadcountPage() {
               id="headcount-session"
               className="input max-w-[220px]"
               value={sessionId ?? ""}
-              onChange={(e) => setSessionId(Number(e.target.value))}
+              onChange={(e) => {
+                pickedByHand.current = true;
+                setSessionId(Number(e.target.value));
+              }}
             >
               {sessions.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.name}
-                  {s.closed ? " (closed)" : ""}
+                  {s.closed ? " (closed)" : " (open)"}
                 </option>
               ))}
             </select>
