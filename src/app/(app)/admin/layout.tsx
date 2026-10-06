@@ -27,7 +27,7 @@ const SECTIONS: Section[] = [
     key: "live",
     label: "Live",
     tabs: [
-      { href: "/admin", label: "Control room" },
+      { href: "/admin", label: "Live control" },
       { href: "/admin/audit", label: "Audit" },
     ],
   },
@@ -36,7 +36,6 @@ const SECTIONS: Section[] = [
     label: "Freshies",
     tabs: [
       { href: "/admin/freshies", label: "Groups" },
-      { href: "/admin/freshies/sessions", label: "Sessions" },
       { href: "/admin/freshies/headcount", label: "Headcount" },
     ],
   },

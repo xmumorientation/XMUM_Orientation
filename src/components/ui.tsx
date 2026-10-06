@@ -10,17 +10,23 @@ export function PageTitle({
   title,
   subtitle,
   action,
+  titleAside,
 }: {
   title: string;
   subtitle?: string;
   action?: React.ReactNode;
+  /** Shown right beside the title, e.g. a filter. */
+  titleAside?: React.ReactNode;
 }) {
   return (
-    <div className="mb-5 flex items-start justify-between gap-4">
+    <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
       <div className="min-w-0">
-        <h1 className="font-display text-2xl font-bold tracking-tight text-ink">
-          {title}
-        </h1>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <h1 className="font-display text-2xl font-bold tracking-tight text-ink">
+            {title}
+          </h1>
+          {titleAside}
+        </div>
         {subtitle && (
           <p className="mt-1 max-w-[42ch] text-sm leading-5 text-ink-faint">
             {subtitle}

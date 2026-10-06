@@ -87,7 +87,7 @@ function ScreenClock() {
           current.is_endgame ? "animate-pulse text-red-400" : "text-white"
         )}
       >
-        {formatCountdown(remaining)}
+        {current.ends_at || current.state === "paused" ? formatCountdown(remaining) : "LIVE"}
       </p>
     </div>
   );

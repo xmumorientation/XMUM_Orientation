@@ -25,6 +25,7 @@ import { usePhaseTimer } from "@/components/PhaseTimerProvider";
 import { useProfile } from "@/components/ProfileProvider";
 import { useOpenShellMenu } from "@/components/ShellMenu";
 import { useGroup } from "@/components/useGroup";
+import { countdownParts, useEventCountdown } from "@/components/useEventCountdown";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import type { AttendanceSession, Group } from "@/lib/types";
 import { formatCountdown, friendlyError } from "@/lib/utils";
@@ -38,7 +39,7 @@ import { groupSwatch, themeFromColor } from "./groupTheme";
 // version of the public welcome page, in the Vortexa "Night Ticket" style.
 // Five full-screen stops read one at a time (scroll snapping), each about
 // the Freshie's own group:
-//   01 Welcome + countdown (switches to the live phase timer on the day).
+//   01 Welcome + countdown (Live control's schedule timer), plus the running game.
 //      Freshies see one line: "Welcome to Vortexa" plus the group name.
 //      Facilitators keep the Vortexa lockup and the "you're in" line.
 //   02 Checklist (facilitator only: name, attendance, location)
@@ -78,23 +79,9 @@ function goTo(id: string) {
 // ── 01 Welcome ───────────────────────────────────────────────────────────────
 
 function Countdown() {
-  const calc = () => {
-    const diff = new Date(EVENT.dates.day1).getTime() - Date.now();
-    if (diff <= 0) return null;
-    return {
-      d: Math.floor(diff / 86400000),
-      h: Math.floor((diff % 86400000) / 3600000),
-      m: Math.floor((diff % 3600000) / 60000),
-      s: Math.floor((diff % 60000) / 1000),
-    };
-  };
-  // Start undefined so server and first client render match.
-  const [t, setT] = useState<ReturnType<typeof calc> | undefined>(undefined);
-  useEffect(() => {
-    setT(calc());
-    const i = setInterval(() => setT(calc()), 1000);
-    return () => clearInterval(i);
-  }, []);
+  // D-day, then Day 2 and the phases between live games (see useEventCountdown).
+  const { label, seconds } = useEventCountdown();
+  const t = countdownParts(seconds);
 
   const pad = (n: number | undefined) => (n === undefined ? "--" : String(n).padStart(2, "0"));
   const units = [
@@ -106,12 +93,12 @@ function Countdown() {
 
   return (
     <div className="fh-countwrap">
-      <div className="fh-clabel fh-mono">{t === null ? "ORIENTATION IS ON" : "ORIENTATION BEGINS IN"}</div>
-      <div className="fh-count" role="timer" aria-label="Time until orientation begins">
+      <div className="fh-clabel fh-mono">{label}</div>
+      <div className="fh-count" role="timer" aria-label={label.toLowerCase()}>
         {units.map((u, i) => (
           <div key={u.label} className="fh-cell">
             <b className="fh-slab" style={i === 0 ? { color: "var(--fh-blue-light)" } : undefined}>
-              {t === null ? "00" : pad(u.val)}
+              {pad(u.val)}
             </b>
             <span className="fh-mono">{u.label}</span>
           </div>
@@ -148,10 +135,17 @@ export function PhaseCard() {
         {phases.length}
       </div>
       <b className="fh-slab">{current.name}</b>
-      <div className="fh-phasecard-time fh-slab">{formatCountdown(remaining)}</div>
-      <div className="fh-phasecard-bar" aria-hidden>
-        <i style={{ width: `${progress * 100}%` }} />
-      </div>
+      {/* Games started by hand in Live control have no end time. */}
+      {current.ends_at || current.state === "paused" ? (
+        <>
+          <div className="fh-phasecard-time fh-slab">{formatCountdown(remaining)}</div>
+          <div className="fh-phasecard-bar" aria-hidden>
+            <i style={{ width: `${progress * 100}%` }} />
+          </div>
+        </>
+      ) : (
+        <div className="fh-phasecard-time fh-slab">LIVE</div>
+      )}
       {next && <small>Next: {next.name}</small>}
     </div>
   );
@@ -193,7 +187,9 @@ function WelcomeStop({
           {group ? <span className="fh-welcome-group"> {group.name}</span> : null}
         </h1>
       )}
-      {live ? <PhaseCard /> : <Countdown />}
+      {/* The countdown follows Live control's schedule timer; the card shows a running game. */}
+      <Countdown />
+      {live && <PhaseCard />}
       <div className="fh-actions">
         <Link href={isFaci ? "/code" : "/scan"} className="fh-btn fh-btn-primary">
           {isFaci ? <KeyRound size={18} aria-hidden /> : <ScanLine size={18} aria-hidden />}

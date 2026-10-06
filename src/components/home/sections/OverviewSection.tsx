@@ -19,8 +19,7 @@ export function OverviewSection() {
             XMUM 26/12 Orientation brings together freshies, facilitators, and game masters across campus for two days of
             shared challenges and discovery.
           </p>
-          <div className="vx-rise-2" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            <div className="vx-count-label vx-mono">ORIENTATION BEGINS IN</div>
+          <div className="vx-rise-2">
             <Countdown />
           </div>
         </div>
