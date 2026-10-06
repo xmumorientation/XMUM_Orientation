@@ -55,6 +55,7 @@ export interface Station {
   map_y: number;
   risk_tier: RiskTier;
   entry_cost: number;
+  day: 1 | 2;
 }
 
 export const RISK_TIER_META: Record<
@@ -157,6 +158,8 @@ export interface Day2Result {
   piece_index: number | null;
 }
 
+export type TimerState = "idle" | "running" | "paused" | "ended";
+
 export interface ScheduleItem {
   id: number;
   day_label: string;
@@ -165,6 +168,19 @@ export interface ScheduleItem {
   location: string;
   description: string;
   sort_order: number;
+  // Planned times (migration 0049): what the countdown counts to before the
+  // item starts. A live timer never moves them.
+  starts_at: string | null;
+  ends_at: string | null;
+  // Attendance session, created the first time Admin opens it.
+  session_id: number | null;
+  // Live timer, run from Live control. It counts to timer_end_override if
+  // Admin changed the end there, else to the planned end (ends_at).
+  timer_end_override: string | null;
+  timer_state: TimerState;
+  timer_started_at: string | null;
+  timer_ends_at: string | null;
+  timer_paused_remaining: number | null;
 }
 
 export interface FaqItem {

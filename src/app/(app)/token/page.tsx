@@ -1,9 +1,9 @@
 import { redirect } from "next/navigation";
 
-import TokenControl from "../admin/token/page";
+import TokenControl from "@/components/token/TokenControl";
 import { supabaseServer } from "@/lib/supabase/server";
 
-// Staff token control. Facilitators do not use this page.
+// Staff scoreboard (read only). Facilitators do not use this page.
 export default async function TokenPage() {
   const supabase = await supabaseServer();
   const { data } = await supabase.auth.getClaims();
@@ -17,5 +17,5 @@ export default async function TokenPage() {
     .maybeSingle();
   if (profile?.role === "faci") redirect("/dashboard");
 
-  return <TokenControl />;
+  return <TokenControl scoreboardOnly />;
 }

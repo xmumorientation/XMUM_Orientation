@@ -3,17 +3,14 @@
 import { CalendarCheck, Eye, EyeOff, Gamepad2, ShieldCheck, Users } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useRef, useState } from "react";
+import { useState } from "react";
 
 import { AuthShell } from "@/components/auth/AuthShell";
 import { Spinner } from "@/components/ui";
 import { supabaseBrowser } from "@/lib/supabase/client";
-import { ROLE_LABELS, type UserRole } from "@/lib/types";
 
 import type { DemoLogin } from "./demo-logins";
 
-const REQUESTED_ROLE_KEY = "xmum-requested-role";
-const GOOGLE_ROLES = (Object.keys(ROLE_LABELS) as UserRole[]).filter((role) => role !== "freshie");
 const DEMO_ICONS: Record<string, typeof Users> = {
   Admin: ShieldCheck,
   Faci: Users,
@@ -28,10 +25,6 @@ export function LoginForm({ demoLogins }: { demoLogins: DemoLogin[] }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [requestedRole, setRequestedRole] = useState<UserRole | "">("");
-  // The role picker opens after the first tap on Continue with Google.
-  const [googleOpen, setGoogleOpen] = useState(false);
-  const roleRef = useRef<HTMLSelectElement>(null);
   const [error, setError] = useState<string | null>(
     params.get("error") === "google" ? "Google sign-in did not finish. Try again." : null,
   );
@@ -64,21 +57,11 @@ export function LoginForm({ demoLogins }: { demoLogins: DemoLogin[] }) {
     performLogin(presetEmail, presetPass);
   }
 
-  function onGoogleClick() {
-    if (!requestedRole) {
-      setGoogleOpen(true);
-      // Wait for the picker to render, then move focus to it.
-      requestAnimationFrame(() => roleRef.current?.focus());
-      return;
-    }
-    continueWithGoogle();
-  }
-
+  // No role picker: new Google sign-ups wait on the pending page and Admin
+  // assigns the role on approval.
   async function continueWithGoogle() {
-    if (!requestedRole) return;
     setBusy(true);
     setError(null);
-    sessionStorage.setItem(REQUESTED_ROLE_KEY, requestedRole);
     const supabase = supabaseBrowser();
     const { error: oauthError } = await supabase.auth.signInWithOAuth({
       provider: "google",
@@ -150,37 +133,10 @@ export function LoginForm({ demoLogins }: { demoLogins: DemoLogin[] }) {
 
         <p className="vx-login-divider">or</p>
 
-        <button type="button" disabled={busy} onClick={onGoogleClick} className="vx-login-google">
+        <button type="button" disabled={busy} onClick={continueWithGoogle} className="vx-login-google">
           <GoogleLogo />
           Continue with Google
         </button>
-
-        {googleOpen && (
-          <div className="vx-login-google-role">
-            <label htmlFor="google-role">
-              Your role
-              <select
-                ref={roleRef}
-                id="google-role"
-                value={requestedRole}
-                data-empty={requestedRole === ""}
-                onChange={(e) => setRequestedRole(e.target.value as UserRole | "")}
-              >
-                <option value="">Choose a role</option>
-                {GOOGLE_ROLES.map((role) => (
-                  <option key={role} value={role}>
-                    {ROLE_LABELS[role]}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <p className="vx-login-hint">
-              {requestedRole
-                ? "Now tap Continue with Google."
-                : "Choose your role, then tap Continue with Google again."}
-            </p>
-          </div>
-        )}
       </form>
 
       {demoLogins.length > 0 && (

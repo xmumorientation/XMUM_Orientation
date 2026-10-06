@@ -35,3 +35,11 @@
   .av-groups td[data-label]::before { content: attr(data-label); color: #a4b8d1; font-size: 13px; }
   .av-groups td:nth-child(2) p { white-space: normal; overflow-wrap: anywhere; }
 }
+/* Light "slate" utility colours (e.g. the Token page leaderboard and log)
+   sit on the dark admin surfaces above: lift the text, darken the fills. */
+.av :is(.text-slate-900,.text-slate-800,.text-slate-700) { color: #eef5ff; }
+.av :is(.text-slate-600,.text-slate-500) { color: #a4b8d1; }
+.av :is(.bg-slate-50,.bg-slate-100,.bg-slate-200) { background: #0b2246; color: #eef5ff; }
+.av :is(.border-slate-100,.border-slate-200) { border-color: #25405e; }
+.av .divide-slate-100 > :not([hidden]) ~ :not([hidden]) { border-color: #25405e; }
+.av input.bg-white::placeholder, .av input.bg-slate-50::placeholder { color: #a4b8d1; }

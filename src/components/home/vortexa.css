@@ -278,21 +278,16 @@ html.vx-snap { scroll-snap-type: y mandatory; }
     background: rgba(7, 6, 11, 0.96);
   }
   .vx-menu-backdrop {
-    display: block;
     position: fixed;
     inset: 0;
     z-index: 55;
     background: rgba(3, 2, 6, 0.72);
     -webkit-backdrop-filter: blur(12px);
     backdrop-filter: blur(12px);
-    opacity: 0;
     pointer-events: none;
-    transition: opacity 0.22s cubic-bezier(0.16, 1, 0.3, 1),
-                backdrop-filter 0.22s cubic-bezier(0.16, 1, 0.3, 1),
-                -webkit-backdrop-filter 0.22s cubic-bezier(0.16, 1, 0.3, 1);
   }
   .vx-menu-backdrop[data-open="true"] {
-    opacity: 1;
+    display: block;
     pointer-events: auto;
   }
   .vx-nav-row { padding: 0 12px 0 16px; }
@@ -794,8 +789,6 @@ html.vx-snap { scroll-snap-type: y mandatory; }
 }
 .vx-login-google:disabled { opacity: 0.6; cursor: progress; }
 .vx-login-google svg { width: 18px; height: 18px; flex: none; }
-.vx-login-google-role { width: 100%; display: flex; flex-direction: column; gap: 10px; margin-top: 2px; }
-.vx-login-hint { margin: 0; font-size: 14px; line-height: 1.45; color: var(--vx-text-2); text-align: left; }
 .vx-login-demo { width: 100%; margin-top: 4px; color: var(--vx-text-2); font-size: 14px; }
 .vx-login-demo > summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; justify-content: center; text-decoration: underline; text-underline-offset: 3px; }
 .vx-login-demo-box { margin-top: 8px; padding: 14px; border-radius: 18px; border: 1px solid rgba(224, 180, 252, 0.3); background: rgba(224, 180, 252, 0.07); text-align: left; }

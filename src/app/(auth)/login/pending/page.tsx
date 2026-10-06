@@ -46,7 +46,7 @@ export default function PendingApprovalPage() {
       }
 
       const requested = (data?.requested_role ?? null) as UserRole | null;
-      setLabel(requested ? ROLE_LABELS[requested] : "the role you chose");
+      setLabel(requested ? ROLE_LABELS[requested] : null);
       setReady(true);
     }
 
@@ -69,7 +69,9 @@ export default function PendingApprovalPage() {
       role="Waiting for approval"
       lead={
         ready
-          ? `An admin needs to approve this account. You asked to join as ${label}. You can sign in after an admin approves it.`
+          ? label
+            ? `An admin needs to approve this account. You asked to join as ${label}. You can sign in after an admin approves it.`
+            : "An admin needs to approve this account and give it a role. You can sign in after that."
           : "Checking your account."
       }
     >

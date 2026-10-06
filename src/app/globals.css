@@ -16,13 +16,18 @@
     /* NFR-5: 16px minimum body on mobile, high-contrast dark text */
     font-size: 16px;
     -webkit-tap-highlight-color: transparent;
+    /* Canvas colour for overscroll. Dark pages override this below. */
+    background-color: #fdfcfa;
   }
   body {
     @apply bg-paper-50 text-ink antialiased;
     min-height: 100dvh;
-    background:
-      radial-gradient(circle at top left, rgb(var(--brand-1-rgb) / 0.06), transparent 30rem),
-      #fdfcfa;
+    background-color: #fdfcfa;
+    background-image: radial-gradient(
+      circle at top left,
+      rgb(var(--brand-1-rgb) / 0.06),
+      transparent 30rem
+    );
   }
 
   h1,
@@ -104,6 +109,23 @@
   .auth-submit:hover {
     background-color: color-mix(in srgb, var(--brand-1) 92%, black);
   }
+}
+
+/* iOS 26 Safari ignores theme-color. It paints the status bar and the floating
+   toolbar from the document background, and a blurred fixed bar is not sampled,
+   so these bands show whatever html/body are. Dark pages set that to their own
+   ink. Light pages keep the paper canvas above. */
+html:is(:has(.vx), :has(.sl)),
+body:is(:has(.vx), :has(.sl)) {
+  background-color: #07060b;
+  background-image: none;
+  color-scheme: dark;
+}
+html:is(:has(.fh), :has(.staff-dashboard-shell)),
+body:is(:has(.fh), :has(.staff-dashboard-shell)) {
+  background-color: #030b1c;
+  background-image: none;
+  color-scheme: dark;
 }
 
 /* Brand accent underline used on page headings */

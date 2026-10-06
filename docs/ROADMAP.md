@@ -216,10 +216,16 @@ Full background: the "Issues Found" section in [permission-matrix.md](permission
 ### David, 2026-10-06
 - One primary action: "Join the Game ★" opens the login chooser from the Welcome page, the mobile menu and the desktop top bar. "How to check in" is an outline button everywhere. Removed the separate Freshie and Committee login buttons from the menu, top bar and footer. Menu buttons are 48px tall.
 - Login chooser: Freshie Login is the yellow button, Committee, Faci, GM login is outline, with one line of explanation, a close (X) button, scroll lock and the site font.
-- Freshie, Committee/Faci/GM, forgot password, reset password and pending approval pages share one dark layout (`AuthShell`): centred Vortexa wordmark, pill inputs, dark selects with a chevron, a disabled style for buttons, `role="alert"` errors. The (auth) layout no longer adds the light "Welcome to XMUM" header. Committee/Faci/GM login puts email sign-in first; the Google role picker opens after the first tap on Continue with Google (same data sent). Freshie login asks "Choose your group" instead of preselecting the first group.
+- Freshie, Committee/Faci/GM, forgot password, reset password and pending approval pages share one dark layout (`AuthShell`): centred Vortexa wordmark, pill inputs, dark selects with a chevron, a disabled style for buttons, `role="alert"` errors. The (auth) layout no longer adds the light "Welcome to XMUM" header. Committee/Faci/GM login puts email sign-in first, with Continue with Google under it and no role picker (main's flow: Admin assigns the role on approval). Freshie login asks "Choose your group" instead of preselecting the first group.
 - Demo quick logins show only on local dev and Vercel preview, not on production. Their passwords moved to a server-only file, so they are no longer in the browser bundle. Test accounts unchanged.
 - Welcome progress bar: the stop label now has a fixed width, so the bar no longer jumps between Games and Scoreboard; the fill animates smoothly. Credits labels and tab labels are 12px. Logo images have `sizes`.
 - Left: Coca-Cola example logo and the Score tab (owner decision).
+
+### David, 2026-10-06
+- Safari bands follow-up: the closed Welcome menu backdrop stays `display: none` until it opens, so it cannot tint the toolbar. The staff dashboard header pads below the status bar. Staff uses the shell navy `#030b1c`; Welcome and login stay `#07060b`. Light pages keep the paper background.
+
+### David, 2026-10-06
+- iPhone Safari was showing white bands above the header and below the tab bar. Safari 26 takes that colour from the page background and ignores theme-color; the root was still the light paper colour, and the blurred bars are not sampled. Dark pages now paint the root with their own dark background, and the staff dashboard keeps its content below the status bar.
 
 ### David, 2026-10-06
 - Increased staff-menu outside dimming to 88%. Prepared the approved Vortexa UI/dashboard/admin performance work for a local main commit. Unrelated pre-existing notes and separate event-name/migration edits are excluded; no push requested.
@@ -290,6 +296,39 @@ Full background: the "Issues Found" section in [permission-matrix.md](permission
 - Verified TypeScript and a 393px browser preview. Broader welcome/login background redesign remains open; changes are local and have not been committed or pushed.
 
 When you finish something, add a few lines here: your name, the date, and the main points of what you did and what is left. Newest at the top.
+
+### Jiamin, 2026-10-06 (live control)
+- Live control (`/admin`, menu "Live control"). A big **Day 1 / Day 2** dropdown beside the title shows only that day's schedule (it opens on Day 2 once Day 1 Game has ended). Right beside it: **Start Day N Game** (green) / **End Day N Game** (red), with "n/m stations open" (click for per-station overrides). Endgame has no button; projector revival still needs it (see Left). A running game unlocks its game rules. Starting Day 1 or Day 2 Game opens that day's closed stations; ending it closes them. GMs still toggle Busy / Available.
+- **Schedule items run by their planned times by themselves** (no Start button). An item is "on" from its planned start to its live end. **Live schedule** rows show their time and Upcoming / On now / Paused / Done, and open into **1. Session** (Open / Close attendance by hand) and **2. Time** (status only). The item that is on is adjusted in the box below. Times are edited on the Schedule page only.
+- **Now on the Welcome page** box at the top of Live control: the same title and countdown the Welcome page shows, with Pause / ±5 / Stop for the item it counts. None of this changes the schedule.
+- **Game timer** (beside the game button): set the game's **Length** before Start (default 150 min); while it runs, a countdown with Pause / Resume and −5 / +5, and End. It ends itself when time is up (`fn_game_expire`, migration `0052`: pg_cron every minute if Supabase allows, and any open app page the moment it hits zero), which closes that day's stations and locks its game rules. The sidebar timer, big screen and Freshie game card show its countdown. It is separate from the Welcome page countdown, so keep the game's length and its schedule row roughly in step.
+- Schedule editor (`/schedule`, admin): drag rows by the grip (or use ↑/↓) to reorder within a day; that order is used everywhere. The date belongs to the day: set it once and it applies to every item of that day (changing it moves the whole day; migration `0050`, table `schedule_days`). Each row has a planned start and end; the time text Freshies read fills from them and stays editable. Planned times never move when a live timer is adjusted.
+- The Welcome page and Freshie Home countdown follow the schedule: "ORIENTATION DAY 1 STARTS IN" (to Day 1's first item), "<ITEM> ENDS IN" while an item is on (its live end, including Live control changes), "<ITEM> PAUSED", "<NEXT ITEM> STARTS IN" between items, "ORIENTATION DAY 2 STARTS IN", then "ORIENTATION COMPLETE". With no planned times yet it counts to the day dates (08:00). The Welcome Schedule day tabs take their dates from the schedule. Game timers elsewhere (sidebar, big screen, Freshie Home game card) show "LIVE" for a running game.
+- Admin → Freshies → **Headcount** is one table: a row per group, a column per Live schedule item in schedule order (Not opened / Open / Closed), totals and "n/10 groups" at the bottom. A column takes headcounts once its session is opened in Live control. Old sessions that are not on the schedule are under the "Not on schedule" filter. Filter by day and by item; click a number to correct it (Enter saves). Faci headcounts and sessions opened in Live control appear live (migration `0053`).
+- Removed: the old Phase control, the Sessions page (`/admin/freshies/sessions`; past sessions stay in the database and Headcount still uses them), and the Stations page Set status column.
+- Migration `0049` (`fn_game_toggle`, stations follow the game, schedule timer and session columns, `fn_schedule_timer`, `fn_schedule_session`). **Run `0046`, `0047`, `0049`, `0050`, `0051`, `0052` in order** (`0051` fills in suggested times for the current items) (if an earlier draft of `0049` was run, run the current `0049` again: it cleans up the draft). Adjust the suggested times on the Schedule page.
+- Left: Endgame no longer has a button. Projector revival (`/activate`) only works while Endgame runs (`phase_active('endgame')`), so it can't happen now except in Rehearsal mode. Decide: allow revival during Day 2 Game, or make Endgame the last 30 min of Day 2 Game.
+
+### Jiamin, 2026-10-06 (event countdown)
+- One countdown for the whole event ([useEventCountdown.ts](../src/components/useEventCountdown.ts)), used by the Welcome page Overview and Freshie Home. Before Day 1 it counts to D-day (`EVENT.dates.day1`). While a game phase runs it counts down that phase ("DAY 1 GAME ENDS IN"), frozen while paused. After Day 1 it counts to Day 2, shows "<phase> STARTS SOON" while waiting for Admin to start a phase, and "ORIENTATION COMPLETE" at the end. It follows Admin → Phase control live.
+- (Superseded by the live control entry above: the countdown now reads the schedule.)
+
+### Jiamin, 2026-10-06 (scoreboard)
+- The staff menu item "Token System" (`/token`) is now **Scoreboard**: just the live leaderboard, with no token rules and no transaction log. Admin keeps the full page at `/admin/token`. Both use [TokenControl.tsx](../src/components/token/TokenControl.tsx).
+- GM Station page: the Active group card no longer sticks over the tabs, and the tab row has as many columns as there are tabs.
+
+### Jiamin, 2026-10-06 (stations)
+- Stations page (`/admin/stations`): Add and Edit (pencil icon) use one form with station name, Day 1 or Day 2, block (pick from the list or type a new one), floor, and risk tier (Day 2 only). The station's code is its location, built from block and floor (for example `A4-1`). There are All / Day 1 / Day 2 tabs, and each row shows its day and assigned GMs. Day 1 rows show "—" for risk and entry fee.
+- Delete is blocked when a station has token history (it offers to close the station instead), and it warns when GMs are assigned.
+- GM Station page shows only its station's day: the Day 1 tab at Day 1 stations, the Day 2 tab at Day 2 stations. The server enforces this too (`WRONG_DAY_STATION`).
+- Migration `0047`: `stations.day` must be 1 or 2, `stations.code` is no longer unique, and `fn_day2_challenge` refuses at Day 1 stations. **Run `0047` after `0046`.** Every existing station starts as Day 1, so set the Day 2 stations in Admin before Day 2.
+
+### Jiamin, 2026-10-06 (token rules)
+- One token control panel. The Quick Token Operator and presets on the Token page (`/admin/token`) are replaced by **Token Rules**: Day 1 Win, Day 1 Lose, and the Day 2 entry fee for Easy, Medium and Hard. Admin sets them; everyone else sees them read-only. There is no manual add or deduct any more: tokens change only through the GM Station page (Day 1, Day 2, blind box, undo).
+- The GM Station page (`/gm`) reads the rules. Day 1 buttons show the current amounts and call `fn_gm_day1_reward`, which takes the amount from the rules on the server. GMs cannot pick an amount any more.
+- The Day 2 fee is set per tier only. `stations.entry_cost` follows the tier's rule automatically and is read-only on the Stations page. The Groups list and "Add group" were removed from the Stations page.
+- Migration `0046`. It keeps `groups.current_tokens` equal to `token_balance`. It drops the free-amount token functions `fn_adjust_tokens` and `fn_manual_token_adjust`, makes `fn_update_game_config_rule` admin only, limits writes to `game_config_rules` to admin, and makes the unused `fn_day1_record_result`, `fn_day2_deduct_entry` and `fn_day2_award_piece` uncallable. The unused `/api/token` route was deleted. **Run `0046` in Supabase before deploying this.**
+- Left: GM actions still log to `token_transactions`, and admin actions log to `token_logs`. The Token page log does not show GM actions yet; merging the two logs is the next step.
 
 ### Ben, 2026-10-06
 - New Freshie and Faci Items page (`/inventory`), in [src/components/freshie/items/](../src/components/freshie/items/). **It shows SAMPLE DATA only** ("Sample data" in the header): nothing comes from the game yet.
