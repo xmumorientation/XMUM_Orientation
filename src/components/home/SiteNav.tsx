@@ -1,7 +1,6 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { CalendarDays, Gamepad2, Home, Menu, ScanLine, Trophy, X } from "lucide-react";
@@ -26,12 +25,13 @@ const NAV_LINKS: { id: StopId; label: string }[] = [
 const HAMBURGER_LINKS = NAV_LINKS;
 
 /**
- * Fixed top bar. On desktop: logo, section links, and the two login
- * buttons. On phones and tablets: logo, hamburger, and a progress bar
- * naming the current stop. The menu keeps the same two login buttons.
+ * Fixed top bar. On desktop: logo, section links, and the "Join the Game"
+ * button. On phones and tablets: logo, hamburger, and a progress bar naming
+ * the current stop. "Join the Game" opens the login chooser, which offers
+ * the Freshie login and the Committee, Faci, GM login.
  * Scan is not available on the public Welcome page.
  */
-export function SiteNav({ active }: { active: StopId }) {
+export function SiteNav({ active, onJoin }: { active: StopId; onJoin?: () => void }) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const index = Math.max(0, STOPS.findIndex((s) => s.id === active));
@@ -83,7 +83,15 @@ export function SiteNav({ active }: { active: StopId }) {
       <nav className="vx-nav" data-open={open} aria-label="Welcome page sections">
       <div className="vx-nav-row">
         <button type="button" className="vx-nav-logo" onClick={() => go("welcome")} aria-label="Vortexa, back to top">
-          <Image src="/vortexa-logo-sm.webp" alt="" width={320} height={184} priority style={{ width: "auto" }} />
+          <Image
+            src="/vortexa-logo-sm.webp"
+            alt=""
+            width={320}
+            height={184}
+            sizes="(max-width: 1023px) 56px, 66px"
+            priority
+            style={{ width: "auto" }}
+          />
         </button>
 
         <div className="vx-nav-links">
@@ -101,12 +109,9 @@ export function SiteNav({ active }: { active: StopId }) {
         </div>
 
         <div className="vx-nav-logins">
-          <Link href="/login/freshie" className="vx-btn vx-btn-ghost">
-            Freshie Login
-          </Link>
-          <Link href="/login" className="vx-btn vx-btn-ghost">
-            Committee FACI GM login
-          </Link>
+          <button type="button" className="vx-btn vx-btn-primary" onClick={() => onJoin?.()}>
+            Join the Game ★
+          </button>
         </div>
 
         <button
@@ -121,12 +126,14 @@ export function SiteNav({ active }: { active: StopId }) {
         </button>
       </div>
 
+      {/* The label has a fixed width, so the track keeps one length at every
+          stop and only the fill moves (it scales, so no layout work on scroll). */}
       <div className="vx-stopbar vx-mono" aria-hidden={open}>
         <b>{String(index + 1).padStart(2, "0")}</b>
         <span className="vx-stopbar-track">
-          <span className="vx-stopbar-fill" style={{ width: `${((index + 1) / STOPS.length) * 100}%` }} />
+          <span className="vx-stopbar-fill" style={{ transform: `scaleX(${(index + 1) / STOPS.length})` }} />
         </span>
-        <span>{current.label}</span>
+        <span className="vx-stopbar-label">{current.label}</span>
       </div>
 
       <div id="vx-menu" className="vx-menu" data-open={open}>
@@ -138,16 +145,20 @@ export function SiteNav({ active }: { active: StopId }) {
             </span>
           </button>
         ))}
-        <button type="button" className="vx-btn vx-btn-primary" onClick={() => go("check-in")} style={{ marginTop: 16 }}>
-          How to check in
-        </button>
-        <div className="vx-menu-logins">
-          <Link href="/login/freshie" className="vx-btn vx-btn-ghost" onClick={() => setOpen(false)}>
-            Freshie Login
-          </Link>
-          <Link href="/login" className="vx-btn vx-btn-ghost" onClick={() => setOpen(false)}>
-            Committee FACI GM login
-          </Link>
+        <div className="vx-menu-actions">
+          <button
+            type="button"
+            className="vx-btn vx-btn-primary"
+            onClick={() => {
+              setOpen(false);
+              onJoin?.();
+            }}
+          >
+            Join the Game ★
+          </button>
+          <button type="button" className="vx-btn vx-btn-ghost" onClick={() => go("check-in")}>
+            How to check in
+          </button>
         </div>
       </div>
     </nav>
