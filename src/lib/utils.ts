@@ -107,10 +107,22 @@ const ERROR_MESSAGES: Record<string, string> = {
   POOL_EXHAUSTED:
     "This group already owns every piece available from that choice — pick differently.",
   FRESHIE_ONLY: "Only Freshie accounts can open blind boxes.",
-  BOX_UNKNOWN: "This blind box code isn't recognised.",
+  BOX_UNKNOWN: "This blind box code isn't active.",
   BOXES_SOLD_OUT: "All blind boxes here have been given out!",
-  ALREADY_CLAIMED_FROM_MEMBER:
-    "Your group has already opened a box from this committee member.",
+  BB_ALREADY_FROM_SELLER: "Your group has already opened a box from this seller.",
+  BB_GROUP_CAP: "Your group has used all its blind box opens.",
+  BB_TYPE_NAME_MISSING: "Enter a name for the box type.",
+  BB_RANGE_INVALID: "Check the numbers: max must be at least min, and nothing can be negative.",
+  BB_TYPE_EXISTS: "A box type with that name already exists.",
+  BB_TYPE_NOT_FOUND: "Box type not found.",
+  BB_TYPE_ARCHIVED: "That box type is archived.",
+  BB_TARGET_INVALID: "Pick who the boxes go to (an eligible account, role or station).",
+  BB_NO_TARGETS: "Nobody matches that choice yet.",
+  TOKEN_RESET_LOCKED:
+    "Reset is locked. Turn on Rehearsal mode in Live control first; it only works while testing.",
+  BB_RESET_LOCKED: "Turn on Rehearsal mode in Live control first. The reset only works while testing.",
+  BB_RESET_CONFIRM: "Type RESET (capitals) to confirm.",
+  BB_RESET_SCOPE: "Pick what to reset.",
   NOT_ACTIVE: "The phase is not active.",
   NOT_PAUSED: "The phase is not paused.",
   PHASE_NOT_FOUND: "Phase not found.",
@@ -132,6 +144,17 @@ export function friendlyError(err: unknown): string {
     typeof err === "object" && err !== null && "message" in err
       ? String((err as { message: unknown }).message)
       : String(err);
+  // These blind-box errors carry numbers worth showing, so keep the detail.
+  const detailed = /(BB_NOT_ENOUGH_STOCK|BB_STOCK_BELOW_ASSIGNED|BB_QTY_BELOW_OPENED): ([^\n]+)/.exec(msg);
+  if (detailed) {
+    const lead =
+      detailed[1] === "BB_NOT_ENOUGH_STOCK"
+        ? "Not enough stock"
+        : detailed[1] === "BB_STOCK_BELOW_ASSIGNED"
+          ? "Stock can't go below what's assigned"
+          : "Can't go below what's already opened";
+    return `${lead} — ${detailed[2]}.`;
+  }
   for (const code of Object.keys(ERROR_MESSAGES)) {
     if (msg.includes(code)) return ERROR_MESSAGES[code];
   }

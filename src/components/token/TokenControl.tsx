@@ -21,10 +21,12 @@ import {
   Trophy,
   Users,
 } from "lucide-react";
+import Link from "next/link";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Card, PageTitle } from "@/components/ui";
 import { useProfile } from "@/components/ProfileProvider";
+import { useConfig } from "@/components/useConfig";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import {
   fetchGameConfigRules,
@@ -57,6 +59,9 @@ export default function TokenControl({ scoreboardOnly = false }: { scoreboardOnl
   const profile = useProfile();
   const isAdmin = profile.role === "admin";
   const supabase = useMemo(() => supabaseBrowser(), []);
+  // Reset State is for testing: it only works while Rehearsal mode is on.
+  const { config } = useConfig();
+  const rehearsal = config["rehearsal_mode"] === true || config["rehearsal_mode"] === "true";
 
   // Core Data
   const [groups, setGroups] = useState<TokenGroup[]>(generateInitial12Groups());
@@ -365,6 +370,10 @@ export default function TokenControl({ scoreboardOnly = false }: { scoreboardOnl
 
   // Reset All
   const handleResetAll = async () => {
+    if (!rehearsal) {
+      setErrorMsg("Reset is locked. Turn on Rehearsal mode in Live control first.");
+      return;
+    }
     if (!window.confirm("⚠️ DANGER: Reset all 10 groups to 0 tokens and clear all puzzle inventory & logs?")) {
       return;
     }
@@ -410,14 +419,26 @@ export default function TokenControl({ scoreboardOnly = false }: { scoreboardOnl
             {loading ? "Syncing…" : "Sync Now"}
           </button>
           {isAdmin && !scoreboardOnly && (
-            <button
-              onClick={handleResetAll}
-              disabled={busy}
-              className="btn-secondary min-h-[38px] border-red-300 text-red-700 hover:bg-red-50 px-3 text-xs font-semibold"
-            >
-              <ShieldAlert size={14} />
-              Reset State
-            </button>
+            <div className="flex flex-col items-end gap-1">
+              <button
+                onClick={handleResetAll}
+                disabled={busy || !rehearsal}
+                title={
+                  rehearsal
+                    ? "Reset all group tokens, puzzle inventory and logs"
+                    : "Locked: turn on Rehearsal mode in Live control to enable"
+                }
+                className="btn-secondary min-h-[38px] border-red-300 text-red-700 hover:bg-red-50 px-3 text-xs font-semibold disabled:opacity-50"
+              >
+                <ShieldAlert size={14} />
+                Reset State
+              </button>
+              {!rehearsal && (
+                <Link href="/admin" className="text-[11px] text-slate-400 underline">
+                  Locked: needs Rehearsal mode
+                </Link>
+              )}
+            </div>
           )}
         </div>
       </div>

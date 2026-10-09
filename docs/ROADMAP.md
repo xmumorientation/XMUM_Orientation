@@ -133,6 +133,7 @@ Migrations 0012 and 0013 caused most of these gaps. They replaced the earlier ro
 **C. Game data is fully open.** `token_logs`, `puzzle_inventory` and `game_config_rules` use the same open policies as `freshies`.
 - Source: [0013_fix_token_logs_rls.sql:218-240](../supabase/migrations/0013_fix_token_logs_rls.sql#L218-L240).
 - Risk: anyone can give a group tokens or puzzle pieces, change game rules, or delete the scoreboard history.
+- **Partly fixed (0056):** deleting `token_logs` / `puzzle_inventory` rows is now Admin only, and the Token page's Reset State runs inside the database. Select, insert and update are still open.
 
 **D. RPCs have no role check.** These functions are `security definer`, so they bypass RLS. Postgres lets any role execute a function by default, and 0013 also grants some of them to `anon` explicitly.
 - Can wipe data: `fn_set_total_groups`, `fn_set_freshie_group_count`. A lower count deletes the extra groups' tokens, puzzles, attendance and locations.
@@ -212,6 +213,24 @@ Full background: the "Issues Found" section in [permission-matrix.md](permission
 ---
 
 ## Done
+
+### Token reset moved into the database, 2026-10-09
+- `/admin/token` → Reset State now calls `fn_reset_tokens_and_puzzles` (migration `0056_token_reset.sql`). The database checks that the caller is Admin and that Rehearsal mode is on; the button is also greyed out when it is off. Same scope as before: clears `token_logs` and `puzzle_inventory` and sets every group's tokens to 0. It does not touch `token_transactions` or the newer `inventory`. Audited as `tokens.reset`.
+- Part of item 3C: deleting rows from `token_logs` and `puzzle_inventory` is now Admin only (it was open to anyone). An Admin can still delete rows directly; only the full reset is guarded by Rehearsal mode. Select, insert and update on those tables, and the open RPCs in item 3D, are unchanged.
+- Run `0056` in the SQL editor before deploying: the new button code calls a function that does not exist until then.
+
+### Blind boxes v3, 2026-10-09
+- One blind-box system managed from Admin → Blind box. It replaces both the committee QR boxes and the GM "Sell a blind box" button (the GM Box tab and `gm_blindbox_*` config are gone).
+- Box types (name, min/max tokens, price, stock, special) are created, edited and deleted by Admin. A type that has been assigned is archived instead of deleted.
+- Boxes are assigned to an account (gm, guardian_gm, committee, hof, hogm, admin; not faci or freshie), to a station (its GMs share one pool and one QR), or in bulk by role, to all stations, or to picked stations. Bulk is all-or-nothing against remaining stock. Quantities can be raised or lowered later (not below what was opened).
+- QR = HMAC of (assignment id, qr_version), recomputed on demand (`POST /api/blindbox/links`), never stored. Admin previews never invalidate a code; Regenerate does. Every code shows its link with a Copy button.
+- Freshie flow: scan → confirm screen (seller, type, price, balance; range hidden) → Open. Opening the link only previews; the price is paid and one box deducted only when Open is tapped (`fn_open_blind_box`, idempotent).
+- Limits are per group and enforced in the database: one open per seller (a station is one seller), and a total cap (`blindbox_group_cap`, default 4, editable in Admin → Blind box → Settings).
+- Admin page: stock / assigned / unassigned / opened / left, tokens paid in and out, groups at cap. The "My blind box QR" card (now `BlindBoxCard`) is on /committee, /gm and the Admin page.
+- Test reset (Admin → Blind box → Settings, migration `0055_blindbox_reset.sql`): "Restore boxes" sets every opened box back to unopened (each seller has their full assigned number again), clears the groups' opens and puts their tokens back; "Reset everything" also deletes assignments and box types. Only works while Rehearsal mode is on, and needs the word RESET typed. Audited. Migration `0057_blindbox_reset_tokens_option.sql` adds a checkbox "Also put the groups' tokens back" (on by default): off leaves group balances and the token log untouched. Migration `0058_blindbox_reset_where.sql` fixes the reset on Supabase: its API rejects a DELETE with no WHERE, so 0055/0057 failed silently. Rule for new SQL: every DELETE and UPDATE needs a WHERE (use `where true` for all rows).
+- Migration `0054_blindbox_v3.sql` drops the old blind-box tables and RPCs. Run it BEFORE deploying this code. It aborts if any old claim or sale exists, and refuses to run twice.
+- Checked: `tsc`, `next lint`, `next build`, and 83 database checks (stock maths, bulk, caps, idempotency, archiving, RLS) against an in-memory Postgres with the migration applied on a stub of the schema.
+- Not done: the migration has not been run on the real Supabase project, and nothing was tested in a browser against it. The in-app scanner on /scan still says "coming soon" (phone camera works). Not load-tested with many groups opening at once.
 
 ### David, 2026-10-06
 - One primary action: "Join the Game ★" opens the login chooser from the Welcome page, the mobile menu and the desktop top bar. "How to check in" is an outline button everywhere. Removed the separate Freshie and Committee login buttons from the menu, top bar and footer. Menu buttons are 48px tall.

@@ -19,7 +19,7 @@ interface LiveOps {
   tokens_in_circulation: number;
   transactions_count: number;
   blindbox_claims: number;
-  blindbox_sales: number;
+  blindbox_tokens_in: number;
   pieces_granted: number;
   sets_redeemed: number;
   projectors_activated: number;
@@ -82,7 +82,7 @@ export default function AdminControlRoomPage() {
 
   const SWITCHES: { key: string; label: string; danger: string }[] = [
     { key: "tokens_frozen", label: "Freeze token mutations", danger: "All GM ± operations rejected" },
-    { key: "blindbox_disabled", label: "Disable blind box", danger: "All scans & sells rejected" },
+    { key: "blindbox_disabled", label: "Disable blind box", danger: "All blind box opens rejected" },
     { key: "nfc_disabled", label: "Disable NFC activation", danger: "Sticker taps rejected" },
     { key: "rehearsal_mode", label: "Rehearsal mode", danger: "Bypasses ALL phase gating. Testing only" },
     { key: "day2_map_layer", label: "Day 2 map layer", danger: "Reveals projectors on everyone's map" },
@@ -127,7 +127,7 @@ export default function AdminControlRoomPage() {
             ["Tokens in circulation", ops.tokens_in_circulation],
             ["Transactions", ops.transactions_count],
             ["Blind boxes opened", ops.blindbox_claims],
-            ["GM boxes sold", ops.blindbox_sales],
+            ["Box tokens paid in", ops.blindbox_tokens_in],
             ["Pieces granted", ops.pieces_granted],
             ["Sets redeemed", ops.sets_redeemed],
             ["Projectors revived", `${ops.projectors_activated}/3`],

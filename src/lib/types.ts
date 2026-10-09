@@ -128,22 +128,76 @@ export interface AttendanceSession {
   closed: boolean;
 }
 
-export interface BlindBoxAllocation {
+/** Admin-defined blind box type (migration 0054). */
+export interface BlindBoxType {
   id: number;
-  profile_id: string;
-  box_type: "normal" | "special";
+  name: string;
   min_tokens: number;
   max_tokens: number;
-  total_boxes: number;
-  used_boxes: number;
+  price: number;
+  /** Total boxes of this type that exist. Assignments are drawn from it. */
+  stock: number;
+  is_special: boolean;
+  archived: boolean;
+}
+
+/** A box type handed to one seller: an account OR a station (shared pool). */
+export interface BlindBoxAssignment {
+  id: number;
+  type_id: number;
+  profile_id: string | null;
+  station_id: number | null;
+  /** Total assigned, including boxes already opened. */
+  quantity: number;
+  opened: number;
+  qr_version: number;
   active: boolean;
+}
+
+export interface BlindBoxClaim {
+  id: number;
+  assignment_id: number | null;
+  type_id: number;
+  type_name: string;
+  seller_name: string;
+  seller_profile_id: string | null;
+  seller_station_id: number | null;
+  group_id: number;
+  price: number;
+  tokens: number;
+  special: boolean;
+  created_at: string;
+}
+
+/** What a Freshie sees after scanning, before opening (fn_bb_preview). */
+export type BlindBoxPreviewStatus =
+  | "ok"
+  | "disabled"
+  | "frozen"
+  | "sold_out"
+  | "already_from_seller"
+  | "cap_reached"
+  | "insufficient";
+
+export interface BlindBoxPreview {
+  status: BlindBoxPreviewStatus;
+  seller_name: string;
+  type_name: string;
+  price: number;
+  special: boolean;
+  balance: number;
+  group_claims: number;
+  cap: number;
 }
 
 export interface BlindBoxResult {
   ok: boolean;
+  duplicate: boolean;
   tokens: number;
+  price: number;
   special: boolean;
-  member_name: string | null;
+  seller_name: string;
+  type_name: string;
   balance: number;
 }
 
@@ -237,5 +291,16 @@ export const ROLE_LABELS: Record<UserRole, string> = {
 };
 
 export const COMMITTEE_TIER: UserRole[] = ["hof", "hogm", "committee", "admin"];
+
+/** Roles that can hold blind boxes: everyone except Facilitator and Freshie.
+ *  Mirrors bb_holder_role() in migration 0054. */
+export const BLINDBOX_HOLDER_ROLES: UserRole[] = [
+  "gm",
+  "guardian_gm",
+  "committee",
+  "hof",
+  "hogm",
+  "admin",
+];
 
 

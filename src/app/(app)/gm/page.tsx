@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 
+import { BlindBoxCard } from "@/components/BlindBoxCard";
 import { useProfile } from "@/components/ProfileProvider";
-import { useConfig } from "@/components/useConfig";
 import { useOfflineQueue } from "@/components/useOfflineQueue";
 import {
   Card,
@@ -24,12 +24,11 @@ import {
 } from "@/lib/types";
 import { cn, friendlyError, idemKey } from "@/lib/utils";
 
-type Tab = "day1" | "day2" | "box" | "station";
+type Tab = "day1" | "day2" | "station";
 
 const TASKS: Record<Tab, { title: string; desc: string }> = {
   day1: { title: "Day 1", desc: "Award station result" },
   day2: { title: "Day 2", desc: "Charge entry and grant piece" },
-  box: { title: "Box", desc: "Sell GM blind box" },
   station: { title: "Status", desc: "Update queue state" },
 };
 
@@ -38,12 +37,12 @@ const TASKS: Record<Tab, { title: string; desc: string }> = {
 //          (Token page); the server reads them, the GM cannot pick one.
 //  Day 2 - pick group + result (+ tier locations); the system deducts the
 //          tier's entry fee and auto-grants a random non-duplicate piece
-//  Box   - sell one of the limited GM blind boxes
+//  Blind boxes - the QR card at the bottom shows this GM's own boxes and the
+//          station's shared pool; Freshies scan it and open the box themselves.
 // All submissions carry idempotency keys and queue offline (NFR-6).
 export default function GmPanelPage() {
   const profile = useProfile();
   const supabase = useMemo(() => supabaseBrowser(), []);
-  const { config } = useConfig();
   const { queue, failed, dismissFailed, submit } = useOfflineQueue();
 
   const [tab, setTab] = useState<Tab>("day1");
@@ -55,22 +54,15 @@ export default function GmPanelPage() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [boxesSold, setBoxesSold] = useState<number>(0);
   // Shown on the buttons only; the server applies the current rule.
   const [day1, setDay1] = useState({ win: 2, lose: 1 });
 
   useEffect(() => {
     let active = true;
     async function load() {
-      const [{ data: gs }, { count }] = await Promise.all([
-        supabase.rpc("fn_list_groups"),
-        supabase
-          .from("blind_box_sales")
-          .select("*", { count: "exact", head: true }),
-      ]);
+      const { data: gs } = await supabase.rpc("fn_list_groups");
       if (!active) return;
       setGroups(gs ?? []);
-      setBoxesSold(count ?? 0);
       if (profile.station_id) {
         const { data: st } = await supabase
           .from("stations")
@@ -218,23 +210,6 @@ export default function GmPanelPage() {
     }
   }
 
-  async function sellBox() {
-    if (!groupId) return setError("先选组别 Select a group first.");
-    setBusy(true);
-    setError(null);
-    const { data, error } = await supabase.rpc("fn_sell_blind_box", {
-      p_group_id: groupId,
-      p_idempotency_key: idemKey(),
-    });
-    setBusy(false);
-    if (error) setError(friendlyError(error));
-    else {
-      const d = data as { tokens: number; price: number; balance: number };
-      flash(`Box opened: paid ${d.price}, won ${d.tokens} tokens · balance ${d.balance}`);
-      setBoxesSold((n) => n + 1);
-    }
-  }
-
   async function setStatus(status: StationStatus) {
     if (!station) return;
     setBusy(true);
@@ -253,9 +228,6 @@ export default function GmPanelPage() {
       !station ||
       ((t !== "day1" || station.day === 1) && (t !== "day2" || station.day === 2))
   );
-
-  const boxPrice = Number(config["gm_blindbox_price"] ?? 2);
-  const boxStock = Number(config["gm_blindbox_stock"] ?? 8);
 
   return (
     <div className="space-y-4">
@@ -330,7 +302,7 @@ export default function GmPanelPage() {
       <div
         className={cn(
           "grid grid-cols-2 gap-2 rounded-[1.5rem] bg-paper-200 p-1.5",
-          tabs.length === 3 ? "sm:grid-cols-3" : "sm:grid-cols-4"
+          tabs.length === 3 ? "sm:grid-cols-3" : "sm:grid-cols-2"
         )}
       >
         {tabs.map((t) => (
@@ -468,24 +440,6 @@ export default function GmPanelPage() {
         </Card>
       )}
 
-      {tab === "box" && (
-        <Card className="space-y-3">
-          <h2 className="font-semibold">Sell a blind box</h2>
-          <p className="text-sm text-ink-faint">
-            Price -{boxPrice} tokens, contents are random tokens. Limited
-            stock: {Math.max(0, boxStock - boxesSold)} of {boxStock} left
-            (shared across all GMs).
-          </p>
-          <button
-            disabled={busy || boxesSold >= boxStock}
-            onClick={sellBox}
-            className="btn-primary min-h-[72px] w-full text-lg"
-          >
-            Sell and open (-{boxPrice} tokens)
-          </button>
-        </Card>
-      )}
-
       {tab === "station" && (
         <Card className="space-y-3">
           {station ? (
@@ -526,6 +480,8 @@ export default function GmPanelPage() {
           )}
         </Card>
       )}
+
+      <BlindBoxCard />
     </div>
   );
 }

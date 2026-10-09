@@ -26,6 +26,15 @@ export function signPayload(payload: Record<string, unknown>): string {
   return `${body}.${sig}`;
 }
 
+// Same format without the random nonce: signing the same payload twice gives
+// the same token. Used where the token is recomputed on demand and never
+// stored (blind-box QRs, where the payload carries a revocable version).
+export function signPayloadStable(payload: Record<string, unknown>): string {
+  const body = b64url(Buffer.from(JSON.stringify(payload)));
+  const sig = b64url(createHmac("sha256", secret()).update(body).digest());
+  return `${body}.${sig}`;
+}
+
 export function hashToken(token: string): string {
   return createHash("sha256").update(token).digest("hex");
 }

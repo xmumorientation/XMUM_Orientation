@@ -31,7 +31,7 @@ This reflects only the migration files in the repo. Any manual changes made to t
 | Station Panel page | — | — | ✓ | ✓ | — | † | † | † | UI |
 | Day 1 Token Reward (amount from the token rules) | — | — | ✓ | ✓ | — | † | † | † | DB |
 | Day 2 Challenge (charge the tier's entry fee and grant a piece) | — | — | ✓ | ✓ | — | † | † | † | DB |
-| Sell GM Blind Box | — | — | ✓ | ✓ | — | — | — | † | DB |
+| Show blind box QR + link on the Station page (own boxes and own station's shared boxes) | — | — | Own | Own | — | — | — | — | DB |
 | Update Station Status | — | — | Own Station | Own Station | — | All † | All † | All | DB |
 | Undo Token Transaction (own last one, within 2 minutes) | — | — | Own Actions | Own Actions | — | † | † | † | DB |
 | Grant a puzzle piece directly (fn_grant_item, no UI) | — | — | † | † | — | † | † | † | DB |
@@ -42,9 +42,13 @@ This reflects only the migration files in the repo. Any manual changes made to t
 | Manual Projector Activation | — | — | — | ✓ | — | — | † | † | DB |
 | NFC Projector Activation (/activate; Endgame phase; must belong to a group) | ✓ | ✓ | — | — | — | — | — | — | DB |
 | **Blind Box** | | | | | | | | | |
-| Scan Blind Box QR (/scan) | ✓ | — | — | — | — | — | — | — | DB |
-| Personal Blind Box QR (generate / rotate; requires an allocation) | — | — | — | — | Own | Own | Own | Any member | DB |
-| Blind Box Allocation config | — | — | — | — | — | — | — | Manage | DB |
+| Open a blind box (scan a seller's QR, see the confirm screen, tap Open: pays the price and deducts one box; a group can open one per seller and up to the group cap) | ✓ | — | — | — | — | — | — | — | DB |
+| See own blind box QR + link (card on /committee and /gm, and on the Admin Blind box page; boxes assigned to the account, or to its station) | — | — | Own | Own | Own | Own | Own | Own | DB |
+| Box types, assigning boxes (one account, a role, stations), quantities, regenerate / switch off a QR, group cap (Admin → Blind box) | — | — | — | — | — | — | — | Manage | DB |
+| Token page Reset State (clears token logs and puzzle inventory, zeroes group tokens; only while Rehearsal mode is on) | — | — | — | — | — | — | — | ✓ | DB |
+| Blind box test reset (only while Rehearsal mode is on; typed confirmation) | — | — | — | — | — | — | — | ✓ | DB |
+| Read box types (range, price, stock) | — | — | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | DB |
+| Read every assignment and claim | — | — | — | — | Claims only | Claims only | Claims only | ✓ | DB |
 | **Attendance / Location** | | | | | | | | | |
 | Mark attendance (Attendance Roster) | — | Own Group | — | — | — | All † | All † | Manage All | DB |
 | Headcount fallback entry | — | Own Group | — | — | — | † | — | Manage | DB |
