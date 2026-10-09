@@ -1,0 +1,91 @@
+/* Committee, Faci, GM, HOF, HOGM and Guardian GM pages on the dark staff
+   design (same navy and Outfit as the staff dashboard and Admin).
+   AppShell adds .staff-dashboard-shell to the shell, .sp-header to the phone
+   header and .sp to <main> on these pages. Visual only: it re-maps the light
+   utility classes the pages already use, so markup and behaviour stay. */
+
+/* ── Shell: desktop sidebar, phase timer, drawer ─────────────────────────── */
+.staff-dashboard-shell > aside nav a[href="/dashboard"]:not([aria-current="page"]),
+.sd-drawer nav a[href="/dashboard"]:not([aria-current="page"]) { background: transparent; color: #c4d6ee; }
+.staff-dashboard-shell > aside nav a[aria-current="page"],
+.sd-drawer nav a[aria-current="page"] { background: #0b2246; color: #0dfcfd; box-shadow: none; }
+.staff-dashboard-shell > aside nav a > span:first-child { background: #0b2246; color: #0dfcfd; }
+.staff-dashboard-shell > aside .chip { background: transparent; border: 0; padding: 0; color: #c4d6ee; font-size: 14px; }
+.staff-dashboard-shell > aside .text-ink-faint { color: #a4b8d1; }
+.staff-dashboard-shell > aside .border-paper-200 { border-color: #16305a; }
+.staff-dashboard-shell .app-phase-timer:not(.is-endgame) { background: #0b2246; color: #eef5ff; }
+.staff-dashboard-shell .app-phase-timer > span:first-child { font-size: 12px; color: #0dfcfd; }
+
+/* ── Phone header on subpages: back to Home left, role and menu right ──── */
+.sp-header-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 6px 8px 6px 4px; min-height: 56px; }
+.sp-back {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 12px 0 8px;
+  border-radius: 10px; color: #eef5ff; font-size: 16px; font-weight: 600; text-decoration: none;
+}
+.sp-back:hover { background: #0b2246; }
+.sp-header-end { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.sp-role { font-size: 14px; color: #c4d6ee; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.staff-dashboard-shell .sp-header .sp-menu-btn {
+  display: grid; place-items: center; width: 44px; height: 44px; flex: none;
+  border: 0; border-radius: 10px; background: transparent; color: #eef5ff;
+}
+.staff-dashboard-shell .sp-header .sp-menu-btn:hover { background: #0b2246; }
+.sp-header :is(a, button):focus-visible { outline: 2px solid #0dfcfd; outline-offset: 2px; }
+
+/* ── Page content ────────────────────────────────────────────────────────── */
+.sp { color: #eef5ff; font-family: var(--font-nexus-body), Outfit, sans-serif; color-scheme: dark; }
+.sp h1 { font-family: var(--font-vx-display), Georgia, serif; font-weight: 400; font-size: clamp(30px, 8vw, 46px); line-height: 1.15; letter-spacing: 0; color: #eef5ff; }
+.sp .starlight-rule { background: #0dfcfd; width: 32px; height: 2px; }
+.sp :is(.text-ink, .text-gray-900, .text-gray-800) { color: #eef5ff; }
+.sp :is(.text-ink-soft, .text-gray-700, .text-gray-600) { color: #c4d6ee; }
+.sp :is(.text-ink-faint, .text-ink-muted, .text-gray-500) { color: #a4b8d1; }
+.sp .text-brand-1 { color: var(--sd-accent-text, #0dfcfd); }
+
+/* Surfaces: cards, raised items inside cards, and inset trays. */
+.sp :is(.card, .bg-white\/90, .bg-paper-50, .bg-paper-50\/95, .bg-paper-100) { background: #071a30; color: #eef5ff; border-color: #25405e; box-shadow: none; }
+.sp .bg-white { background: #0b2246; color: #eef5ff; border-color: #34516e; box-shadow: none; }
+.sp :is(.bg-paper-200, .bg-paper-200\/80, .bg-gray-100, .bg-gray-200) { background: #030b1c; border-color: #25405e; }
+.sp .card { border-radius: 16px; }
+.sp :is(.border-paper-200, .border-paper-200\/80, .border-paper-300, .border-gray-200, .border-gray-300) { border-color: #25405e; }
+.sp :is(.divide-paper-200, .divide-gray-200) > :not([hidden]) ~ :not([hidden]) { border-color: #25405e; }
+.sp :is(.shadow-card, .shadow-raised, .shadow-floating) { box-shadow: none; }
+.sp .hover\:bg-white\/50:hover, .sp .hover\:bg-paper-100:hover { background: #0b2246; }
+.sp a.card:hover { border-color: #34516e; background: #0b2246; }
+/* Selected option in a tray of choices (task tabs, toggles). */
+.sp :is(button, a)[aria-pressed="true"], .sp :is(button, a)[aria-selected="true"] { box-shadow: inset 0 0 0 2px #0dfcfd; }
+
+/* Form controls: 16px so iOS does not zoom, dark fields, custom chevron. */
+.sp :is(.input, input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]), select, textarea) {
+  background-color: #030b1c; color: #eef5ff; border-color: #34516e; font-size: 16px; color-scheme: dark;
+}
+.sp :is(.input, input, textarea)::placeholder { color: #8ba3c4; opacity: 1; }
+.sp select {
+  -webkit-appearance: none; appearance: none; padding-right: 44px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23c4d6ee' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 14px center; background-size: 18px 18px;
+}
+.sp select option { background: #071a30; color: #eef5ff; }
+.sp :is(.input, select, textarea):focus { border-color: #0dfcfd; box-shadow: 0 0 0 3px rgb(13 252 253 / 25%); outline: none; }
+.sp .label { color: #c4d6ee; font-size: 14px; }
+
+/* Buttons */
+.sp .btn-primary { background: #f2ff0b; background-image: none; color: #111; box-shadow: none; }
+.sp .btn-primary:hover { background: #e6f000; }
+.sp .btn-secondary { background: #0b2246; border-color: #34516e; color: #eef5ff; box-shadow: none; }
+.sp .btn-secondary:hover { background: #16305a; transform: none; }
+.sp .btn:disabled, .sp button:disabled { opacity: 0.5; }
+
+/* Status colours re-tuned for navy (all text >= 4.5:1). */
+.sp :is(.bg-red-50, .bg-red-100) { background: rgb(220 38 38 / 16%); }
+.sp :is(.bg-green-50, .bg-green-100) { background: rgb(22 163 74 / 18%); }
+.sp :is(.bg-amber-50, .bg-amber-100, .bg-yellow-50) { background: rgb(245 158 11 / 14%); }
+.sp :is(.bg-blue-50, .bg-sky-50, .bg-cyan-50) { background: rgb(13 252 253 / 10%); }
+.sp :is(.border-red-200, .border-red-300) { border-color: rgb(248 113 113 / 45%); }
+.sp :is(.border-green-200, .border-green-300) { border-color: rgb(74 222 128 / 40%); }
+.sp :is(.border-amber-200, .border-amber-300) { border-color: rgb(251 191 36 / 45%); }
+.sp :is(.text-red-500, .text-red-600, .text-red-700, .text-red-800, .text-red-900) { color: #ffa3a3; }
+.sp :is(.text-green-600, .text-green-700, .text-green-800, .text-green-900) { color: #86efac; }
+.sp :is(.text-amber-500, .text-amber-600, .text-amber-700, .text-amber-800, .text-amber-900) { color: #fcd34d; }
+.sp .chip { font-size: 13px; }
+.sp th { color: #a4b8d1; font-weight: 500; }
+.sp table { color: #eef5ff; }

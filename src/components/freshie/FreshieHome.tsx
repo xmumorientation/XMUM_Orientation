@@ -19,24 +19,29 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { EVENT, EVENTS, GAME_PHASES } from "@/components/home/data";
+import { EVENT, EVENTS, GAME_PHASES, SPONSORS, SPONSORS_ARE_EXAMPLES } from "@/components/home/data";
 import { vxDisplay, vxSlab } from "@/components/home/fonts";
 import { usePhaseTimer } from "@/components/PhaseTimerProvider";
 import { useProfile } from "@/components/ProfileProvider";
 import { useOpenShellMenu } from "@/components/ShellMenu";
 import { useGroup } from "@/components/useGroup";
+import { countdownParts, useEventCountdown } from "@/components/useEventCountdown";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import type { AttendanceSession, Group } from "@/lib/types";
 import { formatCountdown, friendlyError } from "@/lib/utils";
 
 import "./freshie.css";
+import { GroupDashboard } from "./GroupDashboard";
+import { FreshieSky, type SkyCabin } from "./FreshieSky";
 import { groupSwatch, themeFromColor } from "./groupTheme";
 
 // Freshie Home (/dashboard for the Freshie role only) — the logged-in
 // version of the public welcome page, in the Vortexa "Night Ticket" style.
 // Five full-screen stops read one at a time (scroll snapping), each about
 // the Freshie's own group:
-//   01 Welcome + countdown (switches to the live phase timer on the day)
+//   01 Welcome + countdown (Live control's schedule timer), plus the running game.
+//      Freshies see one line: "Welcome to Vortexa" plus the group name.
+//      Facilitators keep the Vortexa lockup and the "you're in" line.
 //   02 Checklist (facilitator only: name, attendance, location)
 //   03 Group pass (token balance, next action, shortcuts)
 //   04 How the game works
@@ -48,6 +53,8 @@ import { groupSwatch, themeFromColor } from "./groupTheme";
 // Data: stops 01–02 and the scoreboard use live data. The scoreboard reads
 // fn_scoreboard(), the same token_balance the admin token board shows.
 // Per-group colour: --fh-accent / --fh-glow / --fh-blue come from groups.color.
+// Background: FreshieSky (scrolls with the page, ends in a city whose ferris
+// wheel has one cabin per group, coloured from the scoreboard rows).
 
 const STOPS = [
   { id: "fh-welcome", label: "Welcome" },
@@ -72,23 +79,9 @@ function goTo(id: string) {
 // ── 01 Welcome ───────────────────────────────────────────────────────────────
 
 function Countdown() {
-  const calc = () => {
-    const diff = new Date(EVENT.dates.day1).getTime() - Date.now();
-    if (diff <= 0) return null;
-    return {
-      d: Math.floor(diff / 86400000),
-      h: Math.floor((diff % 86400000) / 3600000),
-      m: Math.floor((diff % 3600000) / 60000),
-      s: Math.floor((diff % 60000) / 1000),
-    };
-  };
-  // Start undefined so server and first client render match.
-  const [t, setT] = useState<ReturnType<typeof calc> | undefined>(undefined);
-  useEffect(() => {
-    setT(calc());
-    const i = setInterval(() => setT(calc()), 1000);
-    return () => clearInterval(i);
-  }, []);
+  // D-day, then Day 2 and the phases between live games (see useEventCountdown).
+  const { label, seconds } = useEventCountdown();
+  const t = countdownParts(seconds);
 
   const pad = (n: number | undefined) => (n === undefined ? "--" : String(n).padStart(2, "0"));
   const units = [
@@ -100,12 +93,12 @@ function Countdown() {
 
   return (
     <div className="fh-countwrap">
-      <div className="fh-clabel fh-mono">{t === null ? "ORIENTATION IS ON" : "ORIENTATION BEGINS IN"}</div>
-      <div className="fh-count" role="timer" aria-label="Time until orientation begins">
+      <div className="fh-clabel fh-mono">{label}</div>
+      <div className="fh-count" role="timer" aria-label={label.toLowerCase()}>
         {units.map((u, i) => (
           <div key={u.label} className="fh-cell">
             <b className="fh-slab" style={i === 0 ? { color: "var(--fh-blue-light)" } : undefined}>
-              {t === null ? "00" : pad(u.val)}
+              {pad(u.val)}
             </b>
             <span className="fh-mono">{u.label}</span>
           </div>
@@ -116,7 +109,7 @@ function Countdown() {
 }
 
 /** Live phase card (same data as <PhaseTimer/>). Null when no phase is running. */
-function PhaseCard() {
+export function PhaseCard() {
   const { phases, offsetMs, tick } = usePhaseTimer();
   void tick;
   const activeIdx = phases.findIndex((p) => p.state === "active");
@@ -142,10 +135,17 @@ function PhaseCard() {
         {phases.length}
       </div>
       <b className="fh-slab">{current.name}</b>
-      <div className="fh-phasecard-time fh-slab">{formatCountdown(remaining)}</div>
-      <div className="fh-phasecard-bar" aria-hidden>
-        <i style={{ width: `${progress * 100}%` }} />
-      </div>
+      {/* Games started by hand in Live control have no end time. */}
+      {current.ends_at || current.state === "paused" ? (
+        <>
+          <div className="fh-phasecard-time fh-slab">{formatCountdown(remaining)}</div>
+          <div className="fh-phasecard-bar" aria-hidden>
+            <i style={{ width: `${progress * 100}%` }} />
+          </div>
+        </>
+      ) : (
+        <div className="fh-phasecard-time fh-slab">LIVE</div>
+      )}
       {next && <small>Next: {next.name}</small>}
     </div>
   );
@@ -164,21 +164,32 @@ function WelcomeStop({
   const live = phases.some((p) => p.state === "active" || p.state === "paused");
   return (
     <section id="fh-welcome" className="fh-stop fh-center" aria-labelledby="fh-welcome-title">
-      <div className="fh-eyebrow fh-mono">XMUM Orientation 2026</div>
-      <h1 id="fh-welcome-title" className="fh-welcome-title">
-        <span className="fh-pre fh-slab">WELCOME TO</span>
-        <span className="fh-mark">Vortexa</span>
-      </h1>
-      <p className="fh-hello">
-        Hi <b>{name || "there"}</b>
-        {group && (
-          <>
-            {" "}
-            · you&apos;re in <b>{group.name}</b>
-          </>
-        )}
-      </p>
-      {live ? <PhaseCard /> : <Countdown />}
+      <div className="fh-eyebrow fh-mono">XMUM 26/12 Orientation</div>
+      {isFaci ? (
+        <>
+          <h1 id="fh-welcome-title" className="fh-welcome-title">
+            <span className="fh-pre fh-slab">WELCOME TO</span>
+            <span className="fh-mark">Vortexa</span>
+          </h1>
+          <p className="fh-hello">
+            Hi <b>{name || "there"}</b>
+            {group && (
+              <>
+                {" "}
+                · you&apos;re in <b>{group.name}</b>
+              </>
+            )}
+          </p>
+        </>
+      ) : (
+        <h1 id="fh-welcome-title" className="fh-welcome-line">
+          Welcome to Vortexa
+          {group ? <span className="fh-welcome-group"> {group.name}</span> : null}
+        </h1>
+      )}
+      {/* The countdown follows Live control's schedule timer; the card shows a running game. */}
+      <Countdown />
+      {live && <PhaseCard />}
       <div className="fh-actions">
         <Link href={isFaci ? "/code" : "/scan"} className="fh-btn fh-btn-primary">
           {isFaci ? <KeyRound size={18} aria-hidden /> : <ScanLine size={18} aria-hidden />}
@@ -188,13 +199,14 @@ function WelcomeStop({
           My group ↓
         </button>
       </div>
+      <Credits />
     </section>
   );
 }
 
 // ── Checklist (facilitator only, between Welcome and Your pass) ─────────────
 
-function ChecklistStop({ group, groupId }: { group: Group | null; groupId: number | null }) {
+export function ChecklistStop({ group, groupId }: { group: Group | null; groupId: number | null }) {
   const supabase = useMemo(() => supabaseBrowser(), []);
   const [displayName, setDisplayName] = useState("");
   const [slogan, setSlogan] = useState("");
@@ -522,7 +534,7 @@ function GameStop() {
 
 type ScoreRow = { id: number; name: string; color: string | null; token_balance: number };
 
-function ScoresStop({ groupId }: { groupId: number | null }) {
+function ScoresStop({ groupId, onRows }: { groupId: number | null; onRows?: (rows: ScoreRow[]) => void }) {
   const supabase = useMemo(() => supabaseBrowser(), []);
   const [rows, setRows] = useState<ScoreRow[]>([]);
 
@@ -540,9 +552,12 @@ function ScoresStop({ groupId }: { groupId: number | null }) {
         }))
         .sort((a, b) => b.token_balance - a.token_balance || a.id - b.id);
       setRows(next);
+      onRows?.(next);
     }
     load();
-    const timer = window.setInterval(load, 4000);
+    const refreshVisible = () => { if (document.visibilityState === "visible") void load(); };
+    const timer = window.setInterval(refreshVisible, 30000);
+    document.addEventListener("visibilitychange", refreshVisible);
     const channel = supabase
       .channel(`fh-scores-${crypto.randomUUID()}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "groups" }, load)
@@ -550,9 +565,10 @@ function ScoresStop({ groupId }: { groupId: number | null }) {
     return () => {
       active = false;
       window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", refreshVisible);
       supabase.removeChannel(channel);
     };
-  }, [supabase]);
+  }, [supabase, onRows]);
 
   return (
     <section id="fh-scores" className="fh-stop" aria-labelledby="fh-scores-title">
@@ -625,6 +641,50 @@ function TodayStop() {
   );
 }
 
+/** Organiser + sponsors, under the Welcome buttons. Same list as the public homepage. */
+function Credits() {
+  return (
+    <div className="fh-credits" data-example-sponsors={SPONSORS_ARE_EXAMPLES || undefined}>
+      <div className="fh-credits-col">
+        <span className="fh-credits-label fh-mono">Organised by</span>
+        <Image
+          src="/xmum-logo-horizontal-white.png"
+          alt="Xiamen University Malaysia"
+          width={1024}
+          height={211}
+          className="fh-credits-xmum"
+        />
+      </div>
+      <span className="fh-credits-sep" aria-hidden />
+      <div className="fh-credits-col">
+        <span className="fh-credits-label fh-mono">
+          Supported by{SPONSORS_ARE_EXAMPLES && <span className="fh-credits-example"> (Example)</span>}
+        </span>
+        <ul className="fh-credits-sponsors">
+          {SPONSORS.map((s, i) => {
+            const body = s.logo ? (
+              <Image src={s.logo} alt={s.name} width={240} height={102} className="fh-sponsor-logo" />
+            ) : (
+              <span className="fh-sponsor-ph">{s.name}</span>
+            );
+            return (
+              <li key={i}>
+                {s.href ? (
+                  <a href={s.href} target="_blank" rel="noopener noreferrer">
+                    {body}
+                  </a>
+                ) : (
+                  body
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    </div>
+  );
+}
+
 // ── Chrome: header, account menu, stop bar ───────────────────────────────────
 
 function AccountMenu({
@@ -675,14 +735,14 @@ function AccountMenu({
         aria-controls="fh-account"
         onClick={() => setOpen(!open)}
       >
-        {initials}
+        {roleLabel === "Freshie" ? <>Freshie<ChevronDown size={14} aria-hidden /></> : initials}
       </button>
       {open && (
         <div id="fh-account" className="fh-menu" role="menu">
           <b>{name || roleLabel}</b>
           <span>
             {roleLabel}
-            {groupName ? ` · ${groupName}` : ""}
+            {groupName && roleLabel !== "Freshie" ? `, ${groupName}` : ""}
           </span>
           <button type="button" role="menuitem" onClick={signOut}>
             Log out
@@ -702,15 +762,19 @@ export function FreshieHome() {
   const roleLabel = isFaci ? "Facilitator" : "Freshie";
   const stops = useMemo(() => homeStops(isFaci), [isFaci]);
   const [active, setActive] = useState(0);
+  // Scoreboard rows double as the ferris wheel's cabins (one per group).
+  const [cabins, setCabins] = useState<SkyCabin[]>([]);
 
   // Section-by-section snapping, this page only (same idea as the homepage).
   useEffect(() => {
     const root = document.documentElement;
+    if (!isFaci) return;
     root.classList.add("fh-snap");
     return () => root.classList.remove("fh-snap");
-  }, []);
+  }, [isFaci]);
 
   useEffect(() => {
+    if (!isFaci) return;
     const els = stops.map((s) => document.getElementById(s.id)).filter((el): el is HTMLElement => !!el);
     const io = new IntersectionObserver(
       (entries) => {
@@ -722,11 +786,11 @@ export function FreshieHome() {
     );
     els.forEach((el) => io.observe(el));
     return () => io.disconnect();
-  }, [stops]);
+  }, [stops, isFaci]);
 
   return (
     <div
-      className={`fh ${vxDisplay.variable} ${vxSlab.variable}`}
+      className={`fh ${isFaci ? "" : "fh-operational"} ${vxDisplay.variable} ${vxSlab.variable}`}
       style={
         {
           "--fh-accent": theme.accent,
@@ -734,16 +798,13 @@ export function FreshieHome() {
           "--fh-blue": theme.accent,
           "--fh-blue-light": theme.accentLight,
           "--fh-on-blue": theme.onAccent,
+          "--fh-glow-strength": theme.glowStrength,
+          "--fh-glow-spread": theme.glowSpread,
+          "--fh-partner": theme.partner,
         } as React.CSSProperties
       }
     >
-      <div className="fh-bg" aria-hidden>
-        <div className="fh-glow" style={{ width: 380, height: 380, background: "var(--fh-glow)", left: -150, top: 80, opacity: 0.35 }} />
-        <div className="fh-glow" style={{ width: 300, height: 300, background: "#FE06AB", right: -150, bottom: 80, opacity: 0.16 }} />
-        <i className="fh-spark" style={{ width: 18, height: 18, background: "#F2FF0B", left: "10%", top: "30%" }} />
-        <i className="fh-spark" style={{ width: 24, height: 24, background: "linear-gradient(#FFB1C1, #FE06AB)", right: "9%", top: "58%" }} />
-        <i className="fh-spark" style={{ width: 14, height: 14, background: "#0DFCFD", right: "24%", top: "18%" }} />
-      </div>
+      <FreshieSky cabins={cabins} myGroupId={profile.group_id} />
 
       <header className="fh-head">
         <div className="fh-head-row">
@@ -758,7 +819,7 @@ export function FreshieHome() {
             </button>
           </div>
           <div className="fh-head-r">
-            <span className="fh-chip fh-mono">{roleLabel}</span>
+            {isFaci && <span className="fh-chip fh-mono">{roleLabel}</span>}
             <AccountMenu
               name={profile.full_name ?? ""}
               groupName={group?.name ?? null}
@@ -767,21 +828,26 @@ export function FreshieHome() {
             />
           </div>
         </div>
-        <div className="fh-stopbar fh-mono" aria-hidden>
+        {isFaci && <div className="fh-stopbar fh-mono" aria-hidden>
           <b>{String(active + 1).padStart(2, "0")}</b>
           <span className="fh-stopbar-track">
             <span style={{ width: `${((active + 1) / stops.length) * 100}%` }} />
           </span>
           <span>{stops[active]?.label}</span>
-        </div>
+        </div>}
       </header>
 
+      {isFaci ? <>
       <WelcomeStop name={profile.full_name ?? ""} group={group} isFaci={isFaci} />
       {isFaci && <ChecklistStop group={group} groupId={profile.group_id} />}
       <PassStop group={group} loading={loading} />
       <GameStop />
-      <ScoresStop groupId={profile.group_id} />
+      <ScoresStop groupId={profile.group_id} onRows={setCabins} />
       <TodayStop />
+      </> : <>
+        <GroupDashboard group={group} loading={loading} phase={<PhaseCard />} credits={<Credits />} />
+        <div className="gd-secondary"><ScoresStop groupId={profile.group_id} onRows={setCabins} /><GameStop /></div>
+      </>}
     </div>
   );
 }

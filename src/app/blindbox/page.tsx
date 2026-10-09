@@ -1,15 +1,16 @@
 import { Package } from "lucide-react";
 import { redirect } from "next/navigation";
 
-import { BoxReveal } from "@/components/BoxReveal";
-import { hashToken, verifyBlindBoxToken } from "@/lib/blindbox";
+import { BlindBoxOpener } from "@/components/BlindBoxOpener";
+import { verifyBlindBoxToken } from "@/lib/blindbox";
 import { supabaseServer } from "@/lib/supabase/server";
+import type { BlindBoxPreview } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
-// Committee blind-box QR landing. The printed/on-phone QR encodes
-// /blindbox?t=<signed-token>. A logged-in Freshie scanning it gets the
-// opening animation; the RPC enforces stock and one-claim-per-group.
+// Blind-box QR landing. The seller's QR encodes /blindbox?t=<signed-token>.
+// Opening this page only PREVIEWS the box (fn_bb_preview): nothing is paid
+// and no box is deducted until the Freshie taps Open (fn_open_blind_box).
 
 function ErrorScreen({ title, message }: { title: string; message: string }) {
   return (
@@ -30,18 +31,10 @@ function ErrorScreen({ title, message }: { title: string; message: string }) {
 }
 
 const ERROR_SCREENS: Record<string, { title: string; message: string }> = {
-  ALREADY_CLAIMED_FROM_MEMBER: {
-    title: "Already opened!",
-    message:
-      "Your group has already opened a blind box from this committee member. Find a different one!",
-  },
-  BOXES_SOLD_OUT: {
-    title: "All gone!",
-    message: "This committee member has given out all their blind boxes.",
-  },
   BOX_UNKNOWN: {
-    title: "Unknown box",
-    message: "This QR code isn't active. Ask the committee member to check with Admin.",
+    title: "Code not active",
+    message:
+      "This QR code isn't active any more. Ask the seller to show their latest QR.",
   },
   FRESHIE_ONLY: {
     title: "Freshies only",
@@ -50,10 +43,6 @@ const ERROR_SCREENS: Record<string, { title: string; message: string }> = {
   NOT_IN_GROUP: {
     title: "No group yet",
     message: "Your account isn't assigned to a group yet — see the registration counter.",
-  },
-  TOKENS_FROZEN: {
-    title: "Paused",
-    message: "Token operations are briefly paused by the committee. Try again shortly.",
   },
 };
 
@@ -64,11 +53,12 @@ export default async function BlindBoxPage({
 }) {
   const { t } = await searchParams;
 
-  if (!t || !verifyBlindBoxToken(t).valid) {
+  const token = t ? verifyBlindBoxToken(t) : null;
+  if (!t || !token || !token.valid) {
     return (
       <ErrorScreen
         title="Invalid QR code"
-        message="This blind box code isn't recognised. Scan the committee member's real QR!"
+        message="This blind box code isn't recognised. Scan the seller's real QR!"
       />
     );
   }
@@ -81,8 +71,9 @@ export default async function BlindBoxPage({
     redirect(`/login?next=${encodeURIComponent(`/blindbox?t=${t}`)}`);
   }
 
-  const { data, error } = await supabase.rpc("fn_scan_blind_box", {
-    p_qr_hash: hashToken(t),
+  const { data, error } = await supabase.rpc("fn_bb_preview", {
+    p_assignment_id: token.assignmentId,
+    p_version: token.version,
   });
 
   if (error) {
@@ -93,24 +84,16 @@ export default async function BlindBoxPage({
       ? ERROR_SCREENS[code]
       : {
           title: "Something went wrong",
-          message: "Couldn't open the blind box. Find a committee member for help.",
+          message: "Couldn't load the blind box. Find a committee member for help.",
         };
     return <ErrorScreen title={screen.title} message={screen.message} />;
   }
 
-  const result = data as {
-    tokens: number;
-    special: boolean;
-    member_name: string | null;
-    balance: number;
-  };
-
   return (
-    <BoxReveal
-      tokens={result.tokens}
-      special={result.special}
-      memberName={result.member_name}
-      balance={result.balance}
+    <BlindBoxOpener
+      assignmentId={token.assignmentId}
+      version={token.version}
+      preview={data as BlindBoxPreview}
     />
   );
 }

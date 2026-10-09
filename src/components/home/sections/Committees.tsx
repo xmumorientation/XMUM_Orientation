@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import { COMMITTEES, type Committee } from "../data";
-import { Spark } from "../decor";
 import {
   Code,
   Calendar,
@@ -34,9 +33,6 @@ export function Committees() {
 
   return (
     <section id="committees" className="vx-sec" aria-labelledby="committees-title">
-      <div className="vx-dots" />
-      <Spark size={22} color="var(--vx-cyan)" style={{ right: "6%", bottom: "10%" }} />
-
       <div className="vx-inner">
         <div className="vx-comm-head vx-rise">
           <h2 id="committees-title" className="vx-h2">Meet the crew</h2>
@@ -71,20 +67,26 @@ export function Committees() {
             <div className="vx-card vx-cdetail" style={{ borderColor: activeCommittee.color }}>
               <div className="vx-cdetail-main">
                 <b>
-                  {activeCommittee.name} · {activeCommittee.fullName}
+                  {activeCommittee.name}, {activeCommittee.fullName}
                 </b>
                 <p>{activeCommittee.desc}</p>
               </div>
-              <dl>
-                <div>
-                  <dt className="vx-mono">Committee head</dt>
-                  <dd>{activeCommittee.head || "TBD"}</dd>
-                </div>
-                <div>
-                  <dt className="vx-mono">Members</dt>
-                  <dd>{activeCommittee.members !== null ? activeCommittee.members : "TBD"}</dd>
-                </div>
-              </dl>
+              {(activeCommittee.head || activeCommittee.members !== null) && (
+                <dl>
+                  {activeCommittee.head && (
+                    <div>
+                      <dt className="vx-mono">Committee head</dt>
+                      <dd>{activeCommittee.head}</dd>
+                    </div>
+                  )}
+                  {activeCommittee.members !== null && (
+                    <div>
+                      <dt className="vx-mono">Members</dt>
+                      <dd>{activeCommittee.members}</dd>
+                    </div>
+                  )}
+                </dl>
+              )}
             </div>
           )}
         </div>

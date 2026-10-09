@@ -1,0 +1,21 @@
+{
+  "name": "Vortexa",
+  "short_name": "Vortexa",
+  "description": "XMUM 26/12 Orientation",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#07060b",
+  "theme_color": "#07060b",
+  "icons": [
+    {
+      "src": "/vortexa-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/vortexa-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

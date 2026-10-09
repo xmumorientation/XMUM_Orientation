@@ -1,17 +1,12 @@
 "use client";
 
-import { scrollToSection } from "../data";
-import { Glow, Spark } from "../decor";
+import Image from "next/image";
+
+import { SPONSORS, SPONSORS_ARE_EXAMPLES, scrollToSection } from "../data";
 
 export function WelcomeSection({ onJoin }: { onJoin?: () => void }) {
   return (
     <section id="welcome" className="vx-sec vx-welcome" aria-labelledby="welcome-title">
-      <div className="vx-dots" />
-      <Glow size="min(520px, 90vw)" color="var(--vx-navy)" style={{ left: "-8%", top: "12%", opacity: 0.8 }} />
-      <Glow size="min(380px, 70vw)" color="var(--vx-pink)" style={{ right: "-4%", bottom: "-6%" }} />
-      <Spark size={26} color="var(--vx-yellow)" style={{ left: "16%", top: "24%" }} />
-      <Spark size={16} color="var(--vx-cyan)" style={{ right: "20%", top: "20%" }} />
-      <Spark size={34} color="linear-gradient(#FFB1C1, #FE06AB)" style={{ right: "14%", bottom: "22%" }} />
 
       <div className="vx-inner">
         <div className="vx-eyebrow vx-rise">XMUM 26/12 Orientation</div>
@@ -21,19 +16,15 @@ export function WelcomeSection({ onJoin }: { onJoin?: () => void }) {
           <span className="vx-welcome-mark vx-holo">Vortexa</span>
         </h1>
 
-        <p className="vx-welcome-slogan vx-rise-2">One Ticket, One Ride. Discover the Adventure Inside.</p>
+        <p className="vx-welcome-slogan vx-rise-2">One Ticket, One Ride.<br />Discover the Adventure Inside.</p>
 
-        <p className="vx-lead vx-rise-2">
-          Vortexa is the official theme of XMUM Orientation 2026 — a neon carnival where new beginnings take flight. Over two
-          days, discover campus, bond with your team, and step into university life with energy and purpose.
-        </p>
 
         <div className="vx-welcome-actions vx-rise-3">
           <button type="button" className="vx-btn vx-btn-primary" onClick={() => onJoin?.()}>
             Join the Game ★
           </button>
-          <button type="button" className="vx-btn vx-btn-ghost" onClick={() => scrollToSection("overview")}>
-            What&apos;s inside ↓
+          <button type="button" className="vx-btn vx-btn-ghost" onClick={() => scrollToSection("check-in")}>
+            How to check in
           </button>
         </div>
 
@@ -42,11 +33,52 @@ export function WelcomeSection({ onJoin }: { onJoin?: () => void }) {
           <span><b>2 DAYS</b>on campus</span>
           <span><b>XMUM</b>Sepang, Selangor</span>
         </div>
+
+        {/* Organiser on the left, sponsors on the right. */}
+        <div className="vx-credits vx-rise-3">
+          <div className="vx-credits-col">
+            <span className="vx-credits-label vx-mono">Organised by</span>
+            <Image
+              src="/xmum-logo-horizontal-white.png"
+              alt="Xiamen University Malaysia"
+              width={1024}
+              height={211}
+              sizes="(max-width: 640px) 160px, 210px"
+              className="vx-credits-xmum"
+            />
+          </div>
+          <span className="vx-credits-sep" aria-hidden />
+          <div className="vx-credits-col vx-credits-sponsors">
+            <span className="vx-credits-label vx-mono">
+              Supported by{SPONSORS_ARE_EXAMPLES && <span className="vx-credits-example"> (Example)</span>}
+            </span>
+            <ul>
+              {SPONSORS.map((s, i) => {
+                const body = s.logo ? (
+                  <Image src={s.logo} alt={s.name} width={240} height={102} className="vx-sponsor-logo" />
+                ) : (
+                  <span className="vx-sponsor-ph">
+                    <i aria-hidden />
+                    {s.name}
+                  </span>
+                );
+                return (
+                  <li key={i}>
+                    {s.href ? (
+                      <a href={s.href} target="_blank" rel="noopener noreferrer">
+                        {body}
+                      </a>
+                    ) : (
+                      body
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        </div>
       </div>
 
-      <button type="button" className="vx-scrollhint vx-mono" onClick={() => scrollToSection("overview")}>
-        SCROLL · NEXT STOP: OVERVIEW
-      </button>
     </section>
   );
 }

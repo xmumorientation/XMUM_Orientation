@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   Vortexa "Night Ticket" homepage.
+   Vortexa "Night Ticket" Welcome page.
    Everything is scoped under .vx so nothing leaks into the authenticated app.
    Colour rules: yellow = primary action only, cyan = "you are here / selected".
    ═══════════════════════════════════════════════════════════════════════════ */
@@ -45,13 +45,9 @@
   }
 }
 
-/* Section-by-section scrolling. Mandatory snap only where every stop fits one
-   screen (large landscape viewports); phones and tablets get gentle proximity
-   snapping so taller stops can still be read without fighting the scroll. */
-html.vx-snap { scroll-snap-type: y proximity; }
-@media (min-width: 1024px) and (min-height: 700px) {
-  html.vx-snap { scroll-snap-type: y mandatory; }
-}
+/* Section scrolling. Mandatory snap on every width: releasing past the
+   halfway point between stops settles on the next stop. Reduced-motion off. */
+html.vx-snap { scroll-snap-type: y mandatory; }
 @media (prefers-reduced-motion: reduce) {
   html.vx-snap { scroll-snap-type: none; }
 }
@@ -65,11 +61,25 @@ html.vx-snap { scroll-snap-type: y proximity; }
   padding-block: calc(var(--vx-nav-h) + var(--vx-stopbar-h) + 40px) calc(var(--vx-tabbar-h) + 48px);
   padding-inline: 24px;
   scroll-snap-align: start;
+  scroll-snap-stop: always;
   overflow: hidden;
   isolation: isolate;
 }
 @media (max-width: 1023px) {
   .vx-sec { padding-inline: 16px; padding-block: calc(var(--vx-nav-h) + var(--vx-stopbar-h) + 24px) calc(var(--vx-tabbar-h) + 32px); }
+}
+/* Scoreboard and Schedule keep their original block layout.
+   Equal top and bottom padding places that block on the viewport middle. */
+.vx-score,
+.vx-sched {
+  height: 100svh;
+  padding-block: calc(var(--vx-nav-h) + var(--vx-stopbar-h) + 40px) calc(var(--vx-tabbar-h) + 40px);
+}
+@media (max-width: 1023px) {
+  .vx-score,
+  .vx-sched {
+    padding-block: calc(var(--vx-nav-h) + var(--vx-stopbar-h) + 24px) calc(var(--vx-tabbar-h) + 24px);
+  }
 }
 .vx-inner { position: relative; z-index: 2; width: 100%; max-width: 1120px; margin: 0 auto; }
 
@@ -110,6 +120,61 @@ html.vx-snap { scroll-snap-type: y proximity; }
   50% { transform: scale(0.8) rotate(20deg); opacity: 0.7; }
 }
 
+/* ── Night skyline: one background behind all seven stops ────────────────── */
+/* Stays near-black for the first stops, warms to indigo, ends in a city. */
+.vx-main { position: relative; isolation: isolate; }
+.vx-main > .vx-sec { z-index: 1; }
+.vx-world {
+  position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none;
+  background: linear-gradient(180deg,
+    var(--vx-ink) 0%,
+    var(--vx-ink) 30%,
+    #060816 48%,
+    #080b22 62%,
+    #0d0f33 74%,
+    #17154a 84%,
+    #241a5e 90%,
+    #241a5e 100%);
+}
+.vx-world-dots {
+  position: absolute; inset: 0;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+  background-size: 28px 28px;
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 70%, transparent 90%);
+  mask-image: linear-gradient(180deg, #000 0%, #000 70%, transparent 90%);
+}
+.vx-star { position: absolute; border-radius: 50%; }
+.vx-orb { position: absolute; border-radius: 50%; }
+/* City: two wide skyline layers (cropped at the sides on narrow screens) with
+   the ferris wheel between them. The wheel is sized from the city height, so
+   it always matches the buildings' scale, and placed so it is never cut off. */
+.vx-city {
+  --vx-city-h: clamp(300px, 47.5vw, 760px);
+  --vx-wheel-x: 68%; /* wheel centre, from the left */
+  position: absolute; left: 0; bottom: 0; width: 100%; height: var(--vx-city-h);
+}
+@media (min-width: 1024px) {
+  .vx-city { --vx-wheel-x: 76%; }
+}
+.vx-city-layer { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.vx-wheel {
+  position: absolute;
+  /* 600 wheel units at the city's scale (city is 760 units tall). */
+  width: calc(var(--vx-city-h) * 600 / 760); height: auto;
+  left: calc(var(--vx-wheel-x) - var(--vx-city-h) * 300 / 760);
+  /* Wheel's bottom edge sits 40 units under the ground line (y 560 of 760). */
+  bottom: calc(var(--vx-city-h) * 160 / 760);
+}
+.vx-city-wheel { transform-box: fill-box; transform-origin: center; }
+@media (prefers-reduced-motion: no-preference) {
+  .vx-city-wheel { animation: vx-spin 90s linear infinite; }
+  .vx-city-lamp { animation: vx-lamp 4s ease-in-out infinite; }
+  .vx-orb { animation: vx-bob 7s ease-in-out infinite alternate; }
+}
+@keyframes vx-spin { to { transform: rotate(360deg); } }
+@keyframes vx-lamp { 50% { opacity: 0.55; } }
+@keyframes vx-bob { to { transform: translateY(-14px); } }
+
 /* ── Type ────────────────────────────────────────────────────────────────── */
 .vx-holo {
   background: var(--vx-holo);
@@ -135,7 +200,7 @@ html.vx-snap { scroll-snap-type: y proximity; }
 .vx-btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 0.5em;
   min-height: 48px; padding: 0 28px; border-radius: 999px;
-  font-family: inherit; font-weight: 700; font-size: 15px; letter-spacing: 0.02em;
+  font-weight: 700; font-size: 15px; letter-spacing: 0.02em;
   text-decoration: none; cursor: pointer; border: 1px solid transparent;
   transition: transform 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease, border-color 0.18s ease;
 }
@@ -149,11 +214,22 @@ html.vx-snap { scroll-snap-type: y proximity; }
 /* ── Surfaces ────────────────────────────────────────────────────────────── */
 .vx-card { background: var(--vx-ink-2); border: 1px solid var(--vx-line); border-radius: 18px; }
 
-/* Ticket: two half-circle notches cut into the sides */
-.vx-ticket { position: relative; background: var(--vx-ink-2); border: 1px solid var(--vx-line); }
+/* Ticket: two half-circle notches cut into the sides. The mask makes them real
+   holes, so the page background (which changes colour down the page) shows
+   through; the pseudo-elements only draw the notch outline. */
+.vx-ticket {
+  --vx-notch-y: 50%;
+  position: relative; background: var(--vx-ink-2); border: 1px solid var(--vx-line);
+  -webkit-mask:
+    radial-gradient(circle 8px at 0 var(--vx-notch-y), #0000 98%, #000) left / 51% 100% no-repeat,
+    radial-gradient(circle 8px at 100% var(--vx-notch-y), #0000 98%, #000) right / 51% 100% no-repeat;
+  mask:
+    radial-gradient(circle 8px at 0 var(--vx-notch-y), #0000 98%, #000) left / 51% 100% no-repeat,
+    radial-gradient(circle 8px at 100% var(--vx-notch-y), #0000 98%, #000) right / 51% 100% no-repeat;
+}
 .vx-ticket::before, .vx-ticket::after {
-  content: ""; position: absolute; top: 50%; width: 18px; height: 18px; border-radius: 50%;
-  background: var(--vx-ink); border: 1px solid var(--vx-line); transform: translateY(-50%);
+  content: ""; position: absolute; top: var(--vx-notch-y); width: 18px; height: 18px; border-radius: 50%;
+  background: transparent; border: 1px solid var(--vx-line); transform: translateY(-50%);
 }
 .vx-ticket::before { left: -10px; clip-path: inset(0 0 0 50%); }
 .vx-ticket::after { right: -10px; clip-path: inset(0 50% 0 0); }
@@ -166,7 +242,7 @@ html.vx-snap { scroll-snap-type: y proximity; }
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   padding-top: env(safe-area-inset-top, 0px);
 }
-.vx-nav-row { max-width: 1200px; margin: 0 auto; padding: 0 24px; height: var(--vx-nav-h); display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.vx-nav-row { max-width: 1280px; margin: 0 auto; padding: 0 24px; height: var(--vx-nav-h); display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .vx-nav-logo { display: flex; align-items: center; background: none; border: 0; padding: 0; cursor: pointer; }
 .vx-nav-logo img { height: 38px; width: auto; display: block; }
 .vx-nav-links { display: flex; align-items: center; gap: 4px; }
@@ -177,7 +253,16 @@ html.vx-snap { scroll-snap-type: y proximity; }
 }
 .vx-nav-link:hover { color: #fff; }
 .vx-nav-link[aria-current="true"] { color: #fff; border-bottom-color: var(--vx-cyan); }
+.vx-nav-staff {
+  margin-left: 8px; padding: 8px 10px;
+  font: 500 13px/1 var(--font-nexus-body), Outfit, sans-serif;
+  color: var(--vx-mute); text-decoration: none; border-bottom: 2px solid transparent;
+  transition: color 0.15s;
+}
+.vx-nav-staff:hover { color: var(--vx-text-2); }
+.vx-nav-logins { display: flex; align-items: center; gap: 8px; flex: none; }
 .vx-nav .vx-btn { min-height: 40px; padding: 0 20px; font-size: 14px; }
+.vx-nav .vx-nav-logins .vx-btn { min-height: 36px; padding: 0 14px; font-size: 13px; white-space: nowrap; }
 .vx-nav .vx-nav-scan { padding: 0 16px; margin-right: -8px; }
 .vx-burger {
   display: none; width: 44px; height: 44px; align-items: center; justify-content: center;
@@ -193,26 +278,21 @@ html.vx-snap { scroll-snap-type: y proximity; }
     background: rgba(7, 6, 11, 0.96);
   }
   .vx-menu-backdrop {
-    display: block;
     position: fixed;
     inset: 0;
     z-index: 55;
     background: rgba(3, 2, 6, 0.72);
     -webkit-backdrop-filter: blur(12px);
     backdrop-filter: blur(12px);
-    opacity: 0;
     pointer-events: none;
-    transition: opacity 0.22s cubic-bezier(0.16, 1, 0.3, 1),
-                backdrop-filter 0.22s cubic-bezier(0.16, 1, 0.3, 1),
-                -webkit-backdrop-filter 0.22s cubic-bezier(0.16, 1, 0.3, 1);
   }
   .vx-menu-backdrop[data-open="true"] {
-    opacity: 1;
+    display: block;
     pointer-events: auto;
   }
   .vx-nav-row { padding: 0 12px 0 16px; }
   .vx-nav-logo img { height: 32px; }
-  .vx-nav-links, .vx-nav-cta, .vx-nav-scan { display: none; }
+  .vx-nav-links, .vx-nav-cta, .vx-nav-scan, .vx-nav-staff, .vx-nav-logins { display: none; }
   .vx-burger { display: inline-flex; }
   .vx-stopbar {
     display: flex; align-items: center; gap: 10px; height: var(--vx-stopbar-h); padding: 0 16px 8px;
@@ -252,8 +332,12 @@ html.vx-snap { scroll-snap-type: y proximity; }
   }
   .vx-menu-item[aria-current="true"] { color: var(--vx-cyan); }
   .vx-menu .vx-btn { width: 100%; margin-top: 16px; }
-  .vx-menu-logins { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
-  .vx-menu-logins .vx-btn { margin-top: 0; }
+  .vx-menu-staff {
+    display: block; width: 100%; margin-top: 12px; padding: 10px 0;
+    text-align: center; font: 500 13px/1.4 var(--font-nexus-body), Outfit, sans-serif;
+    color: var(--vx-mute); text-decoration: none; letter-spacing: 0.04em;
+  }
+  .vx-menu-staff:hover { color: var(--vx-text-2); }
 }
 
 /* ── Desktop progress rail ───────────────────────────────────────────────── */
@@ -291,11 +375,11 @@ html.vx-snap { scroll-snap-type: y proximity; }
   .vx-tab {
     flex: 1; min-height: 58px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
     background: none; border: 0; cursor: pointer; color: var(--vx-mute);
-    font: 600 11px var(--font-nexus-body), Outfit, sans-serif; letter-spacing: 0.02em;
+    font: 600 12px var(--font-nexus-body), Outfit, sans-serif; letter-spacing: 0.02em;
   }
   .vx-tab[aria-current="true"] { color: var(--vx-cyan); }
 
-  /* Raised centre Scan button (DEV PREVIEW — see ScanPreview.tsx) */
+  /* Raised centre Scan button (only when TabBar gets onScan) */
   .vx-tab-scan { justify-content: flex-end; color: var(--vx-text); padding-bottom: 6px; }
   .vx-tab-scan-btn {
     width: 58px; height: 58px; margin-top: -30px; border-radius: 50%;
@@ -308,6 +392,9 @@ html.vx-snap { scroll-snap-type: y proximity; }
 }
 
 /* ── 01 Welcome ──────────────────────────────────────────────────────────── */
+/* Clip the Welcome glows at the sides only, so the pink glow fades into the
+   next stop instead of ending in a straight line at the section edge. */
+.vx-welcome { overflow-x: clip; overflow-y: visible; }
 .vx-welcome .vx-inner { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 18px; }
 .vx-welcome-pre { font-family: var(--font-vx-slab), Georgia, serif; font-size: clamp(18px, 2.4vw, 26px); letter-spacing: 0.1em; margin: 0; }
 .vx-welcome-mark {
@@ -321,14 +408,73 @@ html.vx-snap { scroll-snap-type: y proximity; }
 }
 @keyframes vx-shimmer { to { background-position: 200% 0; } }
 .vx-welcome-slogan { font-family: var(--font-vx-slab), Georgia, serif; font-size: clamp(16px, 2vw, 20px); color: #fff; margin: 0; }
-.vx-welcome .vx-lead { max-width: 56ch; }
+.vx-welcome .vx-welcome-slogan { margin-top: -8px; line-height: 1.5; }
 .vx-welcome-actions { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; margin-top: 6px; }
 .vx-welcome-strip { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 28px; margin-top: 18px; font-size: 12px; color: var(--vx-mute); letter-spacing: 0.08em; }
 .vx-welcome-strip b { color: #fff; margin-right: 6px; }
-.vx-scrollhint { position: absolute; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 2; font-size: 11px; letter-spacing: 0.22em; color: var(--vx-mute); background: none; border: 0; cursor: pointer; padding: 8px; }
+/* Organiser + sponsors under the date strip: a divider line, then organiser
+   on the left and sponsors on the right with a thin line between (same as
+   Freshie Home). Logo sizes follow the screen width (clamp) so it stays on
+   one row from phones to desktops. */
+.vx-credits {
+  margin-top: 24px; padding-top: 18px; width: min(560px, 100%);
+  display: flex; align-items: stretch; justify-content: center;
+  border-top: 1px solid var(--vx-line);
+}
+.vx-credits-col {
+  flex: 1 1 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 10px; padding: 0 clamp(12px, 3vw, 32px); min-width: 0;
+}
+.vx-credits-sep { width: 1px; background: var(--vx-line-2); flex: none; }
+.vx-credits-label { font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--vx-mute); white-space: nowrap; }
+.vx-credits-example { text-transform: none; letter-spacing: 0.08em; }
+@media (max-width: 479px) { .vx-credits-example { display: block; margin-top: 2px; } }
+/* White-on-transparent copy of public/xmum-logo-horizontal.png (which is navy on white). */
+.vx-credits-xmum { height: clamp(24px, 6.5vw, 42px); width: auto; max-width: 100%; object-fit: contain; opacity: 0.92; }
+.vx-credits-sponsors ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px 16px; }
+.vx-sponsor-ph { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; font-size: 14px; color: var(--vx-mute); }
+.vx-sponsor-ph i { width: 12px; height: 12px; border-radius: 50%; background: var(--vx-line-2); }
+/* Sponsor logos keep their own colours, as supplied. */
+.vx-sponsor-logo {
+  height: clamp(32px, 8.5vw, 48px); width: auto; max-width: 180px; object-fit: contain;
+  border-radius: 7px; transition: transform 0.15s;
+}
+.vx-credits a:hover .vx-sponsor-logo { transform: translateY(-1px); }
 @media (max-width: 1023px) {
-  .vx-scrollhint { display: none; }
+  .vx-credits { margin-top: 18px; padding-top: 14px; }
+  .vx-credits-col { gap: 7px; }
+}
+
+.vx-scrollhint {
+  position: absolute; left: 50%; bottom: 22px; transform: translateX(-50%); z-index: 2;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  padding: 8px; background: none; border: 0; cursor: pointer;
+  color: var(--vx-mute);
+  font-family: var(--font-mono), "JetBrains Mono", ui-monospace, monospace;
+  font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase;
+}
+/* Hidden but still measured, so it comes back when the screen grows. */
+.vx-scrollhint[data-fits="false"] { visibility: hidden; }
+.vx-scrollhint-line {
+  display: block; width: 1px; height: 46px; position: relative; overflow: hidden;
+  background: rgba(255, 255, 255, 0.16);
+}
+.vx-scrollhint-line::after {
+  content: ""; position: absolute; left: 0; top: 0; width: 100%; height: 40%;
+  background: var(--vx-cyan);
+  box-shadow: 0 0 8px var(--vx-cyan);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .vx-scrollhint-line::after { animation: vx-scroll-line 1.6s ease-in-out infinite; }
+}
+@keyframes vx-scroll-line {
+  0% { transform: translateY(280%); opacity: 0; }
+  25% { opacity: 1; }
+  100% { transform: translateY(-120%); opacity: 0; }
+}
+@media (max-width: 1023px) {
   .vx-welcome .vx-lead { font-size: 15px; }
+  .vx-scrollhint { bottom: calc(var(--vx-tabbar-h) + 8px); }
 }
 
 /* ── 02 Overview ─────────────────────────────────────────────────────────── */
@@ -371,6 +517,35 @@ html.vx-snap { scroll-snap-type: y proximity; }
 }
 @media (min-width: 640px) and (max-width: 1023px) { .vx-steps { grid-template-columns: 1fr 1fr; } }
 
+
+/* ── Honest empty / coming-soon cards ────────────────────────────────────── */
+.vx-coming {
+  padding: 28px 24px;
+  border-radius: 18px;
+  border: 1px solid var(--vx-line-2);
+  background: rgba(21, 18, 30, 0.72);
+}
+.vx-coming-title {
+  margin: 0 0 8px;
+  font-family: var(--font-vx-slab), Georgia, serif;
+  font-weight: 400;
+  font-size: clamp(22px, 3vw, 28px);
+  color: var(--vx-text);
+}
+.vx-coming-meta {
+  margin: 0 0 12px;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  color: var(--vx-cyan);
+}
+.vx-coming-note {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--vx-mute);
+  max-width: 42ch;
+}
+
 /* ── 04 Scoreboard ───────────────────────────────────────────────────────── */
 .vx-score .vx-inner { max-width: 920px; }
 .vx-score-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin-bottom: 10px; }
@@ -410,6 +585,12 @@ html.vx-snap { scroll-snap-type: y proximity; }
 .vx-item::before { content: ""; position: absolute; left: -35px; top: 50%; width: 13px; height: 13px; border-radius: 50%; background: var(--dot); transform: translateY(-50%); box-shadow: 0 0 0 4px var(--vx-ink); }
 .vx-item b { font-weight: 600; font-size: 16px; }
 .vx-item small { grid-column: 1; font-size: 11px; letter-spacing: 0.14em; color: var(--vx-mute); }
+/* Placeholder rows while the schedule loads. */
+.vx-item-skel { min-height: 62px; --dot: var(--vx-line-2); opacity: 0.55; }
+@media (prefers-reduced-motion: no-preference) {
+  .vx-item-skel { animation: vx-skel 1.4s ease-in-out infinite alternate; }
+}
+@keyframes vx-skel { to { opacity: 0.25; } }
 .vx-tag { grid-row: 1 / span 2; grid-column: 2; display: inline-flex; align-items: center; gap: 6px; font-size: 10.5px; letter-spacing: 0.14em; padding: 5px 10px; border-radius: 999px; border: 1px solid currentColor; }
 @media (max-width: 1023px) {
   .vx-sched .vx-inner { grid-template-columns: 1fr; gap: 20px; }
@@ -453,7 +634,33 @@ html.vx-snap { scroll-snap-type: y proximity; }
 }
 @media (min-width: 640px) and (max-width: 1023px) { .vx-cgrid { grid-template-columns: repeat(3, 1fr); } }
 
+/* ── 07 Check-in (was Join) ───────────────────────────────────────────────── */
+.vx-checkin-steps {
+  list-style: none; margin: 8px 0 0; padding: 0;
+  display: flex; flex-direction: column; gap: 12px; width: 100%;
+}
+.vx-checkin-steps li {
+  display: grid; grid-template-columns: 36px 1fr; gap: 12px; align-items: start;
+}
+.vx-checkin-step-no {
+  font-size: 12px; letter-spacing: 0.14em; color: var(--vx-yellow); padding-top: 3px;
+}
+.vx-checkin-steps b {
+  display: block; font-family: var(--font-vx-slab), Georgia, serif;
+  font-weight: 400; font-size: 17px; color: #fff; margin-bottom: 2px;
+}
+.vx-checkin-steps p {
+  margin: 0; font-size: 14px; color: var(--vx-mute); line-height: 1.5; max-width: none;
+}
+.vx-checkin-note {
+  margin: 10px 0 0 !important; font-size: 13px !important; color: var(--vx-mute) !important;
+  max-width: none !important;
+}
+.vx-pass-main > p { margin: 0 0 6px; color: var(--vx-text-2); font-size: 15.5px; max-width: 42ch; }
+
 /* ── 07 Join ─────────────────────────────────────────────────────────────── */
+/* Pass sits high so the city skyline below it stays visible. */
+.vx-join { align-items: flex-start; }
 .vx-join .vx-inner { display: flex; justify-content: center; }
 .vx-pass { width: min(720px, 100%); display: grid; grid-template-columns: 1fr 190px; border-radius: 24px; }
 .vx-pass-main { padding: 40px 40px 36px; display: flex; flex-direction: column; gap: 14px; align-items: flex-start; }
@@ -463,7 +670,7 @@ html.vx-snap { scroll-snap-type: y proximity; }
 .vx-pass-stub .vx-num { font-size: 32px; color: var(--vx-yellow); letter-spacing: 0; }
 @media (max-width: 1023px) {
   .vx-pass { grid-template-columns: 1fr; }
-  .vx-pass::before, .vx-pass::after { top: auto; bottom: 64px; transform: translateY(50%); }
+  .vx-pass { --vx-notch-y: calc(100% - 64px); }
   .vx-pass-main { padding: 28px 22px 22px; }
   .vx-pass-main .vx-btn { width: 100%; }
   .vx-pass-stub { border-left: 0; border-top: 2px dashed var(--vx-line-2); flex-direction: row; justify-content: space-between; height: 64px; padding: 0 22px; }
@@ -483,42 +690,183 @@ html.vx-snap { scroll-snap-type: y proximity; }
 .vx-footer a { font-size: 12px; letter-spacing: 0.14em; color: var(--vx-text-2); text-decoration: none; padding: 10px 18px; border-radius: 999px; border: 1px solid var(--vx-line-2); margin-top: 6px; }
 .vx-footer a:hover { border-color: var(--vx-cyan); color: var(--vx-cyan); }
 
-/* ── Join chooser + Freshie login ────────────────────────────────────────── */
+/* ── Join chooser + login pages (Freshie and Committee, Faci, GM) ────────── */
 .vx-join-pop {
-  position: fixed; inset: 0; z-index: 80;
+  position: fixed; inset: 0; z-index: 80; min-height: 0;
   display: grid; place-items: center; padding: 24px;
+  background: transparent;
 }
 .vx-join-pop-backdrop {
   position: absolute; inset: 0; border: 0; padding: 0;
-  background: rgba(7, 6, 11, 0.72); cursor: pointer;
+  background: rgba(3, 2, 6, 0.78); cursor: pointer;
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
 }
 .vx-join-pop-card {
   position: relative; z-index: 1; width: min(420px, 100%);
   display: flex; flex-direction: column; gap: 12px;
-  padding: 28px 22px 22px; border-radius: 28px;
+  padding: 16px 20px 22px; border-radius: 28px;
   background: var(--vx-ink-2); border: 1px solid var(--vx-line-2);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
 }
+.vx-join-pop-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-right: -10px; }
+.vx-join-pop-head .vx-eyebrow { margin: 0; font-size: 13px; font-weight: 400; }
+.vx-join-pop-close {
+  display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; flex: none;
+  border: 0; border-radius: 999px; background: transparent; color: var(--vx-text-2); cursor: pointer;
+}
+.vx-join-pop-close:hover { color: #fff; background: var(--vx-ink-3); }
+.vx-join-pop-note { margin: 0 0 6px; font-size: 15px; line-height: 1.5; color: var(--vx-text-2); }
 .vx-join-pop-card .vx-btn { width: 100%; }
+
+.vx-btn:disabled, .vx-btn[aria-disabled="true"] {
+  background: var(--vx-ink-3); color: var(--vx-mute); border-color: var(--vx-line-2);
+  box-shadow: none; transform: none; cursor: not-allowed;
+}
+
 .vx-login {
   min-height: 100dvh; display: grid; place-items: center;
-  padding: 32px 20px; position: relative; overflow: hidden;
+  padding: calc(32px + env(safe-area-inset-top, 0px)) 20px calc(32px + env(safe-area-inset-bottom, 0px));
+  position: relative; overflow: hidden;
 }
 .vx-login-card {
   position: relative; width: min(440px, 100%);
   display: flex; flex-direction: column; align-items: center; text-align: center; gap: 16px;
 }
 .vx-login-card .vx-welcome-mark { font-size: clamp(48px, 8vw, 72px); }
-.vx-login-form { width: 100%; display: flex; flex-direction: column; gap: 12px; margin-top: 8px; }
-.vx-login-form label { display: flex; flex-direction: column; gap: 6px; text-align: left; font-size: 13px; color: var(--vx-text-2); }
+.vx-login-role { margin: 0; font-size: 18px; font-weight: 700; color: var(--vx-cyan); letter-spacing: 0.01em; }
+.vx-login-form { width: 100%; display: flex; flex-direction: column; gap: 14px; margin-top: 8px; }
+.vx-login-form label, .vx-login-label { display: flex; flex-direction: column; gap: 6px; text-align: left; font-size: 14px; font-weight: 600; color: var(--vx-text-2); }
 .vx-login-form select,
 .vx-login-form input {
   min-height: 48px; width: 100%; border-radius: 999px; padding: 0 18px;
   background: var(--vx-ink); color: var(--vx-text);
-  border: 1px solid var(--vx-line-2); font: inherit; font-size: 16px;
+  border: 1px solid var(--vx-line-2); font: inherit; font-size: 16px; font-weight: 400; letter-spacing: normal;
 }
-.vx-login-form input { letter-spacing: 0.4em; text-align: center; }
+.vx-login-form input::placeholder { color: var(--vx-mute); opacity: 1; }
+.vx-login-form select {
+  -webkit-appearance: none; appearance: none; color-scheme: dark; cursor: pointer;
+  padding-right: 48px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23cfc9dc' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 18px center; background-size: 20px 20px;
+}
+.vx-login-form select:invalid, .vx-login-form select[data-empty="true"] { color: var(--vx-mute); }
+.vx-login-form select option { color: var(--vx-text); background: var(--vx-ink-2); }
+.vx-login-form .vx-login-code { letter-spacing: 0.4em; text-align: center; }
 .vx-login-form select:focus,
 .vx-login-form input:focus { outline: 2px solid var(--vx-cyan); outline-offset: 2px; }
-.vx-login-error { margin: 0; color: var(--vx-blush); font-size: 14px; }
-.vx-login-back { color: var(--vx-mute); font-size: 13px; text-decoration: none; }
-.vx-login-back:hover { color: var(--vx-cyan); }
+.vx-login-pass { position: relative; display: block; }
+.vx-login-form .vx-login-pass input { padding-right: 56px; }
+.vx-login-eye {
+  position: absolute; right: 2px; top: 50%; transform: translateY(-50%);
+  display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px;
+  border: 0; border-radius: 999px; background: transparent; color: var(--vx-text-2); cursor: pointer;
+}
+.vx-login-eye:hover { color: #fff; }
+.vx-login-error {
+  margin: 0; padding: 10px 14px; border-radius: 14px; text-align: left;
+  border: 1px solid rgba(255, 177, 193, 0.4); background: rgba(188, 7, 29, 0.18);
+  color: #ffc7d2; font-size: 14px; line-height: 1.45;
+}
+.vx-login-notice {
+  margin: 0; padding: 10px 14px; border-radius: 14px; text-align: left;
+  border: 1px solid rgba(13, 252, 253, 0.35); background: rgba(13, 252, 253, 0.08);
+  color: var(--vx-cyan); font-size: 14px; line-height: 1.45;
+}
+.vx-login-link {
+  display: inline-flex; align-items: center; justify-content: center; align-self: center; min-height: 44px; padding: 0 12px;
+  color: var(--vx-text-2); font-size: 14px; font-weight: 600; text-decoration: underline; text-underline-offset: 3px;
+}
+.vx-login-link:hover { color: var(--vx-cyan); }
+.vx-login-divider {
+  display: flex; align-items: center; gap: 12px; width: 100%; margin: 4px 0;
+  color: var(--vx-mute); font-size: 14px;
+}
+.vx-login-divider::before, .vx-login-divider::after { content: ""; flex: 1; height: 1px; background: var(--vx-line-2); }
+.vx-login-google {
+  display: inline-flex; align-items: center; justify-content: center; gap: 10px; width: 100%; min-height: 48px;
+  border-radius: 999px; border: 1px solid var(--vx-line-2); background: #fff; color: #1a1a1a;
+  font: inherit; font-size: 15px; font-weight: 700; cursor: pointer;
+}
+.vx-login-google:disabled { opacity: 0.6; cursor: progress; }
+.vx-login-google svg { width: 18px; height: 18px; flex: none; }
+.vx-login-demo { width: 100%; margin-top: 4px; color: var(--vx-text-2); font-size: 14px; }
+.vx-login-demo > summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; justify-content: center; text-decoration: underline; text-underline-offset: 3px; }
+.vx-login-demo-box { margin-top: 8px; padding: 14px; border-radius: 18px; border: 1px solid rgba(224, 180, 252, 0.3); background: rgba(224, 180, 252, 0.07); text-align: left; }
+.vx-login-demo-box p { margin: 0 0 10px; font-size: 13px; color: var(--vx-text-2); }
+.vx-login-demo-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.vx-login-demo-row button {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 16px; border-radius: 999px;
+  border: 1px solid var(--vx-line-2); background: var(--vx-ink-3); color: var(--vx-text); font: inherit; font-size: 14px; font-weight: 700; cursor: pointer;
+}
+.vx-login-demo-row button:hover { border-color: var(--vx-cyan); color: var(--vx-cyan); }
+.vx-login-demo-row button:disabled { opacity: 0.5; cursor: progress; }
+.vx-login-foot { margin: 8px 0 0; font-size: 13px; color: var(--vx-mute); }
+
+/* Welcome trial: one park identity, restrained light around readable content. */
+.vx-h2, .vx-pass-title { font-family: var(--font-vx-display), Georgia, serif; font-weight: 400; }
+.vx-welcome-pre { font-family: var(--font-nexus-body), Outfit, sans-serif; font-weight: 600; font-size: clamp(16px, 2.4vw, 22px); letter-spacing: 0.1em; }
+.vx-welcome-slogan { font-family: var(--font-nexus-body), Outfit, sans-serif; font-weight: 600; }
+.vx-sec > .vx-dots { display: none; }
+.vx-lead { font-size: 16px; }
+.vx-btn { transition: background-color 180ms ease, border-color 180ms ease, transform 180ms ease; }
+.vx :focus-visible { outline: 2px solid var(--vx-cyan); outline-offset: 4px; }
+@media (max-width: 1023px) {
+  html.vx-snap { scroll-snap-type: y proximity; }
+  .vx-score, .vx-sched { height: auto; min-height: 100svh; overflow: visible; }
+  .vx-h2 { font-size: clamp(32px, 9vw, 44px); line-height: 1.15; }
+  .vx-welcome .vx-inner { gap: 16px; }
+  .vx-welcome .vx-welcome-slogan { margin-top: -6px; font-size: 16px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html.vx-snap { scroll-snap-type: none; }
+  .vx-btn { transition: none; }
+}
+
+/* Shared theme lettering for the park entrance and Freshie login. */
+.vx-welcome .vx-welcome-pre, .vx-login .vx-welcome-pre { font-family: var(--font-vx-slab), Georgia, serif; font-weight: 400; letter-spacing: 0.06em; font-size: clamp(18px, 2.4vw, 26px); }
+.vx-welcome .vx-welcome-mark { filter: drop-shadow(0 8px 36px rgb(13 252 253 / 28%)); }
+
+/* A small park-themed rocket in the upper sky, away from the reading column. */
+.vx-space-rocket { position: absolute; right: 5%; top: 2.6%; width: clamp(24px, 6vw, 42px); height: auto; transform: rotate(22deg); opacity: 0.7; filter: drop-shadow(0 0 7px rgb(13 252 253 / 18%)); }
+.vx-login .vx-welcome-slogan { font-family: var(--font-nexus-body), Outfit, sans-serif; font-weight: 600; }
+
+@media (max-width: 1023px) {
+  .vx-checkin { padding-bottom: calc(var(--vx-tabbar-h) + 240px); }
+  .vx-city { --vx-city-h: 320px; --vx-wheel-x: 50%; }
+}
+
+/* Programmatic navigation must not fight section snapping. */
+html.vx-snap { scroll-snap-type: none; }
+
+.vx-login-back { display: inline-flex; align-items: center; justify-content: center; gap: 0.45rem; width: 100%; min-height: 48px; margin-top: 8px; border-radius: 9999px; border: 1px solid #3b354c; background: transparent; color: var(--vx-text); font-size: 14px; font-weight: 700; text-decoration: none; transition: border-color 0.15s, color 0.15s, transform 0.15s; }
+.vx-login-back:hover { border-color: var(--vx-cyan); color: var(--vx-cyan); }
+.vx-login-back:active { transform: scale(0.97); }
+
+/* Descent: orbit, lower sky, then park. Decoration stays at the page edges. */
+.vx-planet, .vx-aircraft, .vx-cloud, .vx-park-balloons { position: absolute; height: auto; }
+.vx-planet-a { left: 3%; top: 1.6%; width: clamp(54px, 9vw, 110px); opacity: .5; transform: rotate(-8deg); }
+.vx-planet-b { right: 6%; top: 19%; width: clamp(30px, 5vw, 60px); opacity: .35; }
+.vx-plane { left: 2%; top: 32%; width: clamp(56px, 9vw, 115px); opacity: .45; transform: rotate(-14deg); }
+.vx-helicopter { right: 3%; top: 47%; width: clamp(62px, 10vw, 120px); opacity: .45; }
+.vx-cloud { width: clamp(110px, 20vw, 260px); opacity: .055; }
+.vx-cloud-0 { right: -3%; }.vx-cloud-1 { left: -4%; }.vx-cloud-2 { right: -5%; }.vx-cloud-3 { left: -3%; }
+.vx-park-balloons { right: 3%; top: 77%; width: clamp(36px, 5vw, 70px); opacity: .35; }
+@media (max-width: 600px) {
+  .vx-planet-a { top: 1.5%; left: 2%; width: 48px; opacity: .4; }
+  .vx-plane { top: 30%; }.vx-helicopter { top: 44%; }
+  .vx-park-balloons { right: 2%; width: 32px; }
+}
+
+/* Progress bar: fixed label width so the track never changes length between
+   stops (the Games to Scoreboard label change used to shrink it by ~40px and
+   made the bar look like it reset). The fill scales instead of resizing. */
+@media (max-width: 1023px) {
+  .vx-stopbar b { flex: none; }
+  .vx-stopbar-label { flex: none; width: 11ch; text-align: right; white-space: nowrap; }
+  .vx-stopbar-fill { width: 100%; transform-origin: left center; transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1); will-change: transform; }
+  .vx-menu-actions { display: flex; flex-direction: column; gap: 12px; margin-top: 20px; }
+  .vx-menu .vx-menu-actions .vx-btn { min-height: 48px; margin-top: 0; font-size: 16px; }
+}
+@media (max-width: 1023px) and (prefers-reduced-motion: reduce) {
+  .vx-stopbar-fill { transition: none; }
+}

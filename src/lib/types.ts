@@ -57,7 +57,7 @@ export interface Station {
   map_x: number;
   map_y: number;
   risk_tier: RiskTier;
-  entry_cost: number;
+  day: 1 | 2;
   /** How many groups fit at once. When full, status becomes In progress. */
   max_groups: number | null;
   /** Real-world position, used only to warn a far-away check-in. */
@@ -143,22 +143,76 @@ export interface AttendanceSession {
   closed: boolean;
 }
 
-export interface BlindBoxAllocation {
+/** Admin-defined blind box type (migration 0054). */
+export interface BlindBoxType {
   id: number;
-  profile_id: string;
-  box_type: "normal" | "special";
+  name: string;
   min_tokens: number;
   max_tokens: number;
-  total_boxes: number;
-  used_boxes: number;
+  price: number;
+  /** Total boxes of this type that exist. Assignments are drawn from it. */
+  stock: number;
+  is_special: boolean;
+  archived: boolean;
+}
+
+/** A box type handed to one seller: an account OR a station (shared pool). */
+export interface BlindBoxAssignment {
+  id: number;
+  type_id: number;
+  profile_id: string | null;
+  station_id: number | null;
+  /** Total assigned, including boxes already opened. */
+  quantity: number;
+  opened: number;
+  qr_version: number;
   active: boolean;
+}
+
+export interface BlindBoxClaim {
+  id: number;
+  assignment_id: number | null;
+  type_id: number;
+  type_name: string;
+  seller_name: string;
+  seller_profile_id: string | null;
+  seller_station_id: number | null;
+  group_id: number;
+  price: number;
+  tokens: number;
+  special: boolean;
+  created_at: string;
+}
+
+/** What a Freshie sees after scanning, before opening (fn_bb_preview). */
+export type BlindBoxPreviewStatus =
+  | "ok"
+  | "disabled"
+  | "frozen"
+  | "sold_out"
+  | "already_from_seller"
+  | "cap_reached"
+  | "insufficient";
+
+export interface BlindBoxPreview {
+  status: BlindBoxPreviewStatus;
+  seller_name: string;
+  type_name: string;
+  price: number;
+  special: boolean;
+  balance: number;
+  group_claims: number;
+  cap: number;
 }
 
 export interface BlindBoxResult {
   ok: boolean;
+  duplicate: boolean;
   tokens: number;
+  price: number;
   special: boolean;
-  member_name: string | null;
+  seller_name: string;
+  type_name: string;
   balance: number;
 }
 
@@ -173,6 +227,8 @@ export interface Day2Result {
   piece_index: number | null;
 }
 
+export type TimerState = "idle" | "running" | "paused" | "ended";
+
 export interface ScheduleItem {
   id: number;
   day_label: string;
@@ -181,6 +237,19 @@ export interface ScheduleItem {
   location: string;
   description: string;
   sort_order: number;
+  // Planned times (migration 0049): what the countdown counts to before the
+  // item starts. A live timer never moves them.
+  starts_at: string | null;
+  ends_at: string | null;
+  // Attendance session, created the first time Admin opens it.
+  session_id: number | null;
+  // Live timer, run from Live control. It counts to timer_end_override if
+  // Admin changed the end there, else to the planned end (ends_at).
+  timer_end_override: string | null;
+  timer_state: TimerState;
+  timer_started_at: string | null;
+  timer_ends_at: string | null;
+  timer_paused_remaining: number | null;
 }
 
 export interface FaqItem {
@@ -189,6 +258,8 @@ export interface FaqItem {
   question: string;
   answer: string;
   sort_order: number;
+  // Roles that can see the entry. Empty means everyone.
+  roles: UserRole[];
 }
 
 export const PIECES_PER_SET = 5;
@@ -244,5 +315,16 @@ export const ROLE_LABELS: Record<UserRole, string> = {
 };
 
 export const COMMITTEE_TIER: UserRole[] = ["hof", "hogm", "committee", "admin"];
+
+/** Roles that can hold blind boxes: everyone except Facilitator and Freshie.
+ *  Mirrors bb_holder_role() in migration 0054. */
+export const BLINDBOX_HOLDER_ROLES: UserRole[] = [
+  "gm",
+  "guardian_gm",
+  "committee",
+  "hof",
+  "hogm",
+  "admin",
+];
 
 

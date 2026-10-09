@@ -1,6 +1,7 @@
 "use client";
 
 import { Pencil, Trash2 } from "lucide-react";
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
@@ -11,313 +12,228 @@ import {
   SuccessBanner,
 } from "@/components/ui";
 import { Dialog, DialogContent } from "@/components/ui/Dialog";
-import {
-  MAP_BUILDINGS,
-  nextStationCode,
-  stationNumberFromCode,
-  stationPosition,
-} from "@/lib/mapBuildings";
+import { MAP_BUILDINGS, stationPosition } from "@/lib/mapBuildings";
 import { supabaseBrowser } from "@/lib/supabase/client";
-import { friendlyError } from "@/lib/utils";
-import type {
-  Group,
-  RiskTier,
-  Station,
-  StationPurpose,
-  StationStatus,
+import {
+  RISK_TIER_META,
+  type RiskTier,
+  type Station,
+  type StationStatus,
 } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
-type StationDraft = {
-  id: number | null;
-  code: string;
+const OTHER_BLOCK = "__other__";
+const DEFAULT_BLOCKS = [
+  ...MAP_BUILDINGS.map((b) => b.area),
+  "Courts",
+];
+
+type DayFilter = "all" | 1 | 2;
+
+interface StationForm {
   name: string;
-  area: string;
+  day: 1 | 2;
+  block: string; // a known block, or OTHER_BLOCK
+  otherBlock: string;
+  floor: string;
+  risk: RiskTier;
   purpose: string;
-  newPurpose: string;
-  status: StationStatus;
-  risk_tier: RiskTier;
-  entry_cost: number;
   max_groups: string;
-  lat: string;
-  lng: string;
-  radius_m: string;
-};
+}
 
-const EMPTY_DRAFT: StationDraft = {
-  id: null,
-  code: "",
+const EMPTY_FORM: StationForm = {
   name: "",
-  area: "A1",
+  day: 1,
+  block: "",
+  otherBlock: "",
+  floor: "",
+  risk: "low",
   purpose: "",
-  newPurpose: "",
-  status: "available",
-  risk_tier: "low",
-  entry_cost: 2,
   max_groups: "",
-  lat: "",
-  lng: "",
-  radius_m: "",
 };
 
+interface StationGm {
+  id: string;
+  full_name: string;
+  station_id: number;
+}
+
+// stations.code is the location: block and floor, e.g. "A4-1".
+function locationCode(block: string, floor: string) {
+  const f = floor.trim();
+  return f ? `${block}-${f}` : block;
+}
+
+// FR-11.3: station management (count/IDs still open per D-2 — fully
+// editable here without redeploy). Groups and their tokens are managed on
+// the Token page (/admin/token).
 export default function AdminStationsPage() {
   const supabase = useMemo(() => supabaseBrowser(), []);
   const [stations, setStations] = useState<Station[]>([]);
-  const [purposes, setPurposes] = useState<StationPurpose[]>([]);
-  const [groups, setGroups] = useState<Group[]>([]);
-  const [counts, setCounts] = useState<Record<number, number>>({});
-  const [draft, setDraft] = useState<StationDraft>(EMPTY_DRAFT);
-  const [stationOpen, setStationOpen] = useState(false);
-  const [newGroup, setNewGroup] = useState("");
-  const [groupOpen, setGroupOpen] = useState(false);
-  const [newPurpose, setNewPurpose] = useState("");
+  const [gms, setGms] = useState<StationGm[]>([]);
+  const [dayFilter, setDayFilter] = useState<DayFilter>("all");
+  // null = closed; "new" = adding; a station = editing it
+  const [editing, setEditing] = useState<Station | "new" | null>(null);
+  const [form, setForm] = useState<StationForm>(EMPTY_FORM);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const [{ data: sts }, { data: ps }, { data: gs }, { data: cs }] = await Promise.all([
-      supabase.from("stations").select("*").order("id"),
-      supabase.from("station_purposes").select("id, name").order("name"),
-      supabase.from("groups").select("*").order("id"),
-      supabase.rpc("fn_station_group_counts"),
+    const [{ data: sts }, { data: staff }] = await Promise.all([
+      supabase.from("stations").select("*").order("day").order("id"),
+      supabase
+        .from("profiles")
+        .select("id, full_name, station_id")
+        .in("role", ["gm", "guardian_gm"])
+        .not("station_id", "is", null),
     ]);
-    setCounts(
-      Object.fromEntries(
-        ((cs as { station_id: number; group_count: number }[]) ?? []).map((row) => [
-          row.station_id,
-          row.group_count,
-        ])
-      )
-    );
     setStations((sts as Station[]) ?? []);
-    setPurposes((ps as StationPurpose[]) ?? []);
-    setGroups((gs as Group[]) ?? []);
+    setGms((staff as StationGm[]) ?? []);
   }, [supabase]);
 
   useEffect(() => {
     load();
   }, [load]);
 
+  const blocks = useMemo(
+    () =>
+      Array.from(
+        new Set([...DEFAULT_BLOCKS, ...stations.map((s) => s.area)])
+      ).filter(Boolean),
+    [stations]
+  );
+
+  const visible = stations.filter(
+    (s) => dayFilter === "all" || s.day === dayFilter
+  );
+
   function flash(msg: string) {
     setNotice(msg);
     setTimeout(() => setNotice(null), 2000);
   }
 
-  function openCreate() {
-    setDraft(EMPTY_DRAFT);
-    setStationOpen(true);
-  }
-
-  function openEdit(station: Station) {
-    setDraft({
-      id: station.id,
-      code: station.code,
-      name: station.name,
-      area: station.area,
-      purpose: station.purpose ?? "",
-      newPurpose: "",
-      status: station.status,
-      risk_tier: station.risk_tier,
-      entry_cost: station.entry_cost,
-      max_groups: station.max_groups?.toString() ?? "",
-      lat: station.lat?.toString() ?? "",
-      lng: station.lng?.toString() ?? "",
-      radius_m: station.radius_m?.toString() ?? "",
+  function openAdd() {
+    setForm({
+      ...EMPTY_FORM,
+      day: dayFilter === 2 ? 2 : 1,
+      block: blocks[0] ?? "A1",
     });
-    setStationOpen(true);
+    setEditing("new");
   }
 
-  async function ensurePurpose(name: string) {
-    const trimmed = name.trim();
-    if (!trimmed) return "";
-    const { error: upsertError } = await supabase
-      .from("station_purposes")
-      .upsert({ name: trimmed }, { onConflict: "name", ignoreDuplicates: true });
-    if (upsertError) throw new Error(upsertError.message);
-    return trimmed;
+  function openEdit(s: Station) {
+    const known = blocks.includes(s.area);
+    setForm({
+      name: s.name,
+      day: s.day,
+      block: known ? s.area : OTHER_BLOCK,
+      otherBlock: known ? "" : s.area,
+      floor: s.code.startsWith(`${s.area}-`)
+        ? s.code.slice(s.area.length + 1)
+        : "",
+      risk: s.risk_tier,
+      purpose: s.purpose ?? "",
+      max_groups: s.max_groups != null ? String(s.max_groups) : "",
+    });
+    setEditing(s);
   }
 
   async function saveStation(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    const purposeName =
-      draft.purpose === "__new" ? draft.newPurpose : draft.purpose;
-    let purpose = "";
-    try {
-      purpose = await ensurePurpose(purposeName);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not save the game.");
-      return;
-    }
+    const block = (
+      form.block === OTHER_BLOCK ? form.otherBlock : form.block
+    ).trim();
+    if (!block) return setError("Choose a block.");
 
-    const siblings = stations.filter(
-      (station) => station.area === draft.area && station.id !== draft.id
-    );
-    const spot = stationPosition(draft.area, siblings.length) ?? { x: 50, y: 50 };
-    const code = draft.id
-      ? draft.code
-      : nextStationCode(
-          draft.area,
-          stations.map((station) => station.code)
-        );
-    const row = {
-      code,
-      station_number: stationNumberFromCode(code),
-      name: draft.name.trim(),
-      area: draft.area,
-      purpose,
-      risk_tier: draft.risk_tier,
-      entry_cost: draft.entry_cost,
-      map_x: spot.x,
-      map_y: spot.y,
-      max_groups: draft.max_groups ? Number(draft.max_groups) : null,
-      lat: draft.lat ? Number(draft.lat) : null,
-      lng: draft.lng ? Number(draft.lng) : null,
-      radius_m: draft.radius_m ? Number(draft.radius_m) : null,
+    const row: Partial<Station> = {
+      name: form.name.trim(),
+      day: form.day,
+      area: block,
+      // Day 1 has no entry fee; keep the column at its default
+      risk_tier: form.day === 2 ? form.risk : "low",
+      purpose: form.purpose.trim(),
+      max_groups: form.max_groups ? parseInt(form.max_groups, 10) : null,
     };
 
-    // Status is not part of the row: Available vs In progress follows the
-    // groups checked in, and the manual choices go through fn_set_station_status.
-    let stationId = draft.id;
-    if (draft.id) {
-      const { error: saveError } = await supabase
-        .from("stations")
-        .update(row)
-        .eq("id", draft.id);
-      if (saveError) {
-        setError(saveError.message);
-        return;
-      }
-    } else {
-      const { data: created, error: saveError } = await supabase
-        .from("stations")
-        .insert(row)
-        .select("id")
-        .single();
-      if (saveError || !created) {
-        setError(saveError?.message ?? "Could not add the station.");
-        return;
-      }
-      stationId = created.id as number;
+    // Keep an existing code that doesn't follow block-floor unless the location changed
+    const old = editing !== "new" ? editing : null;
+    const oldFloor = old?.code.startsWith(`${old.area}-`)
+      ? old.code.slice(old.area.length + 1)
+      : "";
+    if (!old || old.area !== block || oldFloor !== form.floor.trim()) {
+      row.code = locationCode(block, form.floor);
     }
 
-    const before = stations.find((station) => station.id === draft.id);
-    if (stationId && (!before || before.status !== draft.status)) {
-      const { error: statusError } = await supabase.rpc("fn_set_station_status", {
-        p_station_id: stationId,
-        p_status: draft.status,
-      });
-      if (statusError) {
-        setError(friendlyError(statusError));
-        load();
-        return;
-      }
+    if (!old) {
+      const spot = stationPosition(
+        block,
+        stations.filter((s) => s.area === block).length
+      ) ?? { x: 50, y: 50 };
+      row.map_x = spot.x;
+      row.map_y = spot.y;
     }
-    setStationOpen(false);
-    flash(draft.id ? "Station updated." : "Station added.");
+
+    const { error } = old
+      ? await supabase.from("stations").update(row).eq("id", old.id)
+      : await supabase.from("stations").insert(row);
+    if (error) return setError(error.message);
+    setEditing(null);
+    flash(old ? "Station updated." : "Station added.");
     load();
   }
 
-  async function updateStatus(id: number, status: StationStatus) {
-    setError(null);
-    const { error: updateError } = await supabase.rpc("fn_set_station_status", {
-      p_station_id: id,
-      p_status: status,
-    });
-    if (updateError) setError(friendlyError(updateError));
-    load();
-  }
-
-  async function clearStation(station: Station) {
-    if (!window.confirm(`Remove all groups from ${station.code}?`)) return;
-    setError(null);
-    const { error: clearError } = await supabase.rpc("fn_clear_station", {
-      p_station_id: station.id,
-    });
-    if (clearError) setError(friendlyError(clearError));
-    else flash("Station cleared.");
-    load();
-  }
-
-  async function deleteStation(station: Station) {
-    if (!window.confirm(`Delete ${station.code}?`)) return;
-    setError(null);
-    const { error: deleteError } = await supabase
+  async function setStatus(id: number, status: StationStatus) {
+    const { error } = await supabase
       .from("stations")
-      .delete()
-      .eq("id", station.id);
-    if (deleteError) setError(deleteError.message);
+      .update({ status })
+      .eq("id", id);
+    if (error) setError(error.message);
+    else
+      setStations((sts) =>
+        sts.map((s) => (s.id === id ? { ...s, status } : s))
+      );
+  }
+
+  async function deleteStation(s: Station) {
+    setError(null);
+    // Stations with token history keep their records; close them instead.
+    const [{ count: txCount }, { count: logCount }] = await Promise.all([
+      supabase
+        .from("token_transactions")
+        .select("id", { count: "exact", head: true })
+        .eq("station_id", s.id),
+      supabase
+        .from("token_logs")
+        .select("log_id", { count: "exact", head: true })
+        .eq("station_id", s.id),
+    ]);
+    if ((txCount ?? 0) + (logCount ?? 0) > 0) {
+      if (
+        s.status !== "closed" &&
+        window.confirm(
+          `${s.name} already has token history, so it can't be deleted.\n\nClose it instead?`
+        )
+      ) {
+        await setStatus(s.id, "closed");
+        flash("Station closed.");
+      } else if (s.status === "closed") {
+        setError(`${s.name} has token history, so it stays (closed).`);
+      }
+      return;
+    }
+
+    const assigned = gms.filter((g) => g.station_id === s.id);
+    const warning = assigned.length
+      ? `\n\nThese GMs will have no station: ${assigned
+          .map((g) => g.full_name)
+          .join(", ")}.`
+      : "";
+    if (!window.confirm(`Delete ${s.name}?${warning}`)) return;
+    const { error } = await supabase.from("stations").delete().eq("id", s.id);
+    if (error) setError(error.message);
     else {
       flash("Station deleted.");
-      load();
-    }
-  }
-
-  async function addPurpose(e: React.FormEvent) {
-    e.preventDefault();
-    setError(null);
-    const name = newPurpose.trim();
-    if (!name) return;
-    const { error: insertError } = await supabase
-      .from("station_purposes")
-      .insert({ name });
-    if (insertError) setError(insertError.message);
-    else {
-      setNewPurpose("");
-      flash("Game added.");
-      load();
-    }
-  }
-
-  async function renamePurpose(purpose: StationPurpose, name: string) {
-    const next = name.trim();
-    if (!next || next === purpose.name) return;
-    setError(null);
-    const { error: updateError } = await supabase
-      .from("station_purposes")
-      .update({ name: next })
-      .eq("id", purpose.id);
-    if (updateError) {
-      setError(updateError.message);
-      return;
-    }
-    const { error: stationError } = await supabase
-      .from("stations")
-      .update({ purpose: next })
-      .eq("purpose", purpose.name);
-    if (stationError) setError(stationError.message);
-    else flash("Game updated.");
-    load();
-  }
-
-  async function deletePurpose(purpose: StationPurpose) {
-    const used = stations.some((station) => station.purpose === purpose.name);
-    if (used) {
-      setError("Reassign or clear this game on its stations before deleting it.");
-      return;
-    }
-    if (!window.confirm(`Delete “${purpose.name}”?`)) return;
-    const { error: deleteError } = await supabase
-      .from("station_purposes")
-      .delete()
-      .eq("id", purpose.id);
-    if (deleteError) setError(deleteError.message);
-    else {
-      flash("Game deleted.");
-      load();
-    }
-  }
-
-  async function addGroup(e: React.FormEvent) {
-    e.preventDefault();
-    setError(null);
-    const { error: insertError } = await supabase
-      .from("groups")
-      .insert({ name: newGroup });
-    if (insertError) setError(insertError.message);
-    else {
-      setNewGroup("");
-      setGroupOpen(false);
-      flash("Group added.");
       load();
     }
   }
@@ -326,9 +242,8 @@ export default function AdminStationsPage() {
     <div className="space-y-4">
       <PageTitle
         title="Stations"
-        subtitle="Place a station on A1–A5, B1, or Track & Field. Each one can have its own game and a status."
         action={
-          <button type="button" className="btn-primary px-5" onClick={openCreate}>
+          <button type="button" className="btn-primary px-5" onClick={openAdd}>
             + Add station
           </button>
         }
@@ -337,90 +252,125 @@ export default function AdminStationsPage() {
       <SuccessBanner message={notice} />
 
       <section>
-        <h2 className="mb-2 font-semibold">Stations ({stations.length})</h2>
+        <div className="mb-2 flex flex-wrap items-end justify-between gap-2">
+          <div>
+            <h2 className="font-semibold">Stations ({visible.length})</h2>
+            <p className="text-sm text-ink-faint">
+              Status follows the game: a day&apos;s stations open when its game
+              starts in{" "}
+              <Link href="/admin" className="font-semibold underline">
+                Live control
+              </Link>{" "}
+              and close when it ends. Day 2 entry cost follows the risk tier (set
+              on the{" "}
+              <Link href="/admin/token" className="font-semibold underline">
+                Token page
+              </Link>
+              ).
+            </p>
+          </div>
+
+          <div
+            role="tablist"
+            aria-label="Filter stations by day"
+            className="flex rounded-xl bg-paper-200/70 p-1"
+          >
+            {(["all", 1, 2] as DayFilter[]).map((d) => (
+              <button
+                key={d}
+                type="button"
+                role="tab"
+                aria-selected={dayFilter === d}
+                onClick={() => setDayFilter(d)}
+                className={cn(
+                  "min-h-[34px] rounded-lg px-3 text-sm font-bold",
+                  dayFilter === d
+                    ? "bg-white text-ink shadow-card"
+                    : "text-ink-faint"
+                )}
+              >
+                {d === "all" ? "All" : `Day ${d}`}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <Card className="overflow-x-auto p-0">
-          <table className="w-full min-w-[860px] text-left text-sm">
+          <table className="w-full min-w-[760px] text-left text-sm">
             <thead>
               <tr className="border-b border-paper-200 text-xs font-bold uppercase tracking-wide text-ink-faint">
-                <th className="w-28 px-4 py-3">Code</th>
-                <th className="px-4 py-3">Name</th>
-                <th className="w-36 px-4 py-3">Building</th>
-                <th className="px-4 py-3">Game or purpose</th>
-                <th className="w-24 px-4 py-3">Groups</th>
-                <th className="w-36 px-4 py-3">Status</th>
-                <th className="w-40 px-4 py-3">Set status</th>
-                <th className="w-24 px-4 py-3" />
+                <th className="px-4 py-3">Station</th>
+                <th className="w-16 px-4 py-3">Day</th>
+                <th className="w-32 px-4 py-3">Status</th>
+                <th className="w-28 px-4 py-3">Risk</th>
+                <th className="w-20 px-4 py-3">Entry</th>
+                <th className="w-44 px-4 py-3">GMs</th>
+                <th className="w-20 px-4 py-3" />
               </tr>
             </thead>
             <tbody className="divide-y divide-paper-200">
-              {stations.map((station) => (
-                <tr key={station.id}>
-                  <td className="px-4 py-2.5 font-bold">{station.code}</td>
-                  <td className="px-4 py-2.5 font-semibold">{station.name}</td>
-                  <td className="px-4 py-2.5">{station.area}</td>
-                  <td className="px-4 py-2.5 text-ink-soft">
-                    {station.purpose || "—"}
-                  </td>
-                  <td className="px-4 py-2.5">
-                    <span className="font-semibold">{counts[station.id] ?? 0}</span>
-                    <span className="text-ink-faint">
-                      {" / "}
-                      {station.max_groups ?? "not set"}
-                    </span>
-                  </td>
-                  <td className="px-4 py-2.5">
-                    <StationStatusChip status={station.status} />
-                    {station.status_override && (
-                      <span className="ml-1 text-xs text-ink-faint">manual</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-2.5">
-                    <select
-                      className="input min-h-[36px] text-sm"
-                      aria-label={`${station.code} status`}
-                      value={station.status}
-                      onChange={(e) =>
-                        updateStatus(station.id, e.target.value as StationStatus)
-                      }
-                    >
-                      <option value="available">Available</option>
-                      <option value="in_progress">In progress</option>
-                      <option value="closed">Closed</option>
-                    </select>
-                  </td>
-                  <td className="px-4 py-2.5">
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => clearStation(station)}
-                        className="text-xs font-semibold text-ink-soft"
-                      >
-                        Clear
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => openEdit(station)}
-                        className="text-ink-soft"
-                        aria-label={`Edit ${station.code}`}
-                      >
-                        <Pencil size={16} strokeWidth={1.75} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => deleteStation(station)}
-                        className="text-red-500"
-                        aria-label={`Delete ${station.code}`}
-                      >
-                        <Trash2 size={16} strokeWidth={1.75} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {stations.length === 0 && (
+              {visible.map((s) => {
+                const assigned = gms.filter((g) => g.station_id === s.id);
+                return (
+                  <tr key={s.id}>
+                    <td className="max-w-0 px-4 py-2.5">
+                      <p className="truncate font-semibold">{s.name}</p>
+                      <p className="truncate text-xs text-ink-faint">
+                        {s.code}
+                        {s.purpose ? ` · ${s.purpose}` : ""}
+                        {s.max_groups != null ? ` (max ${s.max_groups})` : ""}
+                      </p>
+                    </td>
+                    <td className="px-4 py-2.5 font-bold">{s.day}</td>
+                    <td className="px-4 py-2.5">
+                      <StationStatusChip status={s.status} />
+                    </td>
+                    <td className="px-4 py-2.5">
+                      {s.day === 2 ? RISK_TIER_META[s.risk_tier].label : "—"}
+                    </td>
+                    <td className="px-4 py-2.5 font-bold tabular-nums">
+                      {s.day === 2 ? `−${s.entry_cost}` : "—"}
+                    </td>
+                    <td className="max-w-0 px-4 py-2.5">
+                      {assigned.length ? (
+                        <p
+                          className="truncate"
+                          title={assigned.map((g) => g.full_name).join(", ")}
+                        >
+                          {assigned.map((g) => g.full_name).join(", ")}
+                        </p>
+                      ) : (
+                        <span className="text-ink-faint">None</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-2.5">
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={() => openEdit(s)}
+                          className="text-ink-soft hover:text-ink"
+                          aria-label={`Edit ${s.name}`}
+                        >
+                          <Pencil size={16} strokeWidth={1.75} />
+                        </button>
+                        <button
+                          onClick={() => deleteStation(s)}
+                          className="text-red-500"
+                          aria-label={`Delete ${s.name}`}
+                        >
+                          <Trash2 size={16} strokeWidth={1.75} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+              {visible.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-ink-faint">
-                    No stations yet. Add one and choose its building.
+                  <td
+                    colSpan={7}
+                    className="px-4 py-8 text-center text-ink-faint"
+                  >
+                    No stations yet.
                   </td>
                 </tr>
               )}
@@ -429,262 +379,152 @@ export default function AdminStationsPage() {
         </Card>
       </section>
 
-      <section>
-        <h2 className="mb-2 font-semibold">Games and purposes</h2>
-        <Card className="space-y-3">
-          <form onSubmit={addPurpose} className="flex flex-col gap-2 sm:flex-row">
-            <input
-              className="input text-sm"
-              placeholder="New game or purpose"
-              aria-label="New game or purpose"
-              value={newPurpose}
-              onChange={(e) => setNewPurpose(e.target.value)}
-            />
-            <button type="submit" className="btn-secondary min-h-[44px] px-4 text-sm">
-              Add game
-            </button>
-          </form>
-          {purposes.length === 0 ? (
-            <p className="text-sm text-ink-faint">
-              No games yet. Add one here, or type a new one while creating a station.
-            </p>
-          ) : (
-            <ul className="divide-y divide-paper-200">
-              {purposes.map((purpose) => {
-                const count = stations.filter(
-                  (station) => station.purpose === purpose.name
-                ).length;
-                return (
-                  <li
-                    key={`${purpose.id}-${purpose.name}`}
-                    className="flex flex-col gap-2 py-2 sm:flex-row sm:items-center"
-                  >
-                    <input
-                      className="input min-h-[36px] flex-1 text-sm"
-                      aria-label={`Rename ${purpose.name}`}
-                      defaultValue={purpose.name}
-                      onBlur={(e) => renamePurpose(purpose, e.target.value)}
-                    />
-                    <span className="text-xs text-ink-faint sm:w-28">
-                      {count} {count === 1 ? "station" : "stations"}
-                    </span>
-                    <button
-                      type="button"
-                      className="text-sm text-red-500"
-                      onClick={() => deletePurpose(purpose)}
-                    >
-                      Delete
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </Card>
-      </section>
-
-      <section>
-        <div className="mb-2 flex items-center justify-between">
-          <h2 className="font-semibold">Groups ({groups.length})</h2>
-          <button
-            type="button"
-            className="btn-secondary min-h-[36px] px-4 text-sm"
-            onClick={() => setGroupOpen(true)}
-          >
-            + Add group
-          </button>
-        </div>
-        <Card className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-          {groups.map((group) => (
-            <div
-              key={group.id}
-              className="flex justify-between rounded-lg bg-paper-100 px-3 py-2 text-sm"
-            >
-              <span>{group.name}</span>
-              <span className="font-bold tabular-nums">
-                {group.token_balance} tokens
-              </span>
-            </div>
-          ))}
-        </Card>
-      </section>
-
-      <Dialog open={stationOpen} onOpenChange={setStationOpen}>
-        <DialogContent title={draft.id ? "Edit station" : "Add station"}>
+      <Dialog
+        open={editing !== null}
+        onOpenChange={(open) => !open && setEditing(null)}
+      >
+        <DialogContent
+          title={editing === "new" ? "Add station" : "Edit station"}
+        >
           <form onSubmit={saveStation} className="space-y-3">
-            <p className="text-sm text-ink-faint">
-              Code{" "}
-              <span className="font-bold text-ink">
-                {draft.id
-                  ? draft.code
-                  : nextStationCode(
-                      draft.area,
-                      stations.map((station) => station.code)
-                    )}
-              </span>
-            </p>
-            <label className="block text-sm">
-              <span className="mb-1 block font-semibold">Name</span>
+            <div>
+              <label className="label" htmlFor="station-name">
+                Station name
+              </label>
               <input
+                id="station-name"
                 className="input text-sm"
                 required
-                value={draft.name}
-                onChange={(e) => setDraft({ ...draft, name: e.target.value })}
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
               />
-            </label>
-            <label className="block text-sm">
-              <span className="mb-1 block font-semibold">Building</span>
-              <select
-                className="input text-sm"
-                value={draft.area}
-                onChange={(e) => setDraft({ ...draft, area: e.target.value })}
-              >
-                {MAP_BUILDINGS.map((building) => (
-                  <option key={building.area} value={building.area}>
-                    {building.area}
-                  </option>
+            </div>
+
+            <div>
+              <span className="label">Day</span>
+              <div className="grid grid-cols-2 gap-2">
+                {([1, 2] as const).map((d) => (
+                  <button
+                    key={d}
+                    type="button"
+                    onClick={() => setForm({ ...form, day: d })}
+                    aria-pressed={form.day === d}
+                    className={cn(
+                      "btn min-h-[44px] text-sm",
+                      form.day === d
+                        ? "bg-ink text-white"
+                        : "border border-paper-300 bg-white"
+                    )}
+                  >
+                    Day {d}
+                  </button>
                 ))}
-              </select>
-            </label>
-            <label className="block text-sm">
-              <span className="mb-1 block font-semibold">Game or purpose</span>
-              <select
-                className="input text-sm"
-                value={draft.purpose}
-                onChange={(e) => setDraft({ ...draft, purpose: e.target.value })}
-              >
-                <option value="">None yet</option>
-                {purposes.map((purpose) => (
-                  <option key={purpose.id} value={purpose.name}>
-                    {purpose.name}
-                  </option>
-                ))}
-                {draft.purpose &&
-                  draft.purpose !== "__new" &&
-                  !purposes.some((purpose) => purpose.name === draft.purpose) && (
-                    <option value={draft.purpose}>{draft.purpose}</option>
-                  )}
-                <option value="__new">Add a new game…</option>
-              </select>
-            </label>
-            {draft.purpose === "__new" && (
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="label" htmlFor="station-block">
+                  Block / Area
+                </label>
+                <select
+                  id="station-block"
+                  className="input text-sm"
+                  required
+                  value={form.block}
+                  onChange={(e) => setForm({ ...form, block: e.target.value })}
+                >
+                  <option value="">Choose…</option>
+                  {blocks.map((b) => (
+                    <option key={b} value={b}>
+                      {b}
+                    </option>
+                  ))}
+                  <option value={OTHER_BLOCK}>Other…</option>
+                </select>
+              </div>
+              <div>
+                <label className="label" htmlFor="station-floor">
+                  Floor
+                </label>
+                <input
+                  id="station-floor"
+                  className="input text-sm"
+                  placeholder="e.g. 1, G"
+                  value={form.floor}
+                  onChange={(e) => setForm({ ...form, floor: e.target.value })}
+                />
+              </div>
+            </div>
+            {form.block === OTHER_BLOCK && (
               <input
                 className="input text-sm"
-                placeholder="Name of the new game"
+                placeholder="New block name"
+                aria-label="New block name"
                 required
-                value={draft.newPurpose}
-                onChange={(e) => setDraft({ ...draft, newPurpose: e.target.value })}
+                value={form.otherBlock}
+                onChange={(e) =>
+                  setForm({ ...form, otherBlock: e.target.value })
+                }
               />
             )}
-            <label className="block text-sm">
-              <span className="mb-1 block font-semibold">Status</span>
-              <select
-                className="input text-sm"
-                value={draft.status}
-                onChange={(e) =>
-                  setDraft({ ...draft, status: e.target.value as StationStatus })
-                }
-              >
-                <option value="available">Available</option>
-                <option value="in_progress">In progress</option>
-                <option value="closed">Closed</option>
-              </select>
-            </label>
-            <label className="block text-sm">
-              <span className="mb-1 block font-semibold">Groups at once</span>
+
+            <div>
+              <label className="label" htmlFor="station-purpose">
+                Game or purpose
+              </label>
               <input
+                id="station-purpose"
+                className="input text-sm"
+                placeholder="e.g. Tug of War, Water Relay"
+                value={form.purpose}
+                onChange={(e) => setForm({ ...form, purpose: e.target.value })}
+              />
+            </div>
+
+            <div>
+              <label className="label" htmlFor="station-max-groups">
+                Groups at once (capacity)
+              </label>
+              <input
+                id="station-max-groups"
                 type="number"
                 min="1"
-                required
                 className="input text-sm"
-                placeholder="How many groups fit"
-                value={draft.max_groups}
-                onChange={(e) => setDraft({ ...draft, max_groups: e.target.value })}
+                placeholder="How many groups fit (shows In Progress when full)"
+                value={form.max_groups}
+                onChange={(e) =>
+                  setForm({ ...form, max_groups: e.target.value })
+                }
               />
-              <span className="mt-1 block text-xs text-ink-faint">
-                When this many groups are checked in, the station shows In progress.
-              </span>
-            </label>
-            <div className="grid grid-cols-3 gap-2">
-              <label className="block text-sm">
-                <span className="mb-1 block font-semibold">Latitude</span>
-                <input
-                  type="number"
-                  step="any"
-                  className="input text-sm"
-                  value={draft.lat}
-                  onChange={(e) => setDraft({ ...draft, lat: e.target.value })}
-                />
-              </label>
-              <label className="block text-sm">
-                <span className="mb-1 block font-semibold">Longitude</span>
-                <input
-                  type="number"
-                  step="any"
-                  className="input text-sm"
-                  value={draft.lng}
-                  onChange={(e) => setDraft({ ...draft, lng: e.target.value })}
-                />
-              </label>
-              <label className="block text-sm">
-                <span className="mb-1 block font-semibold">Radius (m)</span>
-                <input
-                  type="number"
-                  min="1"
-                  className="input text-sm"
-                  placeholder="100"
-                  value={draft.radius_m}
-                  onChange={(e) => setDraft({ ...draft, radius_m: e.target.value })}
-                />
-              </label>
             </div>
-            <div className="grid grid-cols-2 gap-2">
-              <label className="block text-sm">
-                <span className="mb-1 block font-semibold">Day 2 risk</span>
-                <select
-                  className="input text-sm"
-                  value={draft.risk_tier}
-                  onChange={(e) =>
-                    setDraft({ ...draft, risk_tier: e.target.value as RiskTier })
-                  }
-                >
-                  <option value="low">Low</option>
-                  <option value="medium">Medium</option>
-                  <option value="high">High</option>
-                </select>
-              </label>
-              <label className="block text-sm">
-                <span className="mb-1 block font-semibold">Entry cost</span>
-                <input
-                  type="number"
-                  min="0"
-                  className="input text-sm"
-                  value={draft.entry_cost}
-                  onChange={(e) =>
-                    setDraft({ ...draft, entry_cost: Number(e.target.value) })
-                  }
-                />
-              </label>
-            </div>
-            <button type="submit" className="btn-primary w-full">
-              {draft.id ? "Save station" : "Add station"}
-            </button>
-          </form>
-        </DialogContent>
-      </Dialog>
 
-      <Dialog open={groupOpen} onOpenChange={setGroupOpen}>
-        <DialogContent title="Add group">
-          <form onSubmit={addGroup} className="space-y-2">
-            <input
-              className="input text-sm"
-              placeholder="New group name"
-              required
-              value={newGroup}
-              onChange={(e) => setNewGroup(e.target.value)}
-            />
+            {form.day === 2 && (
+              <div>
+                <span className="label">Risk</span>
+                <div className="grid grid-cols-3 gap-2">
+                  {(["low", "medium", "high"] as RiskTier[]).map((r) => (
+                    <button
+                      key={r}
+                      type="button"
+                      onClick={() => setForm({ ...form, risk: r })}
+                      aria-pressed={form.risk === r}
+                      className={cn(
+                        "btn min-h-[44px] text-sm",
+                        form.risk === r
+                          ? "bg-ink text-white"
+                          : "border border-paper-300 bg-white"
+                      )}
+                    >
+                      {RISK_TIER_META[r].label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <button type="submit" className="btn-primary w-full">
-              Add group
+              {editing === "new" ? "Add station" : "Save changes"}
             </button>
           </form>
         </DialogContent>

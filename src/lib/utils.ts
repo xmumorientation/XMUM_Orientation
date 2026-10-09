@@ -98,15 +98,34 @@ const ERROR_MESSAGES: Record<string, string> = {
   UNDO_WINDOW_EXPIRED: "The 2-minute undo window has passed.",
   UNDO_WOULD_GO_NEGATIVE: "Undo rejected: it would make the balance negative.",
   NO_STATION_ASSIGNED: "Your account has no station assigned — ask Admin.",
+  SESSION_NOT_OPEN: "This session hasn't been opened yet.",
+  NO_END_TIME: "Set an end time first (here, or the planned end on the Schedule page).",
+  END_TIME_PASSED: "That end time has already passed. Pick a later time.",
+  TIMER_ALREADY_RUNNING: "This timer is already running.",
+  ANOTHER_TIMER_RUNNING: "Another timer is running. End it first.",
+  WRONG_DAY_STATION: "Your station isn't set up for this day — ask Admin.",
+  INVALID_RESULT: "Pick Win or Lose.",
   NEED_TWO_LOCATIONS: "Pick exactly 2 locations for a medium-risk station.",
   NEED_ONE_LOCATION: "Pick exactly 1 location for a high-risk station.",
   POOL_EXHAUSTED:
     "This group already owns every piece available from that choice — pick differently.",
   FRESHIE_ONLY: "Only Freshie accounts can open blind boxes.",
-  BOX_UNKNOWN: "This blind box code isn't recognised.",
+  BOX_UNKNOWN: "This blind box code isn't active.",
   BOXES_SOLD_OUT: "All blind boxes here have been given out!",
-  ALREADY_CLAIMED_FROM_MEMBER:
-    "Your group has already opened a box from this committee member.",
+  BB_ALREADY_FROM_SELLER: "Your group has already opened a box from this seller.",
+  BB_GROUP_CAP: "Your group has used all its blind box opens.",
+  BB_TYPE_NAME_MISSING: "Enter a name for the box type.",
+  BB_RANGE_INVALID: "Check the numbers: max must be at least min, and nothing can be negative.",
+  BB_TYPE_EXISTS: "A box type with that name already exists.",
+  BB_TYPE_NOT_FOUND: "Box type not found.",
+  BB_TYPE_ARCHIVED: "That box type is archived.",
+  BB_TARGET_INVALID: "Pick who the boxes go to (an eligible account, role or station).",
+  BB_NO_TARGETS: "Nobody matches that choice yet.",
+  TOKEN_RESET_LOCKED:
+    "Reset is locked. Turn on Rehearsal mode in Live control first; it only works while testing.",
+  BB_RESET_LOCKED: "Turn on Rehearsal mode in Live control first. The reset only works while testing.",
+  BB_RESET_CONFIRM: "Type RESET (capitals) to confirm.",
+  BB_RESET_SCOPE: "Pick what to reset.",
   NOT_ACTIVE: "The phase is not active.",
   NOT_PAUSED: "The phase is not paused.",
   PHASE_NOT_FOUND: "Phase not found.",
@@ -128,6 +147,17 @@ export function friendlyError(err: unknown): string {
     typeof err === "object" && err !== null && "message" in err
       ? String((err as { message: unknown }).message)
       : String(err);
+  // These blind-box errors carry numbers worth showing, so keep the detail.
+  const detailed = /(BB_NOT_ENOUGH_STOCK|BB_STOCK_BELOW_ASSIGNED|BB_QTY_BELOW_OPENED): ([^\n]+)/.exec(msg);
+  if (detailed) {
+    const lead =
+      detailed[1] === "BB_NOT_ENOUGH_STOCK"
+        ? "Not enough stock"
+        : detailed[1] === "BB_STOCK_BELOW_ASSIGNED"
+          ? "Stock can't go below what's assigned"
+          : "Can't go below what's already opened";
+    return `${lead} — ${detailed[2]}.`;
+  }
   for (const code of Object.keys(ERROR_MESSAGES)) {
     if (msg.includes(code)) return ERROR_MESSAGES[code];
   }

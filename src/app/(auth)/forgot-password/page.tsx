@@ -1,9 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 
-import { ErrorBanner, Spinner, SuccessBanner } from "@/components/ui";
+import { AuthShell } from "@/components/auth/AuthShell";
+import { Spinner } from "@/components/ui";
 import { supabaseBrowser } from "@/lib/supabase/client";
 
 // FR-1.5: password reset via email link
@@ -17,6 +17,7 @@ export default function ForgotPasswordPage() {
     e.preventDefault();
     setBusy(true);
     setError(null);
+    setNotice(null);
     const supabase = supabaseBrowser();
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/reset-password`,
@@ -27,44 +28,41 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="auth-card">
-      <div className="auth-card-inner space-y-5">
-        <div>
-          <p className="text-xs font-black uppercase tracking-[0.22em] text-brand-1">
-            Account recovery
+    <AuthShell
+      role="Reset password"
+      lead="We’ll email you a link to choose a new password."
+      backHref="/login"
+      backLabel="Back to login"
+    >
+      <form onSubmit={onSubmit} className="vx-login-form">
+        {error && (
+          <p className="vx-login-error" role="alert">
+            {error}
           </p>
-          <h2 className="mt-3 text-3xl font-black tracking-[-0.03em] text-ink">
-            Reset your password.
-          </h2>
-        </div>
-        <ErrorBanner message={error} />
-        <SuccessBanner message={notice} />
-        <div>
-          <label className="label" htmlFor="email">
-            Email
-          </label>
+        )}
+        {notice && (
+          <p className="vx-login-notice" role="status">
+            {notice}
+          </p>
+        )}
+
+        <label htmlFor="email">
+          Campus email
           <input
             id="email"
             type="email"
             required
-            className="input"
+            autoComplete="email"
+            placeholder="you@xmu.edu.my"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
-        </div>
-        <button type="submit" disabled={busy} className="group auth-submit">
-          {busy ? (
-            <Spinner className="border-white/40 border-t-white" />
-          ) : (
-            "Send reset link"
-          )}
+        </label>
+
+        <button type="submit" disabled={busy} className="vx-btn vx-btn-primary">
+          {busy ? <Spinner className="border-black/25 border-t-black" /> : "Send reset link"}
         </button>
-        <p className="text-center text-sm">
-          <Link href="/login" className="font-bold text-brand-1">
-            Back to login
-          </Link>
-        </p>
-      </div>
-    </form>
+      </form>
+    </AuthShell>
   );
 }

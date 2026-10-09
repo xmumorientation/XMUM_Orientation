@@ -442,7 +442,7 @@ export default function AdminUsersPage() {
                           <option value="">No station</option>
                           {stations.map((s) => (
                             <option key={s.id} value={s.id}>
-                              {s.code}
+                              {s.name} · Day {s.day} · {s.code}
                             </option>
                           ))}
                         </select>
@@ -573,7 +573,7 @@ export default function AdminUsersPage() {
                   <option value="">No station yet</option>
                   {stations.map((s) => (
                     <option key={s.id} value={s.id}>
-                      {s.code} · {s.name}
+                      {s.name} · Day {s.day} · {s.code}
                     </option>
                   ))}
                 </select>
@@ -639,7 +639,7 @@ export default function AdminUsersPage() {
       {/* CSV import */}
       <Dialog open={importOpen} onOpenChange={setImportOpen}>
         <DialogContent
-          title="Import staff from CSV"
+          title="Import Committee, Faci, GM from CSV"
           description="Always dry-run first. Passwords are shown once after a real import."
           className="max-h-[90dvh] max-w-2xl"
         >

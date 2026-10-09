@@ -29,9 +29,9 @@ This reflects only the migration files in the repo. Any manual changes made to t
 | Puzzle Inventory (/inventory) | Own Group | Own Group | — | — | — | — | — | — | DB |
 | **Station Panel (/gm)** | | | | | | | | | |
 | Station Panel page | — | — | ✓ | ✓ | — | † | † | † | UI |
-| Day 1 Token Reward | — | — | ✓ | ✓ | — | † | † | † | DB |
-| Day 2 Challenge (charge entry fee and grant a piece) | — | — | ✓ | ✓ | — | † | † | † | DB |
-| Sell GM Blind Box | — | — | ✓ | ✓ | — | — | — | † | DB |
+| Day 1 Token Reward (amount from the token rules) | — | — | ✓ | ✓ | — | † | † | † | DB |
+| Day 2 Challenge (charge the tier's entry fee and grant a piece) | — | — | ✓ | ✓ | — | † | † | † | DB |
+| Show blind box QR + link on the Station page (own boxes and own station's shared boxes) | — | — | Own | Own | — | — | — | — | DB |
 | Update Station Status | — | — | Own Station | Own Station | — | All † | All † | All | DB |
 | Undo Token Transaction (own last one, within 2 minutes) | — | — | Own Actions | Own Actions | — | † | † | † | DB |
 | Grant a puzzle piece directly (fn_grant_item, no UI) | — | — | † | † | — | † | † | † | DB |
@@ -42,9 +42,13 @@ This reflects only the migration files in the repo. Any manual changes made to t
 | Manual Projector Activation | — | — | — | ✓ | — | — | † | † | DB |
 | NFC Projector Activation (/activate; Endgame phase; must belong to a group) | ✓ | ✓ | — | — | — | — | — | — | DB |
 | **Blind Box** | | | | | | | | | |
-| Scan Blind Box QR (/scan) | ✓ | — | — | — | — | — | — | — | DB |
-| Personal Blind Box QR (generate / rotate; requires an allocation) | — | — | — | — | Own | Own | Own | Any member | DB |
-| Blind Box Allocation config | — | — | — | — | — | — | — | Manage | DB |
+| Open a blind box (scan a seller's QR, see the confirm screen, tap Open: pays the price and deducts one box; a group can open one per seller and up to the group cap) | ✓ | — | — | — | — | — | — | — | DB |
+| See own blind box QR + link (card on /committee and /gm, and on the Admin Blind box page; boxes assigned to the account, or to its station) | — | — | Own | Own | Own | Own | Own | Own | DB |
+| Box types, assigning boxes (one account, a role, stations), quantities, regenerate / switch off a QR, group cap (Admin → Blind box) | — | — | — | — | — | — | — | Manage | DB |
+| Token page Reset State (clears token logs and puzzle inventory, zeroes group tokens; only while Rehearsal mode is on) | — | — | — | — | — | — | — | ✓ | DB |
+| Blind box test reset (only while Rehearsal mode is on; typed confirmation) | — | — | — | — | — | — | — | ✓ | DB |
+| Read box types (range, price, stock) | — | — | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | DB |
+| Read every assignment and claim | — | — | — | — | Claims only | Claims only | Claims only | ✓ | DB |
 | **Attendance / Location** | | | | | | | | | |
 | Mark attendance (Attendance Roster) | — | Own Group | — | — | — | All † | All † | Manage All | DB |
 | Headcount fallback entry | — | Own Group | — | — | — | † | — | Manage | DB |
@@ -59,9 +63,12 @@ This reflects only the migration files in the repo. Any manual changes made to t
 | Live Ops stats | — | — | — | — | — | † | † | ✓ | DB |
 | Audit Log | — | — | — | — | — | † | † | ✓ | DB |
 | Freshie control (/admin/freshies: groups, sessions, headcount) | — | — | — | — | — | — | — | ✓ | ⚠ UI |
-| **Token System (/token)** | | | | | | | | | |
-| View and operate (Day 1 / Day 2 / manual add and deduct) | — | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ⚠ UI |
-| Edit / delete logs, Reset All, manage Presets | — | — | — | — | — | — | — | ✓ | ⚠ UI |
+| **Scoreboard (/token)** | | | | | | | | | |
+| View the live group scoreboard (no rules, no log) | — | — | ✓ | ✓ | ✓ | ✓ | ✓ | — | UI |
+| **Token page (/admin/token)** | | | | | | | | | |
+| View token rules, scoreboard and log | — | — | — | — | — | — | — | ✓ | UI |
+| Set token rules (Day 1 rewards, Day 2 fee per tier) | — | — | — | — | — | — | — | ✓ | DB |
+| Edit / delete logs, Reset All | — | — | — | — | — | — | — | ✓ | ⚠ UI |
 | **Admin Console (/admin/*)** | | | | | | | | | |
 | Phase Control (start / pause / extend / end) | — | — | — | — | — | — | — | ✓ | DB |
 | Kill-switches | — | — | — | — | — | — | — | ✓ | DB |
@@ -78,11 +85,10 @@ This reflects only the migration files in the repo. Any manual changes made to t
 
 1. **Seed Test Accounts has no permission check.** The POST handler in [seed-test-accounts/route.ts:35](../src/app/api/admin/seed-test-accounts/route.ts#L35) does not check the caller's role. Any logged-in user can call it, and it creates or resets the passwords of the hardcoded test accounts, including admin.
 2. **Migration 0013 opens several tables to everyone.** From [0013_fix_token_logs_rls.sql:218](../supabase/migrations/0013_fix_token_logs_rls.sql#L218) onward, `token_logs`, `puzzle_inventory`, `game_config_rules` and `freshies` use `using (true)` and `grant all ... to anon`. Anyone with the anon key can read and write them without logging in. The `freshies` table holds names, phone numbers and student IDs, and the original "admin only" policy is overridden.
-3. **A batch of RPCs have no role check and are granted to anon.** These are `fn_day1_record_result`, `fn_day2_deduct_entry`, `fn_day2_award_piece`, `fn_manual_token_adjust`, `fn_update_game_config_rule`, `fn_set_total_groups`, `fn_admin_update_freshie` and `fn_admin_delete_freshie`. On the Token System page, "only admin can edit/delete logs" is hidden in the frontend only.
-4. **`/api/token` has no role check** ([route.ts:18](../src/app/api/token/route.ts#L18)).
+3. **A batch of RPCs have no role check and are granted to anon.** These are `fn_set_total_groups`, `fn_admin_update_freshie` and `fn_admin_delete_freshie`. (Migration 0046 made `fn_update_game_config_rule` admin only, dropped `fn_manual_token_adjust`, and made `fn_day1_record_result`, `fn_day2_deduct_entry` and `fn_day2_award_piece` uncallable.) On the Token System page, "only admin can edit/delete logs" is hidden in the frontend only.
+4. ~~**`/api/token` has no role check.**~~ Removed: the route was unused.
 5. **Frontend and backend disagree:**
    - The dashboard shows a Register Counter card to Faci and Committee ([dashboard/page.tsx:263](../src/app/(app)/dashboard/page.tsx#L263)), but the page is Admin-only and shows "Admin access required".
-   - Faci can operate tokens in Token System, which may not be intended.
    - `/guardian`, `/checkin` and `/transactions` are not in the sidebar and are reachable only from dashboard cards.
    - The `/gm`, `/guardian`, `/attendance` and `/committee` pages have no role guard of their own; they rely entirely on RPCs to reject requests.
 6. **The definition of Freshie is inconsistent.** A code comment says freshies have no login accounts (they live in a separate `freshies` table), but login accounts with `role = 'freshie'` also exist and are used for scanning Blind Boxes and viewing Inventory. The Freshie column in the matrix means the role with a login account.

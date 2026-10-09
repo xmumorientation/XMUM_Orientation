@@ -24,15 +24,39 @@ const mono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "XMUM Orientation 2026",
+  title: {
+    default: "Vortexa",
+    template: "%s | Vortexa",
+  },
   description:
-    "Official platform for XMUM Orientation — attendance, campus map and the Big Game.",
+    "XMUM 26/12 Orientation",
+  metadataBase: new URL("https://vortexa.xmum.edu.my"),
+  openGraph: {
+    title: "Vortexa",
+    description:
+      "XMUM 26/12 Orientation",
+    siteName: "XMUM 26/12 Orientation",
+    locale: "en_MY",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Vortexa",
+    description:
+      "XMUM 26/12 Orientation",
+  },
+  icons: {
+    icon: "/vortexa-icon-192.png",
+    apple: "/vortexa-icon-192.png",
+  },
+  manifest: "/manifest.json",
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#fdfcfa",
+  viewportFit: "cover",
+  themeColor: "#07060b",
 };
 
 export default function RootLayout({

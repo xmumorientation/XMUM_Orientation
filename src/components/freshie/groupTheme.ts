@@ -9,13 +9,22 @@ const HEX = /^#[0-9A-Fa-f]{6}$/;
 export type GroupTheme = {
   /** Main accent. Buttons, chips, scan frame, active tab. */
   accent: string;
-  /** Soft background light. Same hue as accent. */
+  /** Soft background light. Same hue as accent, a little whiter for very light hues. */
   glow: string;
   /** Lighter accent for hover and secondary labels. */
   accentLight: string;
   /** Text that stays readable on a fill of `accent`. */
   onAccent: string;
+  /** Opacity of the background lights (0–1). Lower for bright hues. */
+  glowStrength: number;
+  /** Size factor of the background lights (0–1). Smaller for bright hues. */
+  glowSpread: number;
+  /** Second, fixed Vortexa colour for background lights. About a third of the colour wheel away from the accent. */
+  partner: string;
 };
+
+/** Brand colours a group's background may borrow as its partner light. */
+const PARTNER_COLORS = ["#0DFCFD", "#FE06AB", "#E0B4FC", "#FC9E3D"];
 
 export function groupColor(color: string | null | undefined): string {
   return color && HEX.test(color.trim()) ? color.trim().toLowerCase() : DEFAULT_GROUP_COLOR.toLowerCase();
@@ -42,13 +51,50 @@ function luminance(hex: string): number {
   return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 }
 
+function hue(hex: string): number {
+  const int = parseInt(hex.slice(1), 16);
+  const r = ((int >> 16) & 255) / 255;
+  const g = ((int >> 8) & 255) / 255;
+  const b = (int & 255) / 255;
+  const max = Math.max(r, g, b);
+  const d = max - Math.min(r, g, b);
+  if (d === 0) return 0;
+  const h = max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+  return (h * 60 + 360) % 360;
+}
+
+/** The brand colour closest to 120° from the accent: clear contrast, never the same hue, never a harsh complement. */
+function partnerFor(accent: string): string {
+  const h = hue(accent);
+  let best = PARTNER_COLORS[0];
+  let bestScore = Infinity;
+  for (const c of PARTNER_COLORS) {
+    const raw = Math.abs(hue(c) - h);
+    const score = Math.abs(Math.min(raw, 360 - raw) - 120);
+    if (score < bestScore) {
+      best = c;
+      bestScore = score;
+    }
+  }
+  return best;
+}
+
 export function themeFromColor(color: string | null | undefined): GroupTheme {
   const accent = groupColor(color);
+  const lum = luminance(accent);
+  const round = (n: number) => Math.round(n * 100) / 100;
   return {
     accent,
-    glow: accent,
+    // A very light hue (yellow, cyan, green) over navy turns olive at low
+    // opacity; a whiter core keeps it reading as light.
+    glow: lum > 0.5 ? mixWhite(accent, 0.18) : accent,
     accentLight: mixWhite(accent, 0.35),
-    onAccent: luminance(accent) > 0.45 ? "#001629" : "#ffffff",
+    onAccent: lum > 0.45 ? "#001629" : "#ffffff",
+    // Bright hues get a smaller, fainter light and dark hues a wider one, so
+    // every group's background looks about as bright.
+    glowStrength: round(Math.min(0.6, Math.max(0.36, 0.6 - lum * 0.25))),
+    glowSpread: round(1 - Math.max(0, lum - 0.3) * 0.6),
+    partner: partnerFor(accent),
   };
 }
 

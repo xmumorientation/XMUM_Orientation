@@ -1,29 +1,37 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { CalendarDays, Gamepad2, Home, Menu, ScanLine, Trophy, X } from "lucide-react";
 
 import { STOPS, scrollToSection, type StopId } from "./data";
 
-/** Sections listed in the desktop nav (Join lives on the yellow button). */
-const NAV_LINKS = STOPS.filter((s) => s.id !== "join");
+/**
+ * Public Welcome nav links (desktop + hamburger).
+ * Keep STOPS for scroll/IntersectionObserver — not every stop is a nav item.
+ * Welcome → Overview → Schedule → Games → Committees.
+ * Scoreboard & Check-in are page sections only (not listed in the menu).
+ */
+const NAV_LINKS: { id: StopId; label: string }[] = [
+  { id: "welcome", label: "Welcome" },
+  { id: "overview", label: "Overview" },
+  { id: "schedule", label: "Schedule" },
+  { id: "games", label: "Games" },
+  { id: "committees", label: "Committees" },
+];
+
+/** Same set for the mobile hamburger drawer. */
+const HAMBURGER_LINKS = NAV_LINKS;
 
 /**
- * Fixed top bar. On desktop: logo, section links, Join button. On phones and
- * tablets: logo, menu button, and a progress bar naming the current stop.
+ * Fixed top bar. On desktop: logo, section links, and the "Join the Game"
+ * button. On phones and tablets: logo, hamburger, and a progress bar naming
+ * the current stop. "Join the Game" opens the login chooser, which offers
+ * the Freshie login and the Committee, Faci, GM login.
+ * Scan is not available on the public Welcome page.
  */
-export function SiteNav({
-  active,
-  onScan,
-  onJoin,
-}: {
-  active: StopId;
-  onScan?: () => void;
-  onJoin?: () => void;
-}) {
+export function SiteNav({ active, onJoin }: { active: StopId; onJoin?: () => void }) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const index = Math.max(0, STOPS.findIndex((s) => s.id === active));
@@ -72,10 +80,18 @@ export function SiteNav({
           document.body
         )}
 
-      <nav className="vx-nav" data-open={open} aria-label="Homepage sections">
+      <nav className="vx-nav" data-open={open} aria-label="Welcome page sections">
       <div className="vx-nav-row">
-        <button type="button" className="vx-nav-logo" onClick={() => go("welcome")} aria-label="Vortexa — back to top">
-          <Image src="/vortexa-logo-sm.webp" alt="" width={320} height={184} priority style={{ width: "auto" }} />
+        <button type="button" className="vx-nav-logo" onClick={() => go("welcome")} aria-label="Vortexa, back to top">
+          <Image
+            src="/vortexa-logo-sm.webp"
+            alt=""
+            width={320}
+            height={184}
+            sizes="(max-width: 1023px) 56px, 66px"
+            priority
+            style={{ width: "auto" }}
+          />
         </button>
 
         <div className="vx-nav-links">
@@ -92,16 +108,11 @@ export function SiteNav({
           ))}
         </div>
 
-        {/* DEV PREVIEW scanner entry (desktop) — see ScanPreview.tsx */}
-        {onScan && (
-          <button type="button" className="vx-btn vx-btn-ghost vx-nav-scan" onClick={onScan}>
-            <ScanLine size={16} aria-hidden /> Scan
+        <div className="vx-nav-logins">
+          <button type="button" className="vx-btn vx-btn-primary" onClick={() => onJoin?.()}>
+            Join the Game ★
           </button>
-        )}
-
-        <button type="button" className="vx-btn vx-btn-primary vx-nav-cta" onClick={onJoin}>
-          Join the Game
-        </button>
+        </div>
 
         <button
           type="button"
@@ -115,16 +126,18 @@ export function SiteNav({
         </button>
       </div>
 
+      {/* The label has a fixed width, so the track keeps one length at every
+          stop and only the fill moves (it scales, so no layout work on scroll). */}
       <div className="vx-stopbar vx-mono" aria-hidden={open}>
         <b>{String(index + 1).padStart(2, "0")}</b>
         <span className="vx-stopbar-track">
-          <span className="vx-stopbar-fill" style={{ width: `${((index + 1) / STOPS.length) * 100}%` }} />
+          <span className="vx-stopbar-fill" style={{ transform: `scaleX(${(index + 1) / STOPS.length})` }} />
         </span>
-        <span>{current.label}</span>
+        <span className="vx-stopbar-label">{current.label}</span>
       </div>
 
       <div id="vx-menu" className="vx-menu" data-open={open}>
-        {STOPS.map((t, i) => (
+        {HAMBURGER_LINKS.map((t, i) => (
           <button key={t.id} type="button" className="vx-menu-item" aria-current={active === t.id} onClick={() => go(t.id)}>
             <span>{t.label}</span>
             <span className="vx-mono" style={{ fontSize: 12, color: "var(--vx-mute)" }}>
@@ -132,23 +145,20 @@ export function SiteNav({
             </span>
           </button>
         ))}
-        <button
-          type="button"
-          className="vx-btn vx-btn-primary"
-          onClick={() => {
-            setOpen(false);
-            onJoin?.();
-          }}
-        >
-          Join the Game ★
-        </button>
-        <div className="vx-menu-logins">
-          <Link href="/login/freshie" className="vx-btn vx-btn-ghost" onClick={() => setOpen(false)}>
-            Freshie Login
-          </Link>
-          <Link href="/login" className="vx-btn vx-btn-ghost" onClick={() => setOpen(false)}>
-            Committee and Faci GM Login
-          </Link>
+        <div className="vx-menu-actions">
+          <button
+            type="button"
+            className="vx-btn vx-btn-primary"
+            onClick={() => {
+              setOpen(false);
+              onJoin?.();
+            }}
+          >
+            Join the Game ★
+          </button>
+          <button type="button" className="vx-btn vx-btn-ghost" onClick={() => go("check-in")}>
+            How to check in
+          </button>
         </div>
       </div>
     </nav>
@@ -156,40 +166,17 @@ export function SiteNav({
   );
 }
 
-/** Desktop-only column of dots on the right edge: one per stop, clickable. */
-export function StopRail({ active }: { active: StopId }) {
-  const index = STOPS.findIndex((s) => s.id === active);
-  return (
-    <div className="vx-rail" role="navigation" aria-label="Jump to section">
-      {STOPS.map((s, i) => (
-        <button
-          key={s.id}
-          type="button"
-          aria-label={s.label}
-          aria-current={i === index}
-          data-state={i < index ? "done" : undefined}
-          onClick={() => scrollToSection(s.id)}
-        >
-          <span className="vx-rail-tip" aria-hidden>
-            {s.label}
-          </span>
-        </button>
-      ))}
-    </div>
-  );
-}
-
 const TABS: { label: string; target: StopId; match: StopId[]; Icon: typeof Home }[] = [
   { label: "Home", target: "welcome", match: ["welcome", "overview"], Icon: Home },
+  { label: "Schedule", target: "schedule", match: ["schedule"], Icon: CalendarDays },
   { label: "Games", target: "games", match: ["games"], Icon: Gamepad2 },
   { label: "Score", target: "scoreboard", match: ["scoreboard"], Icon: Trophy },
-  { label: "Schedule", target: "schedule", match: ["schedule"], Icon: CalendarDays },
 ];
 
 /**
  * Phone/tablet bottom tab bar for the four most-used stops. When `onScan` is
- * given, a raised Scan button sits in the middle (DEV PREVIEW — see
- * ScanPreview.tsx).
+ * given, a raised Scan button sits in the middle. The public Welcome page
+ * does not pass `onScan`, because scanning needs a login.
  */
 export function TabBar({ active, onScan }: { active: StopId; onScan?: () => void }) {
   const tab = ({ label, target, match, Icon }: (typeof TABS)[number]) => (
@@ -217,6 +204,29 @@ export function TabBar({ active, onScan }: { active: StopId; onScan?: () => void
         </button>
       )}
       {TABS.slice(2).map(tab)}
+    </div>
+  );
+}
+
+/** Desktop-only column of dots on the right edge: one per stop, clickable. */
+export function StopRail({ active }: { active: StopId }) {
+  const index = STOPS.findIndex((s) => s.id === active);
+  return (
+    <div className="vx-rail" role="navigation" aria-label="Jump to section">
+      {STOPS.map((s, i) => (
+        <button
+          key={s.id}
+          type="button"
+          aria-label={s.label}
+          aria-current={i === index}
+          data-state={i < index ? "done" : undefined}
+          onClick={() => scrollToSection(s.id)}
+        >
+          <span className="vx-rail-tip" aria-hidden>
+            {s.label}
+          </span>
+        </button>
+      ))}
     </div>
   );
 }

@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 
+import { BlindBoxCard } from "@/components/BlindBoxCard";
 import { useProfile } from "@/components/ProfileProvider";
-import { useConfig } from "@/components/useConfig";
 import { useOfflineQueue } from "@/components/useOfflineQueue";
 import {
   Card,
@@ -24,25 +24,25 @@ import {
 } from "@/lib/types";
 import { cn, friendlyError, idemKey } from "@/lib/utils";
 
-type Tab = "day1" | "day2" | "box" | "station";
+type Tab = "day1" | "day2" | "station";
 
 const TASKS: Record<Tab, { title: string; desc: string }> = {
   day1: { title: "Day 1", desc: "Award station result" },
   day2: { title: "Day 2", desc: "Charge entry and grant piece" },
-  box: { title: "Box", desc: "Sell GM blind box" },
   station: { title: "Status", desc: "Update queue state" },
 };
 
 // GM control panel v2 (HOGM redesign):
-//  Day 1 - win/lose rewards (+2/+1)
+//  Day 1 - win/lose rewards. Amounts are the admin's token rules
+//          (Token page); the server reads them, the GM cannot pick one.
 //  Day 2 - pick group + result (+ tier locations); the system deducts the
-//          station's entry fee and auto-grants a random non-duplicate piece
-//  Box   - sell one of the limited GM blind boxes
+//          tier's entry fee and auto-grants a random non-duplicate piece
+//  Blind boxes - the QR card at the bottom shows this GM's own boxes and the
+//          station's shared pool; Freshies scan it and open the box themselves.
 // All submissions carry idempotency keys and queue offline (NFR-6).
 export default function GmPanelPage() {
   const profile = useProfile();
   const supabase = useMemo(() => supabaseBrowser(), []);
-  const { config } = useConfig();
   const { queue, failed, dismissFailed, submit } = useOfflineQueue();
 
   const [tab, setTab] = useState<Tab>("day1");
@@ -54,27 +54,26 @@ export default function GmPanelPage() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [boxesSold, setBoxesSold] = useState<number>(0);
+  // Shown on the buttons only; the server applies the current rule.
+  const [day1, setDay1] = useState({ win: 2, lose: 1 });
 
   useEffect(() => {
     let active = true;
     async function load() {
-      const [{ data: gs }, { count }] = await Promise.all([
-        supabase.rpc("fn_list_groups"),
-        supabase
-          .from("blind_box_sales")
-          .select("*", { count: "exact", head: true }),
-      ]);
+      const { data: gs } = await supabase.rpc("fn_list_groups");
       if (!active) return;
       setGroups(gs ?? []);
-      setBoxesSold(count ?? 0);
       if (profile.station_id) {
         const { data: st } = await supabase
           .from("stations")
           .select("*")
           .eq("id", profile.station_id)
           .single();
-        if (active) setStation((st as Station) ?? null);
+        if (active) {
+          setStation((st as Station) ?? null);
+          // open on the tab for this station's day
+          if ((st as Station | null)?.day === 2) setTab((t) => (t === "day1" ? "day2" : t));
+        }
       }
     }
     load();
@@ -83,31 +82,67 @@ export default function GmPanelPage() {
     };
   }, [supabase, profile.station_id]);
 
+  // Token rules can change during the event; keep the labels and the
+  // station's entry fee (synced from its tier) current.
+  useEffect(() => {
+    let active = true;
+    async function loadRules() {
+      const { data } = await supabase
+        .from("game_config_rules")
+        .select("rule_key, rule_value")
+        .in("rule_key", ["DAY1_WIN_TOKENS", "DAY1_LOSE_TOKENS"]);
+      if (!active || !data) return;
+      const value = (key: string, fallback: number) =>
+        data.find((r) => r.rule_key === key)?.rule_value ?? fallback;
+      setDay1({ win: value("DAY1_WIN_TOKENS", 2), lose: value("DAY1_LOSE_TOKENS", 1) });
+      if (profile.station_id) {
+        const { data: st } = await supabase
+          .from("stations")
+          .select("entry_cost")
+          .eq("id", profile.station_id)
+          .single();
+        if (active && st) {
+          setStation((cur) => (cur ? { ...cur, entry_cost: st.entry_cost } : cur));
+        }
+      }
+    }
+    loadRules();
+    const channel = supabase
+      .channel(`gm_token_rules_${profile.id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "game_config_rules" }, loadRules)
+      .subscribe();
+    return () => {
+      active = false;
+      supabase.removeChannel(channel);
+    };
+  }, [supabase, profile.id, profile.station_id]);
+
   function flash(msg: string) {
     setNotice(msg);
     setError(null);
     setTimeout(() => setNotice(null), 4000);
   }
 
-  async function day1Reward(delta: number, reason: string) {
+  async function day1Reward(result: "win" | "lose") {
     if (!groupId) return setError("先选组别 Select a group first.");
+    const label = result === "win" ? "Station win" : "Station participation";
     setBusy(true);
     setError(null);
     const res = await submit(
-      "fn_adjust_tokens",
+      "fn_gm_day1_reward",
       {
         p_group_id: groupId,
-        p_delta: delta,
-        p_reason: reason,
+        p_result: result,
         p_idempotency_key: idemKey(),
       },
-      `${delta > 0 ? "+" : ""}${delta} to group ${groupId}`
+      `Day 1 ${result} to group ${groupId}`
     );
     setBusy(false);
     if (res.status === "confirmed") {
-      const bal = (res.data as { balance?: number })?.balance;
+      const d = res.data as { delta?: number; balance?: number; duplicate?: boolean };
+      if (d?.duplicate) return flash("Duplicate ignored (already recorded).");
       flash(
-        `${reason}: ${delta > 0 ? "+" : ""}${delta}${bal !== undefined ? ` · balance ${bal}` : ""}`
+        `${label}: +${d?.delta ?? "?"}${d?.balance !== undefined ? ` · balance ${d.balance}` : ""}`
       );
     } else if (res.status === "queued") {
       flash("Offline. Queued and will send automatically.");
@@ -175,23 +210,6 @@ export default function GmPanelPage() {
     }
   }
 
-  async function sellBox() {
-    if (!groupId) return setError("先选组别 Select a group first.");
-    setBusy(true);
-    setError(null);
-    const { data, error } = await supabase.rpc("fn_sell_blind_box", {
-      p_group_id: groupId,
-      p_idempotency_key: idemKey(),
-    });
-    setBusy(false);
-    if (error) setError(friendlyError(error));
-    else {
-      const d = data as { tokens: number; price: number; balance: number };
-      flash(`Box opened: paid ${d.price}, won ${d.tokens} tokens · balance ${d.balance}`);
-      setBoxesSold((n) => n + 1);
-    }
-  }
-
   async function setStatus(status: StationStatus) {
     if (!station) return;
     setBusy(true);
@@ -204,8 +222,12 @@ export default function GmPanelPage() {
     else setStation({ ...station, status });
   }
 
-  const boxPrice = Number(config["gm_blindbox_price"] ?? 2);
-  const boxStock = Number(config["gm_blindbox_stock"] ?? 8);
+  // a station runs either Day 1 or Day 2, not both
+  const tabs = (Object.keys(TASKS) as Tab[]).filter(
+    (t) =>
+      !station ||
+      ((t !== "day1" || station.day === 1) && (t !== "day2" || station.day === 2))
+  );
 
   return (
     <div className="space-y-4">
@@ -258,7 +280,7 @@ export default function GmPanelPage() {
         </div>
       )}
 
-      <Card className="sticky top-[8.75rem] z-20 border-brand-1/20">
+      <Card className="border-brand-1/20">
         <label className="label" htmlFor="group">
           Active group
         </label>
@@ -277,10 +299,17 @@ export default function GmPanelPage() {
         </select>
       </Card>
 
-      <div className="grid grid-cols-2 gap-2 rounded-[1.5rem] bg-paper-200 p-1.5 sm:grid-cols-4">
-        {(Object.keys(TASKS) as Tab[]).map((t) => (
+      <div
+        className={cn(
+          "grid grid-cols-2 gap-2 rounded-[1.5rem] bg-paper-200 p-1.5",
+          tabs.length === 3 ? "sm:grid-cols-3" : "sm:grid-cols-2"
+        )}
+      >
+        {tabs.map((t) => (
           <button
             key={t}
+            type="button"
+            aria-pressed={tab === t}
             onClick={() => setTab(t)}
             className={cn(
               "min-h-[72px] rounded-[1.15rem] px-3 text-left transition active:scale-[0.99]",
@@ -306,18 +335,18 @@ export default function GmPanelPage() {
           <div className="grid grid-cols-2 gap-2">
             <button
               disabled={busy}
-              onClick={() => day1Reward(2, "Station win")}
-              className="btn min-h-[92px] flex-col bg-green-600 text-white"
+              onClick={() => day1Reward("win")}
+              className="btn min-h-[92px] flex-col bg-green-800 text-white"
             >
-              <span className="text-2xl font-black">+2</span>
+              <span className="text-2xl font-black">+{day1.win}</span>
               <span className="text-sm">Win</span>
             </button>
             <button
               disabled={busy}
-              onClick={() => day1Reward(1, "Station participation")}
-              className="btn min-h-[92px] flex-col bg-green-500 text-white"
+              onClick={() => day1Reward("lose")}
+              className="btn min-h-[92px] flex-col bg-green-700 text-white"
             >
-              <span className="text-2xl font-black">+1</span>
+              <span className="text-2xl font-black">+{day1.lose}</span>
               <span className="text-sm">Participation</span>
             </button>
           </div>
@@ -340,11 +369,13 @@ export default function GmPanelPage() {
 
           <div className="grid grid-cols-2 gap-2">
             <button
+              type="button"
+              aria-pressed={success}
               onClick={() => setSuccess(true)}
               className={cn(
                 "btn min-h-[76px] flex-col text-base",
                 success
-                  ? "bg-green-600 text-white"
+                  ? "bg-green-700 text-white"
                   : "border border-paper-300 bg-white text-ink-soft"
               )}
             >
@@ -352,6 +383,8 @@ export default function GmPanelPage() {
               <span className="text-xs">Charge + grant</span>
             </button>
             <button
+              type="button"
+              aria-pressed={!success}
               onClick={() => setSuccess(false)}
               className={cn(
                 "btn min-h-[76px] flex-col text-base",
@@ -374,6 +407,8 @@ export default function GmPanelPage() {
                 {PROJECTOR_LOCATIONS.map((loc) => (
                   <button
                     key={loc}
+                    type="button"
+                    aria-pressed={locations.includes(loc)}
                     onClick={() => toggleLocation(loc)}
                     className={cn(
                       "btn min-h-[64px] text-sm",
@@ -405,24 +440,6 @@ export default function GmPanelPage() {
         </Card>
       )}
 
-      {tab === "box" && (
-        <Card className="space-y-3">
-          <h2 className="font-semibold">Sell a blind box</h2>
-          <p className="text-sm text-ink-faint">
-            Price -{boxPrice} tokens, contents are random tokens. Limited
-            stock: {Math.max(0, boxStock - boxesSold)} of {boxStock} left
-            (shared across all GMs).
-          </p>
-          <button
-            disabled={busy || boxesSold >= boxStock}
-            onClick={sellBox}
-            className="btn-primary min-h-[72px] w-full text-lg"
-          >
-            Sell and open (-{boxPrice} tokens)
-          </button>
-        </Card>
-      )}
-
       {tab === "station" && (
         <Card className="space-y-3">
           {station ? (
@@ -435,7 +452,7 @@ export default function GmPanelPage() {
                 <button
                   disabled={busy}
                   onClick={() => setStatus("available")}
-                  className="btn min-h-[72px] bg-green-600 text-sm text-white"
+                  className="btn min-h-[72px] bg-green-700 text-sm text-white"
                 >
                   Available
                 </button>
@@ -449,7 +466,7 @@ export default function GmPanelPage() {
                 <button
                   disabled={busy}
                   onClick={() => setStatus("closed")}
-                  className="btn min-h-[72px] bg-gray-500 text-sm text-white"
+                  className="btn min-h-[72px] bg-gray-600 text-sm text-white"
                 >
                   Closed
                 </button>
@@ -463,6 +480,8 @@ export default function GmPanelPage() {
           )}
         </Card>
       )}
+
+      <BlindBoxCard />
     </div>
   );
 }

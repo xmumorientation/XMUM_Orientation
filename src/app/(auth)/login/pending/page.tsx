@@ -3,7 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
-import { ErrorBanner, Spinner } from "@/components/ui";
+import { AuthShell } from "@/components/auth/AuthShell";
+import { Spinner } from "@/components/ui";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { ROLE_LABELS, type UserRole } from "@/lib/types";
 
@@ -45,7 +46,7 @@ export default function PendingApprovalPage() {
       }
 
       const requested = (data?.requested_role ?? null) as UserRole | null;
-      setLabel(requested ? ROLE_LABELS[requested] : "the role you chose");
+      setLabel(requested ? ROLE_LABELS[requested] : null);
       setReady(true);
     }
 
@@ -64,27 +65,27 @@ export default function PendingApprovalPage() {
   }
 
   return (
-    <div className="auth-card">
-      <div className="auth-card-inner space-y-4">
-        <div>
-          <p className="text-xs font-black uppercase tracking-[0.2em] text-brand-1">
-            Waiting for approval
+    <AuthShell
+      role="Waiting for approval"
+      lead={
+        ready
+          ? label
+            ? `An admin needs to approve this account. You asked to join as ${label}. You can sign in after an admin approves it.`
+            : "An admin needs to approve this account and give it a role. You can sign in after that."
+          : "Checking your account."
+      }
+    >
+      <div className="vx-login-form">
+        {error && (
+          <p className="vx-login-error" role="alert">
+            {error}
           </p>
-          <h2 className="mt-2 text-2xl font-black tracking-tight text-ink">
-            An admin needs to approve this account.
-          </h2>
-          <p className="mt-2 text-sm leading-5 text-ink-faint">
-            {ready
-              ? `You asked to join as ${label}. You can sign in after an admin approves it.`
-              : "Checking your account."}
-          </p>
-        </div>
-        <ErrorBanner message={error} />
-        {!ready && !error && <Spinner />}
-        <button type="button" onClick={signOut} className="btn-secondary w-full">
+        )}
+        {!ready && !error && <Spinner className="mx-auto" />}
+        <button type="button" onClick={signOut} className="vx-btn vx-btn-ghost">
           Sign out
         </button>
       </div>
-    </div>
+    </AuthShell>
   );
 }

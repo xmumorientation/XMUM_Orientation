@@ -179,7 +179,7 @@ create policy "admin deletes puzzle images" on storage.objects
 
 insert into public.game_config (key, value) values
   ('event_name',        '"Vortexa"'),
-  ('event_tagline',     '"XMUM Orientation 2026"'),
+  ('event_tagline',     '"XMUM 26/12 Orientation"'),
   ('brand_primary',     '"#0891b2"'),   -- accent 1 (CTA gradient start)
   ('brand_secondary',   '"#7c3aed"'),   -- accent 2 (CTA gradient end)
   ('gm_blindbox_price', '2'),

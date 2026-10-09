@@ -1,10 +1,11 @@
 "use client";
 
-import { Menu, PanelLeftClose, PanelLeftOpen, X } from "lucide-react";
+import { ArrowLeft, Menu, PanelLeftClose, PanelLeftOpen, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import { nexusBody, vxDisplay } from "@/components/home/fonts";
 import { FreshieTabBar } from "@/components/freshie/FreshieTabBar";
 import { themeFromColor } from "@/components/freshie/groupTheme";
 import { ShellMenuProvider } from "@/components/ShellMenu";
@@ -20,6 +21,9 @@ import { Monogram } from "@/components/ui/Monogram";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { ROLE_LABELS, type UserRole } from "@/lib/types";
 import { cn, hexToRgbChannels } from "@/lib/utils";
+
+import "@/components/staff/staff-dashboard.css";
+import "@/components/staff/staff-pages.css";
 
 interface NavItem {
   href: string;
@@ -67,7 +71,7 @@ const NAV: NavItem[] = [
   { href: "/gm", label: "Station", code: "GM", roles: ["gm", "guardian_gm"] },
   {
     href: "/token",
-    label: "Token System",
+    label: "Scoreboard",
     code: "TK",
     roles: ["gm", "guardian_gm", "hof", "hogm", "committee"],
   },
@@ -113,6 +117,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const isFreshie = profile.role === "freshie";
   const isFaci = profile.role === "faci";
   const isAdmin = profile.role === "admin";
+  const isStaffDashboard = !isFreshie && pathname === "/dashboard";
+  // Every Committee, Faci, GM, HOF, HOGM, Guardian GM and Admin page uses the
+  // dark staff design. The map and Items pages keep their own design.
+  const keepsOwnDesign =
+    pathname === "/map" || pathname.startsWith("/map/") || pathname.startsWith("/inventory");
+  const isStaffArea = !isFreshie && !keepsOwnDesign;
+  const isStaffSubpage = isStaffArea && !isStaffDashboard;
   // Only the admin account can shrink the sidebar to icons.
   const slim = isAdmin && collapsed;
   const items = NAV.filter((n) => n.roles.includes(profile.role)).map((item) =>
@@ -120,12 +131,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   );
   // Freshie and facilitator phones share the night tab bar. Freshie Scan is
   // the raised center button; a facilitator gets Code there instead.
-  // Home and Schedule hide the light mobile header for both roles.
+  // Home, Schedule and Items hide the light mobile header for both roles.
   const { group } = useGroup();
   const groupTheme = isFreshie || isFaci ? themeFromColor(group?.color) : null;
-  const isNight =
+  const isNight = isStaffDashboard || (
     (isFreshie || isFaci) &&
-    (pathname === "/dashboard" || pathname === "/schedule");
+    (pathname === "/dashboard" || pathname === "/schedule" || pathname === "/inventory"));
   const showTabBar = (isFreshie || isFaci) && !(isFreshie && pathname === "/scan");
 
   useEffect(() => {
@@ -163,6 +174,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <Link
           key={item.href}
           href={item.href}
+          aria-current={active ? "page" : undefined}
           onClick={() => mode === "drawer" && setMenuOpen(false)}
           title={iconsOnly ? item.label : undefined}
           aria-label={iconsOnly ? item.label : undefined}
@@ -194,7 +206,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       className={cn(
         "min-h-dvh w-full lg:grid",
         slim ? "lg:grid-cols-[4.5rem_minmax(0,1fr)]" : "lg:grid-cols-[16rem_minmax(0,1fr)]",
-        isNight && "bg-[#030b1c]"
+        isNight && "bg-[#030b1c]",
+        isStaffArea && `staff-dashboard-shell ${nexusBody.variable} ${vxDisplay.variable}`
       )}
       style={
         {
@@ -232,7 +245,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 {brand.eventName}
               </span>
               <span className="block truncate text-xs text-ink-faint">
-                XMUM Orientation 2026
+                XMUM 26/12 Orientation
               </span>
             </span>
           )}
@@ -284,7 +297,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       <div className="min-w-0">
       {!isNight && (
-      <header className="sticky top-0 z-40 border-b border-paper-200 bg-paper-50/95 pt-[env(safe-area-inset-top)] shadow-[0_1px_0_rgba(28,26,23,0.03)] backdrop-blur lg:hidden">
+      <header className={cn("sticky top-0 z-40 border-b border-paper-200 bg-paper-50/95 pt-[env(safe-area-inset-top)] shadow-[0_1px_0_rgba(28,26,23,0.03)] backdrop-blur lg:hidden", isStaffSubpage && "sp-header")}>
+        {isStaffSubpage ? (
+          <div className="sp-header-row">
+            <Link href="/dashboard" className="sp-back">
+              <ArrowLeft size={20} aria-hidden />
+              Home
+            </Link>
+            <div className="sp-header-end">
+              <span className="sp-role">{ROLE_LABELS[profile.role]}</span>
+              <button type="button" aria-label="Open menu" onClick={() => setMenuOpen(true)} className="sp-menu-btn">
+                <Menu size={22} aria-hidden />
+              </button>
+            </div>
+          </div>
+        ) : (
         <div className="flex items-center justify-between gap-3 px-3 py-2.5 sm:px-5 sm:py-3">
           <div className="flex min-w-0 items-center gap-2.5">
             {!isFreshie && (
@@ -305,7 +332,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   {brand.eventName}
                 </span>
                 <span className="block truncate text-xs text-ink-faint">
-                  XMUM Orientation 2026
+                  XMUM 26/12 Orientation
                 </span>
               </span>
             </Link>
@@ -317,6 +344,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </span>
           </div>
         </div>
+        )}
         <PhaseTimer />
       </header>
       )}
@@ -324,15 +352,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {!isFreshie && (
         <Dialog open={menuOpen} onOpenChange={setMenuOpen}>
           <DialogContent
-            layout="sheet"
+            layout={isStaffArea ? "sheetTop" : "sheet"}
             title="Navigation menu"
             titleVisuallyHidden
             showClose={false}
-            className="lg:hidden"
+            className={cn("lg:hidden", isStaffArea && `sd-drawer sd-top-menu ${nexusBody.variable}`)}
+            overlayClassName={isStaffArea ? "sd-menu-overlay" : undefined}
           >
-            <div className="flex h-full flex-col">
+            <div className={cn("flex flex-col", !isStaffArea && "h-full")}>
               <div className="flex items-center justify-between gap-3 p-2">
-                <div className="flex min-w-0 items-center gap-2.5">
+                <div className={cn("flex min-w-0 items-center gap-2.5", isStaffArea && "sd-menu-heading")}>
                   <DialogClose asChild>
                     <button
                       aria-label="Close menu"
@@ -342,7 +371,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     </button>
                   </DialogClose>
                   <div className="flex min-w-0 items-center gap-2">
-                    <Monogram name={brand.eventName} size="sm" />
+                    {!isStaffArea && <Monogram name={brand.eventName} size="sm" />}
                     <div className="min-w-0">
                       <p className="truncate text-sm font-bold">
                         {brand.eventName}
@@ -375,6 +404,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         className={cn(
           "mx-auto min-h-dvh w-full px-3 pb-[calc(1.25rem+env(safe-area-inset-bottom))] pt-3 sm:px-5 sm:pb-8 sm:pt-5 lg:px-8 lg:py-6",
           isAdmin ? "max-w-[96rem]" : "max-w-6xl",
+          // Admin pages already carry their own dark theme (.av).
+          isStaffSubpage && !pathname.startsWith("/admin") && "sp",
           showTabBar &&
             "pb-[calc(6.5rem+env(safe-area-inset-bottom))] sm:pb-[calc(6.5rem+env(safe-area-inset-bottom))]"
         )}
