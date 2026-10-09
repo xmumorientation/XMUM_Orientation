@@ -3,7 +3,7 @@
 import { Package } from "lucide-react";
 import { useMemo, useState } from "react";
 
-import { BoxReveal } from "@/components/BoxReveal";
+import { BOX_REVEAL_VIDEO, BoxReveal } from "@/components/BoxReveal";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import type {
   BlindBoxPreview,
@@ -147,6 +147,20 @@ export function BlindBoxOpener({
       <a href="/dashboard" className="btn-secondary mt-6 min-w-[180px]">
         Back to home
       </a>
+
+      {/* Warm the cache while the Freshie reads this screen, so the opening
+          clip starts the moment they tap Open. Invisible and silent. */}
+      {!blocked && (
+        <video
+          src={BOX_REVEAL_VIDEO}
+          preload="auto"
+          muted
+          playsInline
+          aria-hidden="true"
+          tabIndex={-1}
+          className="pointer-events-none absolute h-px w-px opacity-0"
+        />
+      )}
     </main>
   );
 }
