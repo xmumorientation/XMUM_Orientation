@@ -1,4 +1,5 @@
 import { supabaseBrowser } from "@/lib/supabase/client";
+import { friendlyError } from "@/lib/utils";
 import {
   DEFAULT_RULES,
   type GameConfigRule,
@@ -375,15 +376,13 @@ export async function deleteTokenLog(logId: string): Promise<{ ok: boolean; erro
   return { ok: true };
 }
 
+// Reset State (Admin → Token page). The database does the work and the rules:
+// fn_reset_tokens_and_puzzles (migration 0056) is Admin-only and refuses unless
+// Rehearsal mode is on. Errors are thrown so the page shows why it was refused.
 export async function resetAllTokensAndPuzzles(): Promise<{ ok: boolean }> {
   const supabase = supabaseBrowser();
-  try {
-    await supabase.from("puzzle_inventory").delete().neq("inventory_id", -1);
-    await supabase.from("token_logs").delete().neq("group_id", -1);
-    await supabase.from("groups").update({ current_tokens: 0, token_balance: 0 }).neq("id", -1);
-  } catch (err) {
-    console.warn("Supabase reset fallback:", err);
-  }
+  const { error } = await supabase.rpc("fn_reset_tokens_and_puzzles");
+  if (error) throw new Error(friendlyError(error));
 
   const freshGroups = generateInitial12Groups();
   setLocalItem("groups", freshGroups);

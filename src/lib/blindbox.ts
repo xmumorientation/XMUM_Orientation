@@ -1,25 +1,26 @@
-import { hashToken, signPayload, verifyToken } from "./signed-token";
+import { signPayloadStable, verifyToken } from "./signed-token";
 
-// Committee blind-box QR tokens. Payload: { k: "bb", m: profileId }.
-// The QR encodes /blindbox?t=<token>; the server verifies the signature
-// and the RPC enforces stock + one-claim-per-group-per-member.
+// Blind-box QR tokens. Payload: { k: "bb2", a: assignmentId, v: qrVersion }.
+// The token is an HMAC of that payload, recomputed whenever a link is needed
+// and never stored, so Admin can preview any link without invalidating it.
+// "Regenerate" bumps qr_version in the database, which kills the old QR.
+// The QR encodes /blindbox?t=<token>; the page verifies the signature and the
+// RPCs (fn_bb_preview / fn_open_blind_box) check the version, stock and limits.
 
-export function generateBlindBoxToken(profileId: string): {
-  token: string;
-  tokenHash: string;
-} {
-  const token = signPayload({ k: "bb", m: profileId });
-  return { token, tokenHash: hashToken(token) };
+export function blindBoxToken(assignmentId: number, version: number): string {
+  return signPayloadStable({ k: "bb2", a: assignmentId, v: version });
 }
 
 export function verifyBlindBoxToken(
   token: string
-): { valid: true; profileId: string } | { valid: false } {
+): { valid: true; assignmentId: number; version: number } | { valid: false } {
   const res = verifyToken(token);
   if (!res.valid) return { valid: false };
-  const { k, m } = res.payload as { k?: string; m?: string };
-  if (k !== "bb" || typeof m !== "string") return { valid: false };
-  return { valid: true, profileId: m };
+  const { k, a, v } = res.payload as { k?: string; a?: unknown; v?: unknown };
+  if (k !== "bb2" || !Number.isInteger(a) || !Number.isInteger(v)) {
+    return { valid: false };
+  }
+  return { valid: true, assignmentId: a as number, version: v as number };
 }
 
 export function blindBoxUrl(token: string): string {
@@ -27,4 +28,6 @@ export function blindBoxUrl(token: string): string {
   return `${base}/blindbox?t=${encodeURIComponent(token)}`;
 }
 
-export { hashToken };
+export function blindBoxUrlFor(assignmentId: number, version: number): string {
+  return blindBoxUrl(blindBoxToken(assignmentId, version));
+}

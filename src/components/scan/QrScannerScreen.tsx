@@ -2,6 +2,7 @@
 
 import { Camera, Check, Copy, Flashlight, Globe, ImageUp, RotateCcw, ScanLine, VideoOff, X } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type QrScannerType from "qr-scanner";
 
@@ -14,8 +15,10 @@ import type QrScannerType from "qr-scanner";
 //   - Homepage Welcome section, as a DEV-ONLY UI/UX preview (`preview` prop).
 //     See the DEV PREVIEW note in components/home/sections/WelcomeSection.tsx.
 //
-// Backend is NOT wired yet: a detected code is only classified and shown.
-// See the TODO in `handleResult` for where the blind-box claim hooks in.
+// A detected blind-box QR sends the Freshie to its /blindbox?t=<token> link.
+// That page shows the confirm screen; nothing is paid and no box is deducted
+// until the Freshie taps Open there. In `preview` mode (homepage) it only
+// classifies and shows the result.
 //
 // Testing on a phone (development only — not needed once deployed on HTTPS):
 //   - Camera access requires HTTPS. `http://<LAN-IP>:3000` will not work.
@@ -39,17 +42,23 @@ type Detected = { raw: string; kind: "blindbox" | "other" };
 // Social apps' built-in browsers often cannot open the camera.
 const IN_APP_UA = /MicroMessenger|Instagram|FBAN|FBAV|XHSDiscover|xiaohongshu|Line\/|musical_ly|BytedanceWebview|TikTok/i;
 
-/** Blind-box QRs encode `<our site>/blindbox?t=<token>` (see lib/blindbox.ts). */
-function classify(raw: string): Detected["kind"] {
+/** Blind-box QRs encode `<our site>/blindbox?t=<token>` (see lib/blindbox.ts).
+ *  Returns the in-app path to open, or null for anything else (including links
+ *  to another site, which must never be followed). */
+function blindBoxPath(raw: string): string | null {
   try {
     const url = new URL(raw);
     if (url.origin === window.location.origin && url.pathname === "/blindbox" && url.searchParams.get("t")) {
-      return "blindbox";
+      return url.pathname + url.search;
     }
   } catch {
     // Not a URL.
   }
-  return "other";
+  return null;
+}
+
+function classify(raw: string): Detected["kind"] {
+  return blindBoxPath(raw) ? "blindbox" : "other";
 }
 
 type Props = {
@@ -61,6 +70,7 @@ type Props = {
 };
 
 export function QrScannerScreen({ onClose, closeHref = "/dashboard", preview = false }: Props) {
+  const router = useRouter();
   const videoRef = useRef<HTMLVideoElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const scannerRef = useRef<QrScannerType | null>(null);
@@ -80,11 +90,9 @@ export function QrScannerScreen({ onClose, closeHref = "/dashboard", preview = f
     navigator.vibrate?.(60);
     setDetected({ raw, kind: classify(raw) });
     setPhase("detected");
-    // TODO(backend): for kind === "blindbox", navigate to the scanned URL
-    // (router.push(url.pathname + url.search)) so the existing /blindbox page
-    // verifies the token and runs the claim RPC. Left out until the backend
-    // flow for in-app scanning is confirmed.
-  }, []);
+    const path = blindBoxPath(raw);
+    if (path && !preview) router.push(path);
+  }, [preview, router]);
 
   const loadLib = useCallback(async () => {
     if (!libRef.current) libRef.current = (await import("qr-scanner")).default;
@@ -274,7 +282,7 @@ export function QrScannerScreen({ onClose, closeHref = "/dashboard", preview = f
             {preview
               ? "Preview only — scanning works, but nothing is claimed yet."
               : detected.kind === "blindbox"
-              ? "Opening blind boxes from this scanner is coming soon. For now, scan it with your phone camera app."
+              ? "Opening your blind box…"
               : "This QR code isn't from a committee member. Look for a Vortexa blind box QR."}
           </p>
           <p className="max-w-xs break-all rounded-xl bg-white/5 px-3 py-2 font-mono text-[11px] text-white/50">{detected.raw}</p>
