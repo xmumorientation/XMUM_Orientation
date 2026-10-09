@@ -5,7 +5,7 @@ Read it before starting a new round of development. When a decision changes, upd
 
 > **From Ben:** when you finish your work, write down what you completed in the "Done" section at the end of this file, so the next teammate can see it. Do this for partly finished items too: say which parts are done and which are left.
 
-Last updated: 2026-10-03
+Last updated: 2026-10-05
 
 ## Status key
 
@@ -182,15 +182,19 @@ Full background: the "Issues Found" section in [permission-matrix.md](permission
 - Group locations on the map, with the existing permission rules: Faci sees their own group, Committee and above see all groups.
 - Anything else on the map page.
 
+**Figma:** [XMUM campus map](https://www.figma.com/design/3dcEv45KenmKcoTcbaZmQ0/Untitled?node-id=24-2) (frame `XMUM Block Cube_XMUM Map 1`).
+
 **Current state:**
-- Map page: [map/page.tsx](../src/app/(app)/map/page.tsx). Map component: [CampusMap.tsx](../src/components/CampusMap.tsx).
-- The branch `David-MapPage` (last commit 2026-08-24) has earlier map work. Check it before starting, so work is not repeated.
+- Map page: [map/page.tsx](../src/app/(app)/map/page.tsx). Map component: [CampusMap.tsx](../src/components/CampusMap.tsx). The illustration is `public/campus-map.png`.
+- Labels on the art: A1–A5 along the red-roof row (A1 at the monument end, A5 at the lake end), Track & Field on the pitch, B1 on the white-and-red block.
+- Station dots still show available / in progress / closed, and still update from the `stations` table without a refresh. Group pins still follow the permission rules below.
+- `David-MapPage` colours dots by occupancy (`fn_public_station_occupancy`). That function is not on this branch, so it was not copied. The branch still uses the old rectangle map, not this Figma art.
 - Who can see what on the map: see the "Campus Map" and "Group locations" rows in [permission-matrix.md](permission-matrix.md).
 
-**To do:**
-1. Get the Figma link and add it to this item.
-2. Compare the current map with the Figma design, and list the gaps.
-3. Build the gaps. Station status should update live, without a page refresh.
+**Still open:**
+- Seeded stations are removed. New ones are created in Admin → Stations and sit on A1–A5, B1, or Track & Field.
+- GPS pins are drawn on the art (see Done, 2026-10-07). The calibration needs a real walk-through to confirm.
+- The lake, monument, and brown field are in the picture and are not labeled.
 
 ## 6. Faci updates group name and slogan (Ready)
 
@@ -213,7 +217,45 @@ Full background: the "Issues Found" section in [permission-matrix.md](permission
 
 ## Done
 
-When you finish something, add a few lines here: your name, the date, and the main points of what you did and what is left. Newest at the top.
+### Facilitator automatic precise location reporting, 2026-10-09
+- Facilitators now always ask for and report precise location (`enableHighAccuracy: true`) upon logging in or opening the app, regardless of which page they are on (dashboard, schedule, inventory, code, attendance, etc.).
+- `FaciLocationProvider` in `src/components/FaciLocationTracker.tsx` continuously reports coordinates to `fn_report_gps` (immediately on mount, throttled movement updates via `watchPosition`, 60s heartbeats while stationary, and instant refresh on returning to the foreground).
+- Prompts facilitator with a floating banner when precise location has not yet been allowed or is blocked, ensuring browser permission can be granted with a single tap.
+- Location Check-in page (`/checkin`) now displays the live global GPS status and last report time.
+
+### Full-screen campus map, 2026-10-09
+- Tapping the map, or the Full screen button, opens the picture over the whole phone screen. It no longer zooms in on the tap.
+- The whole campus is visible first. Drag to move, pinch or use + and − to zoom (up to 8×), and reset to fit the screen again. Close or Esc leaves the viewer. The page underneath does not scroll while it is open.
+- Station dots, group pins and building names still work in the viewer. On check-in, the confirm bar stays above the map.
+
+### Zichien, 2026-10-08
+- The campus map is the original Figma export again (`public/campus-map.png`, 3203×1776), including the brown field. The edited cut was removed.
+- Building and projector positions match that image.
+
+### Map zoom and bigger check-in zones, 2026-10-07
+- The map stayed still until you tapped it, then zoomed to 2× at that spot. That tap now opens the full-screen viewer instead (see the 2026-10-09 note above). While the small map is on the page, scrolling still works. Taps on stations, group pins and buttons do not open the viewer.
+- Migration `0049`: the "you seem far from this station" warning now also accepts the whole building (A1–A5 90 m, B1 140 m, Track & Field 130 m around the real GPS points) and allows for the phone's GPS accuracy (up to 100 m). It still never blocks a check-in. Run `0049` on the live database.
+
+### Live group GPS pins on the map, 2026-10-07
+- Faci's phone GPS (the opt-in toggle on the check-in page, one report a minute while the page is open) is drawn as a numbered, coloured pin on the art. Tap a pin for the group name, age and accuracy.
+- `src/lib/mapGeo.ts` converts lat/lng to the picture. It uses the real GPS of A1–A5, B1 and Track & Field as anchors (affine fit plus a correction so each anchor is exact). To recalibrate, edit `GPS_POINTS` there. The courts are between B1 and Track & Field but are not on the art, so they are not an anchor.
+- Pins fade after 3 minutes and leave the map after 15 minutes. The list under the map still shows the last report. Positions outside the picture are not drawn.
+- Migration `0048`: `fn_latest_gps_locations()` (last hour, Committee tier sees all groups, Faci sees their own, GM and Freshie see none). `fn_report_gps` deletes that group's GPS rows older than 1 hour.
+- Left: run migration `0048` on the live database and walk the campus to check the pins. (GPS now auto-reports app-wide for facilitators, see 2026-10-09 note above).
+
+### Station capacity and automatic status, 2026-10-06
+- Migration `0047`: each station has `max_groups` (required in the admin forms; existing stations stay as they are until it is set). When that many groups are checked in the station becomes In progress, otherwise Available. Closed stays manual.
+- A group is at one station at a time (`station_occupancy`). Checking in elsewhere moves it. Full station: check-in is rejected (`STATION_FULL`). Faci can leave their own station (`fn_uncheckin`, "Leave station" on the check-in page). GM and admin can clear a station (`fn_clear_station`), which also resets a manual In progress.
+- Status dropdown now calls `fn_set_station_status`: In progress is a manual override until the station is cleared or set back to Available.
+- Check-in sends the Faci's GPS and warns (never blocks) if outside the station radius. Stations have optional `lat`, `lng`, `radius_m` (default 100 m); none are filled in yet, so no warning appears until an admin sets them.
+- Map pins only show a group at a station while it is still checked in there.
+- Left: run migration `0047` on the live database, then set "Groups at once" on each station. Real lat/lng for each station.
+
+### Zichien, 2026-10-05
+- Campus map now uses the Figma illustration (`public/campus-map.png`) instead of the grey blocks. Labels: A1–A5, Track & Field, B1.
+- Station status (available, in progress, closed), the Day 2 projector layer, and group pins still update live.
+- Migration `0045` deletes the seeded stations (A4-1, CRT-1, and the rest). On the Campus map, an admin clicks a building to add a station there. The short code is generated (A1-1, TF-1). The same panel edits the game and status, or deletes the station.
+- Left: GPS pins are still a list; lake, monument, and the brown field are unlabeled.
 
 ### Jiamin, 2026-10-04
 - Admin redesign step A: Admin nav is now 4 sections (Live, Freshies, Game, Settings) with sub-tabs; Freshie control moved to `/admin/freshies` (old `/freshie-control` redirects); admin sidebar can collapse to icons. UI only. Step B done: Users (role chips, group filter, table, CSV import in a pop-up), Audit (action and role chips, table), Control room (phase rows, switches). Step C done: Stations (table, add in pop-up), Blind box (two tabs, table), NFC, Puzzles, FAQ (grouped, add in pop-up), Brand, Tokens (full width, layout only). Admin redesign complete.

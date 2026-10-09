@@ -36,8 +36,10 @@ export function useConfig() {
       setLoaded(true);
     }
     load();
+    // AppShell and the page can both call useConfig. Supabase rejects a second
+    // subscription on the same channel name, so each caller gets its own.
     const channel = supabase
-      .channel("config-live")
+      .channel(`config-live-${crypto.randomUUID()}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "game_config" },

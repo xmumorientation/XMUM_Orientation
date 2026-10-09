@@ -49,12 +49,28 @@ export interface Station {
   id: number;
   code: string;
   name: string;
+  /** A1–A5, B1, or Track & Field. */
   area: string;
+  /** Game or purpose set by an admin. Empty until one is chosen. */
+  purpose: string;
   status: StationStatus;
   map_x: number;
   map_y: number;
   risk_tier: RiskTier;
   entry_cost: number;
+  /** How many groups fit at once. When full, status becomes In progress. */
+  max_groups: number | null;
+  /** Real-world position, used only to warn a far-away check-in. */
+  lat: number | null;
+  lng: number | null;
+  radius_m: number | null;
+  /** An admin or GM forced In progress. Cleared when the station is cleared. */
+  status_override: boolean;
+}
+
+export interface StationPurpose {
+  id: number;
+  name: string;
 }
 
 export const RISK_TIER_META: Record<
@@ -183,6 +199,15 @@ export interface LatestLocation {
   source: "gps" | "manual";
   station_id: number | null;
   station_name: string | null;
+  lat: number | null;
+  lng: number | null;
+  accuracy_m: number | null;
+  reported_at: string;
+}
+
+export interface GpsLocation {
+  group_id: number;
+  group_name: string;
   lat: number | null;
   lng: number | null;
   accuracy_m: number | null;

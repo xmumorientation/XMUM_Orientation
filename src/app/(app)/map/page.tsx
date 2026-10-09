@@ -16,9 +16,16 @@ export default function MapPage() {
     <div>
       <PageTitle
         title="Campus map"
-        subtitle="Available, in progress, and closed stations. Tap a station for details."
+        subtitle={
+          profile.role === "admin"
+            ? "Tap the map for a full-screen view. Click a building to add a station or change its game and status."
+            : "Tap the map for a full-screen view. Tap a station for details."
+        }
       />
-      <CampusMap showGroupPins={showPins} />
+      <CampusMap
+        showGroupPins={showPins}
+        canManageStations={profile.role === "admin"}
+      />
     </div>
   );
 }

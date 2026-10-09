@@ -10,6 +10,7 @@ import { themeFromColor } from "@/components/freshie/groupTheme";
 import { ShellMenuProvider } from "@/components/ShellMenu";
 import { NavIcon } from "@/components/NavIcon";
 import { NewItemToast } from "@/components/NewItemToast";
+import { FaciLocationBanner } from "@/components/FaciLocationTracker";
 import { PhaseTimer } from "@/components/PhaseTimer";
 import { useConfig } from "@/components/useConfig";
 import { useProfile } from "@/components/ProfileProvider";
@@ -385,6 +386,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {showTabBar && <FreshieTabBar />}
 
       <NewItemToast />
+      <FaciLocationBanner />
       </div>
     </div>
   );
