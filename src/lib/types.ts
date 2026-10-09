@@ -57,6 +57,7 @@ export interface Station {
   map_x: number;
   map_y: number;
   risk_tier: RiskTier;
+  entry_cost: number;
   day: 1 | 2;
   /** How many groups fit at once. When full, status becomes In progress. */
   max_groups: number | null;
