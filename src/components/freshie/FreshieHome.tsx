@@ -27,7 +27,7 @@ import { useOpenShellMenu } from "@/components/ShellMenu";
 import { useGroup } from "@/components/useGroup";
 import { countdownParts, useEventCountdown } from "@/components/useEventCountdown";
 import { supabaseBrowser } from "@/lib/supabase/client";
-import type { AttendanceSession, Group } from "@/lib/types";
+import type { Group } from "@/lib/types";
 import { formatCountdown, friendlyError } from "@/lib/utils";
 
 import "./freshie.css";
@@ -215,7 +215,6 @@ export function ChecklistStop({ group, groupId }: { group: Group | null; groupId
   const [nameNotice, setNameNotice] = useState<string | null>(null);
   const [savingName, setSavingName] = useState(false);
 
-  const [sessions, setSessions] = useState<AttendanceSession[]>([]);
   const [headcount, setHeadcount] = useState("");
   const [countError, setCountError] = useState<string | null>(null);
   const [countNotice, setCountNotice] = useState<string | null>(null);
@@ -231,31 +230,11 @@ export function ChecklistStop({ group, groupId }: { group: Group | null; groupId
   }, [group, seeded]);
 
   useEffect(() => {
+    if (!groupId) return;
     let active = true;
     supabase
-      .from("attendance_sessions")
-      .select("*")
-      .order("id", { ascending: false })
-      .then(({ data }) => {
-        if (active) setSessions((data as AttendanceSession[]) ?? []);
-      });
-    return () => {
-      active = false;
-    };
-  }, [supabase]);
-
-  const session = useMemo(
-    () => sessions.find((row) => !row.closed) ?? sessions[0] ?? null,
-    [sessions],
-  );
-
-  useEffect(() => {
-    if (!session || !groupId) return;
-    let active = true;
-    supabase
-      .from("attendance_headcounts")
+      .from("group_headcounts")
       .select("headcount")
-      .eq("session_id", session.id)
       .eq("group_id", groupId)
       .maybeSingle()
       .then(({ data }) => {
@@ -266,7 +245,7 @@ export function ChecklistStop({ group, groupId }: { group: Group | null; groupId
     return () => {
       active = false;
     };
-  }, [supabase, session, groupId]);
+  }, [supabase, groupId]);
 
   async function saveProfile(e: React.FormEvent) {
     e.preventDefault();
@@ -284,12 +263,10 @@ export function ChecklistStop({ group, groupId }: { group: Group | null; groupId
 
   async function saveHeadcount(e: React.FormEvent) {
     e.preventDefault();
-    if (!session) return;
     setCountError(null);
     setCountNotice(null);
     const count = parseInt(headcount, 10);
-    const { error } = await supabase.rpc("fn_record_headcount", {
-      p_session_id: session.id,
+    const { error } = await supabase.rpc("fn_set_headcount", {
       p_count: count,
     });
     if (error) setCountError(friendlyError(error));
@@ -363,37 +340,30 @@ export function ChecklistStop({ group, groupId }: { group: Group | null; groupId
             <span className="fh-check-no fh-mono">02</span>
             <span className="fh-check-title">
               <b>Take attendance</b>
-              <small>
-                {session ? `${session.name}${headcount !== "" ? ` · ${headcount} people` : ""}` : "No session yet"}
-              </small>
+              <small>{headcount !== "" ? `${headcount} people` : "Not counted yet"}</small>
             </span>
             <ChevronDown size={20} aria-hidden className="fh-check-chev" />
           </button>
           <div id="fh-check-2" className="fh-check-body" hidden={open !== 2}>
-            <p>{session ? session.name : "No attendance session yet."}</p>
-            {session && (
-              <form onSubmit={saveHeadcount}>
-                <label>
-                  Headcount
-                  <input
-                    className="fh-input"
-                    type="number"
-                    min={0}
-                    required
-                    value={headcount}
-                    disabled={session.closed}
-                    onChange={(e) => setHeadcount(e.target.value)}
-                    placeholder="How many people"
-                  />
-                </label>
-                <button type="submit" className="fh-btn fh-btn-primary" disabled={session.closed}>
-                  Save
-                </button>
-                {session.closed && <small className="fh-check-msg">This attendance session is closed.</small>}
-                {countError && <small className="fh-check-msg" role="alert">{countError}</small>}
-                {countNotice && <small className="fh-check-msg">{countNotice}</small>}
-              </form>
-            )}
+            <form onSubmit={saveHeadcount}>
+              <label>
+                Headcount
+                <input
+                  className="fh-input"
+                  type="number"
+                  min={0}
+                  required
+                  value={headcount}
+                  onChange={(e) => setHeadcount(e.target.value)}
+                  placeholder="How many people"
+                />
+              </label>
+              <button type="submit" className="fh-btn fh-btn-primary">
+                Save
+              </button>
+              {countError && <small className="fh-check-msg" role="alert">{countError}</small>}
+              {countNotice && <small className="fh-check-msg">{countNotice}</small>}
+            </form>
           </div>
         </li>
         <li className="fh-check">

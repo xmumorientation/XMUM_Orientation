@@ -70,6 +70,11 @@ function parseCsv(text: string): string[][] {
 }
 
 
+// "game master" (as written in spreadsheets) means the gm role.
+function normalizeRole(role: string) {
+  return /^game\s*-?master$/.test(role) ? "gm" : role;
+}
+
 export async function POST(req: NextRequest) {
   const admin = await requireAdmin();
   if (!admin) {
@@ -97,7 +102,7 @@ export async function POST(req: NextRequest) {
     line: start + i + 1,
     name: (r[0] ?? "").trim(),
     email: (r[1] ?? "").trim().toLowerCase(),
-    role: (r[2] ?? "").trim().toLowerCase(),
+    role: normalizeRole((r[2] ?? "").trim().toLowerCase()),
     group: (r[3] ?? "").trim(),
     station: (r[4] ?? "").trim(),
   }));

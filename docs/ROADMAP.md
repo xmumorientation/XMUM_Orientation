@@ -218,6 +218,13 @@ Full background: the "Issues Found" section in [permission-matrix.md](permission
 
 ## Done
 
+### Admin Live control, Headcount and Game Master assignment, 2026-10-12
+- **Live schedule section removed** from Live control (`LiveSchedule.tsx` deleted; `scheduleTimer` moved to `src/lib/scheduleTimer.ts`). The "Now on the Welcome page" box and all schedule data stay.
+- **Headcount is one number per group, always open** (no sessions, no open/close). New table `group_headcounts`, RPCs `fn_set_headcount` / `fn_clear_headcount` (audit-logged). Used by Admin → Headcount, `/attendance`, `/committee` and the Freshie Home checklist. Old `attendance_headcounts` / `attendance_sessions` are untouched; the latest value per group was copied over.
+- **Live control Day filter** is All / Day 1 / Day 2 and drives the game toggles; Admin → Stations opens on the same choice.
+- **Game Masters are assigned on Admin → Stations** (multi-GM per station, one station per GM per day) through `gm_station_assignments`. Removed the Station column from Admin → Users. `profiles.station_id` is kept in sync as the GM's current station so the GM game functions keep working.
+- Migration `0065`. **Run `0065` in Supabase.** Left: GM RPCs still read `profiles.station_id`; moving them to `gm_station_assignments` directly would remove the sync trigger. `fn_schedule_session` and the old session tables are now unused.
+
 ### Facilitator automatic precise location reporting, 2026-10-09
 - Facilitators now always ask for and report precise location (`enableHighAccuracy: true`) upon logging in or opening the app, regardless of which page they are on (dashboard, schedule, inventory, code, attendance, etc.).
 - `FaciLocationProvider` in `src/components/FaciLocationTracker.tsx` continuously reports coordinates to `fn_report_gps` (immediately on mount, throttled movement updates via `watchPosition`, 60s heartbeats while stationary, and instant refresh on returning to the foreground).

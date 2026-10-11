@@ -5,75 +5,50 @@ import { useEffect, useMemo, useState } from "react";
 import { useProfile } from "@/components/ProfileProvider";
 import { Card, ErrorBanner, PageTitle, Spinner } from "@/components/ui";
 import { supabaseBrowser } from "@/lib/supabase/client";
-import type { AttendanceSession } from "@/lib/types";
-import { cn, friendlyError } from "@/lib/utils";
+import { friendlyError } from "@/lib/utils";
 
 export default function AttendancePage() {
   const profile = useProfile();
   const supabase = useMemo(() => supabaseBrowser(), []);
-  const [sessions, setSessions] = useState<AttendanceSession[]>([]);
   const [headcount, setHeadcount] = useState("");
   const [savedHeadcount, setSavedHeadcount] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  const activeSession = useMemo(() => {
-    return sessions.find((s) => !s.closed) ?? sessions[0] ?? null;
-  }, [sessions]);
-
-  const sessionId = activeSession?.id ?? null;
-
   useEffect(() => {
-    let active = true;
-    async function load() {
-      const { data: sess } = await supabase
-        .from("attendance_sessions")
-        .select("*")
-        .order("id", { ascending: false });
-      if (!active) return;
-      setSessions((sess as AttendanceSession[]) ?? []);
+    if (!profile.group_id) {
       setLoading(false);
+      return;
     }
-    load();
-    return () => {
-      active = false;
-    };
-  }, [supabase]);
-
-  useEffect(() => {
-    if (!sessionId || !profile.group_id) return;
     let active = true;
     async function loadHeadcount() {
       const { data: hc } = await supabase
-        .from("attendance_headcounts")
+        .from("group_headcounts")
         .select("headcount")
-        .eq("session_id", sessionId!)
         .eq("group_id", profile.group_id!)
         .maybeSingle();
       if (!active) return;
-      if (hc) {
-        setSavedHeadcount((hc as { headcount: number }).headcount);
-        setHeadcount(String((hc as { headcount: number }).headcount));
-      } else {
-        setSavedHeadcount(null);
-        setHeadcount("");
-      }
+      const count = (hc as { headcount: number } | null)?.headcount ?? null;
+      setSavedHeadcount(count);
+      setHeadcount(count == null ? "" : String(count));
+      setLoading(false);
     }
     loadHeadcount();
     return () => {
       active = false;
     };
-  }, [supabase, sessionId, profile.group_id]);
+  }, [supabase, profile.group_id]);
 
   async function submitHeadcount(e: React.FormEvent) {
     e.preventDefault();
-    if (!sessionId) return;
     setError(null);
+    setSaving(true);
     const countVal = parseInt(headcount, 10);
-    const { error: rpcError } = await supabase.rpc("fn_record_headcount", {
-      p_session_id: sessionId,
+    const { error: rpcError } = await supabase.rpc("fn_set_headcount", {
       p_count: countVal,
     });
+    setSaving(false);
     if (rpcError) setError(friendlyError(rpcError));
     else setSavedHeadcount(countVal);
   }
@@ -91,38 +66,10 @@ export default function AttendancePage() {
       <PageTitle title="Attendance" subtitle="How many people are in your group" />
       <ErrorBanner message={error} />
 
-      {activeSession ? (
-        <Card className="border border-paper-200 bg-paper-50">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-wider text-ink-faint">Active session</p>
-              <h3 className="text-lg font-bold text-ink">{activeSession.name}</h3>
-            </div>
-            <span
-              className={cn(
-                "chip text-xs",
-                activeSession.closed ? "bg-red-100 text-red-800" : "bg-green-100 text-green-800"
-              )}
-            >
-              {activeSession.closed ? "Closed" : "Open"}
-            </span>
-          </div>
-          {activeSession.closed && (
-            <p className="mt-2 text-xs font-medium text-red-600">
-              This session is closed. Ask an admin if the number needs a correction.
-            </p>
-          )}
-        </Card>
-      ) : (
-        <Card className="border border-amber-200 bg-amber-50 text-amber-800">
-          <p className="text-sm font-semibold">No sessions yet</p>
-        </Card>
-      )}
-
-      {profile.group_id && activeSession && (
+      {profile.group_id && (
         <Card>
           <h2 className="mb-1 font-semibold">Group headcount</h2>
-          <p className="mb-3 text-xs text-ink-faint">Enter the number of people with your group for this session.</p>
+          <p className="mb-3 text-xs text-ink-faint">Enter the number of people with your group. You can change it any time.</p>
           <form onSubmit={submitHeadcount} className="flex gap-2">
             <input
               type="number"
@@ -133,7 +80,7 @@ export default function AttendancePage() {
               value={headcount}
               onChange={(e) => setHeadcount(e.target.value)}
             />
-            <button type="submit" disabled={activeSession.closed} className="btn-secondary px-5">
+            <button type="submit" disabled={saving} className="btn-secondary px-5">
               Save
             </button>
           </form>

@@ -6,7 +6,7 @@ import { BlindBoxCard } from "@/components/BlindBoxCard";
 import { CampusMap } from "@/components/CampusMap";
 import { Card, PageTitle } from "@/components/ui";
 import { supabaseBrowser } from "@/lib/supabase/client";
-import type { AttendanceSession, Group } from "@/lib/types";
+import type { Group } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 type OpsView = "map" | "attendance" | "balances";
@@ -16,71 +16,38 @@ type OpsView = "map" | "attendance" | "balances";
 export default function CommitteePage() {
   const supabase = useMemo(() => supabaseBrowser(), []);
   const [groups, setGroups] = useState<Group[]>([]);
-  const [sessions, setSessions] = useState<AttendanceSession[]>([]);
-  const [sessionId, setSessionId] = useState<number | null>(null);
   const [headcounts, setHeadcounts] = useState<Record<number, number>>({});
   const [view, setView] = useState<OpsView>("map");
 
   useEffect(() => {
     let active = true;
+
     async function load() {
-      const [{ data: gs }, { data: sess }] = await Promise.all([
+      const [{ data: gs }, { data: hcs }] = await Promise.all([
         supabase.from("groups").select("*").order("id"),
-        supabase
-          .from("attendance_sessions")
-          .select("*")
-          .order("id", { ascending: false }),
+        supabase.from("group_headcounts").select("group_id, headcount"),
       ]);
       if (!active) return;
       setGroups((gs as Group[]) ?? []);
-      setSessions((sess as AttendanceSession[]) ?? []);
-      const open = (sess as AttendanceSession[])?.find((s) => !s.closed);
-      setSessionId(open?.id ?? (sess as AttendanceSession[])?.[0]?.id ?? null);
-    }
-    load();
-    return () => {
-      active = false;
-    };
-  }, [supabase]);
-
-  useEffect(() => {
-    if (!sessionId) return;
-    let active = true;
-
-    async function loadHeadcounts() {
-      const { data } = await supabase
-        .from("attendance_headcounts")
-        .select("group_id, headcount")
-        .eq("session_id", sessionId!);
-      if (!active) return;
       const map: Record<number, number> = {};
-      for (const row of data ?? []) {
+      for (const row of hcs ?? []) {
         const rec = row as { group_id: number; headcount: number };
         map[rec.group_id] = rec.headcount;
       }
       setHeadcounts(map);
     }
-    loadHeadcounts();
+    load();
 
     const channel = supabase
-      .channel(`headcount-dash-${sessionId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "attendance_headcounts",
-          filter: `session_id=eq.${sessionId}`,
-        },
-        loadHeadcounts
-      )
+      .channel("headcount-dash")
+      .on("postgres_changes", { event: "*", schema: "public", table: "group_headcounts" }, load)
       .subscribe();
 
     return () => {
       active = false;
       supabase.removeChannel(channel);
     };
-  }, [supabase, sessionId]);
+  }, [supabase]);
 
   const tabs: { key: OpsView; label: string; desc: string }[] = [
     { key: "map", label: "Map", desc: "Live location view" },
@@ -123,20 +90,7 @@ export default function CommitteePage() {
 
       {view === "attendance" && (
         <section>
-          <div className="mb-2 flex items-center justify-between gap-3">
-            <h2 className="font-semibold">Headcount</h2>
-            <select
-              className="input max-w-[190px]"
-              value={sessionId ?? ""}
-              onChange={(e) => setSessionId(Number(e.target.value))}
-            >
-              {sessions.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          <h2 className="mb-2 font-semibold">Headcount</h2>
           <Card className="divide-y divide-paper-200 p-0">
             {groups.map((g) => {
               const count = headcounts[g.id];

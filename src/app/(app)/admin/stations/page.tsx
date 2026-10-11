@@ -1,6 +1,6 @@
 "use client";
 
-import { Pencil, Trash2 } from "lucide-react";
+import { Check, Pencil, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -12,6 +12,7 @@ import {
   SuccessBanner,
 } from "@/components/ui";
 import { Dialog, DialogContent } from "@/components/ui/Dialog";
+import { readAdminDayFilter } from "@/lib/adminDayFilter";
 import { MAP_BUILDINGS, stationPosition } from "@/lib/mapBuildings";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import {
@@ -20,7 +21,7 @@ import {
   type Station,
   type StationStatus,
 } from "@/lib/types";
-import { cn } from "@/lib/utils";
+import { cn, friendlyError } from "@/lib/utils";
 
 const OTHER_BLOCK = "__other__";
 const DEFAULT_BLOCKS = [
@@ -52,10 +53,16 @@ const EMPTY_FORM: StationForm = {
   max_groups: "",
 };
 
-interface StationGm {
+interface GmUser {
   id: string;
   full_name: string;
+}
+
+// One row per GM per day (gm_station_assignments).
+interface GmAssignment {
+  user_id: string;
   station_id: number;
+  day: number;
 }
 
 // stations.code is the location: block and floor, e.g. "A4-1".
@@ -70,7 +77,14 @@ function locationCode(block: string, floor: string) {
 export default function AdminStationsPage() {
   const supabase = useMemo(() => supabaseBrowser(), []);
   const [stations, setStations] = useState<Station[]>([]);
-  const [gms, setGms] = useState<StationGm[]>([]);
+  const [gmUsers, setGmUsers] = useState<GmUser[]>([]);
+  const [assignments, setAssignments] = useState<GmAssignment[]>([]);
+  // Tick-and-save dialog for one station's Game Masters
+  const [gmStation, setGmStation] = useState<Station | null>(null);
+  const [picked, setPicked] = useState<string[]>([]);
+  const [gmSearch, setGmSearch] = useState("");
+  const [gmSaving, setGmSaving] = useState(false);
+  // Starts on Live control's Day filter.
   const [dayFilter, setDayFilter] = useState<DayFilter>("all");
   // null = closed; "new" = adding; a station = editing it
   const [editing, setEditing] = useState<Station | "new" | null>(null);
@@ -79,20 +93,24 @@ export default function AdminStationsPage() {
   const [notice, setNotice] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const [{ data: sts }, { data: staff }] = await Promise.all([
+    const [{ data: sts }, { data: staff }, { data: asg }] = await Promise.all([
       supabase.from("stations").select("*").order("day").order("id"),
       supabase
         .from("profiles")
-        .select("id, full_name, station_id")
+        .select("id, full_name")
         .in("role", ["gm", "guardian_gm"])
-        .not("station_id", "is", null),
+        .order("full_name"),
+      supabase.rpc("fn_admin_station_gms"),
     ]);
     setStations((sts as Station[]) ?? []);
-    setGms((staff as StationGm[]) ?? []);
+    setGmUsers((staff as GmUser[]) ?? []);
+    setAssignments((asg as GmAssignment[]) ?? []);
   }, [supabase]);
 
   useEffect(() => {
     load();
+    const saved = readAdminDayFilter();
+    if (saved) setDayFilter(saved === "all" ? "all" : saved === "Day 1" ? 1 : 2);
   }, [load]);
 
   const blocks = useMemo(
@@ -110,6 +128,42 @@ export default function AdminStationsPage() {
   function flash(msg: string) {
     setNotice(msg);
     setTimeout(() => setNotice(null), 2000);
+  }
+
+  const gmName = (id: string) => gmUsers.find((g) => g.id === id)?.full_name || "Unnamed";
+
+  // Names of the GMs on a station (only users who are still GMs).
+  function gmsOf(stationId: number) {
+    return assignments
+      .filter((a) => a.station_id === stationId && gmUsers.some((g) => g.id === a.user_id))
+      .map((a) => ({ id: a.user_id, name: gmName(a.user_id) }));
+  }
+
+  function openGmDialog(s: Station) {
+    setPicked(gmsOf(s.id).map((g) => g.id));
+    setGmSearch("");
+    setGmStation(s);
+  }
+
+  // Where a GM already works on the given station's day (another station only).
+  function elsewhere(userId: string, s: Station) {
+    const at = assignments.find((a) => a.user_id === userId && a.day === s.day && a.station_id !== s.id);
+    return at ? (stations.find((x) => x.id === at.station_id)?.name ?? "another station") : null;
+  }
+
+  async function saveGms() {
+    if (!gmStation) return;
+    setGmSaving(true);
+    setError(null);
+    const { error } = await supabase.rpc("fn_admin_set_station_gms", {
+      p_station_id: gmStation.id,
+      p_user_ids: picked,
+    });
+    setGmSaving(false);
+    if (error) return setError(friendlyError(error));
+    flash(`${gmStation.name}: Game Masters saved.`);
+    setGmStation(null);
+    load();
   }
 
   function openAdd() {
@@ -223,13 +277,15 @@ export default function AdminStationsPage() {
       return;
     }
 
-    const assigned = gms.filter((g) => g.station_id === s.id);
+    const assigned = gmsOf(s.id);
     const warning = assigned.length
       ? `\n\nThese GMs will have no station: ${assigned
-          .map((g) => g.full_name)
+          .map((g) => g.name)
           .join(", ")}.`
       : "";
-    if (!window.confirm(`Delete ${s.name}?${warning}`)) return;
+    if (!window.confirm(`Delete ${s.name}?${warning}
+
+Groups checked in here will lose that check-in.`)) return;
     const { error } = await supabase.from("stations").delete().eq("id", s.id);
     if (error) setError(error.message);
     else {
@@ -273,7 +329,7 @@ export default function AdminStationsPage() {
           <div
             role="tablist"
             aria-label="Filter stations by day"
-            className="flex rounded-xl bg-paper-200/70 p-1"
+            className="flex rounded-xl border border-paper-300 bg-paper-200 p-1"
           >
             {(["all", 1, 2] as DayFilter[]).map((d) => (
               <button
@@ -285,8 +341,8 @@ export default function AdminStationsPage() {
                 className={cn(
                   "min-h-[34px] rounded-lg px-3 text-sm font-bold",
                   dayFilter === d
-                    ? "bg-white text-ink shadow-card"
-                    : "text-ink-faint"
+                    ? "bg-[#25405e] text-white shadow-card"
+                    : "text-ink-faint hover:text-white"
                 )}
               >
                 {d === "all" ? "All" : `Day ${d}`}
@@ -296,7 +352,7 @@ export default function AdminStationsPage() {
         </div>
 
         <Card className="overflow-x-auto p-0">
-          <table className="w-full min-w-[760px] text-left text-sm">
+          <table className="w-full min-w-[900px] text-left text-sm">
             <thead>
               <tr className="border-b border-paper-200 text-xs font-bold uppercase tracking-wide text-ink-faint">
                 <th className="px-4 py-3">Station</th>
@@ -304,13 +360,13 @@ export default function AdminStationsPage() {
                 <th className="w-32 px-4 py-3">Status</th>
                 <th className="w-28 px-4 py-3">Risk</th>
                 <th className="w-20 px-4 py-3">Entry</th>
-                <th className="w-44 px-4 py-3">GMs</th>
+                <th className="w-64 px-4 py-3">Game Master</th>
                 <th className="w-20 px-4 py-3" />
               </tr>
             </thead>
             <tbody className="divide-y divide-paper-200">
               {visible.map((s) => {
-                const assigned = gms.filter((g) => g.station_id === s.id);
+                const assigned = gmsOf(s.id);
                 return (
                   <tr key={s.id}>
                     <td className="max-w-0 px-4 py-2.5">
@@ -331,17 +387,23 @@ export default function AdminStationsPage() {
                     <td className="px-4 py-2.5 font-bold tabular-nums">
                       {s.day === 2 ? `−${s.entry_cost}` : "—"}
                     </td>
-                    <td className="max-w-0 px-4 py-2.5">
-                      {assigned.length ? (
-                        <p
-                          className="truncate"
-                          title={assigned.map((g) => g.full_name).join(", ")}
-                        >
-                          {assigned.map((g) => g.full_name).join(", ")}
-                        </p>
-                      ) : (
-                        <span className="text-ink-faint">None</span>
-                      )}
+                    <td className="px-4 py-2.5">
+                      <button
+                        type="button"
+                        onClick={() => openGmDialog(s)}
+                        className="flex w-full flex-wrap items-center gap-1.5 rounded-lg border border-dashed border-paper-300 px-2 py-1 text-left hover:border-ink-faint"
+                        aria-label={`Edit Game Masters for ${s.name}`}
+                      >
+                        {assigned.length === 0 ? (
+                          <span className="text-ink-faint">Unassigned · click to assign</span>
+                        ) : (
+                          assigned.map((g) => (
+                            <span key={g.id} className="rounded-full bg-[#25405e] px-2.5 py-0.5 text-xs font-semibold text-white">
+                              {g.name}
+                            </span>
+                          ))
+                        )}
+                      </button>
                     </td>
                     <td className="px-4 py-2.5">
                       <div className="flex items-center gap-3">
@@ -378,6 +440,92 @@ export default function AdminStationsPage() {
           </table>
         </Card>
       </section>
+
+      <Dialog open={gmStation !== null} onOpenChange={(open) => !open && setGmStation(null)}>
+        <DialogContent title={gmStation ? `Game Masters · ${gmStation.name} (Day ${gmStation.day})` : "Game Masters"}>
+          {gmStation && (
+            <div className="space-y-3">
+              <input
+                className="input text-sm"
+                placeholder="Search Game Masters…"
+                aria-label="Search Game Masters"
+                value={gmSearch}
+                onChange={(e) => setGmSearch(e.target.value)}
+              />
+              <div className="max-h-72 divide-y divide-paper-200 overflow-y-auto rounded-xl border border-paper-200">
+                {[...gmUsers]
+                  .filter((g) => (g.full_name || "Unnamed").toLowerCase().includes(gmSearch.trim().toLowerCase()))
+                  .sort((a, b) => {
+                    const rank = (id: string) => (picked.includes(id) ? 0 : elsewhere(id, gmStation) ? 2 : 1);
+                    return rank(a.id) - rank(b.id) || a.full_name.localeCompare(b.full_name);
+                  })
+                  .map((g) => {
+                    const on = picked.includes(g.id);
+                    const at = elsewhere(g.id, gmStation);
+                    return (
+                      <label
+                        key={g.id}
+                        className={cn(
+                          "flex cursor-pointer items-center gap-3 px-3 py-2 text-sm",
+                          at && !on && "opacity-70"
+                        )}
+                      >
+                        <input
+                          type="checkbox"
+                          className="sr-only"
+                          checked={on}
+                          onChange={() =>
+                            setPicked((cur) => (on ? cur.filter((id) => id !== g.id) : [...cur, g.id]))
+                          }
+                        />
+                        <span
+                          aria-hidden
+                          className={cn(
+                            "flex h-5 w-5 shrink-0 items-center justify-center rounded border",
+                            on ? "border-[#25405e] bg-[#25405e] text-white" : "border-paper-300"
+                          )}
+                        >
+                          {on && <Check size={14} />}
+                        </span>
+                        <span className="min-w-0 flex-1 truncate font-medium">{g.full_name || "Unnamed"}</span>
+                        {at && (
+                          <span className="shrink-0 text-xs text-ink-faint">
+                            {on ? `moves from ${at}` : `at ${at}`}
+                          </span>
+                        )}
+                      </label>
+                    );
+                  })}
+                {gmUsers.length === 0 && (
+                  <p className="px-3 py-4 text-center text-sm text-ink-faint">
+                    No Game Masters yet. Give a user the GM role in Settings → Users.
+                  </p>
+                )}
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-xs text-ink-faint">{picked.length} selected</span>
+                <div className="flex gap-2">
+                  <button type="button" className="btn-secondary px-4" onClick={() => setGmStation(null)}>
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-primary px-5"
+                    disabled={
+                      gmSaving ||
+                      (picked.length === gmsOf(gmStation.id).length &&
+                        picked.every((id) => gmsOf(gmStation.id).some((g) => g.id === id)))
+                    }
+                    onClick={saveGms}
+                  >
+                    {gmSaving ? "Saving…" : "Save"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <Dialog
         open={editing !== null}
