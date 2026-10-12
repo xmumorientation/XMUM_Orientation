@@ -1,7 +1,9 @@
 "use client";
 
+import { Check } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { HeadcountTable } from "@/components/admin/HeadcountTable";
 import { groupColor, themeFromColor } from "@/components/freshie/groupTheme";
 import { Card, ErrorBanner, PageTitle, SuccessBanner } from "@/components/ui";
 import { Dialog, DialogContent } from "@/components/ui/Dialog";
@@ -9,9 +11,10 @@ import { groupJoinPath } from "@/lib/group-login";
 import { groupQrPng, saveGroupQr } from "@/lib/group-qr";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import type { Group } from "@/lib/types";
-import { friendlyError } from "@/lib/utils";
+import { cn, friendlyError } from "@/lib/utils";
 
 type LoginCode = { group_id: number; code: string };
+type Faci = { id: string; full_name: string; group_id: number | null };
 
 export default function FreshieControlPage() {
   const supabase = useMemo(() => supabaseBrowser(), []);
@@ -24,6 +27,11 @@ export default function FreshieControlPage() {
   const [busy, setBusy] = useState(false);
   const [qrFiles, setQrFiles] = useState<Record<number, string>>({});
   const [previewId, setPreviewId] = useState<number | null>(null);
+  const [facis, setFacis] = useState<Faci[]>([]);
+  // Tick-and-save dialog for one group's Facilitators
+  const [faciGroup, setFaciGroup] = useState<Group | null>(null);
+  const [picked, setPicked] = useState<string[]>([]);
+  const [faciSearch, setFaciSearch] = useState("");
   const [resetOpen, setResetOpen] = useState(false);
   const [resetText, setResetText] = useState("");
   const preview =
@@ -34,6 +42,12 @@ export default function FreshieControlPage() {
     const rows = (data as Group[]) ?? [];
     setGroups(rows);
     setDrafts(Object.fromEntries(rows.map((g) => [g.id, groupColor(g.color)])));
+    const { data: faciRows } = await supabase
+      .from("profiles")
+      .select("id, full_name, group_id")
+      .eq("role", "faci")
+      .order("full_name");
+    setFacis((faciRows as Faci[]) ?? []);
     const { data: codeRows, error: codeError } = await supabase
       .from("group_login_codes")
       .select("group_id, code");
@@ -48,6 +62,9 @@ export default function FreshieControlPage() {
     const channel = supabase
       .channel(`freshie-control-groups-${crypto.randomUUID()}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "groups" }, () => {
+        load();
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "profiles" }, () => {
         load();
       })
       .subscribe();
@@ -138,6 +155,30 @@ export default function FreshieControlPage() {
     load();
   }
 
+  const faciName = (f: Faci) => f.full_name || "Unnamed";
+  const facisOf = (groupId: number) => facis.filter((f) => f.group_id === groupId);
+
+  function openFaciDialog(group: Group) {
+    setPicked(facisOf(group.id).map((f) => f.id));
+    setFaciSearch("");
+    setFaciGroup(group);
+  }
+
+  async function saveFacis() {
+    if (!faciGroup) return;
+    setBusy(true);
+    setError(null);
+    const { error: rpcError } = await supabase.rpc("fn_admin_set_group_facis", {
+      p_group_id: faciGroup.id,
+      p_user_ids: picked,
+    });
+    setBusy(false);
+    if (rpcError) return setError(friendlyError(rpcError));
+    flash(`${faciGroup.name}: Facilitators saved.`);
+    setFaciGroup(null);
+    load();
+  }
+
   async function saveColor(group: Group) {
     const color = drafts[group.id] ?? groupColor(group.color);
     setBusy(true);
@@ -204,11 +245,12 @@ export default function FreshieControlPage() {
 
       {groups.length > 0 && (
         <Card className="overflow-x-auto p-0">
-          <table className="av-groups w-full min-w-[640px] text-left text-sm">
+          <table className="av-groups w-full min-w-[860px] text-left text-sm">
             <thead>
               <tr className="border-b border-paper-200 text-xs font-bold uppercase tracking-wide text-ink-faint">
                 <th className="w-16 px-4 py-3 text-center">No.</th>
                 <th className="px-4 py-3">Name &amp; slogan</th>
+                <th className="w-56 px-4 py-3">Facilitators</th>
                 <th className="w-32 px-4 py-3">Password</th>
                 <th className="w-40 px-4 py-3">Color</th>
                 <th className="w-28 px-4 py-3 text-right">QR</th>
@@ -240,6 +282,24 @@ export default function FreshieControlPage() {
                       ) : (
                         <p className="text-xs italic text-ink-faint">No slogan yet</p>
                       )}
+                    </td>
+                    <td data-label="Facilitators" className="px-4 py-3">
+                      <button
+                        type="button"
+                        onClick={() => openFaciDialog(group)}
+                        className="flex w-full flex-wrap items-center gap-1.5 rounded-lg border border-dashed border-paper-300 px-2 py-1 text-left hover:border-ink-faint"
+                        aria-label={`Edit Facilitators for ${group.name}`}
+                      >
+                        {facisOf(group.id).length === 0 ? (
+                          <span className="text-ink-faint">Unassigned · click to assign</span>
+                        ) : (
+                          facisOf(group.id).map((f) => (
+                            <span key={f.id} className="rounded-full bg-[#25405e] px-2.5 py-0.5 text-xs font-semibold text-white">
+                              {faciName(f)}
+                            </span>
+                          ))
+                        )}
+                      </button>
                     </td>
                     <td data-label="Password" className="px-4 py-3">
                       {codes[group.id] ? (
@@ -288,6 +348,98 @@ export default function FreshieControlPage() {
           </table>
         </Card>
       )}
+
+      <section className="space-y-2">
+        <h2 className="font-semibold">Headcount</h2>
+        <HeadcountTable />
+      </section>
+
+      <Dialog open={faciGroup !== null} onOpenChange={(open) => !open && setFaciGroup(null)}>
+        <DialogContent title={faciGroup ? `Facilitators · ${faciGroup.name}` : "Facilitators"}>
+          {faciGroup && (
+            <div className="space-y-3">
+              <input
+                className="input text-sm"
+                placeholder="Search Facilitators…"
+                aria-label="Search Facilitators"
+                value={faciSearch}
+                onChange={(e) => setFaciSearch(e.target.value)}
+              />
+              <div className="max-h-72 divide-y divide-paper-200 overflow-y-auto rounded-xl border border-paper-200">
+                {[...facis]
+                  .filter((f) => faciName(f).toLowerCase().includes(faciSearch.trim().toLowerCase()))
+                  .sort((a, b) => {
+                    const rank = (f: Faci) =>
+                      picked.includes(f.id) ? 0 : f.group_id != null && f.group_id !== faciGroup.id ? 2 : 1;
+                    return rank(a) - rank(b) || faciName(a).localeCompare(faciName(b));
+                  })
+                  .map((f) => {
+                    const on = picked.includes(f.id);
+                    const at =
+                      f.group_id != null && f.group_id !== faciGroup.id
+                        ? (groups.find((g) => g.id === f.group_id)?.name ?? `Group ${f.group_id}`)
+                        : null;
+                    return (
+                      <label
+                        key={f.id}
+                        className={cn("flex cursor-pointer items-center gap-3 px-3 py-2 text-sm", at && !on && "opacity-70")}
+                      >
+                        <input
+                          type="checkbox"
+                          className="sr-only"
+                          checked={on}
+                          onChange={() =>
+                            setPicked((cur) => (on ? cur.filter((id) => id !== f.id) : [...cur, f.id]))
+                          }
+                        />
+                        <span
+                          aria-hidden
+                          className={cn(
+                            "flex h-5 w-5 shrink-0 items-center justify-center rounded border",
+                            on ? "border-[#25405e] bg-[#25405e] text-white" : "border-paper-300"
+                          )}
+                        >
+                          {on && <Check size={14} />}
+                        </span>
+                        <span className="min-w-0 flex-1 truncate font-medium">{faciName(f)}</span>
+                        {at && (
+                          <span className="shrink-0 text-xs text-ink-faint">
+                            {on ? `moves from ${at}` : `in ${at}`}
+                          </span>
+                        )}
+                      </label>
+                    );
+                  })}
+                {facis.length === 0 && (
+                  <p className="px-3 py-4 text-center text-sm text-ink-faint">
+                    No Facilitators yet. Give a user the Faci role in Settings → Users.
+                  </p>
+                )}
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-xs text-ink-faint">{picked.length} selected</span>
+                <div className="flex gap-2">
+                  <button type="button" className="btn-secondary px-4" onClick={() => setFaciGroup(null)}>
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-primary px-5"
+                    disabled={
+                      busy ||
+                      (picked.length === facisOf(faciGroup.id).length &&
+                        picked.every((id) => facisOf(faciGroup.id).some((f) => f.id === id)))
+                    }
+                    onClick={saveFacis}
+                  >
+                    {busy ? "Saving…" : "Save"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <Dialog
         open={resetOpen}

@@ -216,6 +216,11 @@ export function ChecklistStop({ group, groupId }: { group: Group | null; groupId
   const [savingName, setSavingName] = useState(false);
 
   const [headcount, setHeadcount] = useState("");
+  // Local / International are set on the Attendance page; keep them when this form saves Total.
+  const [split, setSplit] = useState<{ local: number | null; international: number | null }>({
+    local: null,
+    international: null,
+  });
   const [countError, setCountError] = useState<string | null>(null);
   const [countNotice, setCountNotice] = useState<string | null>(null);
   // Tap a row to open it; one at a time so the checklist stays on one screen.
@@ -234,13 +239,18 @@ export function ChecklistStop({ group, groupId }: { group: Group | null; groupId
     let active = true;
     supabase
       .from("group_headcounts")
-      .select("headcount")
+      .select("headcount, local_count, international_count")
       .eq("group_id", groupId)
       .maybeSingle()
       .then(({ data }) => {
         if (!active) return;
-        const count = (data as { headcount: number } | null)?.headcount;
-        setHeadcount(count == null ? "" : String(count));
+        const row = data as {
+          headcount: number;
+          local_count: number | null;
+          international_count: number | null;
+        } | null;
+        setHeadcount(row == null ? "" : String(row.headcount));
+        setSplit({ local: row?.local_count ?? null, international: row?.international_count ?? null });
       });
     return () => {
       active = false;
@@ -268,6 +278,8 @@ export function ChecklistStop({ group, groupId }: { group: Group | null; groupId
     const count = parseInt(headcount, 10);
     const { error } = await supabase.rpc("fn_set_headcount", {
       p_count: count,
+      p_local: split.local,
+      p_international: split.international,
     });
     if (error) setCountError(friendlyError(error));
     else setCountNotice("Saved.");
