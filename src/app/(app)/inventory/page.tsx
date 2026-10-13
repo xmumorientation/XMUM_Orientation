@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
 
 import { FreshieItems } from "@/components/freshie/items/FreshieItems";
-import { SAMPLE_SCENARIOS, sampleItems, withLastTrackPiece, type SampleScenario } from "@/components/freshie/items/sampleData";
+import { DEFAULT_SCENARIO, SAMPLE_SCENARIOS, sampleItems, withLastTrackPiece, type SampleScenario } from "@/components/freshie/items/sampleData";
 import type { BoxKind, BoxReward, ItemsData } from "@/components/freshie/items/types";
 
 import { PuzzleBoard } from "@/components/PuzzleBoard";
@@ -47,7 +47,7 @@ function ItemsPreview() {
   const { group } = useGroup();
   const params = useSearchParams();
   const asked = params.get("demo");
-  const scenario: SampleScenario = SAMPLE_SCENARIOS.includes(asked as SampleScenario) ? (asked as SampleScenario) : "complete";
+  const scenario: SampleScenario = SAMPLE_SCENARIOS.includes(asked as SampleScenario) ? (asked as SampleScenario) : DEFAULT_SCENARIO;
 
   const [data, setData] = useState<ItemsData>(() => sampleItems(scenario));
   const [run, setRun] = useState(0);
