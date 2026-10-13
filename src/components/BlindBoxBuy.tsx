@@ -30,7 +30,7 @@ const BLOCKED: Record<Exclude<BlindBoxPageStatus, "ok">, { title: string; messag
   already_from_seller: {
     title: "Already bought!",
     message: (p) =>
-      `${p.group_name} has already bought a blind box from ${p.seller_name}. Find a different seller! Your box is waiting in Items.`,
+      `${p.group_name} has already bought a blind box from ${p.seller_name}. Find a different seller! Check My Items for that box.`,
   },
   cap_reached: {
     title: "No more boxes",

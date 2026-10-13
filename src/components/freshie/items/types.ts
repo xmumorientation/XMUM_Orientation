@@ -38,7 +38,12 @@ export type BoxGroup = {
 
 /** What one opened box gave: tokens, or a puzzle piece. */
 export type BoxReward =
-  | { type: "tokens"; amount: number }
+  | {
+      type: "tokens";
+      amount: number;
+      /** Set for a real (bought) box: it opens with the full-screen opening clip, then the prize screen. */
+      real?: { special: boolean; seller: string; balance: number };
+    }
   | { type: "piece"; loc: ProjectorLocation; piece: number };
 
 export type HistoryKind = "game" | "entry" | "piece" | "box" | "fix" | "lit";

@@ -91,7 +91,8 @@ export function useBlindBoxes(groupId: number | null, enabled: boolean) {
         return null;
       }
       await reload();
-      return { type: "tokens", amount: (data as BlindBoxResult).tokens };
+      const r = data as BlindBoxResult;
+      return { type: "tokens", amount: r.tokens, real: { special: r.special, seller: r.seller_name, balance: r.balance } };
     },
     [supabase, claims, reload]
   );

@@ -32,6 +32,7 @@ export function BlindBox({
   data,
   canOpen,
   onOpenBox,
+  onReveal,
   onClose,
   themeVars,
 }: {
@@ -40,6 +41,8 @@ export function BlindBox({
   data: ItemsData;
   canOpen: boolean;
   onOpenBox: (kind: BoxKind) => Promise<BoxReward | null>;
+  /** A real box that was just opened: the page plays the opening clip, then the prize. */
+  onReveal: (reward: Extract<BoxReward, { type: "tokens" }>) => void;
   onClose: () => void;
   themeVars: React.CSSProperties;
 }) {
@@ -48,7 +51,7 @@ export function BlindBox({
       <Dialog.Portal>
         <Dialog.Overlay className="bb-overlay" />
         <Dialog.Content className={`fh bb ${vxSlab.variable}`} style={themeVars} aria-describedby={undefined}>
-          {kind && <BoxFlow kind={kind} data={data} canOpen={canOpen} onOpenBox={onOpenBox} />}
+          {kind && <BoxFlow kind={kind} data={data} canOpen={canOpen} onOpenBox={onOpenBox} onReveal={onReveal} onClose={onClose} />}
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
@@ -60,11 +63,15 @@ function BoxFlow({
   data,
   canOpen,
   onOpenBox,
+  onReveal,
+  onClose,
 }: {
   kind: BoxKind;
   data: ItemsData;
   canOpen: boolean;
   onOpenBox: (kind: BoxKind) => Promise<BoxReward | null>;
+  onReveal: (reward: Extract<BoxReward, { type: "tokens" }>) => void;
+  onClose: () => void;
 }) {
   const [stage, setStage] = useState<Stage>("ask");
   const [reward, setReward] = useState<BoxReward | null>(null);
@@ -85,6 +92,13 @@ function BoxFlow({
       setFailed(true);
       return;
     }
+    // A real box: the page plays the opening clip and shows the prize.
+    if (got.type === "tokens" && got.real) {
+      onClose();
+      onReveal(got);
+      return;
+    }
+    // The sample (?demo): the 3D box below.
     setReward(got);
     setStage("sealed");
   }
