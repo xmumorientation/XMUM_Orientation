@@ -10,6 +10,7 @@ This reflects only the migration files in the repo. Any manual changes made to t
 - Own Group / Own Station = limited to the user's own group / station
 - View All / Manage = can view everything / can manage
 - † = the backend allows it, but there is no menu entry or UI; reachable only by typing the URL or calling the RPC directly
+- ‡ = HOGM does this on Ops → Game control, after migration 0071 (`is_game_lead()`). Kill-switches and other config keys stay Admin only.
 - Enforcement: DB = enforced by the database; UI = hidden in the frontend only; ⚠ = no server-side check
 
 ## Matrix
@@ -72,18 +73,19 @@ This reflects only the migration files in the repo. Any manual changes made to t
 | View the live group scoreboard (no rules, no log) | — | — | ✓ | ✓ | ✓ | ✓ | ✓ | — | UI |
 | **Token page (/admin/token)** | | | | | | | | | |
 | View token rules, scoreboard and log | — | — | — | — | — | — | — | ✓ | UI |
-| Set token rules (Day 1 rewards, Day 2 fee per tier) | — | — | — | — | — | — | — | ✓ | DB |
-| Edit / delete logs, Reset All | — | — | — | — | — | — | — | ✓ | ⚠ UI |
+| Set token rules (Day 1 rewards, Day 2 fee per tier) | — | — | — | — | — | — | ✓ ‡ | ✓ | DB |
+| Edit / delete logs | — | — | — | — | — | — | — | ✓ | ⚠ UI |
+| Reset All (Rehearsal mode only) | — | — | — | — | — | — | ✓ ‡ | ✓ | DB |
 | **Admin Console (/admin/*)** | | | | | | | | | |
-| Phase Control (start / pause / extend / end: runs the game timer only, station statuses are not changed) | — | — | — | — | — | — | — | ✓ | DB |
+| Phase Control (start / pause / extend / end, game length: runs the game timer only, station statuses are not changed) | — | — | — | — | — | — | ✓ ‡ | ✓ | DB |
 | Kill-switches | — | — | — | — | — | — | — | ✓ | DB |
 | Users (CSV import; edit role / group / station) | — | — | — | — | — | — | — | ✓ | DB + API |
-| Stations config | — | — | — | — | — | — | — | ✓ | DB |
-| Puzzles / Items config | — | — | — | — | — | — | — | ✓ | DB |
+| Stations config (add / edit / delete, Game Masters) | — | — | — | — | — | — | ✓ ‡ | ✓ | DB |
+| Puzzle pictures | — | — | — | — | — | — | ✓ ‡ | ✓ | DB |
 | Attendance Sessions open / close | — | — | — | — | — | — | — | ✓ | DB |
 | Schedule / FAQ management | — | — | — | — | — | — | — | ✓ | DB |
 | Brand config | — | — | — | — | — | — | — | ✓ | DB |
-| NFC Token generation | — | — | — | — | — | — | — | ✓ | API |
+| NFC Token generation | — | — | — | — | — | — | ✓ ‡ | ✓ | API + DB |
 | Seed Test Accounts | Any logged-in user | Any logged-in user | Any logged-in user | Any logged-in user | Any logged-in user | Any logged-in user | Any logged-in user | Any logged-in user | ⚠ No check |
 
 ## Issues Found

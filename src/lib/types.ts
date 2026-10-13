@@ -348,6 +348,9 @@ export const ROLE_LABELS: Record<UserRole, string> = {
 
 export const COMMITTEE_TIER: UserRole[] = ["hof", "hogm", "committee", "admin"];
 
+/** Event operations crew: the Vortexa staff home, the Ops tab bar and the Welcome page colours. */
+export const OPS_ROLES: UserRole[] = ["hof", "hogm", "committee"];
+
 /** Roles that can hold blind boxes: everyone except Facilitator and Freshie.
  *  Mirrors bb_holder_role() in migration 0054. */
 export const BLINDBOX_HOLDER_ROLES: UserRole[] = [

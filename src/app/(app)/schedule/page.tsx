@@ -29,6 +29,8 @@ function toIso(date: string, time: string) {
 export default function SchedulePage() {
   const profile = useProfile();
   if (profile.role === "freshie" || profile.role === "faci") return <FreshieSchedule />;
+  // HOGM: the same night schedule in the Welcome page colours, read only.
+  if (profile.role === "hogm") return <FreshieSchedule vortexa />;
   return <StaffSchedule />;
 }
 

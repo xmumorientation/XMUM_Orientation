@@ -217,15 +217,15 @@ The design branches are merged. These remote branches are still not in `main` (c
 ## Done
 
 ### Migrations to run on Supabase for the 2026-10-13 and 2026-10-14 work
-Run in this order (each only once; `0054`-`0058` and `0065` must already be there):
+Run in this order (each only once; `0054`-`0058` and `0065` must already be there). `main` has its own `0071_hogm_game_control.sql` and `0072_hogm_game_length.sql`; the numbers below are this branch's, renumbered to stay clear of them:
 - `0070_blindbox_buy_flow.sql`: one public QR per seller, BUY then open from Items (see "Blind boxes: one QR per seller").
-- `0071_fix_admin_station_gms_types.sql`: Admin → Stations showed every station as "Unassigned" after assigning Game Masters, because `fn_admin_station_gms()` declared `day` as integer while the live `gm_station_assignments.day` is smallint (Postgres: "structure of query does not match function result type"). The function now casts the columns.
-- `0072_station_status_manual.sql`: station status is manual only.
+- `0077_fix_admin_station_gms_types.sql`: Admin → Stations showed every station as "Unassigned" after assigning Game Masters, because `fn_admin_station_gms()` declared `day` as integer while the live `gm_station_assignments.day` is smallint (Postgres: "structure of query does not match function result type"). The function now casts the columns, and allows Admin and HOGM so it is safe to run before or after `0071_hogm_game_control.sql`.
+- `0078_station_status_manual.sql`: station status is manual only.
 - `0073` to `0076`: Manual Location Update, details, per group, Admin-managed locations.
 Branch `jiamin-blind-box-integration` skips `0059`-`0069` on purpose (they live on `main`). The test files `tests/*/stub-schema.sql` are for the local test database only and must never be run on Supabase.
 
 ### Manual Location Update + "Headcount and location", 2026-10-14 (changesv4.md)
-Migrations `0073_faci_location_updates.sql`, `0074_faci_location_details.sql`, `0075_faci_location_per_group.sql`, `0076_faci_location_options.sql` (run in that order, after `0071` and `0072`).
+Migrations `0073_faci_location_updates.sql`, `0074_faci_location_details.sql`, `0075_faci_location_per_group.sql`, `0076_faci_location_options.sql` (run in that order).
 - **The location belongs to the GROUP.** Any Facilitator in Group 1 can send Group 1's location; the group shares one latest update (like the headcount). Each entry records which Facilitator sent it. A Facilitator with no group cannot send one.
 - **Facilitator page:** a fourth Checklist row, "Manual Location Update" (the lead says "Four things"). Status (Heading to / Arrived / Other; Other shows a text box, up to 60 characters), Building (the options Admin manages) and an optional "Details" comment (up to 200 characters; an update can be sent with it empty). The row shows the group's last update, whoever sent it, including "(edited by Admin)". Text only: no GPS, not the map, not station check-in (row 03 "Update Location" is unchanged).
 - **Admin page "Headcount and location"** (menu and title; the URL is still `/admin/freshies/headcount`) is now TWO separate tables, each with Group 1 to 10: **Headcount** (Local / International / Total, always open) and **Location** (status and building on one line, Details under them, and who sent it and when). From md up they are tables (about 560px each); on a phone each group is a compact card with 44px touch targets and no sideways scroll. Updates live. Admin corrects a group's latest update with the dropdowns / Details box and taps Save (marked "edited", audited with before and after); earlier updates are under "History". Admin does not add updates for a group; only Facilitators do. The headcount table on the Groups page is unchanged.
@@ -235,14 +235,84 @@ Migrations `0073_faci_location_updates.sql`, `0074_faci_location_details.sql`, `
 - **Checked on your Supabase project** (localhost; test entries removed): the Facilitator sent an update with a comment; Admin changed it and it was saved and marked "edited"; the page checked at 375px with no sideways scroll. Not checked live: the Locations card (needs `0076` run on Supabase).
 
 ### Station status is manual only (changesv3.md), 2026-10-14
-Migration `0072_station_status_manual.sql` (run `0071`, the Game Master list fix, first if you have not; this branch has `0070`, `0071`, `0072`).
+Migration `0078_station_status_manual.sql`.
 - **Timer decoupled:** the trigger from `0049` that opened a day's stations when its game started and closed them all when it ended or expired is dropped. Start / End / Pause / Resume / the countdown (`fn_phase_control`, `fn_game_toggle`, `fn_game_expire`) now only run the timer. The Start/End confirmation says "Station statuses are not changed."
 - **Check-ins no longer change the status:** `fn_refresh_station` (the "full = In Progress, else Available" recompute from `0062`) is a no-op. A full station still refuses check-ins (`STATION_FULL`) and a Closed station still refuses them (`STATION_CLOSED`). Stations start Closed, so an Admin or Game Master has to open them. `stations.status_override` is unused now.
 - **Admin Stations:** the status badge is a dropdown (Available / In Progress / Closed) that calls `fn_set_station_status`, with live updates (a Game Master's change shows without a refresh). The "n/m stations open" list on Live control stays.
 - **Game Master page:** the Status tab has Available / In Progress / Closed ("Busy" renamed), the current one highlighted, and updates live when Admin changes it. A GM can set only their own station (the one `profiles.station_id` points to, which follows the day: Day 1 station, then the Day 2 station). HOF / HOGM / Admin can set any.
 - Existing statuses in the database are left as they are.
-- **Tests:** `tests/stations/db.test.ts` (real Postgres + the real `0062`, `0064`, `0072`): the old coupling is reproduced first, then after `0072` starting / pausing / ending / resetting games never changes a status; Admin, HOF, GM, Guardian GM and Faci / Freshie permissions; a Closed station refuses check-in; check-in, check-out, clear and a full station never change the status. 13 tests; `npm test` is 49 in total.
-- **Checked in the browser** (temporary test station, removed afterwards): GM page shows the three states and highlights the current one; Admin changes it and the GM page updates without a refresh; the GM taps In Progress and the database changes; the Admin Stations dropdown updates live when the GM side changes it, and changing it there is stored. Not checked live: the timer actually leaving statuses alone (needs `0072` run on Supabase and a real game start/end; covered by the database tests).
+- **Tests:** `tests/stations/db.test.ts` (real Postgres + the real `0062`, `0064`, `0078`): the old coupling is reproduced first, then after `0078` starting / pausing / ending / resetting games never changes a status; Admin, HOF, GM, Guardian GM and Faci / Freshie permissions; a Closed station refuses check-in; check-in, check-out, clear and a full station never change the status. 13 tests; `npm test` is 49 in total.
+- **Checked in the browser** (temporary test station, removed afterwards): GM page shows the three states and highlights the current one; Admin changes it and the GM page updates without a refresh; the GM taps In Progress and the database changes; the Admin Stations dropdown updates live when the GM side changes it, and changing it there is stored. Not checked live: the timer actually leaving statuses alone (needs `0078` run on Supabase and a real game start/end; covered by the database tests).
+
+### HOF / HOGM / Committee home redesign, 2026-10-14
+Branch `hogm-home-redesign`. Not merged yet. Do not merge to `main` until the PR is open and reviewed. No migration.
+- **New home** for HOF, HOGM and Committee: `StaffHome.tsx`, used by `/dashboard` for `OPS_ROLES`. It has the same layout as the Freshie Home Welcome stop:
+  - "Welcome to Vortexa" and "Hi {name} · {role}"
+  - the event countdown (follows the Schedule)
+  - the PhaseCard while a game phase runs; otherwise a dashed "No game running" line with the next phase
+  - an **Ops** button (to `/committee`) and a **More Info ↓** button
+  - the organiser and sponsor credits
+
+  More Info scrolls to: Live floor (people checked in, leading group, live map; each tile opens the matching Ops tab through `/committee?view=`), then the full scoreboard (the ferris wheel cabins use the group colours), then Event tools (Big screen, My blind box QR → `/committee#blindbox`, Campus map, Schedule, Scoreboard). Big screen is also in the account menu and in TopNav.
+- **Colours**: the Welcome page palette (`VORTEXA_THEME`, `.fh-vx`), not a group colour. Staff subpages now read `--sp-*` variables, and `.staff-vx` switches them for these three roles. GM, Guardian GM, Faci, Admin and their pages keep the navy look and are unchanged.
+- **Navigation**:
+  - Phones and portrait tablets: the Freshie tab bar with Home, Map, Ops (yellow center button), Scores and Schedule.
+  - 1024px and wider: TopNav, with Ops as a yellow pill.
+  - The hamburger menu stays on subpages.
+  - `/map` for the ops crew now uses the dark staff design, like the map on the Ops page (same `CampusMap` with group pins), instead of the light page. Other roles' map is unchanged.
+- The old StaffDashboard text "roster" is now "headcount" (there is no roster view).
+- **One timer at a time, every role's home** (Freshie, Faci, ops crew, GM, Guardian GM, Admin):
+  - While a game phase is active or paused, the home shows the PhaseCard and hides the event countdown.
+  - Otherwise it shows the countdown. The ops crew also gets the "No game running" line under it.
+  - That line always says "No game running", with the next pending phase if there is one. There is no "Games are over" text: phases left as "ended" after a rehearsal made it show weeks before Day 1.
+  - Only the "no game" case was checked in the browser (HOGM, GM, Freshie). No game was running, and none was started, to avoid writing to the live project.
+- Checked in the browser with `hogm.test@xmu.edu.my` (local dev server against the live project, read only) at 390×844, 820×1180 and 1180×820:
+  - home, More Info, a floor tile opening the Headcount tab, the subpage menu, `/committee` and `/token`.
+  - `tsc` is clean for `src/`. `next lint` shows no new warnings.
+- Not done:
+  - The HOF and Committee accounts were not opened (they use the same code).
+  - Not tested on real phones or iPads.
+- Known: the dev console shows a hydration warning on the `next/font` class names. It also shows on `/login`, which this branch does not change.
+- Left for later: the Ops page layout itself ("ops will coordinate later").
+
+### Live database runs bonding-session's game timer, 2026-10-14
+Found while running 0071 on the live project (orientation-2612). The account's saved SQL snippets `0018`–`0038` are the `bonding-session` branch's migrations, not `main`'s (for example `0035_role_permissions_and_allocations`, `0036_usability_and_gameplay_fixes`). The live database has both sets.
+
+The live `fn_phase_control` is bonding-session's `0036` version (checked by function length), and it differs from this repo's in three ways:
+- Start takes the length from `game_config` `bonding_session_duration_day1` / `_day2` (both 150), not from `phases.duration_minutes`.
+- It only adds time. A negative extend fails with `INVALID_EXTENSION`.
+- Only one game can run at a time. A second Start fails with `ANOTHER_SESSION_ACTIVE`.
+
+Fixed in Admin → Live control and HOGM → Game control:
+- The length now saves to both places (`src/lib/gameLength.ts`).
+- −5 is removed.
+- Start is disabled while the other day's game runs.
+
+`tests/game-lead/bonding-phase-control.sql` is a copy of the live version, and `tests/game-lead/bonding.test.ts` runs 0071 and 0072 against it.
+
+**Before porting `bonding-session`:** compare against the live database, not only this repo. Migrations that run `create or replace` on these functions can silently undo either side.
+
+### HOGM Game control (Ops page), 2026-10-14
+Branch `hogm-home-redesign`. Migrations `0071_hogm_game_control.sql` and `0072_hogm_game_length.sql` were run on the live project on 2026-10-14.
+- For HOGM only, `/committee` is now **Game control** (`src/components/staff/game/`), in the Welcome page style. HOF and Committee keep the old Ops overview. It has these sections:
+  - **Game**: Day 1 and Day 2 game cards with start, end, pause, resume, +5 min and length. Start and End ask for confirmation first. Start is disabled while the other day's game runs.
+  - **Stations**: folding cards (closed shows the name and status), with add, edit, delete, status and Game Masters.
+  - **Tokens**: token rules, and Reset (only in Rehearsal mode, and you must type RESET).
+  - **Puzzles**: upload the picture for each location.
+  - **NFC**: generate sticker links and see the issued list.
+  - My blind box QR sits under Game.
+- **Scores tab (`/token`) for HOGM**: `GroupScores`, every group's token total and puzzle total (out of 15), best first. Tap a group to see its three puzzle keys drawn like the Freshie Items page (`KeyEmblem`), with pieces per key and a Lit tag when that group lit the projector. Live from `groups`, `inventory` and `projectors`. No headcount (that stays on the HOF and Committee Ops page).
+- **Schedule tab for HOGM**: the Freshie / Faci schedule (`FreshieSchedule vortexa`) in the Welcome page colours. It has a day switcher and timeline cards with tags, and a NOW tag with a glow on the item that is running (`useEventCountdown`). The NOW tag was not seen in the browser, because nothing was running during the check. Read only; Admin still edits on its own schedule page. Freshie and Faci are unchanged.
+- **Header on HOGM subpages** (Ops, Map, Scores, Schedule; phones and portrait tablets): `OpsHeader`, the same logo, role chip and account menu (Big screen, Log Out) as Home, instead of "← Home" with the hamburger menu. The logo goes Home. The running game shows under the header. HOF and Committee keep the old subpage header.
+- Navigation: a chip row on phones and portrait tablets, a side rail on landscape tablets and desktops. The sections can be linked with `#game`, `#stations` and so on.
+- Not included, as asked: kill-switches, Now on Welcome, Live Ops numbers, the token log, Blind box management, and the map (the map is on the Map tab).
+- Backend (0071):
+  - New `is_game_lead()` (HOGM or Admin). 0071 takes each installed function and swaps its `is_admin()` check for it, keeping the rest of the live version. It stops without changing anything if a function does not have exactly one check. This applies to `fn_phase_control`, `fn_update_game_config_rule`, `fn_reset_tokens_and_puzzles`, `fn_admin_station_gms` and `fn_admin_set_station_gms`.
+  - RLS: HOGM may update `phases` (game length only; no insert or delete), manage `stations`, write to the `puzzle-images` storage bucket, and read `nfc_tokens`.
+  - `fn_set_config`: HOGM may set `puzzle_image_*` keys (0071) and `bonding_session_duration_day1/2` (0072) only. Kill-switches and other keys stay Admin only.
+  - `/api/admin/nfc` allows Admin and HOGM, and the audit log now records the caller's real role.
+- Tests: `tests/game-lead/db.test.ts` runs 0071 on a real Postgres. It checks that HOGM can do each of the above and that HOF, Committee and GM cannot, including the kill-switch keys. `tests/game-lead/bonding.test.ts` does the same against the live `fn_phase_control`. `npm test`: 52 pass. `tsc` and `next lint` are clean.
+- Checked in the browser as HOGM at 390×844 and 1180×820 against the live project, before 0071 was run: every section's layout, a station card opened, the Add station sheet, and the Start confirmation (cancelled). Nothing was saved, so a real start, save or upload after 0071 is still untested.
 
 ### Blind boxes: one QR per seller, BUY then open from Items, 2026-10-13
 Branch `jiamin-blind-box-integration`. Migration `0070_blindbox_buy_flow.sql` (this branch skips `0059`-`0069` on purpose: they live on `main`; run `0054`-`0058` first).

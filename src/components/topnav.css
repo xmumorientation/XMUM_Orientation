@@ -29,6 +29,24 @@
 .vx-topnav-link:hover { color: #fff; }
 .vx-topnav-link[aria-current="page"] { color: #fff; border-bottom-color: var(--tn-accent); }
 .vx-topnav-link:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: -6px; border-radius: 8px; }
+/* Ops crew: Ops as a yellow pill, the primary action (Welcome page rule). */
+.vx-topnav-link-primary {
+  height: 34px; margin: 0 6px; padding: 0 16px; border: 0; border-radius: 999px;
+  background: #f2ff0b; color: #111; font-weight: 700;
+}
+.vx-topnav-link-primary:hover { background: #e6f000; color: #111; }
+.vx-topnav-link-primary[aria-current="page"] { color: #111; box-shadow: 0 0 0 2px #07060b, 0 0 0 4px rgba(242, 255, 11, 0.5); }
+
+/* HOF, HOGM, Committee: the Welcome page's near-black instead of navy. */
+@media (min-width: 1024px) {
+  .staff-vx .vx-topnav { background: #07060b; border-bottom-color: #25202f; }
+}
+.staff-vx .vx-topnav-link { color: #b4adc6; }
+.staff-vx .vx-topnav-link-primary { color: #111; }
+.staff-vx .vx-topnav .app-phase-timer:not(.is-endgame) { background: #15121e; color: #f3f0fa; }
+.staff-vx .vx-topnav-menu { background: #15121e; border-color: #3a3448; }
+.staff-vx .vx-topnav-menu span { color: #8d87a0; }
+.staff-vx .vx-topnav-menu button { border-color: #3a3448; color: #f3f0fa; }
 
 .vx-topnav-end { display: flex; align-items: center; gap: 10px; flex: none; }
 /* The live phase as a small pill (PhaseTimer compact). */

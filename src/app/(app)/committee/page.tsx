@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 
 import { BlindBoxCard } from "@/components/BlindBoxCard";
 import { CampusMap } from "@/components/CampusMap";
+import { useProfile } from "@/components/ProfileProvider";
+import { GameControl } from "@/components/staff/game/GameControl";
 import { Card, PageTitle } from "@/components/ui";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import type { Group } from "@/lib/types";
@@ -11,13 +13,26 @@ import { cn } from "@/lib/utils";
 
 type OpsView = "map" | "attendance" | "balances";
 
+// Ops. HOGM runs the game here (Game control: Admin's game console). HOF and
+// Committee keep the overview below.
+export default function CommitteePage() {
+  const profile = useProfile();
+  return profile.role === "hogm" ? <GameControl /> : <OpsOverview />;
+}
+
 // Committee-tier operations: live map (FR-3.4), attendance completion
 // (FR-2.3), blind-box QR card, register counter (FR-12.1).
-export default function CommitteePage() {
+function OpsOverview() {
   const supabase = useMemo(() => supabaseBrowser(), []);
   const [groups, setGroups] = useState<Group[]>([]);
   const [headcounts, setHeadcounts] = useState<Record<number, number>>({});
   const [view, setView] = useState<OpsView>("map");
+
+  // Home's Live floor tiles open a tab directly: /committee?view=attendance.
+  useEffect(() => {
+    const v = new URLSearchParams(window.location.search).get("view");
+    if (v === "map" || v === "attendance" || v === "balances") setView(v);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -79,7 +94,10 @@ export default function CommitteePage() {
           ))}
       </div>
 
-      <BlindBoxCard />
+      {/* Home's "My blind box QR" tool links here (#blindbox). */}
+      <div id="blindbox" className="scroll-mt-4">
+        <BlindBoxCard />
+      </div>
 
       {view === "map" && (
         <section>
