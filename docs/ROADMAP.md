@@ -5,7 +5,7 @@ Read it before starting a new round of development. When a decision changes, upd
 
 > **From Ben:** when you finish your work, write down what you completed in the "Done" section at the end of this file, so the next teammate can see it. Do this for partly finished items too: say which parts are done and which are left.
 
-Last updated: 2026-10-05
+Last updated: 2026-10-13
 
 ## Status key
 
@@ -23,8 +23,9 @@ Last updated: 2026-10-05
 | Jiamin | Faci updates group name and slogan, HOF can see them | [6](#6-faci-updates-group-name-and-slogan-ready) |
 | Zichien | Everything on the map: Figma design, game station status, and so on | [5](#5-map-ready) |
 | Ben | Per-group colour themes on Freshie Home | [2](#2-per-group-colour-themes-on-freshie-home-later) |
+| _To assign_ | Backend for Faci profiles (the UI is built) | [7](#7-faci-profiles-backend-ready) |
 
-Item 3 has no owner yet.
+Items 3 and 7 have no owner yet.
 
 ---
 
@@ -216,10 +217,67 @@ Full background: the "Issues Found" section in [permission-matrix.md](permission
 
 ---
 
+## 7. Faci profiles backend (Ready)
+
+**Owner:** to assign. The UI is built on branch `ben/faci-home` (Ben); this item is the backend only.
+
+**Goal:** a Faci edits their own profile (photo, name, Instagram, programme, languages, intro). Their partner Faci and the Freshies in their group see it.
+
+**Current state (frontend, already built):**
+- Faci Home "You & Your Partner" lists the group's real Facis by reading `profiles` directly (allowed by the "faci reads own group members" policy), live on `profiles` changes for that group.
+- Freshie Home "Your Facilitator" calls `fn_group_facis()`. It does not exist yet, so the page falls back to sample profiles marked "Sample".
+- Edit Profile sheet ([ProfileEditor.tsx](../src/components/freshie/ProfileEditor.tsx)): **name already saves** (`profiles.full_name`). Photo, Instagram, programme, languages and intro show as "Soon" (disabled).
+- Instagram chip: grey and inactive with no handle; with a real handle it links to instagram.com.
+- **No WhatsApp or phone number anywhere** (decision 2026-10-13). Do not add one.
+
+**Decisions taken:**
+- Profile details live in a **new table**, not new columns on `profiles`. `profiles` is tightly locked (only `full_name` and `phone` are user-updatable, Committee reads all rows), and this keeps profile data separate.
+- Freshies never read the table directly. They go through `fn_group_facis()`, so the backend decides which fields they get.
+- Photos are not reviewed before they show. Admin can clear a bad photo or intro afterwards.
+
+**To do (one migration, `0069_faci_profiles.sql`; tell Jiamin the number first so it does not collide):**
+1. Table `faci_profiles`: `user_id` (PK, references `profiles.id`, cascade delete), `instagram` text (handle without @; letters, digits, `.` and `_`, at most 30), `programme` text (≤ 80), `languages` text[] (≤ 6 items), `intro` text (≤ 160), `avatar_path` text, `updated_at`. Put the format and length rules in `check` constraints.
+2. RLS on `faci_profiles`, select only: the row's owner; a Faci whose `my_group_id()` equals the owner's group; Committee and Admin. No insert, update or delete policies (writes go through the RPC).
+3. `fn_set_my_faci_profile(p_instagram, p_programme, p_languages, p_intro, p_avatar_path)`: security definer; caller must be `faci`; upserts the caller's own row only; validates again; `audit('faci_profile.set', ...)`.
+4. `fn_group_facis()`: security definer, no arguments. Returns `id uuid, full_name text, instagram text, programme text, languages text[], intro text, avatar_url text` for every `profiles.role = 'faci'` in the caller's group (`my_group_id()`), ordered by `full_name`. Callable by freshie and faci; no rows for a caller with no group. The frontend already calls it and maps `id`, `full_name`, `instagram`; the other columns are picked up when the frontend step below is done.
+5. `fn_admin_clear_faci_profile(p_user_id, p_fields text[])`: Admin only; clears `avatar_path` and/or `intro`; audited.
+6. Storage bucket `faci-avatars`, public read (same pattern as the puzzle images bucket in [0005_v2_mechanics.sql](../supabase/migrations/0005_v2_mechanics.sql)). Insert, update and delete only by a Faci into their own folder: `(storage.foldername(name))[1] = auth.uid()::text`. Bucket limits: 1 MB, `image/webp`, `image/jpeg`, `image/png`.
+7. Add `faci_profiles` to the `supabase_realtime` publication so a partner's edits show live on Faci Home.
+8. `revoke all ... from public; grant execute ... to authenticated` on each new function.
+
+**Frontend step after the migration (small):**
+- [faciProfiles.ts](../src/components/freshie/faciProfiles.ts) `faciFromProfile()`: map `programme`, `languages`, `intro`, `avatar_url`.
+- `useGroupFacis()` in [FreshieHome.tsx](../src/components/freshie/FreshieHome.tsx): switch to `fn_group_facis()` and also listen to `faci_profiles` changes.
+- `ProfileEditor.tsx`: enable the "Soon" fields and the photo button; save through `fn_set_my_faci_profile`; resize the photo on the phone (square, 512 px, webp) before uploading to `faci-avatars/<user id>/`.
+- `next.config`: allow the Supabase storage host for `next/image`.
+- Remove the sample fallback in `useFreshieFacis()` once `fn_group_facis()` is live.
+
+**Test before running it on the live project** (on a test Supabase project): a Faci cannot change another Faci's row; a Freshie cannot select from `faci_profiles`; another group's members get nothing from `fn_group_facis()`; a Faci can upload only into their own avatar folder; Admin can clear a profile.
+
+**Release order:** run `0069` in Supabase first, then deploy the frontend. The other order calls functions that do not exist yet. Then add the new table and functions to [permission-matrix.md](permission-matrix.md).
+
+---
+
 ## Done
 
+### Vortexa logo intro on opening the site and after login, 2026-10-13
+- `VortexaIntro` ([VortexaIntro.tsx](../src/components/VortexaIntro.tsx), [vortexa-intro.css](../src/components/vortexa-intro.css)), mounted once in the root layout: a dark cover, the Vortexa logo sharpens in, a light band sweeps across it, then the cover fades out (about 2.7 s). Same idea as the interview site's `HomeIntro`.
+- Plays on every full page load: opening the site on any page, a refresh, and after every login (password, Freshie, QR join and Google all end in a full load). Not on in-app navigation. Off with reduced motion.
+- No "Click to skip" text; a tap still ends it early. Also plays on `/bigscreen` when that page is opened or refreshed.
+
+### Faci Home on the Vortexa scroll design, 2026-10-13
+- Facilitators now get the same scroll home as Freshies (`/dashboard` → `FreshieHome`); GM, Committee and Admin keep `StaffDashboard`. Its Faci workspace is no longer reached.
+- Faci stops: Welcome (Hi <name> · you're in <group>, Group Code, My Group → Checklist), Checklist, You & Your Partner, Your Progress, Scores, How It Works.
+- "You & Your Partner" uses the Freshie Facilitator cards and lists the group's **real** Facis: `profiles` with `role = 'faci'` and the same `group_id`, as Admin assigns them in Freshie Control (`fn_admin_set_group_facis`). Read under the existing "faci reads own group members" policy, live on `profiles` changes; no migration. The Faci's own card comes first, marked YOU, with an edit pencil when open. Only names are stored, so open cards say "No profile details yet". With no partner, a line says Admin assigns Facilitators in Freshie Control.
+- **Edit Profile** (Faci): from the header avatar menu or the pencil on their own card, a bottom sheet (`ProfileEditor.tsx`). **Name saves for real** (`profiles.full_name`; users may already update their own name under RLS) and shows at once in the header, Welcome and their card; partners see it live. Photo, Instagram, programme, languages and intro show but are disabled ("Soon") until the profile backend exists.
+- The header avatar is the same `FaciAvatar` as the Faci's card (photo, else initials on the group colour), so a future photo shows in both.
+- Freshie "Your Facilitator" calls `fn_group_facis()`. **Backend to do (not built yet):** a security-definer RPC, no arguments, returning `id uuid, full_name text, instagram text` for every `profiles.role = 'faci'` in the caller's group (`my_group_id()`), ordered by name; callable by freshie and faci; `instagram` may be null until profile fields exist. Until it exists the call fails with "function not found" (PGRST202) and the page falls back to the sample profiles, marked Sample; once it ships, Freshies see real Facis with no frontend change. No realtime for Freshies; the list reloads when the page comes back into view. Also left: profile fields (photo, Instagram, programme, languages, intro) and the editor.
+- **No WhatsApp anywhere** (decision 2026-10-13): Faci cards show Instagram only. The Instagram chip always shows; with no handle yet it is grey and inactive. Real handles link to instagram.com; Freshies' sample handles do not link.
+- Checklist rows are Title Case (Group Name and Slogan, Take Attendance, Update Location), with more space in the forms. "Update Location" opens station check-in (`/checkin`), not the map.
+- Take Attendance counts Local and International with − / + steppers (or typed); Total is their sum and is shown, not typed. Saves all three through `fn_set_headcount`, the same row Admin > Headcount and `/attendance` use. A blank side saves as 0. The row's subtitle shows "24 people · 18 Local · 6 International".
+
 ### Freshie Home back to the Vortexa scroll design, 2026-10-13
-- New "Your Facilitator" stop (Freshie only) between Welcome and Your Progress: collapsible cards (photo or initials, name, Instagram and WhatsApp; tap to open programme, intro and languages, one at a time, animated). "My Group" on Welcome scrolls here. **Sample data** from `faciProfiles.ts`; no backend yet. Left: profile fields for Faci (photo, Instagram, WhatsApp, programme, languages, intro), a page for Faci to edit them, and `faciProfilesFor()` reading the group's real Facis. Real Instagram handles and WhatsApp (wa.me) should then link out, and photo hosts need adding to `next.config` images.
+- New "Your Facilitator" stop (Freshie only) between Welcome and Your Progress: collapsible cards (photo or initials, name, Instagram; tap to open programme, intro and languages, one at a time, animated). "My Group" on Welcome scrolls here. **Sample data** from `faciProfiles.ts`; no backend yet. Left: profile fields for Faci (photo, Instagram, programme, languages, intro), a page for Faci to edit them, and `faciProfilesFor()` reading the group's real Facis. Real Instagram handles then link out, and photo hosts need adding to `next.config` images.
 - Freshies get the full-screen stops again, in this order: Welcome, Your Facilitator, Your Progress, Scores, How It Works. Scroll snapping and the stop bar are back. The group dashboard trial (`GroupDashboard.tsx`, `.gd-*` and `.fh-operational` styles) is removed.
 - Welcome uses the facilitator lockup (WELCOME TO Vortexa) with "Welcome <group> Freshie!" (the Faci-set name if there is one), a FRESHIE chip, "Scan a QR" and "My group".
 - "Your pass" (the ticket card) is replaced by "Your progress": a Tokens card (live balance, opens Token history), a Puzzle pieces card, and an FAQ row. The puzzle card reuses the Items page's key strip (`ProjectorKeys`) and its data (`itemsShown()` in `sampleData.ts`), so it always matches what Items shows. That is sample data today; when Items moves to live data, change `itemsShown()` too.

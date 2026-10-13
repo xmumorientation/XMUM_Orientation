@@ -6,5 +6,6 @@ import { useProfile } from "@/components/ProfileProvider";
 
 export default function DashboardPage() {
   const profile = useProfile();
-  return profile.role === "freshie" ? <FreshieHome /> : <StaffDashboard />;
+  // Freshies and Facilitators share the Vortexa scroll home; other roles get the staff dashboard.
+  return profile.role === "freshie" || profile.role === "faci" ? <FreshieHome /> : <StaffDashboard />;
 }

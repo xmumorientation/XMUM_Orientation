@@ -211,6 +211,12 @@ html.fh-snap { overflow-x: hidden; }
   background: transparent; border: 1px solid var(--fh-line-2); color: var(--fh-text); font-weight: 700; font-size: 14px;
 }
 .fh-menu button:hover { border-color: var(--fh-pink); color: var(--fh-pink); }
+.fh-menu .fh-menu-edit { display: flex; align-items: center; justify-content: center; gap: 8px; }
+.fh-menu .fh-menu-edit:hover { border-color: var(--fh-accent); color: var(--fh-accent); }
+.fh-menu .fh-menu-edit + button { margin-top: 8px; }
+/* Faci: the header button is their FaciAvatar (same photo or initials as their card). */
+.fh-avatar.fh-avatar-me { width: auto; height: auto; padding: 0; background: none; box-shadow: none; border-radius: 50%; }
+.fh-avatar.fh-avatar-me:focus-visible { outline-offset: 2px; }
 .fh-stopbar {
   display: flex; align-items: center; gap: 10px; height: 30px; padding-bottom: 6px;
   font-size: 11px; color: var(--fh-mute); letter-spacing: 0.08em;
@@ -319,34 +325,51 @@ html.fh-snap { overflow-x: hidden; }
 }
 .fh-faci-head { position: relative; display: grid; grid-template-columns: 56px 1fr auto; align-items: center; gap: 14px; }
 .fh-faci-avatar {
-  width: 56px; height: 56px; border-radius: 50%; padding: 2.5px; background: var(--fh-holo);
+  /* Size comes from FaciAvatar (inline width, height, font-size). */
+  display: block; flex: none; box-sizing: border-box; width: 56px; height: 56px; border-radius: 50%; padding: 2.5px; background: var(--fh-holo);
   box-shadow: 0 0 14px color-mix(in srgb, var(--fh-glow) 30%, transparent);
 }
+.fh-faci-avatar.fh-faci-avatar-plain { padding: 0; background: none; box-shadow: none; }
+.fh-faci-avatar.fh-faci-avatar-plain > span { background: var(--fh-accent); }
 .fh-faci-avatar > span, .fh-faci-avatar > img {
   display: grid; place-items: center; width: 100%; height: 100%; border-radius: 50%; object-fit: cover;
   background: radial-gradient(circle at 30% 30%, color-mix(in srgb, var(--fh-accent) 70%, #fff), var(--fh-accent) 70%);
-  color: var(--fh-on-blue); font-size: 20px;
+  color: var(--fh-on-blue); font-size: inherit;
 }
 .fh-faci-id { display: grid; gap: 8px; justify-items: start; min-width: 0; }
-.fh-faci-toggle { all: unset; cursor: pointer; min-width: 0; max-width: 100%; }
+.fh-faci-toggle { all: unset; cursor: pointer; min-width: 0; max-width: 100%; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 /* Whole row toggles the card. */
 .fh-faci-toggle::after { content: ""; position: absolute; inset: -12px -14px; border-radius: 20px; }
 .fh-faci-toggle:focus-visible::after { outline: 2px solid var(--fh-accent); outline-offset: -2px; }
 .fh-faci-name { display: block; font-size: 18px; line-height: 1.15; overflow-wrap: anywhere; }
 .fh-faci-links { position: relative; z-index: 1; display: flex; flex-wrap: wrap; gap: 6px; }
-.fh-faci-ig, .fh-faci-wa {
+.fh-faci-ig {
   display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px;
-  border-radius: 999px; font-size: 12.5px; font-weight: 600; color: #fff;
+  border-radius: 999px; font-size: 12.5px; font-weight: 600; color: #fff; text-decoration: none;
+  background: linear-gradient(100deg, #8a4fd8, #fe06ab 55%, #fc9e3d);
 }
-.fh-faci-ig { background: linear-gradient(100deg, #8a4fd8, #fe06ab 55%, #fc9e3d); }
-.fh-faci-wa { background: #1fa855; }
+/* No handle yet: grey and inactive. */
+.fh-faci-ig[data-empty] { background: var(--fh-ink-3); color: var(--fh-mute); border: 1px solid var(--fh-line-2); cursor: not-allowed; }
+.fh-faci-you { font-size: 9.5px; letter-spacing: 0.14em; padding: 3px 7px; border-radius: 999px; background: var(--fh-accent); color: var(--fh-on-blue); font-weight: 700; }
+.fh-faci-edit {
+  position: absolute; top: 4px; right: -6px; width: 44px; height: 44px; display: grid; place-items: center;
+  border: 0; background: transparent; color: var(--fh-accent); cursor: pointer;
+}
+/* 32px circle inside a 44px tap target. */
+.fh-faci-edit::before {
+  content: ""; position: absolute; inset: 6px; border-radius: 50%;
+  background: var(--fh-ink); border: 1px solid var(--fh-accent);
+}
+.fh-faci-edit svg { position: relative; }
+/* Keep the first lines clear of the edit pencil. */
+.fh-faci[data-me] .fh-faci-body > :not(.fh-faci-edit):not(.fh-faci-langs) { padding-right: 40px; }
 .fh-faci-chev { color: var(--fh-text-2); transition: transform 0.2s ease; }
 .fh-faci[data-open] .fh-faci-chev { transform: rotate(180deg); color: var(--fh-accent); }
 .fh-faci-drawer { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.28s ease; }
 .fh-faci[data-open] .fh-faci-drawer { grid-template-rows: 1fr; }
 .fh-faci-clip { min-height: 0; overflow: hidden; }
 .fh-faci-body {
-  display: grid; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--fh-line);
+  position: relative; display: grid; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--fh-line);
   opacity: 0; transform: translateY(-6px); transition: opacity 0.2s ease, transform 0.28s ease;
 }
 .fh-faci[data-open] .fh-faci-body { opacity: 1; transform: none; }
@@ -354,6 +377,8 @@ html.fh-snap { overflow-x: hidden; }
 .fh-faci-prog svg, .fh-faci-langs > svg { color: var(--fh-accent); flex: none; }
 .fh-faci-intro { margin: 0; font-size: 14px; line-height: 1.45; color: var(--fh-text); }
 .fh-faci-langs { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.fh-faci-empty { font-size: 13px; color: var(--fh-mute); }
+.fh-faci-solo { margin: 12px 2px 0; font-size: 13.5px; color: var(--fh-text-2); }
 .fh-faci-lang { font-size: 12px; padding: 3px 9px; border-radius: 999px; background: var(--fh-ink); border: 1px solid var(--fh-line-2); color: var(--fh-text-2); }
 @media (prefers-reduced-motion: reduce) { .fh-faci-chev, .fh-faci-drawer, .fh-faci-body { transition: none; } }
 
@@ -432,21 +457,50 @@ html.fh-snap { overflow-x: hidden; }
 .fh-check-title small { display: block; margin-top: 2px; font-size: 13px; color: var(--fh-mute); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .fh-check-chev { color: var(--fh-mute); transition: transform 0.2s ease; }
 .fh-check.is-open .fh-check-chev { transform: rotate(180deg); }
-.fh-check-body { padding: 0 16px 16px; border-top: 1px solid var(--fh-line); }
+.fh-check-body { padding: 18px 16px 20px; border-top: 1px solid var(--fh-line); }
 .fh-check-body[hidden] { display: none; }
-.fh-check-body > p:first-child { margin-top: 12px; }
+.fh-check-body > p:first-child { margin-top: 0; }
 .fh-check-no { font-size: 12px; letter-spacing: 0.12em; color: var(--fh-accent); }
 .fh-check b { display: block; font-size: 18px; }
-.fh-check p { margin: 4px 0 10px; font-size: 13.5px; color: var(--fh-mute); }
-.fh-check form { display: flex; flex-direction: column; gap: 8px; }
-.fh-check label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--fh-mute); }
+.fh-check p { margin: 0 0 16px; font-size: 13.5px; color: var(--fh-mute); }
+.fh-check form { display: flex; flex-direction: column; gap: 18px; }
+.fh-check label { display: flex; flex-direction: column; gap: 10px; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--fh-mute); }
 .fh-input {
   width: 100%; min-height: 44px; border-radius: 12px; border: 1px solid var(--fh-line-2);
   background: var(--fh-ink); color: var(--fh-text); padding: 10px 12px; font: inherit; letter-spacing: 0; text-transform: none;
 }
 .fh-input:focus { outline: 2px solid var(--fh-accent); outline-offset: 2px; }
-.fh-check .fh-btn { align-self: flex-start; min-height: 44px; }
+.fh-check .fh-btn { align-self: flex-start; min-height: 44px; margin-top: 8px; }
 .fh-check-msg { font-size: 13px; color: var(--fh-text-2); }
+
+/* Take Attendance: Local / International counters, Total = their sum. */
+.fh-count-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.fh-counter { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.fh-stepper {
+  display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; align-items: center; min-height: 52px;
+  border-radius: 14px; border: 1px solid var(--fh-line-2); background: var(--fh-ink); overflow: hidden;
+}
+.fh-stepper:focus-within { border-color: var(--fh-accent); }
+.fh-stepper button {
+  height: 100%; min-height: 52px; display: grid; place-items: center; border: 0; background: transparent;
+  color: var(--fh-accent); cursor: pointer;
+}
+.fh-stepper button:active { background: var(--fh-ink-2); }
+.fh-stepper button:disabled { color: var(--fh-mute); opacity: 0.5; cursor: default; }
+.fh-stepper input {
+  width: 100%; min-width: 0; padding: 0; border: 0; background: transparent; color: var(--fh-text);
+  font-size: 24px; text-align: center; letter-spacing: 0; -moz-appearance: textfield; appearance: textfield;
+}
+.fh-stepper input::-webkit-outer-spin-button, .fh-stepper input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.fh-stepper input:focus { outline: none; }
+.fh-stepper input::placeholder { color: var(--fh-mute); }
+.fh-count-total {
+  display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-radius: 14px;
+  background: color-mix(in srgb, var(--fh-accent) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--fh-accent) 40%, var(--fh-line));
+}
+.fh-count-total span { font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--fh-text-2); }
+.fh-count-total b { font-size: 30px; line-height: 1; font-variant-numeric: tabular-nums; }
 
 /* ── 03 How it works ─────────────────────────────────────────────────────── */
 .fh-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
@@ -1003,3 +1057,22 @@ html.fh-snap { overflow-x: hidden; }
 .fi-game-clock { display: inline-flex; align-items: center; gap: 7px; }
 .fi-game-clock strong { color: var(--fh-text); font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .fi-game-status[data-phase="endgame"] .fi-game-clock strong { color: var(--fh-orange); }
+
+/* ── Edit Profile sheet (Faci) ───────────────────────────────────────────── */
+.fh-edit .fi-sheet-title { padding-right: 44px; }
+.fh-edit-form { display: grid; gap: 16px; margin-top: 4px; }
+.fh-edit-photo { display: flex; align-items: center; gap: 14px; }
+.fh-edit-soonbtn {
+  display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 16px; border-radius: 999px;
+  border: 1px solid var(--fh-line-2); background: transparent; color: var(--fh-mute); font: inherit; font-weight: 600; cursor: not-allowed;
+}
+.fh-edit-field { display: grid; gap: 8px; }
+.fh-edit-field > span:first-child { font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--fh-mute); }
+.fh-edit-field textarea { resize: vertical; min-height: 84px; line-height: 1.45; }
+.fh-edit-at { position: relative; display: block; }
+.fh-edit-at i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-style: normal; color: var(--fh-mute); }
+.fh-edit-at .fh-input { padding-left: 28px; }
+.fh-edit-soon { display: grid; gap: 14px; margin: 0; padding: 14px; border-radius: 16px; border: 1px dashed var(--fh-line-2); min-width: 0; }
+.fh-edit-soon legend { display: flex; align-items: center; gap: 8px; padding: 0 6px; font-size: 12.5px; color: var(--fh-text-2); }
+.fh-edit-soontag { font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; padding: 3px 8px; border-radius: 999px; border: 1px solid var(--fh-orange); color: var(--fh-orange); }
+.fh-edit-soon .fh-input { opacity: 0.55; cursor: not-allowed; }
