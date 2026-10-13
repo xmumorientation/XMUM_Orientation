@@ -18,11 +18,9 @@ Last updated: 2026-10-13
 | Owner | Area | Item |
 |---|---|---|
 | David | **Priority:** bring the important `bonding-session` features into the current code | [Read before merging `bonding-session`](#read-before-merging-bonding-session) |
-| David | Merge the design work from the different branches | [4](#4-merge-design-branches-ready) |
-| Jiamin | Freshie and staff login pages | [1](#1-separate-login-pages-per-role-ready) |
-| Jiamin | Faci updates group name and slogan, HOF can see them | [6](#6-faci-updates-group-name-and-slogan-ready) |
+| David | Port or delete the branches not merged into `main` | [4](#4-branches-not-merged-into-main-ready) |
+| Jiamin | HOF sees every group's name and slogan | [6](#6-hof-sees-every-groups-name-and-slogan-ready) |
 | Zichien | Everything on the map: Figma design, game station status, and so on | [5](#5-map-ready) |
-| Ben | Per-group colour themes on Freshie Home | [2](#2-per-group-colour-themes-on-freshie-home-later) |
 | _To assign_ | Backend for Faci profiles (the UI is built) | [7](#7-faci-profiles-backend-ready) |
 
 Items 3 and 7 have no owner yet.
@@ -57,55 +55,15 @@ This summary comes from the branch's commit messages, its docs (`docs/FOUNDATION
 1. **Freshies have no login accounts in that branch.** Its docs say Freshies exist only in the registration roster (`freshies` table) and get no Supabase Auth account, and it removes the Freshie test accounts.
    **Decision (Ben): Freshies do log in.** A Freshie reaches Freshie Home in one of two ways:
    - scan their QR code, which goes straight to Freshie Home;
-   - log in as a Freshie from the welcome page ("Freshie Login" button, item 1).
+   - log in as a Freshie from the welcome page ("Freshie Login" button, `/login/freshie`).
 
    When porting `bonding-session`, keep the Freshie role able to log in. Do not port its "Freshies have no Auth account" model, or the removal of the Freshie test accounts. Features that assume no Freshie login (for example inventory and group lookups) need to work for a logged-in Freshie, too.
 2. **There is no Committee role in that branch.** It keeps four roles: `freshie`, `faci`, `gm`, `admin`. Committee, HOF and HOGM become `admin`, with an optional `admin_team` label. Guardian GM becomes `gm`. `/committee` redirects to `/admin/operations`. If it is merged:
-   - rename the "Committee and Faci GM Login" button and the staff login page in item 1;
+   - rename the staff login button in [JoinChooser.tsx](../src/components/home/JoinChooser.tsx) and the staff login page (`/login`);
    - update the roles mentioned in item 5 (map);
    - rewrite [permission-matrix.md](permission-matrix.md), which describes eight roles.
 3. **Overlapping files.** Both this branch and `bonding-session` change the dashboard, the app shell, the menus and the login page. Expect merge conflicts there (item 4).
 4. **Item 3 may already be fixed there.** Its migration `0018` removes the `allow all` policies, revokes `anon` access, and adds role checks to the token and Freshie RPCs. `seed-test-accounts` and `/api/token` now require a permission. Re-check item 3 after merging, and do not reuse migration numbers `0015` to `0030`.
-
-## 1. Separate login pages per role (Ready)
-
-**Owner:** Jiamin
-
-**Goal:** Freshies and staff get different login pages, each with its own design and login method.
-
-**Current state:**
-- The phone and tablet menu on the public homepage has two buttons, "Freshie Login" and "Committee and Faci GM Login". See [SiteNav.tsx](../src/components/home/SiteNav.tsx), at the `TODO(auth)` comment.
-- Both buttons still go to the shared `/login` page ([login/page.tsx](../src/app/(auth)/login/page.tsx)).
-
-**To do:**
-1. Build two pages: `/login/freshie` (Freshie) and `/login/staff` (Committee, Faci, GM). The paths are suggestions, not final.
-2. Point each menu button at its own page.
-3. **Staff page:** add Google login.
-   - Turn on the Google provider in Supabase Auth.
-   - Decide whether to allow only school accounts (for example `@xmu.edu.my`).
-   - A Google account still needs a row in `profiles` with the right role. Decide how a new staff member gets that role: an admin assigns it, or the account is matched against an imported list.
-4. **Freshie page:** a Freshie can reach Freshie Home (`/dashboard`) in two ways:
-   1. Log in on the Freshie login page.
-   2. Scan a QR code, which logs them in and goes straight to Freshie Home without the login page.
-   - **AI note (from Claude, not a team decision):** scanning the code is the same as logging in. Each QR code should log in only one Freshie, be unique to that person, and be hard to guess. Otherwise a forwarded photo or a guessed code would let someone else log in as that Freshie.
-   - Related code: [scan/page.tsx](../src/app/(app)/scan/page.tsx), [QrScannerScreen.tsx](../src/components/scan/QrScannerScreen.tsx), [FreshieHome.tsx](../src/components/freshie/FreshieHome.tsx).
-5. Decide what happens when someone logs in on the wrong page. For example, a Committee account used on the Freshie page could be rejected, or redirected.
-6. Decide whether the desktop top nav also needs these buttons. Today it shows only the yellow "Join the Game" button.
-
-## 2. Per-group colour themes on Freshie Home (Later)
-
-**Owner:** Ben
-
-**Goal:** each of the 10 Freshie groups sees its own colour scheme on the Freshie Home page (`/dashboard`, Freshie role).
-
-**Scope:** colours only. Layout, content and page logic stay the same for every group. Do not build separate pages per group.
-
-**Current state:** [groupTheme.ts](../src/components/freshie/groupTheme.ts) already supports one accent colour and one glow colour per group, keyed by group id. No group has colours filled in yet, so every group shows the default blue.
-
-**To do:**
-1. Pick an accent colour and a glow colour for each group. Check that the accent stays readable on the dark background.
-2. Fill them in under `GROUP_THEMES`.
-3. Check whether other fixed colours on the page should follow the group theme too, for example the pink glow and the sparkles in [FreshieHome.tsx](../src/components/freshie/FreshieHome.tsx).
 
 ## 3. Lock down open tables, RPCs and API routes (Deferred)
 
@@ -166,11 +124,17 @@ Migrations 0012 and 0013 caused most of these gaps. They replaced the earlier ro
 
 Full background: the "Issues Found" section in [permission-matrix.md](permission-matrix.md).
 
-## 4. Merge design branches (Ready)
+## 4. Branches not merged into `main` (Ready)
 
 **Owner:** David
 
-**Task:** merge the design work from the different branches together.
+The design branches are merged. These remote branches are still not in `main` (checked 2026-10-13). For each, port what is still wanted, then delete the branch:
+- `bonding-session` (2026-10-05): see "Read before merging `bonding-session`" above.
+- `cursor/david-next-tasks-cee6` (2026-10-06)
+- `feature/login-neon-redesign-from-Ben` (2026-09-16)
+- `David-MapPage` (2026-08-24): occupancy colours on the map (item 5).
+- `preview/red-white-soft` (2026-07-29)
+- `interview-booking` (2026-07-01)
 
 ## 5. Map (Ready)
 
@@ -198,28 +162,20 @@ Full background: the "Issues Found" section in [permission-matrix.md](permission
 - GPS pins are drawn on the art (see Done, 2026-10-07). The calibration needs a real walk-through to confirm.
 - The lake, monument, and brown field are in the picture and are not labeled.
 
-## 6. Faci updates group name and slogan (Ready)
+## 6. HOF sees every group's name and slogan (Ready)
 
 **Owner:** Jiamin
 
-**Goal:** a Faci can update their group's name and slogan, and HOF can see every group's name and slogan.
+**Done already:** `groups.display_name` and `slogan` (migration `0038`); a Faci sets them for their own group through `fn_set_group_profile` (Faci Home → Checklist → Group Name and Slogan); Admin sees them in Admin → Freshies.
 
-**Current state:**
-- The `groups` table has a `name` column (unique), but no slogan column yet. See [0001_schema.sql](../supabase/migrations/0001_schema.sql).
-- Today only Admin can update `groups`. A Faci can read only their own group.
-
-**To do:**
-1. Add a `slogan` column to `groups` in a new migration.
-2. Let a Faci update the name and slogan of **their own group only**. Use an RPC that checks the caller is a Faci of that group, rather than opening `groups` for direct updates (the table also holds `token_balance`).
-3. Build a simple form for the Faci to edit the name and slogan.
-4. Show all groups' names and slogans to HOF.
-   - Note: in `bonding-session`, HOF is an `admin` account with `admin_team` set. Check which role model is in use when you build this.
+**To do:** show every group's name and slogan to HOF. Admin → Freshies is Admin only, and the Committee page (`/committee`, used by HOF, HOGM and Committee) does not show them yet.
+- Note: in `bonding-session`, HOF is an `admin` account with `admin_team` set. Check which role model is in use when you build this.
 
 ---
 
 ## 7. Faci profiles backend (Ready)
 
-**Owner:** to assign. The UI is built on branch `ben/faci-home` (Ben); this item is the backend only.
+**Owner:** to assign. The UI is built and in `main` (Ben); this item is the backend only.
 
 **Goal:** a Faci edits their own profile (photo, name, Instagram, programme, languages, intro). Their partner Faci and the Freshies in their group see it.
 
@@ -273,12 +229,17 @@ Full background: the "Issues Found" section in [permission-matrix.md](permission
 - Option A from the mockup: on Freshie / Faci Home the page's own header and stop bar are hidden at this width; each stop fills the screen below the nav, and the live phase card in Welcome is hidden (the nav pill shows it). Staff Home hides its own header and phase card too. Phones and iPad portrait are unchanged.
 - Removed: the sidebar and Admin's collapse-to-icons toggle, and the `16rem` offsets (sky, toasts, location banner).
 
+### iPad Chrome: no blank band under the tab bar, 2026-10-13
+- iPad Chrome reports `env(safe-area-inset-bottom)` as about 80px while its toolbar is open (its open/closed height difference), so the tab bar left a blank band under it after a Freshie login. The bottom inset is capped at 34px (the most a real device needs) on `.fh-tabbar` and in `--fh-bottom`. Checked on iPad Chrome.
+- Diagnostics: add `?vp=1` to any URL to see the heights the browser reports (innerHeight, visualViewport, 100vh/dvh/svh/lvh, fixed bottom, safe-area bottom) and two markers for the bottom ([ViewportDebug.tsx](../src/components/ViewportDebug.tsx)). Invisible without the parameter.
+- Left: other `env(safe-area-inset-bottom)` uses (staff page padding, bottom sheets, map controls, Scan screen, the public Welcome tab bar) are not capped yet; on iPad Chrome they leave about 60px extra space. Plan: one `--safe-bottom` variable in `globals.css` used everywhere.
+
 ### Tab bar stays put on iPad and iPhone, 2026-10-13
 - On iPad Safari the bottom tab bar (and the Freshie Home header) could sit mid-screen while scrolling, and fixed things (tab bar, "Replay demo", the logo intro) could stop short of the screen bottom: Safari's area for `position: fixed` can be shorter than the screen.
 - On pages with the tab bar (Freshie and Faci), AppShell's content column is one screen high: header, then the scroller (`.app-scroll`), then the tab bar **in normal flow, not fixed**. The document never scrolls, so Safari's toolbars stay put; snap sits on `.app-scroll`. `main` no longer has `min-h-dvh` there, so short pages do not scroll.
 - The logo intro covers at least `100lvh` and cannot be dragged.
 - Side effect: no pull-to-refresh on those pages on iOS. GM, Committee and Admin pages are unchanged.
-- Left: check on a real iPad and iPhone.
+- Checked on iPad (Safari and Chrome).
 
 ### Vortexa logo intro on opening the site and after login, 2026-10-13
 - `VortexaIntro` ([VortexaIntro.tsx](../src/components/VortexaIntro.tsx), [vortexa-intro.css](../src/components/vortexa-intro.css)), mounted once in the root layout: a dark cover, the Vortexa logo sharpens in, a light band sweeps across it, then the cover fades out (about 2.7 s). Same idea as the interview site's `HomeIntro`.
@@ -297,12 +258,12 @@ Full background: the "Issues Found" section in [permission-matrix.md](permission
 - Take Attendance counts Local and International with − / + steppers (or typed); Total is their sum and is shown, not typed. Saves all three through `fn_set_headcount`, the same row Admin > Headcount and `/attendance` use. A blank side saves as 0. The row's subtitle shows "24 people · 18 Local · 6 International".
 
 ### Freshie Home back to the Vortexa scroll design, 2026-10-13
-- New "Your Facilitator" stop (Freshie only) between Welcome and Your Progress: collapsible cards (photo or initials, name, Instagram; tap to open programme, intro and languages, one at a time, animated). "My Group" on Welcome scrolls here. **Sample data** from `faciProfiles.ts`; no backend yet. Left: profile fields for Faci (photo, Instagram, programme, languages, intro), a page for Faci to edit them, and `faciProfilesFor()` reading the group's real Facis. Real Instagram handles then link out, and photo hosts need adding to `next.config` images.
+- New "Your Facilitator" stop (Freshie only) between Welcome and Your Progress: collapsible cards (photo or initials, name, Instagram; tap to open programme, intro and languages, one at a time, animated). "My Group" on Welcome scrolls here. Sample data from `faciProfiles.ts` until `fn_group_facis()` exists (item 7). Left: profile fields for Faci (photo, Instagram, programme, languages, intro), a page for Faci to edit them, and `faciProfilesFor()` reading the group's real Facis. Real Instagram handles then link out, and photo hosts need adding to `next.config` images.
 - Freshies get the full-screen stops again, in this order: Welcome, Your Facilitator, Your Progress, Scores, How It Works. Scroll snapping and the stop bar are back. The group dashboard trial (`GroupDashboard.tsx`, `.gd-*` and `.fh-operational` styles) is removed.
 - Welcome uses the facilitator lockup (WELCOME TO Vortexa) with "Welcome <group> Freshie!" (the Faci-set name if there is one), a FRESHIE chip, "Scan a QR" and "My group".
-- "Your pass" (the ticket card) is replaced by "Your progress": a Tokens card (live balance, opens Token history), a Puzzle pieces card, and an FAQ row. The puzzle card reuses the Items page's key strip (`ProjectorKeys`) and its data (`itemsShown()` in `sampleData.ts`), so it always matches what Items shows. That is sample data today; when Items moves to live data, change `itemsShown()` too.
+- "Your pass" (the ticket card) is replaced by "Your progress": a Tokens card (live balance, opens Token history), a Puzzle pieces card, and an FAQ row. The puzzle card reuses the Items page's key strip (`ProjectorKeys`) and, since the Items live data work, its live data (`useItemsData()`), so it always matches what Items shows.
 - The Today stop (placeholder rundown) is removed from the home. The programme is only on the Schedule page.
-- Faci home (`StaffDashboard`) is unchanged. No migration.
+- No migration. (Faci Home moved to this design later; see "Faci Home on the Vortexa scroll design".)
 
 ### Admin Live control, Headcount and Game Master assignment, 2026-10-12
 - **Live schedule section removed** from Live control (`LiveSchedule.tsx` deleted; `scheduleTimer` moved to `src/lib/scheduleTimer.ts`). The "Now on the Welcome page" box and all schedule data stay.
