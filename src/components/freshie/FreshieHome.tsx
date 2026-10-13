@@ -6,8 +6,10 @@ import {
   Coins,
   Compass,
   Gamepad2,
+  GraduationCap,
   HelpCircle,
   KeyRound,
+  Languages,
   MapPin,
   Menu,
   Puzzle,
@@ -31,6 +33,7 @@ import { PIECES_PER_SET, PROJECTOR_LOCATIONS, type Group } from "@/lib/types";
 import { formatCountdown, friendlyError } from "@/lib/utils";
 
 import "./freshie.css";
+import { faciProfilesFor } from "./faciProfiles";
 import { FreshieSky, type SkyCabin } from "./FreshieSky";
 import { itemsShown } from "./items/sampleData";
 import { ProjectorKeys } from "./items/sections";
@@ -42,7 +45,8 @@ import { groupSwatch, themeFromColor } from "./groupTheme";
 // the Freshie's own group:
 //   01 Welcome + countdown (Live control's schedule timer), plus the running game.
 //      Vortexa lockup, then "Welcome <group> Freshie!".
-//   02 Checklist (facilitator only: name, attendance, location)
+//   02 Your Facilitator (Freshie only; sample profiles from faciProfiles.ts)
+//      or Checklist (facilitator only: name, attendance, location)
 //   03 Your Progress (tokens, puzzle pieces per key, FAQ)
 //   04 Scoreboard (own group highlighted)
 //   05 How the game works
@@ -58,6 +62,7 @@ import { groupSwatch, themeFromColor } from "./groupTheme";
 
 const STOPS = [
   { id: "fh-welcome", label: "Welcome" },
+  { id: "fh-faci", label: "Facilitator" },
   { id: "fh-pass", label: "Progress" },
   { id: "fh-scores", label: "Scores" },
   { id: "fh-game", label: "Game" },
@@ -67,7 +72,8 @@ const CHECK_STOP = { id: "fh-check", label: "Checklist" };
 
 function homeStops(isFaci: boolean) {
   if (!isFaci) return [...STOPS];
-  return [STOPS[0], CHECK_STOP, ...STOPS.slice(1)];
+  // A Faci gets the checklist where Freshies meet their Faci.
+  return [STOPS[0], CHECK_STOP, ...STOPS.slice(2)];
 }
 
 /** The name a Faci chose for the group, else its number name ("Group 1"). */
@@ -196,7 +202,7 @@ function WelcomeStop({
           {isFaci ? <KeyRound size={18} aria-hidden /> : <ScanLine size={18} aria-hidden />}
           {isFaci ? "Group code" : "Scan a QR"}
         </Link>
-        <button type="button" className="fh-btn fh-btn-ghost" onClick={() => goTo("fh-pass")}>
+        <button type="button" className="fh-btn fh-btn-ghost" onClick={() => goTo(isFaci ? "fh-pass" : "fh-faci")}>
           My Group ↓
         </button>
       </div>
@@ -394,7 +400,121 @@ export function ChecklistStop({ group, groupId }: { group: Group | null; groupId
   );
 }
 
-// ── 02 Your progress ─────────────────────────────────────────────────────────
+// ── 02 Your Facilitator (Freshie only) ───────────────────────────────────────
+
+/** WhatsApp glyph (lucide has no brand icons). */
+function WhatsAppIcon({ size = 18 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden>
+      <path d="M4 20l1.3-3.9A8 8 0 1 1 8 19z" strokeLinejoin="round" />
+      <path d="M9.5 9.2c.3 1.6 1.7 3.3 3.4 4l1-1 1.7.8-.3 1.2c-2.6.4-6.4-3-6.3-5.9l1.2-.4.8 1.6z" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+/** Instagram glyph (lucide has no brand icons). */
+function InstagramIcon({ size = 18 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden>
+      <rect x="3" y="3" width="18" height="18" rx="5" />
+      <circle cx="12" cy="12" r="4" />
+      <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+function initialsOf(name: string) {
+  return (
+    name
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((w) => w[0]?.toUpperCase())
+      .join("") || "?"
+  );
+}
+
+function FaciStop({ groupId }: { groupId: number | null }) {
+  const facis = faciProfilesFor(groupId);
+  // Collapsed: photo, name, Instagram. One card open at a time so a group
+  // with several Facis still fits on one screen.
+  const [openId, setOpenId] = useState<string | null>(null);
+  return (
+    <section id="fh-faci" className="fh-stop" aria-labelledby="fh-faci-title">
+      <div className="fh-stop-head fh-stop-head-row">
+        <h2 id="fh-faci-title" className="fh-h2 fh-slab">
+          Your Facilitator{facis.length > 1 ? "s" : ""}
+        </h2>
+        <span className="fh-pill fh-mono fh-faci-sample">Sample</span>
+      </div>
+      <ul className="fh-facis">
+        {facis.map((f) => {
+          const open = openId === f.id;
+          return (
+            <li key={f.id} className="fh-faci" data-open={open || undefined}>
+              <div className="fh-faci-head">
+                <span className="fh-faci-avatar" aria-hidden>
+                  {f.avatarUrl ? (
+                    <Image src={f.avatarUrl} alt="" width={160} height={160} />
+                  ) : (
+                    <span className="fh-slab">{initialsOf(f.name)}</span>
+                  )}
+                </span>
+                <div className="fh-faci-id">
+                  {/* The button stretches over the whole row; the Instagram chip sits above it. */}
+                  <button
+                    type="button"
+                    className="fh-faci-toggle"
+                    aria-expanded={open}
+                    aria-controls={`fh-faci-${f.id}`}
+                    onClick={() => setOpenId(open ? null : f.id)}
+                  >
+                    <b className="fh-faci-name fh-slab">{f.name}</b>
+                  </button>
+                  {/* Sample handles and numbers are made up, so they do not link out yet. */}
+                  {(f.instagram || f.whatsapp) && (
+                    <div className="fh-faci-links">
+                      {f.instagram && (
+                        <span className="fh-faci-ig">
+                          <InstagramIcon size={14} />@{f.instagram}
+                        </span>
+                      )}
+                      {f.whatsapp && (
+                        <span className="fh-faci-wa">
+                          <WhatsAppIcon size={14} />WhatsApp
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <ChevronDown size={20} aria-hidden className="fh-faci-chev" />
+              </div>
+              {/* Always rendered so it can slide open; inert keeps it out of tab order and screen readers while closed. */}
+              <div id={`fh-faci-${f.id}`} className="fh-faci-drawer" inert={!open}>
+                <div className="fh-faci-clip">
+                  <div className="fh-faci-body">
+                    <small className="fh-faci-prog">
+                      <GraduationCap size={14} aria-hidden /> {f.programme}
+                    </small>
+                    <p className="fh-faci-intro">“{f.intro}”</p>
+                    <div className="fh-faci-langs">
+                      <Languages size={14} aria-hidden />
+                      {f.languages.map((lang) => (
+                        <span key={lang} className="fh-faci-lang">{lang}</span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+}
+
+// ── 03 Your progress ─────────────────────────────────────────────────────────
 
 function ProgressStop({ group, loading }: { group: Group | null; loading: boolean }) {
   const router = useRouter();
@@ -770,7 +890,7 @@ export function FreshieHome() {
       </header>
 
       <WelcomeStop name={profile.full_name ?? ""} group={group} isFaci={isFaci} />
-      {isFaci && <ChecklistStop group={group} groupId={profile.group_id} />}
+      {isFaci ? <ChecklistStop group={group} groupId={profile.group_id} /> : <FaciStop groupId={profile.group_id} />}
       <ProgressStop group={group} loading={loading} />
       <ScoresStop groupId={profile.group_id} onRows={setCabins} />
       <GameStop />

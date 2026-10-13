@@ -303,7 +303,58 @@ html.fh-snap { overflow-x: hidden; }
 .fh-btn-ghost:hover { border-color: var(--fh-accent); color: var(--fh-accent); }
 .fh-btn-block { width: 100%; }
 
-/* ── 02 Your progress ────────────────────────────────────────────────────── */
+/* ── 02 Your Facilitator (Freshie only) ──────────────────────────────────── */
+.fh-faci-sample { border-color: var(--fh-orange); color: var(--fh-orange); }
+.fh-facis { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.fh-faci {
+  padding: 12px 14px; border-radius: 20px; border: 1px solid var(--fh-line); background: var(--fh-ink-2);
+  transition: border-color 0.15s ease;
+}
+.fh-faci[data-open] {
+  background: linear-gradient(var(--fh-ink-2), var(--fh-ink-2)) padding-box, var(--fh-holo) border-box;
+  border: 1.5px solid transparent;
+}
+.fh-faci-head { position: relative; display: grid; grid-template-columns: 56px 1fr auto; align-items: center; gap: 14px; }
+.fh-faci-avatar {
+  width: 56px; height: 56px; border-radius: 50%; padding: 2.5px; background: var(--fh-holo);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--fh-glow) 30%, transparent);
+}
+.fh-faci-avatar > span, .fh-faci-avatar > img {
+  display: grid; place-items: center; width: 100%; height: 100%; border-radius: 50%; object-fit: cover;
+  background: radial-gradient(circle at 30% 30%, color-mix(in srgb, var(--fh-accent) 70%, #fff), var(--fh-accent) 70%);
+  color: var(--fh-on-blue); font-size: 20px;
+}
+.fh-faci-id { display: grid; gap: 8px; justify-items: start; min-width: 0; }
+.fh-faci-toggle { all: unset; cursor: pointer; min-width: 0; max-width: 100%; }
+/* Whole row toggles the card. */
+.fh-faci-toggle::after { content: ""; position: absolute; inset: -12px -14px; border-radius: 20px; }
+.fh-faci-toggle:focus-visible::after { outline: 2px solid var(--fh-accent); outline-offset: -2px; }
+.fh-faci-name { display: block; font-size: 18px; line-height: 1.15; overflow-wrap: anywhere; }
+.fh-faci-links { position: relative; z-index: 1; display: flex; flex-wrap: wrap; gap: 6px; }
+.fh-faci-ig, .fh-faci-wa {
+  display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px;
+  border-radius: 999px; font-size: 12.5px; font-weight: 600; color: #fff;
+}
+.fh-faci-ig { background: linear-gradient(100deg, #8a4fd8, #fe06ab 55%, #fc9e3d); }
+.fh-faci-wa { background: #1fa855; }
+.fh-faci-chev { color: var(--fh-text-2); transition: transform 0.2s ease; }
+.fh-faci[data-open] .fh-faci-chev { transform: rotate(180deg); color: var(--fh-accent); }
+.fh-faci-drawer { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.28s ease; }
+.fh-faci[data-open] .fh-faci-drawer { grid-template-rows: 1fr; }
+.fh-faci-clip { min-height: 0; overflow: hidden; }
+.fh-faci-body {
+  display: grid; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--fh-line);
+  opacity: 0; transform: translateY(-6px); transition: opacity 0.2s ease, transform 0.28s ease;
+}
+.fh-faci[data-open] .fh-faci-body { opacity: 1; transform: none; }
+.fh-faci-prog { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--fh-text-2); }
+.fh-faci-prog svg, .fh-faci-langs > svg { color: var(--fh-accent); flex: none; }
+.fh-faci-intro { margin: 0; font-size: 14px; line-height: 1.45; color: var(--fh-text); }
+.fh-faci-langs { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.fh-faci-lang { font-size: 12px; padding: 3px 9px; border-radius: 999px; background: var(--fh-ink); border: 1px solid var(--fh-line-2); color: var(--fh-text-2); }
+@media (prefers-reduced-motion: reduce) { .fh-faci-chev, .fh-faci-drawer, .fh-faci-body { transition: none; } }
+
+/* ── 03 Your progress ────────────────────────────────────────────────────── */
 .fh-prog { display: grid; gap: 12px; }
 /* One heading style for Tokens, Puzzle pieces and FAQ. Scoped to .fh-prog so
    the .fh-next / .fh-tile defaults (20px / 14.5px b) do not win. */
@@ -897,6 +948,7 @@ html.fh-snap { overflow-x: hidden; }
 
 /* ── Desktop / landscape tablet ──────────────────────────────────────────── */
 @media (min-width: 1024px) {
+  .fh-facis { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); align-items: start; }
   .fh-prog { grid-template-columns: 1fr 1fr; }
   .fh-prog-puzzle { grid-row: span 2; }
   .fh-steps { grid-template-columns: repeat(4, 1fr); gap: 14px; }

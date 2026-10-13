@@ -219,7 +219,8 @@ Full background: the "Issues Found" section in [permission-matrix.md](permission
 ## Done
 
 ### Freshie Home back to the Vortexa scroll design, 2026-10-13
-- Freshies get the full-screen stops again, in this order: Welcome, Your progress, Scores, How it works. Scroll snapping and the stop bar are back. The group dashboard trial (`GroupDashboard.tsx`, `.gd-*` and `.fh-operational` styles) is removed.
+- New "Your Facilitator" stop (Freshie only) between Welcome and Your Progress: collapsible cards (photo or initials, name, Instagram and WhatsApp; tap to open programme, intro and languages, one at a time, animated). "My Group" on Welcome scrolls here. **Sample data** from `faciProfiles.ts`; no backend yet. Left: profile fields for Faci (photo, Instagram, WhatsApp, programme, languages, intro), a page for Faci to edit them, and `faciProfilesFor()` reading the group's real Facis. Real Instagram handles and WhatsApp (wa.me) should then link out, and photo hosts need adding to `next.config` images.
+- Freshies get the full-screen stops again, in this order: Welcome, Your Facilitator, Your Progress, Scores, How It Works. Scroll snapping and the stop bar are back. The group dashboard trial (`GroupDashboard.tsx`, `.gd-*` and `.fh-operational` styles) is removed.
 - Welcome uses the facilitator lockup (WELCOME TO Vortexa) with "Welcome <group> Freshie!" (the Faci-set name if there is one), a FRESHIE chip, "Scan a QR" and "My group".
 - "Your pass" (the ticket card) is replaced by "Your progress": a Tokens card (live balance, opens Token history), a Puzzle pieces card, and an FAQ row. The puzzle card reuses the Items page's key strip (`ProjectorKeys`) and its data (`itemsShown()` in `sampleData.ts`), so it always matches what Items shows. That is sample data today; when Items moves to live data, change `itemsShown()` too.
 - The Today stop (placeholder rundown) is removed from the home. The programme is only on the Schedule page.
