@@ -265,7 +265,7 @@ Fixed in Admin → Live control and HOGM → Game control:
 **Before porting `bonding-session`:** compare against the live database, not only this repo. Migrations that run `create or replace` on these functions can silently undo either side.
 
 ### HOGM Game control (Ops page), 2026-10-14
-Branch `hogm-home-redesign`. Migration `0071_hogm_game_control.sql` was run on the live project on 2026-10-14. **`0072_hogm_game_length.sql` still has to be run**, or HOGM cannot change a game's length.
+Branch `hogm-home-redesign`. Migrations `0071_hogm_game_control.sql` and `0072_hogm_game_length.sql` were run on the live project on 2026-10-14.
 - For HOGM only, `/committee` is now **Game control** (`src/components/staff/game/`), in the Welcome page style. HOF and Committee keep the old Ops overview. It has these sections:
   - **Game**: Day 1 and Day 2 game cards with start, end, pause, resume, +5 min and length. Start and End ask for confirmation first. Start is disabled while the other day's game runs.
   - **Stations**: folding cards (closed shows the name and status), with add, edit, delete, status and Game Masters.
