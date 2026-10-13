@@ -216,6 +216,76 @@ The design branches are merged. These remote branches are still not in `main` (c
 
 ## Done
 
+### HOF / HOGM / Committee home redesign, 2026-10-14
+Branch `hogm-home-redesign`. Not merged yet. Do not merge to `main` until the PR is open and reviewed. No migration.
+- **New home** for HOF, HOGM and Committee: `StaffHome.tsx`, used by `/dashboard` for `OPS_ROLES`. It has the same layout as the Freshie Home Welcome stop:
+  - "Welcome to Vortexa" and "Hi {name} · {role}"
+  - the event countdown (follows the Schedule)
+  - the PhaseCard while a game phase runs; otherwise a dashed "No game running" line with the next phase
+  - an **Ops** button (to `/committee`) and a **More Info ↓** button
+  - the organiser and sponsor credits
+
+  More Info scrolls to: Live floor (people checked in, leading group, live map; each tile opens the matching Ops tab through `/committee?view=`), then the full scoreboard (the ferris wheel cabins use the group colours), then Event tools (Big screen, My blind box QR → `/committee#blindbox`, Campus map, Schedule, Scoreboard). Big screen is also in the account menu and in TopNav.
+- **Colours**: the Welcome page palette (`VORTEXA_THEME`, `.fh-vx`), not a group colour. Staff subpages now read `--sp-*` variables, and `.staff-vx` switches them for these three roles. GM, Guardian GM, Faci, Admin and their pages keep the navy look and are unchanged.
+- **Navigation**:
+  - Phones and portrait tablets: the Freshie tab bar with Home, Map, Ops (yellow center button), Scores and Schedule.
+  - 1024px and wider: TopNav, with Ops as a yellow pill.
+  - The hamburger menu stays on subpages.
+  - `/map` for the ops crew now uses the dark staff design, like the map on the Ops page (same `CampusMap` with group pins), instead of the light page. Other roles' map is unchanged.
+- The old StaffDashboard text "roster" is now "headcount" (there is no roster view).
+- **One timer at a time, every role's home** (Freshie, Faci, ops crew, GM, Guardian GM, Admin):
+  - While a game phase is active or paused, the home shows the PhaseCard and hides the event countdown.
+  - Otherwise it shows the countdown. The ops crew also gets the "No game running" line under it.
+  - That line always says "No game running", with the next pending phase if there is one. There is no "Games are over" text: phases left as "ended" after a rehearsal made it show weeks before Day 1.
+  - Only the "no game" case was checked in the browser (HOGM, GM, Freshie). No game was running, and none was started, to avoid writing to the live project.
+- Checked in the browser with `hogm.test@xmu.edu.my` (local dev server against the live project, read only) at 390×844, 820×1180 and 1180×820:
+  - home, More Info, a floor tile opening the Headcount tab, the subpage menu, `/committee` and `/token`.
+  - `tsc` is clean for `src/`. `next lint` shows no new warnings.
+- Not done:
+  - The HOF and Committee accounts were not opened (they use the same code).
+  - Not tested on real phones or iPads.
+- Known: the dev console shows a hydration warning on the `next/font` class names. It also shows on `/login`, which this branch does not change.
+- Left for later: the Ops page layout itself ("ops will coordinate later").
+
+### Live database runs bonding-session's game timer, 2026-10-14
+Found while running 0071 on the live project (orientation-2612). The account's saved SQL snippets `0018`–`0038` are the `bonding-session` branch's migrations, not `main`'s (for example `0035_role_permissions_and_allocations`, `0036_usability_and_gameplay_fixes`). The live database has both sets.
+
+The live `fn_phase_control` is bonding-session's `0036` version (checked by function length), and it differs from this repo's in three ways:
+- Start takes the length from `game_config` `bonding_session_duration_day1` / `_day2` (both 150), not from `phases.duration_minutes`.
+- It only adds time. A negative extend fails with `INVALID_EXTENSION`.
+- Only one game can run at a time. A second Start fails with `ANOTHER_SESSION_ACTIVE`.
+
+Fixed in Admin → Live control and HOGM → Game control:
+- The length now saves to both places (`src/lib/gameLength.ts`).
+- −5 is removed.
+- Start is disabled while the other day's game runs.
+
+`tests/game-lead/bonding-phase-control.sql` is a copy of the live version, and `tests/game-lead/bonding.test.ts` runs 0071 and 0072 against it.
+
+**Before porting `bonding-session`:** compare against the live database, not only this repo. Migrations that run `create or replace` on these functions can silently undo either side.
+
+### HOGM Game control (Ops page), 2026-10-14
+Branch `hogm-home-redesign`. Migrations `0071_hogm_game_control.sql` and `0072_hogm_game_length.sql` were run on the live project on 2026-10-14.
+- For HOGM only, `/committee` is now **Game control** (`src/components/staff/game/`), in the Welcome page style. HOF and Committee keep the old Ops overview. It has these sections:
+  - **Game**: Day 1 and Day 2 game cards with start, end, pause, resume, +5 min and length. Start and End ask for confirmation first. Start is disabled while the other day's game runs.
+  - **Stations**: folding cards (closed shows the name and status), with add, edit, delete, status and Game Masters.
+  - **Tokens**: token rules, and Reset (only in Rehearsal mode, and you must type RESET).
+  - **Puzzles**: upload the picture for each location.
+  - **NFC**: generate sticker links and see the issued list.
+  - My blind box QR sits under Game.
+- **Scores tab (`/token`) for HOGM**: `GroupScores`, every group's token total and puzzle total (out of 15), best first. Tap a group to see its three puzzle keys drawn like the Freshie Items page (`KeyEmblem`), with pieces per key and a Lit tag when that group lit the projector. Live from `groups`, `inventory` and `projectors`. No headcount (that stays on the HOF and Committee Ops page).
+- **Schedule tab for HOGM**: the Freshie / Faci schedule (`FreshieSchedule vortexa`) in the Welcome page colours. It has a day switcher and timeline cards with tags, and a NOW tag with a glow on the item that is running (`useEventCountdown`). The NOW tag was not seen in the browser, because nothing was running during the check. Read only; Admin still edits on its own schedule page. Freshie and Faci are unchanged.
+- **Header on HOGM subpages** (Ops, Map, Scores, Schedule; phones and portrait tablets): `OpsHeader`, the same logo, role chip and account menu (Big screen, Log Out) as Home, instead of "← Home" with the hamburger menu. The logo goes Home. The running game shows under the header. HOF and Committee keep the old subpage header.
+- Navigation: a chip row on phones and portrait tablets, a side rail on landscape tablets and desktops. The sections can be linked with `#game`, `#stations` and so on.
+- Not included, as asked: kill-switches, Now on Welcome, Live Ops numbers, the token log, Blind box management, and the map (the map is on the Map tab).
+- Backend (0071):
+  - New `is_game_lead()` (HOGM or Admin). 0071 takes each installed function and swaps its `is_admin()` check for it, keeping the rest of the live version. It stops without changing anything if a function does not have exactly one check. This applies to `fn_phase_control`, `fn_update_game_config_rule`, `fn_reset_tokens_and_puzzles`, `fn_admin_station_gms` and `fn_admin_set_station_gms`.
+  - RLS: HOGM may update `phases` (game length only; no insert or delete), manage `stations`, write to the `puzzle-images` storage bucket, and read `nfc_tokens`.
+  - `fn_set_config`: HOGM may set `puzzle_image_*` keys (0071) and `bonding_session_duration_day1/2` (0072) only. Kill-switches and other keys stay Admin only.
+  - `/api/admin/nfc` allows Admin and HOGM, and the audit log now records the caller's real role.
+- Tests: `tests/game-lead/db.test.ts` runs 0071 on a real Postgres. It checks that HOGM can do each of the above and that HOF, Committee and GM cannot, including the kill-switch keys. `tests/game-lead/bonding.test.ts` does the same against the live `fn_phase_control`. `npm test`: 52 pass. `tsc` and `next lint` are clean.
+- Checked in the browser as HOGM at 390×844 and 1180×820 against the live project, before 0071 was run: every section's layout, a station card opened, the Add station sheet, and the Start confirmation (cancelled). Nothing was saved, so a real start, save or upload after 0071 is still untested.
+
 ### Blind boxes: one QR per seller, BUY then open from Items, 2026-10-13
 Branch `jiamin-blind-box-integration`. Migration `0070_blindbox_buy_flow.sql` (this branch skips `0059`-`0069` on purpose: they live on `main`; run `0054`-`0058` first).
 - **One public QR per seller** (account or station): `/blindbox?t=<token>`, token kind `bb3` = HMAC of (seller id, qr_version), stable and recomputed on demand. Works until the seller's boxes are all sold; Admin Regenerate kills it. If the seller has several box types the buyer picks one on the page. The old per-type links (`bb2`) stop working. New table `blind_box_sellers`; `blind_box_assignments.seller_id`.

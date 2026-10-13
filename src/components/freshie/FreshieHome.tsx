@@ -87,14 +87,14 @@ function groupLabel(group: Group) {
   return group.display_name?.trim() || group.name;
 }
 
-function goTo(id: string) {
+export function goTo(id: string) {
   const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   document.getElementById(id)?.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
 }
 
 // ── 01 Welcome ───────────────────────────────────────────────────────────────
 
-function Countdown() {
+export function Countdown() {
   // D-day, then Day 2 and the phases between live games (see useEventCountdown).
   const { label, seconds } = useEventCountdown();
   const t = countdownParts(seconds);
@@ -200,9 +200,9 @@ function WelcomeStop({
           Welcome {group && <b>{groupLabel(group)}</b>} Freshie!
         </p>
       )}
-      {/* The countdown follows Live control's schedule timer; the card shows a running game. */}
-      <Countdown />
-      {live && <PhaseCard />}
+      {/* One timer at a time: the running game while a phase is on or paused,
+          else the event countdown (follows the Schedule). */}
+      {live ? <PhaseCard /> : <Countdown />}
       <div className="fh-actions">
         <Link href={isFaci ? "/code" : "/scan"} className="fh-btn fh-btn-primary">
           {isFaci ? <KeyRound size={18} aria-hidden /> : <ScanLine size={18} aria-hidden />}
@@ -872,7 +872,7 @@ function ScoresStop({ groupId, onRows }: { groupId: number | null; onRows?: (row
 }
 
 /** Organiser + sponsors, under the Welcome buttons. Same list as the public homepage. */
-function Credits() {
+export function Credits() {
   return (
     <div className="fh-credits" data-example-sponsors={SPONSORS_ARE_EXAMPLES || undefined}>
       <div className="fh-credits-col">
@@ -917,13 +917,14 @@ function Credits() {
 
 // ── Chrome: header, account menu, stop bar ───────────────────────────────────
 
-function AccountMenu({
+export function AccountMenu({
   name,
   groupName,
   roleLabel,
   logoutHref,
   avatarUrl,
   onEditProfile,
+  links,
 }: {
   name: string;
   groupName: string | null;
@@ -933,6 +934,8 @@ function AccountMenu({
   avatarUrl?: string | null;
   /** Faci only: shows "Edit Profile" in the menu. */
   onEditProfile?: () => void;
+  /** Extra pages above Log Out (staff home: Big screen). */
+  links?: { href: string; label: string }[];
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -993,6 +996,11 @@ function AccountMenu({
               <Pencil size={15} aria-hidden /> Edit Profile
             </button>
           )}
+          {links?.map((l) => (
+            <Link key={l.href} href={l.href} role="menuitem" className="fh-menu-link" onClick={() => setOpen(false)}>
+              {l.label}
+            </Link>
+          ))}
           <button type="button" role="menuitem" onClick={signOut}>
             Log Out
           </button>
@@ -1008,7 +1016,7 @@ function AccountMenu({
  * fill animation stutter. The fill animates width, not transform: Safari can
  * skip transform transitions under the header's backdrop-filter.
  */
-function StopBar({ stops }: { stops: readonly { id: string; label: string }[] }) {
+export function StopBar({ stops }: { stops: readonly { id: string; label: string }[] }) {
   const [active, setActive] = useState(0);
 
   useEffect(() => {

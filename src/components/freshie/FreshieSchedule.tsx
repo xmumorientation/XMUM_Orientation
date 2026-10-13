@@ -4,16 +4,19 @@ import { Gamepad2, Info, Star, UtensilsCrossed, type LucideIcon } from "lucide-r
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { vxSlab, vxDisplay } from "@/components/home/fonts";
+import { useEventCountdown } from "@/components/useEventCountdown";
 import { useGroup } from "@/components/useGroup";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import type { ScheduleItem } from "@/lib/types";
 
 import "./freshie.css";
-import { themeFromColor } from "./groupTheme";
+import "@/components/staff/staff-home.css";
+import { themeFromColor, VORTEXA_THEME } from "./groupTheme";
 
 // Logged-in Freshie schedule. Same night layout as the welcome page
 // schedule (day switcher + timeline cards), filled from schedule_items
-// so an admin edit shows up here.
+// so an admin edit shows up here. With `vortexa` (HOGM) it uses the
+// Welcome page colours (.fh-vx) and marks the item that is on now.
 
 const DAY_META: Record<string, { weekday: string; date: string }> = {
   "Day 1": { weekday: "SAT", date: "28 Nov" },
@@ -37,9 +40,11 @@ function whenLabel(item: ScheduleItem) {
   return `${time} · ${venue}`;
 }
 
-export function FreshieSchedule() {
+export function FreshieSchedule({ vortexa = false }: { vortexa?: boolean }) {
   const { group } = useGroup();
-  const theme = themeFromColor(group?.color);
+  const theme = vortexa ? VORTEXA_THEME : themeFromColor(group?.color);
+  const { live, itemId } = useEventCountdown();
+  const nowId = vortexa && live ? itemId : null;
   const supabase = useMemo(() => supabaseBrowser(), []);
   const [items, setItems] = useState<ScheduleItem[] | null>(null);
   const [active, setActive] = useState(0);
@@ -92,7 +97,7 @@ export function FreshieSchedule() {
 
   return (
     <div
-      className={`fh fh-sched ${vxSlab.variable} ${vxDisplay.variable}`}
+      className={`fh fh-sched${vortexa ? " fh-vx" : ""} ${vxSlab.variable} ${vxDisplay.variable}`}
       style={
         {
           "--fh-accent": theme.accent,
@@ -110,7 +115,10 @@ export function FreshieSchedule() {
 
       <div className="fh-sched-inner">
         <div className="fh-sched-side">
-          <h1 className="fh-h2 fh-slab">Schedule</h1>
+          <div className="fh-sched-title">
+            {vortexa && <p className="fh-eyebrow fh-mono">Two-day programme</p>}
+            <h1 className="fh-h2 fh-slab">Schedule</h1>
+          </div>
           {days.length > 0 && (
             <div className="fh-days" role="tablist" aria-label="Orientation day">
               {days.map((label, index) => {
@@ -158,9 +166,13 @@ export function FreshieSchedule() {
                 <li
                   key={item.id}
                   className="fh-sched-item"
+                  data-now={item.id === nowId || undefined}
                   style={{ "--dot": tag?.color ?? "#0DFCFD" } as React.CSSProperties}
                 >
-                  <b>{item.title}</b>
+                  <b>
+                    {item.id === nowId && <span className="fh-sched-now fh-mono">NOW</span>}
+                    {item.title}
+                  </b>
                   <small className="fh-mono">{note ? `${when} · ${note}` : when}</small>
                   {tag && (
                     <span className="fh-sched-tag fh-mono" style={{ color: tag.color }}>

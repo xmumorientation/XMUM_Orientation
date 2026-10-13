@@ -29,6 +29,7 @@ export function TopNav({
   name,
   groupName,
   canEditProfile,
+  primaryHref,
   onSignOut,
 }: {
   items: TopNavItem[];
@@ -37,6 +38,8 @@ export function TopNav({
   name: string;
   groupName: string | null;
   canEditProfile: boolean;
+  /** This link shows as a yellow pill (the ops crew's Ops), like the tab bar's center button. */
+  primaryHref?: string;
   onSignOut: () => void;
 }) {
   const router = useRouter();
@@ -76,7 +79,7 @@ export function TopNav({
           <Link
             key={item.href}
             href={item.href}
-            className="vx-topnav-link"
+            className={item.href === primaryHref ? "vx-topnav-link vx-topnav-link-primary" : "vx-topnav-link"}
             aria-current={isActive(item.href) ? "page" : undefined}
           >
             {item.label}
