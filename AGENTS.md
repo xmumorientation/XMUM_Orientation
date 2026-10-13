@@ -14,16 +14,18 @@ When you finish work from it, record what was done in its "Done" section.
 
 ## Rules
 
-### Freshie Home: per-group colours
+### Freshie and Faci pages: per-group colours
 
-All Freshie groups share one Freshie Home page (`src/components/freshie/`). Layout, buttons and logic are the same for every group. Each group can have its own colour scheme.
+All Freshie groups share one set of pages (Freshie Home, Items, Schedule; Facilitators use the same Home). Layout, buttons and logic are the same for every group. Each group has its own colour.
 
-- Each group's colours live in `GROUP_THEMES` in [groupTheme.ts](src/components/freshie/groupTheme.ts), keyed by group id. Change a group's colours there, not in the components.
-- Today a group theme has two colours, `accent` and `glow`, exposed as `var(--fh-accent)` and `var(--fh-glow)`. Use these variables for any colour that should follow the user's group. Do not hardcode a hex value.
-- To make another colour change per group (for example button colour, secondary glow, sparkles), add a field to the `GroupTheme` type, expose it as a new `--fh-*` CSS variable in `FreshieHome`, and use that variable. Give the field a default in `DEFAULT_GROUP_THEME`, so groups without their own value still work.
-- Many colours in [freshie.css](src/components/freshie/freshie.css) are still fixed (for example `--fh-blue`, `--fh-pink`, and the pink glow and sparkles in `FreshieHome.tsx`). They are the same for every group today. Move them into the group theme with the step above when a group needs them to differ.
-- Do not branch on group id in components (for example `if (groupId === 3)`). Put the difference in `GROUP_THEMES` instead.
-- Do not copy the page into one copy per group (for example `Group3Home.tsx`). There is one page, and each group's look comes from its theme.
+- A group's colour is **one value, `groups.color`**, set by Admin in Admin → Freshies (Color). It is not in the code. A missing or invalid value falls back to the default blue (`DEFAULT_GROUP_COLOR`).
+- [groupTheme.ts](src/components/freshie/groupTheme.ts) `themeFromColor()` derives the rest from that one colour: `accent`, `glow`, `accentLight`, `onAccent` (text on an accent fill), `glowStrength`, `glowSpread` and `partner`. Change how colours are derived there, not in the components.
+- They reach the page as CSS variables: `--fh-accent`, `--fh-glow`, `--fh-blue` (same as accent), `--fh-blue-light`, `--fh-on-blue`, `--fh-glow-strength`, `--fh-glow-spread`, `--fh-partner`. Use these for any colour that should follow the group. Do not hardcode a hex value. Text on an accent fill uses `var(--fh-on-blue)`, so a light group colour still reads.
+- The variables are set in `AppShell` (for Freshie and Faci) and on the roots of `FreshieHome`, `FreshieItems` and `FreshieSchedule`; sheets and dialogs rendered outside them (portals) get them passed in. When adding a variable, set it in all of those places.
+- To make another colour follow the group (for example sparkles or a secondary glow), add a field to the `GroupTheme` type, compute it in `themeFromColor()`, expose it as a new `--fh-*` variable where the others are set, and use that variable.
+- Some colours in [freshie.css](src/components/freshie/freshie.css) are still fixed for every group (for example `--fh-pink` and the pink glow and sparkles in `FreshieHome.tsx`). Move them into the theme with the step above if a group needs them to differ.
+- Do not branch on group id in components (for example `if (groupId === 3)`). Derive the difference from the group's colour in `themeFromColor()` instead.
+- Do not copy a page per group (for example `Group3Home.tsx`). There is one page, and each group's look comes from its colour.
 
 ## Other references
 
