@@ -54,7 +54,7 @@ export async function fetchTokenGroups(inventory?: Promise<PuzzleInventoryItem[]
   try {
     const [{ data: groupsData, error: gErr }, { data: invData, error: iErr }] = await Promise.all([
       supabase.from("groups").select("*").order("id"),
-      inventory ? inventory.then(data => ({ data, error: null })) : supabase.from("puzzle_inventory").select("*"),
+      (inventory ?? fetchPuzzleInventory()).then(data => ({ data, error: null })),
     ]);
 
     if (!gErr && groupsData && groupsData.length > 0) {
@@ -144,12 +144,26 @@ export async function fetchTokenLogs(groupId?: number): Promise<TokenLog[]> {
   return allLogs;
 }
 
+// Puzzle pieces come from `inventory` + `items`, where a Day 2 station win
+// (fn_day2_challenge) writes them; the same rows the Freshie Items page shows.
+// (`puzzle_inventory` from the old token system is not written by the game.)
+// Mapped to this page's shape: B1 = 1, A3 = 2, TF = 3 (LOCATION_NAMES).
+const LOCATION_ID: Record<string, number> = { B1: 1, A3: 2, TF: 3 };
+
+type InventoryPieceRow = {
+  id: number;
+  group_id: number;
+  created_at: string;
+  items: { puzzle_location: string | null; puzzle_index: number | null } | null;
+};
+
 export async function fetchPuzzleInventory(groupId?: number): Promise<PuzzleInventoryItem[]> {
   const supabase = supabaseBrowser();
   try {
     let query = supabase
-      .from("puzzle_inventory")
-      .select("*")
+      .from("inventory")
+      .select("id, group_id, created_at, items!inner(type, puzzle_location, puzzle_index)")
+      .eq("items.type", "puzzle")
       .order("created_at", { ascending: false });
 
     if (groupId) {
@@ -158,8 +172,21 @@ export async function fetchPuzzleInventory(groupId?: number): Promise<PuzzleInve
 
     const { data, error } = await query;
     if (!error && data) {
-      setLocalItem("puzzle_inv", data);
-      return data as PuzzleInventoryItem[];
+      const pieces: PuzzleInventoryItem[] = (data as unknown as InventoryPieceRow[])
+        .filter((row) => row.items?.puzzle_location && LOCATION_ID[row.items.puzzle_location])
+        .map((row) => {
+          const loc = LOCATION_ID[row.items!.puzzle_location!];
+          return {
+            inventory_id: row.id,
+            group_id: row.group_id,
+            location_id: loc,
+            piece_id: `LOC${loc}_P${row.items!.puzzle_index ?? 0}`,
+            station_id: null,
+            created_at: row.created_at,
+          };
+        });
+      setLocalItem("puzzle_inv", pieces);
+      return pieces;
     }
   } catch (err) {
     console.warn("Supabase fetchPuzzleInventory fallback:", err);

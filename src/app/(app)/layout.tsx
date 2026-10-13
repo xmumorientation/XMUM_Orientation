@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { AppShell } from "@/components/AppShell";
+import { FaciLocationProvider } from "@/components/FaciLocationTracker";
 import { PhaseTimerProvider } from "@/components/PhaseTimerProvider";
 import { ProfileProvider } from "@/components/ProfileProvider";
 import { supabaseServer } from "@/lib/supabase/server";
@@ -37,7 +38,9 @@ export default async function AppLayout({
   return (
     <ProfileProvider profile={profile as Profile} initialGroup={group}>
       <PhaseTimerProvider>
-        <AppShell>{children}</AppShell>
+        <FaciLocationProvider>
+          <AppShell>{children}</AppShell>
+        </FaciLocationProvider>
       </PhaseTimerProvider>
     </ProfileProvider>
   );

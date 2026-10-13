@@ -4,15 +4,9 @@
    header and .sp to <main> on these pages. Visual only: it re-maps the light
    utility classes the pages already use, so markup and behaviour stay. */
 
-/* ── Shell: desktop sidebar, phase timer, drawer ─────────────────────────── */
-.staff-dashboard-shell > aside nav a[href="/dashboard"]:not([aria-current="page"]),
+/* ── Shell: phase timer, drawer ──────────────────────────────────────────── */
 .sd-drawer nav a[href="/dashboard"]:not([aria-current="page"]) { background: transparent; color: #c4d6ee; }
-.staff-dashboard-shell > aside nav a[aria-current="page"],
 .sd-drawer nav a[aria-current="page"] { background: #0b2246; color: #0dfcfd; box-shadow: none; }
-.staff-dashboard-shell > aside nav a > span:first-child { background: #0b2246; color: #0dfcfd; }
-.staff-dashboard-shell > aside .chip { background: transparent; border: 0; padding: 0; color: #c4d6ee; font-size: 14px; }
-.staff-dashboard-shell > aside .text-ink-faint { color: #a4b8d1; }
-.staff-dashboard-shell > aside .border-paper-200 { border-color: #16305a; }
 .staff-dashboard-shell .app-phase-timer:not(.is-endgame) { background: #0b2246; color: #eef5ff; }
 .staff-dashboard-shell .app-phase-timer > span:first-child { font-size: 12px; color: #0dfcfd; }
 

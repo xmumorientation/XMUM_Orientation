@@ -40,26 +40,28 @@
   --fh-partner: #fc9e3d;
   /* Height of the fixed header + stop bar, and of the bottom tab bar. */
   --fh-top: calc(96px + env(safe-area-inset-top, 0px));
-  --fh-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+  --fh-bottom: calc(72px + min(env(safe-area-inset-bottom, 0px), 34px)); /* capped: see .fh-tabbar */
 
   position: relative;
   isolation: isolate;
   color: var(--fh-text);
 }
 @media (min-width: 1024px) {
-  .fh { --fh-bottom: 0px; }
+  /* AppShell's TopNav sits above the scroller in normal flow, so the stops
+     only need a little room at the top and no tab bar room at the bottom. */
+  .fh { --fh-bottom: 0px; --fh-top: 24px; }
 }
 
-/* One stop per screen, this page only (class set by FreshieHome). Same rule
-   as the public homepage: mandatory snap (one scroll = next stop) on large
-   screens, gentle proximity snap on phones and tablets so taller stops can
-   still be read. */
-html.fh-snap { scroll-snap-type: y proximity; }
+/* One stop per screen, this page only (class set by FreshieHome): mandatory
+   snap (one scroll = next stop) on large screens, gentle proximity snap on
+   phones and tablets so taller stops can still be read. The snap sits on
+   AppShell's .app-scroll, the scroller on Freshie / Faci pages. */
+html.fh-snap .app-scroll { scroll-snap-type: y proximity; }
 @media (min-width: 1024px) and (min-height: 700px) {
-  html.fh-snap { scroll-snap-type: y mandatory; }
+  html.fh-snap .app-scroll { scroll-snap-type: y mandatory; }
 }
 @media (prefers-reduced-motion: reduce) {
-  html.fh-snap { scroll-snap-type: none; }
+  html.fh-snap .app-scroll { scroll-snap-type: none; }
 }
 
 /* Full-bleed black ground (AppShell paints the root black on Freshie Home;
@@ -98,10 +100,6 @@ html.fh-snap { overflow-x: hidden; }
   position: absolute; top: 0; bottom: 0; z-index: -1; overflow: hidden; pointer-events: none;
   left: calc(50% - 50vw); width: 100vw;
   background: linear-gradient(180deg, #030b1c 0%, #04102a 30%, #071334 52%, #0d1240 70%, #160f44 84%, #160f44 100%);
-}
-@media (min-width: 1024px) {
-  /* Beside AppShell's 16rem sidebar. */
-  .fh-sky { left: calc(50% - (100vw - 16rem) / 2); width: calc(100vw - 16rem); }
 }
 .fh-sky-dots {
   position: absolute; inset: 0;
@@ -194,6 +192,11 @@ html.fh-snap { overflow-x: hidden; }
   display: flex; align-items: center; justify-content: center;
   box-shadow: 0 0 0 2px var(--fh-ink), 0 0 0 3px var(--fh-line-2);
 }
+/* Freshie accounts are shared per group, so the button reads "Freshie ▾", not initials. */
+.fh-avatar-label {
+  width: auto; height: auto; min-height: 44px; padding: 8px 12px; gap: 8px; border-radius: 12px;
+  background: transparent; color: var(--fh-text); box-shadow: none;
+}
 .fh-menu {
   position: absolute; right: 0; top: calc(100% + 8px); z-index: 50; width: 220px;
   background: var(--fh-ink-3); border: 1px solid var(--fh-line-2); border-radius: 16px; padding: 14px;
@@ -206,16 +209,29 @@ html.fh-snap { overflow-x: hidden; }
   background: transparent; border: 1px solid var(--fh-line-2); color: var(--fh-text); font-weight: 700; font-size: 14px;
 }
 .fh-menu button:hover { border-color: var(--fh-pink); color: var(--fh-pink); }
+.fh-menu .fh-menu-edit { display: flex; align-items: center; justify-content: center; gap: 8px; }
+.fh-menu .fh-menu-edit:hover { border-color: var(--fh-accent); color: var(--fh-accent); }
+.fh-menu .fh-menu-edit + button { margin-top: 8px; }
+/* Faci: the header button is their FaciAvatar (same photo or initials as their card). */
+.fh-avatar.fh-avatar-me { width: auto; height: auto; padding: 0; background: none; box-shadow: none; border-radius: 50%; }
+.fh-avatar.fh-avatar-me:focus-visible { outline-offset: 2px; }
 .fh-stopbar {
   display: flex; align-items: center; gap: 10px; height: 30px; padding-bottom: 6px;
   font-size: 11px; color: var(--fh-mute); letter-spacing: 0.08em;
 }
 .fh-stopbar b { color: #fff; }
+/* Fixed width (longest label: "Facilitator") so the track keeps its length
+   when the label changes; otherwise the fill shrinks before it grows. */
+.fh-stopbar > span:last-child { flex: none; width: 12.5ch; text-align: right; white-space: nowrap; }
 .fh-stopbar-track { flex: 1; height: 4px; border-radius: 4px; background: var(--fh-ink-3); overflow: hidden; }
 .fh-stopbar-track span { display: block; height: 100%; background: var(--fh-holo); transition: width 0.35s ease; }
 @media (min-width: 1024px) {
-  /* Sit beside AppShell's 16rem sidebar. */
-  .fh-head, .fh-bg { left: 16rem; }
+  /* TopNav carries the logo, role and account menu here; no stop bar (option A). */
+  .fh-head { display: none; }
+  /* Each stop fills the screen below the 60px TopNav. */
+  .fh-stop { min-height: calc(100svh - 60px); }
+  /* The live phase shows as the pill in TopNav instead (option A). */
+  #fh-welcome .fh-phasecard { display: none; }
 }
 
 /* ── Stops ───────────────────────────────────────────────────────────────── */
@@ -250,12 +266,6 @@ html.fh-snap { overflow-x: hidden; }
 @keyframes fh-shimmer { to { background-position: 200% 0; } }
 .fh-hello { margin: -6px 0 4px; font-size: 15px; color: var(--fh-text-2); }
 .fh-hello b { color: #fff; }
-/* Freshie only. One line; a long group name may wrap. Faci keeps the lockup above. */
-.fh-welcome-line {
-  margin: 0; min-width: 0; max-width: 100%; padding-inline: 16px; box-sizing: border-box;
-  font-size: clamp(16px, 4.7vw, 36px); font-weight: 700; line-height: 1.15; letter-spacing: -0.03em;
-}
-.fh-welcome-group { color: var(--fh-accent); }
 
 .fh-countwrap { display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 440px; }
 .fh-clabel { font-size: 11px; letter-spacing: 0.24em; color: var(--fh-mute); }
@@ -304,34 +314,95 @@ html.fh-snap { overflow-x: hidden; }
 .fh-btn-ghost:hover { border-color: var(--fh-accent); color: var(--fh-accent); }
 .fh-btn-block { width: 100%; }
 
-/* ── 02 Group pass ───────────────────────────────────────────────────────── */
-.fh-pass-grid { display: grid; gap: 14px; }
-.fh-pass-side { display: flex; flex-direction: column; gap: 12px; }
-.fh-pass {
-  position: relative; display: grid; grid-template-columns: 1fr 96px; border-radius: 22px;
-  background: linear-gradient(135deg, #0a2350, var(--fh-ink-2) 60%); border: 1px solid var(--fh-line-2);
+/* ── 02 Your Facilitator (Freshie only) ──────────────────────────────────── */
+.fh-faci-sample { border-color: var(--fh-orange); color: var(--fh-orange); }
+.fh-facis { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.fh-faci {
+  padding: 12px 14px; border-radius: 20px; border: 1px solid var(--fh-line); background: var(--fh-ink-2);
+  transition: border-color 0.15s ease;
 }
-.fh-pass::before, .fh-pass::after {
-  content: ""; position: absolute; top: 50%; width: 20px; height: 20px; border-radius: 50%;
-  background: var(--fh-ink); border: 1px solid var(--fh-accent); transform: translateY(-50%);
+.fh-faci[data-open] {
+  background: linear-gradient(var(--fh-ink-2), var(--fh-ink-2)) padding-box, var(--fh-holo) border-box;
+  border: 1.5px solid transparent;
 }
-.fh-pass::before { left: -11px; clip-path: inset(0 0 0 50%); }
-.fh-pass::after { right: -11px; clip-path: inset(0 50% 0 0); }
-.fh-pass-main { padding: 20px; }
-.fh-pass-group { font-weight: 700; font-size: 17px; margin-top: 4px; }
-.fh-pass-num { font-size: clamp(64px, 18vw, 96px); line-height: 1; margin-top: 8px; font-variant-numeric: tabular-nums; }
-.fh-pass-unit { font-size: 13px; color: var(--fh-mute); margin-top: 2px; }
-.fh-pass-stub {
-  border-left: 2px dashed var(--fh-accent);
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
-  font-size: 10px; letter-spacing: 0.16em; color: var(--fh-mute); text-align: center; padding: 10px 6px;
+.fh-faci-head { position: relative; display: grid; grid-template-columns: 56px 1fr auto; align-items: center; gap: 14px; }
+.fh-faci-avatar {
+  /* Size comes from FaciAvatar (inline width, height, font-size). */
+  display: block; flex: none; box-sizing: border-box; width: 56px; height: 56px; border-radius: 50%; padding: 2.5px; background: var(--fh-holo);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--fh-glow) 30%, transparent);
 }
-.fh-pass-stub b { font-size: 24px; color: #fff; letter-spacing: 0; }
-.fh-live { display: inline-flex; align-items: center; gap: 6px; color: var(--fh-accent); }
-.fh-live i { width: 7px; height: 7px; border-radius: 50%; background: var(--fh-accent); box-shadow: 0 0 8px var(--fh-accent); }
-@media (prefers-reduced-motion: no-preference) {
-  .fh-live i { animation: fh-pulse 2s ease-in-out infinite; }
+.fh-faci-avatar.fh-faci-avatar-plain { padding: 0; background: none; box-shadow: none; }
+.fh-faci-avatar.fh-faci-avatar-plain > span { background: var(--fh-accent); }
+.fh-faci-avatar > span, .fh-faci-avatar > img {
+  display: grid; place-items: center; width: 100%; height: 100%; border-radius: 50%; object-fit: cover;
+  background: radial-gradient(circle at 30% 30%, color-mix(in srgb, var(--fh-accent) 70%, #fff), var(--fh-accent) 70%);
+  color: var(--fh-on-blue); font-size: inherit;
 }
+.fh-faci-id { display: grid; gap: 8px; justify-items: start; min-width: 0; }
+.fh-faci-toggle { all: unset; cursor: pointer; min-width: 0; max-width: 100%; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+/* Whole row toggles the card. */
+.fh-faci-toggle::after { content: ""; position: absolute; inset: -12px -14px; border-radius: 20px; }
+.fh-faci-toggle:focus-visible::after { outline: 2px solid var(--fh-accent); outline-offset: -2px; }
+.fh-faci-name { display: block; font-size: 18px; line-height: 1.15; overflow-wrap: anywhere; }
+.fh-faci-links { position: relative; z-index: 1; display: flex; flex-wrap: wrap; gap: 6px; }
+.fh-faci-ig {
+  display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px;
+  border-radius: 999px; font-size: 12.5px; font-weight: 600; color: #fff; text-decoration: none;
+  background: linear-gradient(100deg, #8a4fd8, #fe06ab 55%, #fc9e3d);
+}
+/* No handle yet: grey and inactive. */
+.fh-faci-ig[data-empty] { background: var(--fh-ink-3); color: var(--fh-mute); border: 1px solid var(--fh-line-2); cursor: not-allowed; }
+.fh-faci-you { font-size: 9.5px; letter-spacing: 0.14em; padding: 3px 7px; border-radius: 999px; background: var(--fh-accent); color: var(--fh-on-blue); font-weight: 700; }
+.fh-faci-edit {
+  position: absolute; top: 4px; right: -6px; width: 44px; height: 44px; display: grid; place-items: center;
+  border: 0; background: transparent; color: var(--fh-accent); cursor: pointer;
+}
+/* 32px circle inside a 44px tap target. */
+.fh-faci-edit::before {
+  content: ""; position: absolute; inset: 6px; border-radius: 50%;
+  background: var(--fh-ink); border: 1px solid var(--fh-accent);
+}
+.fh-faci-edit svg { position: relative; }
+/* Keep the first lines clear of the edit pencil. */
+.fh-faci[data-me] .fh-faci-body > :not(.fh-faci-edit):not(.fh-faci-langs) { padding-right: 40px; }
+.fh-faci-chev { color: var(--fh-text-2); transition: transform 0.2s ease; }
+.fh-faci[data-open] .fh-faci-chev { transform: rotate(180deg); color: var(--fh-accent); }
+.fh-faci-drawer { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.28s ease; }
+.fh-faci[data-open] .fh-faci-drawer { grid-template-rows: 1fr; }
+.fh-faci-clip { min-height: 0; overflow: hidden; }
+.fh-faci-body {
+  position: relative; display: grid; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--fh-line);
+  opacity: 0; transform: translateY(-6px); transition: opacity 0.2s ease, transform 0.28s ease;
+}
+.fh-faci[data-open] .fh-faci-body { opacity: 1; transform: none; }
+.fh-faci-prog { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--fh-text-2); }
+.fh-faci-prog svg, .fh-faci-langs > svg { color: var(--fh-accent); flex: none; }
+.fh-faci-intro { margin: 0; font-size: 14px; line-height: 1.45; color: var(--fh-text); }
+.fh-faci-langs { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.fh-faci-empty { font-size: 13px; color: var(--fh-mute); }
+.fh-faci-solo { margin: 12px 2px 0; font-size: 13.5px; color: var(--fh-text-2); }
+.fh-faci-lang { font-size: 12px; padding: 3px 9px; border-radius: 999px; background: var(--fh-ink); border: 1px solid var(--fh-line-2); color: var(--fh-text-2); }
+@media (prefers-reduced-motion: reduce) { .fh-faci-chev, .fh-faci-drawer, .fh-faci-body { transition: none; } }
+
+/* ── 03 Your progress ────────────────────────────────────────────────────── */
+.fh-prog { display: grid; gap: 12px; }
+/* One heading style for Tokens, Puzzle pieces and FAQ. Scoped to .fh-prog so
+   the .fh-next / .fh-tile defaults (20px / 14.5px b) do not win. */
+.fh-prog .fh-prog-title { display: block; margin: 0; font-family: inherit; font-size: 15px; font-weight: 700; line-height: 1.3; color: var(--fh-text); }
+.fh-prog .fh-prog-num { display: block; font-size: clamp(40px, 12vw, 56px); line-height: 1; margin: 4px 0 0; font-variant-numeric: tabular-nums; }
+.fh-prog-puzzle {
+  border-radius: 22px; padding: 14px 14px 16px; background: var(--fh-ink-2);
+  border: 1px solid color-mix(in srgb, #e0b4fc 35%, var(--fh-line));
+}
+.fh-prog-head { display: flex; align-items: center; gap: 10px; text-decoration: none; color: inherit; padding: 0 2px 10px; }
+.fh-prog-head small { font-size: 12px; color: var(--fh-text-2); }
+.fh-prog-more { margin-left: auto; display: inline-flex; align-items: center; gap: 4px; font-size: 13px; color: var(--fh-text-2); }
+.fh-prog-keys .fi-sec { margin-top: 0; }
+.fh-prog-keys .fi-grid { border: 0; background: transparent; padding: 4px 0 0; }
+.fh-prog-faq { display: grid; grid-template-columns: auto auto 1fr auto; }
+.fh-prog-faq small { font-size: 13px; color: var(--fh-mute); }
+.fh-prog-faq > svg { color: var(--fh-text-2); }
+
 @keyframes fh-pulse { 50% { opacity: 0.35; } }
 
 .fh-pending { border-radius: 22px; padding: 18px 20px; border: 1px solid rgba(252, 158, 61, 0.5); background: rgba(252, 158, 61, 0.07); }
@@ -387,21 +458,50 @@ html.fh-snap { overflow-x: hidden; }
 .fh-check-title small { display: block; margin-top: 2px; font-size: 13px; color: var(--fh-mute); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .fh-check-chev { color: var(--fh-mute); transition: transform 0.2s ease; }
 .fh-check.is-open .fh-check-chev { transform: rotate(180deg); }
-.fh-check-body { padding: 0 16px 16px; border-top: 1px solid var(--fh-line); }
+.fh-check-body { padding: 18px 16px 20px; border-top: 1px solid var(--fh-line); }
 .fh-check-body[hidden] { display: none; }
-.fh-check-body > p:first-child { margin-top: 12px; }
+.fh-check-body > p:first-child { margin-top: 0; }
 .fh-check-no { font-size: 12px; letter-spacing: 0.12em; color: var(--fh-accent); }
 .fh-check b { display: block; font-size: 18px; }
-.fh-check p { margin: 4px 0 10px; font-size: 13.5px; color: var(--fh-mute); }
-.fh-check form { display: flex; flex-direction: column; gap: 8px; }
-.fh-check label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--fh-mute); }
+.fh-check p { margin: 0 0 16px; font-size: 13.5px; color: var(--fh-mute); }
+.fh-check form { display: flex; flex-direction: column; gap: 18px; }
+.fh-check label { display: flex; flex-direction: column; gap: 10px; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--fh-mute); }
 .fh-input {
   width: 100%; min-height: 44px; border-radius: 12px; border: 1px solid var(--fh-line-2);
   background: var(--fh-ink); color: var(--fh-text); padding: 10px 12px; font: inherit; letter-spacing: 0; text-transform: none;
 }
 .fh-input:focus { outline: 2px solid var(--fh-accent); outline-offset: 2px; }
-.fh-check .fh-btn { align-self: flex-start; min-height: 44px; }
+.fh-check .fh-btn { align-self: flex-start; min-height: 44px; margin-top: 8px; }
 .fh-check-msg { font-size: 13px; color: var(--fh-text-2); }
+
+/* Take Attendance: Local / International counters, Total = their sum. */
+.fh-count-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.fh-counter { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.fh-stepper {
+  display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; align-items: center; min-height: 52px;
+  border-radius: 14px; border: 1px solid var(--fh-line-2); background: var(--fh-ink); overflow: hidden;
+}
+.fh-stepper:focus-within { border-color: var(--fh-accent); }
+.fh-stepper button {
+  height: 100%; min-height: 52px; display: grid; place-items: center; border: 0; background: transparent;
+  color: var(--fh-accent); cursor: pointer;
+}
+.fh-stepper button:active { background: var(--fh-ink-2); }
+.fh-stepper button:disabled { color: var(--fh-mute); opacity: 0.5; cursor: default; }
+.fh-stepper input {
+  width: 100%; min-width: 0; padding: 0; border: 0; background: transparent; color: var(--fh-text);
+  font-size: 24px; text-align: center; letter-spacing: 0; -moz-appearance: textfield; appearance: textfield;
+}
+.fh-stepper input::-webkit-outer-spin-button, .fh-stepper input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.fh-stepper input:focus { outline: none; }
+.fh-stepper input::placeholder { color: var(--fh-mute); }
+.fh-count-total {
+  display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-radius: 14px;
+  background: color-mix(in srgb, var(--fh-accent) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--fh-accent) 40%, var(--fh-line));
+}
+.fh-count-total span { font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--fh-text-2); }
+.fh-count-total b { font-size: 30px; line-height: 1; font-variant-numeric: tabular-nums; }
 
 /* ── 03 How it works ─────────────────────────────────────────────────────── */
 .fh-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
@@ -427,16 +527,6 @@ html.fh-snap { overflow-x: hidden; }
 .fh-team b { flex: 1; font-weight: 600; font-size: 15px; display: flex; align-items: center; gap: 8px; }
 .fh-you { font-size: 9.5px; letter-spacing: 0.14em; padding: 3px 7px; border-radius: 999px; background: var(--fh-accent); color: var(--fh-on-blue); font-weight: 700; }
 .fh-team-sc { font-size: 18px; color: var(--fh-mute); font-variant-numeric: tabular-nums; }
-
-/* ── 05 Today ────────────────────────────────────────────────────────────── */
-.fh-tl { list-style: none; margin: 0; padding: 0 0 0 22px; border-left: 1px dashed var(--fh-line-2); display: flex; flex-direction: column; gap: 9px; }
-.fh-it { position: relative; padding: 12px 14px; border-radius: 14px; background: var(--fh-ink-2); border: 1px solid var(--fh-line); }
-.fh-it::before {
-  content: ""; position: absolute; left: -29px; top: 50%; width: 12px; height: 12px; border-radius: 50%;
-  background: var(--d); transform: translateY(-50%); box-shadow: 0 0 0 4px var(--fh-ink);
-}
-.fh-it b { display: block; font-size: 15px; }
-.fh-it small { font-size: 10.5px; letter-spacing: 0.12em; color: var(--fh-mute); }
 
 /* ── Freshie schedule page (welcome schedule layout) ─────────────────────── */
 .fh-sched {
@@ -504,7 +594,7 @@ html.fh-snap { overflow-x: hidden; }
    Group colour comes in through --fh-accent / --fh-glow, set on .fi. Lit
    projectors use gold for "the light is back" and the lighting group's own
    colour for "who lit it". */
-.fi, .fi-sheet, .bb {
+.fi, .fi-sheet, .bb, .fh-prog-keys, .fh-prog-tokens {
   --fi-gold: #ffd66b;
   --fi-up: #3ddc97;
   --fi-down: #ff5c7a;
@@ -916,19 +1006,25 @@ html.fh-snap { overflow-x: hidden; }
 
 /* ── Desktop / landscape tablet ──────────────────────────────────────────── */
 @media (min-width: 1024px) {
-  .fh-pass-grid { grid-template-columns: 1.15fr 1fr; align-items: stretch; }
-  .fh-pass-side { justify-content: center; }
+  .fh-facis { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); align-items: start; }
+  .fh-prog { grid-template-columns: 1fr 1fr; }
+  .fh-prog-puzzle { grid-row: span 2; }
   .fh-steps { grid-template-columns: repeat(4, 1fr); gap: 14px; }
   .fh-step { grid-template-columns: 1fr; row-gap: 8px; padding: 22px 20px; align-content: start; }
   .fh-step-ic { grid-row: auto; width: 56px; height: 56px; }
   .fh-board { grid-template-columns: 1fr 1fr; gap: 8px 16px; }
-  .fh-tl, .fh-btn-block { max-width: 640px; }
+  .fh-btn-block { max-width: 640px; }
 }
 
 /* ── Freshie bottom tab bar (every Freshie page, phones/tablets) ────────── */
 .fh-tabbar {
-  position: fixed; inset: auto 0 0 0; z-index: 45;
-  display: flex; align-items: flex-end; padding: 6px 6px env(safe-area-inset-bottom, 0px);
+  /* In normal flow at the bottom of AppShell's screen-high column, not fixed:
+     iOS Safari can place fixed bars short of the screen bottom. */
+  position: relative; flex: none; z-index: 45;
+  /* Bottom inset capped at 34px (the most a real device needs, iPhone home
+     indicator): iPad Chrome reports about 80px while its toolbar is open,
+     which left a blank band under the bar. */
+  display: flex; align-items: flex-end; padding: 6px 6px min(env(safe-area-inset-bottom, 0px), 34px);
   background: rgba(3, 11, 28, 0.95); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
   border-top: 1px solid #16305a;
 }
@@ -950,88 +1046,18 @@ html.fh-snap { overflow-x: hidden; }
   .fh-tabbar { display: none; }
 }
 
-/* Group dashboard trial: team light above a compact event workspace. */
-.fh-operational { --fh-top: calc(60px + env(safe-area-inset-top, 0px)); min-height: 100dvh; }
-.fh-operational .fh-chip { color: var(--fh-text-2); border-color: var(--fh-line-2); }
-.gd { position: relative; max-width: 680px; margin: auto; padding: calc(var(--fh-top) + 20px) 16px 0; }
-.gd-arrival { padding: 24px 20px; border-radius: 24px; background: radial-gradient(ellipse at top right, color-mix(in srgb, var(--fh-glow) 22%, transparent), transparent 75%), #07101f; border: 1px solid color-mix(in srgb, var(--fh-accent) 45%, var(--fh-line)); box-shadow: 0 0 32px color-mix(in srgb, var(--fh-glow) 10%, transparent); }
-.gd-kicker { margin: 0 0 6px; color: var(--fh-text-2); font-size: 14px; }
-.gd-arrival h1 { margin: 0; font-size: 18px; font-weight: 500; }
-.gd-arrival h1 > span { display: block; font-family: var(--font-vx-display), Georgia, serif; font-size: 48px; line-height: 1.2; color: var(--fh-blue-light); }
-.gd-identity { display: flex; align-items: center; gap: 14px; margin-top: 20px; }
-.gd-number { flex-shrink: 0; display: grid; place-items: center; height: 52px; width: 52px; border-radius: 16px; color: var(--fh-on-blue); background: var(--fh-accent); font-size: 24px; font-weight: 700; }
-.gd-group { margin: 0; font-size: 18px; font-weight: 700; overflow-wrap: anywhere; }
-.gd-slogan { margin: 4px 0 0; font-size: 14px; color: var(--fh-text-2); overflow-wrap: anywhere; }
-.gd-plan { margin-top: 20px; padding: 18px; border-radius: 20px; border: 1px solid var(--fh-line-2); background: #07101f; }
-.gd-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-.gd h2 { margin: 0; font-size: 18px; font-weight: 700; }
-.gd-heading a { display: inline-flex; align-items: center; gap: 4px; min-height: 44px; color: var(--fh-text-2); font-size: 14px; }
-.gd-plan > p { font-size: 15px; line-height: 1.5; color: var(--fh-text-2); }
-.gd-plan .gd-plan-title { color: var(--fh-text); font-size: 18px; font-weight: 600; margin-bottom: 4px; }
-.gd-primary { display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 48px; border-radius: 999px; margin-top: 16px; background: var(--fh-yellow); color: #111; font-weight: 700; font-size: 15px; text-decoration: none; }
-.gd-primary:active, .gd-tools a:active { transform: scale(0.98); }
-.gd-progress { display: flex; align-items: center; justify-content: space-between; padding: 20px 4px; gap: 16px; }
-.gd-progress p { margin: 5px 0 0; font-size: 14px; color: var(--fh-text-2); }
-.gd-tokens { display: flex; flex-direction: column; align-items: flex-end; font-size: 34px; font-weight: 700; color: var(--fh-blue-light); min-width: 64px; text-decoration: none; }
-.gd-tokens span { display: flex; align-items: center; gap: 5px; font-size: 13px; color: var(--fh-text-2); }
-.gd-tools { display: grid; gap: 8px; }
-.gd-tools a { display: flex; align-items: center; gap: 14px; padding: 14px 16px; min-height: 64px; border: 1px solid var(--fh-line); background: #07101f; border-radius: 16px; color: var(--fh-text); text-decoration: none; }
-.gd-tools a > svg:first-child { color: var(--fh-blue-light); }
-.gd-tools a > svg:last-child { margin-left: auto; flex-shrink: 0; }
-.gd-tools span { font-size: 16px; font-weight: 600; }
-.gd-tools b { display: block; margin-top: 3px; font-size: 13px; font-weight: 400; color: var(--fh-text-2); }
-.gd-demo-note { font-size: 13px; line-height: 1.5; color: var(--fh-text-2); }
-.gd-agenda { padding: 0; list-style: none; margin: 10px 0; }
-.gd-agenda li { display: grid; gap: 4px; padding: 12px 0; border-bottom: 1px solid var(--fh-line); }
-.gd-agenda span, .gd-agenda small { color: var(--fh-text-2); font-size: 14px; }
-.gd-secondary { position: relative; max-width: 680px; margin: auto; padding: 16px 16px calc(var(--fh-bottom) + 24px); }
-.gd-secondary .fh-stop { min-height: 0; padding: 20px 0; scroll-snap-align: none; content-visibility: auto; contain-intrinsic-size: auto 450px; }
-.gd-secondary .fh-h2 { font-size: 28px; }
-.gd-rules { margin-top: 20px; }
-.gd-rules summary { min-height: 48px; cursor: pointer; font-size: 16px; padding: 14px 0; }
-.gd-secondary .fh-credits { margin-top: 32px; }
-@media (prefers-reduced-motion: reduce) { .gd-primary:active, .gd-tools a:active { transform: none; } }
-
-.fh-operational .fh-sky { opacity: 0.5; }
-.fh-operational .fh-sky-dots { display: none; }
-.gd > .fh-phasecard { margin: 16px 0 0; width: 100%; }
-
-/* Quiet group identity and a readable guide entry. */
-.gd-kicker { font-family: var(--font-vx-slab), Georgia, serif; font-size: 16px; color: var(--fh-text); }
-.fh-operational .fh-avatar { display: flex; align-items: center; gap: 8px; width: auto; min-height: 44px; height: auto; padding: 8px 12px; border-radius: 12px; background: var(--fh-ink-2); color: var(--fh-text); border: 1px solid color-mix(in srgb, var(--fh-accent) 50%, var(--fh-line)); box-shadow: none; font-size: 14px; }
-.fh-operational .fh-menu { background: #07101f; border-color: var(--fh-line-2); border-radius: 18px; box-shadow: 0 12px 32px rgb(0 0 0 / 35%); }
-.gd-rules summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; border: 1px solid var(--fh-line-2); border-radius: 16px; background: #07101f; padding: 16px; list-style: none; }
-.gd-rules summary::-webkit-details-marker { display: none; }
-.gd-rules summary small { display: block; margin-top: 5px; font-size: 14px; color: var(--fh-text-2); }
-.gd-rules[open] summary > svg { transform: rotate(180deg); }
 .fh-sched .fh-h2 { font-family: var(--font-vx-display), Georgia, serif; }
-/* Identity stays in team light, not in every control border. */
-.fh-operational .fh-avatar { border: 0; background: transparent; }
-.gd-credits .fh-credits { margin-top: 12px; padding-top: 0; border-top: 0; width: 100%; gap: 10px; align-items: center; }
-.gd-credits .fh-credits-label { font-family: var(--font-nexus-body), Outfit, sans-serif; letter-spacing: 0; text-transform: none; font-size: 11px; color: var(--fh-text-2); }
-.gd-credits .fh-credits-xmum { max-width: 100px; opacity: 0.8; }
-.gd-credits .fh-sponsor-logo { max-width: 52px; max-height: 24px; }
-.gd-credits .fh-credits-sep { height: 28px; }
-.gd-credits .fh-credits-col { gap: 5px; }
 .fi { font-family: var(--font-nexus-body), Outfit, sans-serif; }
 .fi-top h1 { font-family: var(--font-vx-display), Georgia, serif; font-weight: 400; }
 .fi .fi-phase { border: 0; border-radius: 0; background: transparent; padding: 4px 0; font-family: var(--font-nexus-body), Outfit, sans-serif; letter-spacing: 0; font-size: 13px; color: var(--fh-text-2); }
 .fi .fi-activity-btn { border: 0; background: transparent; border-radius: 8px; padding: 10px 4px 10px 12px; min-height: 44px; color: var(--fh-text); font-family: inherit; }
 .fi .fi-activity-btn:hover { background: var(--fh-ink-2); }
 
-/* Quiet partner strip; roles remain available to screen readers. */
-.gd-credits .fh-credits-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-.gd-credits .fh-credits-example { position: static; display: block; }
-.gd-credits .fh-credits-sep { display: none; }
-.gd-credits .fh-credits { justify-content: center; gap: 24px; }
-.gd-credits .fh-credits-col { flex: none; }
 .fi .fi-group, .fi .fi-sample { font-family: var(--font-nexus-body), Outfit, sans-serif; }
 .fi .fi-sample { letter-spacing: 0; text-transform: none; font-size: 11px; }
 .fi .fi-phase { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; line-height: 1.25; }
 .fi .fi-phase strong { color: var(--fh-text); font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .fi .fi-phase small { font-size: 10px; color: var(--fh-mute); }
-
-.gd-credits .fh-credits[data-example-sponsors="true"] .fh-credits-sponsors::after { content: "Example sponsor"; display: block; font-size: 10px; color: var(--fh-mute); }
 
 .fi-game-status { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 14px; padding: 12px 0; border-top: 1px solid var(--fh-line); border-bottom: 1px solid var(--fh-line); font-size: 13px; color: var(--fh-text-2); }
 .fi-game-clock { display: inline-flex; align-items: center; gap: 7px; }
@@ -1039,3 +1065,21 @@ html.fh-snap { overflow-x: hidden; }
 .fi-game-status[data-phase="endgame"] .fi-game-clock strong { color: var(--fh-orange); }
 
 .fi-shelf-empty { margin: 10px 4px 0; font-size: 13px; line-height: 1.45; color: var(--fh-text-2); text-align: center; }
+/* ── Edit Profile sheet (Faci) ───────────────────────────────────────────── */
+.fh-edit .fi-sheet-title { padding-right: 44px; }
+.fh-edit-form { display: grid; gap: 16px; margin-top: 4px; }
+.fh-edit-photo { display: flex; align-items: center; gap: 14px; }
+.fh-edit-soonbtn {
+  display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 16px; border-radius: 999px;
+  border: 1px solid var(--fh-line-2); background: transparent; color: var(--fh-mute); font: inherit; font-weight: 600; cursor: not-allowed;
+}
+.fh-edit-field { display: grid; gap: 8px; }
+.fh-edit-field > span:first-child { font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--fh-mute); }
+.fh-edit-field textarea { resize: vertical; min-height: 84px; line-height: 1.45; }
+.fh-edit-at { position: relative; display: block; }
+.fh-edit-at i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-style: normal; color: var(--fh-mute); }
+.fh-edit-at .fh-input { padding-left: 28px; }
+.fh-edit-soon { display: grid; gap: 14px; margin: 0; padding: 14px; border-radius: 16px; border: 1px dashed var(--fh-line-2); min-width: 0; }
+.fh-edit-soon legend { display: flex; align-items: center; gap: 8px; padding: 0 6px; font-size: 12.5px; color: var(--fh-text-2); }
+.fh-edit-soontag { font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; padding: 3px 8px; border-radius: 999px; border: 1px solid var(--fh-orange); color: var(--fh-orange); }
+.fh-edit-soon .fh-input { opacity: 0.55; cursor: not-allowed; }

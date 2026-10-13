@@ -36,9 +36,8 @@ export function useConfig() {
       setLoaded(true);
     }
     load();
-    // Unique name per mount: the browser client is shared, so two components
-    // using this hook would otherwise get the same, already-subscribed channel,
-    // and adding .on() to it throws.
+    // AppShell and the page can both call useConfig. Supabase rejects a second
+    // subscription on the same channel name, so each caller gets its own.
     const channel = supabase
       .channel(`config-live-${crypto.randomUUID()}`)
       .on(

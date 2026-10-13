@@ -1,9 +1,5 @@
 /* Event crew workspace: Vortexa lettering with compact, practical controls. */
 .staff-dashboard-shell { background: #030b1c; color: #eef5ff; }
-.staff-dashboard-shell > aside { background: #07101f; border-color: #16305a; color: #eef5ff; }
-.staff-dashboard-shell > aside a, .staff-dashboard-shell > aside button { color: #c4d6ee; }
-.staff-dashboard-shell > aside nav a:hover { background: #0b2246; color: #fff; }
-.staff-dashboard-shell > aside nav a[href="/dashboard"] { background: #0b2246; color: #0dfcfd; }
 .sd { position: relative; min-height: calc(100dvh - 40px); max-width: 900px; margin: auto; padding: 0 4px 24px; font-family: var(--font-nexus-body), Outfit, sans-serif; background: radial-gradient(ellipse at 100% 0, color-mix(in srgb, var(--fh-glow) 9%, transparent), transparent 45%); }
 .sd-header { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: calc(8px + env(safe-area-inset-top, 0px)) 0 24px; }
 .sd-header > img { width: 88px; height: auto; }
@@ -36,7 +32,8 @@
 .sd-primary:hover { background: #e6f000; }
 .sd-tools a:hover, .sd-header button:hover { background: #0b2246; }
 @media (max-width: 600px) { .sd-tools > div { grid-template-columns: 1fr; gap: 8px; } .sd-header { padding-bottom: 16px; } }
-@media (min-width: 1024px) { .sd-header button { display: none; } }
+/* TopNav carries the logo, role and menu on landscape tablets and desktops. */
+@media (min-width: 1024px) { .sd-header { display: none; } .sd .fh-phasecard { display: none; } }
 
 .sd-drawer { background: #07101f; color: #eef5ff; border-color: #16305a; }
 .sd-drawer nav a { color: #c4d6ee; background: transparent; box-shadow: none; }

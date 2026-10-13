@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-import { scheduleTimer } from "@/components/admin/LiveSchedule";
+import { scheduleTimer } from "@/lib/scheduleTimer";
 import { countdownParts, useEventCountdown } from "@/components/useEventCountdown";
 import { supabaseBrowser } from "@/lib/supabase/client";
 

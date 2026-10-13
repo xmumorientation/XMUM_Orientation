@@ -122,7 +122,7 @@ export default function AdminUsersPage() {
     setBusy(false);
   }
 
-  // Role/group/station changes go through a security-definer RPC — direct
+  // Role/group changes go through a security-definer RPC — direct
   // column updates on profiles are revoked to block self-escalation.
   async function updateUser(id: string, patch: Partial<Profile>) {
     setError(null);
@@ -367,7 +367,6 @@ export default function AdminUsersPage() {
                 <th className="px-4 py-3">Name</th>
                 <th className="w-48 px-4 py-3">Role</th>
                 <th className="w-52 px-4 py-3">Group</th>
-                <th className="w-36 px-4 py-3">Station</th>
                 <th className="w-24 px-4 py-3" />
               </tr>
             </thead>
@@ -428,29 +427,6 @@ export default function AdminUsersPage() {
                       )}
                     </td>
                     <td className="px-4 py-2.5">
-                      {HAS_STATION.includes(u.role) ? (
-                        <select
-                          className="input min-h-[36px] text-sm"
-                          aria-label={`${u.full_name} station`}
-                          value={u.station_id ?? ""}
-                          onChange={(e) =>
-                            updateUser(u.id, {
-                              station_id: e.target.value ? Number(e.target.value) : null,
-                            })
-                          }
-                        >
-                          <option value="">No station</option>
-                          {stations.map((s) => (
-                            <option key={s.id} value={s.id}>
-                              {s.name} · Day {s.day} · {s.code}
-                            </option>
-                          ))}
-                        </select>
-                      ) : (
-                        <span className="text-ink-faint">—</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-2.5">
                       {!isGroupLogin && (
                         <div className="flex justify-end gap-3">
                           <button
@@ -477,7 +453,7 @@ export default function AdminUsersPage() {
               })}
               {visible.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-4 py-8 text-center text-ink-faint">
+                  <td colSpan={4} className="px-4 py-8 text-center text-ink-faint">
                     {filtered ? "No accounts match these filters." : "No accounts yet."}
                   </td>
                 </tr>
@@ -640,7 +616,7 @@ export default function AdminUsersPage() {
       <Dialog open={importOpen} onOpenChange={setImportOpen}>
         <DialogContent
           title="Import Committee, Faci, GM from CSV"
-          description="Always dry-run first. Passwords are shown once after a real import."
+          description="Choose a file or paste the rows. Always dry-run first. Passwords are shown once after a real import."
           className="max-h-[90dvh] max-w-2xl"
         >
           <div className="space-y-2">
@@ -648,6 +624,22 @@ export default function AdminUsersPage() {
               Columns: <code>name,email,role,group,station</code> — role ∈{" "}
               faci/gm/guardian_gm/hof/hogm/committee/admin.
             </p>
+            <label className="btn-secondary inline-flex cursor-pointer items-center">
+              Choose CSV file…
+              <input
+                type="file"
+                accept=".csv,text/csv"
+                className="sr-only"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  e.target.value = "";
+                  if (!file) return;
+                  setCsv((await file.text()).replace(/^\uFEFF/, ""));
+                  setResult(null);
+                  setError(null);
+                }}
+              />
+            </label>
             <textarea
               className="input min-h-[120px] py-2 font-mono text-xs"
               placeholder={"name,email,role,group,station\nAlice Tan,alice@xmu.edu.my,faci,1,\nBob Lim,bob@xmu.edu.my,gm,,3"}
@@ -670,6 +662,9 @@ export default function AdminUsersPage() {
                 Import
               </button>
             </div>
+            {csv.trim() && !result?.dryRun && (
+              <p className="text-xs text-ink-faint">Run Dry run first. Import turns on once every row checks out.</p>
+            )}
 
             {result?.dryRun && (
               <div className="rounded-xl bg-paper-100 p-3 text-sm">

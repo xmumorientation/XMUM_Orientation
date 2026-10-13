@@ -10,8 +10,12 @@ import {
 } from "@/components/ui";
 import { GameToggles } from "@/components/admin/GameToggles";
 import { usePhaseTimer } from "@/components/PhaseTimerProvider";
-import { LiveSchedule } from "@/components/admin/LiveSchedule";
 import { NowOnWelcome } from "@/components/admin/NowOnWelcome";
+import {
+  type AdminDayFilter,
+  readAdminDayFilter,
+  saveAdminDayFilter,
+} from "@/lib/adminDayFilter";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { cn, friendlyError } from "@/lib/utils";
 
@@ -26,7 +30,7 @@ interface LiveOps {
 }
 
 // FR-11.5 kill-switches + FR-11.6 live ops + FR-10.1 games (GameToggles,
-// started and ended by hand) + the schedule's sessions and timers (LiveSchedule).
+// started and ended by hand), filtered by the Day selector (All / Day 1 / Day 2).
 export default function AdminControlRoomPage() {
   const supabase = useMemo(() => supabaseBrowser(), []);
   const [ops, setOps] = useState<LiveOps | null>(null);
@@ -34,11 +38,16 @@ export default function AdminControlRoomPage() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  // Day filter beside the title: that day's games and schedule only.
+  // Day filter beside the title: that day's games only (or both with All).
   const { phases } = usePhaseTimer();
-  const [day, setDay] = useState<"Day 1" | "Day 2" | null>(null);
+  const [day, setDay] = useState<AdminDayFilter | null>(null);
   const day1Done = phases.find((p) => p.key === "day1")?.state === "ended";
-  const shownDay = day ?? (day1Done ? "Day 2" : "Day 1");
+  const shownDay: AdminDayFilter = day ?? (day1Done ? "Day 2" : "Day 1");
+
+  useEffect(() => {
+    const saved = readAdminDayFilter();
+    if (saved) setDay(saved);
+  }, []);
 
   const load = useCallback(async () => {
     const [{ data: o }, { data: cfg }] = await Promise.all([
@@ -99,16 +108,23 @@ export default function AdminControlRoomPage() {
             <select
               aria-label="Day"
               value={shownDay}
-              onChange={(e) => setDay(e.target.value as "Day 1" | "Day 2")}
+              onChange={(e) => {
+                const next = e.target.value as AdminDayFilter;
+                setDay(next);
+                saveAdminDayFilter(next);
+              }}
               className="input min-h-[52px] w-auto py-2 pl-4 pr-10 text-xl font-bold"
             >
+              <option value="all">All</option>
               <option value="Day 1">Day 1</option>
               <option value="Day 2">Day 2</option>
             </select>
-            <GameToggles day={shownDay} onError={setError} onNotice={flashNotice} />
+            {(shownDay === "all" ? (["Day 1", "Day 2"] as const) : [shownDay]).map((d) => (
+              <GameToggles key={d} day={d} onError={setError} onNotice={flashNotice} />
+            ))}
           </div>
         }
-        subtitle={`${shownDay}: start and end the game. Schedule items run by their planned times; adjust them below.`}
+        subtitle={`${shownDay === "all" ? "Both days" : shownDay}: start and end the game. The Welcome page follows the planned schedule times.`}
       />
       <NowOnWelcome onError={setError} onNotice={flashNotice} />
       <ErrorBanner message={error} />
@@ -140,9 +156,7 @@ export default function AdminControlRoomPage() {
         </div>
       )}
 
-      <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1.4fr)_minmax(20rem,0.6fr)]">
-        <LiveSchedule day={shownDay} onError={setError} onNotice={flashNotice} />
-
+      <div className="grid items-start gap-4">
         <section>
           <h2 className="mb-2 font-semibold">Kill-switches</h2>
           <Card className="divide-y divide-paper-200 p-0">

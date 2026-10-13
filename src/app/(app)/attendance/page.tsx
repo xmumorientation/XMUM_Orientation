@@ -5,77 +5,82 @@ import { useEffect, useMemo, useState } from "react";
 import { useProfile } from "@/components/ProfileProvider";
 import { Card, ErrorBanner, PageTitle, Spinner } from "@/components/ui";
 import { supabaseBrowser } from "@/lib/supabase/client";
-import type { AttendanceSession } from "@/lib/types";
-import { cn, friendlyError } from "@/lib/utils";
+import { friendlyError } from "@/lib/utils";
+
+type Saved = { headcount: number; local_count: number | null; international_count: number | null };
 
 export default function AttendancePage() {
   const profile = useProfile();
   const supabase = useMemo(() => supabaseBrowser(), []);
-  const [sessions, setSessions] = useState<AttendanceSession[]>([]);
-  const [headcount, setHeadcount] = useState("");
-  const [savedHeadcount, setSavedHeadcount] = useState<number | null>(null);
+  const [total, setTotal] = useState("");
+  const [local, setLocal] = useState("");
+  const [international, setInternational] = useState("");
+  const [saved, setSaved] = useState<Saved | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  const activeSession = useMemo(() => {
-    return sessions.find((s) => !s.closed) ?? sessions[0] ?? null;
-  }, [sessions]);
-
-  const sessionId = activeSession?.id ?? null;
+  const groupId = profile.group_id;
 
   useEffect(() => {
-    let active = true;
-    async function load() {
-      const { data: sess } = await supabase
-        .from("attendance_sessions")
-        .select("*")
-        .order("id", { ascending: false });
-      if (!active) return;
-      setSessions((sess as AttendanceSession[]) ?? []);
+    if (!groupId) {
       setLoading(false);
+      return;
     }
-    load();
-    return () => {
-      active = false;
-    };
-  }, [supabase]);
-
-  useEffect(() => {
-    if (!sessionId || !profile.group_id) return;
     let active = true;
     async function loadHeadcount() {
       const { data: hc } = await supabase
-        .from("attendance_headcounts")
-        .select("headcount")
-        .eq("session_id", sessionId!)
-        .eq("group_id", profile.group_id!)
+        .from("group_headcounts")
+        .select("headcount, local_count, international_count")
+        .eq("group_id", groupId!)
         .maybeSingle();
       if (!active) return;
-      if (hc) {
-        setSavedHeadcount((hc as { headcount: number }).headcount);
-        setHeadcount(String((hc as { headcount: number }).headcount));
-      } else {
-        setSavedHeadcount(null);
-        setHeadcount("");
-      }
+      const row = hc as Saved | null;
+      setSaved(row);
+      setTotal(row ? String(row.headcount) : "");
+      setLocal(row?.local_count == null ? "" : String(row.local_count));
+      setInternational(row?.international_count == null ? "" : String(row.international_count));
+      setLoading(false);
     }
     loadHeadcount();
+    const channel = supabase
+      .channel(`attendance-headcount-${groupId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "group_headcounts", filter: `group_id=eq.${groupId}` },
+        loadHeadcount
+      )
+      .subscribe();
     return () => {
       active = false;
+      supabase.removeChannel(channel);
     };
-  }, [supabase, sessionId, profile.group_id]);
+  }, [supabase, groupId]);
+
+  const optional = (v: string) => (v === "" ? null : parseInt(v, 10));
+  const split =
+    optional(local) !== null && optional(international) !== null
+      ? (optional(local) as number) + (optional(international) as number)
+      : null;
+  const mismatch = split !== null && total !== "" && split !== parseInt(total, 10);
 
   async function submitHeadcount(e: React.FormEvent) {
     e.preventDefault();
-    if (!sessionId) return;
     setError(null);
-    const countVal = parseInt(headcount, 10);
-    const { error: rpcError } = await supabase.rpc("fn_record_headcount", {
-      p_session_id: sessionId,
-      p_count: countVal,
+    setSaving(true);
+    const row: Saved = {
+      headcount: parseInt(total, 10),
+      local_count: optional(local),
+      international_count: optional(international),
+    };
+    const { error: rpcError } = await supabase.rpc("fn_set_headcount", {
+      p_count: row.headcount,
+      p_local: row.local_count,
+      p_international: row.international_count,
     });
+    setSaving(false);
     if (rpcError) setError(friendlyError(rpcError));
-    else setSavedHeadcount(countVal);
+    else setSaved(row);
   }
 
   if (loading) {
@@ -91,55 +96,45 @@ export default function AttendancePage() {
       <PageTitle title="Attendance" subtitle="How many people are in your group" />
       <ErrorBanner message={error} />
 
-      {activeSession ? (
-        <Card className="border border-paper-200 bg-paper-50">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-wider text-ink-faint">Active session</p>
-              <h3 className="text-lg font-bold text-ink">{activeSession.name}</h3>
-            </div>
-            <span
-              className={cn(
-                "chip text-xs",
-                activeSession.closed ? "bg-red-100 text-red-800" : "bg-green-100 text-green-800"
-              )}
-            >
-              {activeSession.closed ? "Closed" : "Open"}
-            </span>
-          </div>
-          {activeSession.closed && (
-            <p className="mt-2 text-xs font-medium text-red-600">
-              This session is closed. Ask an admin if the number needs a correction.
-            </p>
-          )}
-        </Card>
-      ) : (
-        <Card className="border border-amber-200 bg-amber-50 text-amber-800">
-          <p className="text-sm font-semibold">No sessions yet</p>
-        </Card>
-      )}
-
-      {profile.group_id && activeSession && (
+      {profile.group_id && (
         <Card>
           <h2 className="mb-1 font-semibold">Group headcount</h2>
-          <p className="mb-3 text-xs text-ink-faint">Enter the number of people with your group for this session.</p>
-          <form onSubmit={submitHeadcount} className="flex gap-2">
-            <input
-              type="number"
-              min="0"
-              required
-              className="input flex-1"
-              placeholder="e.g. 24"
-              value={headcount}
-              onChange={(e) => setHeadcount(e.target.value)}
-            />
-            <button type="submit" disabled={activeSession.closed} className="btn-secondary px-5">
+          <p className="mb-3 text-xs text-ink-faint">Enter the number of people with your group. Total is required; Local and International are optional. You can change it any time.</p>
+          <form onSubmit={submitHeadcount} className="space-y-3">
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { label: "Local", value: local, set: setLocal, required: false },
+                { label: "International", value: international, set: setInternational, required: false },
+                { label: "Total", value: total, set: setTotal, required: true },
+              ].map((f) => (
+                <label key={f.label} className="block text-xs font-semibold text-ink-soft">
+                  {f.label}
+                  <input
+                    type="number"
+                    min="0"
+                    required={f.required}
+                    className="input mt-1 w-full"
+                    placeholder={f.required ? "e.g. 24" : "optional"}
+                    value={f.value}
+                    onChange={(e) => f.set(e.target.value)}
+                  />
+                </label>
+              ))}
+            </div>
+            {mismatch && (
+              <p className="text-xs text-amber-600">
+                Local + International = {split}, which differs from Total. You can still save.
+              </p>
+            )}
+            <button type="submit" disabled={saving} className="btn-secondary px-5">
               Save
             </button>
           </form>
-          {savedHeadcount !== null && (
+          {saved && (
             <p className="mt-2 text-xs text-ink-soft">
-              Saved headcount: <span className="font-semibold text-ink">{savedHeadcount}</span>
+              Saved: Local <span className="font-semibold text-ink">{saved.local_count ?? "—"}</span> ·
+              International <span className="font-semibold text-ink">{saved.international_count ?? "—"}</span> ·
+              Total <span className="font-semibold text-ink">{saved.headcount}</span>
             </p>
           )}
         </Card>

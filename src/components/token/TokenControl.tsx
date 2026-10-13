@@ -155,7 +155,7 @@ export default function TokenControl({ scoreboardOnly = false }: { scoreboardOnl
       .channel("token_all_in_one_realtime")
       .on("postgres_changes", { event: "*", schema: "public", table: "groups" }, refreshSoon)
       .on("postgres_changes", { event: "*", schema: "public", table: "token_logs" }, refreshSoon)
-      .on("postgres_changes", { event: "*", schema: "public", table: "puzzle_inventory" }, refreshSoon)
+      .on("postgres_changes", { event: "*", schema: "public", table: "inventory" }, refreshSoon)
       .on("postgres_changes", { event: "*", schema: "public", table: "game_config_rules" }, refreshSoon)
       .subscribe();
     const interval = setInterval(() => {
