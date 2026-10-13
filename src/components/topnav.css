@@ -1,0 +1,66 @@
+/* TopNav: landscape tablets and desktops only (≥1024px). Dark, in the public
+   Welcome page's nav style (.vx-nav). The accent comes from --fh-accent (the
+   group colour for Freshies and Facis, set by AppShell), else Vortexa cyan. */
+
+.vx-topnav { display: none; }
+
+@media (min-width: 1024px) {
+  .vx-topnav {
+    --tn-accent: var(--fh-accent, #0dfcfd);
+    position: sticky; top: 0; z-index: 40; flex: none;
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    height: 60px; padding: 0 24px;
+    padding-top: env(safe-area-inset-top, 0px);
+    background: #030b1c; border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    color: #eef5ff; font-family: var(--font-nexus-body), Outfit, system-ui, sans-serif;
+  }
+}
+
+.vx-topnav-logo { display: flex; align-items: center; flex: none; }
+.vx-topnav-logo img { height: 34px; width: auto; display: block; }
+
+.vx-topnav-links { display: flex; align-items: center; gap: 4px; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.vx-topnav-links::-webkit-scrollbar { display: none; }
+.vx-topnav-link {
+  display: flex; align-items: center; height: 60px; padding: 0 12px; box-sizing: border-box;
+  font-size: 14px; font-weight: 500; color: #a9b9d3; text-decoration: none; white-space: nowrap;
+  border-bottom: 2px solid transparent; transition: color 0.15s, border-color 0.15s;
+}
+.vx-topnav-link:hover { color: #fff; }
+.vx-topnav-link[aria-current="page"] { color: #fff; border-bottom-color: var(--tn-accent); }
+.vx-topnav-link:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: -6px; border-radius: 8px; }
+
+.vx-topnav-end { display: flex; align-items: center; gap: 10px; flex: none; }
+/* The live phase as a small pill (PhaseTimer compact). */
+.vx-topnav .app-phase-timer { border-radius: 999px; padding: 6px 12px; font-size: 13px; white-space: nowrap; }
+.vx-topnav .app-phase-timer:not(.is-endgame) { background: #0b2246; color: #eef5ff; }
+.vx-topnav .app-phase-timer > span:first-child { font-family: var(--font-mono), "JetBrains Mono", monospace; font-size: 11px; color: #0dfcfd; }
+.vx-topnav-role {
+  font-family: var(--font-mono), "JetBrains Mono", monospace; font-size: 10.5px; letter-spacing: 0.16em; text-transform: uppercase;
+  padding: 5px 10px; border-radius: 999px; border: 1px solid var(--tn-accent); color: var(--tn-accent); white-space: nowrap;
+}
+
+.vx-topnav-account { position: relative; }
+.vx-topnav-avatar { display: block; padding: 0; border: 0; background: none; border-radius: 50%; cursor: pointer; }
+.vx-topnav-avatar:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: 2px; }
+/* FaciAvatar plain: initials on the accent. */
+.vx-topnav .fh-faci-avatar { display: block; border-radius: 50%; }
+.vx-topnav .fh-faci-avatar > span {
+  display: grid; place-items: center; width: 100%; height: 100%; border-radius: 50%;
+  background: var(--tn-accent); color: var(--fh-on-blue, #001629); font-family: var(--font-vx-slab), Georgia, serif;
+}
+
+.vx-topnav-menu {
+  position: absolute; right: 0; top: calc(100% + 10px); z-index: 50; width: 230px;
+  background: #0b2246; border: 1px solid #22457a; border-radius: 16px; padding: 14px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+}
+.vx-topnav-menu b { display: block; font-size: 15px; }
+.vx-topnav-menu span { display: block; font-size: 12.5px; color: #8ba3c4; margin-top: 2px; }
+.vx-topnav-menu button {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  margin-top: 12px; width: 100%; min-height: 44px; border-radius: 12px; cursor: pointer;
+  background: transparent; border: 1px solid #22457a; color: #eef5ff; font: inherit; font-weight: 700; font-size: 14px;
+}
+.vx-topnav-menu button:hover { border-color: var(--tn-accent); color: var(--tn-accent); }
+.vx-topnav-menu .vx-topnav-menu-edit + button { margin-top: 8px; }

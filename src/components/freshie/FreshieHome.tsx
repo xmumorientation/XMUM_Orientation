@@ -29,6 +29,7 @@ import { vxDisplay, vxSlab } from "@/components/home/fonts";
 import { usePhaseTimer } from "@/components/PhaseTimerProvider";
 import { useProfile } from "@/components/ProfileProvider";
 import { useOpenShellMenu } from "@/components/ShellMenu";
+import { EDIT_PROFILE_EVENT } from "@/components/TopNav";
 import { useGroup } from "@/components/useGroup";
 import { countdownParts, useEventCountdown } from "@/components/useEventCountdown";
 import { supabaseBrowser } from "@/lib/supabase/client";
@@ -1048,6 +1049,20 @@ export function FreshieHome() {
   // and the profile editor, so an edit shows everywhere at once.
   const [myName, setMyName] = useState(profile.full_name ?? "");
   const [editing, setEditing] = useState(false);
+
+  // TopNav's "Edit Profile" (landscape): an event on this page, or
+  // /dashboard?edit=profile from another page.
+  useEffect(() => {
+    if (!isFaci) return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("edit") === "profile") {
+      setEditing(true);
+      window.history.replaceState(null, "", window.location.pathname);
+    }
+    const open = () => setEditing(true);
+    window.addEventListener(EDIT_PROFILE_EVENT, open);
+    return () => window.removeEventListener(EDIT_PROFILE_EVENT, open);
+  }, [isFaci]);
   const team = useGroupFacis(profile.group_id, profile.id, isFaci);
   const teamView = useMemo(
     () => team?.map((f) => (f.isMe ? { ...f, name: myName || f.name } : f)) ?? null,

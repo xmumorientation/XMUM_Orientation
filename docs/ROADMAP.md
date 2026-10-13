@@ -260,6 +260,11 @@ Full background: the "Issues Found" section in [permission-matrix.md](permission
 
 ## Done
 
+### Top text nav instead of the sidebar on landscape tablets and desktops, 2026-10-13
+- At 1024px and wider (iPad landscape, desktop), every role gets `TopNav` ([TopNav.tsx](../src/components/TopNav.tsx), [topnav.css](../src/components/topnav.css)) instead of the left sidebar, in the public Welcome page's nav style: logo, the role's links as text (current page underlined in the group colour, else cyan), the live phase pill ("NOW Day 2 Game 1:13:58"), the role chip and an account menu (Log Out; Facis also get Edit Profile, which opens the editor on Home, via `/dashboard?edit=profile` from other pages).
+- Option A from the mockup: on Freshie / Faci Home the page's own header and stop bar are hidden at this width; each stop fills the screen below the nav, and the live phase card in Welcome is hidden (the nav pill shows it). Staff Home hides its own header and phase card too. Phones and iPad portrait are unchanged.
+- Removed: the sidebar and Admin's collapse-to-icons toggle, and the `16rem` offsets (sky, toasts, location banner).
+
 ### Tab bar stays put on iPad and iPhone, 2026-10-13
 - On iPad Safari the bottom tab bar (and the Freshie Home header) could sit mid-screen while scrolling, and fixed things (tab bar, "Replay demo", the logo intro) could stop short of the screen bottom: Safari's area for `position: fixed` can be shorter than the screen.
 - On pages with the tab bar (Freshie and Faci), AppShell's content column is one screen high: header, then the scroller (`.app-scroll`), then the tab bar **in normal flow, not fixed**. The document never scrolls, so Safari's toolbars stay put; snap sits on `.app-scroll`. `main` no longer has `min-h-dvh` there, so short pages do not scroll.

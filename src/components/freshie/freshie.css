@@ -47,7 +47,9 @@
   color: var(--fh-text);
 }
 @media (min-width: 1024px) {
-  .fh { --fh-bottom: 0px; }
+  /* AppShell's TopNav sits above the scroller in normal flow, so the stops
+     only need a little room at the top and no tab bar room at the bottom. */
+  .fh { --fh-bottom: 0px; --fh-top: 24px; }
 }
 
 /* One stop per screen, this page only (class set by FreshieHome): mandatory
@@ -98,10 +100,6 @@ html.fh-snap { overflow-x: hidden; }
   position: absolute; top: 0; bottom: 0; z-index: -1; overflow: hidden; pointer-events: none;
   left: calc(50% - 50vw); width: 100vw;
   background: linear-gradient(180deg, #030b1c 0%, #04102a 30%, #071334 52%, #0d1240 70%, #160f44 84%, #160f44 100%);
-}
-@media (min-width: 1024px) {
-  /* Beside AppShell's 16rem sidebar. */
-  .fh-sky { left: calc(50% - (100vw - 16rem) / 2); width: calc(100vw - 16rem); }
 }
 .fh-sky-dots {
   position: absolute; inset: 0;
@@ -228,8 +226,12 @@ html.fh-snap { overflow-x: hidden; }
 .fh-stopbar-track { flex: 1; height: 4px; border-radius: 4px; background: var(--fh-ink-3); overflow: hidden; }
 .fh-stopbar-track span { display: block; height: 100%; background: var(--fh-holo); transition: width 0.35s ease; }
 @media (min-width: 1024px) {
-  /* Sit beside AppShell's 16rem sidebar. */
-  .fh-head, .fh-bg { left: 16rem; }
+  /* TopNav carries the logo, role and account menu here; no stop bar (option A). */
+  .fh-head { display: none; }
+  /* Each stop fills the screen below the 60px TopNav. */
+  .fh-stop { min-height: calc(100svh - 60px); }
+  /* The live phase shows as the pill in TopNav instead (option A). */
+  #fh-welcome .fh-phasecard { display: none; }
 }
 
 /* ── Stops ───────────────────────────────────────────────────────────────── */

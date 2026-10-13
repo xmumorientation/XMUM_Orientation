@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, Menu, PanelLeftClose, PanelLeftOpen, X } from "lucide-react";
+import { ArrowLeft, Menu, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -11,13 +11,14 @@ import { themeFromColor } from "@/components/freshie/groupTheme";
 import { ShellMenuProvider } from "@/components/ShellMenu";
 import { NavIcon } from "@/components/NavIcon";
 import { NewItemToast } from "@/components/NewItemToast";
-import { FaciLocationBanner } from "@/components/FaciLocationTracker";
 import { PhaseTimer } from "@/components/PhaseTimer";
+import { FaciLocationBanner } from "@/components/FaciLocationTracker";
 import { useConfig } from "@/components/useConfig";
 import { useProfile } from "@/components/ProfileProvider";
 import { useGroup } from "@/components/useGroup";
 import { Dialog, DialogClose, DialogContent } from "@/components/ui/Dialog";
 import { Monogram } from "@/components/ui/Monogram";
+import { TopNav } from "@/components/TopNav";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { ROLE_LABELS, type UserRole } from "@/lib/types";
 import { cn, hexToRgbChannels } from "@/lib/utils";
@@ -112,7 +113,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { brand } = useConfig();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [collapsed, setCollapsed] = useState(false);
 
   const isFreshie = profile.role === "freshie";
   const isFaci = profile.role === "faci";
@@ -124,8 +124,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     pathname === "/map" || pathname.startsWith("/map/") || pathname.startsWith("/inventory");
   const isStaffArea = !isFreshie && !keepsOwnDesign;
   const isStaffSubpage = isStaffArea && !isStaffDashboard;
-  // Only the admin account can shrink the sidebar to icons.
-  const slim = isAdmin && collapsed;
   const items = NAV.filter((n) => n.roles.includes(profile.role)).map((item) =>
     isFaci && item.href === "/map" ? { ...item, href: "/checkin" } : item
   );
@@ -139,21 +137,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     (pathname === "/dashboard" || pathname === "/schedule" || pathname === "/inventory"));
   const showTabBar = (isFreshie || isFaci) && !(isFreshie && pathname === "/scan");
 
-  useEffect(() => {
-    try {
-      setCollapsed(localStorage.getItem("sidebar-collapsed") === "1");
-    } catch {}
-  }, []);
-
-  function toggleCollapsed() {
-    setCollapsed((c) => {
-      try {
-        localStorage.setItem("sidebar-collapsed", c ? "0" : "1");
-      } catch {}
-      return !c;
-    });
-  }
-
   // Close the drawer on route change so it never lingers over a new page.
   // Radix Dialog owns focus-trap/Escape/backdrop-dismiss/focus-return; route
   // change is the one thing it has no opinion on.
@@ -166,7 +149,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     window.location.href = isFreshie ? "/" : "/login";
   }
 
-  const navLinks = (mode: "sidebar" | "drawer", iconsOnly = false) =>
+  const navLinks = (mode: "drawer", iconsOnly = false) =>
     items.map((item) => {
       const active =
         pathname === item.href || pathname.startsWith(item.href + "/");
@@ -206,8 +189,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       className={cn(
         // With the tab bar the page itself never scrolls (see .app-scroll below).
         showTabBar ? "h-dvh overflow-hidden" : "min-h-dvh",
-        "w-full lg:grid",
-        slim ? "lg:grid-cols-[4.5rem_minmax(0,1fr)]" : "lg:grid-cols-[16rem_minmax(0,1fr)]",
+        "w-full",
         isNight && "bg-[#030b1c]",
         isStaffArea && `staff-dashboard-shell ${nexusBody.variable} ${vxDisplay.variable}`
       )}
@@ -229,79 +211,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         } as React.CSSProperties
       }
     >
-      <aside
-        className={cn(
-          "sticky top-0 hidden h-dvh border-r border-paper-200 bg-paper-50/95 py-5 lg:flex lg:flex-col",
-          slim ? "px-2" : "px-4"
-        )}
-      >
-        <Link
-          href="/dashboard"
-          title={slim ? brand.eventName : undefined}
-          className={cn("flex items-center gap-3", slim && "justify-center")}
-        >
-          <Monogram name={brand.eventName} />
-          {!slim && (
-            <span className="min-w-0">
-              <span className="block truncate text-base font-black tracking-tight">
-                {brand.eventName}
-              </span>
-              <span className="block truncate text-xs text-ink-faint">
-                XMUM 26/12 Orientation
-              </span>
-            </span>
-          )}
-        </Link>
-
-        {!slim && (
-          <div className="mt-5">
-            <PhaseTimer compact />
-          </div>
-        )}
-
-        <nav className="mt-5 space-y-1">{navLinks("sidebar", slim)}</nav>
-
-        <div
-          className={cn(
-            "mt-auto space-y-3 border-t border-paper-200 pt-4",
-            slim && "flex flex-col items-center"
-          )}
-        >
-          {isAdmin && (
-            <button
-              type="button"
-              onClick={toggleCollapsed}
-              aria-label={slim ? "Expand sidebar" : "Collapse sidebar"}
-              title={slim ? "Expand sidebar" : "Collapse sidebar"}
-              className="flex h-10 w-10 items-center justify-center rounded-xl border border-paper-300 bg-white text-ink-soft transition hover:bg-paper-100 hover:text-ink"
-            >
-              {slim ? (
-                <PanelLeftOpen size={18} strokeWidth={1.75} />
-              ) : (
-                <PanelLeftClose size={18} strokeWidth={1.75} />
-              )}
-            </button>
-          )}
-          {!slim && (
-            <span className="chip border border-brand-1/20 bg-brand-1/20 text-brand-1">
-              {ROLE_LABELS[profile.role]}
-            </span>
-          )}
-          <button
-            onClick={signOut}
-            title="Log out"
-            className="flex min-h-[44px] items-center text-sm font-semibold text-ink-faint transition hover:text-ink"
-          >
-            {slim ? "Exit" : "Log out"}
-          </button>
-        </div>
-      </aside>
 
       {/* Freshie / Faci: one screen-high column, header, scroller (.app-scroll),
           then the tab bar in normal flow. The document never scrolls and the
           tab bar is not position: fixed, so iOS Safari cannot leave it mid-screen
           or short of the bottom (seen on iPad, 2026-10-13). */}
       <div className={cn("min-w-0", showTabBar && "flex h-dvh flex-col")}>
+      {/* Landscape tablets and desktops: one row of text links (no sidebar). */}
+      <TopNav
+        items={items.map(({ href, label }) => ({ href, label }))}
+        pathname={pathname}
+        roleLabel={ROLE_LABELS[profile.role]}
+        name={profile.full_name ?? ""}
+        groupName={isFreshie || isFaci ? (group?.name ?? null) : null}
+        canEditProfile={isFaci}
+        onSignOut={signOut}
+      />
       {!isNight && (
       <header className={cn("sticky top-0 z-40 border-b border-paper-200 bg-paper-50/95 pt-[env(safe-area-inset-top)] shadow-[0_1px_0_rgba(28,26,23,0.03)] backdrop-blur lg:hidden", isStaffSubpage && "sp-header")}>
         {isStaffSubpage ? (

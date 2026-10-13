@@ -301,7 +301,7 @@ export function FaciLocationBanner() {
   const isRequesting = status === "requesting";
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 top-[calc(4.5rem+env(safe-area-inset-top))] z-[60] flex flex-col items-center px-4 lg:left-64 lg:top-5">
+    <div className="pointer-events-none fixed inset-x-0 top-[calc(4.5rem+env(safe-area-inset-top))] z-[60] flex flex-col items-center px-4 lg:top-[76px]">
       <div className="card pointer-events-auto flex w-full max-w-lg items-center justify-between gap-3 border-amber-300 bg-amber-50/95 p-3.5 text-amber-950 shadow-glow backdrop-blur sm:p-4">
         <div className="flex min-w-0 items-start gap-3">
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-500 text-white shadow-sm">
