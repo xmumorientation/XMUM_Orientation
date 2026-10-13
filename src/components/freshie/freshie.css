@@ -40,7 +40,7 @@
   --fh-partner: #fc9e3d;
   /* Height of the fixed header + stop bar, and of the bottom tab bar. */
   --fh-top: calc(96px + env(safe-area-inset-top, 0px));
-  --fh-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+  --fh-bottom: calc(72px + min(env(safe-area-inset-bottom, 0px), 34px)); /* capped: see .fh-tabbar */
 
   position: relative;
   isolation: isolate;
@@ -1020,7 +1020,10 @@ html.fh-snap { overflow-x: hidden; }
   /* In normal flow at the bottom of AppShell's screen-high column, not fixed:
      iOS Safari can place fixed bars short of the screen bottom. */
   position: relative; flex: none; z-index: 45;
-  display: flex; align-items: flex-end; padding: 6px 6px env(safe-area-inset-bottom, 0px);
+  /* Bottom inset capped at 34px (the most a real device needs, iPhone home
+     indicator): iPad Chrome reports about 80px while its toolbar is open,
+     which left a blank band under the bar. */
+  display: flex; align-items: flex-end; padding: 6px 6px min(env(safe-area-inset-bottom, 0px), 34px);
   background: rgba(3, 11, 28, 0.95); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
   border-top: 1px solid #16305a;
 }

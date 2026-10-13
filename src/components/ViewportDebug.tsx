@@ -22,6 +22,13 @@ function measure(probe: HTMLDivElement | null, fixedProbe: HTMLDivElement | null
   const ua = navigator.userAgent;
   const browser = /CriOS/.test(ua) ? "Chrome iOS" : /FxiOS/.test(ua) ? "Firefox iOS" : /Safari/.test(ua) && !/Chrome/.test(ua) ? "Safari" : /Chrome/.test(ua) ? "Chrome" : "other";
   const fixedBottom = fixedProbe ? Math.round(fixedProbe.getBoundingClientRect().bottom) : "?";
+  let safeBottom = "?";
+  if (probe) {
+    probe.style.height = "0px";
+    probe.style.paddingBottom = "env(safe-area-inset-bottom, 0px)";
+    safeBottom = `${Math.round(probe.getBoundingClientRect().height)}`;
+    probe.style.paddingBottom = "0px";
+  }
   return [
     ["browser", browser],
     ["orientation", window.matchMedia("(orientation: portrait)").matches ? "portrait" : "landscape"],
@@ -35,6 +42,7 @@ function measure(probe: HTMLDivElement | null, fixedProbe: HTMLDivElement | null
     ["100svh", px("100svh")],
     ["100lvh", px("100lvh")],
     ["fixed bottom:0 at", `${fixedBottom}`],
+    ["safe-area bottom", safeBottom],
     ["scrollY", `${Math.round(window.scrollY)}`],
     ["time", new Date().toLocaleTimeString()],
   ];
