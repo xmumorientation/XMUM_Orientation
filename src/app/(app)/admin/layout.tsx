@@ -36,7 +36,7 @@ const SECTIONS: Section[] = [
     label: "Freshies",
     tabs: [
       { href: "/admin/freshies", label: "Groups" },
-      { href: "/admin/freshies/headcount", label: "Headcount" },
+      { href: "/admin/freshies/headcount", label: "Headcount and location" },
     ],
   },
   {

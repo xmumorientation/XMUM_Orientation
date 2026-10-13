@@ -32,7 +32,7 @@ This reflects only the migration files in the repo. Any manual changes made to t
 | Day 1 Token Reward (amount from the token rules) | — | — | ✓ | ✓ | — | † | † | † | DB |
 | Day 2 Challenge (charge the tier's entry fee and grant a piece) | — | — | ✓ | ✓ | — | † | † | † | DB |
 | Show blind box QR + link on the Station page (own boxes and own station's shared boxes) | — | — | Own | Own | — | — | — | — | DB |
-| Update Station Status | — | — | Own Station | Own Station | — | All † | All † | All | DB |
+| Set station status: Available / In Progress / Closed (`fn_set_station_status`; on the GM page's Status tab, Admin → Stations and the Live control list; manual only, never changed by the game timer or by check-ins; changes show live on every page) | — | — | Own Station | Own Station | — | All † | All † | All | DB |
 | Undo Token Transaction (own last one, within 2 minutes) | — | — | Own Actions | Own Actions | — | † | † | † | DB |
 | Grant a puzzle piece directly (fn_grant_item, no UI) | — | — | † | † | — | † | † | † | DB |
 | **Guardian** | | | | | | | | | |
@@ -56,7 +56,9 @@ This reflects only the migration files in the repo. Any manual changes made to t
 | Mark attendance (Attendance Roster) | — | Own Group | — | — | — | All † | All † | Manage All | DB |
 | Headcount fallback entry | — | Own Group | — | — | — | † | — | Manage | DB |
 | Attendance completion overview | — | Own Group | — | — | View All | View All | View All | Manage All | DB |
-| Manual Location Check-in | — | ✓ | — | — | — | — | — | † | DB |
+| Manual Location Check-in (station check-in) | — | ✓ | — | — | — | — | — | † | DB |
+| Manual Location Update: a text-only note of where a GROUP is, sent by any Facilitator in it (status Heading to / Arrived / Other + typed text, a building and an optional comment; no GPS, not linked to the map; `fn_faci_log_location`, table `faci_location_updates`; the group shares the latest update) | — | Own group (add, read) | — | — | Read all | Read all | Read all | Read all + edit a group's latest entry (`fn_admin_edit_faci_location`, marked and audited) | DB |
+| Manage the location options Facilitators choose from (add, rename, reorder, delete; `fn_admin_location_option_save` / `_delete` / `_move`, table `faci_location_options`; everyone signed in can read them) | — | Read | Read | Read | Read | Read | Read | Manage | DB |
 | GPS auto-report | — | ✓ | — | — | — | — | — | — | DB |
 | **Committee / Operations** | | | | | | | | | |
 | Committee Operations page (/committee) | — | — | — | — | ✓ | ✓ | ✓ | † | UI |
@@ -73,7 +75,7 @@ This reflects only the migration files in the repo. Any manual changes made to t
 | Set token rules (Day 1 rewards, Day 2 fee per tier) | — | — | — | — | — | — | — | ✓ | DB |
 | Edit / delete logs, Reset All | — | — | — | — | — | — | — | ✓ | ⚠ UI |
 | **Admin Console (/admin/*)** | | | | | | | | | |
-| Phase Control (start / pause / extend / end) | — | — | — | — | — | — | — | ✓ | DB |
+| Phase Control (start / pause / extend / end: runs the game timer only, station statuses are not changed) | — | — | — | — | — | — | — | ✓ | DB |
 | Kill-switches | — | — | — | — | — | — | — | ✓ | DB |
 | Users (CSV import; edit role / group / station) | — | — | — | — | — | — | — | ✓ | DB + API |
 | Stations config | — | — | — | — | — | — | — | ✓ | DB |
