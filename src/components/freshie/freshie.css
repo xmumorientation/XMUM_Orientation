@@ -50,16 +50,16 @@
   .fh { --fh-bottom: 0px; }
 }
 
-/* One stop per screen, this page only (class set by FreshieHome). Same rule
-   as the public homepage: mandatory snap (one scroll = next stop) on large
-   screens, gentle proximity snap on phones and tablets so taller stops can
-   still be read. */
-html.fh-snap { scroll-snap-type: y proximity; }
+/* One stop per screen, this page only (class set by FreshieHome): mandatory
+   snap (one scroll = next stop) on large screens, gentle proximity snap on
+   phones and tablets so taller stops can still be read. The snap sits on
+   AppShell's .app-scroll, the scroller on Freshie / Faci pages. */
+html.fh-snap .app-scroll { scroll-snap-type: y proximity; }
 @media (min-width: 1024px) and (min-height: 700px) {
-  html.fh-snap { scroll-snap-type: y mandatory; }
+  html.fh-snap .app-scroll { scroll-snap-type: y mandatory; }
 }
 @media (prefers-reduced-motion: reduce) {
-  html.fh-snap { scroll-snap-type: none; }
+  html.fh-snap .app-scroll { scroll-snap-type: none; }
 }
 
 /* Full-bleed black ground (AppShell paints the root black on Freshie Home;

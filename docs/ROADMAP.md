@@ -260,6 +260,11 @@ Full background: the "Issues Found" section in [permission-matrix.md](permission
 
 ## Done
 
+### Tab bar stays put on iPad and iPhone, 2026-10-13
+- On iPad Safari the bottom tab bar (and the Freshie Home header) could be left in the middle of the screen while the page scrolled or snapped. On pages with the tab bar (Freshie and Faci), the document no longer scrolls: AppShell's content column (`.app-scroll`) is the scroller, so the fixed bars cannot drift and Safari's toolbars do not collapse. Snap moved from `html` to `.app-scroll`.
+- Side effect: no pull-to-refresh on those pages on iOS. GM, Committee and Admin pages are unchanged.
+- Left: check on a real iPad and iPhone.
+
 ### Vortexa logo intro on opening the site and after login, 2026-10-13
 - `VortexaIntro` ([VortexaIntro.tsx](../src/components/VortexaIntro.tsx), [vortexa-intro.css](../src/components/vortexa-intro.css)), mounted once in the root layout: a dark cover, the Vortexa logo sharpens in, a light band sweeps across it, then the cover fades out (about 2.7 s). Same idea as the interview site's `HomeIntro`.
 - Plays on every full page load: opening the site on any page, a refresh, and after every login (password, Freshie, QR join and Google all end in a full load). Not on in-app navigation. Off with reduced motion.

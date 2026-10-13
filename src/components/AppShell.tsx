@@ -204,7 +204,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div
       className={cn(
-        "min-h-dvh w-full lg:grid",
+        // With the tab bar the page itself never scrolls (see .app-scroll below).
+        showTabBar ? "h-dvh overflow-hidden" : "min-h-dvh",
+        "w-full lg:grid",
         slim ? "lg:grid-cols-[4.5rem_minmax(0,1fr)]" : "lg:grid-cols-[16rem_minmax(0,1fr)]",
         isNight && "bg-[#030b1c]",
         isStaffArea && `staff-dashboard-shell ${nexusBody.variable} ${vxDisplay.variable}`
@@ -295,7 +297,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      <div className="min-w-0">
+      {/* Freshie / Faci: this column is the scroller, not the document. iOS Safari
+          then never collapses its toolbars and the fixed tab bar and headers
+          can never be left behind mid-scroll (seen on iPad, 2026-10-13). */}
+      <div
+        className={cn(
+          "min-w-0",
+          showTabBar && "app-scroll h-dvh overflow-y-auto overflow-x-hidden overscroll-y-contain"
+        )}
+      >
       {!isNight && (
       <header className={cn("sticky top-0 z-40 border-b border-paper-200 bg-paper-50/95 pt-[env(safe-area-inset-top)] shadow-[0_1px_0_rgba(28,26,23,0.03)] backdrop-blur lg:hidden", isStaffSubpage && "sp-header")}>
         {isStaffSubpage ? (
