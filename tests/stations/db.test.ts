@@ -1,7 +1,7 @@
-// Station status is manual (migration 0072, changesv3.md).
+// Station status is manual (migration 0078, changesv3.md).
 // Real Postgres (embedded-postgres) + a small Supabase stub. The OLD timer
 // trigger from 0049 is installed first, so the first test proves the problem
-// existed (a game ending closed the stations) before 0072 removes it.
+// existed (a game ending closed the stations) before 0078 removes it.
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -109,7 +109,7 @@ afterAll(async () => {
   }
 });
 
-describe("before 0072 (proves the old coupling)", () => {
+describe("before 0078 (proves the old coupling)", () => {
   it("a game starting opens its day's stations and ending closes them", async () => {
     await q("update phases set state = 'active' where key = 'day1'");
     expect(await status(A)).toBe("available");
@@ -122,15 +122,15 @@ describe("before 0072 (proves the old coupling)", () => {
   });
 });
 
-describe("after 0072", () => {
+describe("after 0078", () => {
   beforeAll(async () => {
     await q("update phases set state = 'pending'");
-    await admin.query(read("supabase/migrations/0072_station_status_manual.sql"));
+    await admin.query(read("supabase/migrations/0078_station_status_manual.sql"));
     await q("update stations set status = 'closed'");
   });
 
   it("is idempotent to re-run", async () => {
-    await admin.query(read("supabase/migrations/0072_station_status_manual.sql"));
+    await admin.query(read("supabase/migrations/0078_station_status_manual.sql"));
   });
 
   it("starting, pausing, ending and resetting a game never changes any station status", async () => {

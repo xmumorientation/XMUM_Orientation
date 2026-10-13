@@ -1,5 +1,5 @@
 -- ═══════════════════════════════════════════════════════════════════════
--- Migration 0072: station status is manual only (changesv3.md)
+-- Migration 0078: station status is manual only (changesv3.md)
 --
 -- 1. The game timer no longer touches stations. 0049 added a trigger on
 --    public.phases that opened a day's stations when its game started and

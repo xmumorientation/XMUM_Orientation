@@ -65,7 +65,7 @@ export interface Station {
   lat: number | null;
   lng: number | null;
   radius_m: number | null;
-  /** Unused since 0072 (status is manual only). */
+  /** Unused since 0078 (status is manual only). */
   status_override: boolean;
 }
 

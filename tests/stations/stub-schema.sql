@@ -1,5 +1,5 @@
 -- Minimal stand-in for the Supabase pieces the station migrations depend on.
--- Real migrations 0062, 0064 and 0072 (and the 0049 phase trigger) are applied on top.
+-- Real migrations 0062, 0064 and 0078 (and the 0049 phase trigger) are applied on top.
 
 create schema if not exists auth;
 create role anon nologin;
