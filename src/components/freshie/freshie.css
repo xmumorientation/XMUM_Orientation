@@ -216,6 +216,9 @@ html.fh-snap { overflow-x: hidden; }
   font-size: 11px; color: var(--fh-mute); letter-spacing: 0.08em;
 }
 .fh-stopbar b { color: #fff; }
+/* Fixed width (longest label: "Facilitator") so the track keeps its length
+   when the label changes; otherwise the fill shrinks before it grows. */
+.fh-stopbar > span:last-child { flex: none; width: 12.5ch; text-align: right; white-space: nowrap; }
 .fh-stopbar-track { flex: 1; height: 4px; border-radius: 4px; background: var(--fh-ink-3); overflow: hidden; }
 .fh-stopbar-track span { display: block; height: 100%; background: var(--fh-holo); transition: width 0.35s ease; }
 @media (min-width: 1024px) {

@@ -807,24 +807,14 @@ function AccountMenu({
   );
 }
 
-export function FreshieHome() {
-  const profile = useProfile();
-  const { group, loading } = useGroup();
-  const theme = themeFromColor(group?.color);
-  const openMenu = useOpenShellMenu();
-  const isFaci = profile.role === "faci";
-  const roleLabel = isFaci ? "Facilitator" : "Freshie";
-  const stops = useMemo(() => homeStops(isFaci), [isFaci]);
+/**
+ * Which stop is on screen. Keeps its own state so a stop change re-renders
+ * only this bar, not the whole page (sky, scoreboard, keys), which made the
+ * fill animation stutter. The fill animates width, not transform: Safari can
+ * skip transform transitions under the header's backdrop-filter.
+ */
+function StopBar({ stops }: { stops: readonly { id: string; label: string }[] }) {
   const [active, setActive] = useState(0);
-  // Scoreboard rows double as the ferris wheel's cabins (one per group).
-  const [cabins, setCabins] = useState<SkyCabin[]>([]);
-
-  // Section-by-section snapping, this page only (same idea as the homepage).
-  useEffect(() => {
-    const root = document.documentElement;
-    root.classList.add("fh-snap");
-    return () => root.classList.remove("fh-snap");
-  }, []);
 
   useEffect(() => {
     const els = stops.map((s) => document.getElementById(s.id)).filter((el): el is HTMLElement => !!el);
@@ -839,6 +829,35 @@ export function FreshieHome() {
     els.forEach((el) => io.observe(el));
     return () => io.disconnect();
   }, [stops]);
+
+  return (
+    <div className="fh-stopbar fh-mono" aria-hidden>
+      <b>{String(active + 1).padStart(2, "0")}</b>
+      <span className="fh-stopbar-track">
+        <span style={{ width: `${((active + 1) / stops.length) * 100}%` }} />
+      </span>
+      <span>{stops[active]?.label}</span>
+    </div>
+  );
+}
+
+export function FreshieHome() {
+  const profile = useProfile();
+  const { group, loading } = useGroup();
+  const theme = themeFromColor(group?.color);
+  const openMenu = useOpenShellMenu();
+  const isFaci = profile.role === "faci";
+  const roleLabel = isFaci ? "Facilitator" : "Freshie";
+  const stops = useMemo(() => homeStops(isFaci), [isFaci]);
+  // Scoreboard rows double as the ferris wheel's cabins (one per group).
+  const [cabins, setCabins] = useState<SkyCabin[]>([]);
+
+  // Section-by-section snapping, this page only (same idea as the homepage).
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.add("fh-snap");
+    return () => root.classList.remove("fh-snap");
+  }, []);
 
   return (
     <div
@@ -880,13 +899,7 @@ export function FreshieHome() {
             />
           </div>
         </div>
-        <div className="fh-stopbar fh-mono" aria-hidden>
-          <b>{String(active + 1).padStart(2, "0")}</b>
-          <span className="fh-stopbar-track">
-            <span style={{ width: `${((active + 1) / stops.length) * 100}%` }} />
-          </span>
-          <span>{stops[active]?.label}</span>
-        </div>
+        <StopBar stops={stops} />
       </header>
 
       <WelcomeStop name={profile.full_name ?? ""} group={group} isFaci={isFaci} />
