@@ -1067,6 +1067,7 @@ html.fh-snap { overflow-x: hidden; }
 .fh-edit .fi-sheet-title { padding-right: 44px; }
 .fh-edit-form { display: grid; gap: 16px; margin-top: 4px; }
 .fh-edit-photo { display: flex; align-items: center; gap: 14px; }
+.fh-edit-photobtn {
   display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 16px; border-radius: 999px;
   border: 1px solid var(--fh-line-2); background: transparent; color: var(--fh-text); font: inherit; font-weight: 600; cursor: pointer;
 }

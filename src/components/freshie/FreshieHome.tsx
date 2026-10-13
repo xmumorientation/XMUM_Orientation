@@ -37,7 +37,7 @@ import { PIECES_PER_SET, PROJECTOR_LOCATIONS, type Group } from "@/lib/types";
 import { formatCountdown, friendlyError } from "@/lib/utils";
 
 import "./freshie.css";
-import { faciFromProfile, type FaciProfile, type FaciRow } from "./faciProfiles";
+import { faciFromProfile, FACI_PROFILE_SAVED_EVENT, type FaciProfile, type FaciRow } from "./faciProfiles";
 import { FaciAvatar, ProfileEditor } from "./ProfileEditor";
 import { FreshieSky, type SkyCabin } from "./FreshieSky";
 import { ProjectorKeys } from "./items/sections";
@@ -515,9 +515,11 @@ function useGroupFacis(groupId: number | null, meId: string, enabled: boolean): 
       .subscribe();
     const onVisible = () => { if (document.visibilityState === "visible") void load(); };
     document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener(FACI_PROFILE_SAVED_EVENT, load);
     return () => {
       active = false;
       document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener(FACI_PROFILE_SAVED_EVENT, load);
       supabase.removeChannel(channel);
     };
   }, [supabase, groupId, meId, enabled]);

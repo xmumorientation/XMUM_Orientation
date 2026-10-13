@@ -33,6 +33,9 @@ export type FaciRow = {
   avatar_url?: string | null;
 };
 
+/** Fired on window after a Faci saves their profile, so Home reloads the cards at once. */
+export const FACI_PROFILE_SAVED_EVENT = "faci-profile-saved";
+
 const AVATAR_PREFIX = "/storage/v1/object/public/faci-avatars/";
 
 /** The Supabase project's storage host, for next/image (see next.config). */

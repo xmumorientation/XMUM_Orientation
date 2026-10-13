@@ -10,7 +10,7 @@ import { vxSlab } from "@/components/home/fonts";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { friendlyError } from "@/lib/utils";
 
-import { avatarPathOf, type FaciProfile } from "./faciProfiles";
+import { avatarPathOf, FACI_PROFILE_SAVED_EVENT, type FaciProfile } from "./faciProfiles";
 
 export function initialsOf(name: string) {
   return (
@@ -207,6 +207,7 @@ export function ProfileEditor({
 
     // Best effort: the replaced photo is no longer used.
     if (photo && oldPath && oldPath !== avatarPath) void supabase.storage.from("faci-avatars").remove([oldPath]);
+    window.dispatchEvent(new Event(FACI_PROFILE_SAVED_EVENT));
     onSaved(trimmed);
     // Server-rendered profile (menu drawer, other pages) picks up the new name.
     router.refresh();
@@ -236,7 +237,7 @@ export function ProfileEditor({
                 onChange={pickPhoto}
                 tabIndex={-1}
               />
-              <button type="button" className="fh-edit-soonbtn" onClick={() => fileRef.current?.click()}>
+              <button type="button" className="fh-edit-photobtn" onClick={() => fileRef.current?.click()}>
                 <Camera size={16} aria-hidden /> {me.avatarUrl || photo ? "Change Photo" : "Add Photo"}
               </button>
             </div>
