@@ -122,6 +122,18 @@ export function sampleItems(scenario: SampleScenario = "day2"): ItemsData {
   }
 }
 
+/** What /inventory plays with no ?demo. */
+export const DEFAULT_SCENARIO: SampleScenario = "complete";
+
+/**
+ * What the Items page shows once its default demo settles. Freshie Home's
+ * puzzle card reads this so both pages show the same keys. When Items moves
+ * to live data, point this at the same source.
+ */
+export function itemsShown(): ItemsData {
+  return withLastTrackPiece(sampleItems(DEFAULT_SCENARIO));
+}
+
 /** The piece that completes T&F in the "complete" scenario. */
 export function withLastTrackPiece(data: ItemsData): ItemsData {
   if (data.pieces.TF.includes(3)) return data;

@@ -6,20 +6,22 @@ import {
   Coins,
   Compass,
   Gamepad2,
+  GraduationCap,
   HelpCircle,
-  History,
   KeyRound,
+  Languages,
   MapPin,
   Menu,
-  Package,
+  Puzzle,
   ScanLine,
   Trophy,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { EVENT, EVENTS, GAME_PHASES, SPONSORS, SPONSORS_ARE_EXAMPLES } from "@/components/home/data";
+import { GAME_PHASES, SPONSORS, SPONSORS_ARE_EXAMPLES } from "@/components/home/data";
 import { vxDisplay, vxSlab } from "@/components/home/fonts";
 import { usePhaseTimer } from "@/components/PhaseTimerProvider";
 import { useProfile } from "@/components/ProfileProvider";
@@ -27,48 +29,56 @@ import { useOpenShellMenu } from "@/components/ShellMenu";
 import { useGroup } from "@/components/useGroup";
 import { countdownParts, useEventCountdown } from "@/components/useEventCountdown";
 import { supabaseBrowser } from "@/lib/supabase/client";
-import type { Group } from "@/lib/types";
+import { PIECES_PER_SET, PROJECTOR_LOCATIONS, type Group } from "@/lib/types";
 import { formatCountdown, friendlyError } from "@/lib/utils";
 
 import "./freshie.css";
-import { GroupDashboard } from "./GroupDashboard";
+import { faciProfilesFor } from "./faciProfiles";
 import { FreshieSky, type SkyCabin } from "./FreshieSky";
+import { itemsShown } from "./items/sampleData";
+import { ProjectorKeys } from "./items/sections";
 import { groupSwatch, themeFromColor } from "./groupTheme";
 
 // Freshie Home (/dashboard for the Freshie role only) — the logged-in
 // version of the public welcome page, in the Vortexa "Night Ticket" style.
-// Five full-screen stops read one at a time (scroll snapping), each about
+// Four full-screen stops read one at a time (scroll snapping), each about
 // the Freshie's own group:
 //   01 Welcome + countdown (Live control's schedule timer), plus the running game.
-//      Freshies see one line: "Welcome to Vortexa" plus the group name.
-//      Facilitators keep the Vortexa lockup and the "you're in" line.
-//   02 Checklist (facilitator only: name, attendance, location)
-//   03 Group pass (token balance, next action, shortcuts)
-//   04 How the game works
-//   05 Scoreboard (own group highlighted)
-//   06 Today's schedule
-// Staff roles still get the original light dashboard
+//      Vortexa lockup, then "Welcome <group> Freshie!".
+//   02 Your Facilitator (Freshie only; sample profiles from faciProfiles.ts)
+//      or Checklist (facilitator only: name, attendance, location)
+//   03 Your Progress (tokens, puzzle pieces per key, FAQ)
+//   04 Scoreboard (own group highlighted)
+//   05 How the game works
+// The day's programme is on the Schedule page, not here.
+// Every other role, Faci included, gets StaffDashboard
 // (see app/(app)/dashboard/page.tsx).
 //
-// Data: stops 01–02 and the scoreboard use live data. The scoreboard reads
-// fn_scoreboard(), the same token_balance the admin token board shows.
+// Data: the scoreboard reads fn_scoreboard(), the same token_balance the
+// admin token board shows.
 // Per-group colour: --fh-accent / --fh-glow / --fh-blue come from groups.color.
 // Background: FreshieSky (scrolls with the page, ends in a city whose ferris
 // wheel has one cabin per group, coloured from the scoreboard rows).
 
 const STOPS = [
   { id: "fh-welcome", label: "Welcome" },
-  { id: "fh-pass", label: "My group" },
-  { id: "fh-game", label: "Game" },
+  { id: "fh-faci", label: "Facilitator" },
+  { id: "fh-pass", label: "Progress" },
   { id: "fh-scores", label: "Scores" },
-  { id: "fh-today", label: "Today" },
+  { id: "fh-game", label: "Game" },
 ] as const;
 
 const CHECK_STOP = { id: "fh-check", label: "Checklist" };
 
 function homeStops(isFaci: boolean) {
   if (!isFaci) return [...STOPS];
-  return [STOPS[0], CHECK_STOP, ...STOPS.slice(1)];
+  // A Faci gets the checklist where Freshies meet their Faci.
+  return [STOPS[0], CHECK_STOP, ...STOPS.slice(2)];
+}
+
+/** The name a Faci chose for the group, else its number name ("Group 1"). */
+function groupLabel(group: Group) {
+  return group.display_name?.trim() || group.name;
 }
 
 function goTo(id: string) {
@@ -165,27 +175,24 @@ function WelcomeStop({
   return (
     <section id="fh-welcome" className="fh-stop fh-center" aria-labelledby="fh-welcome-title">
       <div className="fh-eyebrow fh-mono">XMUM 26/12 Orientation</div>
+      <h1 id="fh-welcome-title" className="fh-welcome-title">
+        <span className="fh-pre fh-slab">WELCOME TO</span>
+        <span className="fh-mark">Vortexa</span>
+      </h1>
       {isFaci ? (
-        <>
-          <h1 id="fh-welcome-title" className="fh-welcome-title">
-            <span className="fh-pre fh-slab">WELCOME TO</span>
-            <span className="fh-mark">Vortexa</span>
-          </h1>
-          <p className="fh-hello">
-            Hi <b>{name || "there"}</b>
-            {group && (
-              <>
-                {" "}
-                · you&apos;re in <b>{group.name}</b>
-              </>
-            )}
-          </p>
-        </>
+        <p className="fh-hello">
+          Hi <b>{name || "there"}</b>
+          {group && (
+            <>
+              {" "}
+              · you&apos;re in <b>{group.name}</b>
+            </>
+          )}
+        </p>
       ) : (
-        <h1 id="fh-welcome-title" className="fh-welcome-line">
-          Welcome to Vortexa
-          {group ? <span className="fh-welcome-group"> {group.name}</span> : null}
-        </h1>
+        <p className="fh-hello">
+          Welcome {group && <b>{groupLabel(group)}</b>} Freshie!
+        </p>
       )}
       {/* The countdown follows Live control's schedule timer; the card shows a running game. */}
       <Countdown />
@@ -195,8 +202,8 @@ function WelcomeStop({
           {isFaci ? <KeyRound size={18} aria-hidden /> : <ScanLine size={18} aria-hidden />}
           {isFaci ? "Group code" : "Scan a QR"}
         </Link>
-        <button type="button" className="fh-btn fh-btn-ghost" onClick={() => goTo("fh-pass")}>
-          My group ↓
+        <button type="button" className="fh-btn fh-btn-ghost" onClick={() => goTo(isFaci ? "fh-pass" : "fh-faci")}>
+          My Group ↓
         </button>
       </div>
       <Credits />
@@ -393,85 +400,195 @@ export function ChecklistStop({ group, groupId }: { group: Group | null; groupId
   );
 }
 
-// ── 02 Group pass ────────────────────────────────────────────────────────────
+// ── 02 Your Facilitator (Freshie only) ───────────────────────────────────────
 
-function GroupPass({ group, loading }: { group: Group | null; loading: boolean }) {
-  if (loading) return <div className="fh-skel" aria-hidden />;
-  if (!group) {
-    return (
-      <div className="fh-pending">
-        <div className="fh-eb fh-mono">● Group pending</div>
-        <p>
-          You have not been assigned to a group yet. Check again after the registration counter finishes your
-          check-in.
-        </p>
-      </div>
-    );
-  }
+/** WhatsApp glyph (lucide has no brand icons). */
+function WhatsAppIcon({ size = 18 }: { size?: number }) {
   return (
-    <div className="fh-pass">
-      <div className="fh-pass-main">
-        <div className="fh-eb fh-mono">Group pass</div>
-        <div className="fh-pass-group">{group.name}</div>
-        <div className="fh-pass-num fh-slab">{group.token_balance}</div>
-        <div className="fh-pass-unit">tokens in your group</div>
-      </div>
-      <div className="fh-pass-stub fh-mono">
-        <span className="fh-live">
-          <i aria-hidden />
-          LIVE
-        </span>
-        <span>GROUP</span>
-        <b className="fh-slab">{String(group.id).padStart(2, "0")}</b>
-      </div>
-    </div>
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden>
+      <path d="M4 20l1.3-3.9A8 8 0 1 1 8 19z" strokeLinejoin="round" />
+      <path d="M9.5 9.2c.3 1.6 1.7 3.3 3.4 4l1-1 1.7.8-.3 1.2c-2.6.4-6.4-3-6.3-5.9l1.2-.4.8 1.6z" fill="currentColor" stroke="none" />
+    </svg>
   );
 }
 
-function PassStop({ group, loading }: { group: Group | null; loading: boolean }) {
+/** Instagram glyph (lucide has no brand icons). */
+function InstagramIcon({ size = 18 }: { size?: number }) {
   return (
-    <section id="fh-pass" className="fh-stop" aria-labelledby="fh-pass-title">
-      <div className="fh-stop-head">
-        <h2 id="fh-pass-title" className="fh-h2 fh-slab">Your pass</h2>
-        <p className="fh-lead">Your group&apos;s live token balance.</p>
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden>
+      <rect x="3" y="3" width="18" height="18" rx="5" />
+      <circle cx="12" cy="12" r="4" />
+      <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+function initialsOf(name: string) {
+  return (
+    name
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((w) => w[0]?.toUpperCase())
+      .join("") || "?"
+  );
+}
+
+function FaciStop({ groupId }: { groupId: number | null }) {
+  const facis = faciProfilesFor(groupId);
+  // Collapsed: photo, name, Instagram. One card open at a time so a group
+  // with several Facis still fits on one screen.
+  const [openId, setOpenId] = useState<string | null>(null);
+  return (
+    <section id="fh-faci" className="fh-stop" aria-labelledby="fh-faci-title">
+      <div className="fh-stop-head fh-stop-head-row">
+        <h2 id="fh-faci-title" className="fh-h2 fh-slab">
+          Your Facilitator{facis.length > 1 ? "s" : ""}
+        </h2>
+        <span className="fh-pill fh-mono fh-faci-sample">Sample</span>
       </div>
-      <div className="fh-pass-grid">
-        <GroupPass group={group} loading={loading} />
-        <div className="fh-pass-side">
-          <Link href="/inventory" className="fh-next">
-            <span className="fh-next-ic" aria-hidden>
-              <Package size={24} />
-            </span>
-            <span>
-              <span className="fh-eb fh-mono">Next action</span>
-              <b className="fh-slab">Check your progress</b>
-              <small>See your group&apos;s collected pieces &amp; rank</small>
-            </span>
-            <span className="fh-next-arr" aria-hidden>
-              <ArrowRight size={20} strokeWidth={2.4} />
-            </span>
-          </Link>
-          <nav className="fh-tiles" aria-label="Shortcuts">
-            <Link href="/transactions" className="fh-tile">
-              <span className="fh-tile-ic" style={{ background: "#FC9E3D24", color: "#FC9E3D" }} aria-hidden>
-                <History size={20} />
-              </span>
-              <b>Token history</b>
-            </Link>
-            <Link href="/faq" className="fh-tile">
-              <span className="fh-tile-ic" style={{ background: "#FE06AB24", color: "#FE06AB" }} aria-hidden>
-                <HelpCircle size={20} />
-              </span>
-              <b>FAQ</b>
-            </Link>
-          </nav>
-        </div>
-      </div>
+      <ul className="fh-facis">
+        {facis.map((f) => {
+          const open = openId === f.id;
+          return (
+            <li key={f.id} className="fh-faci" data-open={open || undefined}>
+              <div className="fh-faci-head">
+                <span className="fh-faci-avatar" aria-hidden>
+                  {f.avatarUrl ? (
+                    <Image src={f.avatarUrl} alt="" width={160} height={160} />
+                  ) : (
+                    <span className="fh-slab">{initialsOf(f.name)}</span>
+                  )}
+                </span>
+                <div className="fh-faci-id">
+                  {/* The button stretches over the whole row; the Instagram chip sits above it. */}
+                  <button
+                    type="button"
+                    className="fh-faci-toggle"
+                    aria-expanded={open}
+                    aria-controls={`fh-faci-${f.id}`}
+                    onClick={() => setOpenId(open ? null : f.id)}
+                  >
+                    <b className="fh-faci-name fh-slab">{f.name}</b>
+                  </button>
+                  {/* Sample handles and numbers are made up, so they do not link out yet. */}
+                  {(f.instagram || f.whatsapp) && (
+                    <div className="fh-faci-links">
+                      {f.instagram && (
+                        <span className="fh-faci-ig">
+                          <InstagramIcon size={14} />@{f.instagram}
+                        </span>
+                      )}
+                      {f.whatsapp && (
+                        <span className="fh-faci-wa">
+                          <WhatsAppIcon size={14} />WhatsApp
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <ChevronDown size={20} aria-hidden className="fh-faci-chev" />
+              </div>
+              {/* Always rendered so it can slide open; inert keeps it out of tab order and screen readers while closed. */}
+              <div id={`fh-faci-${f.id}`} className="fh-faci-drawer" inert={!open}>
+                <div className="fh-faci-clip">
+                  <div className="fh-faci-body">
+                    <small className="fh-faci-prog">
+                      <GraduationCap size={14} aria-hidden /> {f.programme}
+                    </small>
+                    <p className="fh-faci-intro">“{f.intro}”</p>
+                    <div className="fh-faci-langs">
+                      <Languages size={14} aria-hidden />
+                      {f.languages.map((lang) => (
+                        <span key={lang} className="fh-faci-lang">{lang}</span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
     </section>
   );
 }
 
-// ── 03 How the game works ────────────────────────────────────────────────────
+// ── 03 Your progress ─────────────────────────────────────────────────────────
+
+function ProgressStop({ group, loading }: { group: Group | null; loading: boolean }) {
+  const router = useRouter();
+  // Same keys as the Items page (sample data until Items goes live).
+  const items = useMemo(() => itemsShown(), []);
+  const owned = PROJECTOR_LOCATIONS.reduce((sum, loc) => sum + items.pieces[loc].length, 0);
+
+  return (
+    <section id="fh-pass" className="fh-stop" aria-labelledby="fh-pass-title">
+      <div className="fh-stop-head">
+        <h2 id="fh-pass-title" className="fh-h2 fh-slab">Your Progress</h2>
+      </div>
+      {loading ? (
+        <div className="fh-skel" aria-hidden />
+      ) : !group ? (
+        <div className="fh-pending">
+          <div className="fh-eb fh-mono">● Group pending</div>
+          <p>
+            You have not been assigned to a group yet. Check again after the registration counter finishes your
+            check-in.
+          </p>
+        </div>
+      ) : (
+        <div className="fh-prog">
+          <Link href="/transactions" className="fh-next fh-prog-tokens">
+            {/* Same gold coin as the Tokens tile on the Items page. */}
+            <span className="fh-next-ic fi-item-art" data-item="tokens" aria-hidden>
+              <Coins size={22} strokeWidth={2.2} />
+            </span>
+            <span>
+              <b className="fh-prog-title">Tokens</b>
+              <b className="fh-prog-num fh-slab">{group.token_balance}</b>
+            </span>
+            <span className="fh-next-arr" aria-label="Token history">
+              <ArrowRight size={20} strokeWidth={2.4} />
+            </span>
+          </Link>
+
+          <div className="fh-prog-puzzle">
+            <Link href="/inventory" className="fh-prog-head">
+              <span className="fh-tile-ic" style={{ background: "#E0B4FC24", color: "#E0B4FC" }} aria-hidden>
+                <Puzzle size={20} />
+              </span>
+              <span>
+                <b className="fh-prog-title">Puzzle Pieces</b>
+                <small className="fh-mono">
+                  {owned}/{PROJECTOR_LOCATIONS.length * PIECES_PER_SET}
+                  <span className="fh-prog-sample"> · Sample</span>
+                </small>
+              </span>
+              <span className="fh-prog-more">
+                Items <ArrowRight size={14} aria-hidden />
+              </span>
+            </Link>
+            <div className="fh-prog-keys">
+              <ProjectorKeys data={items} arrivals={{}} onSelect={() => router.push("/inventory")} />
+            </div>
+          </div>
+
+          <Link href="/faq" className="fh-tile fh-prog-faq">
+            <span className="fh-tile-ic" style={{ background: "#FE06AB24", color: "#FE06AB" }} aria-hidden>
+              <HelpCircle size={20} />
+            </span>
+            <b className="fh-prog-title">FAQ</b>
+            <small>Rules, help and contacts</small>
+            <ArrowRight size={18} aria-hidden />
+          </Link>
+        </div>
+      )}
+    </section>
+  );
+}
+
+// ── How the game works ────────────────────────────────────────────────────
 
 const PHASE_ICON: Record<string, React.ReactNode> = {
   Compass: <Compass size={22} />,
@@ -492,7 +609,7 @@ function GameStop() {
   return (
     <section id="fh-game" className="fh-stop" aria-labelledby="fh-game-title">
       <div className="fh-stop-head">
-        <h2 id="fh-game-title" className="fh-h2 fh-slab">How it works</h2>
+        <h2 id="fh-game-title" className="fh-h2 fh-slab">How It Works</h2>
         <p className="fh-lead">Four steps, played as a team.</p>
       </div>
       <ol className="fh-steps">
@@ -512,7 +629,7 @@ function GameStop() {
   );
 }
 
-// ── 04 Scoreboard ────────────────────────────────────────────────────────────
+// ── Scoreboard ────────────────────────────────────────────────────────────
 
 type ScoreRow = { id: number; name: string; color: string | null; token_balance: number };
 
@@ -574,51 +691,6 @@ function ScoresStop({ groupId, onRows }: { groupId: number | null; onRows?: (row
           );
         })}
       </ol>
-    </section>
-  );
-}
-
-// ── 05 Today ─────────────────────────────────────────────────────────────────
-
-const TYPE_DOT: Record<string, string> = { info: "#0DFCFD", star: "#F2FF0B", game: "#FE06AB", food: "#FC9E3D" };
-
-function TodayStop() {
-  // TODO(backend): read today's items from the Schedule page's data source
-  // and mark the current / finished items. Uses the homepage placeholder
-  // rundown (components/home/data.ts EVENTS) for now.
-  const [dayIdx, setDayIdx] = useState(0);
-  useEffect(() => {
-    const today = new Date().toLocaleDateString("en-GB", {
-      day: "numeric",
-      month: "short",
-      timeZone: "Asia/Kuala_Lumpur",
-    });
-    const i = EVENTS.findIndex((d) => d.date === today);
-    if (i >= 0) setDayIdx(i);
-  }, []);
-  const day = EVENTS[dayIdx] ?? EVENTS[0];
-
-  return (
-    <section id="fh-today" className="fh-stop" aria-labelledby="fh-today-title">
-      <div className="fh-stop-head">
-        <h2 id="fh-today-title" className="fh-h2 fh-slab">Today</h2>
-        <p className="fh-lead">
-          {day.day} · {day.date}
-        </p>
-      </div>
-      <ol className="fh-tl">
-        {day.items.map((it, i) => (
-          <li key={i} className="fh-it" style={{ "--d": TYPE_DOT[it.type] ?? "#0DFCFD" } as React.CSSProperties}>
-            <b>{it.title}</b>
-            <small className="fh-mono">
-              {it.time === "TBD" && it.venue === "TBD" ? "TIME & VENUE TBD" : `${it.time} · ${it.venue}`}
-            </small>
-          </li>
-        ))}
-      </ol>
-      <Link href="/schedule" className="fh-btn fh-btn-ghost fh-btn-block">
-        Full schedule →
-      </Link>
     </section>
   );
 }
@@ -711,7 +783,7 @@ function AccountMenu({
     <div ref={ref} style={{ position: "relative" }}>
       <button
         type="button"
-        className="fh-avatar"
+        className={roleLabel === "Freshie" ? "fh-avatar fh-avatar-label" : "fh-avatar"}
         aria-label="Account"
         aria-expanded={open}
         aria-controls="fh-account"
@@ -727,10 +799,44 @@ function AccountMenu({
             {groupName && roleLabel !== "Freshie" ? `, ${groupName}` : ""}
           </span>
           <button type="button" role="menuitem" onClick={signOut}>
-            Log out
+            Log Out
           </button>
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * Which stop is on screen. Keeps its own state so a stop change re-renders
+ * only this bar, not the whole page (sky, scoreboard, keys), which made the
+ * fill animation stutter. The fill animates width, not transform: Safari can
+ * skip transform transitions under the header's backdrop-filter.
+ */
+function StopBar({ stops }: { stops: readonly { id: string; label: string }[] }) {
+  const [active, setActive] = useState(0);
+
+  useEffect(() => {
+    const els = stops.map((s) => document.getElementById(s.id)).filter((el): el is HTMLElement => !!el);
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting) setActive(stops.findIndex((s) => s.id === e.target.id));
+        }
+      },
+      { rootMargin: "-45% 0px -50% 0px", threshold: 0 }
+    );
+    els.forEach((el) => io.observe(el));
+    return () => io.disconnect();
+  }, [stops]);
+
+  return (
+    <div className="fh-stopbar fh-mono" aria-hidden>
+      <b>{String(active + 1).padStart(2, "0")}</b>
+      <span className="fh-stopbar-track">
+        <span style={{ width: `${((active + 1) / stops.length) * 100}%` }} />
+      </span>
+      <span>{stops[active]?.label}</span>
     </div>
   );
 }
@@ -743,36 +849,19 @@ export function FreshieHome() {
   const isFaci = profile.role === "faci";
   const roleLabel = isFaci ? "Facilitator" : "Freshie";
   const stops = useMemo(() => homeStops(isFaci), [isFaci]);
-  const [active, setActive] = useState(0);
   // Scoreboard rows double as the ferris wheel's cabins (one per group).
   const [cabins, setCabins] = useState<SkyCabin[]>([]);
 
   // Section-by-section snapping, this page only (same idea as the homepage).
   useEffect(() => {
     const root = document.documentElement;
-    if (!isFaci) return;
     root.classList.add("fh-snap");
     return () => root.classList.remove("fh-snap");
-  }, [isFaci]);
-
-  useEffect(() => {
-    if (!isFaci) return;
-    const els = stops.map((s) => document.getElementById(s.id)).filter((el): el is HTMLElement => !!el);
-    const io = new IntersectionObserver(
-      (entries) => {
-        for (const e of entries) {
-          if (e.isIntersecting) setActive(stops.findIndex((s) => s.id === e.target.id));
-        }
-      },
-      { rootMargin: "-45% 0px -50% 0px", threshold: 0 }
-    );
-    els.forEach((el) => io.observe(el));
-    return () => io.disconnect();
-  }, [stops, isFaci]);
+  }, []);
 
   return (
     <div
-      className={`fh ${isFaci ? "" : "fh-operational"} ${vxDisplay.variable} ${vxSlab.variable}`}
+      className={`fh ${vxDisplay.variable} ${vxSlab.variable}`}
       style={
         {
           "--fh-accent": theme.accent,
@@ -801,7 +890,7 @@ export function FreshieHome() {
             </button>
           </div>
           <div className="fh-head-r">
-            {isFaci && <span className="fh-chip fh-mono">{roleLabel}</span>}
+            <span className="fh-chip fh-mono">{roleLabel}</span>
             <AccountMenu
               name={profile.full_name ?? ""}
               groupName={group?.name ?? null}
@@ -810,26 +899,14 @@ export function FreshieHome() {
             />
           </div>
         </div>
-        {isFaci && <div className="fh-stopbar fh-mono" aria-hidden>
-          <b>{String(active + 1).padStart(2, "0")}</b>
-          <span className="fh-stopbar-track">
-            <span style={{ width: `${((active + 1) / stops.length) * 100}%` }} />
-          </span>
-          <span>{stops[active]?.label}</span>
-        </div>}
+        <StopBar stops={stops} />
       </header>
 
-      {isFaci ? <>
       <WelcomeStop name={profile.full_name ?? ""} group={group} isFaci={isFaci} />
-      {isFaci && <ChecklistStop group={group} groupId={profile.group_id} />}
-      <PassStop group={group} loading={loading} />
-      <GameStop />
+      {isFaci ? <ChecklistStop group={group} groupId={profile.group_id} /> : <FaciStop groupId={profile.group_id} />}
+      <ProgressStop group={group} loading={loading} />
       <ScoresStop groupId={profile.group_id} onRows={setCabins} />
-      <TodayStop />
-      </> : <>
-        <GroupDashboard group={group} loading={loading} phase={<PhaseCard />} credits={<Credits />} />
-        <div className="gd-secondary"><ScoresStop groupId={profile.group_id} onRows={setCabins} /><GameStop /></div>
-      </>}
+      <GameStop />
     </div>
   );
 }

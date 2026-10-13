@@ -218,6 +218,14 @@ Full background: the "Issues Found" section in [permission-matrix.md](permission
 
 ## Done
 
+### Freshie Home back to the Vortexa scroll design, 2026-10-13
+- New "Your Facilitator" stop (Freshie only) between Welcome and Your Progress: collapsible cards (photo or initials, name, Instagram and WhatsApp; tap to open programme, intro and languages, one at a time, animated). "My Group" on Welcome scrolls here. **Sample data** from `faciProfiles.ts`; no backend yet. Left: profile fields for Faci (photo, Instagram, WhatsApp, programme, languages, intro), a page for Faci to edit them, and `faciProfilesFor()` reading the group's real Facis. Real Instagram handles and WhatsApp (wa.me) should then link out, and photo hosts need adding to `next.config` images.
+- Freshies get the full-screen stops again, in this order: Welcome, Your Facilitator, Your Progress, Scores, How It Works. Scroll snapping and the stop bar are back. The group dashboard trial (`GroupDashboard.tsx`, `.gd-*` and `.fh-operational` styles) is removed.
+- Welcome uses the facilitator lockup (WELCOME TO Vortexa) with "Welcome <group> Freshie!" (the Faci-set name if there is one), a FRESHIE chip, "Scan a QR" and "My group".
+- "Your pass" (the ticket card) is replaced by "Your progress": a Tokens card (live balance, opens Token history), a Puzzle pieces card, and an FAQ row. The puzzle card reuses the Items page's key strip (`ProjectorKeys`) and its data (`itemsShown()` in `sampleData.ts`), so it always matches what Items shows. That is sample data today; when Items moves to live data, change `itemsShown()` too.
+- The Today stop (placeholder rundown) is removed from the home. The programme is only on the Schedule page.
+- Faci home (`StaffDashboard`) is unchanged. No migration.
+
 ### Admin Live control, Headcount and Game Master assignment, 2026-10-12
 - **Live schedule section removed** from Live control (`LiveSchedule.tsx` deleted; `scheduleTimer` moved to `src/lib/scheduleTimer.ts`). The "Now on the Welcome page" box and all schedule data stay.
 - **Headcount is one number per group, always open** (no sessions, no open/close). New table `group_headcounts`, RPCs `fn_set_headcount` / `fn_clear_headcount` (audit-logged). Used by Admin → Headcount, `/attendance`, `/committee` and the Freshie Home checklist. Old `attendance_headcounts` / `attendance_sessions` are untouched; the latest value per group was copied over.
