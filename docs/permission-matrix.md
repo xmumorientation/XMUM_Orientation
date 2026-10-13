@@ -55,6 +55,13 @@ This reflects only the migration files in the repo. Any manual changes made to t
 | Attendance completion overview | — | Own Group | — | — | View All | View All | View All | Manage All | DB |
 | Manual Location Check-in | — | ✓ | — | — | — | — | — | † | DB |
 | GPS auto-report | — | ✓ | — | — | — | — | — | — | DB |
+| **Faci Profiles** (`faci_profiles`, migration 0069; no phone or WhatsApp stored) | | | | | | | | | |
+| See the Facis of own group with their profile (`fn_group_facis()`: name, Instagram, programme, languages, intro, photo) | Own Group | Own Group | — | — | — | — | — | — | DB |
+| Read the `faci_profiles` table directly (select policy) | — | Own row + own group | — | — | View All | View All | View All | View All | DB |
+| Edit own profile: photo, Instagram, programme, languages, intro (`fn_set_my_faci_profile`; own row only, audited) | — | Own | — | — | — | — | — | — | DB |
+| Upload, replace or delete a photo in the `faci-avatars` bucket (own folder `<user id>/` only; 1 MB; webp, jpeg, png; anyone can read photos) | — | Own | — | — | — | — | — | — | DB |
+| Clear a Faci's photo or intro (`fn_admin_clear_faci_profile`; audited) | — | — | — | — | — | — | — | ✓ | DB |
+| Insert, update or delete `faci_profiles` rows directly | — | — | — | — | — | — | — | — | DB (no policy; writes go through the RPC) |
 | **Committee / Operations** | | | | | | | | | |
 | Committee Operations page (/committee) | — | — | — | — | ✓ | ✓ | ✓ | † | UI |
 | Group Balance overview | — | — | — | — | View All | View All | View All | View All | DB |

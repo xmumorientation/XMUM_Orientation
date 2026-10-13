@@ -37,7 +37,7 @@ import { PIECES_PER_SET, PROJECTOR_LOCATIONS, type Group } from "@/lib/types";
 import { formatCountdown, friendlyError } from "@/lib/utils";
 
 import "./freshie.css";
-import { faciFromProfile, faciProfilesFor, type FaciProfile } from "./faciProfiles";
+import { faciFromProfile, type FaciProfile, type FaciRow } from "./faciProfiles";
 import { FaciAvatar, ProfileEditor } from "./ProfileEditor";
 import { FreshieSky, type SkyCabin } from "./FreshieSky";
 import { ProjectorKeys } from "./items/sections";
@@ -52,7 +52,7 @@ import { groupSwatch, themeFromColor } from "./groupTheme";
 //      Vortexa lockup, then "Welcome <group> Freshie!".
 //   02 Checklist (facilitator only: name, attendance, location)
 //   03 Your Facilitator (Freshie) or You & Your Partner (Faci; own card has
-//      an edit pencil). Sample profiles from faciProfiles.ts.
+//      an edit pencil). Real profiles from fn_group_facis().
 //   03 Your Progress (tokens, puzzle pieces per key, FAQ)
 //   04 Scoreboard (own group highlighted)
 //   05 How the game works
@@ -483,9 +483,12 @@ function InstagramIcon({ size = 18 }: { size?: number }) {
 
 
 /**
- * The Facis of a group, live: Admin assigns them in Freshie Control
- * (profiles.group_id). A Faci may read their own group's profiles under RLS.
- * The viewer comes first, then partners by name. Null while loading.
+ * The Facis of a group from fn_group_facis(), kept live: a Faci or Freshie
+ * sees the Facis of their own group with their profile fields. Reloads when
+ * Admin changes the group's Facis (profiles) or a Faci edits a profile
+ * (faci_profiles; realtime only delivers rows the caller may read, so a
+ * Freshie reloads when the page comes back into view instead).
+ * With `meId` the viewer's own card comes first. Null while loading.
  */
 function useGroupFacis(groupId: number | null, meId: string, enabled: boolean): FaciProfile[] | null {
   const supabase = useMemo(() => supabaseBrowser(), []);
@@ -499,72 +502,27 @@ function useGroupFacis(groupId: number | null, meId: string, enabled: boolean): 
     }
     let active = true;
     async function load() {
-      const { data } = await supabase
-        .from("profiles")
-        .select("id, full_name")
-        .eq("role", "faci")
-        .eq("group_id", groupId!)
-        .order("full_name");
+      const { data } = await supabase.rpc("fn_group_facis");
       if (!active) return;
-      const rows = ((data ?? []) as { id: string; full_name: string }[]).map((r) => faciFromProfile(r, meId));
+      const rows = ((data ?? []) as FaciRow[]).map((r) => faciFromProfile(r, meId));
       setFacis([...rows.filter((f) => f.isMe), ...rows.filter((f) => !f.isMe)]);
     }
     load();
-    // Only this group's rows, so a profile change elsewhere does not reload every Faci.
-    // Catches a partner added to the group (or renamed). A partner moved OUT arrives
-    // with group_id no longer this group, so it shows on the next load.
     const channel = supabase
       .channel(`fh-facis-${crypto.randomUUID()}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "profiles", filter: `group_id=eq.${groupId}` },
-        load
-      )
+      .on("postgres_changes", { event: "*", schema: "public", table: "profiles", filter: `group_id=eq.${groupId}` }, load)
+      .on("postgres_changes", { event: "*", schema: "public", table: "faci_profiles" }, load)
       .subscribe();
-    return () => {
-      active = false;
-      supabase.removeChannel(channel);
-    };
-  }, [supabase, groupId, meId, enabled]);
-
-  return facis;
-}
-
-/**
- * A Freshie's Facilitators from fn_group_facis() (rows: id, full_name, instagram
- * for the caller's group). Until the backend ships that RPC, falls back to the
- * sample profiles so the stop still shows something, marked Sample.
- * No realtime for Freshies (the RPC hides fields per caller); reloads when the
- * page comes back into view.
- */
-function useFreshieFacis(groupId: number | null, enabled: boolean): { facis: FaciProfile[]; sample: boolean } | null {
-  const supabase = useMemo(() => supabaseBrowser(), []);
-  const [result, setResult] = useState<{ facis: FaciProfile[]; sample: boolean } | null>(null);
-
-  useEffect(() => {
-    if (!enabled) return;
-    let active = true;
-    async function load() {
-      const { data, error } = await supabase.rpc("fn_group_facis");
-      if (!active) return;
-      // PGRST202 / 42883: the RPC does not exist yet.
-      if (error && (error.code === "PGRST202" || error.code === "42883")) {
-        setResult({ facis: faciProfilesFor(groupId), sample: true });
-        return;
-      }
-      const rows = (error ? [] : (data ?? [])) as { id: string; full_name: string; instagram?: string | null }[];
-      setResult({ facis: rows.map((r) => faciFromProfile(r, "")), sample: false });
-    }
-    load();
     const onVisible = () => { if (document.visibilityState === "visible") void load(); };
     document.addEventListener("visibilitychange", onVisible);
     return () => {
       active = false;
       document.removeEventListener("visibilitychange", onVisible);
+      supabase.removeChannel(channel);
     };
-  }, [supabase, groupId, enabled]);
+  }, [supabase, groupId, meId, enabled]);
 
-  return result;
+  return facis;
 }
 
 function FaciStop({
@@ -581,14 +539,11 @@ function FaciStop({
   /** Opens the profile editor (pencil on the Faci's own card). */
   onEditMe?: () => void;
 }) {
-  const live = viewer ? (team ?? null) : null;
-  const freshie = useFreshieFacis(groupId, !viewer);
+  const freshie = useGroupFacis(groupId, "", !viewer);
   // Until the list loads, a Faci sees at least their own card.
   const facis = viewer
-    ? (live ?? [faciFromProfile({ id: viewer.id, full_name: viewer.name }, viewer.id)])
-    : (freshie?.facis ?? []);
-  // Only the Freshie fallback is made-up; a Faci always sees real profiles.
-  const sample = !viewer && (freshie?.sample ?? false);
+    ? (team ?? [faciFromProfile({ id: viewer.id, full_name: viewer.name }, viewer.id)])
+    : (freshie ?? []);
   // Collapsed: photo, name, Instagram. One card open at a time so a group
   // with several Facis still fits on one screen.
   const [openId, setOpenId] = useState<string | null>(null);
@@ -602,7 +557,6 @@ function FaciStop({
             <>Your Facilitator{facis.length > 1 ? "s" : ""}</>
           )}
         </h2>
-        {sample && <span className="fh-pill fh-mono fh-faci-sample">Sample</span>}
       </div>
       <ul className="fh-facis">
         {facis.map((f) => {
@@ -628,11 +582,6 @@ function FaciStop({
                       // No handle yet: greyed and inactive until the Faci adds one.
                       <span className="fh-faci-ig" data-empty aria-disabled="true">
                         <InstagramIcon size={14} />Instagram
-                      </span>
-                    ) : sample ? (
-                      // Sample handles are made up, so they do not link out.
-                      <span className="fh-faci-ig">
-                        <InstagramIcon size={14} />@{f.instagram}
                       </span>
                     ) : (
                       <a
@@ -681,10 +630,10 @@ function FaciStop({
           );
         })}
       </ul>
-      {viewer && live && live.length < 2 && (
+      {viewer && team && team.length < 2 && (
         <p className="fh-faci-solo">No partner assigned yet. Admin assigns Facilitators in Freshie Control.</p>
       )}
-      {!viewer && freshie && freshie.facis.length === 0 && (
+      {!viewer && freshie && freshie.length === 0 && (
         <p className="fh-faci-solo">Your Facilitators will show here once they are assigned to your group.</p>
       )}
     </section>

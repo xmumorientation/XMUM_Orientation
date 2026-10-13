@@ -4,13 +4,13 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { Camera, X } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { vxSlab } from "@/components/home/fonts";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { friendlyError } from "@/lib/utils";
 
-import type { FaciProfile } from "./faciProfiles";
+import { avatarPathOf, type FaciProfile } from "./faciProfiles";
 
 export function initialsOf(name: string) {
   return (
@@ -57,12 +57,48 @@ export function FaciAvatar({
 }
 
 const NAME_MAX = 60;
+const PROGRAMME_MAX = 80;
+const INTRO_MAX = 160;
+const LANGUAGES_MAX = 6;
+const AVATAR_PX = 512;
+
+/** Square-crops a photo to 512 px and encodes it as webp (jpeg where webp is not supported). */
+async function resizeAvatar(file: File): Promise<Blob> {
+  const bitmap = await createImageBitmap(file);
+  const side = Math.min(bitmap.width, bitmap.height);
+  const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = AVATAR_PX;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("no canvas");
+  ctx.drawImage(
+    bitmap,
+    (bitmap.width - side) / 2,
+    (bitmap.height - side) / 2,
+    side,
+    side,
+    0,
+    0,
+    AVATAR_PX,
+    AVATAR_PX
+  );
+  bitmap.close();
+  const encode = (type: string) => new Promise<Blob | null>((res) => canvas.toBlob(res, type, 0.85));
+  const blob = (await encode("image/webp")) ?? (await encode("image/jpeg"));
+  if (!blob) throw new Error("encode failed");
+  return blob;
+}
+
+const parseLanguages = (text: string) =>
+  text
+    .split(/[,，、]/)
+    .map((l) => l.trim())
+    .filter(Boolean);
 
 /**
- * Bottom sheet where a Faci edits their profile. Only the name saves today
- * (profiles.full_name, which a user may update on their own row). Photo,
- * Instagram, programme, languages and intro wait for the profile backend
- * (see docs/ROADMAP.md), so they show but cannot be changed yet.
+ * Bottom sheet where a Faci edits their profile. The name saves to
+ * profiles.full_name (a user may update their own row); the rest saves through
+ * fn_set_my_faci_profile. The photo is resized on the phone and uploaded to
+ * faci-avatars/<user id>/ when the Faci taps Save.
  */
 export function ProfileEditor({
   open,
@@ -81,7 +117,13 @@ export function ProfileEditor({
 }) {
   const supabase = useMemo(() => supabaseBrowser(), []);
   const router = useRouter();
+  const fileRef = useRef<HTMLInputElement>(null);
   const [name, setName] = useState(me.name);
+  const [instagram, setInstagram] = useState(me.instagram ?? "");
+  const [programme, setProgramme] = useState(me.programme);
+  const [languages, setLanguages] = useState(me.languages.join(", "));
+  const [intro, setIntro] = useState(me.intro);
+  const [photo, setPhoto] = useState<{ blob: Blob; preview: string } | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -89,20 +131,82 @@ export function ProfileEditor({
   useEffect(() => {
     if (!open) return;
     setName(me.name);
+    setInstagram(me.instagram ?? "");
+    setProgramme(me.programme);
+    setLanguages(me.languages.join(", "));
+    setIntro(me.intro);
+    setPhoto(null);
     setError(null);
-  }, [open, me.name]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  useEffect(() => () => { if (photo) URL.revokeObjectURL(photo.preview); }, [photo]);
 
   const trimmed = name.trim();
-  const changed = trimmed !== me.name;
+  const handle = instagram.trim().replace(/^@+/, "");
+  const langList = parseLanguages(languages);
+  const handleOk = handle === "" || /^[A-Za-z0-9._]{1,30}$/.test(handle);
+  const langOk = langList.length <= LANGUAGES_MAX;
+  const changed =
+    trimmed !== me.name ||
+    handle !== (me.instagram ?? "") ||
+    programme.trim() !== me.programme ||
+    langList.join("|") !== me.languages.join("|") ||
+    intro.trim() !== me.intro ||
+    photo !== null;
+
+  async function pickPhoto(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setError(null);
+    try {
+      const blob = await resizeAvatar(file);
+      setPhoto({ blob, preview: URL.createObjectURL(blob) });
+    } catch {
+      setError("That photo could not be read. Try a JPG or PNG.");
+    }
+  }
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
-    if (!trimmed || !changed) return;
+    if (!trimmed || !changed || !handleOk || !langOk) return;
     setSaving(true);
     setError(null);
-    const { error: err } = await supabase.from("profiles").update({ full_name: trimmed }).eq("id", userId);
+
+    const oldPath = avatarPathOf(me.avatarUrl);
+    let avatarPath = oldPath;
+    if (photo) {
+      const ext = photo.blob.type === "image/jpeg" ? "jpg" : "webp";
+      // A new file name each time, so the old photo is not served from cache.
+      const path = `${userId}/${Date.now()}.${ext}`;
+      const up = await supabase.storage.from("faci-avatars").upload(path, photo.blob, { contentType: photo.blob.type });
+      if (up.error) {
+        setSaving(false);
+        return setError(friendlyError(up.error));
+      }
+      avatarPath = path;
+    }
+
+    if (trimmed !== me.name) {
+      const { error: err } = await supabase.from("profiles").update({ full_name: trimmed }).eq("id", userId);
+      if (err) {
+        setSaving(false);
+        return setError(friendlyError(err));
+      }
+    }
+    const { error: rpcErr } = await supabase.rpc("fn_set_my_faci_profile", {
+      p_instagram: handle,
+      p_programme: programme.trim(),
+      p_languages: langList,
+      p_intro: intro.trim(),
+      p_avatar_path: avatarPath,
+    });
     setSaving(false);
-    if (err) return setError(friendlyError(err));
+    if (rpcErr) return setError(friendlyError(rpcErr));
+
+    // Best effort: the replaced photo is no longer used.
+    if (photo && oldPath && oldPath !== avatarPath) void supabase.storage.from("faci-avatars").remove([oldPath]);
     onSaved(trimmed);
     // Server-rendered profile (menu drawer, other pages) picks up the new name.
     router.refresh();
@@ -123,9 +227,17 @@ export function ProfileEditor({
 
           <form onSubmit={save} className="fh-edit-form">
             <div className="fh-edit-photo">
-              <FaciAvatar name={trimmed || me.name} avatarUrl={me.avatarUrl} size={72} />
-              <button type="button" className="fh-edit-soonbtn" disabled>
-                <Camera size={16} aria-hidden /> Change Photo
+              <FaciAvatar name={trimmed || me.name} avatarUrl={photo?.preview ?? me.avatarUrl} size={72} />
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="fh-edit-file"
+                onChange={pickPhoto}
+                tabIndex={-1}
+              />
+              <button type="button" className="fh-edit-soonbtn" onClick={() => fileRef.current?.click()}>
+                <Camera size={16} aria-hidden /> {me.avatarUrl || photo ? "Change Photo" : "Add Photo"}
               </button>
             </div>
 
@@ -141,33 +253,57 @@ export function ProfileEditor({
               />
             </label>
 
-            <fieldset className="fh-edit-soon" disabled>
-              <legend>
-                <span className="fh-edit-soontag fh-mono">Soon</span>
-                These save once profiles go live.
-              </legend>
-              <label className="fh-edit-field">
-                <span>Instagram</span>
-                <span className="fh-edit-at">
-                  <i aria-hidden>@</i>
-                  <input className="fh-input" placeholder="your.handle" defaultValue={me.instagram ?? ""} />
-                </span>
-              </label>
-              <label className="fh-edit-field">
-                <span>Programme</span>
-                <input className="fh-input" placeholder="e.g. Computer Science · Year 3" defaultValue={me.programme} />
-              </label>
-              <label className="fh-edit-field">
-                <span>Languages</span>
-                <input className="fh-input" placeholder="e.g. English, 中文" defaultValue={me.languages.join(", ")} />
-              </label>
-              <label className="fh-edit-field">
-                <span>Intro</span>
-                <textarea className="fh-input" rows={3} maxLength={160} placeholder="A line or two to your group" defaultValue={me.intro} />
-              </label>
-            </fieldset>
+            <label className="fh-edit-field">
+              <span>Instagram</span>
+              <span className="fh-edit-at">
+                <i aria-hidden>@</i>
+                <input
+                  className="fh-input"
+                  placeholder="your.handle"
+                  maxLength={31}
+                  value={instagram}
+                  onChange={(e) => setInstagram(e.target.value)}
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  aria-invalid={!handleOk}
+                />
+              </span>
+              {!handleOk && <small className="fh-check-msg">Letters, numbers, . and _ only (30 max).</small>}
+            </label>
+            <label className="fh-edit-field">
+              <span>Programme</span>
+              <input
+                className="fh-input"
+                placeholder="e.g. Computer Science · Year 3"
+                maxLength={PROGRAMME_MAX}
+                value={programme}
+                onChange={(e) => setProgramme(e.target.value)}
+              />
+            </label>
+            <label className="fh-edit-field">
+              <span>Languages</span>
+              <input
+                className="fh-input"
+                placeholder="e.g. English, 中文"
+                value={languages}
+                onChange={(e) => setLanguages(e.target.value)}
+                aria-invalid={!langOk}
+              />
+              {!langOk && <small className="fh-check-msg">Up to {LANGUAGES_MAX} languages, separated by commas.</small>}
+            </label>
+            <label className="fh-edit-field">
+              <span>Intro</span>
+              <textarea
+                className="fh-input"
+                rows={3}
+                maxLength={INTRO_MAX}
+                placeholder="A line or two to your group"
+                value={intro}
+                onChange={(e) => setIntro(e.target.value)}
+              />
+            </label>
 
-            <button type="submit" className="fh-btn fh-btn-primary fh-btn-block" disabled={!trimmed || !changed || saving}>
+            <button type="submit" className="fh-btn fh-btn-primary fh-btn-block" disabled={!trimmed || !changed || !handleOk || !langOk || saving}>
               {saving ? "Saving…" : "Save"}
             </button>
             {error && (
