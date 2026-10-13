@@ -35,6 +35,19 @@
 .fh-vx .fh-btn-primary:hover { background: #e6f000; }
 .fh-vx .fh-menu button:hover { border-color: var(--fh-pink); color: var(--fh-pink); }
 
+/* ── HOGM subpage header (OpsHeader): Home's header, in normal flow ──────── */
+.fh.ops-head {
+  position: sticky; top: 0; z-index: 40; flex: none;
+  padding-top: env(safe-area-inset-top, 0px);
+  background: rgba(7, 6, 11, 0.94); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+  border-bottom: 1px solid #25202f;
+}
+.ops-head .app-phase-timer:not(.is-endgame) { background: #15121e; color: #f3f0fa; }
+.ops-head .app-phase-timer > span:first-child { color: #0dfcfd; }
+@media (min-width: 1024px) {
+  .fh.ops-head { display: none; }
+}
+
 /* ── Schedule (FreshieSchedule vortexa, HOGM) ─────────────────────────────── */
 .fh-vx .fh-bg {
   background: linear-gradient(180deg, #07060b 0%, #07060b 35%, #060816 55%, #080b22 70%, #0d0f33 85%, #17154a 100%);

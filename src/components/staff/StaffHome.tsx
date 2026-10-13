@@ -17,6 +17,7 @@ import { FreshieSky, type SkyCabin } from "@/components/freshie/FreshieSky";
 import { groupSwatch, VORTEXA_THEME } from "@/components/freshie/groupTheme";
 import { nexusBody, vxDisplay, vxSlab } from "@/components/home/fonts";
 import { usePhaseTimer } from "@/components/PhaseTimerProvider";import { useProfile } from "@/components/ProfileProvider";
+import { OPS_CHIP } from "@/components/staff/OpsHeader";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { ROLE_LABELS, type UserRole } from "@/lib/types";
 
@@ -36,9 +37,6 @@ const STOPS = [
   { id: "sh-scores", label: "Scores" },
   { id: "sh-tools", label: "Tools" },
 ] as const;
-
-/** Short role name for the header chip. */
-const CHIP: Partial<Record<UserRole, string>> = { hof: "HOF", hogm: "HOGM", committee: "Committee" };
 
 type FloorGroup = { id: number; name: string; color: string | null; token_balance: number };
 
@@ -256,7 +254,7 @@ export function StaffHome() {
             </button>
           </div>
           <div className="fh-head-r">
-            <span className="fh-chip fh-mono">{CHIP[profile.role] ?? ROLE_LABELS[profile.role]}</span>
+            <span className="fh-chip fh-mono">{OPS_CHIP[profile.role] ?? ROLE_LABELS[profile.role]}</span>
             <AccountMenu
               name={profile.full_name ?? ""}
               groupName={null}

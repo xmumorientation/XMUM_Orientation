@@ -11,6 +11,7 @@ import { themeFromColor, VORTEXA_THEME } from "@/components/freshie/groupTheme";
 import { ShellMenuProvider } from "@/components/ShellMenu";
 import { NavIcon } from "@/components/NavIcon";
 import { NewItemToast } from "@/components/NewItemToast";
+import { OpsHeader } from "@/components/staff/OpsHeader";
 import { PhaseTimer } from "@/components/PhaseTimer";
 import { FaciLocationBanner } from "@/components/FaciLocationTracker";
 import { useConfig } from "@/components/useConfig";
@@ -234,7 +235,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         primaryHref={isOps ? "/committee" : undefined}
         onSignOut={signOut}
       />
-      {!isNight && (
+      {/* HOGM subpages: Home's logo, role chip and account menu (OpsHeader). */}
+      {isStaffSubpage && profile.role === "hogm" && <OpsHeader />}
+      {!isNight && !(isStaffSubpage && profile.role === "hogm") && (
       <header className={cn("sticky top-0 z-40 border-b border-paper-200 bg-paper-50/95 pt-[env(safe-area-inset-top)] shadow-[0_1px_0_rgba(28,26,23,0.03)] backdrop-blur lg:hidden", isStaffSubpage && "sp-header")}>
         {isStaffSubpage ? (
           <div className="sp-header-row">
