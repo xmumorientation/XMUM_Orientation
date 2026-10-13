@@ -260,6 +260,11 @@ Full background: the "Issues Found" section in [permission-matrix.md](permission
 
 ## Done
 
+### Vortexa logo intro on opening the site and after login, 2026-10-13
+- `VortexaIntro` ([VortexaIntro.tsx](../src/components/VortexaIntro.tsx), [vortexa-intro.css](../src/components/vortexa-intro.css)), mounted once in the root layout: a dark cover, the Vortexa logo sharpens in, a light band sweeps across it, then the cover fades out (about 2.7 s). Same idea as the interview site's `HomeIntro`.
+- Plays on every full page load: opening the site on any page, a refresh, and after every login (password, Freshie, QR join and Google all end in a full load). Not on in-app navigation. Off with reduced motion.
+- No "Click to skip" text; a tap still ends it early. Also plays on `/bigscreen` when that page is opened or refreshed.
+
 ### Faci Home on the Vortexa scroll design, 2026-10-13
 - Facilitators now get the same scroll home as Freshies (`/dashboard` → `FreshieHome`); GM, Committee and Admin keep `StaffDashboard`. Its Faci workspace is no longer reached.
 - Faci stops: Welcome (Hi <name> · you're in <group>, Group Code, My Group → Checklist), Checklist, You & Your Partner, Your Progress, Scores, How It Works.

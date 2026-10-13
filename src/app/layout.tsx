@@ -3,6 +3,7 @@ import { Inter, JetBrains_Mono, Space_Grotesk } from "next/font/google";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
 import "./globals.css";
+import { VortexaIntro } from "@/components/VortexaIntro";
 import { cn } from "@/lib/utils";
 
 // Self-hosted at build time by next/font — no runtime dependency on a font
@@ -70,6 +71,10 @@ export default function RootLayout({
       className={cn(display.variable, body.variable, mono.variable)}
     >
       <body className="min-h-dvh font-sans">
+        {/* Logo reveal on every full page load: opening the site, a refresh,
+            and every login (they all end in a full load). The root layout
+            stays mounted on in-app navigation, so it does not replay there. */}
+        <VortexaIntro />
         {children}
         <SpeedInsights />
       </body>
