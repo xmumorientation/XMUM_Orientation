@@ -272,7 +272,8 @@ Branch `hogm-home-redesign`. Migrations `0071_hogm_game_control.sql` and `0072_h
   - **Tokens**: token rules, and Reset (only in Rehearsal mode, and you must type RESET).
   - **Puzzles**: upload the picture for each location.
   - **NFC**: generate sticker links and see the issued list.
-  - **Floor**: headcount and token balance per group, and My blind box QR.
+  - My blind box QR sits under Game.
+- **Scores tab (`/token`) for HOGM**: `GroupScores`, every group's token total and puzzle total (out of 15), best first. Tap a group to see its three puzzle keys drawn like the Freshie Items page (`KeyEmblem`), with pieces per key and a Lit tag when that group lit the projector. Live from `groups`, `inventory` and `projectors`. No headcount (that stays on the HOF and Committee Ops page).
 - Navigation: a chip row on phones and portrait tablets, a side rail on landscape tablets and desktops. The sections can be linked with `#game`, `#stations` and so on.
 - Not included, as asked: kill-switches, Now on Welcome, Live Ops numbers, the token log, Blind box management, and the map (the map is on the Map tab).
 - Backend (0071):

@@ -227,14 +227,32 @@
 .gc-minted-row b { font-size: 14px; }
 .gc-minted-row code { font-family: var(--gc-mono); font-size: 11px; color: var(--gc-mute); overflow-wrap: anywhere; }
 
-/* ── Plain rows (NFC issued, Floor) ──────────────────────────────────────── */
+/* ── Plain rows (NFC issued) ──────────────────────────────────────── */
 .gc-rows { list-style: none; margin: 8px 0 0; padding: 0 0 6px; }
 .gc-rows > li { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 48px; padding: 8px 16px; border-top: 1px solid var(--gc-line); font-size: 14px; }
-.gc-floor > li { display: grid; grid-template-columns: minmax(0, 1fr) 64px 64px; }
-.gc-floor > li b { font-family: var(--gc-slab); font-weight: 400; font-size: 17px; text-align: right; font-variant-numeric: tabular-nums; }
-.gc-floor .gc-rows-head { min-height: 32px; border-top: 0; font-family: var(--gc-mono); font-size: 9.5px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--gc-mute); }
-.gc-floor .gc-rows-head span:not(:first-child) { text-align: right; }
 .gc-bb:empty { display: none; }
+
+/* ── Scores (GroupScores, HOGM's /token) ─────────────────────────────────── */
+.gc-scores-head, .gc .gc-score-head { display: grid; grid-template-columns: 24px 10px minmax(0, 1fr) 52px 64px 18px; align-items: center; gap: 10px; }
+.gc-scores-head { padding: 0 14px 8px 16px; font-family: var(--gc-mono); font-size: 9.5px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--gc-mute); }
+.gc-scores-head span:first-child { grid-column: 1 / 4; }
+.gc-scores-head span:not(:first-child) { text-align: right; }
+.gc-scores-head span:last-child { grid-column: 5; }
+.gc-scores { margin-bottom: 24px; }
+.gc-scores, .gc-scores-head { max-width: 880px; }
+.gc-rank { font-family: var(--gc-mono); font-size: 11px; color: var(--gc-mute); }
+.gc-scores > li:first-child .gc-rank { color: var(--gc-yellow); }
+.gc-swatch { width: 10px; height: 10px; border-radius: 50%; }
+.gc-num { font-family: var(--gc-slab); font-weight: 400; font-size: 20px; text-align: right; font-variant-numeric: tabular-nums; }
+.gc-num-sub { font-size: 17px; color: var(--gc-text-2); }
+.gc-num small { font-family: var(--gc-mono); font-size: 10px; color: var(--gc-mute); margin-left: 1px; }
+.gc-keys { list-style: none; margin: 0; padding: 12px 0 0; border-top: 1px solid var(--gc-line); display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.gc-key { display: grid; justify-items: center; gap: 4px; padding: 12px 6px; border-radius: 16px; background: var(--gc-ink-3); border: 1px solid var(--gc-line); text-align: center; }
+.gc-key[data-lit] { border-color: rgba(13, 252, 253, 0.5); box-shadow: 0 0 20px rgba(13, 252, 253, 0.12); }
+.gc-key-art { width: min(84px, 100%); height: auto; overflow: visible; }
+.gc-key b { font-size: 13.5px; font-weight: 600; }
+.gc-key small { font-size: 11px; color: var(--gc-mute); line-height: 1.25; }
+.gc-key .gc-chip { display: inline-flex; align-items: center; gap: 4px; margin-top: 2px; }
 
 /* ── Sheets (portal) ─────────────────────────────────────────────────────── */
 .gc-sheet.gc-sheet {

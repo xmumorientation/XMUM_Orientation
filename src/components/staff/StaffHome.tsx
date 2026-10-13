@@ -139,7 +139,7 @@ function FloorStop({ groups, checkedIn }: { groups: FloorGroup[] | null; checked
       label: "people checked in",
     },
     {
-      href: "/committee?view=balances",
+      href: "/token",
       Icon: Trophy,
       value: leader && leader.token_balance > 0 ? leader.name : "—",
       label: leader && leader.token_balance > 0 ? `leading · ${leader.token_balance.toLocaleString("en")} tokens` : "no tokens yet",
