@@ -5,7 +5,7 @@ Read it before starting a new round of development. When a decision changes, upd
 
 > **From Ben:** when you finish your work, write down what you completed in the "Done" section at the end of this file, so the next teammate can see it. Do this for partly finished items too: say which parts are done and which are left.
 
-Last updated: 2026-10-13
+Last updated: 2026-10-14
 
 ## Status key
 
@@ -216,12 +216,20 @@ The design branches are merged. These remote branches are still not in `main` (c
 
 ## Done
 
+### Migrations to run on Supabase for the 2026-10-13 and 2026-10-14 work
+Run in this order (each only once; `0054`-`0058` and `0065` must already be there):
+- `0070_blindbox_buy_flow.sql`: one public QR per seller, BUY then open from Items (see "Blind boxes: one QR per seller").
+- `0071_fix_admin_station_gms_types.sql`: Admin → Stations showed every station as "Unassigned" after assigning Game Masters, because `fn_admin_station_gms()` declared `day` as integer while the live `gm_station_assignments.day` is smallint (Postgres: "structure of query does not match function result type"). The function now casts the columns.
+- `0072_station_status_manual.sql`: station status is manual only.
+- `0073` to `0076`: Manual Location Update, details, per group, Admin-managed locations.
+Branch `jiamin-blind-box-integration` skips `0059`-`0069` on purpose (they live on `main`). The test files `tests/*/stub-schema.sql` are for the local test database only and must never be run on Supabase.
+
 ### Manual Location Update + "Headcount and location", 2026-10-14 (changesv4.md)
 Migrations `0073_faci_location_updates.sql`, `0074_faci_location_details.sql`, `0075_faci_location_per_group.sql`, `0076_faci_location_options.sql` (run in that order, after `0071` and `0072`).
 - **The location belongs to the GROUP.** Any Facilitator in Group 1 can send Group 1's location; the group shares one latest update (like the headcount). Each entry records which Facilitator sent it. A Facilitator with no group cannot send one.
 - **Facilitator page:** a fourth Checklist row, "Manual Location Update" (the lead says "Four things"). Status (Heading to / Arrived / Other; Other shows a text box, up to 60 characters), Building (the options Admin manages) and an optional "Details" comment (up to 200 characters; an update can be sent with it empty). The row shows the group's last update, whoever sent it, including "(edited by Admin)". Text only: no GPS, not the map, not station check-in (row 03 "Update Location" is unchanged).
 - **Admin page "Headcount and location"** (menu and title; the URL is still `/admin/freshies/headcount`) is now TWO separate tables, each with Group 1 to 10: **Headcount** (Local / International / Total, always open) and **Location** (status and building on one line, Details under them, and who sent it and when). From md up they are tables (about 560px each); on a phone each group is a compact card with 44px touch targets and no sideways scroll. Updates live. Admin corrects a group's latest update with the dropdowns / Details box and taps Save (marked "edited", audited with before and after); earlier updates are under "History". Admin does not add updates for a group; only Facilitators do. The headcount table on the Groups page is unchanged.
-- **Admin manages the location options** (`0076`): a "Locations" card under the Location table to add, rename, reorder (up/down) and delete the options (A1, A3, ...). Seeded with A1-A5, B1, Track & Field. Rename also renames earlier updates; deleting one that updates already used hides it (it leaves the dropdowns, those updates keep the text), deleting an unused one removes it. Everyone signed in reads the options; only Admin changes them (`fn_admin_location_option_save` / `_delete` / `_move`). The Facilitator dropdown and the Admin dropdowns follow them live.
+- **Admin manages the location options** (`0076`): a "Locations" card under the Location table to add, rename, reorder (up/down) and delete the options (A1, A3, ...). Seeded with A1-A5, B1, Track & Field. Rename also renames earlier updates; deleting one that updates already used hides it (it leaves the dropdowns, those updates keep the text), deleting an unused one removes it. Everyone signed in reads the options; only Admin changes them (`fn_admin_location_option_save` / `_delete` / `_move`). The Facilitator dropdown and the Admin dropdowns follow them live: they also reload straight after Admin changes something and whenever the tab comes back into view (a page opened before `0076` was run kept showing the built-in list and "No locations yet" until reloaded), and the card says "Run migration 0076" if the table cannot be read.
 - **Database:** table `faci_location_updates` (user_id = sender, group_id = the group; no coordinates; status checked; Other needs text; the building is checked against the live options). Nobody writes directly: `fn_faci_log_location` (a Faci, for their group) and `fn_admin_edit_faci_location` (Admin, the group's latest entry). A Faci reads their group's entries; HOF / HOGM / Committee / Admin read all. `0075` moved entries made before it onto their Facilitator's group and removed entries from a Facilitator with no group.
 - **Tests:** `tests/faci-location/db.test.ts` (real Postgres + the real migrations, including the 0074 to 0075 data move): any Faci in a group updates the group's latest, another group is untouched, a Faci with no group is refused, Other text rules, optional details, read access by role, no direct writes, Admin edits (mark, audit, only a group's latest entry, validation, role checks), and the options (create, duplicate / invalid names, delete vs hide, rename carries the history, archived building kept on an edit, move, role checks). 32 tests; the test cleanup tolerates Windows keeping the temp folder locked.
 - **Checked on your Supabase project** (localhost; test entries removed): the Facilitator sent an update with a comment; Admin changed it and it was saved and marked "edited"; the page checked at 375px with no sideways scroll. Not checked live: the Locations card (needs `0076` run on Supabase).
