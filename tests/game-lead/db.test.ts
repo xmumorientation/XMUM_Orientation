@@ -59,6 +59,24 @@ async function fails(p: Promise<unknown>): Promise<string | null> {
   }
 }
 
+/** One `create or replace function public.<fn>(…) … $$;` block from a migration file. */
+function fnFrom(file: string, fn: string): string {
+  const text = sql(`supabase/migrations/${file}`);
+  const start = text.indexOf(`create or replace function public.${fn}(`);
+  if (start < 0) throw new Error(`${fn} not in ${file}`);
+  const end = text.indexOf("\n$$;", start);
+  return text.slice(start, end + 4);
+}
+
+const ORIGINALS: [string, string][] = [
+  ["0003_functions.sql", "fn_phase_control"],
+  ["0003_functions.sql", "fn_set_config"],
+  ["0046_token_rules.sql", "fn_update_game_config_rule"],
+  ["0056_token_reset.sql", "fn_reset_tokens_and_puzzles"],
+  ["0065_gm_station_per_day_and_headcount.sql", "fn_admin_station_gms"],
+  ["0066_station_gms_set.sql", "fn_admin_set_station_gms"],
+];
+
 const q = async <T extends Row = Row>(text: string, params: unknown[] = []) => (await db.query(text, params)).rows as T[];
 
 beforeAll(async () => {
@@ -101,6 +119,8 @@ beforeAll(async () => {
     create policy "public read puzzle images" on storage.objects for select using (bucket_id = 'puzzle-images');
     create policy "admin writes puzzle images" on storage.objects for insert with check (bucket_id = 'puzzle-images' and public.is_admin());
   `);
+  // The functions 0071 patches, as the repo's migrations define them.
+  for (const [file, fn] of ORIGINALS) await db.query(fnFrom(file, fn));
   await db.query(sql("supabase/migrations/0071_hogm_game_control.sql"));
 
   for (const [id, role] of [
@@ -123,6 +143,25 @@ afterAll(async () => {
   await db?.end();
   await pg?.stop();
   rmSync(dataDir, { recursive: true, force: true });
+});
+
+describe("0071 patches the installed functions", () => {
+  it("keeps each function's own body and swaps only the check", async () => {
+    const def = (await q("select pg_get_functiondef('public.fn_phase_control(text,text,integer)'::regprocedure) as d"))[0].d as string;
+    expect(def).toContain("PHASE_NOT_FOUND");
+    expect(def).toContain("public.is_game_lead()");
+    expect(def).not.toContain("public.is_admin()");
+  });
+
+  it("running it twice stops with an error and changes nothing", async () => {
+    const before = (await q("select pg_get_functiondef('public.fn_set_config(text,jsonb)'::regprocedure) as d"))[0].d;
+    await db.query("begin");
+    const err = await fails(db.query(sql("supabase/migrations/0071_hogm_game_control.sql")));
+    await db.query("rollback");
+    expect(err).toMatch(/exactly one is_admin\(\) check; nothing changed/);
+    const after = (await q("select pg_get_functiondef('public.fn_set_config(text,jsonb)'::regprocedure) as d"))[0].d;
+    expect(after).toBe(before);
+  });
 });
 
 describe("game lead (HOGM + Admin)", () => {
