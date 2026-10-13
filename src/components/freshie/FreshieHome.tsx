@@ -40,8 +40,8 @@ import "./freshie.css";
 import { faciFromProfile, faciProfilesFor, type FaciProfile } from "./faciProfiles";
 import { FaciAvatar, ProfileEditor } from "./ProfileEditor";
 import { FreshieSky, type SkyCabin } from "./FreshieSky";
-import { itemsShown } from "./items/sampleData";
 import { ProjectorKeys } from "./items/sections";
+import { useItemsData } from "./items/useItemsData";
 import { groupSwatch, themeFromColor } from "./groupTheme";
 
 // Freshie Home (/dashboard for Freshies and Facilitators) — the logged-in
@@ -695,8 +695,8 @@ function FaciStop({
 
 function ProgressStop({ group, loading }: { group: Group | null; loading: boolean }) {
   const router = useRouter();
-  // Same keys as the Items page (sample data until Items goes live).
-  const items = useMemo(() => itemsShown(), []);
+  // Same live data as the Items page, so both always show the same keys.
+  const { data: items } = useItemsData();
   const owned = PROJECTOR_LOCATIONS.reduce((sum, loc) => sum + items.pieces[loc].length, 0);
 
   return (
@@ -739,7 +739,6 @@ function ProgressStop({ group, loading }: { group: Group | null; loading: boolea
                 <b className="fh-prog-title">Puzzle Pieces</b>
                 <small className="fh-mono">
                   {owned}/{PROJECTOR_LOCATIONS.length * PIECES_PER_SET}
-                  <span className="fh-prog-sample"> · Sample</span>
                 </small>
               </span>
               <span className="fh-prog-more">

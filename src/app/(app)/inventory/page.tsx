@@ -7,6 +7,7 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import { FreshieItems } from "@/components/freshie/items/FreshieItems";
 import { DEFAULT_SCENARIO, SAMPLE_SCENARIOS, sampleItems, withLastTrackPiece, type SampleScenario } from "@/components/freshie/items/sampleData";
 import type { BoxKind, BoxReward, ItemsData } from "@/components/freshie/items/types";
+import { useItemsData } from "@/components/freshie/items/useItemsData";
 
 import { PuzzleBoard } from "@/components/PuzzleBoard";
 import { useProfile } from "@/components/ProfileProvider";
@@ -28,20 +29,33 @@ export default function InventoryPage() {
   if (profile.role === "freshie" || profile.role === "faci") {
     return (
       <Suspense>
-        <ItemsPreview />
+        <FreshieItemsRoute />
       </Suspense>
     );
   }
   return <GroupInventory />;
 }
 
-// SAMPLE DATA: Freshie and facilitator Items page. Everything shown here comes
-// from sampleData.ts, not from the game. TODO: wire to the bonding-session game
-// data before the event. With no ?demo it plays "complete": the last T&F
-// piece arrives after a moment, with a Replay button. ?demo=day1|day2|ready|
-// taken|won picks another state. Opening a box only changes the sample in
-// this browser. In the sample, Freshies can open boxes too so the blind box
-// flow can be demoed; on live data only the Faci can.
+/** Live data by default; ?demo=… plays the sample instead (kept for previews and the Replay demo). */
+function FreshieItemsRoute() {
+  const params = useSearchParams();
+  return params.get("demo") ? <ItemsPreview /> : <LiveItems />;
+}
+
+// LIVE: the group's real tokens, puzzle pieces, projectors, phase and history
+// (useItemsData). Blind boxes still show the sample and cannot be opened here:
+// real boxes are opened from the seller's QR (fn_open_blind_box).
+function LiveItems() {
+  const { group } = useGroup();
+  const { data } = useItemsData();
+  return <FreshieItems data={data} groupColor={group?.color} canOpenBoxes={false} onOpenBox={async () => null} />;
+}
+
+// SAMPLE DATA (?demo=…): everything shown comes from sampleData.ts, not from
+// the game. ?demo=complete plays the last T&F piece arriving after a moment,
+// with a Replay button; ?demo=day1|day2|ready|taken|won picks another state.
+// Opening a box only changes the sample in this browser. In the sample,
+// Freshies can open boxes too so the blind box flow can be demoed.
 function ItemsPreview() {
   const profile = useProfile();
   const { group } = useGroup();

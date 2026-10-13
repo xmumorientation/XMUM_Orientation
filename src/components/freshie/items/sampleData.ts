@@ -1,15 +1,11 @@
 import type { HistoryEntry, ItemsData } from "./types";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SAMPLE DATA ONLY: not real game data.
-// Every Freshie and Faci sees these made-up tokens, pieces and boxes on the
-// Items page (marked "Sample data" in the header) until the page reads the
-// live game data: fn_my_inventory_group, fn_my_puzzle_inventory,
-// fn_group_blind_boxes and fn_lighting_zones from bonding-session.
-// TODO: replace with live data before the event; keep ?demo for previews.
-//
-// /inventory with no ?demo plays "complete": the T&F key completing (the 5th
-// piece arrives). Add ?demo=day1|day2|ready|taken|won to see the other states.
+// SAMPLE DATA ONLY: not real game data. Kept for previews and the Replay demo.
+// /inventory shows live data (useItemsData.ts); add ?demo=… to see these:
+// ?demo=complete plays the T&F key completing (the 5th piece arrives, with a
+// Replay button); ?demo=day1|day2|ready|taken|won shows the other states.
+// GUARDIAN and SAMPLE_BOXES are also used by live data for now.
 // Locations show as code names (Star, Wheel, Orbit) until the map unlocks;
 // only "ready" and "won" are unlocked here.
 // ─────────────────────────────────────────────────────────────────────────────
@@ -17,7 +13,8 @@ import type { HistoryEntry, ItemsData } from "./types";
 export const SAMPLE_SCENARIOS = ["day1", "day2", "ready", "taken", "won", "complete"] as const;
 export type SampleScenario = (typeof SAMPLE_SCENARIOS)[number];
 
-const GUARDIAN: ItemsData["guardian"] = {
+/** Also used by live data until Admin can set the Guardian spots. */
+export const GUARDIAN: ItemsData["guardian"] = {
   B1: { place: "B1 lobby, beside the east staircase", hint: "Look for the Guardian in the light-blue vest.", photoUrl: null },
   A3: { place: "A3 main entrance, under the clock", hint: "Wait at the glass doors facing the car park.", photoUrl: null },
   TF: { place: "Track & Field, finish-line stand", hint: "Enter from the gate next to the volleyball court.", photoUrl: null },
@@ -45,6 +42,12 @@ const DAY2_HISTORY: HistoryEntry[] = [
   { id: "d2-0", kind: "entry", day: 2, title: "Station 2 · Low risk", detail: "Entry fee", amount: -2, time: "13:08" },
 ];
 
+/** Sample blind boxes. Live data shows these too until the blind box section is redone. */
+export const SAMPLE_BOXES: ItemsData["boxes"] = {
+  gold: { unopened: 5, opened: [5] },
+  standard: { unopened: 2, opened: [2, 1, 1, 2] },
+};
+
 function base(): ItemsData {
   return {
     phase: "day2",
@@ -56,7 +59,7 @@ function base(): ItemsData {
     projectors: { B1: null, A3: null, TF: null },
     pieces: { B1: [1, 2, 4], A3: [3], TF: [2] },
     guardian: GUARDIAN,
-    boxes: { gold: { unopened: 5, opened: [5] }, standard: { unopened: 2, opened: [2, 1, 1, 2] } },
+    boxes: SAMPLE_BOXES,
     history: [...DAY2_HISTORY, ...DAY1_HISTORY],
   };
 }
@@ -126,9 +129,8 @@ export function sampleItems(scenario: SampleScenario = "day2"): ItemsData {
 export const DEFAULT_SCENARIO: SampleScenario = "complete";
 
 /**
- * What the Items page shows once its default demo settles. Freshie Home's
- * puzzle card reads this so both pages show the same keys. When Items moves
- * to live data, point this at the same source.
+ * What ?demo=complete shows once it settles. (Freshie Home's puzzle card now
+ * reads live data through useItemsData, like the Items page.)
  */
 export function itemsShown(): ItemsData {
   return withLastTrackPiece(sampleItems(DEFAULT_SCENARIO));

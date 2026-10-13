@@ -260,6 +260,14 @@ Full background: the "Issues Found" section in [permission-matrix.md](permission
 
 ## Done
 
+### Items page on live data: tokens and puzzle pieces, 2026-10-13
+- `/inventory` (Freshie and Faci) now shows the group's real data through `useItemsData()` ([useItemsData.ts](../src/components/freshie/items/useItemsData.ts)): tokens (`groups.token_balance`, same as Admin), puzzle pieces per key and piece number (`inventory` + `items`, written by a Day 2 station win), projectors lit and by whom (`projectors` + `fn_scoreboard`), phase and time left (Live control's `phases`), Day 2 entry costs (`stations`), and history (the group's `token_transactions`, pieces and lit projector). Live updates on all of them. Each group reads only its own rows (RLS); Admin, HOF, HOGM and Committee read all.
+- Freshie Home's Puzzle Pieces card reads the same hook, so Home and Items always match. The "Sample" labels are gone.
+- The map unlocks (real location names instead of Star / Wheel / Orbit) in the endgame.
+- Sample data stays for previews: `/inventory?demo=complete` (with Replay demo), `?demo=day1|day2|ready|taken|won`.
+- Admin → Tokens now counts puzzle pieces from `inventory` (it read `puzzle_inventory`, which the game never writes, so it always showed 0). Mapped B1 = 1, A3 = 2, TF = 3.
+- Not done yet: blind boxes on Items still show the sample and cannot be opened there (real boxes open from the seller's QR); Guardian spot text is still the sample. Left for the backend / token owner: Admin → Tokens' history reads the old `token_logs`, so it does not show GM rewards from `token_transactions`; Admin's Reset State clears `puzzle_inventory`, not the real pieces in `inventory`. A GM on `/token` cannot read `inventory` (RLS), so their scoreboard shows no pieces.
+
 ### Top text nav instead of the sidebar on landscape tablets and desktops, 2026-10-13
 - At 1024px and wider (iPad landscape, desktop), every role gets `TopNav` ([TopNav.tsx](../src/components/TopNav.tsx), [topnav.css](../src/components/topnav.css)) instead of the left sidebar, in the public Welcome page's nav style: logo, the role's links as text (current page underlined in the group colour, else cyan), the live phase pill ("NOW Day 2 Game 1:13:58"), the role chip and an account menu (Log Out; Facis also get Edit Profile, which opens the editor on Home, via `/dashboard?edit=profile` from other pages).
 - Option A from the mockup: on Freshie / Faci Home the page's own header and stop bar are hidden at this width; each stop fills the screen below the nav, and the live phase card in Welcome is hidden (the nav pill shows it). Staff Home hides its own header and phase card too. Phones and iPad portrait are unchanged.
