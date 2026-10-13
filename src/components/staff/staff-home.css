@@ -1,0 +1,90 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   Staff Home (StaffHome.tsx) for HOF, HOGM and Committee.
+   Freshie Home's layout (.fh classes from freshie.css), recoloured to the
+   public Welcome page (components/home/vortexa.css):
+     near-black violet night, cyan = "you are here", yellow = primary action,
+     pink / lilac / orange holo for decoration only.
+   .fh-vx only swaps colour tokens; layout stays in freshie.css.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.fh.fh-vx {
+  --fh-ink: #07060b;
+  --fh-ink-2: #0e0c15;
+  --fh-ink-3: #15121e;
+  --fh-line: #25202f;
+  --fh-line-2: #3a3448;
+  --fh-text: #f3f0fa;
+  --fh-text-2: #cfc9dc;
+  --fh-mute: #8d87a0;
+  --fh-holo: linear-gradient(100deg, #0dfcfd 0%, #e0b4fc 35%, #fe06ab 65%, #fc9e3d 100%);
+  --fh-holo-loop: linear-gradient(90deg, #0dfcfd 0%, #e0b4fc 22%, #fe06ab 44%, #fc9e3d 66%, #e0b4fc 84%, #0dfcfd 100%);
+  font-family: var(--font-nexus-body), Outfit, sans-serif;
+}
+
+/* Sky: the Welcome page's .vx-world gradient and 28px white dot grid. */
+.fh-vx .fh-sky { background: linear-gradient(180deg, #07060b 0%, #060816 30%, #080b22 50%, #0d0f33 68%, #17154a 84%, #241a5e 100%); }
+.fh-vx .fh-sky-dots { background-image: radial-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1.2px); background-size: 28px 28px; }
+.fh-vx #fh-sky-fade stop { stop-color: #07060b; }
+.fh-vx .fh-head { background: linear-gradient(rgba(7, 6, 11, 0.94) 70%, rgba(7, 6, 11, 0)); }
+
+.fh-vx .fh-mark { filter: drop-shadow(0 0 18px rgba(13, 252, 253, 0.18)); }
+.fh-vx .fh-cell:first-child { border-color: var(--fh-accent); background: rgba(13, 252, 253, 0.07); }
+
+/* Yellow is the primary action on the Welcome page. */
+.fh-vx .fh-btn-primary { background: var(--fh-yellow); color: #111; box-shadow: 0 0 24px rgba(242, 255, 11, 0.3); }
+.fh-vx .fh-btn-primary:hover { background: #e6f000; }
+.fh-vx .fh-menu button:hover { border-color: var(--fh-pink); color: var(--fh-pink); }
+
+/* Only the Welcome stop fills the screen; the rest are as tall as their content. */
+.sh .fh-stop:not(#sh-welcome) { min-height: 0; padding-top: 48px; scroll-margin-top: var(--fh-top); }
+@media (min-width: 1024px) {
+  /* The live phase shows as the pill in TopNav, as on Freshie Home. */
+  #sh-welcome .fh-phasecard { display: none; }
+}
+
+/* No game running: a quiet dashed line where the PhaseCard would be. */
+.sh-idle {
+  display: flex; align-items: center; gap: 12px; width: 100%; max-width: 440px; text-align: left;
+  padding: 12px 16px; border-radius: 16px; border: 1px dashed var(--fh-line-2); background: rgba(14, 12, 21, 0.6);
+}
+.sh-idle > i { width: 8px; height: 8px; border-radius: 50%; flex: none; background: var(--fh-mute); }
+.sh-idle div { display: grid; gap: 2px; line-height: 1.35; }
+.sh-idle b { font-size: 14px; font-weight: 600; }
+.sh-idle span { font-size: 12.5px; color: var(--fh-mute); }
+
+/* Live floor tiles. */
+.sh-tiles { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.sh-tile {
+  display: grid; gap: 4px; align-content: start; height: 100%; padding: 14px 12px; border-radius: 16px;
+  border: 1px solid var(--fh-line); background: rgba(21, 18, 30, 0.85); color: var(--fh-text); text-decoration: none;
+  transition: border-color 0.15s ease;
+}
+.sh-tile:hover { border-color: var(--fh-accent); }
+.sh-tile > svg { color: var(--fh-accent); }
+.sh-tile b { font-size: clamp(20px, 5.5vw, 30px); line-height: 1.1; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.sh-tile span { font-size: 12px; line-height: 1.3; color: var(--fh-mute); }
+
+.sh-more { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; font-size: 14px; font-weight: 600; color: var(--fh-accent); text-decoration: none; }
+
+/* Event tools. */
+.sh-tools { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.sh-tool {
+  display: flex; align-items: center; gap: 12px; height: 100%; min-height: 76px; padding: 14px;
+  border-radius: 16px; border: 1px solid var(--fh-line); background: rgba(21, 18, 30, 0.85);
+  color: var(--fh-text); text-decoration: none; transition: border-color 0.15s ease;
+}
+.sh-tool:hover { border-color: var(--fh-accent); }
+.sh-tool > span:nth-child(2) { display: grid; gap: 2px; min-width: 0; flex: 1; }
+.sh-tool b { font-size: 15px; font-weight: 600; }
+.sh-tool small { font-size: 12.5px; line-height: 1.35; color: var(--fh-mute); }
+.sh-tool > svg { flex: none; color: var(--fh-mute); }
+.sh-tool-ic { display: grid; place-items: center; width: 38px; height: 38px; flex: none; border-radius: 11px; background: rgba(13, 252, 253, 0.1); color: var(--fh-accent); }
+.sh-tools li:nth-child(2) .sh-tool-ic { background: rgba(254, 6, 171, 0.12); color: var(--fh-pink); }
+.sh-tools li:nth-child(n + 3) .sh-tool-ic { background: rgba(224, 180, 252, 0.12); color: var(--fh-lilac); }
+@media (max-width: 479px) {
+  .sh-tools { grid-template-columns: 1fr; }
+  .sh-tile { padding: 12px 10px; }
+}
+@media (min-width: 768px) {
+  .sh-tools { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
