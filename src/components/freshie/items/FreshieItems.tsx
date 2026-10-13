@@ -34,6 +34,7 @@ export function FreshieItems({
   groupColor,
   canOpenBoxes,
   onOpenBox,
+  sample = false,
 }: {
   data: ItemsData;
   groupColor: string | null | undefined;
@@ -89,7 +90,10 @@ export function FreshieItems({
           </button>
         </div>
         <div className="fi-game-status" data-phase={data.phase}>
-          <span>{PHASE_LABEL[data.phase]}</span>
+          <span>
+            {PHASE_LABEL[data.phase]}
+            {sample && <span className="fi-sample">· Sample data</span>}
+          </span>
           {data.timeLeft && <span className="fi-game-clock"><Clock3 size={15} aria-hidden /><strong>{data.timeLeft}</strong><span>left to play</span></span>}
         </div>
       </header>

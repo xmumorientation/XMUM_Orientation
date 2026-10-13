@@ -45,10 +45,51 @@ function FreshieItemsRoute() {
 // LIVE: the group's real tokens, puzzle pieces, projectors, phase and history
 // (useItemsData). Blind boxes still show the sample and cannot be opened here:
 // real boxes are opened from the seller's QR (fn_open_blind_box).
+//
+// Replay demo is always there: it shows the sample for a moment (marked
+// Sample data), the T&F key going from 4 to 5 pieces, then returns to the
+// group's live data.
+const REPLAY_PIECE_MS = 1500;
+const REPLAY_BACK_MS = 7000;
+
 function LiveItems() {
   const { group } = useGroup();
   const { data } = useItemsData();
-  return <FreshieItems data={data} groupColor={group?.color} canOpenBoxes={false} onOpenBox={async () => null} />;
+  const [demo, setDemo] = useState<ItemsData | null>(null);
+  const [run, setRun] = useState(0);
+
+  useEffect(() => {
+    if (!run) return;
+    const piece = window.setTimeout(() => setDemo((d) => (d ? withLastTrackPiece(d) : d)), REPLAY_PIECE_MS);
+    const back = window.setTimeout(() => setDemo(null), REPLAY_BACK_MS);
+    return () => {
+      window.clearTimeout(piece);
+      window.clearTimeout(back);
+    };
+  }, [run]);
+
+  function replay() {
+    setDemo(sampleItems(DEFAULT_SCENARIO));
+    setRun((n) => n + 1);
+  }
+
+  return (
+    <>
+      {/* A new key per run remounts the page, so only the 5th piece animates in
+          (not every piece that differs between live and sample data). */}
+      <FreshieItems
+        key={demo ? `demo-${run}` : "live"}
+        data={demo ? { ...demo, group: data.group } : data}
+        groupColor={group?.color}
+        canOpenBoxes={false}
+        onOpenBox={async () => null}
+        sample={demo !== null}
+      />
+      <button type="button" className="fi-replay" onClick={replay}>
+        Replay demo
+      </button>
+    </>
+  );
 }
 
 // SAMPLE DATA (?demo=…): everything shown comes from sampleData.ts, not from
