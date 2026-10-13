@@ -172,7 +172,12 @@ beforeAll(async () => {
 afterAll(async () => {
   await admin?.end().catch(() => {});
   await pg?.stop().catch(() => {});
-  if (dataDir) rmSync(dataDir, { recursive: true, force: true });
+  // Windows can keep the folder locked for a moment after Postgres stops; it is a temp folder.
+  try {
+    if (dataDir) rmSync(dataDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
+  } catch {
+    /* left for the OS temp cleanup */
+  }
 });
 
 describe("one code per seller", () => {

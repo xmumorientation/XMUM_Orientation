@@ -20,13 +20,15 @@ const DAY_GAME: Record<string, string> = { "Day 1": "day1", "Day 2": "day2" };
 // Live control header, beside the Day dropdown: that day's game. Set its
 // length, Start (green) runs it for that long (fn_phase_control); while it
 // runs: countdown, Pause / Resume, +5 min, End (red). It ends itself when
-// time is up (fn_game_expire, 0052). A running game unlocks its game rules;
-// starting it opens that day's stations, ending it closes them (0049). The
-// countdown is separate from the Welcome page's, which follows the schedule.
-// "n/m stations open" opens the per-station overrides.
+// time is up (fn_game_expire, 0052). A running game unlocks its game rules.
+// It does NOT touch station statuses (0078): Start / End / the countdown only
+// run the timer, and every station is set by hand by Admin (here, or on Admin
+// → Stations) or by its Game Master. The countdown is separate from the
+// Welcome page's, which follows the schedule.
+// "n/m stations open" lists the day's stations with their status.
 // The live fn_phase_control (bonding-session 0032 / 0036) only adds time, runs
 // one game at a time and takes the length from game_config
-// (lib/gameLength), so there is no −5 and Start waits for the other game.
+// (lib/gameLength), so there is no -5 and Start waits for the other game.
 export function GameToggles({
   day,
   onError,
@@ -62,15 +64,14 @@ export function GameToggles({
   }, [loadStations, supabase]);
 
   async function control(p: Phase, action: "start" | "pause" | "resume" | "extend" | "end", minutes = 0) {
-    const day = PHASE_DAY[p.key];
     // an unsaved length typed in the box counts for this Start
     const typed = Math.round(Number(lengthDraft));
     const saved = gameLength(config, p);
     const minutesToRun = action === "start" && typed >= 1 && typed <= 24 * 60 ? typed : saved;
     if (action === "start" || action === "end") {
-      const what = day ? ` Day ${day} stations will ${action === "start" ? "open" : "close"}.` : "";
       const length = action === "start" ? ` It runs for ${minutesToRun} min.` : "";
-      if (!window.confirm(`${action === "start" ? "Start" : "End"} ${p.name}?${length}${what}`)) return;
+      // Only the timer: station statuses are not changed.
+      if (!window.confirm(`${action === "start" ? "Start" : "End"} ${p.name}?${length} Station statuses are not changed.`)) return;
     }
     setBusy(true);
     onError(null);
@@ -217,12 +218,12 @@ export function GameToggles({
               <StationStatusChip status={s.status} />
               <select
                 className="input min-h-[30px] w-28 text-xs"
-                aria-label={`${s.name} status override`}
+                aria-label={`${s.name} status`}
                 value={s.status}
                 onChange={(e) => setStationStatus(s.id, e.target.value as StationStatus)}
               >
                 <option value="available">Available</option>
-                <option value="in_progress">Busy</option>
+                <option value="in_progress">In Progress</option>
                 <option value="closed">Closed</option>
               </select>
             </div>

@@ -59,13 +59,13 @@ export interface Station {
   risk_tier: RiskTier;
   entry_cost: number;
   day: 1 | 2;
-  /** How many groups fit at once. When full, status becomes In progress. */
+  /** How many groups fit at once. A full station refuses more check-ins; its status is not changed. */
   max_groups: number | null;
   /** Real-world position, used only to warn a far-away check-in. */
   lat: number | null;
   lng: number | null;
   radius_m: number | null;
-  /** An admin or GM forced In progress. Cleared when the station is cleared. */
+  /** Unused since 0078 (status is manual only). */
   status_override: boolean;
 }
 

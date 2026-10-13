@@ -113,6 +113,25 @@ export default function AdminStationsPage() {
     if (saved) setDayFilter(saved === "all" ? "all" : saved === "Day 1" ? 1 : 2);
   }, [load]);
 
+  // A Game Master (or another Admin) changes a status: it shows here at once.
+  // Only the status is merged, so a dialog being edited is not disturbed.
+  useEffect(() => {
+    const channel = supabase
+      .channel(`admin-stations-${crypto.randomUUID()}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "stations" }, (payload) => {
+        if (payload.eventType === "UPDATE") {
+          const row = payload.new as Station;
+          setStations((sts) => sts.map((s) => (s.id === row.id ? { ...s, status: row.status } : s)));
+        } else {
+          load();
+        }
+      })
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [supabase, load]);
+
   const blocks = useMemo(
     () =>
       Array.from(
@@ -237,12 +256,15 @@ export default function AdminStationsPage() {
     load();
   }
 
+  // Status is manual: Admin sets it here, a Game Master sets their own
+  // station's. Same server function for both (it checks the role).
   async function setStatus(id: number, status: StationStatus) {
-    const { error } = await supabase
-      .from("stations")
-      .update({ status })
-      .eq("id", id);
-    if (error) setError(error.message);
+    setError(null);
+    const { error } = await supabase.rpc("fn_set_station_status", {
+      p_station_id: id,
+      p_status: status,
+    });
+    if (error) setError(friendlyError(error));
     else
       setStations((sts) =>
         sts.map((s) => (s.id === id ? { ...s, status } : s))
@@ -379,7 +401,16 @@ Groups checked in here will lose that check-in.`)) return;
                     </td>
                     <td className="px-4 py-2.5 font-bold">{s.day}</td>
                     <td className="px-4 py-2.5">
-                      <StationStatusChip status={s.status} />
+                      <select
+                        className="input min-h-[36px] w-36 text-sm"
+                        aria-label={`${s.name} status`}
+                        value={s.status}
+                        onChange={(e) => setStatus(s.id, e.target.value as StationStatus)}
+                      >
+                        <option value="available">Available</option>
+                        <option value="in_progress">In Progress</option>
+                        <option value="closed">Closed</option>
+                      </select>
                     </td>
                     <td className="px-4 py-2.5">
                       {s.day === 2 ? RISK_TIER_META[s.risk_tier].label : "—"}
@@ -639,7 +670,7 @@ Groups checked in here will lose that check-in.`)) return;
                 type="number"
                 min="1"
                 className="input text-sm"
-                placeholder="How many groups fit (shows In Progress when full)"
+                placeholder="How many groups fit (a full station refuses more check-ins)"
                 value={form.max_groups}
                 onChange={(e) =>
                   setForm({ ...form, max_groups: e.target.value })
