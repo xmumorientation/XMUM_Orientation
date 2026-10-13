@@ -35,6 +35,25 @@
 .fh-vx .fh-btn-primary:hover { background: #e6f000; }
 .fh-vx .fh-menu button:hover { border-color: var(--fh-pink); color: var(--fh-pink); }
 
+/* ── Schedule (FreshieSchedule vortexa, HOGM) ─────────────────────────────── */
+.fh-vx .fh-bg {
+  background: linear-gradient(180deg, #07060b 0%, #07060b 35%, #060816 55%, #080b22 70%, #0d0f33 85%, #17154a 100%);
+}
+.fh-vx .fh-bg::before { background-image: radial-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1.2px); background-size: 28px 28px; }
+.fh-sched-title { display: grid; gap: 4px; }
+.fh-vx .fh-eyebrow { margin: 0; font-size: 11px; letter-spacing: 0.2em; }
+.fh-vx.fh-sched .fh-h2 { font-size: clamp(40px, 9vw, 56px); line-height: 1.05; }
+.fh-vx .fh-day[aria-selected="true"] { box-shadow: 0 0 24px rgba(13, 252, 253, 0.25); }
+.fh-vx .fh-sched-item { background: rgba(14, 12, 21, 0.86); border-radius: 18px; }
+.fh-vx .fh-sched-item b { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 16.5px; line-height: 1.3; }
+.fh-vx .fh-sched-item small { font-size: 11.5px; line-height: 1.4; color: var(--fh-text-2); opacity: 0.8; }
+.fh-vx .fh-sched-item[data-now] { border-color: rgba(13, 252, 253, 0.6); box-shadow: 0 0 28px rgba(13, 252, 253, 0.12); }
+.fh-vx .fh-sched-item[data-now]::before { box-shadow: 0 0 0 4px var(--fh-ink), 0 0 12px var(--dot); }
+.fh-sched-now {
+  font-size: 9.5px; font-weight: 700; letter-spacing: 0.16em; padding: 3px 8px; border-radius: 999px;
+  background: var(--fh-accent); color: var(--fh-on-blue);
+}
+
 /* Only the Welcome stop fills the screen; the rest are as tall as their content. */
 .sh .fh-stop:not(#sh-welcome) { min-height: 0; padding-top: 48px; scroll-margin-top: var(--fh-top); }
 @media (min-width: 1024px) {
