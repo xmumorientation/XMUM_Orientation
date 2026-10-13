@@ -145,15 +145,19 @@ export interface BlindBoxType {
 export interface BlindBoxAssignment {
   id: number;
   type_id: number;
+  /** The seller's row: one per account or station, and it holds the one QR version. */
+  seller_id: number;
   profile_id: string | null;
   station_id: number | null;
-  /** Total assigned, including boxes already opened. */
+  /** Total assigned, including boxes already sold. */
   quantity: number;
+  /** Boxes sold (bought) so far. Opened or not. */
   opened: number;
   qr_version: number;
   active: boolean;
 }
 
+/** A box a group has BOUGHT: owned until it is opened from the Items page. */
 export interface BlindBoxClaim {
   id: number;
   assignment_id: number | null;
@@ -164,35 +168,62 @@ export interface BlindBoxClaim {
   seller_station_id: number | null;
   group_id: number;
   price: number;
-  tokens: number;
+  /** Null until the box is opened. */
+  tokens: number | null;
   special: boolean;
+  status: "owned" | "opened";
+  /** When the box was bought. */
   created_at: string;
+  opened_at: string | null;
 }
 
-/** What a Freshie sees after scanning, before opening (fn_bb_preview). */
-export type BlindBoxPreviewStatus =
+/** What a Freshie sees after scanning a seller's QR, before buying (fn_bb_seller_preview). */
+export type BlindBoxPageStatus =
   | "ok"
   | "disabled"
   | "frozen"
   | "sold_out"
   | "already_from_seller"
-  | "cap_reached"
-  | "insufficient";
+  | "cap_reached";
 
-export interface BlindBoxPreview {
-  status: BlindBoxPreviewStatus;
-  seller_name: string;
+export type BlindBoxOptionStatus = "ok" | "sold_out" | "insufficient";
+
+export interface BlindBoxOption {
+  assignment_id: number;
   type_name: string;
   price: number;
   special: boolean;
+  left: number;
+  status: BlindBoxOptionStatus;
+}
+
+export interface BlindBoxPreview {
+  status: BlindBoxPageStatus;
+  seller_name: string;
+  group_name: string;
   balance: number;
   group_claims: number;
   cap: number;
+  options: BlindBoxOption[];
 }
 
+/** fn_bb_buy result. */
+export interface BlindBoxBuyResult {
+  ok: boolean;
+  duplicate: boolean;
+  claim_id: number;
+  price: number;
+  special: boolean;
+  seller_name: string;
+  type_name: string;
+  balance: number;
+}
+
+/** fn_bb_open result. */
 export interface BlindBoxResult {
   ok: boolean;
   duplicate: boolean;
+  claim_id: number;
   tokens: number;
   price: number;
   special: boolean;

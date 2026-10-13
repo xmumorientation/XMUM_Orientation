@@ -12,6 +12,9 @@ const PUBLIC_PATHS = [
   "/forgot-password",
   "/reset-password",
   "/auth/callback",
+  // Blind-box QR: scanned from any scanner, signed in or not. The page asks a
+  // logged-out visitor for their group and password (see /blindbox).
+  "/blindbox",
 ];
 
 function denyGroupPass(request: NextRequest, reason: string, groupId?: string) {

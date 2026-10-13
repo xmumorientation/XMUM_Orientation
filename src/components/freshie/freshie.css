@@ -1037,3 +1037,5 @@ html.fh-snap { overflow-x: hidden; }
 .fi-game-clock { display: inline-flex; align-items: center; gap: 7px; }
 .fi-game-clock strong { color: var(--fh-text); font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .fi-game-status[data-phase="endgame"] .fi-game-clock strong { color: var(--fh-orange); }
+
+.fi-shelf-empty { margin: 10px 4px 0; font-size: 13px; line-height: 1.45; color: var(--fh-text-2); text-align: center; }

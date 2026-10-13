@@ -42,8 +42,11 @@ This reflects only the migration files in the repo. Any manual changes made to t
 | Manual Projector Activation | — | — | — | ✓ | — | — | † | † | DB |
 | NFC Projector Activation (/activate; Endgame phase; must belong to a group) | ✓ | ✓ | — | — | — | — | — | — | DB |
 | **Blind Box** | | | | | | | | | |
-| Open a blind box (scan a seller's QR, see the confirm screen, tap Open: pays the price and deducts one box; a group can open one per seller and up to the group cap) | ✓ | — | — | — | — | — | — | — | DB |
-| See own blind box QR + link (card on /committee and /gm, and on the Admin Blind box page; boxes assigned to the account, or to its station) | — | — | Own | Own | Own | Own | Own | Own | DB |
+| Scan a seller's blind box QR (public page, `fn_bb_seller_public`): a logged-out visitor sees only the seller's name, then picks a group and enters its 4-digit password | anyone with the code | anyone | anyone | anyone | anyone | anyone | anyone | anyone | DB (valid signed code only) |
+| BUY a blind box (`fn_bb_buy`, from the scan page: pays the price and takes one box from the seller; a group can buy one per seller and up to the group cap; blocked by the blind-box kill-switch and by frozen tokens) | ✓ | — | — | — | — | — | — | — | DB |
+| OPEN a bought box (`fn_bb_open`, from the Items page: rolls the prize and adds the tokens; still allowed when blind boxes are off or tokens are frozen) | ✓ own group | — | — | — | — | — | — | — | DB |
+| See the group's bought boxes on the Items page (own claim rows; the prize range is never readable) | Own Group | Own Group (view only) | — | — | View All | View All | View All | View All | DB |
+| See own blind box QR + link (ONE QR per seller covering all its box types; card on /committee and /gm, and on the Admin Blind box page; boxes assigned to the account, or to its station) | — | — | Own | Own | Own | Own | Own | Own | DB |
 | Box types, assigning boxes (one account, a role, stations), quantities, regenerate / switch off a QR, group cap (Admin → Blind box) | — | — | — | — | — | — | — | Manage | DB |
 | Token page Reset State (clears token logs and puzzle inventory, zeroes group tokens; only while Rehearsal mode is on) | — | — | — | — | — | — | — | ✓ | DB |
 | Blind box test reset (only while Rehearsal mode is on; typed confirmation) | — | — | — | — | — | — | — | ✓ | DB |

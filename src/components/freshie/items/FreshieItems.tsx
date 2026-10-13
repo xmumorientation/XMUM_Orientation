@@ -37,7 +37,7 @@ export function FreshieItems({
 }: {
   data: ItemsData;
   groupColor: string | null | undefined;
-  /** Facilitators open boxes; Freshies only see them. */
+  /** Only the group's Freshie login opens boxes; a Facilitator can see them. */
   canOpenBoxes: boolean;
   /** Opens one box and returns what it gave, or null if it failed. */
   onOpenBox: (kind: BoxKind) => Promise<BoxReward | null>;
@@ -61,7 +61,7 @@ export function FreshieItems({
 
   function selectShelf(item: ShelfItem) {
     if (item === "tokens") setTokensOpen(true);
-    else setBoxFor(item);
+    else setBoxFor(item.replace(/^box:/, ""));
   }
 
   const keys = keyLocations(data);

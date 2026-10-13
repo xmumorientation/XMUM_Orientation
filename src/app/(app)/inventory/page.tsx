@@ -6,6 +6,7 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 
 import { FreshieItems } from "@/components/freshie/items/FreshieItems";
 import { SAMPLE_SCENARIOS, sampleItems, withLastTrackPiece, type SampleScenario } from "@/components/freshie/items/sampleData";
+import { boxGroupsOf, boxHistoryOf, useBlindBoxes } from "@/components/freshie/items/useBlindBoxes";
 import type { BoxKind, BoxReward, ItemsData } from "@/components/freshie/items/types";
 
 import { PuzzleBoard } from "@/components/PuzzleBoard";
@@ -35,19 +36,21 @@ export default function InventoryPage() {
   return <GroupInventory />;
 }
 
-// SAMPLE DATA: Freshie and facilitator Items page. Everything shown here comes
-// from sampleData.ts, not from the game. TODO: wire to the bonding-session game
-// data before the event. With no ?demo it plays "complete": the last T&F
-// piece arrives after a moment, with a Replay button. ?demo=day1|day2|ready|
-// taken|won picks another state. Opening a box only changes the sample in
-// this browser. In the sample, Freshies can open boxes too so the blind box
-// flow can be demoed; on live data only the Faci can.
+// Freshie and facilitator Items page. The BLIND BOXES are live: every box the
+// group has bought (by scanning a seller's QR) sits on the shelf, sealed, and
+// the Freshie opens it from here (fn_bb_open). Everything else (tokens shown on
+// the shelf, puzzle pieces, projectors, phase) is still SAMPLE data from
+// sampleData.ts. TODO: wire it to the game before the event. With no ?demo it
+// plays "complete": the last T&F piece arrives after a moment, with a Replay
+// button. ?demo=day1|day2|ready|taken|won picks another state; any ?demo makes
+// the boxes sample too (opening one only changes the sample in this browser).
 function ItemsPreview() {
   const profile = useProfile();
   const { group } = useGroup();
   const params = useSearchParams();
   const asked = params.get("demo");
   const scenario: SampleScenario = SAMPLE_SCENARIOS.includes(asked as SampleScenario) ? (asked as SampleScenario) : "complete";
+  const demoBoxes = asked !== null;
 
   const [data, setData] = useState<ItemsData>(() => sampleItems(scenario));
   const [run, setRun] = useState(0);
@@ -58,15 +61,30 @@ function ItemsPreview() {
     return () => window.clearTimeout(timer);
   }, [scenario, run]);
 
-  const view: ItemsData = {
-    ...data,
-    group: { id: group?.id ?? data.group.id, name: group?.name ?? data.group.name },
-  };
+  const live = useBlindBoxes(group?.id ?? profile.group_id ?? null, !demoBoxes);
 
-  // Sample rules: a standard box gives 1–2 tokens; a gold box gives 4–6
-  // tokens, or (1 in 3, on Day 2) a piece the group is still missing.
-  // DEMO: the box count is not reduced, so boxes can be opened again and again.
-  async function openBox(kind: BoxKind): Promise<BoxReward | null> {
+  const view: ItemsData = useMemo(() => {
+    const base: ItemsData = {
+      ...data,
+      group: { id: group?.id ?? data.group.id, name: group?.name ?? data.group.name },
+    };
+    if (demoBoxes) return base;
+    return {
+      ...base,
+      // the real balance, so opening a box shows the right total
+      tokens: { balance: group?.token_balance ?? data.tokens.balance },
+      boxes: boxGroupsOf(live.claims),
+      history: [
+        ...boxHistoryOf(live.claims, data.phase === "day1" ? 1 : 2),
+        ...data.history.filter((e) => e.kind !== "box"),
+      ],
+    };
+  }, [data, group, demoBoxes, live.claims]);
+
+  // Sample rules (demo only): a standard box gives 1–2 tokens; a gold box gives
+  // 4–6 tokens, or (1 in 3, on Day 2) a piece the group is still missing. The
+  // box count is not reduced, so boxes can be opened again and again.
+  async function openSampleBox(kind: BoxKind): Promise<BoxReward | null> {
     const reward = sampleReward(kind, data);
     const amount = reward.type === "tokens" ? reward.amount : 0;
     setData((d) => ({
@@ -76,14 +94,14 @@ function ItemsPreview() {
         reward.type === "piece"
           ? { ...d.pieces, [reward.loc]: [...d.pieces[reward.loc], reward.piece].sort((x, y) => x - y) }
           : d.pieces,
-      boxes: { ...d.boxes, [kind]: { unopened: d.boxes[kind].unopened, opened: [...d.boxes[kind].opened, amount] } },
+      boxes: d.boxes.map((b) => (b.key === kind ? { ...b, opened: [...b.opened, amount] } : b)),
       history: [
         {
           id: `open-${Date.now()}`,
           kind: "box",
           day: d.phase === "day1" ? 1 : 2,
           title: `Opened a ${kind} box`,
-          detail: reward.type === "piece" ? `Got {${reward.loc}} piece #${reward.piece}` : "Opened by your Faci",
+          detail: reward.type === "piece" ? `Got {${reward.loc}} piece #${reward.piece}` : "Sample box",
           amount,
           time: new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }),
         },
@@ -98,8 +116,9 @@ function ItemsPreview() {
       <FreshieItems
         data={view}
         groupColor={group?.color}
-        canOpenBoxes
-        onOpenBox={openBox}
+        // Only the group's Freshie login opens real boxes; a Faci sees them.
+        canOpenBoxes={demoBoxes || profile.role === "freshie"}
+        onOpenBox={demoBoxes ? openSampleBox : live.openBox}
         sample
       />
       {scenario === "complete" && (
