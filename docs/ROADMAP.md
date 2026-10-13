@@ -216,6 +216,56 @@ The design branches are merged. These remote branches are still not in `main` (c
 
 ## Done
 
+### HOF / HOGM / Committee home redesign, 2026-10-14
+Branch `hogm-home-redesign`. Not merged yet. Do not merge to `main` until the PR is open and reviewed. No migration.
+- **New home** for HOF, HOGM and Committee: `StaffHome.tsx`, used by `/dashboard` for `OPS_ROLES`. It has the same layout as the Freshie Home Welcome stop:
+  - "Welcome to Vortexa" and "Hi {name} · {role}"
+  - the event countdown (follows the Schedule)
+  - the PhaseCard while a game phase runs; otherwise a dashed "No game running" line with the next phase
+  - an **Ops** button (to `/committee`) and a **More Info ↓** button
+  - the organiser and sponsor credits
+
+  More Info scrolls to: Live floor (people checked in, leading group, live map; each tile opens the matching Ops tab through `/committee?view=`), then the full scoreboard (the ferris wheel cabins use the group colours), then Event tools (Big screen, My blind box QR → `/committee#blindbox`, Campus map, Schedule, Scoreboard). Big screen is also in the account menu and in TopNav.
+- **Colours**: the Welcome page palette (`VORTEXA_THEME`, `.fh-vx`), not a group colour. Staff subpages now read `--sp-*` variables, and `.staff-vx` switches them for these three roles. GM, Guardian GM, Faci, Admin and their pages keep the navy look and are unchanged.
+- **Navigation**:
+  - Phones and portrait tablets: the Freshie tab bar with Home, Map, Ops (yellow center button), Scores and Schedule.
+  - 1024px and wider: TopNav, with Ops as a yellow pill.
+  - The hamburger menu stays on subpages.
+  - `/map` for the ops crew now uses the dark staff design, like the map on the Ops page (same `CampusMap` with group pins), instead of the light page. Other roles' map is unchanged.
+- The old StaffDashboard text "roster" is now "headcount" (there is no roster view).
+- **One timer at a time, every role's home** (Freshie, Faci, ops crew, GM, Guardian GM, Admin):
+  - While a game phase is active or paused, the home shows the PhaseCard and hides the event countdown.
+  - Otherwise it shows the countdown. The ops crew also gets the "No game running" line under it.
+  - That line always says "No game running", with the next pending phase if there is one. There is no "Games are over" text: phases left as "ended" after a rehearsal made it show weeks before Day 1.
+  - Only the "no game" case was checked in the browser (HOGM, GM, Freshie). No game was running, and none was started, to avoid writing to the live project.
+- Checked in the browser with `hogm.test@xmu.edu.my` (local dev server against the live project, read only) at 390×844, 820×1180 and 1180×820:
+  - home, More Info, a floor tile opening the Headcount tab, the subpage menu, `/committee` and `/token`.
+  - `tsc` is clean for `src/`. `next lint` shows no new warnings.
+- Not done:
+  - The HOF and Committee accounts were not opened (they use the same code).
+  - Not tested on real phones or iPads.
+- Known: the dev console shows a hydration warning on the `next/font` class names. It also shows on `/login`, which this branch does not change.
+- Left for later: the Ops page layout itself ("ops will coordinate later").
+
+### HOGM Game control (Ops page), 2026-10-14
+Branch `hogm-home-redesign`. **Migration `0071_hogm_game_control.sql` must be run on Supabase before HOGM can use it.** Until then, every change on the page fails with "You don't have permission to do that."
+- For HOGM only, `/committee` is now **Game control** (`src/components/staff/game/`), in the Welcome page style. HOF and Committee keep the old Ops overview. It has these sections:
+  - **Game**: Day 1 and Day 2 game cards with start, end, pause, resume, ±5 min and length. Start and End ask for confirmation first.
+  - **Stations**: folding cards (closed shows the name and status), with add, edit, delete, status and Game Masters.
+  - **Tokens**: token rules, and Reset (only in Rehearsal mode, and you must type RESET).
+  - **Puzzles**: upload the picture for each location.
+  - **NFC**: generate sticker links and see the issued list.
+  - **Floor**: headcount and token balance per group, and My blind box QR.
+- Navigation: a chip row on phones and portrait tablets, a side rail on landscape tablets and desktops. The sections can be linked with `#game`, `#stations` and so on.
+- Not included, as asked: kill-switches, Now on Welcome, Live Ops numbers, the token log, Blind box management, and the map (the map is on the Map tab).
+- Backend (0071):
+  - New `is_game_lead()` (HOGM or Admin), used by `fn_phase_control`, `fn_update_game_config_rule`, `fn_reset_tokens_and_puzzles`, `fn_admin_station_gms` and `fn_admin_set_station_gms`.
+  - RLS: HOGM may update `phases` (game length only; no insert or delete), manage `stations`, write to the `puzzle-images` storage bucket, and read `nfc_tokens`.
+  - `fn_set_config`: HOGM may set `puzzle_image_*` keys only. Kill-switches and other keys stay Admin only.
+  - `/api/admin/nfc` allows Admin and HOGM, and the audit log now records the caller's real role.
+- Tests: `tests/game-lead/db.test.ts` runs 0071 on a real Postgres. It checks that HOGM can do each of the above and that HOF, Committee and GM cannot, including the kill-switch keys. `npm test`: 45 pass. `tsc` and `next lint` are clean.
+- Checked in the browser as HOGM at 390×844 and 1180×820 against the live project, before 0071 was run: every section's layout, a station card opened, the Add station sheet, and the Start confirmation (cancelled). Nothing was saved, so a real start, save or upload after 0071 is still untested.
+
 ### Blind boxes: one QR per seller, BUY then open from Items, 2026-10-13
 Branch `jiamin-blind-box-integration`. Migration `0070_blindbox_buy_flow.sql` (this branch skips `0059`-`0069` on purpose: they live on `main`; run `0054`-`0058` first).
 - **One public QR per seller** (account or station): `/blindbox?t=<token>`, token kind `bb3` = HMAC of (seller id, qr_version), stable and recomputed on demand. Works until the seller's boxes are all sold; Admin Regenerate kills it. If the seller has several box types the buyer picks one on the page. The old per-type links (`bb2`) stop working. New table `blind_box_sellers`; `blind_box_assignments.seller_id`.

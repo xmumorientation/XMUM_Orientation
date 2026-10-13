@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { requireAdmin } from "@/lib/auth";
+import { requireRoleDetail } from "@/lib/auth";
 import { generateNfcToken, nfcUrl } from "@/lib/nfc";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { PROJECTOR_LOCATIONS, type ProjectorLocation } from "@/lib/types";
@@ -11,11 +11,13 @@ export const dynamic = "force-dynamic";
 // The full token appears ONLY in this response — write it to the sticker
 // immediately. The DB stores just the hash.
 
+// Admin, and HOGM from Ops → Game control (migration 0071 lets both read the list).
 export async function POST(req: NextRequest) {
-  const admin = await requireAdmin();
-  if (!admin) {
+  const caller = await requireRoleDetail(["admin", "hogm"]);
+  if (!caller) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
+  const admin = caller.user;
 
   let body: unknown;
   try {
@@ -61,7 +63,7 @@ export async function POST(req: NextRequest) {
 
   await service.from("audit_log").insert({
     actor: admin.id,
-    actor_role: "admin",
+    actor_role: caller.role,
     action: "nfc.generate",
     target: `projector:${location}`,
     detail: { count: n },
