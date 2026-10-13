@@ -9,7 +9,7 @@ import { PIECES_PER_SET } from "@/lib/types";
 
 import { zoneNames } from "./derive";
 import { KeyEmblem } from "./KeyEmblem";
-import type { BoxKind, BoxReward, ItemsData } from "./types";
+import type { BoxGroup, BoxKind, BoxReward, ItemsData } from "./types";
 
 // Blind box flow, opened from a box tile on the shelf. Four stages:
 //   ask     → "Unlock a Gold box?" with what is left and what it can give
@@ -20,10 +20,8 @@ import type { BoxKind, BoxReward, ItemsData } from "./types";
 // already saved before the animation plays; closing early loses nothing.
 // Reduced motion skips the opening animation and goes straight to the reveal.
 
-export const BOX_INFO: Record<BoxKind, { name: string; label: string; range: string }> = {
-  gold: { name: "Gold box", label: "Gold", range: "4–6 tokens or a puzzle piece" },
-  standard: { name: "Standard box", label: "Standard", range: "1–2 tokens each" },
-};
+// Real boxes keep their prize hidden until they are opened.
+const HIDDEN_RANGE = "Prize hidden until you open it";
 
 type Stage = "ask" | "sealed" | "opening" | "reveal";
 
@@ -75,8 +73,7 @@ function BoxFlow({
   const timer = useRef<number | undefined>(undefined);
   useEffect(() => () => window.clearTimeout(timer.current), []);
 
-  const stock = data.boxes[kind];
-  const info = BOX_INFO[kind];
+  const group = data.boxes.find((b) => b.key === kind);
 
   async function unlock() {
     if (busy) return;
@@ -102,8 +99,12 @@ function BoxFlow({
     timer.current = window.setTimeout(() => setStage("reveal"), OPEN_MS);
   }
 
+  if (!group) return null;
+  const stock = group;
+  const info = group;
+
   return (
-    <div className="bb-flow" data-kind={kind} data-stage={stage}>
+    <div className="bb-flow" data-kind={group.special ? "gold" : "standard"} data-stage={stage}>
       <Dialog.Title className="fh-sr">{stage === "reveal" ? "Box opened" : `Unlock a ${info.name.toLowerCase()}`}</Dialog.Title>
       <Dialog.Close className="fi-x bb-x" aria-label="Close">
         <X size={16} />
@@ -112,11 +113,11 @@ function BoxFlow({
       {stage === "ask" && (
         <div className="bb-card">
           <div className="bb-mini" aria-hidden>
-            <Box3D kind={kind} />
+            <Box3D group={group} />
           </div>
           <span className="fi-eb fh-mono">Blind box · {info.label}</span>
           <h2 className="bb-ask-title">Unlock a {info.name.toLowerCase()}?</h2>
-          <p className="bb-ask-sub">{info.range}</p>
+          <p className="bb-ask-sub">{info.range ?? HIDDEN_RANGE}</p>
           <dl className="fi-facts">
             <div>
               <dt>To open</dt>
@@ -146,7 +147,7 @@ function BoxFlow({
           ) : (
             <p className="bb-locked">
               <Lock size={15} aria-hidden />
-              Your Faci unlocks the boxes. What&apos;s inside goes straight to your group.
+              Boxes are opened from your group&apos;s Freshie login. What&apos;s inside goes straight to your group.
             </p>
           )}
         </div>
@@ -156,7 +157,7 @@ function BoxFlow({
         <div className="bb-stage">
           <button type="button" className="bb-scene" onClick={tapBox} disabled={stage === "opening"} aria-label="Open the box">
             <span className="bb-light" aria-hidden />
-            <Box3D kind={kind} />
+            <Box3D group={group} />
             <span className="bb-shadow" aria-hidden />
           </button>
           <p className="bb-hint fh-mono" aria-live="polite">
@@ -168,7 +169,7 @@ function BoxFlow({
 
       {stage === "reveal" && reward && (
         <Reveal
-          kind={kind}
+          group={group}
           reward={reward}
           data={data}
           canOpenAnother={canOpen && stock.unopened > 0}
@@ -182,8 +183,9 @@ function BoxFlow({
 
 // ── The 3D box ─────────────────────────────────────────────────────────────
 
-function Box3D({ kind }: { kind: BoxKind }) {
-  const info = BOX_INFO[kind];
+function Box3D({ group }: { group: BoxGroup }) {
+  const info = group;
+  const piece = group.mayGivePiece === true;
   return (
     <span className="bb-cube" aria-hidden>
       <span className="bb-face bb-front">
@@ -191,7 +193,7 @@ function Box3D({ kind }: { kind: BoxKind }) {
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img className="bb-logo" src="/vortexa-logo-sm.webp" alt="" />
         <span className="bb-q fh-slab">?</span>
-        <span className="bb-foot fh-mono">{info.range}</span>
+        <span className="bb-foot fh-mono">{info.range ?? HIDDEN_RANGE}</span>
       </span>
       <span className="bb-face bb-side bb-right">
         <span className="bb-side-title fh-slab">Could be</span>
@@ -205,8 +207,8 @@ function Box3D({ kind }: { kind: BoxKind }) {
           <i data-c="coin">
             <Coins size={14} strokeWidth={2.4} />
           </i>
-          <i data-c={kind === "gold" ? "piece" : "coin"}>
-            {kind === "gold" ? <Puzzle size={14} strokeWidth={2.2} /> : <Coins size={14} strokeWidth={2.4} />}
+          <i data-c={piece ? "piece" : "coin"}>
+            {piece ? <Puzzle size={14} strokeWidth={2.2} /> : <Coins size={14} strokeWidth={2.4} />}
           </i>
           <i data-c="secret">?</i>
         </span>
@@ -233,21 +235,21 @@ const SPARKS = Array.from({ length: 10 }, (_, i) => {
 });
 
 function Reveal({
-  kind,
+  group,
   reward,
   data,
   canOpenAnother,
   busy,
   onOpenAnother,
 }: {
-  kind: BoxKind;
+  group: BoxGroup;
   reward: BoxReward;
   data: ItemsData;
   canOpenAnother: boolean;
   busy: boolean;
   onOpenAnother: () => void;
 }) {
-  const stock = data.boxes[kind];
+  const stock = group;
   const total = stock.opened.length + stock.unopened;
   const pad = (n: number) => String(n).padStart(2, "0");
 
@@ -299,7 +301,7 @@ function Reveal({
       </div>
       <span className="bb-rtag fh-mono">{tag}</span>
       <span className="bb-no fh-mono">
-        {BOX_INFO[kind].label} · No. {pad(stock.opened.length)} / {pad(total)}
+        {group.label} · No. {pad(stock.opened.length)} / {pad(total)}
       </span>
       <h2 className="bb-rtitle fh-slab">{title}</h2>
       <p className="bb-rdetail">{detail}</p>

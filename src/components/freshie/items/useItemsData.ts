@@ -21,7 +21,8 @@ import type { GamePhase, HistoryEntry, ItemsData, LitBy } from "./types";
 //   costs       Day 2 stations' entry_cost by risk tier
 //   history     the group's token_transactions, pieces and lit projector
 // A Freshie or Faci reads only their own group's rows (RLS).
-// Not live yet: blind boxes (still the sample), the Guardian spot text.
+// Not live yet: the Guardian spot text. Blind boxes are added by the Items page
+// (useBlindBoxes); their buy and open token changes show here as "box" entries.
 // The map unlocks (real location names) in the endgame.
 
 type PieceRow = {
@@ -165,7 +166,7 @@ export function useItemsData(): { data: ItemsData; loading: boolean } {
     const events: (HistoryEntry & { at: string })[] = [];
     for (const t of fetched?.tx ?? []) {
       const entry = t.reason.startsWith("Day 2 entry");
-      const box = t.reason.startsWith("Blind box");
+      const box = /^(Blind box|Bought .* blind box|Opened .* blind box)/.test(t.reason);
       events.push({
         id: `tx-${t.id}`,
         at: t.created_at,

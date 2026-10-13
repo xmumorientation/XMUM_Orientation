@@ -1,4 +1,4 @@
-import type { HistoryEntry, ItemsData } from "./types";
+import type { BoxGroup, HistoryEntry, ItemsData } from "./types";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SAMPLE DATA ONLY: not real game data. Kept for previews and the Replay demo.
@@ -42,11 +42,15 @@ const DAY2_HISTORY: HistoryEntry[] = [
   { id: "d2-0", kind: "entry", day: 2, title: "Station 2 · Low risk", detail: "Entry fee", amount: -2, time: "13:08" },
 ];
 
-/** Sample blind boxes. Live data shows these too until the blind box section is redone. */
-export const SAMPLE_BOXES: ItemsData["boxes"] = {
-  gold: { unopened: 5, opened: [5] },
-  standard: { unopened: 2, opened: [2, 1, 1, 2] },
-};
+function sampleBoxes(goldLeft: number, goldOpened: number[], stdLeft: number, stdOpened: number[]): BoxGroup[] {
+  return [
+    { key: "gold", name: "Gold box", label: "Gold", special: true, range: "4–6 tokens or a puzzle piece", mayGivePiece: true, unopened: goldLeft, opened: goldOpened },
+    { key: "standard", name: "Standard box", label: "Standard", special: false, range: "1–2 tokens each", unopened: stdLeft, opened: stdOpened },
+  ];
+}
+
+/** Sample blind boxes (the ?demo previews and the Replay demo). Live data shows the group's real boxes. */
+export const SAMPLE_BOXES: ItemsData["boxes"] = sampleBoxes(5, [5], 2, [2, 1, 1, 2]);
 
 function base(): ItemsData {
   return {
@@ -74,7 +78,7 @@ export function sampleItems(scenario: SampleScenario = "day2"): ItemsData {
         timeLeft: "1:48:20",
         tokens: { balance: 14 },
         pieces: { B1: [], A3: [], TF: [] },
-        boxes: { gold: { unopened: 5, opened: [5] }, standard: { unopened: 1, opened: [2] } },
+        boxes: sampleBoxes(5, [5], 1, [2]),
         history: DAY1_HISTORY,
       };
     case "ready":

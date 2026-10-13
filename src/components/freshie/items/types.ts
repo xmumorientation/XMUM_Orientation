@@ -14,10 +14,23 @@ export type LitBy = {
   isUs: boolean;
 };
 
-export type BoxKind = "gold" | "standard";
+/** Key of a box group on the shelf. Live boxes are grouped by type name. */
+export type BoxKind = string;
 
-export type BoxStock = {
-  /** Claimed but not opened yet. */
+/** The group's boxes of one type: how many are still sealed, and what opened ones gave. */
+export type BoxGroup = {
+  key: BoxKind;
+  /** e.g. "Gold box". */
+  name: string;
+  /** Short name used in tags, e.g. "Gold". */
+  label: string;
+  /** Special boxes get the gold look. */
+  special: boolean;
+  /** What it can give. Only the sample knows; real prizes stay hidden until opened. */
+  range?: string;
+  /** Whether it may give a puzzle piece (sample only; real boxes give tokens). */
+  mayGivePiece?: boolean;
+  /** Bought but not opened yet. */
   unopened: number;
   /** Tokens each opened box gave, oldest first (0 for a box that gave a piece). */
   opened: number[];
@@ -67,6 +80,6 @@ export type ItemsData = {
   /** Piece numbers (1–5) the group owns, per location. */
   pieces: Record<ProjectorLocation, number[]>;
   guardian: Record<ProjectorLocation, GuardianSpot>;
-  boxes: Record<BoxKind, BoxStock>;
+  boxes: BoxGroup[];
   history: HistoryEntry[];
 };

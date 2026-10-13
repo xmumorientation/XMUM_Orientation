@@ -19,10 +19,11 @@ interface Shown {
   qr: string;
 }
 
-// "My blind box QR": one card per box the signed-in account holds, either
-// personally or through its station (a station's GMs share one pool and one
-// code). Links are recomputed by the server on demand, so showing a QR never
-// invalidates one that is already out there; only Admin's Regenerate does.
+// "My blind box QR": ONE card with ONE QR for the signed-in account (or its
+// station: a station's GMs share one pool and one code), listing every box type
+// it holds. The same QR works until all the boxes are sold. Links are
+// recomputed by the server on demand, so showing a QR never invalidates one
+// that is already out there; only Admin's Regenerate does.
 export function BlindBoxCard() {
   const profile = useProfile();
   const supabase = useMemo(() => supabaseBrowser(), []);
@@ -106,6 +107,11 @@ export function BlindBoxCard() {
 
   if (rows.length === 0 && !error) return null;
 
+  // One card per seller. A personal account has one seller; so does its
+  // station, and a GM can have both (own boxes + the station's shared pool).
+  const sellers = new Map<number, Row[]>();
+  for (const r of rows) sellers.set(r.seller_id, [...(sellers.get(r.seller_id) ?? []), r]);
+
   return (
     <div className="space-y-3">
       {error && (
@@ -113,51 +119,63 @@ export function BlindBoxCard() {
           {error}
         </p>
       )}
-      {rows.map((r) => {
-        const left = r.quantity - r.opened;
-        const live = r.active && !r.type?.archived;
-        const s = shown[r.id];
+      {[...sellers.entries()].map(([sellerId, list]) => {
+        const first = list[0];
+        const live = list.some((r) => r.active && !r.type?.archived);
+        const totalLeft = list.reduce(
+          (n, r) => n + (r.active && !r.type?.archived ? Math.max(r.quantity - r.opened, 0) : 0),
+          0
+        );
+        const s = shown[first.id];
         return (
-          <Card key={r.id} className="text-center">
-            <h2 className="flex flex-wrap items-center justify-center gap-2 font-semibold">
-              My blind box QR · {r.type?.name ?? "Box"}
-              {r.type?.is_special && (
-                <span className="chip bg-amber-400/40 text-amber-500">
-                  <Sparkles size={12} strokeWidth={1.75} /> special
-                </span>
-              )}
-            </h2>
+          <Card key={sellerId} className="text-center">
+            <h2 className="font-semibold">My blind box QR</h2>
             <p className="text-sm text-ink-faint">
-              {r.station
-                ? `Station ${r.station.name} — shared with this station's other GMs`
+              {first.station
+                ? `Station ${first.station.name} — shared with this station's other GMs`
                 : "Your own boxes"}
             </p>
-            <p className="mt-1 text-sm text-ink-faint">
-              {left} of {r.quantity} boxes left
-              {r.type
-                ? ` · ${r.type.price > 0 ? `${r.type.price} token${r.type.price !== 1 ? "s" : ""}` : "free"} to open · ${r.type.min_tokens}-${r.type.max_tokens} tokens inside`
-                : ""}
-              {" · each group can scan once"}
+            <ul className="mx-auto mt-2 max-w-sm space-y-1 text-sm text-ink-faint">
+              {list.map((r) => {
+                const left = Math.max(r.quantity - r.opened, 0);
+                return (
+                  <li key={r.id} className="flex flex-wrap items-center justify-center gap-x-2">
+                    <span className="font-semibold text-ink">{r.type?.name ?? "Box"}</span>
+                    {r.type?.is_special && (
+                      <span className="chip bg-amber-400/40 text-amber-500">
+                        <Sparkles size={12} strokeWidth={1.75} /> special
+                      </span>
+                    )}
+                    <span>
+                      {left} of {r.quantity} left
+                      {r.type ? ` · ${r.type.price > 0 ? `${r.type.price} token${r.type.price !== 1 ? "s" : ""}` : "free"}` : ""}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+            <p className="mt-1 text-xs text-ink-faint">
+              One QR for all of these. Each group can buy one box from you; the code keeps working until they are all sold.
             </p>
 
             {!live ? (
               <p className="mt-3 text-sm font-semibold text-red-600">
                 Switched off by Admin — this code doesn&apos;t work right now.
               </p>
-            ) : left <= 0 ? (
+            ) : totalLeft <= 0 ? (
               <p className="mt-3 text-sm font-semibold text-ink-faint">
-                All boxes opened.
+                All boxes sold.
               </p>
             ) : s ? (
               <>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={s.qr}
-                  alt={`Blind box QR code for ${r.type?.name ?? "box"}`}
+                  alt="Blind box QR code"
                   className="mx-auto mt-3 w-56 max-w-full rounded-xl border border-paper-200"
                 />
                 <p className="mt-2 text-xs text-ink-faint">
-                  Let a Freshie scan this after your mini-game.
+                  Let a Freshie scan this after your mini-game. Any phone camera works.
                 </p>
                 <div className="mx-auto mt-2 flex max-w-sm items-center gap-2">
                   <input
@@ -169,15 +187,15 @@ export function BlindBoxCard() {
                   />
                   <button
                     type="button"
-                    onClick={() => copy(r.id, s.url)}
+                    onClick={() => copy(sellerId, s.url)}
                     className="btn-secondary min-h-[40px] shrink-0 px-3 text-xs"
                   >
-                    {copied === r.id ? (
+                    {copied === sellerId ? (
                       <Check size={14} strokeWidth={2} />
                     ) : (
                       <Copy size={14} strokeWidth={1.75} />
                     )}
-                    {copied === r.id ? "Copied" : "Copy"}
+                    {copied === sellerId ? "Copied" : "Copy"}
                   </button>
                 </div>
               </>
