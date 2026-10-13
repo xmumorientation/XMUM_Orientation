@@ -261,7 +261,9 @@ Full background: the "Issues Found" section in [permission-matrix.md](permission
 ## Done
 
 ### Tab bar stays put on iPad and iPhone, 2026-10-13
-- On iPad Safari the bottom tab bar (and the Freshie Home header) could be left in the middle of the screen while the page scrolled or snapped. On pages with the tab bar (Freshie and Faci), the document no longer scrolls: AppShell's content column (`.app-scroll`) is the scroller, so the fixed bars cannot drift and Safari's toolbars do not collapse. Snap moved from `html` to `.app-scroll`.
+- On iPad Safari the bottom tab bar (and the Freshie Home header) could sit mid-screen while scrolling, and fixed things (tab bar, "Replay demo", the logo intro) could stop short of the screen bottom: Safari's area for `position: fixed` can be shorter than the screen.
+- On pages with the tab bar (Freshie and Faci), AppShell's content column is one screen high: header, then the scroller (`.app-scroll`), then the tab bar **in normal flow, not fixed**. The document never scrolls, so Safari's toolbars stay put; snap sits on `.app-scroll`. `main` no longer has `min-h-dvh` there, so short pages do not scroll.
+- The logo intro covers at least `100lvh` and cannot be dragged.
 - Side effect: no pull-to-refresh on those pages on iOS. GM, Committee and Admin pages are unchanged.
 - Left: check on a real iPad and iPhone.
 

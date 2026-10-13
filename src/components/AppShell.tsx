@@ -297,15 +297,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      {/* Freshie / Faci: this column is the scroller, not the document. iOS Safari
-          then never collapses its toolbars and the fixed tab bar and headers
-          can never be left behind mid-scroll (seen on iPad, 2026-10-13). */}
-      <div
-        className={cn(
-          "min-w-0",
-          showTabBar && "app-scroll h-dvh overflow-y-auto overflow-x-hidden overscroll-y-contain"
-        )}
-      >
+      {/* Freshie / Faci: one screen-high column, header, scroller (.app-scroll),
+          then the tab bar in normal flow. The document never scrolls and the
+          tab bar is not position: fixed, so iOS Safari cannot leave it mid-screen
+          or short of the bottom (seen on iPad, 2026-10-13). */}
+      <div className={cn("min-w-0", showTabBar && "flex h-dvh flex-col")}>
       {!isNight && (
       <header className={cn("sticky top-0 z-40 border-b border-paper-200 bg-paper-50/95 pt-[env(safe-area-inset-top)] shadow-[0_1px_0_rgba(28,26,23,0.03)] backdrop-blur lg:hidden", isStaffSubpage && "sp-header")}>
         {isStaffSubpage ? (
@@ -409,20 +405,25 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </Dialog>
       )}
 
+      <div className={showTabBar ? "app-scroll min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain" : undefined}>
       <ShellMenuProvider openMenu={() => setMenuOpen(true)}>
       <main
         className={cn(
-          "mx-auto min-h-dvh w-full px-3 pb-[calc(1.25rem+env(safe-area-inset-bottom))] pt-3 sm:px-5 sm:pb-8 sm:pt-5 lg:px-8 lg:py-6",
+          "mx-auto w-full px-3 pb-[calc(1.25rem+env(safe-area-inset-bottom))] pt-3 sm:px-5 sm:pb-8 sm:pt-5 lg:px-8 lg:py-6",
+          // In the tab-bar column the scroller sets the height; min-h-dvh there
+          // would make even a short page scroll by the tab bar's height.
+          showTabBar ? "min-h-full" : "min-h-dvh",
           isAdmin ? "max-w-[96rem]" : "max-w-6xl",
           // Admin pages already carry their own dark theme (.av).
           isStaffSubpage && !pathname.startsWith("/admin") && "sp",
-          showTabBar &&
-            "pb-[calc(6.5rem+env(safe-area-inset-bottom))] sm:pb-[calc(6.5rem+env(safe-area-inset-bottom))]"
+          // Room for the Scan button, which rises above the tab bar.
+          showTabBar && "pb-10 sm:pb-10"
         )}
       >
         {children}
       </main>
       </ShellMenuProvider>
+      </div>
 
       {showTabBar && <FreshieTabBar />}
 

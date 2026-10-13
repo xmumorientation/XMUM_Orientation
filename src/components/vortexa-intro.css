@@ -5,6 +5,11 @@
 .vx-intro {
   position: fixed;
   inset: 0;
+  /* iOS Safari can make the fixed area shorter than the screen; cover the
+     largest viewport anyway, and do not let the page be dragged under it. */
+  min-height: 100lvh;
+  touch-action: none;
+  overscroll-behavior: contain;
   z-index: 300;
   display: grid;
   place-items: center;

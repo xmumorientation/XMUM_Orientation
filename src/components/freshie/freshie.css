@@ -1017,7 +1017,9 @@ html.fh-snap { overflow-x: hidden; }
 
 /* ── Freshie bottom tab bar (every Freshie page, phones/tablets) ────────── */
 .fh-tabbar {
-  position: fixed; inset: auto 0 0 0; z-index: 45;
+  /* In normal flow at the bottom of AppShell's screen-high column, not fixed:
+     iOS Safari can place fixed bars short of the screen bottom. */
+  position: relative; flex: none; z-index: 45;
   display: flex; align-items: flex-end; padding: 6px 6px env(safe-area-inset-bottom, 0px);
   background: rgba(3, 11, 28, 0.95); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
   border-top: 1px solid #16305a;
