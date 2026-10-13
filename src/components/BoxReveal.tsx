@@ -20,11 +20,14 @@ export function BoxReveal({
   special,
   memberName,
   balance,
+  onContinue,
 }: {
   tokens: number;
   special: boolean;
   memberName: string | null;
   balance: number | null;
+  /** Called by the Continue button. Without it, Continue goes to the dashboard. */
+  onContinue?: () => void;
 }) {
   const [stage, setStage] = useState<"playing" | "revealed">("playing");
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -123,9 +126,15 @@ export function BoxReveal({
               Group balance: {balance}
             </p>
           )}
-          <a href="/dashboard" className="btn-primary mt-10 min-w-[160px]">
-            Continue
-          </a>
+          {onContinue ? (
+            <button type="button" onClick={onContinue} className="btn-primary mt-10 min-w-[160px]">
+              Continue
+            </button>
+          ) : (
+            <a href="/dashboard" className="btn-primary mt-10 min-w-[160px]">
+              Continue
+            </a>
+          )}
         </div>
       )}
     </div>
