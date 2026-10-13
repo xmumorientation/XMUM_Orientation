@@ -60,7 +60,7 @@
 .gc-stack { display: grid; gap: 12px; min-width: 0; }
 .gc-grid2, .gc-grid3 { display: grid; gap: 12px; }
 .gc-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.gc-row4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.gc-row3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
 .gc-pad { padding: 14px 16px 0; }
 @media (min-width: 640px) {
   .gc-grid2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -160,7 +160,7 @@
 .gc-start { display: flex; gap: 8px; align-items: center; }
 .gc-length { display: flex; align-items: center; gap: 8px; flex: none; color: var(--gc-mute); font-size: 13px; }
 .gc .gc-length .gc-input { width: 84px; text-align: center; font-family: var(--gc-slab); font-size: 20px; }
-.gc-row4 .gc-btn { padding: 0 6px; }
+.gc-row3 .gc-btn { padding: 0 6px; }
 
 /* ── Stations: folding cards ─────────────────────────────────────────────── */
 .gc-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }

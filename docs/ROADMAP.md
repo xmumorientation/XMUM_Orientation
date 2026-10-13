@@ -247,10 +247,27 @@ Branch `hogm-home-redesign`. Not merged yet. Do not merge to `main` until the PR
 - Known: the dev console shows a hydration warning on the `next/font` class names. It also shows on `/login`, which this branch does not change.
 - Left for later: the Ops page layout itself ("ops will coordinate later").
 
+### Live database runs bonding-session's game timer, 2026-10-14
+Found while running 0071 on the live project (orientation-2612). The account's saved SQL snippets `0018`–`0038` are the `bonding-session` branch's migrations, not `main`'s (for example `0035_role_permissions_and_allocations`, `0036_usability_and_gameplay_fixes`). The live database has both sets.
+
+The live `fn_phase_control` is bonding-session's `0036` version (checked by function length), and it differs from this repo's in three ways:
+- Start takes the length from `game_config` `bonding_session_duration_day1` / `_day2` (both 150), not from `phases.duration_minutes`.
+- It only adds time. A negative extend fails with `INVALID_EXTENSION`.
+- Only one game can run at a time. A second Start fails with `ANOTHER_SESSION_ACTIVE`.
+
+Fixed in Admin → Live control and HOGM → Game control:
+- The length now saves to both places (`src/lib/gameLength.ts`).
+- −5 is removed.
+- Start is disabled while the other day's game runs.
+
+`tests/game-lead/bonding-phase-control.sql` is a copy of the live version, and `tests/game-lead/bonding.test.ts` runs 0071 and 0072 against it.
+
+**Before porting `bonding-session`:** compare against the live database, not only this repo. Migrations that run `create or replace` on these functions can silently undo either side.
+
 ### HOGM Game control (Ops page), 2026-10-14
-Branch `hogm-home-redesign`. **Migration `0071_hogm_game_control.sql` must be run on Supabase before HOGM can use it.** Until then, every change on the page fails with "You don't have permission to do that."
+Branch `hogm-home-redesign`. Migration `0071_hogm_game_control.sql` was run on the live project on 2026-10-14. **`0072_hogm_game_length.sql` still has to be run**, or HOGM cannot change a game's length.
 - For HOGM only, `/committee` is now **Game control** (`src/components/staff/game/`), in the Welcome page style. HOF and Committee keep the old Ops overview. It has these sections:
-  - **Game**: Day 1 and Day 2 game cards with start, end, pause, resume, ±5 min and length. Start and End ask for confirmation first.
+  - **Game**: Day 1 and Day 2 game cards with start, end, pause, resume, +5 min and length. Start and End ask for confirmation first. Start is disabled while the other day's game runs.
   - **Stations**: folding cards (closed shows the name and status), with add, edit, delete, status and Game Masters.
   - **Tokens**: token rules, and Reset (only in Rehearsal mode, and you must type RESET).
   - **Puzzles**: upload the picture for each location.
@@ -259,11 +276,11 @@ Branch `hogm-home-redesign`. **Migration `0071_hogm_game_control.sql` must be ru
 - Navigation: a chip row on phones and portrait tablets, a side rail on landscape tablets and desktops. The sections can be linked with `#game`, `#stations` and so on.
 - Not included, as asked: kill-switches, Now on Welcome, Live Ops numbers, the token log, Blind box management, and the map (the map is on the Map tab).
 - Backend (0071):
-  - New `is_game_lead()` (HOGM or Admin), used by `fn_phase_control`, `fn_update_game_config_rule`, `fn_reset_tokens_and_puzzles`, `fn_admin_station_gms` and `fn_admin_set_station_gms`.
+  - New `is_game_lead()` (HOGM or Admin). 0071 takes each installed function and swaps its `is_admin()` check for it, keeping the rest of the live version. It stops without changing anything if a function does not have exactly one check. This applies to `fn_phase_control`, `fn_update_game_config_rule`, `fn_reset_tokens_and_puzzles`, `fn_admin_station_gms` and `fn_admin_set_station_gms`.
   - RLS: HOGM may update `phases` (game length only; no insert or delete), manage `stations`, write to the `puzzle-images` storage bucket, and read `nfc_tokens`.
-  - `fn_set_config`: HOGM may set `puzzle_image_*` keys only. Kill-switches and other keys stay Admin only.
+  - `fn_set_config`: HOGM may set `puzzle_image_*` keys (0071) and `bonding_session_duration_day1/2` (0072) only. Kill-switches and other keys stay Admin only.
   - `/api/admin/nfc` allows Admin and HOGM, and the audit log now records the caller's real role.
-- Tests: `tests/game-lead/db.test.ts` runs 0071 on a real Postgres. It checks that HOGM can do each of the above and that HOF, Committee and GM cannot, including the kill-switch keys. `npm test`: 45 pass. `tsc` and `next lint` are clean.
+- Tests: `tests/game-lead/db.test.ts` runs 0071 on a real Postgres. It checks that HOGM can do each of the above and that HOF, Committee and GM cannot, including the kill-switch keys. `tests/game-lead/bonding.test.ts` does the same against the live `fn_phase_control`. `npm test`: 52 pass. `tsc` and `next lint` are clean.
 - Checked in the browser as HOGM at 390×844 and 1180×820 against the live project, before 0071 was run: every section's layout, a station card opened, the Add station sheet, and the Start confirmation (cancelled). Nothing was saved, so a real start, save or upload after 0071 is still untested.
 
 ### Blind boxes: one QR per seller, BUY then open from Items, 2026-10-13

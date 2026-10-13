@@ -1,9 +1,11 @@
 "use client";
 
-import { Minus, Pause, Play, Plus, Square } from "lucide-react";
+import { Pause, Play, Plus, Square } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { usePhaseTimer } from "@/components/PhaseTimerProvider";
+import { useConfig } from "@/components/useConfig";
+import { gameLength, otherGameRunning, saveGameLength } from "@/lib/gameLength";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import type { Phase } from "@/lib/types";
 import { formatCountdown, friendlyError } from "@/lib/utils";
@@ -11,8 +13,10 @@ import { formatCountdown, friendlyError } from "@/lib/utils";
 import { ConfirmSheet, StatusLine, useStatus } from "./parts";
 
 // Start / end each day's game and set its length. Same calls as Admin →
-// Live control (GameToggles): phases.duration_minutes, then fn_phase_control.
-// Starting a game opens that day's stations; ending it closes them (0049).
+// Live control (GameToggles): the length (lib/gameLength), then
+// fn_phase_control. Starting a game opens that day's stations; ending it
+// closes them (0049). The live fn_phase_control only adds time and runs one
+// game at a time, so there is no −5 and Start waits for the other day's game.
 
 const GAMES = [
   { key: "day1", day: 1 },
@@ -23,7 +27,8 @@ type Action = "start" | "pause" | "resume" | "extend" | "end";
 
 function GameCard({ game, day }: { game: Phase; day: 1 | 2 }) {
   const supabase = useMemo(() => supabaseBrowser(), []);
-  const { offsetMs, tick } = usePhaseTimer();
+  const { phases, offsetMs, tick } = usePhaseTimer();
+  const { config } = useConfig();
   const { error, setError, notice, flash } = useStatus();
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
@@ -37,28 +42,25 @@ function GameCard({ game, day }: { game: Phase; day: 1 | 2 }) {
       : game.state === "active" && game.ends_at
         ? Math.max(0, (new Date(game.ends_at).getTime() - (Date.now() + offsetMs)) / 1000)
         : null;
+  const saved = gameLength(config, game);
   const typed = Math.round(Number(draft));
   const typedOk = draft !== "" && typed >= 1 && typed <= 24 * 60;
-  const minutes = typedOk ? typed : game.duration_minutes;
+  const minutes = typedOk ? typed : saved;
+  const blocker = otherGameRunning(phases, game);
   const stateLabel =
     game.state === "active" ? "LIVE" : game.state === "paused" ? "PAUSED" : game.state === "ended" ? "ENDED" : "NOT STARTED";
-
-  async function saveLength(m: number) {
-    const { error } = await supabase.from("phases").update({ duration_minutes: m }).eq("key", game.key);
-    if (error) {
-      setError(friendlyError(error));
-      return false;
-    }
-    setDraft("");
-    return true;
-  }
 
   async function control(action: Action, extend = 0) {
     setBusy(true);
     setError(null);
-    if (action === "start" && minutes !== game.duration_minutes && !(await saveLength(minutes))) {
-      setBusy(false);
-      return;
+    if (action === "start" && minutes !== saved) {
+      const lengthError = await saveGameLength(supabase, game, minutes);
+      if (lengthError) {
+        setBusy(false);
+        setAsking(null);
+        return setError(lengthError);
+      }
+      setDraft("");
     }
     const { error } = await supabase.rpc("fn_phase_control", {
       p_phase_key: game.key,
@@ -70,7 +72,7 @@ function GameCard({ game, day }: { game: Phase; day: 1 | 2 }) {
     if (error) return setError(friendlyError(error));
     flash(
       action === "extend"
-        ? `${extend > 0 ? "+" : "−"}${Math.abs(extend)} min`
+        ? `+${extend} min`
         : action === "start"
           ? `${game.name} started`
           : action === "end"
@@ -96,7 +98,7 @@ function GameCard({ game, day }: { game: Phase; day: 1 | 2 }) {
           <div className="gc-clock" role="timer" aria-label={`${game.name} time left`}>
             {formatCountdown(left)}
           </div>
-          <div className="gc-row4">
+          <div className="gc-row3">
             {game.state === "paused" ? (
               <button type="button" className="gc-btn" disabled={busy} onClick={() => control("resume")}>
                 <Play size={16} aria-hidden /> Resume
@@ -109,20 +111,11 @@ function GameCard({ game, day }: { game: Phase; day: 1 | 2 }) {
             <button
               type="button"
               className="gc-btn"
-              disabled={busy || left < 6 * 60}
-              onClick={() => control("extend", -5)}
-              aria-label="5 minutes less"
-            >
-              <Minus size={16} aria-hidden /> 5
-            </button>
-            <button
-              type="button"
-              className="gc-btn"
-              disabled={busy || game.state !== "active"}
+              disabled={busy}
               onClick={() => control("extend", 5)}
               aria-label="5 minutes more"
             >
-              <Plus size={16} aria-hidden /> 5
+              <Plus size={16} aria-hidden /> 5 min
             </button>
             <button type="button" className="gc-btn gc-btn-stop" disabled={busy} onClick={() => setAsking("end")}>
               <Square size={14} aria-hidden /> End
@@ -139,7 +132,7 @@ function GameCard({ game, day }: { game: Phase; day: 1 | 2 }) {
               max={1440}
               className="gc-input"
               aria-label={`${game.name} length in minutes`}
-              value={draft || String(game.duration_minutes)}
+              value={draft || String(saved)}
               onChange={(e) => setDraft(e.target.value)}
             />
             <span>min</span>
@@ -147,13 +140,14 @@ function GameCard({ game, day }: { game: Phase; day: 1 | 2 }) {
           <button
             type="button"
             className="gc-btn gc-btn-go gc-grow"
-            disabled={busy || (draft !== "" && !typedOk)}
+            disabled={busy || !!blocker || (draft !== "" && !typedOk)}
             onClick={() => setAsking("start")}
           >
             <Play size={16} aria-hidden /> Start
           </button>
         </div>
       )}
+      {!on && blocker && <p className="gc-muted">End {blocker.name} first.</p>}
 
       <StatusLine error={error} notice={notice} />
 
