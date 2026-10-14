@@ -59,22 +59,22 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Active test run not found for this location" }, { status: 400 });
     }
   }
-  const results: { label: string; url: string }[] = [];
+  const results: { id: number; label: string; url: string }[] = [];
 
   for (let i = 1; i <= n; i++) {
     const { token, tokenHash } = generateNfcToken(loc);
     const label = `${labelPrefix || loc + " sticker"} #${i}`;
-    const { error } = await service.from("nfc_tokens").insert({
+    const { data, error } = await service.from("nfc_tokens").insert({
       token_hash: tokenHash,
       location: loc,
       label,
       created_by: admin.id,
       ...(typeof testRunId === "string" ? { test_run_id: testRunId } : {}),
-    });
+    }).select("id").single();
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
-    results.push({ label, url: nfcUrl(token) });
+    results.push({ id: data.id, label, url: nfcUrl(token) });
   }
 
   await service.from("audit_log").insert({
