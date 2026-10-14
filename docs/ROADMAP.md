@@ -223,6 +223,11 @@ The design branches are merged. These remote branches are still not in `main` (c
 
 ## Done
 
+### David, 2026-10-14 (Admin NFC card deletion)
+- Implemented per-card Delete with an in-page confirmation dialog on Admin → NFC. Used cards and visible projector links disable Delete. The database also rejects consumed Guardian links and live-schema `USED` status.
+- Migration `0086_nfc_token_delete.sql` adds an Admin-only transactional RPC. It locks the card against activation, preserves NFC logs, and audits the deleted card's ID, label, location and linked log IDs without token hashes or URLs. Unused puzzle requirements follow their existing cascade rule.
+- Embedded Postgres tests cover the base and enriched schema, roles, protected cards, retained logs, audit rollback and concurrent activation. This is implemented locally, not deployed. Apply migration `0086` before deploying the frontend. No existing live cards were deleted.
+
 ### Map migrations to run (Zichien's map work, 2026-10-13/14)
 Renumbered after main's `0081` (and clear of `0069`, kept for Faci profiles). Run in order: `0082_multi_faci_group_position.sql`, `0083_map_lightbulbs.sql`, `0084_nfc_demo_scan.sql`, `0085_lightbulb_spots.sql`. They were already run on the project under their old numbers (0069–0072); running them again is safe (all `create or replace` / guarded), and `0084` must be re-run anyway so Reset also clears `test_run_id`. Optional test data: `supabase/seeds/day2_map_stations.sql`. Before the event: turn off NFC demo mode.
 
