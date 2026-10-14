@@ -3,6 +3,7 @@
 import { TriangleAlert } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { Dialog, DialogContent } from "@/components/ui/Dialog";
 import { Card, ErrorBanner, PageTitle } from "@/components/ui";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import {
@@ -37,20 +38,30 @@ export default function AdminNfcPage() {
   const supabase = useMemo(() => supabaseBrowser(), []);
   const [location, setLocation] = useState<ProjectorLocation>("B1");
   const [count, setCount] = useState(3);
-  const [minted, setMinted] = useState<{ label: string; url: string }[]>([]);
+  const [minted, setMinted] = useState<{ id: number; label: string; url: string }[]>([]);
   const [existing, setExisting] = useState<NfcTokenRow[]>([]);
   const [groups, setGroups] = useState<{ id: number; name: string }[]>([]);
   const [groupId, setGroupId] = useState(1);
   const [testRuns, setTestRuns] = useState<NfcTestRun[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<NfcTokenRow | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [projectorTokenIds, setProjectorTokenIds] = useState<Set<number>>(new Set());
 
   const load = useCallback(async () => {
-    const { data } = await supabase
+    const { data, error: tokensError } = await supabase
       .from("nfc_tokens")
       .select("id, location, label, used_at, used_by_group, created_at, test_run_id")
       .order("id", { ascending: false });
-    setExisting((data as NfcTokenRow[]) ?? []);
+    if (tokensError) setError(`Unable to load issued tokens. ${tokensError.message}`);
+    else setExisting((data as NfcTokenRow[]) ?? []);
+    const { data: projectors, error: projectorsError } = await supabase
+      .from("projectors").select("activated_by_nfc_id");
+    if (!projectorsError) {
+      setProjectorTokenIds(new Set((projectors ?? []).flatMap((p) =>
+        p.activated_by_nfc_id == null ? [] : [Number(p.activated_by_nfc_id)])));
+    }
     const [{ data: runRows, error: runsError }, { data: groupRows }] = await Promise.all([
       supabase.from("nfc_test_runs").select("id, group_id, location, created_at, reset_at, closed_at").order("created_at", { ascending: false }),
       supabase.rpc("fn_list_groups"),
@@ -65,6 +76,39 @@ export default function AdminNfcPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  function deleteReason(token: NfcTokenRow) {
+    if (token.used_at || token.used_by_group !== null) return "Used cards cannot be deleted.";
+    if (projectorTokenIds.has(token.id)) return "This card is linked to a projector.";
+    return null;
+  }
+
+  async function deleteToken() {
+    if (!pendingDelete || busy) return;
+    setBusy(true);
+    setDeleteError(null);
+    try {
+      const { error } = await supabase.rpc("fn_admin_delete_nfc_token", { p_token_id: pendingDelete.id });
+      if (error) {
+        const messages: Record<string, string> = {
+          PERMISSION_DENIED: "Only an Admin can delete NFC cards.",
+          NFC_TOKEN_USED: "This card has been used and cannot be deleted.",
+          NFC_TOKEN_PROJECTOR_LINKED: "This card is linked to a projector and cannot be deleted.",
+          NFC_TOKEN_GUARDIAN_LINKED: "This card has a Guardian verification and cannot be deleted.",
+        };
+        setDeleteError(messages[error.message] ?? error.message);
+        return;
+      }
+      setPendingDelete(null);
+      setMinted((tokens) => tokens.filter((token) => token.id !== pendingDelete.id));
+      setError(null);
+      await load();
+    } catch (error) {
+      setDeleteError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function mint(testRun?: NfcTestRun) {
     setBusy(true);
@@ -180,7 +224,7 @@ export default function AdminNfcPage() {
           </p>
           <div className="grid gap-2 lg:grid-cols-2">
             {minted.map((t) => (
-              <div key={t.label} className="rounded-lg bg-paper-100 p-2">
+              <div key={t.id} className="rounded-lg bg-paper-100 p-2">
                 <p className="text-xs font-bold">{t.label}</p>
                 <p className="break-all font-mono text-[10px] text-ink-soft">
                   {t.url}
@@ -239,6 +283,7 @@ export default function AdminNfcPage() {
                 <th className="px-4 py-2.5">Label</th>
                 <th className="w-28 px-4 py-2.5">Location</th>
                 <th className="w-40 px-4 py-2.5">Status</th>
+                <th className="px-4 py-2.5 text-right">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-paper-200">
@@ -252,21 +297,30 @@ export default function AdminNfcPage() {
                         "chip",
                         (t.test_run_id && testRuns.find((r) => r.id === t.test_run_id)?.closed_at)
                           ? "bg-paper-200 text-ink-soft"
-                          : t.used_at
+                          : t.used_at || t.used_by_group !== null
                           ? "bg-red-100 text-red-700"
                           : "bg-green-100 text-green-700"
                       )}
                     >
                       {t.test_run_id && testRuns.find((r) => r.id === t.test_run_id)?.closed_at
                         ? "test ended"
-                        : t.used_at ? `used by G${t.used_by_group}` : "unused"}
+                        : t.used_at || t.used_by_group !== null ? (t.used_by_group === null ? "used" : `used by G${t.used_by_group}`) : "unused"}
                     </span>
+                  </td>
+                  <td className="px-4 py-2 text-right">
+                    <button
+                      className="btn-danger text-xs"
+                      disabled={busy || !!deleteReason(t)}
+                      aria-label={`Delete ${t.label || `card #${t.id}`}`}
+                      onClick={() => { setDeleteError(null); setPendingDelete(t); }}
+                    >Delete</button>
+                    {deleteReason(t) && <p className="mt-1 text-xs text-ink-faint">{deleteReason(t)}</p>}
                   </td>
                 </tr>
               ))}
               {existing.length === 0 && (
                 <tr>
-                  <td colSpan={3} className="px-4 py-8 text-center text-ink-faint">
+                  <td colSpan={4} className="px-4 py-8 text-center text-ink-faint">
                     No tokens issued yet.
                   </td>
                 </tr>
@@ -275,6 +329,16 @@ export default function AdminNfcPage() {
           </table>
         </Card>
       </div>
+      <Dialog open={pendingDelete !== null} onOpenChange={(open) => { if (!open && !busy) setPendingDelete(null); }}>
+        <DialogContent title="Delete NFC card?" description="This permanently removes the card. Its NFC sticker and QR link will stop working. Existing logs will be kept." showClose={!busy}>
+          {pendingDelete && <p className="text-sm font-semibold">{pendingDelete.label || `Card #${pendingDelete.id}`} · {pendingDelete.location} · #{pendingDelete.id}</p>}
+          {deleteError && <p role="alert" className="mt-3 text-sm text-red-700">{deleteError}</p>}
+          <div className="mt-4 flex justify-end gap-2">
+            <button className="btn" disabled={busy} onClick={() => setPendingDelete(null)}>Cancel</button>
+            <button className="btn-danger" disabled={busy} onClick={deleteToken}>{busy ? "Deleting…" : "Delete card"}</button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
