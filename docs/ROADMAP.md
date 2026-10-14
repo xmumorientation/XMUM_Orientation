@@ -656,3 +656,6 @@ Example:
 - Replaced the activation circuit animation with five converging light trails, a star burst and an illuminated amusement park, using CSS/SVG and reduced-motion support.
 - Added a development-only, backend-free `/activate/preview` for replaying B1/A3/TF. Activation routes skip the global intro so it cannot cover the celebration. Mobile browser preview checked; fixed particle-coordinate hydration mismatch.
 - This release contains the celebration only; the separate NFC backend integration remains on `codex/nfc-integration`.
+
+### David, 2026-10-14 (continuous projector ignition)
+- Matched the star charge/ignition transforms and synchronized all five trails to the same finish. Ignition now follows the actual CSS charge completion rather than a separate timer, avoiding a hydration-dependent pause. Reduced-motion mode still shows the result immediately.
