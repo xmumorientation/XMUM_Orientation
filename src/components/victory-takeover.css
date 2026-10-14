@@ -1,0 +1,27 @@
+.vt-scene{position:fixed;inset:0;z-index:100;overflow:hidden;isolation:isolate;background:#080c20;color:#fff;text-align:center;--vt-ease:cubic-bezier(.16,1,.3,1)}
+.vt-sky{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 38%,#252152 0%,transparent 60%)}
+.vt-sky i{position:absolute;width:3px;height:3px;background:var(--color);box-shadow:0 0 10px var(--color);border-radius:50%;animation:vt-twinkle 3s var(--delay) ease-in-out infinite alternate}
+.vt-logo{position:absolute;top:max(22px,env(safe-area-inset-top));left:50%;transform:translateX(-50%);width:126px;z-index:2}.vt-logo img{width:100%;height:auto}
+.vt-magic{position:absolute;top:35%;left:50%;width:0;height:0;z-index:2}
+.vt-core{position:absolute;width:84px;height:84px;left:-42px;top:-42px;filter:drop-shadow(0 0 18px #0dfcfd);animation:vt-core-charge 2.1s ease-in both}.vt-core svg{width:100%;height:100%;fill:#fff6c5}
+.vt-trail{position:absolute;inset:-130px;border:1px solid transparent;border-top:2px solid var(--color);border-right-color:var(--color);border-radius:50%;transform:rotate(var(--turn));animation:vt-gather 2.1s var(--delay) cubic-bezier(.6,0,.4,1) both}.vt-trail i{position:absolute;left:35px;top:35px;width:9px;height:9px;background:var(--color);border-radius:50%;box-shadow:0 0 22px var(--color)}
+.vt-charging{position:absolute;top:52%;width:100%;font-size:16px;letter-spacing:.04em;color:#e0b4fc;transition:opacity .2s}.vt-charging span{display:block;margin:18px auto;width:100px;height:2px;background:#e0b4fc;transform-origin:left;animation:vt-progress 2.1s linear both}
+.vt-wave{position:absolute;inset:-100px;border:2px solid #fff0b9;border-radius:50%;opacity:0}
+.vt-wash{position:absolute;inset:0;opacity:0;background:radial-gradient(ellipse at 50% 35%,#f7cf8555,transparent 37%),radial-gradient(ellipse at 0% 70%,#fe06ab33,transparent 60%),radial-gradient(ellipse at 100% 80%,#0dfcfd33,transparent 60%)}
+.vt-lit .vt-wash{animation:vt-wash 2s var(--vt-ease) both}.vt-lit .vt-core{animation:vt-ignite 1.1s var(--vt-ease) both}.vt-lit .vt-wave{animation:vt-wave 1.5s ease-out both}.vt-lit .vt-trail{opacity:0;animation:none}.vt-lit .vt-charging{opacity:0}
+.vt-spark{position:absolute;width:7px;height:13px;background:var(--color);opacity:0;border-radius:2px}.vt-spark:nth-child(3n){width:10px;height:10px;clip-path:polygon(50% 0,61% 38%,100% 50%,61% 62%,50% 100%,39% 62%,0 50%,39% 38%)}.vt-lit .vt-spark{animation:vt-explode 2.4s var(--delay) cubic-bezier(.12,.65,.3,1) both}
+.vt-result{position:absolute;top:46%;left:20px;right:20px;z-index:3}.vt-result h1{font-family:var(--font-display),sans-serif;font-size:clamp(30px,8.6vw,58px);line-height:1.05;letter-spacing:-.035em;font-weight:800;margin:0;animation:vt-title .8s .2s var(--vt-ease) both}.vt-result h1 span{display:block;color:#fff2b2;font-size:1.18em;text-shadow:0 3px 24px #fc9e3d44}.vt-location{display:inline-block;margin:20px 0 0;font-size:20px;font-weight:600;color:#0dfcfd;animation:vt-rise .7s .5s var(--vt-ease) both}.vt-group{margin:8px 0 0;font-size:15px;color:#ddd6f3;animation:vt-rise .7s .65s var(--vt-ease) both}.vt-group strong{color:white}.vt-note{margin:22px 0 0;font-size:16px;color:#fff2b2;animation:vt-rise .7s .85s var(--vt-ease) both}
+.vt-park{position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:max(100%,600px);height:clamp(180px,29vh,320px);opacity:.12;transition:opacity 1.5s;pointer-events:none}.vt-lit .vt-park{opacity:.65}.vt-outline{stroke-dasharray:1;stroke-dashoffset:1}.vt-lit .vt-outline{animation:vt-draw 1.8s .15s ease-out forwards}.vt-wheel{transform-origin:110px 94px}.vt-lit .vt-wheel{animation:vt-wheel 35s linear infinite;filter:drop-shadow(0 0 5px #0dfcfd55)}
+@keyframes vt-gather{0%{transform:rotate(var(--turn)) scale(1.5);opacity:0}20%{opacity:1}80%{opacity:1}100%{transform:rotate(calc(var(--turn) + 400deg)) scale(.04);opacity:0}}
+@keyframes vt-core-charge{0%{transform:scale(.2) rotate(-90deg);opacity:.1}100%{transform:scale(1) rotate(90deg);opacity:1}}
+@keyframes vt-ignite{0%{transform:scale(.6) rotate(90deg)}35%{transform:scale(1.55) rotate(180deg);filter:drop-shadow(0 0 38px #fff2b2)}100%{transform:scale(1) rotate(180deg);filter:drop-shadow(0 0 18px #fc9e3d)}}
+@keyframes vt-wave{0%{transform:scale(.1);opacity:.8}100%{transform:scale(5);opacity:0}}
+@keyframes vt-explode{0%{transform:translate(0,0) scale(.2);opacity:0}12%{opacity:1}65%{opacity:1}100%{transform:translate(var(--x),calc(var(--y) + 85px)) rotate(var(--spin)) scale(.3);opacity:0}}
+@keyframes vt-title{from{opacity:0;transform:translateY(26px) scale(.8) rotate(-3deg)}to{opacity:1;transform:translateY(0) scale(1) rotate(0)}}
+@keyframes vt-rise{from{opacity:0;transform:translateY(15px)}to{opacity:1;transform:translateY(0)}}
+@keyframes vt-progress{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes vt-wash{from{opacity:0}35%{opacity:1}to{opacity:.7}}
+@keyframes vt-twinkle{from{opacity:.3;transform:scale(.65)}to{opacity:.9;transform:scale(1.15)}}
+@keyframes vt-draw{to{stroke-dashoffset:0}}@keyframes vt-wheel{to{transform:rotate(360deg)}}
+@media(max-height:650px){.vt-logo{width:95px;top:12px}.vt-magic{top:29%}.vt-result{top:41%}.vt-result h1{font-size:32px}.vt-location{margin-top:12px}.vt-note{margin-top:12px}.vt-lit .vt-park{opacity:.35}}
+@media(prefers-reduced-motion:reduce){.vt-scene *{animation:none!important;transition:none!important}.vt-trail,.vt-wave,.vt-spark,.vt-charging{display:none}.vt-wash{opacity:.7}.vt-outline{stroke-dashoffset:0}.vt-core{opacity:1}}
