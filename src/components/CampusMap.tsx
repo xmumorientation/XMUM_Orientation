@@ -2,25 +2,32 @@
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { ArrowLeft, Maximize2, Minus, Plus, RotateCcw, X } from "lucide-react";
+import { ArrowLeft, Lightbulb, MapPin, Maximize2, Minus, Plus, RotateCcw, X } from "lucide-react";
 
 import { BuildingStationPanel } from "@/components/BuildingStationPanel";
+import {
+  GroupStatusList,
+  pinSummary,
+  reportingSummary,
+} from "@/components/GroupStatusList";
+import { LightbulbList, bulbStatus, bulbTitle } from "@/components/LightbulbList";
 import { StationEditDialog } from "@/components/StationEditDialog";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { stationDotColor } from "@/components/ui";
-import type {
-  GpsLocation,
-  LatestLocation,
-  Projector,
-  Station,
+import {
+  PROJECTOR_CODE_NAMES,
+  type GroupPosition,
+  type MapLightbulb,
+  type ProjectorLocation,
+  type Station,
 } from "@/lib/types";
 import {
   MAP_BUILDINGS,
-  PROJECTOR_SPOTS,
   stationPosition,
 } from "@/lib/mapBuildings";
-import { isStale, timeAgo } from "@/lib/utils";
-import { gpsPinState, gpsToMapPercent, groupPinColor } from "@/lib/mapGeo";
+import { resolveGroupPin, type GroupPin } from "@/lib/groupPosition";
+import { friendlyError, timeAgo } from "@/lib/utils";
+import { accuracyAxes, groupPinColor } from "@/lib/mapGeo";
 
 // Illustrated campus map exported from the Figma frame
 // "XMUM Block Cube_XMUM Map 1". Coordinates below are percentages of that image.
@@ -39,6 +46,36 @@ const MIN_ZOOM = 1;
 const MAX_ZOOM = 8;
 
 type MapView = { scale: number; x: number; y: number };
+
+/** Stations mode shows game stations; Lightbulbs mode shows the lit (and, once unlocked, unlit) lightbulbs. */
+type MapLayer = "stations" | "bulbs";
+const LAYER_KEY = "campus-map-layer";
+
+/** In full screen, a building's badge splits into station dots past this zoom. */
+const CLUSTER_SPLIT_ZOOM = 2.5;
+
+/** Colour for a building badge: green if any station is open, else red if any is busy, else grey. */
+function clusterStatus(list: Station[]): Station["status"] {
+  if (list.some((s) => s.status === "available")) return "available";
+  if (list.some((s) => s.status === "in_progress")) return "in_progress";
+  return "closed";
+}
+const SEEN_LIT_KEY = "campus-map-seen-lit";
+
+function readStored(key: string) {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+function writeStored(key: string, value: string) {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    // Private mode: the choice just isn't remembered.
+  }
+}
 type Box = { w: number; h: number };
 
 /** Largest size that fits the whole map inside the screen. */
@@ -97,11 +134,16 @@ export function CampusMap({
 }) {
   const supabase = useMemo(() => supabaseBrowser(), []);
   const [stations, setStations] = useState<Station[]>([]);
-  const [projectors, setProjectors] = useState<Projector[]>([]);
-  const [day2Layer, setDay2Layer] = useState(false);
-  const [locations, setLocations] = useState<LatestLocation[]>([]);
-  const [gpsLocations, setGpsLocations] = useState<GpsLocation[]>([]);
-  const [selectedGpsGroup, setSelectedGpsGroup] = useState<number | null>(null);
+  const [layer, setLayerState] = useState<MapLayer>("stations");
+  const [bulbs, setBulbs] = useState<MapLightbulb[]>([]);
+  const [selectedBulb, setSelectedBulb] = useState<ProjectorLocation | null>(null);
+  const [movingBulb, setMovingBulb] = useState<ProjectorLocation | null>(null);
+  const [bulbError, setBulbError] = useState<string | null>(null);
+  // Lit bulbs the viewer has already seen in Lightbulbs mode; more lit than
+  // this makes the Lightbulbs tab pulse.
+  const [seenLit, setSeenLit] = useState<number | null>(null);
+  const [positions, setPositions] = useState<GroupPosition[]>([]);
+  const [selectedGroup, setSelectedGroup] = useState<number | null>(null);
   const [nowMs, setNowMs] = useState(() => Date.now());
   const [view, setView] = useState<MapView>({ scale: 1, x: 0, y: 0 });
   // Full-screen viewer. The inline map stays still so the page can scroll.
@@ -115,6 +157,9 @@ export function CampusMap({
   const dragged = useRef(false);
   const [selected, setSelected] = useState<Station | null>(null);
   const [openBuilding, setOpenBuilding] = useState<string | null>(null);
+  // Building whose stations are listed under the map (badge tapped).
+  const [clusterArea, setClusterArea] = useState<string | null>(null);
+  const [resetting, setResetting] = useState<ProjectorLocation | null>(null);
   const [showNames, setShowNames] = useState(false);
   const [editing, setEditing] = useState<Station | null>(null);
   const [counts, setCounts] = useState<Record<number, number>>({});
@@ -128,6 +173,74 @@ export function CampusMap({
     setStations((data as Station[]) ?? []);
   }, [supabase]);
 
+  const litCount = bulbs.filter((b) => b.activated_at).length;
+
+  useEffect(() => {
+    // ?layer=bulbs (from the demo scan) wins over the remembered choice.
+    const fromUrl = new URLSearchParams(window.location.search).get("layer");
+    const stored = fromUrl ?? readStored(LAYER_KEY);
+    if (stored === "bulbs" || stored === "stations") setLayerState(stored);
+    const seen = Number(readStored(SEEN_LIT_KEY));
+    setSeenLit(Number.isFinite(seen) ? seen : 0);
+  }, []);
+
+  // In Lightbulbs mode every lit bulb counts as seen. A reset (fewer lit)
+  // lowers the mark so the next lit bulb still pulses.
+  useEffect(() => {
+    if (seenLit === null) return;
+    if (layer === "bulbs" ? litCount !== seenLit : litCount < seenLit) {
+      setSeenLit(litCount);
+      writeStored(SEEN_LIT_KEY, String(litCount));
+    }
+  }, [layer, litCount, seenLit]);
+  const newLit = layer === "stations" && seenLit !== null && litCount > seenLit;
+
+  function setLayer(next: MapLayer) {
+    setLayerState(next);
+    writeStored(LAYER_KEY, next);
+    setSelected(null);
+    setSelectedBulb(null);
+    setMovingBulb(null);
+    setOpenBuilding(null);
+    setClusterArea(null);
+    setBulbError(null);
+  }
+
+  async function resetBulb(loc: ProjectorLocation) {
+    const b = bulbs.find((item) => item.location === loc);
+    if (!b || !window.confirm(`Turn off ${bulbTitle(b)}? The group that lit it loses it.`)) {
+      return;
+    }
+    setResetting(loc);
+    const { error } = await supabase.rpc("fn_admin_reset_projector", { p_location: loc });
+    setResetting(null);
+    setBulbError(error ? friendlyError(error) : null);
+    const { data } = await supabase.rpc("fn_map_lightbulbs");
+    if (data) setBulbs(data as MapLightbulb[]);
+  }
+
+  // Admin: put the bulb being moved where the map was tapped.
+  async function placeBulb(e: React.MouseEvent<SVGRectElement>) {
+    const loc = movingBulb;
+    const svg = e.currentTarget.ownerSVGElement;
+    if (!loc || !svg) return;
+    const r = svg.getBoundingClientRect();
+    const round = (n: number) => Math.round(Math.min(100, Math.max(0, n)) * 100) / 100;
+    const x = round(((e.clientX - r.left) / r.width) * 100);
+    const y = round(((e.clientY - r.top) / r.height) * 100);
+    setMovingBulb(null);
+    // Show it at once; the realtime reload confirms it.
+    setBulbs((list) => list.map((b) => (b.location === loc ? { ...b, map_x: x, map_y: y } : b)));
+    const { error } = await supabase
+      .from("projectors")
+      .update({ map_x: x, map_y: y })
+      .eq("location", loc);
+    if (error) setBulbError(friendlyError(error));
+    else setBulbError(null);
+    const { data } = await supabase.rpc("fn_map_lightbulbs");
+    if (data) setBulbs(data as MapLightbulb[]);
+  }
+
   useEffect(() => {
     let active = true;
 
@@ -135,24 +248,26 @@ export function CampusMap({
       const { data } = await supabase.from("stations").select("*").order("id");
       if (active) setStations((data as Station[]) ?? []);
     }
-    async function loadProjectors() {
-      const { data } = await supabase.from("projectors").select("*");
-      if (active && data) setProjectors(data as Projector[]);
+    // Unlit bulbs come back only after the map unlocks (or for Committee);
+    // fn_map_lightbulbs decides, so a bulb's place is never sent early.
+    async function loadBulbs() {
+      const { data } = await supabase.rpc("fn_map_lightbulbs");
+      if (active && data) setBulbs(data as MapLightbulb[]);
     }
-    async function loadConfig() {
-      const { data } = await supabase
-        .from("game_config")
-        .select("value")
-        .eq("key", "day2_map_layer")
-        .single();
-      if (active) setDay2Layer(data?.value === true || data?.value === "true");
-    }
-    async function loadLocations() {
+    async function loadPositions() {
       if (!showGroupPins) return;
-      const { data } = await supabase.rpc("fn_latest_locations");
-      if (active && data) setLocations(data as LatestLocation[]);
-      const gps = await supabase.rpc("fn_latest_gps_locations");
-      if (active && gps.data) setGpsLocations(gps.data as GpsLocation[]);
+      const { data } = await supabase.rpc("fn_group_positions");
+      if (active && data) setPositions(data as GroupPosition[]);
+    }
+    // Up to 30 Faci phones report about twice a minute. Batch the realtime
+    // events into one reload every couple of seconds.
+    let reloadTimer: ReturnType<typeof setTimeout> | null = null;
+    function scheduleLoadPositions() {
+      if (!showGroupPins || reloadTimer) return;
+      reloadTimer = setTimeout(() => {
+        reloadTimer = null;
+        void loadPositions();
+      }, 2000);
     }
 
     async function loadCounts() {
@@ -167,9 +282,8 @@ export function CampusMap({
 
     loadCounts();
     loadStationsLive();
-    loadProjectors();
-    loadConfig();
-    loadLocations();
+    loadBulbs();
+    loadPositions();
 
     const channel = supabase
       .channel("map-live")
@@ -181,23 +295,23 @@ export function CampusMap({
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "projectors" },
-        loadProjectors,
+        loadBulbs,
       )
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "game_config" },
-        loadConfig,
+        loadBulbs,
       )
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "group_locations" },
-        loadLocations,
+        scheduleLoadPositions,
       )
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "station_occupancy" },
         () => {
-          loadLocations();
+          scheduleLoadPositions();
           loadCounts();
         },
       )
@@ -208,31 +322,52 @@ export function CampusMap({
     const tick = showGroupPins
       ? setInterval(() => {
           setNowMs(Date.now());
-          loadLocations();
+          loadPositions();
         }, 30_000)
       : null;
 
     return () => {
       active = false;
       if (tick) clearInterval(tick);
+      if (reloadTimer) clearTimeout(reloadTimer);
       supabase.removeChannel(channel);
     };
   }, [supabase, showGroupPins]);
 
-  // Manual check-in pins sit on the station the group checked into.
-  // GPS pins are placed by gpsToMapPercent (see src/lib/mapGeo.ts).
-  const manualPins = locations.filter((l) => l.source === "manual");
+  // The map shows Day 2 stations only (Day 1 stations are managed on Admin → Stations).
+  const mapStations = useMemo(() => stations.filter((s) => s.day === 2), [stations]);
+
+  // Buildings with two or more stations show one badge instead of a dot each.
+  const clusters = useMemo(() => {
+    const list: { area: string; x: number; y: number; stations: Station[] }[] = [];
+    for (const b of MAP_BUILDINGS) {
+      const here = mapStations.filter((s) => s.area === b.area);
+      if (here.length >= 2) list.push({ area: b.area, x: b.x, y: b.y, stations: here });
+    }
+    return list;
+  }, [mapStations]);
+  const clusteredIds = useMemo(
+    () => new Set(clusters.flatMap((c) => c.stations.map((s) => s.id))),
+    [clusters],
+  );
 
   const stationSpots = useMemo(() => {
     const byArea = new Map<string, Station[]>();
-    for (const station of stations) {
+    for (const station of mapStations) {
       const list = byArea.get(station.area) ?? [];
       list.push(station);
       byArea.set(station.area, list);
     }
     const spots = new Map<number, { x: number; y: number }>();
     for (const [area, list] of byArea) {
+      const building = MAP_BUILDINGS.find((b) => b.area === area);
       list.forEach((station, index) => {
+        // One station sits on the building's centre; several (shown only
+        // when zoomed in) spread round it.
+        if (building && list.length === 1) {
+          spots.set(station.id, { x: building.x, y: building.y });
+          return;
+        }
         spots.set(
           station.id,
           stationPosition(area, index) ?? {
@@ -243,28 +378,45 @@ export function CampusMap({
       });
     }
     return spots;
-  }, [stations]);
+  }, [mapStations]);
 
-  const gpsPins = useMemo(
-    () =>
-      gpsLocations.flatMap((g) => {
-        const state = gpsPinState(g.reported_at, nowMs);
-        if (state === "hidden" || g.lat == null || g.lng == null) return [];
-        const pos = gpsToMapPercent(g.lat, g.lng);
-        return pos ? [{ ...g, pos, state }] : [];
-      }),
-    [gpsLocations, nowMs],
-  );
-  const selectedGps =
-    gpsLocations.find((g) => g.group_id === selectedGpsGroup) ?? null;
+  // One pin per group: best GPS fix across its Facis' phones, or its
+  // station check-in (see src/lib/groupPosition.ts).
+  const groupPins = useMemo(() => {
+    const spotOf = (id: number) => {
+      const st = stations.find((s) => s.id === id);
+      if (!st) return null;
+      return stationSpots.get(id) ?? { x: Number(st.map_x), y: Number(st.map_y) };
+    };
+    const pins = new Map<number, GroupPin | null>();
+    for (const g of positions) pins.set(g.group_id, resolveGroupPin(g, spotOf, nowMs));
+    return pins;
+  }, [positions, stations, stationSpots, nowMs]);
 
-  function pinPosition(l: LatestLocation): { x: number; y: number } | null {
-    const st = stations.find((s) => s.id === l.station_id);
-    if (!st) return null;
-    return (
-      stationSpots.get(st.id) ?? { x: Number(st.map_x), y: Number(st.map_y) }
-    );
-  }
+  // Groups at the same spot (for example checked into one station) sit side by side.
+  const drawnPins = useMemo(() => {
+    const list = positions.flatMap((g) => {
+      const pin = groupPins.get(g.group_id);
+      return pin ? [{ g, pin }] : [];
+    });
+    const bySpot = new Map<string, number[]>();
+    list.forEach(({ pin }, i) => {
+      const key = `${Math.round(pin.pos.x * 2)}:${Math.round(pin.pos.y * 2)}`;
+      bySpot.set(key, [...(bySpot.get(key) ?? []), i]);
+    });
+    const offsets = new Array<number>(list.length).fill(0);
+    for (const idx of bySpot.values()) {
+      idx.forEach((i, k) => {
+        offsets[i] = (k - (idx.length - 1) / 2) * 90;
+      });
+    }
+    return list.map((item, i) => ({ ...item, dx: offsets[i] }));
+  }, [positions, groupPins]);
+
+  const selectedPosition =
+    positions.find((g) => g.group_id === selectedGroup) ?? null;
+  const selectedPin =
+    selectedGroup != null ? (groupPins.get(selectedGroup) ?? null) : null;
 
   // Zoom by a factor around a point given in viewport pixels.
   const zoomAt = useCallback((factor: number, cx: number, cy: number) => {
@@ -457,7 +609,91 @@ export function CampusMap({
     pointers.current.delete(e.pointerId);
   }
 
+  function layerSwitch(dark: boolean) {
+    const tab = (value: MapLayer, label: string, Icon: typeof MapPin) => {
+      const on = layer === value;
+      return (
+        <button
+          type="button"
+          role="tab"
+          aria-selected={on}
+          onClick={() => setLayer(value)}
+          className={`relative inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-full px-3 text-xs font-bold transition-colors ${
+            on
+              ? "bg-stone-900 text-white shadow-sm"
+              : dark
+                ? "text-stone-700"
+                : "text-ink-soft hover:bg-paper-200"
+          }`}
+        >
+          <Icon className="h-3.5 w-3.5" />
+          {label}
+          {value === "bulbs" && litCount > 0 && (
+            <span
+              className={`ml-0.5 rounded-full px-1.5 py-0.5 text-[10px] leading-none ${
+                on ? "bg-amber-400 text-stone-900" : "bg-amber-100 text-amber-800"
+              } ${newLit ? "animate-pulse ring-2 ring-amber-400" : ""}`}
+            >
+              {litCount} lit
+            </span>
+          )}
+        </button>
+      );
+    };
+    return (
+      <div
+        role="tablist"
+        aria-label="Map view"
+        className={`flex w-full max-w-xs gap-1 rounded-full p-1 ${
+          dark ? "bg-white shadow-lg" : "bg-paper-100 ring-1 ring-paper-200"
+        }`}
+      >
+        {tab("stations", "Stations", MapPin)}
+        {tab("bulbs", "Lightbulbs", Lightbulb)}
+      </div>
+    );
+  }
+
+  // Full screen: zoom in on a spot (percent of the map) so a badge splits into dots.
+  function zoomToSpot(xPct: number, yPct: number) {
+    const el = viewportRef.current;
+    const box = contentRef.current;
+    if (!el || box.w === 0) return;
+    const { width, height } = el.getBoundingClientRect();
+    const scale = Math.max(CLUSTER_SPLIT_ZOOM + 0.5, view.scale);
+    setView(
+      clampView(
+        {
+          scale,
+          x: width / 2 - (xPct / 100) * box.w * scale,
+          y: height / 2 - (yPct / 100) * box.h * scale,
+        },
+        width,
+        height,
+        box.w,
+        box.h,
+      ),
+    );
+  }
+
+  function openCluster(area: string, fitted: boolean, x: number, y: number) {
+    setSelected(null);
+    if (fitted) {
+      zoomToSpot(x, y);
+      return;
+    }
+    if (canManageStations) {
+      toggleBuilding(area);
+      return;
+    }
+    setClusterArea((cur) => (cur === area ? null : area));
+  }
+
   function mapPicture(fitted: boolean) {
+    // The inline map always groups busy buildings; full screen splits them when zoomed in.
+    const split = fitted && view.scale >= CLUSTER_SPLIT_ZOOM;
+    // The inline map and the full-screen map are both in the page, so ids differ.
+    const glowId = fitted ? "bulb-glow-full" : "bulb-glow-inline";
     return (
       <>
             <img
@@ -473,6 +709,13 @@ export function CampusMap({
               role="img"
               aria-label="Game stations on the campus map"
             >
+              <defs>
+                <radialGradient id={glowId}>
+                  <stop offset="0%" stopColor="#fde68a" stopOpacity="0.9" />
+                  <stop offset="55%" stopColor="#fbbf24" stopOpacity="0.45" />
+                  <stop offset="100%" stopColor="#f59e0b" stopOpacity="0" />
+                </radialGradient>
+              </defs>
               {MAP_BUILDINGS.map((place) => (
                 <ellipse
                   key={place.area}
@@ -485,7 +728,75 @@ export function CampusMap({
                   strokeWidth={openBuilding === place.area ? 10 : 7}
                 />
               ))}
-              {stations.map((s) => {
+              {layer === "stations" &&
+                !split &&
+                clusters.map((c) => {
+                  const cx = mx(c.x);
+                  const cy = my(c.y);
+                  const open = c.stations.filter((st) => st.status === "available").length;
+                  const color = stationDotColor(clusterStatus(c.stations));
+                  const isSel =
+                    clusterArea === c.area ||
+                    openBuilding === c.area ||
+                    c.stations.some(
+                      (st) => st.id === activeSelected?.id || st.id === highlightStationId,
+                    );
+                  return (
+                    <g
+                      key={`cluster-${c.area}`}
+                      data-map-hit
+                      className="pointer-events-auto cursor-pointer"
+                      onClick={() => openCluster(c.area, fitted, c.x, c.y)}
+                    >
+                      <title>
+                        {c.area}: {open} of {c.stations.length} stations open
+                      </title>
+                      <circle cx={cx} cy={cy} r="62" fill="transparent" />
+                      {/* A second disc peeking out behind says "several stations here". */}
+                      <circle
+                        cx={cx + 14}
+                        cy={cy - 12}
+                        r="40"
+                        fill={color}
+                        opacity="0.55"
+                        stroke="#fff"
+                        strokeWidth="6"
+                      />
+                      <circle
+                        cx={cx}
+                        cy={cy}
+                        r={isSel ? 50 : 42}
+                        fill={color}
+                        stroke={isSel ? "#1c1917" : "#fff"}
+                        strokeWidth="8"
+                      />
+                      {open > 0 ? (
+                        <text
+                          x={cx}
+                          y={cy + 19}
+                          textAnchor="middle"
+                          fontSize="54"
+                          fontWeight="800"
+                          fill="#fff"
+                        >
+                          {open}
+                        </text>
+                      ) : clusterStatus(c.stations) === "in_progress" ? (
+                        <circle cx={cx} cy={cy} r="19" fill="#fff" />
+                      ) : (
+                        <>
+                          <line x1={cx - 23} y1={cy - 23} x2={cx + 23} y2={cy + 23} stroke="#fff" strokeWidth="7" />
+                          <line x1={cx - 23} y1={cy + 23} x2={cx + 23} y2={cy - 23} stroke="#fff" strokeWidth="7" />
+                        </>
+                      )}
+                    </g>
+                  );
+                })}
+              {layer === "stations" && mapStations.map((s) => {
+                if (!split && clusteredIds.has(s.id)) return null;
+                // "TBD" = no location chosen yet; it has no place on the map
+                // (it is still in the station list).
+                if (s.area === "TBD") return null;
                 const spot = stationSpots.get(s.id) ?? {
                   x: Number(s.map_x),
                   y: Number(s.map_y),
@@ -576,100 +887,187 @@ export function CampusMap({
                 );
               })}
 
-              {day2Layer &&
-                projectors.map((p) => {
-                  const spot = PROJECTOR_SPOTS[p.location] ?? {
-                    x: Number(p.map_x),
-                    y: Number(p.map_y),
-                  };
-                  const x = mx(spot.x);
-                  const y = my(spot.y);
-                  const fill = p.activated_at ? "#f59e0b" : "#0f766e";
-                  return (
-                    <g key={p.location}>
-                      <text
-                        x={x}
-                        y={y}
-                        textAnchor="middle"
-                        fontSize="34"
-                        fontWeight="800"
-                        fill={fill}
-                        stroke="#fff"
-                        strokeWidth="8"
-                        paintOrder="stroke"
-                      >
-                        {p.activated_at ? "ON" : "NFC"}
-                      </text>
-                      <text
-                        x={x}
-                        y={y + 40}
-                        textAnchor="middle"
-                        fontSize="28"
-                        fontWeight="700"
-                        fill={fill}
-                        stroke="#fff"
-                        strokeWidth="8"
-                        paintOrder="stroke"
-                      >
-                        {p.activated_at ? "REVIVED" : p.location}
-                      </text>
-                    </g>
-                  );
-                })}
-
-              {showGroupPins &&
-                manualPins.map((l) => {
-                  const pos = pinPosition(l);
-                  if (!pos) return null;
-                  const stale = isStale(l.reported_at);
-                  const x = mx(pos.x);
-                  const y = my(pos.y);
-                  return (
-                    <g key={l.group_id} opacity={stale ? 0.45 : 1}>
-                      <rect
-                        x={x - 36}
-                        y={y + 18}
-                        width="72"
-                        height="36"
-                        rx="12"
-                        fill="#0891b2"
-                      />
-                      <text
-                        x={x}
-                        y={y + 43}
-                        textAnchor="middle"
-                        fontSize="24"
-                        fontWeight="700"
-                        fill="#fff"
-                      >
-                        G{l.group_id}
-                      </text>
-                    </g>
-                  );
-                })}
-
-              {showGroupPins &&
-                gpsPins.map((g) => {
-                  const x = mx(g.pos.x);
-                  const y = my(g.pos.y);
-                  const color = groupPinColor(g.group_id);
-                  const isSel = selectedGpsGroup === g.group_id;
+              {layer === "bulbs" &&
+                bulbs.map((b) => {
+                  const x = mx(Number(b.map_x));
+                  const y = my(Number(b.map_y));
+                  const lit = !!b.activated_at;
+                  const isSel = selectedBulb === b.location;
                   return (
                     <g
-                      key={`gps-${g.group_id}`}
-                      opacity={g.state === "faded" ? 0.45 : 1}
+                      key={b.location}
                       data-map-hit
                       className="pointer-events-auto cursor-pointer"
                       onClick={() =>
-                        setSelectedGpsGroup((cur) =>
+                        setSelectedBulb((cur) => (cur === b.location ? null : b.location))
+                      }
+                    >
+                      <title>
+                        {bulbTitle(b)} · {bulbStatus(b, nowMs)}
+                      </title>
+                      <circle cx={x} cy={y + 20} r="110" fill="transparent" />
+                      {lit && (
+                        <>
+                          <circle
+                            cx={x}
+                            cy={y - 4}
+                            r="120"
+                            fill={`url(#${glowId})`}
+                            className="animate-pulse"
+                          />
+                          {/* Rays round the glass (none below, where the base is). */}
+                          {[-90, -45, 0, 180, 225].map((deg) => {
+                            const a = (deg * Math.PI) / 180;
+                            return (
+                              <line
+                                key={deg}
+                                x1={x + Math.cos(a) * 64}
+                                y1={y - 6 + Math.sin(a) * 64}
+                                x2={x + Math.cos(a) * 86}
+                                y2={y - 6 + Math.sin(a) * 86}
+                                stroke="#f59e0b"
+                                strokeWidth="9"
+                                strokeLinecap="round"
+                              />
+                            );
+                          })}
+                        </>
+                      )}
+                      {/* Glass: pear shape, centred on the spot, narrowing to the neck. */}
+                      <path
+                        d={`M ${x - 21} ${y + 40} C ${x - 21} ${y + 26} ${x - 46} ${y + 12} ${x - 46} ${y - 8} A 46 46 0 1 1 ${x + 46} ${y - 8} C ${x + 46} ${y + 12} ${x + 21} ${y + 26} ${x + 21} ${y + 40} Z`}
+                        fill={lit ? "#fcd34d" : "#e7e5e4"}
+                        stroke={isSel ? "#1c1917" : lit ? "#b45309" : "#a8a29e"}
+                        strokeWidth={isSel ? 9 : 6}
+                        strokeLinejoin="round"
+                      />
+                      {/* Inner warm core when lit. */}
+                      {lit && <circle cx={x} cy={y - 6} r="28" fill="#fef3c7" opacity="0.9" />}
+                      {/* Shine. */}
+                      <path
+                        d={`M ${x - 30} ${y - 14} A 32 32 0 0 1 ${x - 10} ${y - 38}`}
+                        fill="none"
+                        stroke="#fff"
+                        strokeWidth="7"
+                        strokeLinecap="round"
+                        opacity={lit ? 0.95 : 0.8}
+                      />
+                      {/* Filament: two wires up from the neck, a coil across the top. */}
+                      <path
+                        d={`M ${x - 11} ${y + 40} L ${x - 11} ${y + 4} L ${x - 6} ${y - 6} L ${x - 1} ${y + 4} L ${x + 4} ${y - 6} L ${x + 9} ${y + 4} L ${x + 11} ${y + 4} L ${x + 11} ${y + 40}`}
+                        fill="none"
+                        stroke={lit ? "#ea580c" : "#78716c"}
+                        strokeWidth="4.5"
+                        strokeLinejoin="round"
+                        strokeLinecap="round"
+                      />
+                      {/* Screw base with threads and a contact tip. */}
+                      <rect
+                        x={x - 23}
+                        y={y + 38}
+                        width="46"
+                        height="30"
+                        rx="6"
+                        fill={lit ? "#a8a29e" : "#78716c"}
+                        stroke="#fff"
+                        strokeWidth="4"
+                      />
+                      <line x1={x - 21} y1={y + 48} x2={x + 21} y2={y + 46} stroke="#57534e" strokeWidth="3" />
+                      <line x1={x - 21} y1={y + 58} x2={x + 21} y2={y + 56} stroke="#57534e" strokeWidth="3" />
+                      <path
+                        d={`M ${x - 12} ${y + 68} L ${x + 12} ${y + 68} L ${x + 6} ${y + 78} L ${x - 6} ${y + 78} Z`}
+                        fill="#44403c"
+                        stroke="#fff"
+                        strokeWidth="3"
+                        strokeLinejoin="round"
+                      />
+                      {!lit && (
+                        <text
+                          x={x}
+                          y={y - 18}
+                          textAnchor="middle"
+                          fontSize="30"
+                          fontWeight="800"
+                          fill="#78716c"
+                        >
+                          ?
+                        </text>
+                      )}
+                      <text
+                        x={x}
+                        y={y + 112}
+                        textAnchor="middle"
+                        fontSize="30"
+                        fontWeight="800"
+                        fill={lit ? "#b45309" : "#57534e"}
+                        stroke="#fff"
+                        strokeWidth="8"
+                        paintOrder="stroke"
+                      >
+                        {PROJECTOR_CODE_NAMES[b.location]}
+                        {lit && b.activated_by_group != null ? ` · G${b.activated_by_group}` : ""}
+                      </text>
+                    </g>
+                  );
+                })}
+
+              {layer === "bulbs" && movingBulb && (
+                <rect
+                  x="0"
+                  y="0"
+                  width={MAP_W}
+                  height={MAP_H}
+                  fill="#f59e0b"
+                  fillOpacity="0.08"
+                  data-map-hit
+                  className="pointer-events-auto cursor-crosshair"
+                  onClick={placeBulb}
+                />
+              )}
+
+              {showGroupPins &&
+                drawnPins.map(({ g, pin, dx }) => {
+                  const x = mx(pin.pos.x) + dx;
+                  const y = my(pin.pos.y);
+                  const color =
+                    pin.state === "stale" ? "#9ca3af" : groupPinColor(g.group_id);
+                  const isSel = selectedGroup === g.group_id;
+                  const halo =
+                    pin.source === "gps" &&
+                    pin.imprecise &&
+                    pin.accuracyM != null &&
+                    g.gps_lat != null
+                      ? accuracyAxes(g.gps_lat, pin.accuracyM)
+                      : null;
+                  return (
+                    <g
+                      key={`group-${g.group_id}`}
+                      opacity={pin.state === "faded" ? 0.6 : 1}
+                      data-map-hit
+                      className="pointer-events-auto cursor-pointer"
+                      onClick={() =>
+                        setSelectedGroup((cur) =>
                           cur === g.group_id ? null : g.group_id,
                         )
                       }
                     >
                       <title>
-                        {g.group_name} · {timeAgo(g.reported_at, nowMs)}
+                        {g.group_name} · {pinSummary(g, pin, nowMs)}
                       </title>
-                      <circle cx={x} cy={y} r="70" fill="transparent" />
+                      {halo && (
+                        <circle
+                          r="1"
+                          transform={`matrix(${(halo.east.x / 100) * MAP_W} ${(halo.east.y / 100) * MAP_H} ${(halo.north.x / 100) * MAP_W} ${(halo.north.y / 100) * MAP_H} ${x} ${y})`}
+                          fill={color}
+                          fillOpacity="0.14"
+                          stroke={color}
+                          strokeWidth="2"
+                          strokeDasharray="6 4"
+                          vectorEffect="non-scaling-stroke"
+                          className="pointer-events-none"
+                        />
+                      )}
+                      <circle cx={x} cy={y - 40} r="70" fill="transparent" />
                       <path
                         d={`M ${x} ${y} L ${x - 22} ${y - 38} L ${x + 22} ${y - 38} Z`}
                         fill={color}
@@ -681,6 +1079,7 @@ export function CampusMap({
                         fill={color}
                         stroke="#fff"
                         strokeWidth="8"
+                        strokeDasharray={halo ? "14 10" : undefined}
                       />
                       <text
                         x={x}
@@ -692,6 +1091,18 @@ export function CampusMap({
                       >
                         {g.group_id}
                       </text>
+                      {pin.source === "manual" && (
+                        <rect
+                          x={x + 22}
+                          y={y - 104}
+                          width="24"
+                          height="24"
+                          rx="6"
+                          fill="#0891b2"
+                          stroke="#fff"
+                          strokeWidth="5"
+                        />
+                      )}
                     </g>
                   );
                 })}
@@ -699,8 +1110,9 @@ export function CampusMap({
             <div className="pointer-events-none absolute inset-0">
               {MAP_BUILDINGS.map((place) => {
                 const spot = { left: `${place.x}%`, top: `${place.y}%` };
+                const manage = canManageStations && layer === "stations";
                 if (!showNames) {
-                  if (!canManageStations) return null;
+                  if (!manage) return null;
                   return (
                     <button
                       key={place.area}
@@ -717,8 +1129,8 @@ export function CampusMap({
                   openBuilding === place.area
                     ? "ring-2 ring-stone-900"
                     : "ring-black/15"
-                } ${canManageStations ? "cursor-pointer" : ""}`;
-                if (!canManageStations) {
+                } ${manage ? "cursor-pointer" : ""}`;
+                if (!manage) {
                   return (
                     <span key={place.area} className={className} style={spot}>
                       {place.area}
@@ -743,8 +1155,29 @@ export function CampusMap({
     );
   }
 
+  const movingTitle = movingBulb
+    ? bulbs.find((b) => b.location === movingBulb)
+    : undefined;
+
   return (
     <div>
+      <div className="mb-2 flex justify-center" aria-hidden={fullscreen}>
+        {layerSwitch(false)}
+      </div>
+      {movingTitle && (
+        <div className="mb-2 flex items-center justify-between gap-3 rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-950 ring-1 ring-amber-200">
+          <span>
+            Tap the map where the {bulbTitle(movingTitle)} NFC card is. Use full screen for a precise spot.
+          </span>
+          <button
+            type="button"
+            className="shrink-0 font-semibold underline"
+            onClick={() => setMovingBulb(null)}
+          >
+            Cancel
+          </button>
+        </div>
+      )}
       <div className="card overflow-hidden p-0" aria-hidden={fullscreen}>
         <div
           className="relative cursor-pointer select-none"
@@ -773,18 +1206,55 @@ export function CampusMap({
           </button>
         </div>
         <div className="flex flex-wrap gap-x-4 gap-y-1 border-t border-paper-200 px-3 py-2 text-xs text-ink-faint">
-          <span className="inline-flex items-center gap-1.5">
-            <span className="inline-block h-2.5 w-2.5 rounded-full bg-[#16a34a]" />
-            Available
-          </span>
-          <span className="inline-flex items-center gap-1.5">
-            <span className="inline-block h-2.5 w-2.5 rounded-full border-2 border-[#dc2626] bg-white" />
-            In progress
-          </span>
-          <span className="inline-flex items-center gap-1.5">
-            <span className="inline-block h-2.5 w-2.5 rounded-full bg-[#9ca3af]" />
-            Closed
-          </span>
+          {layer === "bulbs" ? (
+            <>
+              <span className="inline-flex items-center gap-1.5">
+                <span className="inline-block h-2.5 w-2.5 rounded-full bg-[#fbbf24] shadow-[0_0_6px_#fbbf24]" />
+                Lit
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <span className="inline-block h-2.5 w-2.5 rounded-full bg-[#e7e5e4] ring-1 ring-stone-400" />
+                Not lit yet
+              </span>
+            </>
+          ) : (
+            <>
+              <span className="inline-flex items-center gap-1.5">
+                <span className="inline-block h-2.5 w-2.5 rounded-full bg-[#16a34a]" />
+                Available
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <span className="inline-block h-2.5 w-2.5 rounded-full border-2 border-[#dc2626] bg-white" />
+                In progress
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <span className="inline-block h-2.5 w-2.5 rounded-full bg-[#9ca3af]" />
+                Closed
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-[#16a34a] text-[9px] font-bold leading-none text-white">
+                  2
+                </span>
+                Open stations in a building (tap for list)
+              </span>
+            </>
+          )}
+          {showGroupPins && (
+            <>
+              <span className="inline-flex items-center gap-1.5">
+                <span className="inline-block h-3 w-3 rounded-full border border-dashed border-ink-faint" />
+                Group, rough location
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <span className="inline-block h-2.5 w-2.5 rounded-sm bg-[#0891b2]" />
+                Group checked in
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <span className="inline-block h-3 w-3 rounded-full bg-[#9ca3af] ring-2 ring-white" />
+                Group not seen 10+ min
+              </span>
+            </>
+          )}
         </div>
       </div>
 
@@ -845,6 +1315,13 @@ export function CampusMap({
                 {showNames ? "Hide names" : "Show names"}
               </button>
             </div>
+            <div
+              className="pointer-events-auto absolute inset-x-0 z-10 flex justify-center px-3"
+              style={{ top: "calc(max(0.75rem, env(safe-area-inset-top)) + 3.5rem)" }}
+              onPointerDown={(e) => e.stopPropagation()}
+            >
+              {layerSwitch(true)}
+            </div>
 
             <div
               className="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex items-end justify-between gap-3 px-3"
@@ -857,23 +1334,60 @@ export function CampusMap({
               onPointerDown={(e) => e.stopPropagation()}
             >
               <div className="min-w-0 flex-1">
-                {showGroupPins && selectedGps ? (
+                {layer === "bulbs" && movingTitle ? (
+                  <div className="pointer-events-auto flex items-center justify-between gap-3 rounded-2xl bg-amber-50 px-3 py-2.5 text-sm text-amber-950 shadow-lg">
+                    <span className="min-w-0">
+                      Tap where the {bulbTitle(movingTitle)} NFC card is.
+                    </span>
+                    <button
+                      type="button"
+                      className="shrink-0 font-semibold underline"
+                      onClick={() => setMovingBulb(null)}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : layer === "bulbs" && selectedBulb ? (
+                  (() => {
+                    const b = bulbs.find((item) => item.location === selectedBulb);
+                    if (!b) return <span />;
+                    return (
+                      <div className="pointer-events-auto flex items-center justify-between gap-3 rounded-2xl bg-white px-3 py-2.5 text-sm shadow-lg">
+                        <div className="min-w-0">
+                          <div className="truncate font-semibold">{bulbTitle(b)}</div>
+                          <div className="truncate text-xs text-ink-faint">
+                            {bulbStatus(b, nowMs)}
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          aria-label="Close lightbulb details"
+                          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full"
+                          onClick={() => setSelectedBulb(null)}
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    );
+                  })()
+                ) : showGroupPins && selectedPosition ? (
                   <div className="pointer-events-auto flex items-center justify-between gap-3 rounded-2xl bg-white px-3 py-2.5 text-sm shadow-lg">
                     <div className="min-w-0">
                       <div className="truncate font-semibold">
-                        {selectedGps.group_name}
+                        {selectedPosition.group_name}
                       </div>
-                      <div className="text-xs text-ink-faint">
-                        Updated {timeAgo(selectedGps.reported_at, nowMs)}
-                        {selectedGps.accuracy_m != null &&
-                          ` · ±${Math.round(selectedGps.accuracy_m)} m`}
+                      <div className="truncate text-xs text-ink-faint">
+                        {pinSummary(selectedPosition, selectedPin, nowMs)}
+                      </div>
+                      <div className="truncate text-xs text-ink-faint">
+                        {reportingSummary(selectedPosition)}
                       </div>
                     </div>
                     <button
                       type="button"
                       aria-label="Close group details"
                       className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full"
-                      onClick={() => setSelectedGpsGroup(null)}
+                      onClick={() => setSelectedGroup(null)}
                     >
                       <X className="h-4 w-4" />
                     </button>
@@ -966,24 +1480,65 @@ export function CampusMap({
         />
       )}
 
-      {canManageStations && openBuilding && (
+      {canManageStations && layer === "stations" && openBuilding && (
         <BuildingStationPanel
           area={openBuilding}
-          stations={stations.filter((station) => station.area === openBuilding)}
+          stations={mapStations.filter((station) => station.area === openBuilding)}
           codes={stations.map((station) => station.code)}
           onClose={() => setOpenBuilding(null)}
           onChanged={loadStations}
         />
       )}
 
-      {!(hasSelection ?? !!activeSelected) && !openBuilding && (
+      {layer === "bulbs" && (
+        <>
+          {bulbError && (
+            <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">
+              Lightbulb not changed: {bulbError}
+            </p>
+          )}
+          <LightbulbList
+            bulbs={bulbs}
+            nowMs={nowMs}
+            selected={selectedBulb}
+            onSelect={(loc) => setSelectedBulb((cur) => (cur === loc ? null : loc))}
+            canMove={canManageStations}
+            moving={movingBulb}
+            onMove={setMovingBulb}
+            resetting={resetting}
+            onReset={resetBulb}
+          />
+        </>
+      )}
+
+      {layer === "stations" && !(hasSelection ?? !!activeSelected) && !openBuilding && (
         <div className="card mt-3 overflow-hidden p-0">
-          <h2 className="border-b border-paper-200 px-3 py-2 text-sm font-semibold">
-            Available stations
-          </h2>
+          {clusterArea ? (
+            <div className="flex items-center justify-between gap-3 border-b border-paper-200 px-3 py-2">
+              <h2 className="text-sm font-semibold">
+                {clusterArea} stations
+              </h2>
+              <button
+                type="button"
+                onClick={() => setClusterArea(null)}
+                className="inline-flex items-center gap-1 text-xs font-semibold text-ink-faint hover:text-ink-base"
+              >
+                <ArrowLeft className="h-3.5 w-3.5" />
+                All available
+              </button>
+            </div>
+          ) : (
+            <h2 className="border-b border-paper-200 px-3 py-2 text-sm font-semibold">
+              Available stations
+            </h2>
+          )}
           <ul className="divide-y divide-paper-200">
-            {stations
-              .filter((station) => station.status === "available")
+            {mapStations
+              .filter((station) =>
+                clusterArea
+                  ? station.area === clusterArea
+                  : station.status === "available",
+              )
               .map((station) => (
                 <li key={station.id} className="flex items-center">
                   {(() => {
@@ -1024,19 +1579,17 @@ export function CampusMap({
                     );
                     const cls =
                       "flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left";
-                    return onStationTap ? (
+                    return (
                       <button
                         type="button"
                         className={`${cls} transition-colors hover:bg-paper-100`}
                         onClick={() => {
                           setSelected(station);
-                          onStationTap(station);
+                          onStationTap?.(station);
                         }}
                       >
                         {body}
                       </button>
-                    ) : (
-                      <div className={cls}>{body}</div>
                     );
                   })()}
                   {canManageStations && (
@@ -1050,7 +1603,8 @@ export function CampusMap({
                   )}
                 </li>
               ))}
-            {stations.every((station) => station.status !== "available") && (
+            {!clusterArea &&
+              mapStations.every((station) => station.status !== "available") && (
               <li className="px-3 py-4 text-sm text-ink-faint">
                 No stations are available right now.
               </li>
@@ -1059,7 +1613,7 @@ export function CampusMap({
         </div>
       )}
 
-      {activeSelected && !onStationTap && (
+      {layer === "stations" && activeSelected && !onStationTap && (
         <div className="card mt-3 p-3">
           <div className="mb-2.5 flex items-center justify-between border-b border-paper-200 pb-2">
             <button
@@ -1068,7 +1622,7 @@ export function CampusMap({
               className="inline-flex items-center gap-1.5 text-xs font-semibold text-ink-faint transition-colors hover:text-ink-base"
             >
               <ArrowLeft className="h-3.5 w-3.5" />
-              Back to available stations
+              {clusterArea ? `Back to ${clusterArea} stations` : "Back to available stations"}
             </button>
             <button
               type="button"
@@ -1105,48 +1659,56 @@ export function CampusMap({
         </div>
       )}
 
-      {showGroupPins && selectedGps && (
-        <div className="card mt-3 flex items-center justify-between gap-3 p-3 text-sm">
-          <div>
-            <div className="font-semibold">{selectedGps.group_name}</div>
+      {showGroupPins && selectedPosition && (
+        <div className="card mt-3 flex items-start justify-between gap-3 p-3 text-sm">
+          <div className="min-w-0">
+            <div className="font-semibold">{selectedPosition.group_name}</div>
             <div className="text-xs text-ink-faint">
-              Updated {timeAgo(selectedGps.reported_at, nowMs)}
-              {selectedGps.accuracy_m != null &&
-                ` · accuracy ±${Math.round(selectedGps.accuracy_m)} m`}
+              {pinSummary(selectedPosition, selectedPin, nowMs)}
             </div>
+            {selectedPin?.source === "gps" &&
+              selectedPosition.checkin_station_code &&
+              selectedPosition.checkin_at && (
+                <div className="text-xs text-ink-faint">
+                  Checked in at {selectedPosition.checkin_station_code} ·{" "}
+                  {timeAgo(selectedPosition.checkin_at, nowMs)}
+                </div>
+              )}
+            {selectedPin?.source === "manual" && selectedPosition.gps_at && (
+              <div className="text-xs text-ink-faint">
+                Last GPS{" "}
+                {selectedPosition.gps_accuracy_m != null &&
+                  `±${Math.round(selectedPosition.gps_accuracy_m)} m `}
+                · {timeAgo(selectedPosition.gps_at, nowMs)}
+              </div>
+            )}
+            <div className="text-xs text-ink-faint">
+              {reportingSummary(selectedPosition)}
+            </div>
+            {selectedPin?.imprecise && selectedPin.source === "gps" && (
+              <div className="mt-1 text-xs text-amber-700">
+                Rough location: the dashed circle shows where the group could be.
+              </div>
+            )}
           </div>
           <button
             type="button"
             aria-label="Close"
-            onClick={() => setSelectedGpsGroup(null)}
+            className="shrink-0"
+            onClick={() => setSelectedGroup(null)}
           >
             <X className="h-4 w-4" />
           </button>
         </div>
       )}
 
-      {/* Latest report per group, including ones too old to show on the map */}
       {showGroupPins && (
-        <div className="mt-3 space-y-1">
-          {locations.map((l) => (
-            <div
-              key={l.group_id}
-              className="flex items-center justify-between rounded-lg bg-white px-3 py-1.5 text-sm"
-            >
-              <span className="font-medium">{l.group_name}</span>
-              <span className="text-xs text-ink-faint">
-                {l.source === "manual"
-                  ? (l.station_name ?? "station")
-                  : `GPS ±${Math.round(l.accuracy_m ?? 0)}m`}
-                {" · "}
-                <span className={isStale(l.reported_at) ? "text-red-500" : ""}>
-                  {timeAgo(l.reported_at)}
-                  {isStale(l.reported_at) && " (stale)"}
-                </span>
-              </span>
-            </div>
-          ))}
-        </div>
+        <GroupStatusList
+          positions={positions}
+          pins={groupPins}
+          nowMs={nowMs}
+          onSelect={(id) => setSelectedGroup(id)}
+        />
       )}
     </div>
   );

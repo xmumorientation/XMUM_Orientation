@@ -9,14 +9,10 @@ export const MAP_BUILDINGS = [
   { area: "A5", x: 35.32, y: 29.23 },
   { area: "Track & Field", x: 23.39, y: 46.2 },
   { area: "B1", x: 36.26, y: 58.2 },
+  // The two pairs of flat green courts beside B1.
+  { area: "Tennis Court", x: 35.62, y: 52.62 },
+  { area: "Volleyball Court", x: 30.21, y: 58.32 },
 ] as const;
-
-/** Day 2 projector marks, in the same percentages. Keyed by projector location. */
-export const PROJECTOR_SPOTS: Record<string, { x: number; y: number }> = {
-  A3: { x: 44.59, y: 19.2 },
-  B1: { x: 39.79, y: 56.51 },
-  TF: { x: 26.5, y: 48.81 },
-};
 
 export type MapBuilding = (typeof MAP_BUILDINGS)[number]["area"];
 
@@ -24,9 +20,15 @@ export function isMapBuilding(area: string): area is MapBuilding {
   return MAP_BUILDINGS.some((building) => building.area === area);
 }
 
-/** Short code prefix. Track & Field is TF so the map dot stays small. */
+const CODE_PREFIXES: Record<string, string> = {
+  "Track & Field": "TF",
+  "Tennis Court": "TC",
+  "Volleyball Court": "VC",
+};
+
+/** Short code prefix, so the map dot stays small (Track & Field is TF). */
 export function stationCodePrefix(area: string) {
-  return area === "Track & Field" ? "TF" : area;
+  return CODE_PREFIXES[area] ?? area;
 }
 
 /** Next code for a building, for example A1-1, A1-2, TF-1. Skips numbers already used. */

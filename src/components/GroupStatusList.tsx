@@ -1,0 +1,237 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import { ChevronDown, MessageCircle, Phone } from "lucide-react";
+
+import { supabaseBrowser } from "@/lib/supabase/client";
+import type { FaciStatus, GroupPosition } from "@/lib/types";
+import { isNotSeen, type GroupPin } from "@/lib/groupPosition";
+import { MAX_DRAW_ACCURACY_M, groupPinColor } from "@/lib/mapGeo";
+import { friendlyError, timeAgo } from "@/lib/utils";
+
+/** "012-345 6789" → "60123456789" for wa.me. Assumes Malaysia when there's no country code. */
+export function whatsappNumber(phone: string) {
+  const digits = phone.replace(/\D/g, "");
+  if (!digits) return null;
+  if (phone.trim().startsWith("+")) return digits;
+  if (digits.startsWith("60")) return digits;
+  if (digits.startsWith("0")) return `60${digits.slice(1)}`;
+  return digits;
+}
+
+export function pinSummary(g: GroupPosition, pin: GroupPin | null, nowMs: number) {
+  if (!pin) {
+    if (!g.gps_at) return "No location yet";
+    const acc = g.gps_accuracy_m;
+    return acc != null && acc > MAX_DRAW_ACCURACY_M
+      ? `Only a rough location (±${Math.round(acc)} m), ${timeAgo(g.gps_at, nowMs)}`
+      : `Outside the campus map, ${timeAgo(g.gps_at, nowMs)}`;
+  }
+  if (pin.source === "manual") {
+    return `Checked in at ${g.checkin_station_code ?? "a station"} · ${timeAgo(pin.at, nowMs)}`;
+  }
+  const acc = pin.accuracyM != null ? `±${Math.round(pin.accuracyM)} m` : "accuracy unknown";
+  return `GPS ${acc} · ${timeAgo(pin.at, nowMs)}`;
+}
+
+export function reportingSummary(g: GroupPosition) {
+  if (g.facis_total === 0) return "No Faci assigned";
+  return `${g.facis_reporting} of ${g.facis_total} Faci phones sharing now`;
+}
+
+/**
+ * Every visible group with where its pin comes from. Groups nobody can place
+ * (no fix in the last 10 minutes) are listed first, with their Facis'
+ * contacts. Phone numbers only come back for Committee tier.
+ */
+export function GroupStatusList({
+  positions,
+  pins,
+  nowMs,
+  onSelect,
+}: {
+  positions: GroupPosition[];
+  pins: Map<number, GroupPin | null>;
+  nowMs: number;
+  onSelect: (groupId: number) => void;
+}) {
+  const [notSeen, seen] = useMemo(() => {
+    const a: GroupPosition[] = [];
+    const b: GroupPosition[] = [];
+    for (const g of positions) {
+      (isNotSeen(pins.get(g.group_id) ?? null, nowMs) ? a : b).push(g);
+    }
+    return [a, b];
+  }, [positions, pins, nowMs]);
+
+  if (positions.length === 0) return null;
+
+  return (
+    <div className="mt-3 space-y-3">
+      {notSeen.length > 0 && (
+        <section className="card overflow-hidden border-red-200 p-0">
+          <h2 className="border-b border-red-100 bg-red-50 px-3 py-2 text-sm font-semibold text-red-800">
+            Not seen for 10+ min ({notSeen.length})
+          </h2>
+          <ul className="divide-y divide-paper-200">
+            {notSeen.map((g) => (
+              <NotSeenRow
+                key={g.group_id}
+                g={g}
+                pin={pins.get(g.group_id) ?? null}
+                nowMs={nowMs}
+                onSelect={onSelect}
+              />
+            ))}
+          </ul>
+        </section>
+      )}
+      {seen.length > 0 && (
+        <section className="card overflow-hidden p-0">
+          <h2 className="border-b border-paper-200 px-3 py-2 text-sm font-semibold">
+            Groups on the map
+          </h2>
+          <ul className="divide-y divide-paper-200">
+            {seen.map((g) => {
+              const pin = pins.get(g.group_id) ?? null;
+              return (
+                <li key={g.group_id}>
+                  <button
+                    type="button"
+                    onClick={() => onSelect(g.group_id)}
+                    className="flex w-full items-center gap-3 px-3 py-2 text-left hover:bg-paper-100"
+                  >
+                    <GroupDot groupId={g.group_id} />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-medium">{g.group_name}</span>
+                      <span className="block truncate text-xs text-ink-faint">
+                        {pinSummary(g, pin, nowMs)}
+                        {pin?.imprecise && pin.source === "gps" ? " · rough" : ""}
+                      </span>
+                    </span>
+                    <span className="shrink-0 text-xs text-ink-faint">
+                      {g.facis_reporting}/{g.facis_total}
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
+    </div>
+  );
+}
+
+function GroupDot({ groupId }: { groupId: number }) {
+  return (
+    <span
+      className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white"
+      style={{ backgroundColor: groupPinColor(groupId) }}
+    >
+      {groupId}
+    </span>
+  );
+}
+
+function NotSeenRow({
+  g,
+  pin,
+  nowMs,
+  onSelect,
+}: {
+  g: GroupPosition;
+  pin: GroupPin | null;
+  nowMs: number;
+  onSelect: (groupId: number) => void;
+}) {
+  const supabase = useMemo(() => supabaseBrowser(), []);
+  const [open, setOpen] = useState(false);
+  const [facis, setFacis] = useState<FaciStatus[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function toggle() {
+    const next = !open;
+    setOpen(next);
+    if (!next) return;
+    setError(null);
+    const { data, error: rpcError } = await supabase.rpc("fn_group_faci_status", {
+      p_group_id: g.group_id,
+    });
+    if (rpcError) setError(friendlyError(rpcError));
+    else setFacis((data as FaciStatus[]) ?? []);
+  }
+
+  return (
+    <li>
+      <div className="flex items-center gap-3 px-3 py-2">
+        <GroupDot groupId={g.group_id} />
+        <button
+          type="button"
+          className="min-w-0 flex-1 text-left"
+          onClick={() => pin && onSelect(g.group_id)}
+        >
+          <span className="block truncate text-sm font-medium">{g.group_name}</span>
+          <span className="block truncate text-xs text-ink-faint">
+            {pin ? `Last seen: ${pinSummary(g, pin, nowMs)}` : pinSummary(g, pin, nowMs)}
+          </span>
+        </button>
+        <button
+          type="button"
+          onClick={toggle}
+          aria-expanded={open}
+          className="inline-flex min-h-[36px] shrink-0 items-center gap-1 rounded-lg border border-paper-200 px-2.5 text-xs font-semibold hover:bg-paper-100"
+        >
+          Facis
+          <ChevronDown className={`h-3.5 w-3.5 transition-transform ${open ? "rotate-180" : ""}`} />
+        </button>
+      </div>
+      {open && (
+        <div className="bg-paper-50 px-3 pb-2.5 pt-1">
+          {error && <p className="text-xs text-red-600">{error}</p>}
+          {!error && !facis && <p className="text-xs text-ink-faint">Loading…</p>}
+          {facis?.length === 0 && (
+            <p className="text-xs text-ink-faint">No Faci is assigned to this group.</p>
+          )}
+          <ul className="space-y-1.5">
+            {facis?.map((f) => {
+              const wa = f.phone ? whatsappNumber(f.phone) : null;
+              return (
+                <li key={f.user_id} className="flex items-center gap-2 text-sm">
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-medium">{f.full_name ?? "Faci"}</span>
+                    <span className="block truncate text-xs text-ink-faint">
+                      {f.last_gps_at
+                        ? `Phone last shared ${timeAgo(f.last_gps_at, nowMs)}`
+                        : "Phone hasn't shared location today"}
+                    </span>
+                  </span>
+                  {f.phone && (
+                    <a
+                      href={`tel:${f.phone.replace(/[^\d+]/g, "")}`}
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white ring-1 ring-paper-200"
+                      aria-label={`Call ${f.full_name ?? "Faci"}`}
+                    >
+                      <Phone className="h-4 w-4" />
+                    </a>
+                  )}
+                  {wa && (
+                    <a
+                      href={`https://wa.me/${wa}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white text-green-700 ring-1 ring-paper-200"
+                      aria-label={`WhatsApp ${f.full_name ?? "Faci"}`}
+                    >
+                      <MessageCircle className="h-4 w-4" />
+                    </a>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+    </li>
+  );
+}

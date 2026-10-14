@@ -71,6 +71,8 @@ export function BuildingStationPanel({
         .from("stations")
         .insert({
         code: nextCode,
+        // The campus map shows Day 2 stations only, so stations added here are Day 2.
+        day: 2,
         station_number: stationNumberFromCode(nextCode),
         name: name.trim(),
         area,

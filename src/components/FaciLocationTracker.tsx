@@ -1,5 +1,16 @@
 "use client";
 
+// Sends a Faci's phone position to fn_report_gps while the app is open.
+//
+// A web page cannot read GPS once the tab is in the background, the screen is
+// locked or the browser is closed, on any phone. So:
+// * each group has three Facis, and the map uses the best recent fix from
+//   any of their phones (fn_group_positions);
+// * "Keep tracking" holds the screen awake (Wake Lock API) on one phone;
+// * a fix is sent as soon as the app comes back to the front;
+// * when a Faci reopens the app after their group was off the map for a
+//   while, they are told so.
+
 import {
   createContext,
   useCallback,
@@ -11,18 +22,25 @@ import {
 } from "react";
 import { MapPin, X } from "lucide-react";
 
+import { LocationHelp, type LocationProblem } from "@/components/LocationHelp";
 import { useProfile } from "@/components/ProfileProvider";
+import { detectBrowserEnv, type BrowserEnv } from "@/lib/browserEnv";
+import { GPS_FADED_MS, PRECISE_ACCURACY_M } from "@/lib/mapGeo";
 import { supabaseBrowser } from "@/lib/supabase/client";
+import type { GroupPosition } from "@/lib/types";
 import { friendlyError } from "@/lib/utils";
 
 export type FaciLocationStatus =
   | "idle"
   | "requesting"
   | "active"
+  | "imprecise"
   | "prompt"
   | "denied"
   | "unavailable"
   | "error";
+
+export type WakeLockState = "off" | "on" | "unsupported" | "failed";
 
 export interface FaciLocationContextValue {
   isFaci: boolean;
@@ -30,7 +48,15 @@ export interface FaciLocationContextValue {
   lastReportedAt: Date | null;
   accuracy: number | null;
   error: string | null;
-  requestLocation: () => Promise<void>;
+  env: BrowserEnv | null;
+  requestLocation: () => void;
+  /** "Keep tracking": hold the screen awake while the app is open. */
+  keepAwake: boolean;
+  setKeepAwake: (on: boolean) => void;
+  wakeLock: WakeLockState;
+  /** Minutes the group was off the map before this phone came back, or null. */
+  gapMinutes: number | null;
+  dismissGap: () => void;
 }
 
 const FaciLocationContext = createContext<FaciLocationContextValue>({
@@ -39,16 +65,35 @@ const FaciLocationContext = createContext<FaciLocationContextValue>({
   lastReportedAt: null,
   accuracy: null,
   error: null,
-  requestLocation: async () => {},
+  env: null,
+  requestLocation: () => {},
+  keepAwake: false,
+  setKeepAwake: () => {},
+  wakeLock: "off",
+  gapMinutes: null,
+  dismissGap: () => {},
 });
 
-// Best-effort geolocation configuration.
-// enableHighAccuracy: true requests GPS satellite/hardware fix instead of coarse IP/cell.
 const GEOLOCATION_OPTIONS: PositionOptions = {
   enableHighAccuracy: true,
-  maximumAge: 10000,
-  timeout: 15000,
+  maximumAge: 10_000,
+  timeout: 20_000,
 };
+
+/** Least time between two reports while moving. */
+const REPORT_INTERVAL_MS = 30_000;
+/** Least time between two reports even when one is forced (resume, tap). The server ignores faster ones. */
+const FORCED_GAP_MS = 10_000;
+/** Ask for a fresh fix this often when standing still (watchPosition goes quiet). */
+const HEARTBEAT_MS = 55_000;
+/** After a timeout, try again this soon. */
+const TIMEOUT_RETRY_MS = 10_000;
+/** Check whether the group was off the map when the app comes back after this long. */
+const RESUME_GAP_CHECK_MS = 2 * 60 * 1000;
+
+const KEEP_AWAKE_KEY = "faci-keep-awake";
+
+const DENIED_TEXT = "Location is blocked for this site.";
 
 export function FaciLocationProvider({
   children,
@@ -62,87 +107,199 @@ export function FaciLocationProvider({
   const [lastReportedAt, setLastReportedAt] = useState<Date | null>(null);
   const [accuracy, setAccuracy] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [env, setEnv] = useState<BrowserEnv | null>(null);
+  const [keepAwake, setKeepAwakeState] = useState(false);
+  const [wakeLock, setWakeLock] = useState<WakeLockState>("off");
+  const [gapMinutes, setGapMinutes] = useState<number | null>(null);
 
-  const lastReportMs = useRef<number>(0);
-  const reportingLock = useRef<boolean>(false);
-  const watchIdRef = useRef<number | null>(null);
-  const heartbeatTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Time of the last report attempt, successful or not. Throttling on the
+  // attempt (not the success) stops a failing phone from retrying every second.
+  const lastAttemptMs = useRef(0);
+  const lastSuccessMs = useRef(0);
+  const inFlight = useRef(false);
+  const hiddenAtMs = useRef<number | null>(null);
+  const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const wakeSentinel = useRef<WakeLockSentinel | null>(null);
 
   const supabase = useMemo(() => supabaseBrowser(), []);
 
-  const reportPosition = useCallback(
-    async (coords: GeolocationCoordinates) => {
-      if (reportingLock.current) return;
+  const report = useCallback(
+    async (coords: GeolocationCoordinates, forced: boolean) => {
       if (!Number.isFinite(coords.latitude) || !Number.isFinite(coords.longitude)) return;
       if (Math.abs(coords.latitude) > 90 || Math.abs(coords.longitude) > 180) return;
+      if (inFlight.current) return;
+      const now = Date.now();
+      if (now - lastAttemptMs.current < (forced ? FORCED_GAP_MS : REPORT_INTERVAL_MS)) {
+        return;
+      }
+      lastAttemptMs.current = now;
+      inFlight.current = true;
 
-      reportingLock.current = true;
+      const acc = Number.isFinite(coords.accuracy) ? coords.accuracy : null;
       try {
         const { error: rpcError } = await supabase.rpc("fn_report_gps", {
           p_lat: coords.latitude,
           p_lng: coords.longitude,
-          p_accuracy: Number.isFinite(coords.accuracy) ? coords.accuracy : null,
+          p_accuracy: acc,
         });
-
         if (rpcError) {
           setError(friendlyError(rpcError));
           setStatus("error");
         } else {
-          lastReportMs.current = Date.now();
+          lastSuccessMs.current = Date.now();
           setLastReportedAt(new Date());
-          setAccuracy(coords.accuracy);
+          setAccuracy(acc);
           setError(null);
-          setStatus("active");
+          setStatus(acc == null || acc > PRECISE_ACCURACY_M ? "imprecise" : "active");
         }
       } catch (err: unknown) {
-        setError(friendlyError(err));
+        setError(
+          typeof navigator !== "undefined" && !navigator.onLine
+            ? "No internet connection. Your location will be sent when you are back online."
+            : friendlyError(err)
+        );
         setStatus("error");
       } finally {
-        reportingLock.current = false;
+        inFlight.current = false;
       }
     },
     [supabase]
   );
 
-  const requestLocation = useCallback(async () => {
-    if (!isFaci) return;
-    if (typeof window === "undefined" || !("geolocation" in navigator)) {
-      setStatus("unavailable");
-      setError("This device or browser does not support geolocation.");
-      return;
-    }
+  // Handles an error from getCurrentPosition, or (fromWatch) watchPosition.
+  const onGeoError = useCallback(
+    (geoError: GeolocationPositionError, fromWatch: boolean, retry: () => void) => {
+      if (geoError.code === geoError.PERMISSION_DENIED) {
+        setStatus("denied");
+        setError(DENIED_TEXT);
+        return;
+      }
+      // watchPosition reports passing hiccups; the heartbeat covers those.
+      if (fromWatch) return;
+      const recentlyOk = Date.now() - lastSuccessMs.current < 2 * 60 * 1000;
+      if (geoError.code === geoError.TIMEOUT) {
+        if (!recentlyOk) {
+          setStatus("requesting");
+          setError("Still looking for a GPS signal. Step outside or near a window.");
+        }
+        if (retryTimer.current) clearTimeout(retryTimer.current);
+        retryTimer.current = setTimeout(retry, TIMEOUT_RETRY_MS);
+        return;
+      }
+      if (recentlyOk) return;
+      if (geoError.code === geoError.POSITION_UNAVAILABLE) {
+        setStatus("unavailable");
+        setError("Your phone can't find its location right now.");
+      } else {
+        setStatus("error");
+        setError(geoError.message || "Location failed.");
+      }
+    },
+    []
+  );
 
-    setStatus("requesting");
-    setError(null);
-
-    return new Promise<void>((resolve) => {
+  const getFix = useCallback(
+    (forced: boolean) => {
+      if (!isFaci || typeof navigator === "undefined" || !("geolocation" in navigator)) {
+        return;
+      }
       navigator.geolocation.getCurrentPosition(
-        async (pos) => {
-          await reportPosition(pos.coords);
-          resolve();
-        },
-        (geoError) => {
-          if (geoError.code === geoError.PERMISSION_DENIED) {
-            setStatus("denied");
-            setError(
-              "Location permission denied. Please enable precise location in browser settings."
-            );
-          } else if (geoError.code === geoError.POSITION_UNAVAILABLE) {
-            setStatus("unavailable");
-            setError("Location unavailable. Please check device GPS.");
-          } else if (geoError.code === geoError.TIMEOUT) {
-            setStatus("error");
-            setError("Location request timed out. Retrying…");
-          } else {
-            setStatus("error");
-            setError(geoError.message);
-          }
-          resolve();
-        },
+        (pos) => void report(pos.coords, forced),
+        (err) => onGeoError(err, false, () => getFix(true)),
         GEOLOCATION_OPTIONS
       );
-    });
-  }, [isFaci, reportPosition]);
+    },
+    [isFaci, report, onGeoError]
+  );
+
+  const requestLocation = useCallback(() => {
+    if (!isFaci) return;
+    if (typeof navigator === "undefined" || !("geolocation" in navigator)) {
+      setStatus("unavailable");
+      setError("This browser does not support location.");
+      return;
+    }
+    // Only show "Locating…" when nothing is on the map yet; otherwise keep the
+    // current state until the new fix arrives.
+    setStatus((s) => (s === "active" || s === "imprecise" ? s : "requesting"));
+    // A tap is a fresh try: allow it straight away.
+    lastAttemptMs.current = 0;
+    getFix(true);
+  }, [isFaci, getFix]);
+
+  // Was the group off the map before this phone came back? Checked before
+  // this phone reports, so its own fix does not hide the gap.
+  const checkGap = useCallback(async () => {
+    const { data } = await supabase.rpc("fn_group_positions");
+    const own = (data as GroupPosition[] | null)?.find(
+      (g) => g.group_id === profile.group_id
+    );
+    if (!own) return;
+    const times = [own.gps_at, own.checkin_at]
+      .filter((t): t is string => !!t)
+      .map((t) => new Date(t).getTime());
+    if (times.length === 0) return;
+    const gap = Date.now() - Math.max(...times);
+    if (gap > GPS_FADED_MS) setGapMinutes(Math.round(gap / 60_000));
+  }, [supabase, profile.group_id]);
+
+  // ── Wake lock ──────────────────────────────────────────────────────
+
+  const releaseWake = useCallback(() => {
+    const sentinel = wakeSentinel.current;
+    wakeSentinel.current = null;
+    if (sentinel) void sentinel.release().catch(() => {});
+  }, []);
+
+  const acquireWake = useCallback(async () => {
+    if (!("wakeLock" in navigator)) {
+      setWakeLock("unsupported");
+      return;
+    }
+    if (wakeSentinel.current || document.visibilityState !== "visible") return;
+    try {
+      const sentinel = await navigator.wakeLock.request("screen");
+      wakeSentinel.current = sentinel;
+      setWakeLock("on");
+      // The browser drops the lock whenever the page is hidden.
+      sentinel.addEventListener("release", () => {
+        if (wakeSentinel.current === sentinel) wakeSentinel.current = null;
+        setWakeLock((w) => (w === "on" ? "off" : w));
+      });
+    } catch {
+      setWakeLock("failed");
+    }
+  }, []);
+
+  const setKeepAwake = useCallback((on: boolean) => {
+    setKeepAwakeState(on);
+    try {
+      if (on) localStorage.setItem(KEEP_AWAKE_KEY, "1");
+      else localStorage.removeItem(KEEP_AWAKE_KEY);
+    } catch {
+      // Private mode: the choice just isn't remembered.
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!isFaci) return;
+    try {
+      if (localStorage.getItem(KEEP_AWAKE_KEY) === "1") setKeepAwakeState(true);
+    } catch {
+      // ignore
+    }
+  }, [isFaci]);
+
+  useEffect(() => {
+    if (!isFaci) return;
+    if (keepAwake) void acquireWake();
+    else {
+      releaseWake();
+      setWakeLock((w) => (w === "unsupported" ? w : "off"));
+    }
+  }, [isFaci, keepAwake, acquireWake, releaseWake]);
+
+  // ── Tracking ───────────────────────────────────────────────────────
 
   useEffect(() => {
     if (!isFaci) {
@@ -150,114 +307,121 @@ export function FaciLocationProvider({
       return;
     }
 
-    if (typeof window === "undefined" || !("geolocation" in navigator)) {
+    const detected = detectBrowserEnv();
+    setEnv(detected);
+    if (!detected.geolocation || !detected.secure) {
       setStatus("unavailable");
-      setError("Geolocation is not supported by your browser.");
+      setError(
+        detected.secure
+          ? "This browser does not support location."
+          : "Location only works on the secure (https) site."
+      );
       return;
     }
 
-    // Check Permissions API if available to detect denied/prompt state early
     let permissionStatus: PermissionStatus | null = null;
-    if (
-      "permissions" in navigator &&
-      typeof navigator.permissions?.query === "function"
-    ) {
+    let cancelled = false;
+    if (typeof navigator.permissions?.query === "function") {
       navigator.permissions
         .query({ name: "geolocation" as PermissionName })
-        .then((pStatus) => {
-          permissionStatus = pStatus;
-          if (pStatus.state === "denied") {
+        .then((p) => {
+          if (cancelled) return;
+          permissionStatus = p;
+          if (p.state === "denied") {
             setStatus("denied");
-            setError(
-              "Location permission is blocked. Please allow location in browser settings."
-            );
-          } else if (pStatus.state === "prompt" && !lastReportMs.current) {
-            setStatus("prompt");
+            setError(DENIED_TEXT);
+          } else if (p.state === "prompt") {
+            // Don't overwrite "Locating…" or a working state.
+            setStatus((s) => (s === "idle" ? "prompt" : s));
           }
-
-          pStatus.onchange = () => {
-            if (pStatus.state === "granted") {
-              requestLocation();
-            } else if (pStatus.state === "denied") {
+          p.onchange = () => {
+            if (p.state === "granted") {
+              lastAttemptMs.current = 0;
+              getFix(true);
+            } else if (p.state === "denied") {
               setStatus("denied");
-              setError(
-                "Location permission is blocked. Please allow location in browser settings."
-              );
-            } else if (pStatus.state === "prompt") {
+              setError(DENIED_TEXT);
+            } else {
               setStatus("prompt");
             }
           };
         })
         .catch(() => {
-          // Ignore if permission query is unsupported
+          // Safari before 16 has no geolocation permission query.
         });
     }
 
-    // Always ask for precise location immediately when faci logs in / opens the app
-    requestLocation();
+    // First fix: check the gap first, then report.
+    setStatus("requesting");
+    void checkGap().finally(() => {
+      if (!cancelled) getFix(true);
+    });
 
-    // Setup watchPosition to track movement (throttled to at most once per 30s)
+    // Moving: watchPosition fires on movement; report() throttles.
+    let watchId: number | null = null;
     try {
-      watchIdRef.current = navigator.geolocation.watchPosition(
-        (pos) => {
-          const now = Date.now();
-          if (now - lastReportMs.current >= 30_000) {
-            reportPosition(pos.coords);
-          }
-        },
-        (err) => {
-          if (err.code === err.PERMISSION_DENIED) {
-            setStatus("denied");
-          }
-        },
+      watchId = navigator.geolocation.watchPosition(
+        (pos) => void report(pos.coords, false),
+        (err) => onGeoError(err, true, () => getFix(true)),
         GEOLOCATION_OPTIONS
       );
     } catch {
-      // Ignore if watchPosition throws
+      // Some in-app browsers throw here.
     }
 
-    // Heartbeat timer: ensures fresh position is reported every 60s even when stationary
-    heartbeatTimerRef.current = setInterval(() => {
-      const now = Date.now();
-      if (document.visibilityState === "visible" && now - lastReportMs.current >= 50_000) {
-        navigator.geolocation.getCurrentPosition(
-          (pos) => reportPosition(pos.coords),
-          () => {},
-          GEOLOCATION_OPTIONS
-        );
+    // Standing still: watchPosition goes quiet, so ask now and then.
+    const heartbeat = setInterval(() => {
+      if (
+        document.visibilityState === "visible" &&
+        Date.now() - lastAttemptMs.current >= HEARTBEAT_MS
+      ) {
+        getFix(false);
       }
-    }, 60_000);
+    }, 15_000);
 
-    // Refresh immediately when returning to the app from background/locked screen
-    function handleVisibilityChange() {
-      if (document.visibilityState === "visible") {
-        const now = Date.now();
-        if (now - lastReportMs.current >= 30_000) {
-          navigator.geolocation.getCurrentPosition(
-            (pos) => reportPosition(pos.coords),
-            () => {},
-            GEOLOCATION_OPTIONS
-          );
-        }
+    function onVisibility() {
+      if (document.visibilityState === "hidden") {
+        hiddenAtMs.current = Date.now();
+        return;
+      }
+      const hiddenFor = hiddenAtMs.current ? Date.now() - hiddenAtMs.current : 0;
+      hiddenAtMs.current = null;
+      if (hiddenFor >= RESUME_GAP_CHECK_MS) {
+        void checkGap().finally(() => getFix(true));
+      } else {
+        getFix(true);
       }
     }
-    document.addEventListener("visibilitychange", handleVisibilityChange);
+    function onOnline() {
+      getFix(true);
+    }
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("online", onOnline);
 
     return () => {
-      if (watchIdRef.current !== null) {
-        navigator.geolocation.clearWatch(watchIdRef.current);
-        watchIdRef.current = null;
-      }
-      if (heartbeatTimerRef.current !== null) {
-        clearInterval(heartbeatTimerRef.current);
-        heartbeatTimerRef.current = null;
-      }
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-      if (permissionStatus) {
-        permissionStatus.onchange = null;
-      }
+      cancelled = true;
+      if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+      clearInterval(heartbeat);
+      if (retryTimer.current) clearTimeout(retryTimer.current);
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("online", onOnline);
+      if (permissionStatus) permissionStatus.onchange = null;
     };
-  }, [isFaci, requestLocation, reportPosition]);
+  }, [isFaci, report, getFix, onGeoError, checkGap]);
+
+  // Re-take the wake lock when the app comes back to the front.
+  useEffect(() => {
+    if (!isFaci || !keepAwake) return;
+    function onVisibility() {
+      if (document.visibilityState === "visible") void acquireWake();
+    }
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
+  }, [isFaci, keepAwake, acquireWake]);
+
+  useEffect(() => releaseWake, [releaseWake]);
+
+  const dismissGap = useCallback(() => setGapMinutes(null), []);
 
   const value = useMemo(
     () => ({
@@ -266,9 +430,28 @@ export function FaciLocationProvider({
       lastReportedAt,
       accuracy,
       error,
+      env,
       requestLocation,
+      keepAwake,
+      setKeepAwake,
+      wakeLock,
+      gapMinutes,
+      dismissGap,
     }),
-    [isFaci, status, lastReportedAt, accuracy, error, requestLocation]
+    [
+      isFaci,
+      status,
+      lastReportedAt,
+      accuracy,
+      error,
+      env,
+      requestLocation,
+      keepAwake,
+      setKeepAwake,
+      wakeLock,
+      gapMinutes,
+      dismissGap,
+    ]
   );
 
   return (
@@ -282,65 +465,166 @@ export function useFaciLocation() {
   return useContext(FaciLocationContext);
 }
 
+/** The problem the banner should explain, most important first, or null. */
+function bannerProblem(
+  status: FaciLocationStatus,
+  env: BrowserEnv | null,
+  gapMinutes: number | null,
+  error: string | null
+): LocationProblem | "gap" | "prompt" | "requesting" | "error" | null {
+  if (env?.inApp) return "inapp";
+  if (env && !env.secure) return "insecure";
+  if (status === "denied") return "denied";
+  if (status === "unavailable") return "unavailable";
+  if (status === "imprecise") return "imprecise";
+  if (status === "error") return "error";
+  if (status === "prompt") return "prompt";
+  if (gapMinutes != null) return "gap";
+  // A normal first fix takes a second or two; only explain a slow one.
+  if (status === "requesting" && error) return "requesting";
+  return null;
+}
+
+const BANNER_TITLES: Record<string, string> = {
+  inapp: "Open this page in your browser",
+  insecure: "Location needs the secure site",
+  denied: "Location is blocked",
+  unavailable: "Your phone can't find its location",
+  imprecise: "Your location is only approximate",
+  error: "Your location wasn't sent",
+  prompt: "Allow location for the campus map",
+  requesting: "Finding your location…",
+  gap: "Your group was off the map",
+};
+
 /**
- * Top floating banner that appears when a facilitator is logged in
- * but precise location has not yet been permitted or is blocked.
- * Disappears once precise location has been reported.
+ * Floating banner for a Faci whose location isn't reaching the map, with
+ * steps for their phone. A dismissed banner comes back when the problem
+ * changes (for example, permission is turned off later).
  */
 export function FaciLocationBanner() {
-  const { isFaci, status, error, requestLocation, lastReportedAt } =
-    useFaciLocation();
-  const [dismissed, setDismissed] = useState(false);
+  const {
+    isFaci,
+    status,
+    error,
+    env,
+    requestLocation,
+    gapMinutes,
+    dismissGap,
+    keepAwake,
+    setKeepAwake,
+  } = useFaciLocation();
+  const [dismissedKey, setDismissedKey] = useState<string | null>(null);
 
   if (!isFaci) return null;
-  // If active and location has been reported, hide banner
-  if (status === "active" || lastReportedAt) return null;
-  if (dismissed) return null;
+  const problem = bannerProblem(status, env, gapMinutes, error);
+  if (!problem) return null;
+  if (dismissedKey === problem) return null;
 
-  const isDenied = status === "denied";
-  const isRequesting = status === "requesting";
+  const helpProblem: LocationProblem | null =
+    problem === "inapp" ||
+    problem === "insecure" ||
+    problem === "denied" ||
+    problem === "unavailable" ||
+    problem === "imprecise"
+      ? problem
+      : null;
+
+  let message: string;
+  switch (problem) {
+    case "gap":
+      message = `Nobody in your group had the app open for ${gapMinutes} min, so Committee couldn't see you. Keep it open on at least one phone${keepAwake ? "." : ", with Keep tracking on."}`;
+      break;
+    case "imprecise":
+      message =
+        "Your phone is sharing a rough location (off by more than 100 m), so your group's pin may be in the wrong place.";
+      break;
+    case "prompt":
+      message =
+        "Your group's live pin on the campus map comes from the Facis' phones. Tap Allow, then allow location when your phone asks.";
+      break;
+    case "requesting":
+      message = error ?? "Allow location if your phone asks.";
+      break;
+    default:
+      message = error ?? "Your group's pin can't be updated from this phone.";
+  }
+
+  const showRetry = problem !== "gap" && problem !== "inapp" && problem !== "insecure";
+
+  function dismiss() {
+    if (problem === "gap") dismissGap();
+    setDismissedKey(problem);
+  }
 
   return (
     <div className="pointer-events-none fixed inset-x-0 top-[calc(4.5rem+env(safe-area-inset-top))] z-[60] flex flex-col items-center px-4 lg:left-64 lg:top-5">
-      <div className="card pointer-events-auto flex w-full max-w-lg items-center justify-between gap-3 border-amber-300 bg-amber-50/95 p-3.5 text-amber-950 shadow-glow backdrop-blur sm:p-4">
-        <div className="flex min-w-0 items-start gap-3">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-500 text-white shadow-sm">
-            <MapPin size={20} />
-          </span>
-          <div className="min-w-0">
-            <p className="text-sm font-bold text-amber-950 leading-tight">
-              Precise location required for campus map
-            </p>
-            <p className="mt-0.5 text-xs text-amber-900/80 leading-snug">
-              {isDenied
-                ? "Location permission is blocked. Please allow location access in your browser settings so your group appears on the map."
-                : "Facilitators must provide precise location so your group's live pin appears on the campus map."}
-            </p>
-            {error && !isDenied && (
-              <p className="mt-1 text-[11px] font-medium text-red-600">
-                {error}
+      <div
+        role="status"
+        className="card pointer-events-auto w-full max-w-lg border-amber-300 bg-amber-50/95 p-3.5 text-amber-950 shadow-glow backdrop-blur sm:p-4"
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex min-w-0 items-start gap-3">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-500 text-white shadow-sm">
+              <MapPin size={20} />
+            </span>
+            <div className="min-w-0">
+              <p className="text-sm font-bold leading-tight text-amber-950">
+                {BANNER_TITLES[problem]}
               </p>
-            )}
+              <p className="mt-0.5 text-xs leading-snug text-amber-900/80">{message}</p>
+            </div>
           </div>
-        </div>
-        <div className="flex shrink-0 items-center gap-2">
           <button
             type="button"
-            onClick={() => requestLocation()}
-            disabled={isRequesting}
-            className="btn btn-primary shrink-0 text-xs px-3.5 py-1.5 min-h-[36px] bg-amber-600 hover:bg-amber-700 text-white disabled:opacity-50"
-          >
-            {isRequesting ? "Locating…" : isDenied ? "Retry" : "Allow"}
-          </button>
-          <button
-            type="button"
-            onClick={() => setDismissed(true)}
-            aria-label="Dismiss banner"
-            className="rounded-lg p-1 text-amber-800 transition hover:bg-amber-100"
+            onClick={dismiss}
+            aria-label="Dismiss"
+            className="-m-1 shrink-0 rounded-lg p-2 text-amber-800 transition hover:bg-amber-100"
           >
             <X size={16} />
           </button>
         </div>
+
+        {helpProblem && env && (
+          <details
+            className="mt-2 text-xs text-amber-950"
+            open={helpProblem !== "imprecise"}
+          >
+            <summary className="cursor-pointer font-semibold">How to fix it</summary>
+            <LocationHelp problem={helpProblem} env={env} className="mt-1.5" />
+          </details>
+        )}
+
+        {(showRetry || (problem === "gap" && !keepAwake)) && (
+          <div className="mt-2.5 flex justify-end gap-2">
+            {problem === "gap" && !keepAwake && (
+              <button
+                type="button"
+                onClick={() => {
+                  setKeepAwake(true);
+                  dismiss();
+                }}
+                className="btn min-h-[36px] bg-amber-600 px-3.5 py-1.5 text-xs text-white hover:bg-amber-700"
+              >
+                Turn on Keep tracking
+              </button>
+            )}
+            {showRetry && (
+              <button
+                type="button"
+                onClick={requestLocation}
+                disabled={status === "requesting"}
+                className="btn min-h-[36px] bg-amber-600 px-3.5 py-1.5 text-xs text-white hover:bg-amber-700 disabled:opacity-50"
+              >
+                {status === "requesting"
+                  ? "Locating…"
+                  : problem === "prompt"
+                    ? "Allow"
+                    : "Try again"}
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

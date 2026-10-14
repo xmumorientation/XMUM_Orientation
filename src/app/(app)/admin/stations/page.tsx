@@ -13,7 +13,11 @@ import {
 } from "@/components/ui";
 import { Dialog, DialogContent } from "@/components/ui/Dialog";
 import { readAdminDayFilter } from "@/lib/adminDayFilter";
-import { MAP_BUILDINGS, stationPosition } from "@/lib/mapBuildings";
+import {
+  MAP_BUILDINGS,
+  stationCodePrefix,
+  stationPosition,
+} from "@/lib/mapBuildings";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import {
   RISK_TIER_META,
@@ -24,10 +28,7 @@ import {
 import { cn, friendlyError } from "@/lib/utils";
 
 const OTHER_BLOCK = "__other__";
-const DEFAULT_BLOCKS = [
-  ...MAP_BUILDINGS.map((b) => b.area),
-  "Courts",
-];
+const DEFAULT_BLOCKS: string[] = MAP_BUILDINGS.map((b) => b.area);
 
 type DayFilter = "all" | 1 | 2;
 
@@ -65,10 +66,19 @@ interface GmAssignment {
   day: number;
 }
 
-// stations.code is the location: block and floor, e.g. "A4-1".
+// stations.code is the location: block and floor, e.g. "A4-1" or "TC-1".
 function locationCode(block: string, floor: string) {
+  const prefix = stationCodePrefix(block);
   const f = floor.trim();
-  return f ? `${block}-${f}` : block;
+  return f ? `${prefix}-${f}` : prefix;
+}
+
+/** The floor part of a code, for either the short ("TF-1") or long ("Track & Field-1") form. */
+function codeFloor(code: string, area: string) {
+  for (const prefix of [stationCodePrefix(area), area]) {
+    if (code.startsWith(`${prefix}-`)) return code.slice(prefix.length + 1);
+  }
+  return "";
 }
 
 // FR-11.3: station management (count/IDs still open per D-2 — fully
@@ -182,9 +192,7 @@ export default function AdminStationsPage() {
       day: s.day,
       block: known ? s.area : OTHER_BLOCK,
       otherBlock: known ? "" : s.area,
-      floor: s.code.startsWith(`${s.area}-`)
-        ? s.code.slice(s.area.length + 1)
-        : "",
+      floor: codeFloor(s.code, s.area),
       risk: s.risk_tier,
       purpose: s.purpose ?? "",
       max_groups: s.max_groups != null ? String(s.max_groups) : "",
@@ -212,9 +220,7 @@ export default function AdminStationsPage() {
 
     // Keep an existing code that doesn't follow block-floor unless the location changed
     const old = editing !== "new" ? editing : null;
-    const oldFloor = old?.code.startsWith(`${old.area}-`)
-      ? old.code.slice(old.area.length + 1)
-      : "";
+    const oldFloor = old ? codeFloor(old.code, old.area) : "";
     if (!old || old.area !== block || oldFloor !== form.floor.trim()) {
       row.code = locationCode(block, form.floor);
     }

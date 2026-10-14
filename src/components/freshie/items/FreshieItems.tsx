@@ -3,10 +3,12 @@
 import * as Dialog from "@radix-ui/react-dialog";
 import { Clock3, History, Info, KeyRound, Lock, MapPin, Nfc, X } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { vxSlab, vxDisplay, nexusBody } from "@/components/home/fonts";
+import { supabaseBrowser } from "@/lib/supabase/client";
 import { PROJECTOR_LABELS, type ProjectorLocation } from "@/lib/types";
+import { friendlyError } from "@/lib/utils";
 
 import "../freshie.css";
 import { themeFromColor } from "../groupTheme";
@@ -166,7 +168,45 @@ function Sheet({
   );
 }
 
+/**
+ * Demo scan for testing the map's Lightbulbs view without the NFC cards.
+ * Shown only while Admin has "NFC demo mode" on (Live control); it lights the
+ * bulb for real through fn_demo_activate_projector.
+ */
+function useNfcDemo(loc: ProjectorLocation) {
+  const supabase = useMemo(() => supabaseBrowser(), []);
+  const [enabled, setEnabled] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    supabase
+      .from("game_config")
+      .select("value")
+      .eq("key", "nfc_demo_mode")
+      .maybeSingle()
+      .then(({ data }) => {
+        if (active) setEnabled(data?.value === true || data?.value === "true");
+      });
+    return () => {
+      active = false;
+    };
+  }, [supabase]);
+
+  async function scan() {
+    setBusy(true);
+    setResult(null);
+    const { error } = await supabase.rpc("fn_demo_activate_projector", { p_location: loc });
+    setBusy(false);
+    setResult(error ? { ok: false, text: friendlyError(error) } : { ok: true, text: "Lit for your group." });
+  }
+
+  return { enabled, busy, result, scan };
+}
+
 function KeySheet({ data, loc }: { data: ItemsData; loc: ProjectorLocation }) {
+  const demo = useNfcDemo(loc);
   const spot = data.guardian[loc];
   const endgame = data.phase === "endgame";
   const name = zoneNames(data)[loc];
@@ -234,7 +274,34 @@ function KeySheet({ data, loc }: { data: ItemsData; loc: ProjectorLocation }) {
         <button type="button" className="fh-btn fh-btn-primary" disabled>
           <Nfc size={16} aria-hidden /> Scan part card
         </button>
+        {demo.enabled && (
+          <button
+            type="button"
+            className="fh-btn fh-btn-ghost fi-key-demo"
+            onClick={demo.scan}
+            disabled={demo.busy || demo.result?.ok}
+          >
+            <Nfc size={16} aria-hidden /> {demo.busy ? "Scanning…" : "Demo scan"}
+          </button>
+        )}
       </div>
+      {demo.result && (
+        <p className="fi-key-foot" role="status">
+          {demo.result.ok ? (
+            <>
+              Demo: {name.short} is {demo.result.text.toLowerCase()}{" "}
+              <Link href="/map?layer=bulbs" className="underline">
+                See it on the map
+              </Link>
+            </>
+          ) : (
+            demo.result.text
+          )}
+        </p>
+      )}
+      {demo.enabled && !demo.result && (
+        <p className="fi-key-foot">Demo mode: lights this bulb without the card, for testing the map.</p>
+      )}
       <p className="fi-key-foot">
         {endgame
           ? "Part-card scanning is added in the NFC step. For now, show this screen to the Guardian."

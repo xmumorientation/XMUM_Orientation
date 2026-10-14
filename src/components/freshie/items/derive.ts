@@ -1,4 +1,10 @@
-import { PIECES_PER_SET, PROJECTOR_LABELS, PROJECTOR_LOCATIONS, type ProjectorLocation } from "@/lib/types";
+import {
+  PIECES_PER_SET,
+  PROJECTOR_CODE_NAMES,
+  PROJECTOR_LABELS,
+  PROJECTOR_LOCATIONS,
+  type ProjectorLocation,
+} from "@/lib/types";
 
 import { KEY_NAMES } from "./KeyEmblem";
 
@@ -16,7 +22,7 @@ export type CardState = "locked" | "collecting" | "key" | "lit" | "idle" | "done
 const SHORT_LABEL: Record<ProjectorLocation, string> = { B1: "B1", A3: "A3", TF: "T&F" };
 
 /** Code names used until the full map unlocks, so the page never gives a location away. */
-export const CODE_NAMES: Record<ProjectorLocation, string> = { B1: "Star", A3: "Wheel", TF: "Orbit" };
+export const CODE_NAMES = PROJECTOR_CODE_NAMES;
 
 export type ZoneName = { short: string; long: string };
 

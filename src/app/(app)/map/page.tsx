@@ -1,6 +1,7 @@
 "use client";
 
 import { CampusMap } from "@/components/CampusMap";
+import { FaciTrackingPanel } from "@/components/FaciTrackingPanel";
 import { useProfile } from "@/components/ProfileProvider";
 import { PageTitle } from "@/components/ui";
 import { COMMITTEE_TIER } from "@/lib/types";
@@ -18,10 +19,11 @@ export default function MapPage() {
         title="Campus map"
         subtitle={
           profile.role === "admin"
-            ? "Tap the map for a full-screen view. Click a building to add a station or change its game and status."
-            : "Tap the map for a full-screen view. Tap a station for details."
+            ? "Day 2 stations. Tap the map for a full-screen view. Click a building to add a station or change its game and status."
+            : "Day 2 stations. Tap the map for a full-screen view. Tap a station or a building's badge for details."
         }
       />
+      <FaciTrackingPanel />
       <CampusMap
         showGroupPins={showPins}
         canManageStations={profile.role === "admin"}

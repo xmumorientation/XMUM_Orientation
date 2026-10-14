@@ -95,6 +95,7 @@ export default function AdminControlRoomPage() {
     { key: "nfc_disabled", label: "Disable NFC activation", danger: "Sticker taps rejected" },
     { key: "rehearsal_mode", label: "Rehearsal mode", danger: "Bypasses ALL phase gating. Testing only" },
     { key: "day2_map_layer", label: "Day 2 map layer", danger: "Reveals projectors on everyone's map" },
+    { key: "nfc_demo_mode", label: "NFC demo mode", danger: "Freshies and Facis can light a lightbulb without the card. Testing only" },
   ];
 
   const onSwitches = SWITCHES.filter((s) => boolOf(s.key));

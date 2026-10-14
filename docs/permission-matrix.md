@@ -19,6 +19,9 @@ This reflects only the migration files in the repo. Any manual changes made to t
 | **General** | | | | | | | | | |
 | Dashboard / Home | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | UI |
 | Campus Map / station status | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | DB |
+| Lightbulbs on the map (`fn_map_lightbulbs`) | Lit; unlit after unlock | Lit; unlit after unlock | Lit; unlit after unlock | Lit; unlit after unlock | All | All | All | All, can move | DB |
+| Demo NFC scan (only while NFC demo mode is on) | Own Group | Own Group | — | — | — | — | — | — | DB |
+| Reset a lightbulb | — | — | — | — | — | — | — | ✓ | DB |
 | Group locations on the map | — | Own Group | — | — | View All | View All | View All | View All | DB |
 | Phase Timer (view) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | DB |
 | Schedule (view) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | DB |
@@ -55,6 +58,7 @@ This reflects only the migration files in the repo. Any manual changes made to t
 | Attendance completion overview | — | Own Group | — | — | View All | View All | View All | Manage All | DB |
 | Manual Location Check-in | — | ✓ | — | — | — | — | — | † | DB |
 | GPS auto-report | — | ✓ | — | — | — | — | — | — | DB |
+| Group Facis' sharing status (`fn_group_faci_status`) | — | Own Group, no phones | — | — | All, with phones | All, with phones | All, with phones | All, with phones | DB |
 | **Committee / Operations** | | | | | | | | | |
 | Committee Operations page (/committee) | — | — | — | — | ✓ | ✓ | ✓ | † | UI |
 | Group Balance overview | — | — | — | — | View All | View All | View All | View All | DB |

@@ -850,6 +850,8 @@ html.fh-snap { overflow-x: hidden; }
   .fi-key-actions { grid-template-columns: 1fr 1fr; }
 }
 .fi-key-actions .fh-btn { white-space: nowrap; }
+/* Demo scan (NFC demo mode only) takes the full row under the two main buttons. */
+.fi-key-actions .fi-key-demo { grid-column: 1 / -1; }
 .fi-key-foot { margin: 8px 2px 0; font-size: 12px; color: var(--fh-mute); text-align: center; }
 
 /* Blind box (BlindBox.tsx): ask → sealed → opening → reveal. Full screen

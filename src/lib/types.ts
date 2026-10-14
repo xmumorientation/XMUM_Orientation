@@ -49,7 +49,7 @@ export interface Station {
   id: number;
   code: string;
   name: string;
-  /** A1–A5, B1, or Track & Field. */
+  /** A1–A5, B1, Track & Field, Tennis Court, Volleyball Court, or TBD. */
   area: string;
   /** Game or purpose set by an admin. Empty until one is chosen. */
   purpose: string;
@@ -286,6 +286,32 @@ export interface GpsLocation {
   reported_at: string;
 }
 
+/** One row of fn_group_positions(): a group's best GPS fix and its station check-in. */
+export interface GroupPosition {
+  group_id: number;
+  group_name: string;
+  gps_lat: number | null;
+  gps_lng: number | null;
+  gps_accuracy_m: number | null;
+  gps_at: string | null;
+  /** Facis whose phone reported in the last 2 minutes. */
+  facis_reporting: number;
+  facis_total: number;
+  checkin_station_id: number | null;
+  checkin_station_code: string | null;
+  checkin_station_name: string | null;
+  checkin_at: string | null;
+}
+
+/** One row of fn_group_faci_status(). phone is only filled in for Committee tier. */
+export interface FaciStatus {
+  user_id: string;
+  full_name: string | null;
+  phone: string | null;
+  last_gps_at: string | null;
+  last_accuracy_m: number | null;
+}
+
 export interface AuditEntry {
   id: number;
   actor: string | null;
@@ -303,6 +329,25 @@ export const PROJECTOR_LABELS: Record<ProjectorLocation, string> = {
   A3: "A3 Building",
   TF: "Track & Field",
 };
+
+/** Code names used until the full map unlocks, so a page never gives a location away. */
+export const PROJECTOR_CODE_NAMES: Record<ProjectorLocation, string> = {
+  B1: "Star",
+  A3: "Wheel",
+  TF: "Orbit",
+};
+
+/** One row of fn_map_lightbulbs(): a lightbulb the viewer may see on the map. */
+export interface MapLightbulb {
+  location: ProjectorLocation;
+  name: string;
+  map_x: number;
+  map_y: number;
+  activated_by_group: number | null;
+  group_name: string | null;
+  activated_at: string | null;
+  activated_manually: boolean;
+}
 
 export const ROLE_LABELS: Record<UserRole, string> = {
   freshie: "Freshie",

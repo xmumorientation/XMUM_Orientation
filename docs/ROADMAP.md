@@ -188,14 +188,17 @@ Full background: the "Issues Found" section in [permission-matrix.md](permission
 
 **Current state:**
 - Map page: [map/page.tsx](../src/app/(app)/map/page.tsx). Map component: [CampusMap.tsx](../src/components/CampusMap.tsx). The illustration is `public/campus-map.png`.
-- Labels on the art: A1–A5 along the red-roof row (A1 at the monument end, A5 at the lake end), Track & Field on the pitch, B1 on the white-and-red block.
+- Labels on the art: A1–A5 along the red-roof row (A1 at the monument end, A5 at the lake end), Track & Field on the pitch, B1 on the white-and-red block, Tennis Court and Volleyball Court on the two pairs of green courts beside B1.
 - Station dots still show available / in progress / closed, and still update from the `stations` table without a refresh. Group pins still follow the permission rules below.
 - `David-MapPage` colours dots by occupancy (`fn_public_station_occupancy`). That function is not on this branch, so it was not copied. The branch still uses the old rectangle map, not this Figma art.
 - Who can see what on the map: see the "Campus Map" and "Group locations" rows in [permission-matrix.md](permission-matrix.md).
 
 **Still open:**
-- Seeded stations are removed. New ones are created in Admin → Stations and sit on A1–A5, B1, or Track & Field.
-- GPS pins are drawn on the art (see Done, 2026-10-07). The calibration needs a real walk-through to confirm.
+- Seeded stations are removed. New ones are created in Admin → Stations and sit on A1–A5, B1, Track & Field, Tennis Court or Volleyball Court.
+- GPS pins are drawn on the art (see Done, 2026-10-07 and 2026-10-13). The calibration needs a real walk-through to confirm: stand at each building and court with a phone and check the pin.
+- Before the event: turn **NFC demo mode** off in Live control, and Reset any bulbs lit while testing.
+- Before the event: brief Facis that a phone only shares location while the app is open on screen, and that one phone per group should use Keep tracking with a power bank.
+- Admin → Stations "Other…" block: the database only accepts the listed buildings (and TBD), so saving a station with another block name fails.
 - The lake, monument, and brown field are in the picture and are not labeled.
 
 ## 6. Faci updates group name and slogan (Ready)
@@ -259,6 +262,41 @@ Full background: the "Issues Found" section in [permission-matrix.md](permission
 ---
 
 ## Done
+
+### Map: GPS precision from Google Maps anchors, 2026-10-14 (Zichien)
+- A pin between Furong Lake and the courts landed near the track (about 7% of the map off): the warp had no anchors around the lakes.
+- Added landmark anchors read off Google Maps satellite view, in `LANDMARKS` in [mapGeo.ts](../src/lib/mapGeo.ts): LakeFront Café (the red dome), the causeway between the two lakes (the red bridge), and the Statue of Tan Kah Kee (the monument). The art is the campus turned about 135° (north points down-right).
+- The pin position now uses a thin-plate spline through all anchors instead of a straight fit plus inverse-distance pull: exact at every anchor, smooth in between, no snapping toward the nearest anchor. The same test spot now lands about 1–2% from the right place.
+- A lake-centre anchor was tried and dropped: it folded the warp (the art draws the lakes bigger than they are). Use sharp points only.
+- Still to do: an Admin walk-and-tap calibration tool, so anchors can be added on site (not built yet).
+
+### Map: Day 2 stations, building badges, demo NFC scan, 2026-10-14 (Zichien)
+Needs migration `0071_nfc_demo_scan.sql`.
+- **Day 2 stations only** on every campus map (`/map`, `/checkin`, `/committee`), including the "Available stations" list. Day 1 stations are still managed on Admin → Stations. Stations added from a building on the map are created as Day 2.
+- **Building badges:** a building with two or more Day 2 stations shows one badge ("3/5": open of total), green if any is open, red if any is busy, grey if all closed. One station keeps its own dot. Tapping a badge lists that building's stations under the map (Admin: opens the building panel). In full screen, tapping a badge zooms in, and past 2.5× zoom the badges split into station dots.
+- **Demo NFC scan:** Live control has a new switch, "NFC demo mode". While it is on, the Key screen on Items shows "Demo scan", which lights that bulb for the user's group for real (`fn_demo_activate_projector`, skips the endgame, puzzle and token checks; still one group per bulb and one bulb per group; audit-logged) and links to `/map?layer=bulbs`.
+- **Reset a bulb:** Admin has Reset on each lit bulb in the map's Lightbulbs list (`fn_admin_reset_projector`, audit-logged). It does not free a used NFC token.
+
+### Map: Stations / Lightbulbs switch, 2026-10-13 (Zichien)
+Needs migration `0070_map_lightbulbs.sql`.
+- A Stations / Lightbulbs switch above the map (and in full screen) on every page that shows the campus map (`/map`, `/checkin`, `/committee`). The choice is remembered on the device. Group pins show in both modes.
+- **Stations** is the map as before, without the projector marks drawn on top.
+- **Lightbulbs** shows the three lightbulbs (projectors Star/B1, Wheel/A3, Orbit/TF): lit ones glow with the group that lit them and the time; unlit ones are grey with a "?". Read through `fn_map_lightbulbs()`: lit bulbs go to everyone; unlit bulbs only to Committee tier, or to everyone once Admin turns on "Day 2 map layer" (the map unlock). The `projectors` table itself is still readable by any logged-in user (item 3).
+- The Lightbulbs tab shows "N lit", and pulses when a bulb is lit while you are in Stations mode, until you open Lightbulbs.
+- **Admin moves a bulb** to where its NFC card really is: Lightbulbs → Move, then tap the map (full screen for precision). Saved to `projectors.map_x / map_y`. `PROJECTOR_SPOTS` is removed; the spots come from the table.
+- Star/Wheel/Orbit code names now live in `PROJECTOR_CODE_NAMES` (`src/lib/types.ts`), shared with the Items page.
+
+### Map: three Facis per group, courts, and location problems, 2026-10-13 (Zichien)
+Needs migration `0069_multi_faci_group_position.sql`.
+- **One pin per group.** `fn_group_positions()` takes the best fix across all of the group's Faci phones (smallest accuracy plus 1 m per second of age), plus the group's current station check-in. [groupPosition.ts](../src/lib/groupPosition.ts) draws whichever is newer, except that a check-in from the last 10 min beats a GPS fix worse than 100 m. Groups at the same spot sit side by side. Replaces the separate GPS pin and "G4" check-in tag (`fn_latest_gps_locations` / `fn_latest_locations` are no longer used by the map).
+- **Pins never disappear.** Fresh ≤ 2 min, faded ≤ 10 min, then grey. `fn_report_gps` keeps each Faci's newest fix past the 1-hour cleanup. A "Not seen for 10+ min" list (all groups with no usable fix) opens each group's Facis with when their phone last shared, and Call / WhatsApp links for Committee tier (`fn_group_faci_status`; phone numbers are not returned to Facis).
+- **Rough fixes** (worse than 100 m) draw with a dashed circle the size of the accuracy; worse than 1 km are stored but not drawn.
+- **Faci tracker rewrite** ([FaciLocationTracker.tsx](../src/components/FaciLocationTracker.tsx)): throttles on the attempt, not the success (and the server ignores reports < 10 s apart), so a failing phone no longer reports every second; no double report on start; "imprecise" status; the banner comes back when permission is revoked; a GPS timeout really retries; offline errors explained; a fix is sent on return to the app and when the connection comes back.
+- **Location help per phone** ([LocationHelp.tsx](../src/components/LocationHelp.tsx), [browserEnv.ts](../src/lib/browserEnv.ts)): steps for iOS Safari / Chrome and Android Chrome / Samsung for blocked, rough and unavailable location; detects WhatsApp / Instagram / Facebook / WeChat / LINE / TikTok in-app browsers and non-https.
+- **Keep tracking** ([FaciTrackingPanel.tsx](../src/components/FaciTrackingPanel.tsx), on the Map page for Facis): holds the screen awake with the Wake Lock API while the app is open, re-taken when the app returns; falls back to Auto-Lock steps when the browser can't. The panel shows which of the group's Faci phones are sharing. A Faci who reopens the app after their group was off the map for 10+ min is told so.
+- **Courts:** Tennis Court and Volleyball Court are map buildings and GPS anchors (Tennis 2.831869, 101.706675; Volleyball 2.831859, 101.707253), with 45 m check-in zones. Station codes TC-n and VC-n. Admin → Stations no longer offers the "Courts" block, which the database rejected.
+- Realtime map reloads are batched (one every 2 s at most).
+- Not tested on real phones yet. Web pages cannot read GPS in the background, so pins still depend on someone having the app open.
 
 ### Vortexa logo intro on opening the site and after login, 2026-10-13
 - `VortexaIntro` ([VortexaIntro.tsx](../src/components/VortexaIntro.tsx), [vortexa-intro.css](../src/components/vortexa-intro.css)), mounted once in the root layout: a dark cover, the Vortexa logo sharpens in, a light band sweeps across it, then the cover fades out (about 2.7 s). Same idea as the interview site's `HomeIntro`.
