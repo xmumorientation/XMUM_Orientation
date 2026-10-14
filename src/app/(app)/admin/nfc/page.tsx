@@ -19,6 +19,16 @@ interface NfcTokenRow {
   used_at: string | null;
   used_by_group: number | null;
   created_at: string;
+  test_run_id: string | null;
+}
+
+interface NfcTestRun {
+  id: string;
+  group_id: number;
+  location: ProjectorLocation;
+  created_at: string;
+  reset_at: string | null;
+  closed_at: string | null;
 }
 
 // FR-9.1: mint signed one-time URLs for physical stickers. Write them with
@@ -29,29 +39,45 @@ export default function AdminNfcPage() {
   const [count, setCount] = useState(3);
   const [minted, setMinted] = useState<{ label: string; url: string }[]>([]);
   const [existing, setExisting] = useState<NfcTokenRow[]>([]);
+  const [groups, setGroups] = useState<{ id: number; name: string }[]>([]);
+  const [groupId, setGroupId] = useState(1);
+  const [testRuns, setTestRuns] = useState<NfcTestRun[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
     const { data } = await supabase
       .from("nfc_tokens")
-      .select("id, location, label, used_at, used_by_group, created_at")
+      .select("id, location, label, used_at, used_by_group, created_at, test_run_id")
       .order("id", { ascending: false });
     setExisting((data as NfcTokenRow[]) ?? []);
-  }, [supabase]);
+    const [{ data: runRows, error: runsError }, { data: groupRows }] = await Promise.all([
+      supabase.from("nfc_test_runs").select("id, group_id, location, created_at, reset_at, closed_at").order("created_at", { ascending: false }),
+      supabase.rpc("fn_list_groups"),
+    ]);
+    if (runsError) setError(`NFC test mode unavailable. Apply migration 0081 first. ${runsError.message}`);
+    setTestRuns((runRows as NfcTestRun[]) ?? []);
+    const listedGroups = (groupRows ?? []) as { id: number; name: string }[];
+    setGroups(listedGroups);
+    if (listedGroups.length && !listedGroups.some((g) => g.id === groupId)) setGroupId(listedGroups[0].id);
+  }, [supabase, groupId]);
 
   useEffect(() => {
     load();
   }, [load]);
 
-  async function mint() {
+  async function mint(testRun?: NfcTestRun) {
     setBusy(true);
     setError(null);
     try {
       const res = await fetch("/api/admin/nfc", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ location, count }),
+        body: JSON.stringify({
+          location: testRun?.location ?? location,
+          count,
+          ...(testRun ? { testRunId: testRun.id, labelPrefix: `TEST G${testRun.group_id} ${testRun.location}` } : {}),
+        }),
       });
       const data = await res.json();
       if (!res.ok) setError(data.error ?? "Failed");
@@ -65,6 +91,38 @@ export default function AdminNfcPage() {
     setBusy(false);
   }
 
+  async function startTestRun() {
+    setBusy(true);
+    setError(null);
+    const { error } = await supabase.rpc("fn_nfc_test_start", {
+      p_group_id: groupId,
+      p_location: location,
+    });
+    setBusy(false);
+    if (error) setError(testRunError(error.message));
+    else await load();
+  }
+
+  async function resetTestRun(run: NfcTestRun) {
+    if (!window.confirm(`Reset NFC test for Group ${run.group_id} at ${run.location}? This re-arms its test sticker and restores the test redemption.`)) return;
+    setBusy(true);
+    setError(null);
+    const { error } = await supabase.rpc("fn_nfc_test_reset", { p_test_run_id: run.id });
+    setBusy(false);
+    if (error) setError(testRunError(error.message));
+    else await load();
+  }
+
+  async function finishTestRun(run: NfcTestRun) {
+    if (!window.confirm(`Finish NFC test for Group ${run.group_id} at ${run.location}? This clears test activation. Stickers from this run will stop working.`)) return;
+    setBusy(true);
+    setError(null);
+    const { error } = await supabase.rpc("fn_nfc_test_finish", { p_test_run_id: run.id });
+    setBusy(false);
+    if (error) setError(testRunError(error.message));
+    else await load();
+  }
+
   return (
     <div className="space-y-4">
       <PageTitle
@@ -72,6 +130,45 @@ export default function AdminNfcPage() {
         subtitle="One-time signed URLs for the physical stickers"
       />
       <ErrorBanner message={error} />
+
+      <Card className="space-y-3 border-2 border-amber-300">
+        <div>
+          <h2 className="font-semibold">NFC test mode</h2>
+          <p className="mt-1 text-sm text-ink-soft">Creates a test-only Guardian redemption so the group can exercise the real sticker activation without waiting for Endgame. The group must scan while signed in to its account.</p>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-3">
+          <label className="label mb-0">Test group
+            <select className="input mt-1" value={groupId} onChange={(e) => setGroupId(Number(e.target.value))}>
+              {groups.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
+            </select>
+          </label>
+          <label className="label mb-0">Projector
+            <select className="input mt-1" value={location} onChange={(e) => setLocation(e.target.value as ProjectorLocation)}>
+              {PROJECTOR_LOCATIONS.map((loc) => <option key={loc} value={loc}>{PROJECTOR_LABELS[loc]}</option>)}
+            </select>
+          </label>
+          <button disabled={busy || groups.length === 0} onClick={startTestRun} className="btn-primary self-end">Prepare test</button>
+        </div>
+        <p className="text-xs text-ink-faint">Preparation is refused if the group or projector already has activation or redemption state. Reset re-arms the test sticker and restores only this test redemption. NFC kill-switch still applies.</p>
+        {testRuns.length > 0 && <div className="overflow-x-auto">
+          <table className="w-full min-w-[560px] text-left text-sm">
+            <thead><tr className="border-b border-paper-200 text-xs font-bold uppercase tracking-wide text-ink-faint"><th className="py-2">Test run</th><th>State</th><th className="text-right">Actions</th></tr></thead>
+            <tbody className="divide-y divide-paper-200">
+              {testRuns.map((run) => <tr key={run.id}>
+                <td className="py-2">Group {run.group_id} · {PROJECTOR_LABELS[run.location]}<span className="block text-xs text-ink-faint">{new Date(run.created_at).toLocaleString()}</span></td>
+                <td>{run.closed_at ? `Finished · ${new Date(run.closed_at).toLocaleString()}` : run.reset_at ? `Active · reset ${new Date(run.reset_at).toLocaleString()}` : "Active"}</td>
+                <td className="space-x-2 text-right">
+                  {!run.closed_at && <>
+                    <button disabled={busy} onClick={() => mint(run)} className="btn text-xs">Generate test sticker</button>
+                    <button disabled={busy} onClick={() => resetTestRun(run)} className="btn text-xs">Reset and re-arm</button>
+                    <button disabled={busy} onClick={() => finishTestRun(run)} className="btn-danger text-xs">Finish test</button>
+                  </>}
+                </td>
+              </tr>)}
+            </tbody>
+          </table>
+        </div>}
+      </Card>
 
       {minted.length > 0 && (
         <Card className="space-y-2 border-2 border-amber-400">
@@ -127,7 +224,7 @@ export default function AdminNfcPage() {
               onChange={(e) => setCount(Number(e.target.value))}
             />
           </div>
-          <button disabled={busy} onClick={mint} className="btn-primary w-full">
+          <button disabled={busy} onClick={() => mint()} className="btn-primary w-full">
             Generate {count} token{count > 1 ? "s" : ""}
           </button>
         </Card>
@@ -153,12 +250,16 @@ export default function AdminNfcPage() {
                     <span
                       className={cn(
                         "chip",
-                        t.used_at
+                        (t.test_run_id && testRuns.find((r) => r.id === t.test_run_id)?.closed_at)
+                          ? "bg-paper-200 text-ink-soft"
+                          : t.used_at
                           ? "bg-red-100 text-red-700"
                           : "bg-green-100 text-green-700"
                       )}
                     >
-                      {t.used_at ? `used by G${t.used_by_group}` : "unused"}
+                      {t.test_run_id && testRuns.find((r) => r.id === t.test_run_id)?.closed_at
+                        ? "test ended"
+                        : t.used_at ? `used by G${t.used_by_group}` : "unused"}
                     </span>
                   </td>
                 </tr>
@@ -176,4 +277,15 @@ export default function AdminNfcPage() {
       </div>
     </div>
   );
+}
+
+function testRunError(message: string) {
+  const known: Record<string, string> = {
+    TEST_RUN_EXISTS: "This group and projector already have an NFC test. Use its existing run below.",
+    SET_ALREADY_REDEEMED: "This group already has a redemption at this projector. Choose a clean test group and projector.",
+    PROJECTOR_ALREADY_ACTIVATED: "This projector is already activated. Choose an unused projector.",
+    GROUP_ALREADY_ACTIVATED: "This group already activated a projector. Choose a clean test group.",
+    PERMISSION_DENIED: "Only an Admin can manage NFC test runs.",
+  };
+  return known[message] ?? message;
 }

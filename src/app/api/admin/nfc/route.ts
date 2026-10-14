@@ -25,10 +25,11 @@ export async function POST(req: NextRequest) {
   } catch {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
-  const { location, count, labelPrefix } = (body ?? {}) as {
+  const { location, count, labelPrefix, testRunId } = (body ?? {}) as {
     location?: unknown;
     count?: unknown;
     labelPrefix?: unknown;
+    testRunId?: unknown;
   };
 
   if (
@@ -44,6 +45,20 @@ export async function POST(req: NextRequest) {
   const n = Math.min(Math.max(Math.floor(Number(count)) || 1, 1), 20);
 
   const service = supabaseAdmin();
+  if (testRunId !== undefined) {
+    if (caller.role !== "admin" || typeof testRunId !== "string") {
+      return NextResponse.json({ error: "Test stickers are Admin only" }, { status: 403 });
+    }
+    const { data: run } = await service
+      .from("nfc_test_runs")
+      .select("id, location, closed_at")
+      .eq("id", testRunId)
+      .is("closed_at", null)
+      .single();
+    if (!run || run.location !== loc) {
+      return NextResponse.json({ error: "Active test run not found for this location" }, { status: 400 });
+    }
+  }
   const results: { label: string; url: string }[] = [];
 
   for (let i = 1; i <= n; i++) {
@@ -54,6 +69,7 @@ export async function POST(req: NextRequest) {
       location: loc,
       label,
       created_by: admin.id,
+      ...(typeof testRunId === "string" ? { test_run_id: testRunId } : {}),
     });
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
@@ -66,7 +82,7 @@ export async function POST(req: NextRequest) {
     actor_role: caller.role,
     action: "nfc.generate",
     target: `projector:${location}`,
-    detail: { count: n },
+    detail: { count: n, ...(typeof testRunId === "string" ? { test_run_id: testRunId } : {}) },
   });
 
   return NextResponse.json({ tokens: results });
