@@ -222,6 +222,7 @@ Run in this order (each only once; `0054`-`0058` and `0065` must already be ther
 - `0077_fix_admin_station_gms_types.sql`: Admin → Stations showed every station as "Unassigned" after assigning Game Masters, because `fn_admin_station_gms()` declared `day` as integer while the live `gm_station_assignments.day` is smallint (Postgres: "structure of query does not match function result type"). The function now casts the columns, and allows Admin and HOGM so it is safe to run before or after `0071_hogm_game_control.sql`.
 - `0078_station_status_manual.sql`: station status is manual only.
 - `0073` to `0076`: Manual Location Update, details, per group, Admin-managed locations.
+- `0079_station_gms_game_lead.sql` (run after `0077`): HOGM → Ops → Stations showed "You don't have permission to do that." on load. On the live database `fn_admin_station_gms()` was the only one of 0071's functions without `is_game_lead()`. 0079 switches it to `is_game_lead()` and revokes `anon`. Before 0079, a caller who was not logged in could read every assignment, because `is_admin()` and `my_role()` return NULL for anon and `if not (NULL)` does not raise. Other `if not public.is_admin()` checks have the same NULL hole for anon; see section 3.
 Branch `jiamin-blind-box-integration` skips `0059`-`0069` on purpose (they live on `main`). The test files `tests/*/stub-schema.sql` are for the local test database only and must never be run on Supabase.
 
 ### Manual Location Update + "Headcount and location", 2026-10-14 (changesv4.md)
