@@ -65,6 +65,8 @@ This reflects only the migration files in the repo. Any manual changes made to t
 | Committee Operations page (/committee) | — | — | — | — | ✓ | ✓ | ✓ | † | UI |
 | Group Balance overview | — | — | — | — | View All | View All | View All | View All | DB |
 | Freshie group assignment (Committee → Register tab) | — | — | — | — | ✓ | — | — | ✓ | DB |
+| Facilitator group assignment (`fn_admin_set_group_facis`; HOF on Ops → Faci control, Admin on Admin → Freshies; `is_faci_lead()`, migration 0080) | — | — | — | — | — | ✓ | — | ✓ | DB |
+| Faci control overview (every group's name, slogan, Facilitators, headcount, location updates and Faci-related audit entries; read only) | — | — | — | — | — | ✓ | — | ✓ | DB (Committee-tier reads) |
 | Big Screen | — | — | — | — | ✓ | ✓ | ✓ | ✓ | UI + DB |
 | Live Ops stats | — | — | — | — | — | † | † | ✓ | DB |
 | Audit Log | — | — | — | — | — | † | † | ✓ | DB |

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { CampusMap } from "@/components/CampusMap";
 import { useProfile } from "@/components/ProfileProvider";
+import { FaciControl } from "@/components/staff/faci/FaciControl";
 import { GameControl } from "@/components/staff/game/GameControl";
 import { Card, PageTitle } from "@/components/ui";
 import { supabaseBrowser } from "@/lib/supabase/client";
@@ -16,7 +17,9 @@ type OpsView = "map" | "attendance" | "balances";
 // Committee keep the overview below.
 export default function CommitteePage() {
   const profile = useProfile();
-  return profile.role === "hogm" ? <GameControl /> : <OpsOverview />;
+  if (profile.role === "hogm") return <GameControl />;
+  if (profile.role === "hof") return <FaciControl />;
+  return <OpsOverview />;
 }
 
 // Committee-tier operations: live map (FR-3.4), attendance completion

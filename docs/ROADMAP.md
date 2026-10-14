@@ -99,6 +99,10 @@ Migrations 0012 and 0013 caused most of these gaps. They replaced the earlier ro
 - Freshie records: `fn_admin_update_freshie`, `fn_admin_delete_freshie`.
 - Tokens and game: `fn_day1_record_result`, `fn_day2_deduct_entry`, `fn_day2_award_piece`, `fn_manual_token_adjust`, `fn_update_game_config_rule`.
 
+**D2. HOF can call game functions it has no use for.** HOF runs the Facilitators, not the game, and has no UI for these, but the backend still allows them (decided 2026-10-14: remove HOF from them):
+- `fn_adjust_tokens`, `fn_grant_item`, `fn_gm_day1_reward`, `fn_day2_challenge`, `fn_undo_last_transaction` (tokens and items),
+- `fn_redeem_puzzle_set` (Guardian's job), `fn_clear_station`, `fn_set_station_status` (stations are HOGM's).
+
 **E. `/api/token` has no role check.**
 - Source: [api/token/route.ts:18](../src/app/api/token/route.ts#L18).
 
@@ -162,7 +166,7 @@ The design branches are merged. These remote branches are still not in `main` (c
 - GPS pins are drawn on the art (see Done, 2026-10-07). The calibration needs a real walk-through to confirm.
 - The lake, monument, and brown field are in the picture and are not labeled.
 
-## 6. HOF sees every group's name and slogan (Ready)
+## 6. HOF sees every group's name and slogan (Done on branch `hof-page-setup`: Ops → Faci control shows them, read only)
 
 **Owner:** Jiamin
 
@@ -222,6 +226,7 @@ Run in this order (each only once; `0054`-`0058` and `0065` must already be ther
 - `0077_fix_admin_station_gms_types.sql`: Admin → Stations showed every station as "Unassigned" after assigning Game Masters, because `fn_admin_station_gms()` declared `day` as integer while the live `gm_station_assignments.day` is smallint (Postgres: "structure of query does not match function result type"). The function now casts the columns, and allows Admin and HOGM so it is safe to run before or after `0071_hogm_game_control.sql`.
 - `0078_station_status_manual.sql`: station status is manual only.
 - `0073` to `0076`: Manual Location Update, details, per group, Admin-managed locations.
+- `0080_hof_faci_control.sql`: HOF assigns Facilitators to groups on Ops → Faci control (`is_faci_lead()`: HOF or Admin). Run before deploying branch `hof-page-setup`.
 - `0079_station_gms_game_lead.sql` (run after `0077`): HOGM → Ops → Stations showed "You don't have permission to do that." on load. On the live database `fn_admin_station_gms()` was the only one of 0071's functions without `is_game_lead()`. 0079 switches it to `is_game_lead()` and revokes `anon`. Before 0079, a caller who was not logged in could read every assignment, because `is_admin()` and `my_role()` return NULL for anon and `if not (NULL)` does not raise. Other `if not public.is_admin()` checks have the same NULL hole for anon; see section 3.
 Branch `jiamin-blind-box-integration` skips `0059`-`0069` on purpose (they live on `main`). The test files `tests/*/stub-schema.sql` are for the local test database only and must never be run on Supabase.
 

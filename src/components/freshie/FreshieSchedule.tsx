@@ -15,7 +15,7 @@ import { themeFromColor, VORTEXA_THEME } from "./groupTheme";
 
 // Logged-in Freshie schedule. Same night layout as the welcome page
 // schedule (day switcher + timeline cards), filled from schedule_items
-// so an admin edit shows up here. With `vortexa` (HOGM) it uses the
+// so an admin edit shows up here. With `vortexa` (HOGM, HOF) it uses the
 // Welcome page colours (.fh-vx) and marks the item that is on now.
 
 const DAY_META: Record<string, { weekday: string; date: string }> = {

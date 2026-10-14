@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 
 import "./game-control.css";
 
-// HOGM's Scores tab (/token): every group's tokens and puzzle pieces. Tap a
+// HOGM's and HOF's Scores tab (/token): every group's tokens and puzzle pieces. Tap a
 // group to see its three puzzle keys, drawn like the Freshie Items page
 // (KeyEmblem). Data: groups.token_balance, inventory + items (pieces, the rows
 // a Day 2 station win writes) and projectors (who lit which). Live.
