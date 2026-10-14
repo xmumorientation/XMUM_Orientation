@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { ArrowLeft, Lightbulb, MapPin, Maximize2, Minus, Plus, RotateCcw, X } from "lucide-react";
+import { ArrowLeft, Crosshair, Lightbulb, MapPin, Maximize2, Minus, Plus, RotateCcw, X } from "lucide-react";
 
+import { AccuracyCheckPanel, useAccuracyCheck } from "@/components/AccuracyCheck";
 import { BuildingStationPanel } from "@/components/BuildingStationPanel";
 import {
   GroupStatusList,
@@ -11,12 +12,14 @@ import {
   reportingSummary,
 } from "@/components/GroupStatusList";
 import { LightbulbList, bulbStatus, bulbTitle } from "@/components/LightbulbList";
+import { useProfile } from "@/components/ProfileProvider";
 import { StationEditDialog } from "@/components/StationEditDialog";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { stationDotColor } from "@/components/ui";
 import {
   PROJECTOR_CODE_NAMES,
   type GroupPosition,
+  type MapAnchor,
   type MapLightbulb,
   type ProjectorLocation,
   type Station,
@@ -27,7 +30,12 @@ import {
 } from "@/lib/mapBuildings";
 import { resolveGroupPin, type GroupPin } from "@/lib/groupPosition";
 import { friendlyError, timeAgo } from "@/lib/utils";
-import { accuracyAxes, groupPinColor } from "@/lib/mapGeo";
+import {
+  accuracyAxes,
+  gpsToMapPercent,
+  groupPinColor,
+  setExtraAnchors,
+} from "@/lib/mapGeo";
 
 // Illustrated campus map exported from the Figma frame
 // "XMUM Block Cube_XMUM Map 1". Coordinates below are percentages of that image.
@@ -133,11 +141,20 @@ export function CampusMap({
   hasSelection?: boolean;
 }) {
   const supabase = useMemo(() => supabaseBrowser(), []);
+  const myId = useProfile().id;
   const [stations, setStations] = useState<Station[]>([]);
   const [layer, setLayerState] = useState<MapLayer>("stations");
   const [bulbs, setBulbs] = useState<MapLightbulb[]>([]);
   const [selectedBulb, setSelectedBulb] = useState<ProjectorLocation | null>(null);
   const [movingBulb, setMovingBulb] = useState<ProjectorLocation | null>(null);
+  // Admin anchors (map_anchors), added to the built-in ones in mapGeo.
+  // warpVersion changes when they are refitted, so pins are placed again.
+  const [anchors, setAnchors] = useState<MapAnchor[]>([]);
+  const [warpVersion, setWarpVersion] = useState(0);
+  const [checkMode, setCheckMode] = useState(false);
+  const [checkNotice, setCheckNotice] = useState<string | null>(null);
+  const [checkError, setCheckError] = useState<string | null>(null);
+  const check = useAccuracyCheck(checkMode && canManageStations);
   const [bulbError, setBulbError] = useState<string | null>(null);
   // Lit bulbs the viewer has already seen in Lightbulbs mode; more lit than
   // this makes the Lightbulbs tab pulse.
@@ -172,6 +189,81 @@ export function CampusMap({
     const { data } = await supabase.from("stations").select("*").order("id");
     setStations((data as Station[]) ?? []);
   }, [supabase]);
+
+  // Every map loads the Admin anchors. Before migration 0087 the table does
+  // not exist; the map then keeps the built-in anchors.
+  const loadAnchors = useCallback(async () => {
+    const { data, error } = await supabase
+      .from("map_anchors")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (error || !data) return;
+    const list = (data as MapAnchor[]).map((a) => ({
+      ...a,
+      x: Number(a.x),
+      y: Number(a.y),
+    }));
+    setAnchors(list);
+    setExtraAnchors(list);
+    setWarpVersion((v) => v + 1);
+  }, [supabase]);
+
+  useEffect(() => {
+    void loadAnchors();
+  }, [loadAnchors]);
+
+  // Admin taps where they really are: save an anchor from the averaged GPS.
+  async function placeAnchor(e: React.MouseEvent<SVGRectElement>) {
+    const svg = e.currentTarget.ownerSVGElement;
+    if (!svg) return;
+    const r = svg.getBoundingClientRect();
+    const x = Math.min(100, Math.max(0, ((e.clientX - r.left) / r.width) * 100));
+    const y = Math.min(100, Math.max(0, ((e.clientY - r.top) / r.height) * 100));
+    setCheckNotice(null);
+    const fix = check.averaged();
+    if (!fix) {
+      setCheckError(
+        "GPS too rough to save. Step into the open and wait for 2 fixes at ±20 m or better.",
+      );
+      return;
+    }
+    const predicted = gpsToMapPercent(fix.lat, fix.lng);
+    if (
+      predicted &&
+      Math.hypot(predicted.x - x, predicted.y - y) > 25 &&
+      !window.confirm(
+        "That spot is far from where the map puts you. Save it anyway? A wrong tap bends the map for everyone.",
+      )
+    ) {
+      return;
+    }
+    const { data, error } = await supabase.rpc("fn_admin_add_map_anchor", {
+      p_lat: fix.lat,
+      p_lng: fix.lng,
+      p_x: Math.round(x * 100) / 100,
+      p_y: Math.round(y * 100) / 100,
+      p_accuracy: fix.accuracy,
+      p_fixes: fix.fixes,
+    });
+    if (error) {
+      setCheckError(friendlyError(error));
+      return;
+    }
+    setCheckError(null);
+    const replaced = (data as { replaced?: number } | null)?.replaced ?? 0;
+    setCheckNotice(
+      `Saved (±${Math.round(fix.accuracy)} m, ${fix.fixes} fixes)${replaced ? `, replaced ${replaced} nearby` : ""}. Every map now uses it.`,
+    );
+    await loadAnchors();
+  }
+
+  async function deleteAnchor(id: number) {
+    if (!window.confirm("Delete this correction? Every map stops using it.")) return;
+    const { error } = await supabase.rpc("fn_admin_delete_map_anchor", { p_id: id });
+    setCheckError(error ? friendlyError(error) : null);
+    setCheckNotice(error ? null : "Correction deleted.");
+    await loadAnchors();
+  }
 
   const litCount = bulbs.filter((b) => b.activated_at).length;
 
@@ -391,7 +483,9 @@ export function CampusMap({
     const pins = new Map<number, GroupPin | null>();
     for (const g of positions) pins.set(g.group_id, resolveGroupPin(g, spotOf, nowMs));
     return pins;
-  }, [positions, stations, stationSpots, nowMs]);
+    // warpVersion: re-place the pins when Admin anchors change the warp.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [positions, stations, stationSpots, nowMs, warpVersion]);
 
   // Groups at the same spot (for example checked into one station) sit side by side.
   const drawnPins = useMemo(() => {
@@ -1106,6 +1200,75 @@ export function CampusMap({
                     </g>
                   );
                 })}
+              {checkMode && canManageStations && (
+                <>
+                  {anchors.map((an) => (
+                    <rect
+                      key={`anchor-${an.id}`}
+                      x={mx(an.x) - 14}
+                      y={my(an.y) - 14}
+                      width="28"
+                      height="28"
+                      transform={`rotate(45 ${mx(an.x)} ${my(an.y)})`}
+                      fill="#0ea5e9"
+                      stroke="#fff"
+                      strokeWidth="5"
+                    />
+                  ))}
+                  {check.others
+                    .filter((o) => !check.live || o.user_id !== myId)
+                    .map((o) => {
+                      const p = gpsToMapPercent(o.lat, o.lng);
+                      if (!p) return null;
+                      return (
+                        <g key={`admin-${o.user_id}`}>
+                          <circle cx={mx(p.x)} cy={my(p.y)} r="26" fill="#334155" stroke="#fff" strokeWidth="6" />
+                          <text x={mx(p.x)} y={my(p.y) + 62} textAnchor="middle" fontSize="28" fontWeight="800" fill="#334155" stroke="#fff" strokeWidth="7" paintOrder="stroke">
+                            {o.full_name ?? "Admin"}
+                          </text>
+                        </g>
+                      );
+                    })}
+                  {check.live &&
+                    (() => {
+                      const p = gpsToMapPercent(check.live.lat, check.live.lng);
+                      if (!p) return null;
+                      const cx = mx(p.x);
+                      const cy = my(p.y);
+                      const halo = accuracyAxes(check.live.lat, check.live.acc);
+                      return (
+                        <g className="pointer-events-none">
+                          <circle
+                            r="1"
+                            transform={`matrix(${(halo.east.x / 100) * MAP_W} ${(halo.east.y / 100) * MAP_H} ${(halo.north.x / 100) * MAP_W} ${(halo.north.y / 100) * MAP_H} ${cx} ${cy})`}
+                            fill="#0ea5e9"
+                            fillOpacity="0.15"
+                            stroke="#0284c7"
+                            strokeWidth="2"
+                            vectorEffect="non-scaling-stroke"
+                          />
+                          <circle cx={cx} cy={cy} r="24" fill="#0284c7" stroke="#fff" strokeWidth="7" />
+                          <text x={cx} y={cy - 40} textAnchor="middle" fontSize="30" fontWeight="800" fill="#0369a1" stroke="#fff" strokeWidth="8" paintOrder="stroke">
+                            You
+                          </text>
+                        </g>
+                      );
+                    })()}
+                  {!movingBulb && (
+                    <rect
+                      x="0"
+                      y="0"
+                      width={MAP_W}
+                      height={MAP_H}
+                      fill="#0ea5e9"
+                      fillOpacity="0.06"
+                      data-map-hit
+                      className="pointer-events-auto cursor-crosshair"
+                      onClick={placeAnchor}
+                    />
+                  )}
+                </>
+              )}
             </svg>
             <div className="pointer-events-none absolute inset-0">
               {MAP_BUILDINGS.map((place) => {
@@ -1164,6 +1327,34 @@ export function CampusMap({
       <div className="mb-2 flex justify-center" aria-hidden={fullscreen}>
         {layerSwitch(false)}
       </div>
+      {canManageStations && !checkMode && (
+        <div className="mb-2 flex justify-end">
+          <button
+            type="button"
+            onClick={() => {
+              setCheckMode(true);
+              setCheckNotice(null);
+              setCheckError(null);
+            }}
+            className="inline-flex min-h-[36px] items-center gap-1.5 rounded-lg border border-paper-200 px-3 text-xs font-semibold hover:bg-paper-100"
+          >
+            <Crosshair className="h-3.5 w-3.5" />
+            Accuracy check
+          </button>
+        </div>
+      )}
+      {canManageStations && checkMode && (
+        <AccuracyCheckPanel
+          live={check.live}
+          goodFixes={check.goodFixes}
+          error={checkError ?? check.error}
+          notice={checkNotice}
+          anchors={anchors}
+          nowMs={nowMs}
+          onDelete={deleteAnchor}
+          onClose={() => setCheckMode(false)}
+        />
+      )}
       {movingTitle && (
         <div className="mb-2 flex items-center justify-between gap-3 rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-950 ring-1 ring-amber-200">
           <span>
@@ -1334,7 +1525,18 @@ export function CampusMap({
               onPointerDown={(e) => e.stopPropagation()}
             >
               <div className="min-w-0 flex-1">
-                {layer === "bulbs" && movingTitle ? (
+                {checkMode && canManageStations && !movingTitle ? (
+                  <div className="pointer-events-auto rounded-2xl bg-white px-3 py-2.5 text-sm shadow-lg">
+                    <div className="font-semibold">Tap where you really are</div>
+                    <div className="text-xs text-ink-faint">
+                      {checkError ??
+                        checkNotice ??
+                        (check.live
+                          ? `GPS ±${Math.round(check.live.acc)} m · ${check.goodFixes} good fixes`
+                          : "Finding your location…")}
+                    </div>
+                  </div>
+                ) : layer === "bulbs" && movingTitle ? (
                   <div className="pointer-events-auto flex items-center justify-between gap-3 rounded-2xl bg-amber-50 px-3 py-2.5 text-sm text-amber-950 shadow-lg">
                     <span className="min-w-0">
                       Tap where the {bulbTitle(movingTitle)} NFC card is.
