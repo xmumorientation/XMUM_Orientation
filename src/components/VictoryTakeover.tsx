@@ -7,18 +7,21 @@ import "./victory-takeover.css";
 const colors = ["#0dfcfd", "#fe06ab", "#e0b4fc", "#fc9e3d", "#f2ff0b"];
 export function VictoryTakeover({location, groupName}: {location: ProjectorLocation; groupName: string | null}) {
   const [lit, setLit] = useState(false);
+  const [ready, setReady] = useState(false);
   useEffect(() => {
-    const timer = window.setTimeout(() => setLit(true), window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 2100);
-    return () => window.clearTimeout(timer);
+    setReady(true);
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) setLit(true);
   }, []);
-  return <main className={"vt-scene " + (lit ? "vt-lit" : "")}>
+  return <main className={"vt-scene " + (ready ? "vt-ready " : "") + (lit ? "vt-lit" : "")}>
     <div className="vt-sky" aria-hidden="true">{Array.from({length:28},(_,i)=><i key={i} style={{left:(i*37+7)%100+"%",top:(i*23+3)%90+"%", "--color":colors[i%5],"--delay":i%5*-.6+"s"} as CSSProperties}/>)}</div>
     <div className="vt-wash" aria-hidden="true"/>
     <div className="vt-logo"><Image src="/vortexa-logo-sm.webp" width={320} height={184} alt="Vortexa" priority/></div>
     <div className="vt-magic" aria-hidden="true">
       <div className="vt-wave"/>
       {colors.map((color,i)=><div className="vt-trail" key={color} style={{"--color":color,"--turn":i*72+"deg","--delay":i*.06+"s"} as CSSProperties}><i/></div>)}
-      <div className="vt-core"><svg viewBox="0 0 80 80"><path d="M40 4Q44 34 76 40Q44 44 40 76Q36 44 4 40Q36 36 40 4Z"/></svg></div>
+      <div className="vt-core" onAnimationEnd={(event) => {
+        if (event.target === event.currentTarget && event.animationName === "vt-core-charge") setLit(true);
+      }}><svg viewBox="0 0 80 80"><path d="M40 4Q44 34 76 40Q44 44 40 76Q36 44 4 40Q36 36 40 4Z"/></svg></div>
       {Array.from({length:45},(_,i)=>{const angle=i*137.508*Math.PI/180;const distance=110+i%7*32;return <i className="vt-spark" key={i} style={{"--x":(Math.cos(angle)*distance).toFixed(3)+"px","--y":(Math.sin(angle)*distance).toFixed(3)+"px","--color":colors[i%5],"--delay":i%5*.055+"s","--spin":i*43+"deg"} as CSSProperties}/>;})}
     </div>
     <div className="vt-charging" aria-hidden={lit}>Gathering the magic<span/></div>
