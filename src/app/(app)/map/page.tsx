@@ -1,9 +1,12 @@
 "use client";
 
 import { CampusMap } from "@/components/CampusMap";
+import { vxDisplay, vxSlab } from "@/components/home/fonts";
 import { useProfile } from "@/components/ProfileProvider";
+import "@/components/staff/game/game-control.css";
 import { PageTitle } from "@/components/ui";
-import { COMMITTEE_TIER } from "@/lib/types";
+import { COMMITTEE_TIER, OPS_ROLES } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 export default function MapPage() {
   const profile = useProfile();
@@ -11,6 +14,31 @@ export default function MapPage() {
   // enforces this server-side - the flag just requests pins).
   const showPins =
     COMMITTEE_TIER.includes(profile.role) || profile.role === "faci";
+  const map = (
+    <CampusMap
+      showGroupPins={showPins}
+      canManageStations={profile.role === "admin"}
+    />
+  );
+
+  // HOF, HOGM, Committee: the same night, eyebrow and title as their other
+  // tabs (Ops, Scores). Same map and layout; only the colours and type change.
+  if (OPS_ROLES.includes(profile.role)) {
+    return (
+      <div className={cn("gc gc-map", vxDisplay.variable, vxSlab.variable)}>
+        <div className="gc-bg" aria-hidden>
+          <i className="gc-orb gc-orb-navy" />
+          <i className="gc-orb gc-orb-pink" />
+        </div>
+        <header className="gc-top">
+          <p className="gc-eyebrow">Campus</p>
+          <h1 className="gc-title">Map</h1>
+          <p className="gc-muted">Tap the map for a full-screen view. Tap a station for details.</p>
+        </header>
+        {map}
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -22,10 +50,7 @@ export default function MapPage() {
             : "Tap the map for a full-screen view. Tap a station for details."
         }
       />
-      <CampusMap
-        showGroupPins={showPins}
-        canManageStations={profile.role === "admin"}
-      />
+      {map}
     </div>
   );
 }

@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-import { BlindBoxCard } from "@/components/BlindBoxCard";
 import { CampusMap } from "@/components/CampusMap";
 import { useProfile } from "@/components/ProfileProvider";
 import { GameControl } from "@/components/staff/game/GameControl";
@@ -28,7 +27,7 @@ function OpsOverview() {
   const [headcounts, setHeadcounts] = useState<Record<number, number>>({});
   const [view, setView] = useState<OpsView>("map");
 
-  // Home's Live floor tiles open a tab directly: /committee?view=attendance.
+  // A tab can be opened directly: /committee?view=attendance.
   useEffect(() => {
     const v = new URLSearchParams(window.location.search).get("view");
     if (v === "map" || v === "attendance" || v === "balances") setView(v);
@@ -92,11 +91,6 @@ function OpsOverview() {
               <span className="mt-1 block text-xs leading-4">{tab.desc}</span>
             </button>
           ))}
-      </div>
-
-      {/* Home's "My blind box QR" tool links here (#blindbox). */}
-      <div id="blindbox" className="scroll-mt-4">
-        <BlindBoxCard />
       </div>
 
       {view === "map" && (

@@ -9,28 +9,42 @@ import { Card } from "@/components/ui";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import type { BlindBoxAssignment, BlindBoxType } from "@/lib/types";
 
-type Row = BlindBoxAssignment & {
+export type BlindBoxRow = BlindBoxAssignment & {
   type: BlindBoxType | null;
   station: { name: string; code: string } | null;
 };
+
+type Row = BlindBoxRow;
 
 interface Shown {
   url: string;
   qr: string;
 }
 
-// "My blind box QR": ONE card with ONE QR for the signed-in account (or its
-// station: a station's GMs share one pool and one code), listing every box type
-// it holds. The same QR works until all the boxes are sold. Links are
-// recomputed by the server on demand, so showing a QR never invalidates one
-// that is already out there; only Admin's Regenerate does.
-export function BlindBoxCard() {
+/** One seller (an account or a station) and the box types it holds, with its QR once loaded. */
+export interface MyBlindBoxSeller {
+  id: number;
+  rows: BlindBoxRow[];
+  station: { name: string; code: string } | null;
+  /** At least one active, unarchived box type: false means Admin switched it off. */
+  live: boolean;
+  left: number;
+  qr: Shown | undefined;
+}
+
+// The signed-in account's blind boxes (personal + its station's shared pool),
+// grouped by seller, with each seller's QR. Used by BlindBoxCard and by Staff
+// Home's "My Blind Box" stop. Links are recomputed by the server on demand, so
+// showing a QR never invalidates one that is already out there; only Admin's
+// Regenerate does.
+export function useMyBlindBoxes() {
   const profile = useProfile();
   const supabase = useMemo(() => supabaseBrowser(), []);
   const [rows, setRows] = useState<Row[]>([]);
   const [shown, setShown] = useState<Record<number, Shown>>({});
   const [copied, setCopied] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [loaded, setLoaded] = useState(false);
 
   const load = useCallback(async () => {
     // Admin's RLS lets them read every assignment, so filter to this account's
@@ -43,6 +57,7 @@ export function BlindBoxCard() {
       .select("*, type:blind_box_types(*), station:stations(name, code)")
       .or(mine)
       .order("id");
+    setLoaded(true);
     if (err) {
       setError(err.message);
       return;
@@ -105,12 +120,29 @@ export function BlindBoxCard() {
     }
   }
 
-  if (rows.length === 0 && !error) return null;
+  // A personal account has one seller; so does its station, and a GM can have
+  // both (own boxes + the station's shared pool).
+  const bySeller = new Map<number, Row[]>();
+  for (const r of rows) bySeller.set(r.seller_id, [...(bySeller.get(r.seller_id) ?? []), r]);
+  const sellers: MyBlindBoxSeller[] = [...bySeller.entries()].map(([id, list]) => ({
+    id,
+    rows: list,
+    station: list[0].station,
+    live: list.some((r) => r.active && !r.type?.archived),
+    left: list.reduce((n, r) => n + (r.active && !r.type?.archived ? Math.max(r.quantity - r.opened, 0) : 0), 0),
+    qr: shown[list[0].id],
+  }));
 
-  // One card per seller. A personal account has one seller; so does its
-  // station, and a GM can have both (own boxes + the station's shared pool).
-  const sellers = new Map<number, Row[]>();
-  for (const r of rows) sellers.set(r.seller_id, [...(sellers.get(r.seller_id) ?? []), r]);
+  return { loaded, error, sellers, copy, copied };
+}
+
+// "My blind box QR": ONE card with ONE QR for the signed-in account (or its
+// station: a station's GMs share one pool and one code), listing every box type
+// it holds. The same QR works until all the boxes are sold.
+export function BlindBoxCard() {
+  const { error, sellers, copy, copied } = useMyBlindBoxes();
+
+  if (sellers.length === 0 && !error) return null;
 
   return (
     <div className="space-y-3">
@@ -119,20 +151,13 @@ export function BlindBoxCard() {
           {error}
         </p>
       )}
-      {[...sellers.entries()].map(([sellerId, list]) => {
-        const first = list[0];
-        const live = list.some((r) => r.active && !r.type?.archived);
-        const totalLeft = list.reduce(
-          (n, r) => n + (r.active && !r.type?.archived ? Math.max(r.quantity - r.opened, 0) : 0),
-          0
-        );
-        const s = shown[first.id];
+      {sellers.map(({ id: sellerId, rows: list, station, live, left: totalLeft, qr: s }) => {
         return (
           <Card key={sellerId} className="text-center">
             <h2 className="font-semibold">My blind box QR</h2>
             <p className="text-sm text-ink-faint">
-              {first.station
-                ? `Station ${first.station.name} — shared with this station's other GMs`
+              {station
+                ? `Station ${station.name} — shared with this station's other GMs`
                 : "Your own boxes"}
             </p>
             <ul className="mx-auto mt-2 max-w-sm space-y-1 text-sm text-ink-faint">
