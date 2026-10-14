@@ -199,7 +199,7 @@ export function TypesTab({ data, onError, onNotice }: TabProps) {
               <th className="px-3 py-2.5">Price</th>
               <th className="px-3 py-2.5">Stock</th>
               <th className="px-3 py-2.5">Unassigned</th>
-              <th className="px-3 py-2.5">Opened</th>
+              <th className="px-3 py-2.5">Sold</th>
               <th className="px-3 py-2.5">Left</th>
               <th className="px-3 py-2.5" />
             </tr>

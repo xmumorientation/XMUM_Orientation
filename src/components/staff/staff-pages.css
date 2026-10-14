@@ -4,75 +4,69 @@
    header and .sp to <main> on these pages. Visual only: it re-maps the light
    utility classes the pages already use, so markup and behaviour stay. */
 
-/* ── Shell: desktop sidebar, phase timer, drawer ─────────────────────────── */
-.staff-dashboard-shell > aside nav a[href="/dashboard"]:not([aria-current="page"]),
-.sd-drawer nav a[href="/dashboard"]:not([aria-current="page"]) { background: transparent; color: #c4d6ee; }
-.staff-dashboard-shell > aside nav a[aria-current="page"],
-.sd-drawer nav a[aria-current="page"] { background: #0b2246; color: #0dfcfd; box-shadow: none; }
-.staff-dashboard-shell > aside nav a > span:first-child { background: #0b2246; color: #0dfcfd; }
-.staff-dashboard-shell > aside .chip { background: transparent; border: 0; padding: 0; color: #c4d6ee; font-size: 14px; }
-.staff-dashboard-shell > aside .text-ink-faint { color: #a4b8d1; }
-.staff-dashboard-shell > aside .border-paper-200 { border-color: #16305a; }
-.staff-dashboard-shell .app-phase-timer:not(.is-endgame) { background: #0b2246; color: #eef5ff; }
+/* ── Shell: phase timer, drawer ──────────────────────────────────────────── */
+.sd-drawer nav a[href="/dashboard"]:not([aria-current="page"]) { background: transparent; color: var(--sp-text-2); }
+.sd-drawer nav a[aria-current="page"] { background: var(--sp-raised); color: #0dfcfd; box-shadow: none; }
+.staff-dashboard-shell .app-phase-timer:not(.is-endgame) { background: var(--sp-raised); color: var(--sp-text); }
 .staff-dashboard-shell .app-phase-timer > span:first-child { font-size: 12px; color: #0dfcfd; }
 
 /* ── Phone header on subpages: back to Home left, role and menu right ──── */
 .sp-header-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 6px 8px 6px 4px; min-height: 56px; }
 .sp-back {
   display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 12px 0 8px;
-  border-radius: 10px; color: #eef5ff; font-size: 16px; font-weight: 600; text-decoration: none;
+  border-radius: 10px; color: var(--sp-text); font-size: 16px; font-weight: 600; text-decoration: none;
 }
-.sp-back:hover { background: #0b2246; }
+.sp-back:hover { background: var(--sp-raised); }
 .sp-header-end { display: flex; align-items: center; gap: 4px; min-width: 0; }
-.sp-role { font-size: 14px; color: #c4d6ee; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sp-role { font-size: 14px; color: var(--sp-text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .staff-dashboard-shell .sp-header .sp-menu-btn {
   display: grid; place-items: center; width: 44px; height: 44px; flex: none;
-  border: 0; border-radius: 10px; background: transparent; color: #eef5ff;
+  border: 0; border-radius: 10px; background: transparent; color: var(--sp-text);
 }
-.staff-dashboard-shell .sp-header .sp-menu-btn:hover { background: #0b2246; }
+.staff-dashboard-shell .sp-header .sp-menu-btn:hover { background: var(--sp-raised); }
 .sp-header :is(a, button):focus-visible { outline: 2px solid #0dfcfd; outline-offset: 2px; }
 
 /* ── Page content ────────────────────────────────────────────────────────── */
-.sp { color: #eef5ff; font-family: var(--font-nexus-body), Outfit, sans-serif; color-scheme: dark; }
-.sp h1 { font-family: var(--font-vx-display), Georgia, serif; font-weight: 400; font-size: clamp(30px, 8vw, 46px); line-height: 1.15; letter-spacing: 0; color: #eef5ff; }
+.sp { color: var(--sp-text); font-family: var(--font-nexus-body), Outfit, sans-serif; color-scheme: dark; }
+.sp h1 { font-family: var(--font-vx-display), Georgia, serif; font-weight: 400; font-size: clamp(30px, 8vw, 46px); line-height: 1.15; letter-spacing: 0; color: var(--sp-text); }
 .sp .starlight-rule { background: #0dfcfd; width: 32px; height: 2px; }
-.sp :is(.text-ink, .text-gray-900, .text-gray-800) { color: #eef5ff; }
-.sp :is(.text-ink-soft, .text-gray-700, .text-gray-600) { color: #c4d6ee; }
-.sp :is(.text-ink-faint, .text-ink-muted, .text-gray-500) { color: #a4b8d1; }
+.sp :is(.text-ink, .text-gray-900, .text-gray-800) { color: var(--sp-text); }
+.sp :is(.text-ink-soft, .text-gray-700, .text-gray-600) { color: var(--sp-text-2); }
+.sp :is(.text-ink-faint, .text-ink-muted, .text-gray-500) { color: var(--sp-faint); }
 .sp .text-brand-1 { color: var(--sd-accent-text, #0dfcfd); }
 
 /* Surfaces: cards, raised items inside cards, and inset trays. */
-.sp :is(.card, .bg-white\/90, .bg-paper-50, .bg-paper-50\/95, .bg-paper-100) { background: #071a30; color: #eef5ff; border-color: #25405e; box-shadow: none; }
-.sp .bg-white { background: #0b2246; color: #eef5ff; border-color: #34516e; box-shadow: none; }
-.sp :is(.bg-paper-200, .bg-paper-200\/80, .bg-gray-100, .bg-gray-200) { background: #030b1c; border-color: #25405e; }
+.sp :is(.card, .bg-white\/90, .bg-paper-50, .bg-paper-50\/95, .bg-paper-100) { background: var(--sp-card); color: var(--sp-text); border-color: var(--sp-line); box-shadow: none; }
+.sp .bg-white { background: var(--sp-raised); color: var(--sp-text); border-color: var(--sp-line-2); box-shadow: none; }
+.sp :is(.bg-paper-200, .bg-paper-200\/80, .bg-gray-100, .bg-gray-200) { background: var(--sp-bg); border-color: var(--sp-line); }
 .sp .card { border-radius: 16px; }
-.sp :is(.border-paper-200, .border-paper-200\/80, .border-paper-300, .border-gray-200, .border-gray-300) { border-color: #25405e; }
-.sp :is(.divide-paper-200, .divide-gray-200) > :not([hidden]) ~ :not([hidden]) { border-color: #25405e; }
+.sp :is(.border-paper-200, .border-paper-200\/80, .border-paper-300, .border-gray-200, .border-gray-300) { border-color: var(--sp-line); }
+.sp :is(.divide-paper-200, .divide-gray-200) > :not([hidden]) ~ :not([hidden]) { border-color: var(--sp-line); }
 .sp :is(.shadow-card, .shadow-raised, .shadow-floating) { box-shadow: none; }
-.sp .hover\:bg-white\/50:hover, .sp .hover\:bg-paper-100:hover { background: #0b2246; }
-.sp a.card:hover { border-color: #34516e; background: #0b2246; }
+.sp .hover\:bg-white\/50:hover, .sp .hover\:bg-paper-100:hover { background: var(--sp-raised); }
+.sp a.card:hover { border-color: var(--sp-line-2); background: var(--sp-raised); }
 /* Selected option in a tray of choices (task tabs, toggles). */
 .sp :is(button, a)[aria-pressed="true"], .sp :is(button, a)[aria-selected="true"] { box-shadow: inset 0 0 0 2px #0dfcfd; }
 
 /* Form controls: 16px so iOS does not zoom, dark fields, custom chevron. */
 .sp :is(.input, input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]), select, textarea) {
-  background-color: #030b1c; color: #eef5ff; border-color: #34516e; font-size: 16px; color-scheme: dark;
+  background-color: var(--sp-bg); color: var(--sp-text); border-color: var(--sp-line-2); font-size: 16px; color-scheme: dark;
 }
-.sp :is(.input, input, textarea)::placeholder { color: #8ba3c4; opacity: 1; }
+.sp :is(.input, input, textarea)::placeholder { color: var(--sp-mute); opacity: 1; }
 .sp select {
   -webkit-appearance: none; appearance: none; padding-right: 44px;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23c4d6ee' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   background-repeat: no-repeat; background-position: right 14px center; background-size: 18px 18px;
 }
-.sp select option { background: #071a30; color: #eef5ff; }
+.sp select option { background: var(--sp-card); color: var(--sp-text); }
 .sp :is(.input, select, textarea):focus { border-color: #0dfcfd; box-shadow: 0 0 0 3px rgb(13 252 253 / 25%); outline: none; }
-.sp .label { color: #c4d6ee; font-size: 14px; }
+.sp .label { color: var(--sp-text-2); font-size: 14px; }
 
 /* Buttons */
 .sp .btn-primary { background: #f2ff0b; background-image: none; color: #111; box-shadow: none; }
 .sp .btn-primary:hover { background: #e6f000; }
-.sp .btn-secondary { background: #0b2246; border-color: #34516e; color: #eef5ff; box-shadow: none; }
-.sp .btn-secondary:hover { background: #16305a; transform: none; }
+.sp .btn-secondary { background: var(--sp-raised); border-color: var(--sp-line-2); color: var(--sp-text); box-shadow: none; }
+.sp .btn-secondary:hover { background: var(--sp-line-3); transform: none; }
 .sp .btn:disabled, .sp button:disabled { opacity: 0.5; }
 
 /* Status colours re-tuned for navy (all text >= 4.5:1). */
@@ -87,5 +81,5 @@
 .sp :is(.text-green-600, .text-green-700, .text-green-800, .text-green-900) { color: #86efac; }
 .sp :is(.text-amber-500, .text-amber-600, .text-amber-700, .text-amber-800, .text-amber-900) { color: #fcd34d; }
 .sp .chip { font-size: 13px; }
-.sp th { color: #a4b8d1; font-weight: 500; }
-.sp table { color: #eef5ff; }
+.sp th { color: var(--sp-faint); font-weight: 500; }
+.sp table { color: var(--sp-text); }

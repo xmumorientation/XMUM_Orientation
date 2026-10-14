@@ -1,4 +1,4 @@
--- Migration 0071: demo NFC scan, and resetting a lightbulb.
+-- Migration 0084: demo NFC scan, and resetting a lightbulb.
 --
 -- For testing the map's Lightbulbs view without the physical NFC cards.
 --
@@ -10,7 +10,8 @@
 --   bulb and one bulb per group. Audit-logged as projector.demo_activate.
 -- * fn_admin_reset_projector(location): Admin turns a bulb off again (lit by
 --   a demo, a real scan or the Guardian). It does not free a used NFC token;
---   reset tokens on Admin -> NFC if needed.
+--   reset tokens on Admin -> NFC if needed. It also clears test_run_id (0081),
+--   so a bulb lit by an Admin NFC test run can be turned off here too.
 
 insert into public.game_config (key, value)
 values ('nfc_demo_mode', 'false'::jsonb)
@@ -68,7 +69,8 @@ begin
   end if;
 
   update public.projectors
-     set activated_by_group = null, activated_at = null, activated_manually = false
+     set activated_by_group = null, activated_at = null, activated_manually = false,
+         test_run_id = null
    where location = p_location;
 
   perform public.audit('projector.reset', 'projector:' || p_location,

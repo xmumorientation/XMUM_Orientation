@@ -6,7 +6,9 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 
 import { FreshieItems } from "@/components/freshie/items/FreshieItems";
 import { DEFAULT_SCENARIO, SAMPLE_SCENARIOS, sampleItems, withLastTrackPiece, type SampleScenario } from "@/components/freshie/items/sampleData";
+import { boxGroupsOf, useBlindBoxes } from "@/components/freshie/items/useBlindBoxes";
 import type { BoxKind, BoxReward, ItemsData } from "@/components/freshie/items/types";
+import { useItemsData } from "@/components/freshie/items/useItemsData";
 
 import { PuzzleBoard } from "@/components/PuzzleBoard";
 import { useProfile } from "@/components/ProfileProvider";
@@ -28,22 +30,83 @@ export default function InventoryPage() {
   if (profile.role === "freshie" || profile.role === "faci") {
     return (
       <Suspense>
-        <ItemsPreview />
+        <FreshieItemsRoute />
       </Suspense>
     );
   }
   return <GroupInventory />;
 }
 
-// SAMPLE DATA: Freshie and facilitator Items page. Everything shown here comes
-// from sampleData.ts, not from the game. TODO: wire to the bonding-session game
-// data before the event. With no ?demo it plays "complete": the last T&F
-// piece arrives after a moment, with a Replay button. ?demo=day1|day2|ready|
-// taken|won picks another state. Opening a box only changes the sample in
-// this browser. In the sample, Freshies can open boxes too so the blind box
-// flow can be demoed; on live data only the Faci can.
-function ItemsPreview() {
+/** Live data by default; ?demo=… plays the sample instead (kept for previews and the Replay demo). */
+function FreshieItemsRoute() {
+  const params = useSearchParams();
+  return params.get("demo") ? <ItemsPreview /> : <LiveItems />;
+}
+
+// LIVE: the group's real tokens, puzzle pieces, projectors, phase and history
+// (useItemsData), and its real BLIND BOXES: every box the group has bought by
+// scanning a seller's QR sits on the shelf, sealed, and the group's Freshie
+// login opens it from here (fn_bb_open). A Faci sees the boxes but cannot
+// open them. The buy and open token changes show in Activity through the
+// token log.
+//
+// Replay demo is always there: it shows the sample for a moment (marked
+// Sample data), the T&F key going from 4 to 5 pieces, then returns to the
+// group's live data.
+const REPLAY_PIECE_MS = 1500;
+const REPLAY_BACK_MS = 7000;
+
+function LiveItems() {
   const profile = useProfile();
+  const { group } = useGroup();
+  const { data } = useItemsData();
+  const blind = useBlindBoxes(group?.id ?? profile.group_id ?? null, true);
+  const [demo, setDemo] = useState<ItemsData | null>(null);
+  const [run, setRun] = useState(0);
+
+  useEffect(() => {
+    if (!run) return;
+    const piece = window.setTimeout(() => setDemo((d) => (d ? withLastTrackPiece(d) : d)), REPLAY_PIECE_MS);
+    const back = window.setTimeout(() => setDemo(null), REPLAY_BACK_MS);
+    return () => {
+      window.clearTimeout(piece);
+      window.clearTimeout(back);
+    };
+  }, [run]);
+
+  function replay() {
+    setDemo(sampleItems(DEFAULT_SCENARIO));
+    setRun((n) => n + 1);
+  }
+
+  const live: ItemsData = useMemo(() => ({ ...data, boxes: boxGroupsOf(blind.claims) }), [data, blind.claims]);
+
+  return (
+    <>
+      {/* A new key per run remounts the page, so only the 5th piece animates in
+          (not every piece that differs between live and sample data). */}
+      <FreshieItems
+        key={demo ? `demo-${run}` : "live"}
+        data={demo ? { ...demo, group: data.group } : live}
+        groupColor={group?.color}
+        // Only the group's Freshie login opens real boxes; a Faci sees them.
+        canOpenBoxes={demo === null && profile.role === "freshie"}
+        onOpenBox={blind.openBox}
+        sample={demo !== null}
+      />
+      <button type="button" className="fi-replay" onClick={replay}>
+        Replay demo
+      </button>
+    </>
+  );
+}
+
+// SAMPLE DATA (?demo=…): everything shown comes from sampleData.ts, not from
+// the game. ?demo=complete plays the last T&F piece arriving after a moment,
+// with a Replay button; ?demo=day1|day2|ready|taken|won picks another state.
+// Opening a box only changes the sample in this browser. In the sample,
+// Freshies can open boxes too so the blind box flow can be demoed.
+function ItemsPreview() {
   const { group } = useGroup();
   const params = useSearchParams();
   const asked = params.get("demo");
@@ -66,7 +129,7 @@ function ItemsPreview() {
   // Sample rules: a standard box gives 1–2 tokens; a gold box gives 4–6
   // tokens, or (1 in 3, on Day 2) a piece the group is still missing.
   // DEMO: the box count is not reduced, so boxes can be opened again and again.
-  async function openBox(kind: BoxKind): Promise<BoxReward | null> {
+  async function openSampleBox(kind: BoxKind): Promise<BoxReward | null> {
     const reward = sampleReward(kind, data);
     const amount = reward.type === "tokens" ? reward.amount : 0;
     setData((d) => ({
@@ -76,14 +139,14 @@ function ItemsPreview() {
         reward.type === "piece"
           ? { ...d.pieces, [reward.loc]: [...d.pieces[reward.loc], reward.piece].sort((x, y) => x - y) }
           : d.pieces,
-      boxes: { ...d.boxes, [kind]: { unopened: d.boxes[kind].unopened, opened: [...d.boxes[kind].opened, amount] } },
+      boxes: d.boxes.map((b) => (b.key === kind ? { ...b, opened: [...b.opened, amount] } : b)),
       history: [
         {
           id: `open-${Date.now()}`,
           kind: "box",
           day: d.phase === "day1" ? 1 : 2,
           title: `Opened a ${kind} box`,
-          detail: reward.type === "piece" ? `Got {${reward.loc}} piece #${reward.piece}` : "Opened by your Faci",
+          detail: reward.type === "piece" ? `Got {${reward.loc}} piece #${reward.piece}` : "Sample box",
           amount,
           time: new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }),
         },
@@ -99,7 +162,7 @@ function ItemsPreview() {
         data={view}
         groupColor={group?.color}
         canOpenBoxes
-        onOpenBox={openBox}
+        onOpenBox={openSampleBox}
         sample
       />
       {scenario === "complete" && (

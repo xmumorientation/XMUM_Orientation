@@ -18,7 +18,7 @@ interface QrPreview {
   dataUrl: string;
 }
 
-// One row per assignment: who holds which box type, how many were opened, the
+// One row per assignment: who holds which box type, how many were sold, the
 // link and QR Admin can preview (previewing never changes anything), and the
 // controls: set quantity, regenerate the QR, switch off, remove.
 export function SellersTab({ data, onError, onNotice }: TabProps) {
@@ -65,7 +65,7 @@ export function SellersTab({ data, onError, onNotice }: TabProps) {
   }
 
   async function remove(a: BlindBoxAssignment) {
-    if (!window.confirm(`Remove ${data.sellerName(a)}'s boxes? The unopened boxes return to stock.`)) {
+    if (!window.confirm(`Remove ${data.sellerName(a)}'s boxes? The boxes not sold yet return to stock.`)) {
       return;
     }
     await call("fn_bb_set_quantity", { p_assignment_id: a.id, p_quantity: 0 }, "Removed.");
@@ -74,7 +74,7 @@ export function SellersTab({ data, onError, onNotice }: TabProps) {
   async function regenerate(a: BlindBoxAssignment) {
     if (
       !window.confirm(
-        `Regenerate the QR for ${data.sellerName(a)}? Any QR already shown or printed stops working. Boxes already opened are unaffected.`
+        `Regenerate the QR for ${data.sellerName(a)}? This is the seller's one QR for all their box types: any QR already shown or printed stops working. Boxes already bought are unaffected.`
       )
     ) {
       return;
@@ -140,7 +140,7 @@ export function SellersTab({ data, onError, onNotice }: TabProps) {
               <th className="px-4 py-2.5">Seller</th>
               <th className="px-3 py-2.5">Type</th>
               <th className="px-3 py-2.5">Assigned</th>
-              <th className="px-3 py-2.5">Opened</th>
+              <th className="px-3 py-2.5">Sold</th>
               <th className="px-3 py-2.5">Left</th>
               <th className="px-3 py-2.5">Link</th>
               <th className="px-3 py-2.5" />

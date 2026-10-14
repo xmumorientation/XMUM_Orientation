@@ -152,7 +152,91 @@ export function HeadcountTable() {
       <ErrorBanner message={error} />
       <SuccessBanner message={notice} />
 
-      <Card className="overflow-x-auto p-0">
+      {/* Phone: one compact card per group (the table below needs about 560px). */}
+      <div className="space-y-2 md:hidden">
+        {groups.map((g) => {
+          const current = counts[g.id];
+          const mismatch =
+            current &&
+            current.local_count !== null &&
+            current.international_count !== null &&
+            current.local_count + current.international_count !== current.headcount;
+          return (
+            <Card key={g.id} className="space-y-3 p-3">
+              <div className="flex items-center justify-between gap-2">
+                <span className="flex items-center gap-2 font-semibold">
+                  <span className="h-3 w-3 shrink-0 rounded-full" style={{ background: g.color || "#008CFF" }} aria-hidden />
+                  {g.name}
+                </span>
+                {current && (
+                  <button
+                    type="button"
+                    disabled={savingId === g.id}
+                    onClick={() => clear(g.id)}
+                    className="flex min-h-[36px] min-w-[36px] items-center justify-center text-red-500 disabled:opacity-50"
+                    aria-label={`Clear ${g.name} headcount`}
+                  >
+                    <Trash2 size={16} strokeWidth={1.75} />
+                  </button>
+                )}
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                {FIELDS.map((f) => {
+                  const key = `${g.id}:${f.key}`;
+                  const cur = valueOf(current, f.key);
+                  return (
+                    <label key={f.key} className="block text-xs font-semibold text-ink-faint">
+                      {f.label === "International" ? "Intl." : f.label}
+                      <input
+                        type="number"
+                        min={0}
+                        inputMode="numeric"
+                        aria-label={`${g.name} ${f.label.toLowerCase()} headcount`}
+                        placeholder="-"
+                        disabled={savingId === g.id}
+                        className={cn(
+                          "input mt-1 min-h-[44px] w-full text-base tabular-nums",
+                          drafts[key] !== undefined && "ring-2 ring-amber-400"
+                        )}
+                        value={drafts[key] ?? (cur !== null ? String(cur) : "")}
+                        onChange={(e) => setDrafts((d) => ({ ...d, [key]: e.target.value }))}
+                        onBlur={() => save(g.id, f.key)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                          if (e.key === "Escape") setDrafts((d) => without(d, key));
+                        }}
+                      />
+                    </label>
+                  );
+                })}
+              </div>
+              <p className="text-xs text-ink-faint">
+                {current ? `Counted ${new Date(current.updated_at).toLocaleString()}` : "Not counted yet"}
+              </p>
+              {mismatch && (
+                <p className="text-xs text-amber-600">
+                  Local + International = {current.local_count! + current.international_count!}, differs from Total
+                </p>
+              )}
+            </Card>
+          );
+        })}
+        <Card className="flex items-center justify-between p-3 text-sm font-bold">
+          <span>Total</span>
+          <span className="flex gap-4 tabular-nums">
+            {sums.map((x) => (
+              <span key={x.key} className="text-right">
+                {x.sum}
+                <span className="block text-[11px] font-normal text-ink-faint">
+                  {x.key === "international" ? "Intl." : FIELDS.find((f) => f.key === x.key)?.label}
+                </span>
+              </span>
+            ))}
+          </span>
+        </Card>
+      </div>
+
+      <Card className="hidden overflow-x-auto p-0 md:block">
         <table className="w-full min-w-[560px] text-left text-sm">
           <thead>
             <tr className="border-b border-paper-200 text-xs font-bold text-ink-faint">

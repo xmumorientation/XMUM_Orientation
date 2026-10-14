@@ -1,10 +1,12 @@
 "use client";
 
-import { Camera, Check, Copy, Flashlight, Globe, ImageUp, RotateCcw, ScanLine, VideoOff, X } from "lucide-react";
+import { Camera, Check, Copy, ExternalLink, Flashlight, Globe, ImageUp, RotateCcw, ScanLine, ShieldAlert, VideoOff, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type QrScannerType from "qr-scanner";
+
+import { classifyScan, type ScanRoute } from "@/lib/scan-route";
 
 // Full-screen web QR scanner UI. Opens the rear camera, decodes a QR code
 // with `qr-scanner`, and shows the result. Photo upload is the fallback when
@@ -15,19 +17,21 @@ import type QrScannerType from "qr-scanner";
 //   - Homepage Welcome section, as a DEV-ONLY UI/UX preview (`preview` prop).
 //     See the DEV PREVIEW note in components/home/sections/WelcomeSection.tsx.
 //
-// A detected blind-box QR sends the Freshie to its /blindbox?t=<token> link.
-// That page shows the confirm screen; nothing is paid and no box is deducted
-// until the Freshie taps Open there. In `preview` mode (homepage) it only
-// classifies and shows the result.
+// A general scanner: any QR code can be scanned. See lib/scan-route.ts.
+//   - a link to this site (blind box, NFC card, group pass, ...) opens inside
+//     the app; the page itself checks the code. A blind box page only
+//     previews: nothing is paid until BUY is tapped there.
+//   - a group login link (/join) is refused, it would sign the group out.
+//   - a link to another site is shown with its address and opened only on tap.
+//   - plain text is shown and can be copied.
+// In `preview` mode (homepage) it only classifies and shows the result.
 //
 // Testing on a phone (development only — not needed once deployed on HTTPS):
 //   - Camera access requires HTTPS. `http://<LAN-IP>:3000` will not work.
 //     Run `npm run dev`, then `cloudflared tunnel --url http://localhost:3000`
 //     and open the printed https://*.trycloudflare.com URL on the phone.
-//   - Set NEXT_PUBLIC_SITE_URL in .env.local to that tunnel URL and restart
-//     the dev server, otherwise blind-box QRs (minted with that base URL) will
-//     not match window.location.origin and show "Not a Vortexa blind box".
-//     Revert NEXT_PUBLIC_SITE_URL afterwards; production uses the real domain.
+//   - Links on this site are recognised by window.location.origin AND by
+//     NEXT_PUBLIC_SITE_URL, so a QR minted with either opens in the app.
 
 type Phase =
   | "starting"
@@ -37,28 +41,13 @@ type Phase =
   | "no-camera"
   | "in-app";
 
-type Detected = { raw: string; kind: "blindbox" | "other" };
+type Detected = { raw: string; route: ScanRoute };
 
 // Social apps' built-in browsers often cannot open the camera.
 const IN_APP_UA = /MicroMessenger|Instagram|FBAN|FBAV|XHSDiscover|xiaohongshu|Line\/|musical_ly|BytedanceWebview|TikTok/i;
 
-/** Blind-box QRs encode `<our site>/blindbox?t=<token>` (see lib/blindbox.ts).
- *  Returns the in-app path to open, or null for anything else (including links
- *  to another site, which must never be followed). */
-function blindBoxPath(raw: string): string | null {
-  try {
-    const url = new URL(raw);
-    if (url.origin === window.location.origin && url.pathname === "/blindbox" && url.searchParams.get("t")) {
-      return url.pathname + url.search;
-    }
-  } catch {
-    // Not a URL.
-  }
-  return null;
-}
-
-function classify(raw: string): Detected["kind"] {
-  return blindBoxPath(raw) ? "blindbox" : "other";
+function ownOrigins(): string[] {
+  return [window.location.origin, process.env.NEXT_PUBLIC_SITE_URL ?? ""];
 }
 
 type Props = {
@@ -88,10 +77,10 @@ export function QrScannerScreen({ onClose, closeHref = "/dashboard", preview = f
     scannerRef.current?.stop();
     setFlashOn(false);
     navigator.vibrate?.(60);
-    setDetected({ raw, kind: classify(raw) });
+    const route = classifyScan(raw, ownOrigins());
+    setDetected({ raw, route });
     setPhase("detected");
-    const path = blindBoxPath(raw);
-    if (path && !preview) router.push(path);
+    if (route.kind === "app" && !preview) router.push(route.path);
   }, [preview, router]);
 
   const loadLib = useCallback(async () => {
@@ -155,6 +144,16 @@ export function QrScannerScreen({ onClose, closeHref = "/dashboard", preview = f
       handleResult(r.data);
     } catch {
       setUploadError("No QR code found in that photo. Try again closer and with more light.");
+    }
+  }
+
+  async function copyText(text: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setCopied(false);
     }
   }
 
@@ -271,22 +270,62 @@ export function QrScannerScreen({ onClose, closeHref = "/dashboard", preview = f
       {phase === "detected" && detected && (
         <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-[#07060b]/85 px-8 text-center backdrop-blur-sm" role="status">
           <span
-            className={`flex h-24 w-24 items-center justify-center rounded-full ${detected.kind === "blindbox" ? "bg-[#0DFCFD] shadow-[0_0_40px_rgba(13,252,253,0.45)]" : "bg-[#FC9E3D]"}`}
+            className={`flex h-24 w-24 items-center justify-center rounded-full ${
+              detected.route.kind === "app"
+                ? "bg-[#0DFCFD] shadow-[0_0_40px_rgba(13,252,253,0.45)]"
+                : detected.route.kind === "blocked"
+                  ? "bg-[#FE06AB]"
+                  : "bg-[#FC9E3D]"
+            }`}
           >
-            {detected.kind === "blindbox" ? <Check size={48} strokeWidth={3} className="text-[#06121a]" /> : <ScanLine size={40} className="text-black" />}
+            {detected.route.kind === "app" ? (
+              <Check size={48} strokeWidth={3} className="text-[#06121a]" />
+            ) : detected.route.kind === "blocked" ? (
+              <ShieldAlert size={40} className="text-white" />
+            ) : detected.route.kind === "link" ? (
+              <ExternalLink size={40} className="text-black" />
+            ) : (
+              <ScanLine size={40} className="text-black" />
+            )}
           </span>
           <h1 className="mt-2 text-2xl font-black">
-            {detected.kind === "blindbox" ? "Blind box QR detected!" : "Not a Vortexa blind box"}
+            {detected.route.kind === "app"
+              ? `${detected.route.label} QR detected!`
+              : detected.route.kind === "blocked"
+                ? "Can't open this here"
+                : detected.route.kind === "link"
+                  ? "A link to another site"
+                  : "QR code scanned"}
           </h1>
           <p className="max-w-xs text-sm text-white/70">
-            {preview
-              ? "Preview only — scanning works, but nothing is claimed yet."
-              : detected.kind === "blindbox"
-              ? "Opening your blind box…"
-              : "This QR code isn't from a committee member. Look for a Vortexa blind box QR."}
+            {detected.route.kind === "app"
+              ? preview
+                ? "Preview only — scanning works, but nothing is opened."
+                : "Opening it…"
+              : detected.route.kind === "blocked"
+                ? detected.route.reason
+                : detected.route.kind === "link"
+                  ? "This is not a Vortexa link. Only open it if you trust it."
+                  : "This QR code holds plain text."}
           </p>
-          <p className="max-w-xs break-all rounded-xl bg-white/5 px-3 py-2 font-mono text-[11px] text-white/50">{detected.raw}</p>
+          {detected.route.kind !== "blocked" && (
+            <p className="max-w-xs break-all rounded-xl bg-white/5 px-3 py-2 font-mono text-[11px] text-white/50">{detected.raw}</p>
+          )}
           <div className="mt-4 flex w-full max-w-xs flex-col gap-2">
+            {detected.route.kind === "link" && (
+              <button
+                type="button"
+                onClick={() => window.open((detected.route as { url: string }).url, "_blank", "noopener,noreferrer")}
+                className="flex min-h-[48px] items-center justify-center gap-2 rounded-full bg-[#0DFCFD] px-5 text-sm font-bold text-black transition active:scale-[0.98]"
+              >
+                <ExternalLink size={18} /> Open link
+              </button>
+            )}
+            {(detected.route.kind === "link" || detected.route.kind === "text") && (
+              <button type="button" onClick={() => copyText(detected.raw)} className={backClass}>
+                <Copy size={16} className="mr-2" /> {copied ? "Copied" : "Copy"}
+              </button>
+            )}
             <button
               type="button"
               onClick={startCamera}

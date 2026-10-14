@@ -2,8 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-import { BlindBoxCard } from "@/components/BlindBoxCard";
 import { CampusMap } from "@/components/CampusMap";
+import { useProfile } from "@/components/ProfileProvider";
+import { FaciControl } from "@/components/staff/faci/FaciControl";
+import { GameControl } from "@/components/staff/game/GameControl";
 import { Card, PageTitle } from "@/components/ui";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import type { Group } from "@/lib/types";
@@ -11,13 +13,28 @@ import { cn } from "@/lib/utils";
 
 type OpsView = "map" | "attendance" | "balances";
 
+// Ops. HOGM runs the game here (Game control: Admin's game console). HOF and
+// Committee keep the overview below.
+export default function CommitteePage() {
+  const profile = useProfile();
+  if (profile.role === "hogm") return <GameControl />;
+  if (profile.role === "hof") return <FaciControl />;
+  return <OpsOverview />;
+}
+
 // Committee-tier operations: live map (FR-3.4), attendance completion
 // (FR-2.3), blind-box QR card, register counter (FR-12.1).
-export default function CommitteePage() {
+function OpsOverview() {
   const supabase = useMemo(() => supabaseBrowser(), []);
   const [groups, setGroups] = useState<Group[]>([]);
   const [headcounts, setHeadcounts] = useState<Record<number, number>>({});
   const [view, setView] = useState<OpsView>("map");
+
+  // A tab can be opened directly: /committee?view=attendance.
+  useEffect(() => {
+    const v = new URLSearchParams(window.location.search).get("view");
+    if (v === "map" || v === "attendance" || v === "balances") setView(v);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -78,8 +95,6 @@ export default function CommitteePage() {
             </button>
           ))}
       </div>
-
-      <BlindBoxCard />
 
       {view === "map" && (
         <section>

@@ -1,25 +1,27 @@
 "use client";
 
-import { ArrowLeft, Menu, PanelLeftClose, PanelLeftOpen, X } from "lucide-react";
+import { ArrowLeft, Menu, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { nexusBody, vxDisplay } from "@/components/home/fonts";
 import { FreshieTabBar } from "@/components/freshie/FreshieTabBar";
-import { themeFromColor } from "@/components/freshie/groupTheme";
+import { themeFromColor, VORTEXA_THEME } from "@/components/freshie/groupTheme";
 import { ShellMenuProvider } from "@/components/ShellMenu";
 import { NavIcon } from "@/components/NavIcon";
 import { NewItemToast } from "@/components/NewItemToast";
-import { FaciLocationBanner } from "@/components/FaciLocationTracker";
+import { OpsHeader } from "@/components/staff/OpsHeader";
 import { PhaseTimer } from "@/components/PhaseTimer";
+import { FaciLocationBanner } from "@/components/FaciLocationTracker";
 import { useConfig } from "@/components/useConfig";
 import { useProfile } from "@/components/ProfileProvider";
 import { useGroup } from "@/components/useGroup";
 import { Dialog, DialogClose, DialogContent } from "@/components/ui/Dialog";
 import { Monogram } from "@/components/ui/Monogram";
+import { TopNav } from "@/components/TopNav";
 import { supabaseBrowser } from "@/lib/supabase/client";
-import { ROLE_LABELS, type UserRole } from "@/lib/types";
+import { OPS_ROLES, ROLE_LABELS, type UserRole } from "@/lib/types";
 import { cn, hexToRgbChannels } from "@/lib/utils";
 
 import "@/components/staff/staff-dashboard.css";
@@ -112,20 +114,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { brand } = useConfig();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [collapsed, setCollapsed] = useState(false);
 
   const isFreshie = profile.role === "freshie";
   const isFaci = profile.role === "faci";
   const isAdmin = profile.role === "admin";
+  // HOF, HOGM, Committee: Freshie-style home and tab bar in the Welcome page colours.
+  const isOps = OPS_ROLES.includes(profile.role);
   const isStaffDashboard = !isFreshie && pathname === "/dashboard";
   // Every Committee, Faci, GM, HOF, HOGM, Guardian GM and Admin page uses the
   // dark staff design. The map and Items pages keep their own design.
+  // The ops crew's map is the Ops page's map, so it gets the same dark design.
   const keepsOwnDesign =
-    pathname === "/map" || pathname.startsWith("/map/") || pathname.startsWith("/inventory");
+    (!isOps && (pathname === "/map" || pathname.startsWith("/map/"))) || pathname.startsWith("/inventory");
   const isStaffArea = !isFreshie && !keepsOwnDesign;
   const isStaffSubpage = isStaffArea && !isStaffDashboard;
-  // Only the admin account can shrink the sidebar to icons.
-  const slim = isAdmin && collapsed;
+  // Roles whose subpages use Home's header (OpsHeader) instead of the staff phone header.
+  const hasOpsHeader = profile.role === "hogm" || profile.role === "hof";
   const items = NAV.filter((n) => n.roles.includes(profile.role)).map((item) =>
     isFaci && item.href === "/map" ? { ...item, href: "/checkin" } : item
   );
@@ -134,25 +138,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   // Home, Schedule and Items hide the light mobile header for both roles.
   const { group } = useGroup();
   const groupTheme = isFreshie || isFaci ? themeFromColor(group?.color) : null;
+  // Only the --fh-* night colours; --brand-1 stays the brand so light pages (map) keep theirs.
+  const fhTheme = groupTheme ?? (isOps ? VORTEXA_THEME : null);
   const isNight = isStaffDashboard || (
     (isFreshie || isFaci) &&
     (pathname === "/dashboard" || pathname === "/schedule" || pathname === "/inventory"));
-  const showTabBar = (isFreshie || isFaci) && !(isFreshie && pathname === "/scan");
-
-  useEffect(() => {
-    try {
-      setCollapsed(localStorage.getItem("sidebar-collapsed") === "1");
-    } catch {}
-  }, []);
-
-  function toggleCollapsed() {
-    setCollapsed((c) => {
-      try {
-        localStorage.setItem("sidebar-collapsed", c ? "0" : "1");
-      } catch {}
-      return !c;
-    });
-  }
+  const showTabBar = (isFreshie || isFaci || isOps) && !(isFreshie && pathname === "/scan");
 
   // Close the drawer on route change so it never lingers over a new page.
   // Radix Dialog owns focus-trap/Escape/backdrop-dismiss/focus-return; route
@@ -166,7 +157,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     window.location.href = isFreshie ? "/" : "/login";
   }
 
-  const navLinks = (mode: "sidebar" | "drawer", iconsOnly = false) =>
+  const navLinks = (mode: "drawer", iconsOnly = false) =>
     items.map((item) => {
       const active =
         pathname === item.href || pathname.startsWith(item.href + "/");
@@ -204,10 +195,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div
       className={cn(
-        "min-h-dvh w-full lg:grid",
-        slim ? "lg:grid-cols-[4.5rem_minmax(0,1fr)]" : "lg:grid-cols-[16rem_minmax(0,1fr)]",
-        isNight && "bg-[#030b1c]",
-        isStaffArea && `staff-dashboard-shell ${nexusBody.variable} ${vxDisplay.variable}`
+        // With the tab bar the page itself never scrolls (see .app-scroll below).
+        showTabBar ? "h-dvh overflow-hidden" : "min-h-dvh",
+        "w-full",
+        isNight && (isOps ? "bg-[#07060b]" : "bg-[#030b1c]"),
+        isStaffArea && `staff-dashboard-shell ${nexusBody.variable} ${vxDisplay.variable}`,
+        isStaffArea && isOps && "staff-vx"
       )}
       style={
         {
@@ -215,88 +208,38 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           "--brand-2": brand.brandSecondary,
           "--brand-1-rgb": hexToRgbChannels(groupTheme?.accent ?? brand.brandPrimary),
           "--brand-2-rgb": hexToRgbChannels(brand.brandSecondary),
-          ...(groupTheme
+          ...(fhTheme
             ? {
-                "--fh-accent": groupTheme.accent,
-                "--fh-glow": groupTheme.glow,
-                "--fh-blue": groupTheme.accent,
-                "--fh-blue-light": groupTheme.accentLight,
-                "--fh-on-blue": groupTheme.onAccent,
+                "--fh-accent": fhTheme.accent,
+                "--fh-glow": fhTheme.glow,
+                "--fh-blue": fhTheme.accent,
+                "--fh-blue-light": fhTheme.accentLight,
+                "--fh-on-blue": fhTheme.onAccent,
               }
             : {}),
         } as React.CSSProperties
       }
     >
-      <aside
-        className={cn(
-          "sticky top-0 hidden h-dvh border-r border-paper-200 bg-paper-50/95 py-5 lg:flex lg:flex-col",
-          slim ? "px-2" : "px-4"
-        )}
-      >
-        <Link
-          href="/dashboard"
-          title={slim ? brand.eventName : undefined}
-          className={cn("flex items-center gap-3", slim && "justify-center")}
-        >
-          <Monogram name={brand.eventName} />
-          {!slim && (
-            <span className="min-w-0">
-              <span className="block truncate text-base font-black tracking-tight">
-                {brand.eventName}
-              </span>
-              <span className="block truncate text-xs text-ink-faint">
-                XMUM 26/12 Orientation
-              </span>
-            </span>
-          )}
-        </Link>
 
-        {!slim && (
-          <div className="mt-5">
-            <PhaseTimer compact />
-          </div>
-        )}
-
-        <nav className="mt-5 space-y-1">{navLinks("sidebar", slim)}</nav>
-
-        <div
-          className={cn(
-            "mt-auto space-y-3 border-t border-paper-200 pt-4",
-            slim && "flex flex-col items-center"
-          )}
-        >
-          {isAdmin && (
-            <button
-              type="button"
-              onClick={toggleCollapsed}
-              aria-label={slim ? "Expand sidebar" : "Collapse sidebar"}
-              title={slim ? "Expand sidebar" : "Collapse sidebar"}
-              className="flex h-10 w-10 items-center justify-center rounded-xl border border-paper-300 bg-white text-ink-soft transition hover:bg-paper-100 hover:text-ink"
-            >
-              {slim ? (
-                <PanelLeftOpen size={18} strokeWidth={1.75} />
-              ) : (
-                <PanelLeftClose size={18} strokeWidth={1.75} />
-              )}
-            </button>
-          )}
-          {!slim && (
-            <span className="chip border border-brand-1/20 bg-brand-1/20 text-brand-1">
-              {ROLE_LABELS[profile.role]}
-            </span>
-          )}
-          <button
-            onClick={signOut}
-            title="Log out"
-            className="flex min-h-[44px] items-center text-sm font-semibold text-ink-faint transition hover:text-ink"
-          >
-            {slim ? "Exit" : "Log out"}
-          </button>
-        </div>
-      </aside>
-
-      <div className="min-w-0">
-      {!isNight && (
+      {/* Freshie / Faci: one screen-high column, header, scroller (.app-scroll),
+          then the tab bar in normal flow. The document never scrolls and the
+          tab bar is not position: fixed, so iOS Safari cannot leave it mid-screen
+          or short of the bottom (seen on iPad, 2026-10-13). */}
+      <div className={cn("min-w-0", showTabBar && "flex h-dvh flex-col")}>
+      {/* Landscape tablets and desktops: one row of text links (no sidebar). */}
+      <TopNav
+        items={items.map(({ href, label }) => ({ href, label }))}
+        pathname={pathname}
+        roleLabel={ROLE_LABELS[profile.role]}
+        name={profile.full_name ?? ""}
+        groupName={isFreshie || isFaci ? (group?.name ?? null) : null}
+        canEditProfile={isFaci}
+        primaryHref={isOps ? "/committee" : undefined}
+        onSignOut={signOut}
+      />
+      {/* HOGM and HOF subpages: Home's logo, role chip and account menu (OpsHeader). */}
+      {isStaffSubpage && hasOpsHeader && <OpsHeader />}
+      {!isNight && !(isStaffSubpage && hasOpsHeader) && (
       <header className={cn("sticky top-0 z-40 border-b border-paper-200 bg-paper-50/95 pt-[env(safe-area-inset-top)] shadow-[0_1px_0_rgba(28,26,23,0.03)] backdrop-blur lg:hidden", isStaffSubpage && "sp-header")}>
         {isStaffSubpage ? (
           <div className="sp-header-row">
@@ -356,7 +299,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             title="Navigation menu"
             titleVisuallyHidden
             showClose={false}
-            className={cn("lg:hidden", isStaffArea && `sd-drawer sd-top-menu ${nexusBody.variable}`)}
+            className={cn("lg:hidden", isStaffArea && `sd-drawer sd-top-menu ${nexusBody.variable}`, isStaffArea && isOps && "staff-vx")}
             overlayClassName={isStaffArea ? "sd-menu-overlay" : undefined}
           >
             <div className={cn("flex flex-col", !isStaffArea && "h-full")}>
@@ -399,20 +342,25 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </Dialog>
       )}
 
+      <div className={showTabBar ? "app-scroll min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain" : undefined}>
       <ShellMenuProvider openMenu={() => setMenuOpen(true)}>
       <main
         className={cn(
-          "mx-auto min-h-dvh w-full px-3 pb-[calc(1.25rem+env(safe-area-inset-bottom))] pt-3 sm:px-5 sm:pb-8 sm:pt-5 lg:px-8 lg:py-6",
+          "mx-auto w-full px-3 pb-[calc(1.25rem+env(safe-area-inset-bottom))] pt-3 sm:px-5 sm:pb-8 sm:pt-5 lg:px-8 lg:py-6",
+          // In the tab-bar column the scroller sets the height; min-h-dvh there
+          // would make even a short page scroll by the tab bar's height.
+          showTabBar ? "min-h-full" : "min-h-dvh",
           isAdmin ? "max-w-[96rem]" : "max-w-6xl",
           // Admin pages already carry their own dark theme (.av).
           isStaffSubpage && !pathname.startsWith("/admin") && "sp",
-          showTabBar &&
-            "pb-[calc(6.5rem+env(safe-area-inset-bottom))] sm:pb-[calc(6.5rem+env(safe-area-inset-bottom))]"
+          // Room for the Scan button, which rises above the tab bar.
+          showTabBar && "pb-10 sm:pb-10"
         )}
       >
         {children}
       </main>
       </ShellMenuProvider>
+      </div>
 
       {showTabBar && <FreshieTabBar />}
 

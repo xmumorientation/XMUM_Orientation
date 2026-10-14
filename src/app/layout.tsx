@@ -3,6 +3,7 @@ import { Inter, JetBrains_Mono, Space_Grotesk } from "next/font/google";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
 import "./globals.css";
+import { ViewportDebug } from "@/components/ViewportDebug";
 import { VortexaIntro } from "@/components/VortexaIntro";
 import { cn } from "@/lib/utils";
 
@@ -76,6 +77,8 @@ export default function RootLayout({
             stays mounted on in-app navigation, so it does not replay there. */}
         <VortexaIntro />
         {children}
+        {/* TEMPORARY: viewport numbers for the iPad Chrome bug, only with ?vp=1. */}
+        <ViewportDebug />
         <SpeedInsights />
       </body>
     </html>

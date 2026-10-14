@@ -7,7 +7,7 @@
 -- * Sets every Day 2 station that is on a building to Available.
 --   "TBD" stations (no location yet) are left as they are.
 -- Names are "Day 2 · <code>"; rename them and set the game on Admin → Stations.
--- Needs migration 0069 (Tennis Court / Volleyball Court areas).
+-- Needs migration 0082 (Tennis Court / Volleyball Court areas).
 
 insert into public.stations (name, day, area, code, purpose, status, station_number, map_x, map_y)
 select 'Day 2 · ' || b.prefix || '-' || n,

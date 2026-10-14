@@ -40,26 +40,28 @@
   --fh-partner: #fc9e3d;
   /* Height of the fixed header + stop bar, and of the bottom tab bar. */
   --fh-top: calc(96px + env(safe-area-inset-top, 0px));
-  --fh-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+  --fh-bottom: calc(72px + min(env(safe-area-inset-bottom, 0px), 34px)); /* capped: see .fh-tabbar */
 
   position: relative;
   isolation: isolate;
   color: var(--fh-text);
 }
 @media (min-width: 1024px) {
-  .fh { --fh-bottom: 0px; }
+  /* AppShell's TopNav sits above the scroller in normal flow, so the stops
+     only need a little room at the top and no tab bar room at the bottom. */
+  .fh { --fh-bottom: 0px; --fh-top: 24px; }
 }
 
-/* One stop per screen, this page only (class set by FreshieHome). Same rule
-   as the public homepage: mandatory snap (one scroll = next stop) on large
-   screens, gentle proximity snap on phones and tablets so taller stops can
-   still be read. */
-html.fh-snap { scroll-snap-type: y proximity; }
+/* One stop per screen, this page only (class set by FreshieHome): mandatory
+   snap (one scroll = next stop) on large screens, gentle proximity snap on
+   phones and tablets so taller stops can still be read. The snap sits on
+   AppShell's .app-scroll, the scroller on Freshie / Faci pages. */
+html.fh-snap .app-scroll { scroll-snap-type: y proximity; }
 @media (min-width: 1024px) and (min-height: 700px) {
-  html.fh-snap { scroll-snap-type: y mandatory; }
+  html.fh-snap .app-scroll { scroll-snap-type: y mandatory; }
 }
 @media (prefers-reduced-motion: reduce) {
-  html.fh-snap { scroll-snap-type: none; }
+  html.fh-snap .app-scroll { scroll-snap-type: none; }
 }
 
 /* Full-bleed black ground (AppShell paints the root black on Freshie Home;
@@ -98,10 +100,6 @@ html.fh-snap { overflow-x: hidden; }
   position: absolute; top: 0; bottom: 0; z-index: -1; overflow: hidden; pointer-events: none;
   left: calc(50% - 50vw); width: 100vw;
   background: linear-gradient(180deg, #030b1c 0%, #04102a 30%, #071334 52%, #0d1240 70%, #160f44 84%, #160f44 100%);
-}
-@media (min-width: 1024px) {
-  /* Beside AppShell's 16rem sidebar. */
-  .fh-sky { left: calc(50% - (100vw - 16rem) / 2); width: calc(100vw - 16rem); }
 }
 .fh-sky-dots {
   position: absolute; inset: 0;
@@ -214,6 +212,12 @@ html.fh-snap { overflow-x: hidden; }
 .fh-menu .fh-menu-edit { display: flex; align-items: center; justify-content: center; gap: 8px; }
 .fh-menu .fh-menu-edit:hover { border-color: var(--fh-accent); color: var(--fh-accent); }
 .fh-menu .fh-menu-edit + button { margin-top: 8px; }
+.fh-menu .fh-menu-link {
+  display: flex; align-items: center; justify-content: center; margin-top: 12px; min-height: 44px; border-radius: 12px;
+  border: 1px solid var(--fh-line-2); color: var(--fh-text); font-weight: 700; font-size: 14px; text-decoration: none;
+}
+.fh-menu .fh-menu-link:hover { border-color: var(--fh-accent); color: var(--fh-accent); }
+.fh-menu .fh-menu-link + button { margin-top: 8px; }
 /* Faci: the header button is their FaciAvatar (same photo or initials as their card). */
 .fh-avatar.fh-avatar-me { width: auto; height: auto; padding: 0; background: none; box-shadow: none; border-radius: 50%; }
 .fh-avatar.fh-avatar-me:focus-visible { outline-offset: 2px; }
@@ -228,8 +232,12 @@ html.fh-snap { overflow-x: hidden; }
 .fh-stopbar-track { flex: 1; height: 4px; border-radius: 4px; background: var(--fh-ink-3); overflow: hidden; }
 .fh-stopbar-track span { display: block; height: 100%; background: var(--fh-holo); transition: width 0.35s ease; }
 @media (min-width: 1024px) {
-  /* Sit beside AppShell's 16rem sidebar. */
-  .fh-head, .fh-bg { left: 16rem; }
+  /* TopNav carries the logo, role and account menu here; no stop bar (option A). */
+  .fh-head { display: none; }
+  /* Each stop fills the screen below the 60px TopNav. */
+  .fh-stop { min-height: calc(100svh - 60px); }
+  /* The live phase shows as the pill in TopNav instead (option A). */
+  #fh-welcome .fh-phasecard { display: none; }
 }
 
 /* ── Stops ───────────────────────────────────────────────────────────────── */
@@ -394,7 +402,6 @@ html.fh-snap { overflow-x: hidden; }
 }
 .fh-prog-head { display: flex; align-items: center; gap: 10px; text-decoration: none; color: inherit; padding: 0 2px 10px; }
 .fh-prog-head small { font-size: 12px; color: var(--fh-text-2); }
-.fh-prog-sample { color: var(--fh-orange); }
 .fh-prog-more { margin-left: auto; display: inline-flex; align-items: center; gap: 4px; font-size: 13px; color: var(--fh-text-2); }
 .fh-prog-keys .fi-sec { margin-top: 0; }
 .fh-prog-keys .fi-grid { border: 0; background: transparent; padding: 4px 0 0; }
@@ -1019,8 +1026,13 @@ html.fh-snap { overflow-x: hidden; }
 
 /* ── Freshie bottom tab bar (every Freshie page, phones/tablets) ────────── */
 .fh-tabbar {
-  position: fixed; inset: auto 0 0 0; z-index: 45;
-  display: flex; align-items: flex-end; padding: 6px 6px env(safe-area-inset-bottom, 0px);
+  /* In normal flow at the bottom of AppShell's screen-high column, not fixed:
+     iOS Safari can place fixed bars short of the screen bottom. */
+  position: relative; flex: none; z-index: 45;
+  /* Bottom inset capped at 34px (the most a real device needs, iPhone home
+     indicator): iPad Chrome reports about 80px while its toolbar is open,
+     which left a blank band under the bar. */
+  display: flex; align-items: flex-end; padding: 6px 6px min(env(safe-area-inset-bottom, 0px), 34px);
   background: rgba(3, 11, 28, 0.95); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
   border-top: 1px solid #16305a;
 }
@@ -1038,6 +1050,15 @@ html.fh-snap { overflow-x: hidden; }
 }
 .fh-tab-scan:active .fh-tab-scan-btn { transform: scale(0.94); }
 .fh-tab:focus-visible { outline: 2px solid var(--fh-accent, #008cff); outline-offset: -4px; border-radius: 12px; }
+/* Ops crew (HOF, HOGM, Committee): Welcome page colours, yellow Ops button. */
+.fh-tabbar[data-variant="ops"] { background: rgba(7, 6, 11, 0.95); border-top-color: #25202f; }
+.fh-tabbar[data-variant="ops"] .fh-tab { color: #8d87a0; }
+.fh-tabbar[data-variant="ops"] .fh-tab[aria-current="page"] { color: #0dfcfd; }
+.fh-tabbar[data-variant="ops"] .fh-tab-scan { color: #f3f0fa; }
+.fh-tabbar[data-variant="ops"] .fh-tab-scan-btn {
+  background: #f2ff0b; color: #111;
+  box-shadow: 0 0 0 4px #07060b, 0 0 0 6px rgba(242, 255, 11, 0.45), 0 8px 24px rgba(242, 255, 11, 0.3);
+}
 @media (min-width: 1024px) {
   .fh-tabbar { display: none; }
 }
@@ -1060,6 +1081,7 @@ html.fh-snap { overflow-x: hidden; }
 .fi-game-clock strong { color: var(--fh-text); font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .fi-game-status[data-phase="endgame"] .fi-game-clock strong { color: var(--fh-orange); }
 
+.fi-shelf-empty { margin: 10px 4px 0; font-size: 13px; line-height: 1.45; color: var(--fh-text-2); text-align: center; }
 /* ── Edit Profile sheet (Faci) ───────────────────────────────────────────── */
 .fh-edit .fi-sheet-title { padding-right: 44px; }
 .fh-edit-form { display: grid; gap: 16px; margin-top: 4px; }

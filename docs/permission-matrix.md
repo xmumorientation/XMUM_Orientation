@@ -10,6 +10,7 @@ This reflects only the migration files in the repo. Any manual changes made to t
 - Own Group / Own Station = limited to the user's own group / station
 - View All / Manage = can view everything / can manage
 - † = the backend allows it, but there is no menu entry or UI; reachable only by typing the URL or calling the RPC directly
+- ‡ = HOGM does this on Ops → Game control, after migration 0071 (`is_game_lead()`). Kill-switches and other config keys stay Admin only.
 - Enforcement: DB = enforced by the database; UI = hidden in the frontend only; ⚠ = no server-side check
 
 ## Matrix
@@ -35,7 +36,7 @@ This reflects only the migration files in the repo. Any manual changes made to t
 | Day 1 Token Reward (amount from the token rules) | — | — | ✓ | ✓ | — | † | † | † | DB |
 | Day 2 Challenge (charge the tier's entry fee and grant a piece) | — | — | ✓ | ✓ | — | † | † | † | DB |
 | Show blind box QR + link on the Station page (own boxes and own station's shared boxes) | — | — | Own | Own | — | — | — | — | DB |
-| Update Station Status | — | — | Own Station | Own Station | — | All † | All † | All | DB |
+| Set station status: Available / In Progress / Closed (`fn_set_station_status`; on the GM page's Status tab, Admin → Stations and the Live control list; manual only, never changed by the game timer or by check-ins; changes show live on every page) | — | — | Own Station | Own Station | — | All † | All † | All | DB |
 | Undo Token Transaction (own last one, within 2 minutes) | — | — | Own Actions | Own Actions | — | † | † | † | DB |
 | Grant a puzzle piece directly (fn_grant_item, no UI) | — | — | † | † | — | † | † | † | DB |
 | **Guardian** | | | | | | | | | |
@@ -45,8 +46,11 @@ This reflects only the migration files in the repo. Any manual changes made to t
 | Manual Projector Activation | — | — | — | ✓ | — | — | † | † | DB |
 | NFC Projector Activation (/activate; Endgame phase; must belong to a group) | ✓ | ✓ | — | — | — | — | — | — | DB |
 | **Blind Box** | | | | | | | | | |
-| Open a blind box (scan a seller's QR, see the confirm screen, tap Open: pays the price and deducts one box; a group can open one per seller and up to the group cap) | ✓ | — | — | — | — | — | — | — | DB |
-| See own blind box QR + link (card on /committee and /gm, and on the Admin Blind box page; boxes assigned to the account, or to its station) | — | — | Own | Own | Own | Own | Own | Own | DB |
+| Scan a seller's blind box QR (public page, `fn_bb_seller_public`): a logged-out visitor sees only the seller's name, then picks a group and enters its 4-digit password | anyone with the code | anyone | anyone | anyone | anyone | anyone | anyone | anyone | DB (valid signed code only) |
+| BUY a blind box (`fn_bb_buy`, from the scan page: pays the price and takes one box from the seller; a group can buy one per seller and up to the group cap; blocked by the blind-box kill-switch and by frozen tokens) | ✓ | — | — | — | — | — | — | — | DB |
+| OPEN a bought box (`fn_bb_open`, from the Items page: rolls the prize and adds the tokens; still allowed when blind boxes are off or tokens are frozen) | ✓ own group | — | — | — | — | — | — | — | DB |
+| See the group's bought boxes on the Items page (own claim rows; the prize range is never readable) | Own Group | Own Group (view only) | — | — | View All | View All | View All | View All | DB |
+| See own blind box QR + link (ONE QR per seller covering all its box types; card on /committee and /gm, and on the Admin Blind box page; boxes assigned to the account, or to its station) | — | — | Own | Own | Own | Own | Own | Own | DB |
 | Box types, assigning boxes (one account, a role, stations), quantities, regenerate / switch off a QR, group cap (Admin → Blind box) | — | — | — | — | — | — | — | Manage | DB |
 | Token page Reset State (clears token logs and puzzle inventory, zeroes group tokens; only while Rehearsal mode is on) | — | — | — | — | — | — | — | ✓ | DB |
 | Blind box test reset (only while Rehearsal mode is on; typed confirmation) | — | — | — | — | — | — | — | ✓ | DB |
@@ -56,13 +60,17 @@ This reflects only the migration files in the repo. Any manual changes made to t
 | Mark attendance (Attendance Roster) | — | Own Group | — | — | — | All † | All † | Manage All | DB |
 | Headcount fallback entry | — | Own Group | — | — | — | † | — | Manage | DB |
 | Attendance completion overview | — | Own Group | — | — | View All | View All | View All | Manage All | DB |
-| Manual Location Check-in | — | ✓ | — | — | — | — | — | † | DB |
+| Manual Location Check-in (station check-in) | — | ✓ | — | — | — | — | — | † | DB |
+| Manual Location Update: a text-only note of where a GROUP is, sent by any Facilitator in it (status Heading to / Arrived / Other + typed text, a building and an optional comment; no GPS, not linked to the map; `fn_faci_log_location`, table `faci_location_updates`; the group shares the latest update) | — | Own group (add, read) | — | — | Read all | Read all | Read all | Read all + edit a group's latest entry (`fn_admin_edit_faci_location`, marked and audited) | DB |
+| Manage the location options Facilitators choose from (add, rename, reorder, delete; `fn_admin_location_option_save` / `_delete` / `_move`, table `faci_location_options`; everyone signed in can read them) | — | Read | Read | Read | Read | Read | Read | Manage | DB |
 | GPS auto-report | — | ✓ | — | — | — | — | — | — | DB |
 | Group Facis' sharing status (`fn_group_faci_status`) | — | Own Group, no phones | — | — | All, with phones | All, with phones | All, with phones | All, with phones | DB |
 | **Committee / Operations** | | | | | | | | | |
 | Committee Operations page (/committee) | — | — | — | — | ✓ | ✓ | ✓ | † | UI |
 | Group Balance overview | — | — | — | — | View All | View All | View All | View All | DB |
 | Freshie group assignment (Committee → Register tab) | — | — | — | — | ✓ | — | — | ✓ | DB |
+| Facilitator group assignment (`fn_admin_set_group_facis`; HOF on Ops → Faci control, Admin on Admin → Freshies; `is_faci_lead()`, migration 0080) | — | — | — | — | — | ✓ | — | ✓ | DB |
+| Faci control overview (every group's name, slogan, Facilitators, headcount, location updates and Faci-related audit entries; read only) | — | — | — | — | — | ✓ | — | ✓ | DB (Committee-tier reads) |
 | Big Screen | — | — | — | — | ✓ | ✓ | ✓ | ✓ | UI + DB |
 | Live Ops stats | — | — | — | — | — | † | † | ✓ | DB |
 | Audit Log | — | — | — | — | — | † | † | ✓ | DB |
@@ -71,18 +79,19 @@ This reflects only the migration files in the repo. Any manual changes made to t
 | View the live group scoreboard (no rules, no log) | — | — | ✓ | ✓ | ✓ | ✓ | ✓ | — | UI |
 | **Token page (/admin/token)** | | | | | | | | | |
 | View token rules, scoreboard and log | — | — | — | — | — | — | — | ✓ | UI |
-| Set token rules (Day 1 rewards, Day 2 fee per tier) | — | — | — | — | — | — | — | ✓ | DB |
-| Edit / delete logs, Reset All | — | — | — | — | — | — | — | ✓ | ⚠ UI |
+| Set token rules (Day 1 rewards, Day 2 fee per tier) | — | — | — | — | — | — | ✓ ‡ | ✓ | DB |
+| Edit / delete logs | — | — | — | — | — | — | — | ✓ | ⚠ UI |
+| Reset All (Rehearsal mode only) | — | — | — | — | — | — | ✓ ‡ | ✓ | DB |
 | **Admin Console (/admin/*)** | | | | | | | | | |
-| Phase Control (start / pause / extend / end) | — | — | — | — | — | — | — | ✓ | DB |
+| Phase Control (start / pause / extend / end, game length: runs the game timer only, station statuses are not changed) | — | — | — | — | — | — | ✓ ‡ | ✓ | DB |
 | Kill-switches | — | — | — | — | — | — | — | ✓ | DB |
 | Users (CSV import; edit role / group / station) | — | — | — | — | — | — | — | ✓ | DB + API |
-| Stations config | — | — | — | — | — | — | — | ✓ | DB |
-| Puzzles / Items config | — | — | — | — | — | — | — | ✓ | DB |
+| Stations config (add / edit / delete, Game Masters) | — | — | — | — | — | — | ✓ ‡ | ✓ | DB |
+| Puzzle pictures | — | — | — | — | — | — | ✓ ‡ | ✓ | DB |
 | Attendance Sessions open / close | — | — | — | — | — | — | — | ✓ | DB |
 | Schedule / FAQ management | — | — | — | — | — | — | — | ✓ | DB |
 | Brand config | — | — | — | — | — | — | — | ✓ | DB |
-| NFC Token generation | — | — | — | — | — | — | — | ✓ | API |
+| NFC Token generation | — | — | — | — | — | — | ✓ ‡ | ✓ | API + DB |
 | Seed Test Accounts | Any logged-in user | Any logged-in user | Any logged-in user | Any logged-in user | Any logged-in user | Any logged-in user | Any logged-in user | Any logged-in user | ⚠ No check |
 
 ## Issues Found

@@ -1,10 +1,10 @@
--- Migration 0072: put the lightbulbs on the centre of their buildings.
+-- Migration 0085: put the lightbulbs on the centre of their buildings.
 --
 -- The projectors table still had the seed spots from the old rectangle map
 -- (B1 80,50 · A3 14,22 · TF 68,82), which land on the field and the edges of
 -- the current art. The map used to hide this with fixed spots in code
 -- (PROJECTOR_SPOTS, slightly off the buildings); since the bulbs became
--- movable (0070) it reads the table. Each bulb now sits on its building's
+-- movable (0083) it reads the table. Each bulb now sits on its building's
 -- anchor in src/lib/mapBuildings.ts.
 --
 -- Only rows still on a seed spot or the old code spot are changed, so a bulb

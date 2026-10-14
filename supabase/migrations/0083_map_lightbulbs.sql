@@ -1,4 +1,4 @@
--- Migration 0070: Lightbulbs view on the campus map.
+-- Migration 0083: Lightbulbs view on the campus map.
 --
 -- fn_map_lightbulbs(): the three lightbulbs (projectors B1, A3, TF) for the
 -- map's Lightbulbs mode.

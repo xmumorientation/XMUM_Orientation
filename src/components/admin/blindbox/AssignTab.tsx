@@ -211,7 +211,7 @@ export function AssignTab({ data, onError, onNotice }: TabProps) {
 
           <p className="text-xs text-ink-faint">
             {sKind === "station"
-              ? "A station's boxes are one shared pool and one QR for all its GMs, and a group can open from it once. "
+              ? "A station's boxes are one shared pool and one QR for all its GMs, and a group can buy from it once. "
               : "This account sees the QR on its own page. "}
             {sTypeObj ? `${sTypeObj.name}: ${sLeft} unassigned.` : ""}
           </p>

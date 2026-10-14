@@ -19,7 +19,6 @@ import {
   type ProjectorLocation,
 } from "@/lib/types";
 
-import { BOX_INFO } from "./BlindBox";
 import { cardState, fillZones, lampState, ourLitLocation, zoneNames, type CardState, type ZoneName } from "./derive";
 import { KEY_NAMES, KeyEmblem, type KeyMode } from "./KeyEmblem";
 import type { Arrivals } from "./useNewPieces";
@@ -141,7 +140,10 @@ export function KeyBanner({
 // ── 3. Item shelf: tokens and the two kinds of box ─────────────────────────
 // Icon, name and count only. Tap tokens for details, or a box to unlock it.
 
-export type ShelfItem = "tokens" | BoxKind;
+/** "tokens", or "box:<key>" for a group of boxes. */
+export type ShelfItem = string;
+
+export const boxShelfKey = (key: BoxKind): ShelfItem => `box:${key}`;
 
 export function ItemShelf({ data, onSelect }: { data: ItemsData; onSelect: (item: ShelfItem) => void }) {
   const balance = data.tokens.balance;
@@ -157,8 +159,7 @@ export function ItemShelf({ data, onSelect }: { data: ItemsData; onSelect: (item
 
   const tiles: { key: ShelfItem; name: string; count: number }[] = [
     { key: "tokens", name: "Tokens", count: balance },
-    { key: "gold", name: BOX_INFO.gold.name, count: data.boxes.gold.unopened },
-    { key: "standard", name: BOX_INFO.standard.name, count: data.boxes.standard.unopened },
+    ...data.boxes.map((b) => ({ key: boxShelfKey(b.key), name: b.name, count: b.unopened })),
   ];
 
   return (
@@ -189,6 +190,11 @@ export function ItemShelf({ data, onSelect }: { data: ItemsData; onSelect: (item
           </button>
         ))}
       </div>
+      {data.boxes.length === 0 && (
+        <p className="fi-shelf-empty">
+          No blind boxes yet. Scan a seller&apos;s QR in Scan to buy one. It will appear here.
+        </p>
+      )}
     </section>
   );
 }

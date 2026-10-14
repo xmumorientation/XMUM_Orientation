@@ -35,6 +35,10 @@ const ERROR_SCREENS: Record<string, { title: string; message: string }> = {
     title: "Code already used",
     message: "This activation card has already been tapped.",
   },
+  TEST_RUN_RESET: {
+    title: "Test link expired",
+    message: "This NFC test has ended. Ask an Admin to prepare a new test sticker.",
+  },
   ALREADY_ACTIVATED: {
     title: "Already revived!",
     message: "This projector has already been revived by another group.",

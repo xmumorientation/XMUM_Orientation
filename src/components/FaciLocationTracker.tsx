@@ -558,7 +558,7 @@ export function FaciLocationBanner() {
   }
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 top-[calc(4.5rem+env(safe-area-inset-top))] z-[60] flex flex-col items-center px-4 lg:left-64 lg:top-5">
+    <div className="pointer-events-none fixed inset-x-0 top-[calc(4.5rem+env(safe-area-inset-top))] z-[60] flex flex-col items-center px-4 lg:top-[76px]">
       <div
         role="status"
         className="card pointer-events-auto w-full max-w-lg border-amber-300 bg-amber-50/95 p-3.5 text-amber-950 shadow-glow backdrop-blur sm:p-4"

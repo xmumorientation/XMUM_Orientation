@@ -4,7 +4,9 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { Clock3, History, Info, KeyRound, Lock, MapPin, Nfc, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 
+import { BOX_REVEAL_VIDEO, BoxReveal } from "@/components/BoxReveal";
 import { vxSlab, vxDisplay, nexusBody } from "@/components/home/fonts";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { PROJECTOR_LABELS, type ProjectorLocation } from "@/lib/types";
@@ -36,10 +38,11 @@ export function FreshieItems({
   groupColor,
   canOpenBoxes,
   onOpenBox,
+  sample = false,
 }: {
   data: ItemsData;
   groupColor: string | null | undefined;
-  /** Facilitators open boxes; Freshies only see them. */
+  /** Only the group's Freshie login opens boxes; a Facilitator can see them. */
   canOpenBoxes: boolean;
   /** Opens one box and returns what it gave, or null if it failed. */
   onOpenBox: (kind: BoxKind) => Promise<BoxReward | null>;
@@ -60,10 +63,12 @@ export function FreshieItems({
   const [activityOpen, setActivityOpen] = useState(false);
   const [tokensOpen, setTokensOpen] = useState(false);
   const [boxFor, setBoxFor] = useState<BoxKind | null>(null);
+  // A real box that was just opened: the full-screen opening clip, then the prize.
+  const [revealed, setRevealed] = useState<Extract<BoxReward, { type: "tokens" }> | null>(null);
 
   function selectShelf(item: ShelfItem) {
     if (item === "tokens") setTokensOpen(true);
-    else setBoxFor(item);
+    else setBoxFor(item.replace(/^box:/, ""));
   }
 
   const keys = keyLocations(data);
@@ -91,7 +96,10 @@ export function FreshieItems({
           </button>
         </div>
         <div className="fi-game-status" data-phase={data.phase}>
-          <span>{PHASE_LABEL[data.phase]}</span>
+          <span>
+            {PHASE_LABEL[data.phase]}
+            {sample && <span className="fi-sample">· Sample data</span>}
+          </span>
           {data.timeLeft && <span className="fi-game-clock"><Clock3 size={15} aria-hidden /><strong>{data.timeLeft}</strong><span>left to play</span></span>}
         </div>
       </header>
@@ -125,9 +133,37 @@ export function FreshieItems({
         data={data}
         canOpen={canOpenBoxes}
         onOpenBox={onOpenBox}
+        onReveal={setRevealed}
         onClose={() => setBoxFor(null)}
         themeVars={themeVars}
       />
+
+      {/* In a portal so it covers the whole screen, tab bar included. */}
+      {revealed?.real &&
+        createPortal(
+          <BoxReveal
+            tokens={revealed.amount}
+            special={revealed.real.special}
+            memberName={revealed.real.seller}
+            balance={revealed.real.balance}
+            onContinue={() => setRevealed(null)}
+          />,
+          document.body
+        )}
+
+      {/* Warm the opening clip while there is a sealed box, so it starts the
+          moment the box is opened. Invisible and silent. */}
+      {data.boxes.some((b) => b.unopened > 0 && !b.range) && (
+        <video
+          src={BOX_REVEAL_VIDEO}
+          preload="auto"
+          muted
+          playsInline
+          aria-hidden="true"
+          tabIndex={-1}
+          className="pointer-events-none absolute h-px w-px opacity-0"
+        />
+      )}
 
       <Sheet open={activityOpen} onClose={() => setActivityOpen(false)} themeVars={themeVars} title="Activity">
         <h2 className="fi-sheet-title">Activity</h2>

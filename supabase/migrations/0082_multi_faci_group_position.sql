@@ -1,4 +1,4 @@
--- Migration 0069: three Facis per group, and the courts on the map.
+-- Migration 0082: three Facis per group, and the courts on the map.
 --
 -- A. Tennis Court and Volleyball Court become map buildings: stations can be
 --    placed there, and check-in uses their geofence. "TBD" stays allowed for

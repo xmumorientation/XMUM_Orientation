@@ -811,7 +811,7 @@ export function CampusMap({
                   s.status === "available"
                     ? "Available"
                     : s.status === "in_progress"
-                      ? "In progress"
+                      ? "In Progress"
                       : "Closed";
                 return (
                   <g

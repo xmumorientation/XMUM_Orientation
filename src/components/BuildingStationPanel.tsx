@@ -212,7 +212,7 @@ export function BuildingStationPanel({
                 onChange={(e) => saveStatus(station, e.target.value as StationStatus)}
               >
                 <option value="available">Available</option>
-                <option value="in_progress">In progress</option>
+                <option value="in_progress">In Progress</option>
                 <option value="closed">Closed</option>
               </select>
               <StationStatusChip status={station.status} />
@@ -284,7 +284,7 @@ export function BuildingStationPanel({
             onChange={(e) => setStatus(e.target.value as StationStatus)}
           >
             <option value="available">Available</option>
-            <option value="in_progress">In progress</option>
+            <option value="in_progress">In Progress</option>
             <option value="closed">Closed</option>
           </select>
         </label>
