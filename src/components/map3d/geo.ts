@@ -381,7 +381,7 @@ export const TRACK_NORTH = {
 
 /** Map labels. `minor` ones (the courts) only show when the camera is close. */
 export const LABELS: { name: string; pos: World; y: number; minor?: boolean }[] = [
-  ...BLOCKS.map((b) => ({ name: b.name, pos: b.pos, y: b.flat ? 10.4 : 9.6 })),
+  ...BLOCKS.map((b) => ({ name: b.name, pos: b.pos, y: b.flat ? 12.2 : 9.6 })),
   { name: "B1", pos: B1_PLACE.pos, y: 11 },
   { name: "Track & Field", pos: toWorld(TRACK.center), y: 3 },
   ...SPORTS.filter((b) => b.label).map((b) => ({

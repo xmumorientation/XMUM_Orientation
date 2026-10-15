@@ -114,6 +114,46 @@ function ringRoofGeometry(sOut: number, sIn: number, h: number, lift: number) {
   return g;
 }
 
+/**
+ * One tier of a Chinese roof over a rectangle (A3): from the eaves (half sizes ox, oz) it rises by h over a
+ * band w wide to an inner rectangle, left open for the storey above or a flat top. Concave slope and
+ * upturned outer corners, as in ringRoofGeometry. heightAt gives the roof height at a point (for the ridges).
+ */
+function tierRoofGeometry(ox: number, oz: number, w: number, h: number, lift: number) {
+  const lin = (a: number, b: number, n: number) => Array.from({ length: n + 1 }, (_, i) => a + ((b - a) * i) / n);
+  const axis = (o: number) => [...lin(-o, w - o, 12), ...lin(w - o, o - w, 6).slice(1), ...lin(o - w, o, 12).slice(1)];
+  const xs = axis(ox);
+  const zs = axis(oz);
+  const at = (x: number, z: number) => {
+    const t = Math.min(1, Math.max(0, Math.min(ox - Math.abs(x), oz - Math.abs(z)) / w));
+    const k = Math.min(Math.abs(x) / ox, Math.abs(z) / oz);
+    return { t, y: h * Math.pow(t, 1.6) + lift * Math.pow(smoothstep(0.55, 1, k), 2) * Math.pow(1 - t, 2) };
+  };
+  const pos: number[] = [];
+  const uv: number[] = [];
+  for (const z of zs)
+    for (const x of xs) {
+      const { t, y } = at(x, z);
+      pos.push(x, y, z);
+      uv.push(0, t * 3);
+    }
+  const n = xs.length;
+  const idx: number[] = [];
+  for (let j = 0; j < zs.length - 1; j++)
+    for (let i = 0; i < n - 1; i++) {
+      if (Math.abs((xs[i] + xs[i + 1]) / 2) < ox - w && Math.abs((zs[j] + zs[j + 1]) / 2) < oz - w) continue;
+      const a = j * n + i;
+      const c = a + n;
+      idx.push(a, c, a + 1, a + 1, c, c + 1);
+    }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
+  g.setIndex(idx);
+  g.computeVertexNormals();
+  return { geometry: g, heightAt: (x: number, z: number) => at(x, z).y };
+}
+
 const H_BLOCK = 5;
 
 type BlockProps = { position: [number, number, number]; rotY: number; seed: number; glow: number };
@@ -215,7 +255,7 @@ function JiagengBlock({ position, rotY, s, seed, glow }: BlockProps & { s: numbe
   );
 }
 
-/** A white grid of square windows, as on A3's facade (photo). */
+/** A3's facade (photo): white walls, square windows in even rows with wide white piers between. */
 function gridFacade() {
   const c = document.createElement("canvas");
   c.width = 256;
@@ -224,12 +264,60 @@ function gridFacade() {
   ctx.fillStyle = "#f1eee7";
   ctx.fillRect(0, 0, 256, 256);
   ctx.fillStyle = "#56677a";
-  for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) ctx.fillRect(x * 32 + 8, y * 32 + 7, 16, 18);
+  for (let y = 0; y < 6; y++) for (let x = 0; x < 4; x++) ctx.fillRect(x * 64 + 14, y * (256 / 6) + 10, 36, 24);
   const t = new THREE.CanvasTexture(c);
   t.colorSpace = THREE.SRGBColorSpace;
   t.wrapS = t.wrapT = THREE.RepeatWrapping;
   t.anisotropy = 4;
   return t;
+}
+
+/** One tier of A3's roof: red tiles, white hip ridges; `top` closes it with a flat roof in a white ridge frame. */
+function RoofTier(p: { ox: number; oz: number; w: number; h: number; lift: number; y: number; top?: boolean }) {
+  const { ox, oz, w, h, lift, y, top } = p;
+  const tiles = useMemo(makeRoofTiles, []);
+  const { geometry, ridges } = useMemo(() => {
+    const r = tierRoofGeometry(ox, oz, w, h, lift);
+    const hips = [
+      [1, 1],
+      [1, -1],
+      [-1, 1],
+      [-1, -1],
+    ].map(([sx, sz]) => {
+      const pts = Array.from({ length: 11 }, (_, i) => {
+        const x = sx * (ox - (i / 10) * w);
+        const z = sz * (oz - (i / 10) * w);
+        return new THREE.Vector3(x, r.heightAt(x, z) + 0.05, z);
+      });
+      return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 16, 0.08, 5);
+    });
+    return { geometry: r.geometry, ridges: hips };
+  }, [ox, oz, w, h, lift]);
+  const ix = ox - w;
+  const iz = oz - w;
+  return (
+    <group position={[0, y, 0]}>
+      <mesh geometry={geometry} castShadow receiveShadow>
+        <meshStandardMaterial map={tiles} roughness={0.55} metalness={0.05} side={THREE.DoubleSide} />
+      </mesh>
+      {ridges.map((g, i) => (
+        <mesh key={i} geometry={g} castShadow>
+          <meshStandardMaterial color="#f4f1ea" roughness={0.7} />
+        </mesh>
+      ))}
+      {top && (
+        <>
+          <Box size={[2 * ix, 0.08, 2 * iz]} pos={[0, h - 0.03, 0]} color="#b8432c" />
+          {[-1, 1].map((sg) => (
+            <Box key={`x${sg}`} size={[0.18, 0.24, 2 * iz + 0.18]} pos={[sg * ix, h + 0.06, 0]} color="#f4f1ea" />
+          ))}
+          {[-1, 1].map((sg) => (
+            <Box key={`z${sg}`} size={[2 * ix + 0.18, 0.24, 0.18]} pos={[0, h + 0.06, sg * iz]} color="#f4f1ea" />
+          ))}
+        </>
+      )}
+    </group>
+  );
 }
 
 /** Hipped roof over a hx x hz rectangle: a four-sided frustum, red tiles, rising to a white ridge. */
@@ -250,17 +338,23 @@ function HipRoof({ hx, hz, h, y, top = 0.35 }: { hx: number; hz: number; h: numb
   );
 }
 
-/** A3: the big 9-level block (photo): white grid facade, a columned entrance, two tiers of red hipped roof. */
+/**
+ * A3: the big 9-level block (photo): white walls with square windows, a tall glass bay over a columned
+ * entrance, and a two-tier Chinese roof: wide red eaves with upturned corners and white hips, a set-back
+ * storey, and a smaller upper tier with a flat top inside a white ridge frame.
+ */
 function FlatBlock({ position, rotY, hx, hz, glow }: BlockProps & { hx: number; hz: number }) {
   const H = 7.4;
-  const tex = useMemo(gridFacade, []);
   const wall = useMemo(() => {
-    const t = tex.clone();
-    t.repeat.set(Math.max(1, Math.round(hx * 0.45)), 1.15);
-    t.needsUpdate = true;
+    const t = gridFacade();
+    t.repeat.set(Math.max(1, Math.round(hx * 0.55)), 1.5);
     return new THREE.MeshStandardMaterial({ map: t, roughness: 0.8, emissive: new THREE.Color("#ffd89a") });
-  }, [tex, hx]);
+  }, [hx]);
   wall.emissiveIntensity = glow * 0.25;
+  const eave = H + 0.3;
+  // the set-back storey stands on the lower tier's inner edge
+  const cx = hx - 1.3;
+  const cz = hz - 1.3;
   // The front (local +Z) faces the statue and the main road.
   const cols = [-1.2, -0.4, 0.4, 1.2];
   return (
@@ -269,28 +363,26 @@ function FlatBlock({ position, rotY, hx, hz, glow }: BlockProps & { hx: number; 
       <mesh position={[0, H / 2 + 0.3, 0]} material={wall} castShadow receiveShadow>
         <boxGeometry args={[2 * hx, H, 2 * hz]} />
       </mesh>
-      {/* corner towers, a little proud of the walls */}
-      {[-1, 1].map((sx) =>
-        [-1, 1].map((sz) => (
-          <Box
-            key={`${sx}${sz}`}
-            size={[1.4, H + 0.4, 1.4]}
-            pos={[sx * (hx - 0.5), (H + 0.4) / 2 + 0.3, sz * (hz - 0.5)]}
-            color="#f4f1ea"
-          />
-        )),
-      )}
-      {/* columned entrance with a small red roof */}
+      <Box
+        size={[1.8, H - 3.3, 0.12]}
+        pos={[0, 3.4 + (H - 3.3) / 2, hz + 0.04]}
+        color="#4d5d70"
+        emissive={{ color: "#ffcf86", intensity: glow * 0.6 }}
+      />
       <Box size={[3.4, 2.4, 1.2]} pos={[0, 1.5, hz + 0.6]} color="#f4f1ea" />
       {cols.map((x) => (
         <Box key={x} size={[0.22, 2.2, 0.22]} pos={[x, 1.4, hz + 1.35]} color="#ffffff" />
       ))}
       <Box size={[3.8, 0.25, 1.8]} pos={[0, 2.6, hz + 0.75]} color="#f4f1ea" />
       <HipRoof hx={1.9} hz={0.95} h={0.6} y={2.7} top={0.25} />
-      {/* wide lower roof with eaves, a white clerestory band, then the upper roof */}
-      <HipRoof hx={hx + 0.7} hz={hz + 0.7} h={1.1} y={H + 0.3} top={0.72} />
-      <Box size={[2 * hx * 0.66, 0.7, 2 * hz * 0.66]} pos={[0, H + 1.75, 0]} color="#f4f1ea" />
-      <HipRoof hx={hx * 0.78} hz={hz * 0.78} h={1.4} y={H + 2.1} top={0.4} />
+      <RoofTier ox={hx + 0.9} oz={hz + 0.9} w={2.2} h={1.3} lift={0.45} y={eave} />
+      <Box
+        size={[2 * cx, 1.1, 2 * cz]}
+        pos={[0, eave + 1.2 + 0.55, 0]}
+        color="#5d6a78"
+        emissive={{ color: "#ffcf86", intensity: glow * 0.5 }}
+      />
+      <RoofTier ox={cx + 0.6} oz={cz + 0.6} w={1.7} h={1.0} lift={0.35} y={eave + 2.3} top />
     </group>
   );
 }
