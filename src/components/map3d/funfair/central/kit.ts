@@ -86,8 +86,41 @@ function triangle(a: V3, b: V3, c: V3) {
   return g;
 }
 
+function starShape(inner = 0.45) {
+  const s = new THREE.Shape();
+  for (let i = 0; i < 10; i++) {
+    const a = Math.PI / 2 + (i / 10) * TAU;
+    const r = i % 2 ? inner : 1;
+    if (i === 0) s.moveTo(Math.cos(a) * r, Math.sin(a) * r);
+    else s.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+  }
+  s.closePath();
+  return s;
+}
+
+/** A five-point star in the xy plane, radius 1, `depth` thick (centred on z = 0). */
+function starGeometry(depth: number) {
+  return new THREE.ExtrudeGeometry(starShape(), { depth, bevelEnabled: false }).translate(0, 0, -depth / 2);
+}
+
+/** The outline of a five-point star (radius 1, xy plane), for neon tubes and bulbs. */
+export function starPoints(inner = 0.45): [number, number][] {
+  return Array.from({ length: 10 }, (_, i) => {
+    const a = Math.PI / 2 + (i / 10) * TAU;
+    const r = i % 2 ? inner : 1;
+    return [Math.cos(a) * r, Math.sin(a) * r];
+  });
+}
+
 export const G = {
   box: flat(new THREE.BoxGeometry(1, 1, 1)),
+  /** A flat 1 x 1 square on the ground (facing up). */
+  quad: flat(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2)),
+  disc48: flat(new THREE.CircleGeometry(1, 48).rotateX(-Math.PI / 2)),
+  cyl48: flat(new THREE.CylinderGeometry(1, 1, 1, 48)),
+  star: flat(starGeometry(1)),
+  /** A flat star tile on the ground (facing up), radius 1. */
+  starTile: flat(new THREE.ShapeGeometry(starShape()).rotateX(-Math.PI / 2)),
   cyl6: flat(new THREE.CylinderGeometry(1, 1, 1, 6)),
   cyl8: flat(new THREE.CylinderGeometry(1, 1, 1, 8)),
   cyl12: flat(new THREE.CylinderGeometry(1, 1, 1, 12)),
@@ -159,6 +192,61 @@ export class Bake {
   /** A bar (box or cylinder) from a to b. */
   seg(c: THREE.ColorRepresentation, a: V3, b: V3, w: number, g = G.box, t = 0, seed = 0) {
     return this.add(g, segMat(a, b, w), c, t, seed);
+  }
+
+  /** One flat triangle (both faces when `both`). */
+  tri(c: THREE.ColorRepresentation, a: V3, b: V3, d: V3, both = false, t = 0, seed = 0) {
+    _c.set(c);
+    const ux = b[0] - a[0], uy = b[1] - a[1], uz = b[2] - a[2];
+    const vx = d[0] - a[0], vy = d[1] - a[1], vz = d[2] - a[2];
+    let nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
+    const l = Math.hypot(nx, ny, nz) || 1;
+    nx /= l;
+    ny /= l;
+    nz /= l;
+    const put = (p: V3, s: number) => {
+      this.pos.push(p[0], p[1], p[2]);
+      this.nor.push(nx * s, ny * s, nz * s);
+      this.col.push(_c.r, _c.g, _c.b);
+      this.ts.push(t, seed);
+    };
+    put(a, 1);
+    put(b, 1);
+    put(d, 1);
+    if (both) {
+      put(a, -1);
+      put(d, -1);
+      put(b, -1);
+    }
+    return this;
+  }
+
+  /** A quad a-b-c-d (counter-clockwise seen from its front). */
+  quad(c: THREE.ColorRepresentation, a: V3, b: V3, cc: V3, d: V3, both = false) {
+    this.tri(c, a, b, cc, both);
+    return this.tri(c, a, cc, d, both);
+  }
+
+  /**
+   * A surface of revolution about the y axis through `o`: rings of [radius, y],
+   * `segs` sides, one colour per side and ring band (stripes).
+   */
+  revolve(o: V3, rings: [number, number][], segs: number, color: (s: number, k: number) => THREE.ColorRepresentation, both = false, a0 = 0) {
+    const P = (r: number, y: number, s: number): V3 => {
+      const a = a0 + (s / segs) * TAU;
+      return [o[0] + Math.cos(a) * r, o[1] + y, o[2] - Math.sin(a) * r];
+    };
+    for (let k = 0; k < rings.length - 1; k++) {
+      const [r0, y0] = rings[k];
+      const [r1, y1] = rings[k + 1];
+      for (let s = 0; s < segs; s++) {
+        const c = color(s, k);
+        const a = P(r0, y0, s), b = P(r0, y0, s + 1), d = P(r1, y1, s), e = P(r1, y1, s + 1);
+        if (r0 > 1e-4) this.tri(c, a, b, e, both);
+        if (r1 > 1e-4) this.tri(c, a, e, d, both);
+      }
+    }
+    return this;
   }
 
   get count() {
