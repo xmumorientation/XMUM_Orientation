@@ -28,7 +28,7 @@ export const WORLD_W = 118.7; // along +X (image left → bottom)
 export const WORLD_D = 94.8; // along -Z (image left → top)
 
 /** Half size of the diorama slab (campus + the plantation ring around it). */
-export const EXTENT = { x: 72, z: 61 };
+export const EXTENT = { x: 72, z: 66 };
 
 /** Image pixel (2000-wide art) → world [x, z] on the ground. */
 export function toWorld([px, py]: Img): World {
@@ -45,7 +45,6 @@ export const COLORS = {
   path: "#ec8d65",
   pathEdge: "#d4764f",
   lawn: "#9a9e52",
-  lawnDark: "#036a37",
   plantation: "#41672f",
   beige: "#efe1cd",
   plaza: "#cfcac2",
@@ -70,17 +69,19 @@ export const COLORS = {
 } as const;
 
 // ── Ground layers (image px polygons), drawn in this order ───────────────
+// The west side of the outer road (the 2nd and 3rd corners) is moved about
+// 12 units west of the art (9 at its north end), so A1 at true scale clears it.
 export const GROUND = {
   road: [
     [62, 487],
-    [880, 8],
-    [1912, 597],
+    [984, -53],
+    [1990, 552],
     [1075, 1105],
   ] as Img[],
   base: [
     [168, 473],
-    [883, 55],
-    [1808, 583],
+    [987, -6],
+    [1886, 538],
     [1080, 1035],
   ] as Img[],
   roadNotch: [
@@ -95,19 +96,6 @@ export const GROUND = {
     [920, 676],
     [718, 810],
   ] as Img[],
-  darkLawns: [
-    [
-      [1045, 105],
-      [1232, 210],
-      [1095, 196],
-    ],
-    [
-      [1440, 325],
-      [1552, 388],
-      [1518, 412],
-      [1468, 410],
-    ],
-  ] as Img[][],
   lawns: [
     // track lawn
     [

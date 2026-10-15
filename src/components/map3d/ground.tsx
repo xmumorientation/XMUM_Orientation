@@ -124,7 +124,11 @@ function makeGroundTexture(): THREE.CanvasTexture {
   poly(img(GROUND.road), COLORS.road);
   poly(img(GROUND.base), COLORS.path);
   poly(img(GROUND.roadNotch), COLORS.road);
-  for (const p of GROUND.darkLawns) poly(img(p), COLORS.lawnDark);
+  // inside the outer road only from here on
+  const base = img(GROUND.base);
+  ctx.save();
+  trace(base);
+  ctx.clip();
   // lawns: the art's track lawn, then the real lake park and the lawns round the statue (OSM)
   for (const p of [...GROUND.lawns.map(img), PARK, ...GRASS]) {
     poly(p, COLORS.lawn);
@@ -145,6 +149,7 @@ function makeGroundTexture(): THREE.CanvasTexture {
   }
   for (const p of FOOTPATHS) stroke(p, FOOTPATH_W + 0.25, COLORS.pathEdge);
   for (const p of FOOTPATHS) stroke(p, FOOTPATH_W, COLORS.path);
+  ctx.restore();
 
   const brown = img(GROUND.brown);
   poly(brown, COLORS.brown);
