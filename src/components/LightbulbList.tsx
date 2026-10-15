@@ -16,13 +16,13 @@ export function bulbStatus(b: MapLightbulb, nowMs: number) {
   return `Lit by ${by} at ${at} (${timeAgo(b.activated_at, nowMs)})${b.activated_manually ? " · set by Admin" : ""}`;
 }
 
-/** The lightbulbs the viewer may see, under the map in Lightbulbs mode. */
+/** The lightbulbs the viewer may see: under the 2D map in Lightbulbs mode, always under the 3D map. */
 export function LightbulbList({
   bulbs,
   nowMs,
   selected,
   onSelect,
-  canMove,
+  canManage,
   moving,
   onMove,
   resetting,
@@ -32,9 +32,10 @@ export function LightbulbList({
   nowMs: number;
   selected: ProjectorLocation | null;
   onSelect: (location: ProjectorLocation) => void;
-  canMove: boolean;
+  /** Admin: reset buttons, and Move buttons when `onMove` is given (the 2D map only). */
+  canManage: boolean;
   moving: ProjectorLocation | null;
-  onMove: (location: ProjectorLocation | null) => void;
+  onMove?: (location: ProjectorLocation | null) => void;
   /** Bulb whose reset is in progress. */
   resetting: ProjectorLocation | null;
   /** Admin: turn a lit bulb off again. */
@@ -69,7 +70,7 @@ export function LightbulbList({
                 <span className="block truncate text-xs text-ink-faint">{bulbStatus(b, nowMs)}</span>
               </span>
             </button>
-            {canMove && b.activated_at && (
+            {canManage && b.activated_at && (
               <button
                 type="button"
                 onClick={() => onReset(b.location)}
@@ -80,7 +81,7 @@ export function LightbulbList({
                 {resetting === b.location ? "Resetting…" : "Reset"}
               </button>
             )}
-            {canMove && (
+            {canManage && onMove && (
               <button
                 type="button"
                 onClick={() => onMove(moving === b.location ? null : b.location)}

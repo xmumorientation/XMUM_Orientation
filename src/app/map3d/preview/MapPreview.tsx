@@ -2,9 +2,8 @@
 
 import { useEffect, useState, type CSSProperties } from "react";
 
-import { CampusMap2DView } from "@/components/campus-map/CampusMap2DView";
-import { CampusMap3DView } from "@/components/campus-map/CampusMap3DView";
-import { LayerSwitch, MapLegend } from "@/components/campus-map/CampusMapPanels";
+import { LayerSwitch, MapLegend, MapToolbar } from "@/components/campus-map/CampusMapPanels";
+import { CampusMapView, useMapView } from "@/components/campus-map/CampusMapView";
 import type { CampusMapData } from "@/components/campus-map/useCampusMapData";
 import { VORTEXA_THEME, themeFromColor, type GroupTheme } from "@/components/freshie/groupTheme";
 import { pinSummary } from "@/components/GroupStatusList";
@@ -23,14 +22,14 @@ import { FACI_GROUP, useMockMapData, type MockOptions } from "./mockData";
 // page shows it. Development only; nothing here talks to Supabase.
 //
 // ?role=freshie|faci|staff|admin  the page and props (default freshie)
-// ?view=2d                         the 2D view instead of the 3D one
-// ?layer=bulbs, ?select=A3-1, ?highlight=A1-1, ?group=5, ?bulb=B1, ?building=A3 (Admin), ?cluster=A3, ?names=1
+// ?map=2d                          the 2D view instead of the 3D one (as on the real pages)
+// ?check=1                         Admin's accuracy check, with a GPS fix near A3
+// ?layer=bulbs (2D), ?select=A3-1, ?highlight=A1-1, ?group=5, ?bulb=B1, ?building=A3 (Admin), ?cluster=A3, ?names=1
 // ?full=1                          open full screen
 // ?color=#16a34a                   the Freshie or Faci group colour
 // ?mode=day|sunset|night, ?lite=0|1, ?intro=0, ?cam=x,y,z,tx,ty,tz   the 3D scene
 
-type Opts = MockOptions & {
-  view: "3d" | "2d";
+type Opts = Omit<MockOptions, "bulbLayer"> & {
   highlight: string | null;
   full: boolean;
   color: string;
@@ -49,7 +48,6 @@ function readOpts(): Opts {
   const cam = q.get("cam")?.split(",").map(Number);
   return {
     role: role === "faci" || role === "staff" || role === "admin" ? role : "freshie",
-    view: q.get("view") === "2d" ? "2d" : "3d",
     layer: q.get("layer") === "bulbs" ? "bulbs" : "stations",
     select: q.get("select"),
     highlight: q.get("highlight"),
@@ -58,6 +56,7 @@ function readOpts(): Opts {
     building: q.get("building"),
     cluster: q.get("cluster"),
     names: q.get("names") === "1",
+    check: q.get("check") === "1",
     full: q.get("full") === "1",
     color: q.get("color") ?? (role === "faci" ? "#7c3aed" : "#fe06ab"),
     mode: mode === "day" || mode === "sunset" || mode === "night" ? mode : undefined,
@@ -108,7 +107,8 @@ function PreviewState({ data, pending, hasSelection }: { data: CampusMapData; pe
 }
 
 function Preview({ opts }: { opts: Opts }) {
-  const data = useMockMapData(opts);
+  const [view, fallBack] = useMapView();
+  const data = useMockMapData({ ...opts, bulbLayer: view === "2d" });
   const [fullscreen, setFullscreen] = useState(opts.full);
   const [pending, setPending] = useState<Station | null>(null);
   const { role } = opts;
@@ -128,14 +128,18 @@ function Preview({ opts }: { opts: Opts }) {
 
   const map = (
     <div>
-      <div className="mb-2 flex justify-center" aria-hidden={fullscreen}>
-        <LayerSwitch data={data} dark={false} />
-      </div>
-      {opts.view === "2d" ? (
-        <CampusMap2DView {...viewProps} />
-      ) : (
-        <CampusMap3DView {...viewProps} mode={opts.mode} lite={opts.lite} intro={opts.intro} camera={opts.cam} />
+      {view === "2d" && (
+        <div className="mb-2 flex justify-center" aria-hidden={fullscreen}>
+          <LayerSwitch data={data} dark={false} />
+        </div>
       )}
+      <MapToolbar data={data} canManageStations={canManageStations} view={view ?? "3d"} />
+      <CampusMapView
+        {...viewProps}
+        view={view}
+        onFail={fallBack}
+        scene={{ mode: opts.mode, lite: opts.lite, intro: opts.intro, camera: opts.cam }}
+      />
       <PreviewState data={data} pending={pending} hasSelection={hasSelection} />
     </div>
   );

@@ -142,6 +142,10 @@ export type MockOptions = {
   building: string | null;
   cluster: string | null;
   names: boolean;
+  /** Admin's accuracy check on, with a GPS fix near A3 (`?check=1`). */
+  check: boolean;
+  /** The Lightbulbs layer exists (2D only), as in useCampusMapData. */
+  bulbLayer: boolean;
 };
 
 /** CampusMapData from the rows above. Actions change only this page's memory. */
@@ -154,7 +158,8 @@ export function useMockMapData(opts: MockOptions): CampusMapData {
     return opts.role === "faci" ? all.filter((g) => g.group_id === FACI_GROUP) : all;
   });
   const [bulbs, setBulbs] = useState(() => mockBulbs(nowMs));
-  const [layer, setLayerState] = useState<MapLayer>(opts.layer);
+  const [layerState, setLayerState] = useState<MapLayer>(opts.layer);
+  const layer: MapLayer = opts.bulbLayer ? layerState : "stations";
   const [selected, setSelected] = useState<Station | null>(() => stations.find((s) => s.code === opts.select) ?? null);
   const [openBuilding, setOpenBuilding] = useState<string | null>(opts.building);
   const [clusterArea, setClusterArea] = useState<string | null>(opts.cluster);
@@ -163,7 +168,10 @@ export function useMockMapData(opts: MockOptions): CampusMapData {
   const [selectedGroup, setSelectedGroup] = useState<number | null>(opts.group);
   const [showNames, setShowNames] = useState(opts.names);
   const [editing, setEditing] = useState<Station | null>(null);
-  const [checkMode, setCheckMode] = useState(false);
+  const [checkMode, setCheckMode] = useState(opts.check);
+  const [checkNotice, setCheckNotice] = useState<string | null>(null);
+  // A steady fix 12 m east of A3's GPS point, ±6 m.
+  const [fix] = useState(() => ({ ...near(GPS_POINTS.A3, 12, 0), acc: 6, t: nowMs }));
   // One bulb seen before: the second lit one makes the Lightbulbs tab pulse, as on the real map.
   const [seenLit, setSeenLit] = useState(1);
 
@@ -242,14 +250,22 @@ export function useMockMapData(opts: MockOptions): CampusMapData {
     setSelectedGroup,
     selectedPosition,
     selectedPin: selectedGroup != null ? (groupPins.get(selectedGroup) ?? null) : null,
-    check: { live: null, error: null, others: [], averaged: () => null, goodFixes: 0 },
+    check: {
+      live: checkMode ? fix : null,
+      error: null,
+      others: [],
+      averaged: () => ({ lat: fix.lat, lng: fix.lng, accuracy: fix.acc, fixes: 3 }),
+      goodFixes: checkMode ? 3 : 0,
+    },
     checkMode,
     setCheckMode,
     startCheck: () => setCheckMode(true),
-    checkNotice: null,
+    checkNotice,
     checkError: null,
     anchors: [],
     placeAnchor: async () => {},
+    measureCheck: (metresTo: (lat: number, lng: number) => number) =>
+      setCheckNotice(`Your GPS is ${Math.round(metresTo(fix.lat, fix.lng))} m from where you tapped (±${fix.acc} m, 3 fixes).`),
     deleteAnchor: async () => {},
   };
 }
