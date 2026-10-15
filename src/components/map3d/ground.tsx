@@ -17,9 +17,11 @@ import {
   PITCH_M,
   type Placed,
   STATUE,
+  STATUE_ROT_Y,
   TRACK,
   TRACK_M,
   toWorld,
+  UNITS_PER_M,
   type Img,
   type World,
 } from "./geo";
@@ -221,7 +223,8 @@ function makeGroundTexture(): THREE.CanvasTexture {
   };
   for (const b of BLOCKS) foot(b, b.flat ? 0.1 : -0.3);
   foot(B1_PLACE, 0.1);
-  foot({ pos: STATUE, hx: 1.7, hz: 1.7, rotY: 0 }, 0);
+  // the statue's 3.3 m stone platform
+  foot({ pos: STATUE, hx: 1.65 * UNITS_PER_M, hz: 1.65 * UNITS_PER_M, rotY: STATUE_ROT_Y }, 0);
   ctx.restore();
 
   const tex = new THREE.CanvasTexture(canvas);

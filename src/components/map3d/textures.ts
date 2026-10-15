@@ -213,69 +213,24 @@ export function makeWaterNormals() {
   return t;
 }
 
-function star(
-  ctx: CanvasRenderingContext2D,
-  cx: number,
-  cy: number,
-  points: number,
-  outer: number,
-  inner: number,
-  rot = -Math.PI / 2,
-) {
-  ctx.beginPath();
-  for (let i = 0; i < points * 2; i++) {
-    const rr = i % 2 ? inner : outer;
-    const a = rot + (i * Math.PI) / points;
-    ctx.lineTo(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr);
-  }
-  ctx.closePath();
-  ctx.fill();
-}
-
-/** Jalur Gemilang (Malaysia), 2:1. */
-export function makeMalaysiaFlag() {
-  const W = 512;
-  const H = 256;
+/**
+ * XMUM flag, 3:2: white with the university badge (public/xmum-logo-badge.png,
+ * the crest and the name) in the middle. The badge loads after the texture is
+ * made, so the flag shows plain white for a moment.
+ */
+export function makeXmumFlag() {
+  const W = 600;
+  const H = 400;
   const [c, ctx] = canvas(W, H);
-  const sh = H / 14;
-  for (let i = 0; i < 14; i++) {
-    ctx.fillStyle = i % 2 ? "#ffffff" : "#cc0001";
-    ctx.fillRect(0, i * sh, W, sh + 0.5);
-  }
-  ctx.fillStyle = "#010066";
-  ctx.fillRect(0, 0, W / 2, sh * 8);
-  const cy = sh * 4;
-  ctx.fillStyle = "#ffcc00";
-  ctx.beginPath();
-  ctx.arc(W * 0.17, cy, sh * 3, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = "#010066";
-  ctx.beginPath();
-  ctx.arc(W * 0.17 + sh * 0.8, cy, sh * 2.55, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = "#ffcc00";
-  star(ctx, W * 0.33, cy, 14, sh * 2.6, sh * 1.15);
-  return texture(c);
-}
-
-/** Flag of China, 3:2. */
-export function makeChinaFlag() {
-  const W = 384;
-  const H = 256;
-  const [c, ctx] = canvas(W, H);
-  ctx.fillStyle = "#de2910";
+  ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, W, H);
-  ctx.fillStyle = "#ffde00";
-  const u = H / 20;
-  star(ctx, 5 * u, 5 * u, 5, 3 * u, 1.15 * u);
-  for (const [x, y] of [
-    [10, 2],
-    [12, 4],
-    [12, 7],
-    [10, 9],
-  ]) {
-    const a = Math.atan2(5 - y, 5 - x);
-    star(ctx, x * u, y * u, 5, u, 0.38 * u, a);
-  }
-  return texture(c);
+  const t = texture(c);
+  const img = new Image();
+  img.onload = () => {
+    const s = H * 0.85;
+    ctx.drawImage(img, (W - s) / 2, (H - s) / 2, s, s);
+    t.needsUpdate = true;
+  };
+  img.src = "/xmum-logo-badge.png";
+  return t;
 }

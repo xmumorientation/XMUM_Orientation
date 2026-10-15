@@ -14,10 +14,13 @@ import {
   grandstandRect,
   LETTERS,
   STATUE,
+  STATUE_ROT_Y,
   toWorld,
+  UNITS_PER_M,
   type World,
 } from "./geo";
-import { makeChinaFlag, makeFacade, makeMalaysiaFlag, makeRoofTiles } from "./textures";
+import { TanKahKeeStatue } from "./statue";
+import { makeFacade, makeRoofTiles, makeXmumFlag } from "./textures";
 
 // DRAFT: the buildings and landmarks. A1–A5 follow the Jiageng style of
 // Xiamen University (cream walls, red brick, curved red-tile roofs with
@@ -329,52 +332,20 @@ export function Grandstand() {
   );
 }
 
-// ── Tan Kah Kee statue and the flags on the plaza ────────────────────────
+// ── Tan Kah Kee statue and the flags on the plaza (real size) ────────────
 export function Statue() {
-  const bronze = { color: COLORS.bronze };
   return (
-    <group position={at(STATUE)}>
-      <Box size={[4.2, 0.35, 4.2]} pos={[0, 0.18, 0]} color="#ddd8ce" />
-      <Box size={[3.1, 0.5, 3.1]} pos={[0, 0.6, 0]} color="#c4bdb1" />
-      <Box size={[1.9, 3.6, 1.9]} pos={[0, 2.65, 0]} color="#a39d93" />
-      <Box size={[2.2, 0.3, 2.2]} pos={[0, 4.6, 0]} color="#c4bdb1" />
-      <Box size={[1.2, 0.7, 0.05]} pos={[0, 2.8, 0.98]} color="#b08d57" />
-      <mesh position={[0, 5.9, 0]} castShadow>
-        <cylinderGeometry args={[0.5, 0.68, 2.3, 14]} />
-        <meshStandardMaterial {...bronze} metalness={0.55} roughness={0.45} />
-      </mesh>
-      <mesh position={[0, 7.1, 0]} scale={[0.78, 0.3, 0.5]} castShadow>
-        <sphereGeometry args={[1, 16, 10]} />
-        <meshStandardMaterial {...bronze} metalness={0.55} roughness={0.45} />
-      </mesh>
-      {[-1, 1].map((sgn) => (
-        <mesh key={sgn} position={[sgn * 0.74, 6.45, 0.05]} rotation-z={sgn * 0.1} castShadow>
-          <capsuleGeometry args={[0.15, 1.1, 4, 8]} />
-          <meshStandardMaterial {...bronze} metalness={0.55} roughness={0.45} />
-        </mesh>
-      ))}
-      <mesh position={[0, 7.62, 0]} castShadow>
-        <sphereGeometry args={[0.34, 16, 12]} />
-        <meshStandardMaterial {...bronze} metalness={0.55} roughness={0.45} />
-      </mesh>
+    <group position={at(STATUE)} rotation-y={STATUE_ROT_Y} scale={UNITS_PER_M}>
+      <TanKahKeeStatue />
     </group>
   );
 }
 
-function Flag({
-  position,
-  texture,
-  w,
-  h,
-  phase,
-}: {
-  position: [number, number, number];
-  texture: THREE.Texture;
-  w: number;
-  h: number;
-  phase: number;
-}) {
-  const geo = useMemo(() => new THREE.PlaneGeometry(w, h, 20, 10).translate(w / 2, 0, 0), [w, h]);
+/** A flagpole with a waving flag, in metres: 12 m pole, 2.4 x 1.6 m flag. */
+function Flag({ position, texture, phase }: { position: [number, number, number]; texture: THREE.Texture; phase: number }) {
+  const w = 2.4;
+  const h = 1.6;
+  const geo = useMemo(() => new THREE.PlaneGeometry(w, h, 20, 10).translate(w / 2, 0, 0), []);
   const base = useMemo(() => Float32Array.from(geo.getAttribute("position").array), [geo]);
   useFrame(({ clock }) => {
     const t = clock.elapsedTime;
@@ -388,30 +359,32 @@ function Flag({
     p.needsUpdate = true;
     geo.computeVertexNormals();
   });
+  // the flag faces the default view (from the north-east)
   return (
-    <group position={position} rotation-y={Math.PI / 4}>
-      <mesh position={[0, 4.25, 0]} castShadow>
-        <cylinderGeometry args={[0.05, 0.08, 8.5, 8]} />
+    <group position={position} rotation-y={Math.PI / 4} scale={UNITS_PER_M}>
+      <mesh position={[0, 6, 0]} castShadow>
+        <cylinderGeometry args={[0.06, 0.1, 12, 8]} />
         <meshStandardMaterial color="#dcdcdc" metalness={0.7} roughness={0.3} />
       </mesh>
-      <mesh position={[0, 8.6, 0]}>
-        <sphereGeometry args={[0.12, 10, 8]} />
+      <mesh position={[0, 12.1, 0]}>
+        <sphereGeometry args={[0.14, 10, 8]} />
         <meshStandardMaterial color="#e8c46a" metalness={0.8} roughness={0.3} />
       </mesh>
-      <mesh geometry={geo} position={[0.06, 7.75 - h / 2, 0]} castShadow>
+      <mesh geometry={geo} position={[0.08, 11.6 - h / 2, 0]} castShadow>
         <meshStandardMaterial map={texture} side={THREE.DoubleSide} roughness={0.8} />
       </mesh>
     </group>
   );
 }
 
+/** Two flagpoles, both flying the XMUM flag. */
 export function Flags() {
-  const my = useMemo(makeMalaysiaFlag, []);
-  const cn = useMemo(makeChinaFlag, []);
+  const xmum = useMemo(makeXmumFlag, []);
   return (
     <>
-      <Flag position={at(FLAGS[0])} texture={my} w={2.4} h={1.2} phase={0} />
-      <Flag position={at(FLAGS[1])} texture={cn} w={1.8} h={1.2} phase={1.3} />
+      {FLAGS.map((f, i) => (
+        <Flag key={i} position={at(f)} texture={xmum} phase={i * 1.3} />
+      ))}
     </>
   );
 }

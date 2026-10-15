@@ -240,7 +240,7 @@ export default function CampusMap3D() {
             ref={controls}
             makeDefault
             enableDamping
-            minDistance={20}
+            minDistance={6}
             maxDistance={420}
             maxPolarAngle={1.3}
             screenSpacePanning={false}

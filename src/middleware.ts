@@ -34,7 +34,7 @@ export async function middleware(request: NextRequest) {
   // Development-only demos: no account, card or database access.
   if (
     process.env.NODE_ENV === "development" &&
-    (path === "/activate/preview" || path === "/map3d")
+    (path === "/activate/preview" || path === "/map3d" || path.startsWith("/map3d/"))
   ) {
     return NextResponse.next({ request });
   }

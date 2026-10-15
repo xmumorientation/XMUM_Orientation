@@ -251,6 +251,12 @@ export const DOME: World = DOME_PLACE.pos;
 const STATUE_GPS = LANDMARKS.find((l) => l.name === "Tan Kah Kee statue")!;
 export const STATUE: World = gpsToWorld(STATUE_GPS.lat, STATUE_GPS.lng);
 
+/** The statue stands with its back to A3. Its front is local +Z, which rotation-y θ turns to (sin θ, cos θ). */
+export const STATUE_ROT_Y = (() => {
+  const a3 = BLOCKS.find((b) => b.name === "A3")!.pos;
+  return Math.atan2(STATUE[0] - a3[0], STATUE[1] - a3[1]);
+})();
+
 /** The two flagpoles, kept where the art draws them relative to the statue. */
 export const FLAGS: World[] = (
   [
@@ -384,7 +390,7 @@ export const LABELS: { name: string; pos: World; y: number; minor?: boolean }[] 
     minor: true,
   })),
   { name: "LakeFront Café", pos: DOME, y: 4 },
-  { name: "Tan Kah Kee Statue", pos: STATUE, y: 11.5 },
+  { name: "Tan Kah Kee Statue", pos: STATUE, y: 1.5 },
 ];
 
 /** The team's GPS points (src/lib/mapGeo.ts), shown by the ?gps=1 debug layer. */
