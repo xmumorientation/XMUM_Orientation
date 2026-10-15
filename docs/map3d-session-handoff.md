@@ -100,3 +100,7 @@ The visual work and the 2D→3D replacement live in different files, so they can
   5. Medium: the 2D accuracy check text still says a correction applies to every map.
   6. Low: no "new bulb lit" signal in 3D; Admin's Move bulb and save-correction tools only reachable with ?map=2d; tapping the OSM credit opens full screen; any touch stops a camera flight.
 - Also to do: "You" as a blue dot and the mock fix on open ground; keep trees off the A5 entrance; check A5 against Ben's photos; re-run the three screenshot checks.
+- Added after the pause (Ben, 2026-10-16), also batch 5:
+  - Phone speed: render only when something changes (not every frame); merge static meshes (about 700 draw calls today, lite mode barely fewer); no shadows in lite mode; measure the frame rate at start and step down quality, then fall back to 2D if still too slow. Test on a cheap 2–3-year-old Android. Do on-demand rendering and the slow-device fallback first.
+  - WebGL check: canUseWebGL() accepts WebGL1, but three.js needs WebGL2 (iPhone 6/5s, iOS < 15, pre-2016 Android get a blank map). Check WebGL2 only.
+  - Accuracy check: record each 3D measurement (metres and direction) so a walk-through can tell a steady offset (fix with one global shift, Admin switch) from GPS noise (no fix). Nobody has field data yet.
