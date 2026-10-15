@@ -27,6 +27,23 @@ Each ride sits on the footprint of the dorm it replaces. An X-shaped LY block su
 - The car park to the north-east of the D blocks stays a car park. It is not part of the funfair.
 - The lake park, the lake and the LakeFront Café are unchanged.
 
+## Styles per zone (Ben chose three styles, 2026-10-15)
+
+Three styles were tried on the bench (`src/components/map3d/funfair-lab/styleA|B|C.tsx`, pages `/map3d/funfair-a|b|c`). Ben chose to give each zone its own style, like the themed lands of a theme park:
+
+| Zone | Style | Why |
+|---|---|---|
+| West · Neon Pier (Vortexa Eye) | **A Neon Cyber**: gunmetal frames with Vortexa neon tubes | "Neon" is in the zone's name, and A's wheel has a glowing eye hub, which suits "Vortexa Eye". Brighten its daytime colours, which read dark from far away. |
+| Central · Starlight Midway | **C Toy low-poly**: chunky, bright, toy-like | Midway rides (drop tower, swings, teacups, bumper cars) suit the playful look, and it matches the campus map. |
+| East · Big Top | **B Retro Carnival**: red and cream stripes, marquee bulbs | The circus Big Top is the classic retro carnival piece. |
+
+Shared by all three, to tie them together:
+
+- the A-style VORTEXA neon gate;
+- the A-style powered-off look (dead tubes, red standby light, current running along the cables at power-up);
+- the Vortexa palette for bulbs and neon;
+- the same ground paving.
+
 ## Look (the website's Vortexa concept)
 
 The colours follow the Welcome page ([vortexa.css](../src/components/home/vortexa.css)):
@@ -68,6 +85,15 @@ The dorms are real. Freshies need to find LY3 or D4.
 
 - Labels keep the dorm name with the ride, for example "LY3 · Vortexa Eye".
 - The funfair has a clear "Vortexa Funfair (game zone)" label, so nobody thinks it is a real fair.
+
+## How the game reaches the funfair (Ben, 2026-10-15)
+
+1. A group collects the five puzzle pieces for a projector location (B1, A3 or TF) and gets its key.
+2. The Items page shows the key and that location's photo (the "Guardian spot"; the backend keeps three photos, one per location). This is the only hint about where to go.
+3. The group goes to the place in the photo and unlocks the lightbulb there by NFC.
+4. The funfair zone Admin assigned to that location powers up for everyone.
+
+So the 3D map shows **no lightbulb markers and no lightbulb layer**: the funfair zones are how the map shows which lights are on. The 2D fallback keeps its lightbulb layer unchanged. Kept in 3D: the lightbulb list (text: which are lit, by which group, when) and Admin's "reset lightbulb". The "move lightbulb" tool stays in the 2D fallback only.
 
 ## Data and Admin control
 

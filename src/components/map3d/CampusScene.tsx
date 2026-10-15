@@ -1,8 +1,8 @@
 "use client";
 
-import { Html, MapControls } from "@react-three/drei";
+import { Html, Hud, MapControls } from "@react-three/drei";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode, type Ref } from "react";
+import { memo, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode, type Ref } from "react";
 import * as THREE from "three";
 import type { MapControls as MapControlsImpl } from "three-stdlib";
 
@@ -16,8 +16,8 @@ import { Duck, Lakes } from "./water";
 import { prefersLite } from "./webgl";
 
 // The 3D campus, sized to its parent (a card or fullscreen). No page
-// chrome: callers add their own controls around it, and 3D overlays
-// (markers, pins) as children inside the Canvas.
+// chrome: callers add their own controls around it, and 3D overlays as
+// children (in the scene) or as `overlay` (drawn on top, after the effects).
 
 export type Vec3 = [number, number, number];
 export type CameraView = { position: Vec3; target: Vec3 };
@@ -115,7 +115,7 @@ function Label({ name, pos, y, minor }: (typeof LABELS)[number]) {
   );
 }
 
-function Labels() {
+const Labels = memo(function Labels() {
   return (
     <>
       {LABELS.map((l) => (
@@ -123,6 +123,44 @@ function Labels() {
       ))}
     </>
   );
+});
+
+/** Everything that never changes after mount, so a caller's re-render (new markers) skips it. */
+const Campus = memo(function Campus({ mode, lite }: { mode: Mode; lite: boolean }) {
+  const look = MODES[mode];
+  return (
+    <>
+      <Atmosphere look={look} mode={mode} lite={lite} />
+      <Slab />
+      <Ground lite={lite} />
+      <Lakes />
+      <Duck />
+      <Blocks glow={look.windows} />
+      <B1Building glow={look.windows} />
+      <Grandstand />
+      <TrackFixtures glow={look.lamps} />
+      <SportsCourts glow={look.lamps} />
+      <Statue />
+      <Flag />
+      <Dome glow={look.windows} />
+      <Bridge />
+      <Letters />
+      <Vegetation lite={lite} />
+      <Lamps glow={look.lamps} />
+    </>
+  );
+});
+
+/** A still scene (a card on a page) leaves touches to the page so it scrolls; the controls take them otherwise. */
+function TouchPolicy({ interactive }: { interactive: boolean }) {
+  const controls = useThree((s) => s.controls) as MapControlsImpl | null;
+  useEffect(() => {
+    if (!controls) return;
+    controls.enabled = interactive;
+    const el = controls.domElement as HTMLElement | undefined;
+    if (el) el.style.touchAction = interactive ? "none" : "";
+  }, [controls, interactive]);
+  return null;
 }
 
 /** Required by the OpenStreetMap licence wherever the map is shown. */
@@ -159,8 +197,15 @@ export type CampusSceneProps = {
   /** Place-name labels (default true). */
   labels?: boolean;
   controlsRef?: Ref<MapControlsImpl>;
-  /** Rendered inside the Canvas, for 3D overlays. */
+  /** Camera controls on (default true). Off, the view stays still and touches scroll the page. */
+  interactive?: boolean;
+  /** Rendered inside the Canvas, in the scene (depth-tested, post-processed): ground overlays, hit areas. */
   children?: ReactNode;
+  /**
+   * Rendered inside the Canvas on top of the finished frame (after the effects, so never blurred), with its
+   * own scene: markers and pins. It has no lights unless it adds some. Its objects get pointer events first.
+   */
+  overlay?: ReactNode;
   className?: string;
   style?: CSSProperties;
 };
@@ -172,7 +217,9 @@ export default function CampusScene({
   intro = true,
   labels = true,
   controlsRef,
+  interactive = true,
   children,
+  overlay,
   className,
   style,
 }: CampusSceneProps) {
@@ -213,36 +260,24 @@ export default function CampusScene({
             gl.toneMapping = THREE.NeutralToneMapping;
           }}
         >
-          <Atmosphere look={look} mode={mode} lite={isLite} />
-          <Slab />
-          <Ground lite={isLite} />
-          <Lakes />
-          <Duck />
-          <Blocks glow={look.windows} />
-          <B1Building glow={look.windows} />
-          <Grandstand />
-          <TrackFixtures glow={look.lamps} />
-          <SportsCourts glow={look.lamps} />
-          <Statue />
-          <Flag />
-          <Dome glow={look.windows} />
-          <Bridge />
-          <Letters />
-          <Vegetation lite={isLite} />
-          <Lamps glow={look.lamps} />
+          <Campus mode={mode} lite={isLite} />
           {labels && <Labels />}
           {children}
           <MapControls
             ref={controlsRef}
             makeDefault
             enableDamping
+            enabled={interactive}
             minDistance={6}
             maxDistance={420}
             maxPolarAngle={1.3}
             screenSpacePanning={false}
           />
+          <TouchPolicy interactive={interactive} />
           <Intro start={start} />
           {!isLite && <Effects look={look} />}
+          {/* After the effects' pass (priority 1); in lite mode the Hud draws the scene itself first. */}
+          {overlay && <Hud renderPriority={isLite ? 1 : 2}>{overlay}</Hud>}
         </Canvas>
       )}
       <Attribution />
