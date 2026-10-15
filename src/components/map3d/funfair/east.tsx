@@ -1,0 +1,11 @@
+"use client";
+
+import type { ZoneProps } from "./common";
+
+// DRAFT: Vortexa Funfair, East zone (docs/map3d-funfair-design.md).
+export function FunfairEast({ power, night, lite }: ZoneProps) {
+  void power;
+  void night;
+  void lite;
+  return null;
+}

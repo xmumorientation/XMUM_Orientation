@@ -1,0 +1,68 @@
+"use client";
+
+import { useFrame } from "@react-three/fiber";
+import { useRef } from "react";
+
+import { fromReal, UNITS_PER_M, type Placed } from "../geo";
+import { DORMS_M } from "./dorms";
+
+// DRAFT: shared pieces of the Vortexa Funfair (docs/map3d-funfair-design.md).
+// Each zone is powered off (0) until the keys Admin assigns to it are
+// unlocked, then powers up (1). Rides are modelled in metres and placed with
+// dormPlace(); wrap a zone's content in <group scale={UNITS_PER_M}> at the
+// footprint's world position, or use metresToWorld for single points.
+
+export type ZoneKey = "west" | "central" | "east";
+
+/** Props every zone component takes. `power` is the target (0 off, 1 on); animate towards it with usePowerRamp. */
+export type ZoneProps = { power: number; night: boolean; lite: boolean };
+
+/** Which dorm footprints each zone covers (design doc, "Zones and rides"). */
+export const ZONE_DORMS: Record<ZoneKey, string[]> = {
+  west: ["LY1", "LY2", "LY3", "LY6", "LY7"],
+  central: ["LY4", "LY5", "LY8", "LY9"],
+  east: ["D1", "D2", "D3", "D4", "D5", "Canteen D6"],
+};
+
+/** The website palette (src/components/home/vortexa.css). */
+export const VX = {
+  yellow: "#f2ff0b",
+  cyan: "#0dfcfd",
+  pink: "#fe06ab",
+  lilac: "#e0b4fc",
+  orange: "#fc9e3d",
+  red: "#bc071d",
+  navy: "#063a65",
+  blush: "#ffb1c1",
+} as const;
+
+/** The zones' own colours on the map (pink west, cyan central, yellow east). */
+export const ZONE_COLOR: Record<ZoneKey, string> = { west: VX.pink, central: VX.cyan, east: VX.yellow };
+
+/** A dorm footprint in the world (same frame as BLOCKS in geo.ts). rotY turns the long side to its bearing. */
+export function dormPlace(name: string): Placed {
+  const r = DORMS_M[name];
+  return {
+    pos: fromReal(r.e, r.n),
+    hx: (r.length / 2) * UNITS_PER_M,
+    hz: (r.width / 2) * UNITS_PER_M,
+    rotY: (-r.bearing * Math.PI) / 180,
+  };
+}
+
+/** Real metres east / north of the Track & Field GPS point → world [x, z]. */
+export const metresToWorld = fromReal;
+
+/**
+ * Eases a zone's power towards its target over `seconds` (the power-up
+ * sequence). Read `.current` inside useFrame; it never re-renders.
+ */
+export function usePowerRamp(target: number, seconds = 2) {
+  const value = useRef(target);
+  useFrame((_, dt) => {
+    const step = Math.min(dt, 0.1) / seconds;
+    const v = value.current;
+    value.current = v < target ? Math.min(target, v + step) : Math.max(target, v - step);
+  });
+  return value;
+}
