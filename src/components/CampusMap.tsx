@@ -2,18 +2,19 @@
 
 import { useState } from "react";
 
-import { CampusMap2DView } from "@/components/campus-map/CampusMap2DView";
 import {
   CampusMapPanels,
   LayerSwitch,
   MapLegend,
   MapToolbar,
 } from "@/components/campus-map/CampusMapPanels";
+import { CampusMapView, useMapView } from "@/components/campus-map/CampusMapView";
 import { useCampusMapData } from "@/components/campus-map/useCampusMapData";
 import type { Station } from "@/lib/types";
 
 // FR-4.1: campus map. Data and state live in useCampusMapData, the controls
-// and lists in CampusMapPanels, and the picture in CampusMap2DView.
+// and lists in CampusMapPanels, and the picture in CampusMapView: the 3D
+// campus, or the 2D art when the device can't run 3D (or with ?map=2d).
 export function CampusMap({
   showGroupPins = false,
   onStationTap,
@@ -29,17 +30,24 @@ export function CampusMap({
   /** When set, the available-station list follows this instead of the map's own selection. */
   hasSelection?: boolean;
 }) {
-  const data = useCampusMapData({ showGroupPins, canManageStations });
+  const [view, fallBack] = useMapView();
+  // The Lightbulbs layer is on the 2D map only; the 3D map lists the bulbs under it.
+  const data = useCampusMapData({ showGroupPins, canManageStations, bulbLayer: view === "2d" });
   // Full-screen viewer. The inline map stays still so the page can scroll.
   const [fullscreen, setFullscreen] = useState(false);
+  const panelView = view ?? "3d";
 
   return (
     <div>
-      <div className="mb-2 flex justify-center" aria-hidden={fullscreen}>
-        <LayerSwitch data={data} dark={false} />
-      </div>
-      <MapToolbar data={data} canManageStations={canManageStations} />
-      <CampusMap2DView
+      {view === "2d" && (
+        <div className="mb-2 flex justify-center" aria-hidden={fullscreen}>
+          <LayerSwitch data={data} dark={false} />
+        </div>
+      )}
+      <MapToolbar data={data} canManageStations={canManageStations} view={panelView} />
+      <CampusMapView
+        view={view}
+        onFail={fallBack}
         data={data}
         showGroupPins={showGroupPins}
         canManageStations={canManageStations}
@@ -55,6 +63,7 @@ export function CampusMap({
         canManageStations={canManageStations}
         hasSelection={hasSelection}
         onStationTap={onStationTap}
+        view={panelView}
       />
     </div>
   );

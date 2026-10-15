@@ -18,11 +18,13 @@ import { resolveGroupPin, type GroupPin } from "@/lib/groupPosition";
 import { friendlyError } from "@/lib/utils";
 import { gpsToMapPercent, setExtraAnchors } from "@/lib/mapGeo";
 
-// Data and state shared by every campus map view (2D today, 3D next).
+// Data and state shared by every campus map view (2D and 3D).
 // Positions are percentages of the 2D Figma art (see mapBuildings.ts).
 
 /** Stations mode shows game stations; Lightbulbs mode shows the lit (and, once unlocked, unlit) lightbulbs. */
 export type MapLayer = "stations" | "bulbs";
+/** Which map draws the data: the 3D campus, or the 2D art (the fallback). */
+export type MapView = "3d" | "2d";
 const LAYER_KEY = "campus-map-layer";
 const SEEN_LIT_KEY = "campus-map-seen-lit";
 
@@ -139,14 +141,18 @@ export function spreadPins(
 export function useCampusMapData({
   showGroupPins,
   canManageStations,
+  bulbLayer = true,
 }: {
   showGroupPins: boolean;
   canManageStations: boolean;
+  /** The Lightbulbs layer (2D map only). Without it the layer stays on Stations. */
+  bulbLayer?: boolean;
 }) {
   const supabase = useMemo(() => supabaseBrowser(), []);
   const myId = useProfile().id;
   const [stations, setStations] = useState<Station[]>([]);
-  const [layer, setLayerState] = useState<MapLayer>("stations");
+  const [layerState, setLayerState] = useState<MapLayer>("stations");
+  const layer: MapLayer = bulbLayer ? layerState : "stations";
   const [bulbs, setBulbs] = useState<MapLightbulb[]>([]);
   const [selectedBulb, setSelectedBulb] = useState<ProjectorLocation | null>(null);
   const [movingBulb, setMovingBulb] = useState<ProjectorLocation | null>(null);
@@ -253,6 +259,21 @@ export function useCampusMapData({
     setCheckError(error ? friendlyError(error) : null);
     setCheckNotice(error ? null : "Correction deleted.");
     await loadAnchors();
+  }
+
+  // 3D map: Admin taps where they really are, and sees how far the averaged GPS fix is from that spot.
+  // `metresTo` measures from the tapped spot to a GPS point. Nothing is saved (anchors only bend the 2D map).
+  function measureCheck(metresTo: (lat: number, lng: number) => number) {
+    setCheckNotice(null);
+    const fix = check.averaged();
+    if (!fix) {
+      setCheckError("GPS too rough to measure. Step into the open and wait for 2 fixes at ±20 m or better.");
+      return;
+    }
+    setCheckError(null);
+    setCheckNotice(
+      `Your GPS is ${Math.round(metresTo(fix.lat, fix.lng))} m from where you tapped (±${Math.round(fix.accuracy)} m, ${fix.fixes} fixes).`,
+    );
   }
 
   function startCheck() {
@@ -503,6 +524,7 @@ export function useCampusMapData({
     checkError,
     anchors,
     placeAnchor,
+    measureCheck,
     deleteAnchor,
   };
 }
