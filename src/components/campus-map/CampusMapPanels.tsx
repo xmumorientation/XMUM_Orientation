@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { ArrowLeft, Crosshair, Lightbulb, MapPin, X } from "lucide-react";
 
 import { AccuracyCheckPanel } from "@/components/AccuracyCheck";
@@ -16,7 +16,7 @@ import { stationDotColor } from "@/components/ui";
 import type { Station } from "@/lib/types";
 import { timeAgo } from "@/lib/utils";
 
-import type { CampusMapData, MapLayer } from "./useCampusMapData";
+import type { CampusMapData, MapLayer, MapView } from "./useCampusMapData";
 
 // The campus map's controls, cards and lists. They only read and change
 // CampusMapData, so any map view (2D or 3D) can sit between them.
@@ -84,9 +84,11 @@ export function LayerSwitch({
 export function MapToolbar({
   data,
   canManageStations,
+  view,
 }: {
   data: CampusMapData;
   canManageStations: boolean;
+  view: MapView;
 }) {
   const { checkMode, check, movingTitle } = data;
   return (
@@ -113,6 +115,7 @@ export function MapToolbar({
           nowMs={data.nowMs}
           onDelete={data.deleteAnchor}
           onClose={() => data.setCheckMode(false)}
+          measure={view === "3d"}
         />
       )}
       {movingTitle && (
@@ -328,6 +331,7 @@ export function MapInfoCard({
 /**
  * Under the map: station edit dialog, building panel, lightbulb list,
  * available stations, selected station and group cards, group list.
+ * Under the 3D map, which has no Lightbulbs layer, the lightbulb list comes last and is always there.
  */
 export function CampusMapPanels({
   data,
@@ -335,12 +339,14 @@ export function CampusMapPanels({
   canManageStations,
   hasSelection,
   onStationTap,
+  view,
 }: {
   data: CampusMapData;
   showGroupPins: boolean;
   canManageStations: boolean;
   hasSelection?: boolean;
   onStationTap?: (station: Station) => void;
+  view: MapView;
 }) {
   const {
     layer,
@@ -358,6 +364,38 @@ export function CampusMapPanels({
     positions,
     groupPins,
   } = data;
+  const bulbsRef = useRef<HTMLDivElement>(null);
+  const scrolledToBulbs = useRef(false);
+  // /map?layer=bulbs (the Items page's "See it on the map") opens the 2D map on its Lightbulbs layer; under the
+  // 3D map it scrolls to the list instead, once the bulbs have loaded.
+  const hasBulbs = bulbs.length > 0;
+  useEffect(() => {
+    if (scrolledToBulbs.current || view !== "3d" || !hasBulbs) return;
+    scrolledToBulbs.current = true;
+    if (new URLSearchParams(window.location.search).get("layer") === "bulbs") {
+      bulbsRef.current?.scrollIntoView({ block: "start" });
+    }
+  }, [view, hasBulbs]);
+  const bulbList = (
+    <>
+      {bulbError && (
+        <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">
+          Lightbulb not changed: {bulbError}
+        </p>
+      )}
+      <LightbulbList
+        bulbs={bulbs}
+        nowMs={nowMs}
+        selected={data.selectedBulb}
+        onSelect={(loc) => data.setSelectedBulb((cur) => (cur === loc ? null : loc))}
+        canManage={canManageStations}
+        moving={data.movingBulb}
+        onMove={view === "2d" ? data.setMovingBulb : undefined}
+        resetting={data.resetting}
+        onReset={data.resetBulb}
+      />
+    </>
+  );
   return (
     <>
       {canManageStations && (
@@ -378,26 +416,7 @@ export function CampusMapPanels({
         />
       )}
 
-      {layer === "bulbs" && (
-        <>
-          {bulbError && (
-            <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">
-              Lightbulb not changed: {bulbError}
-            </p>
-          )}
-          <LightbulbList
-            bulbs={bulbs}
-            nowMs={nowMs}
-            selected={data.selectedBulb}
-            onSelect={(loc) => data.setSelectedBulb((cur) => (cur === loc ? null : loc))}
-            canMove={canManageStations}
-            moving={data.movingBulb}
-            onMove={data.setMovingBulb}
-            resetting={data.resetting}
-            onReset={data.resetBulb}
-          />
-        </>
-      )}
+      {view === "2d" && layer === "bulbs" && bulbList}
 
       {layer === "stations" && !(hasSelection ?? !!activeSelected) && !openBuilding && (
         <div className="card mt-3 overflow-hidden p-0">
@@ -598,6 +617,8 @@ export function CampusMapPanels({
           onSelect={(id) => data.setSelectedGroup(id)}
         />
       )}
+
+      {view === "3d" && <div ref={bulbsRef}>{bulbList}</div>}
     </>
   );
 }

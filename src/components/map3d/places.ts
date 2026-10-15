@@ -1,9 +1,7 @@
 // DRAFT (map-3d-draft branch): where the campus map's places sit in the 3D
 // world. Station areas (src/lib/mapBuildings.ts) attach to their 3D building
-// or court, and the lightbulbs to theirs. The dorms are not modelled: they get
-// a flat footprint and a name only.
-
-import type { ProjectorLocation } from "@/lib/types";
+// or court. The dorms are not modelled: they get a flat footprint and a name
+// only.
 
 import type { EN } from "./campusData";
 import type { Vec3 } from "./CampusScene";
@@ -54,9 +52,6 @@ export const AREA_PLACES: AreaPlace[] = [
 export function areaPlace(area: string): AreaPlace | null {
   return AREA_PLACES.find((p) => p.area === area) ?? null;
 }
-
-/** The building each projector's lightbulb sits on. */
-export const BULB_AREAS: Record<ProjectorLocation, string> = { B1: "B1", A3: "A3", TF: "Track & Field" };
 
 /** The point a marker floats over: the area's label. */
 export function labelPoint(p: AreaPlace): Vec3 {

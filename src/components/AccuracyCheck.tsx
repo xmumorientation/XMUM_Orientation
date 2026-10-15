@@ -164,6 +164,7 @@ export function AccuracyCheckPanel({
   nowMs,
   onDelete,
   onClose,
+  measure = false,
 }: {
   live: { acc: number } | null;
   goodFixes: number;
@@ -173,6 +174,8 @@ export function AccuracyCheckPanel({
   nowMs: number;
   onDelete: (id: number) => void;
   onClose: () => void;
+  /** 3D map: a tap measures the GPS error and saves nothing. The saved anchors only bend the 2D map. */
+  measure?: boolean;
 }) {
   const ready = goodFixes >= MIN_FIXES;
   return (
@@ -183,8 +186,9 @@ export function AccuracyCheckPanel({
             <Crosshair className="h-4 w-4" /> Accuracy check
           </h2>
           <p className="mt-0.5 text-xs text-ink-faint">
-            Walk to a spot, check your pin, then tap the map where you really are
-            (full screen is more precise). The tap saves a correction for every map.
+            {measure
+              ? "Walk to a spot, check your pin, then tap the map where you really are (full screen is more precise). The map shows how far your GPS is off, in metres. Nothing is saved."
+              : "Walk to a spot, check your pin, then tap the map where you really are (full screen is more precise). The tap saves a correction for every map."}
           </p>
         </div>
         <button
@@ -209,7 +213,7 @@ export function AccuracyCheckPanel({
       {anchors.length > 0 && (
         <details>
           <summary className="cursor-pointer text-xs font-semibold">
-            Saved corrections ({anchors.length})
+            {measure ? `Saved corrections, 2D map only (${anchors.length})` : `Saved corrections (${anchors.length})`}
           </summary>
           <ul className="mt-1 divide-y divide-paper-200">
             {anchors.map((a) => (

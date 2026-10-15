@@ -1,7 +1,7 @@
 "use client";
 
 import { useFrame, type ThreeEvent } from "@react-three/fiber";
-import { Maximize2, Minus, Plus, RotateCcw, X } from "lucide-react";
+import { Clock, Maximize2, Minus, Moon, Plus, RotateCcw, Sun, Sunset, X } from "lucide-react";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import * as THREE from "three";
@@ -9,18 +9,18 @@ import type { MapControls as MapControlsImpl } from "three-stdlib";
 
 import { MODES, type Mode } from "@/components/map3d/atmosphere";
 import CampusScene, { type CameraView, type Vec3 } from "@/components/map3d/CampusScene";
-import { UNITS_PER_M, gpsToWorld } from "@/components/map3d/geo";
+import { EXTENT, UNITS_PER_M, gpsToWorld } from "@/components/map3d/geo";
 import {
   CameraRig,
   DormTags,
   GroundMarks,
   HitArea,
   Marker,
-  bulbArt,
   clusterArt,
-  haloArt,
+  isTap,
   pinArt,
   stationArt,
+  tagArt,
   type Flight,
   type FlightPlan,
   type GroundCircle,
@@ -28,7 +28,6 @@ import {
 } from "@/components/map3d/markers";
 import {
   AREA_PLACES,
-  BULB_AREAS,
   CONTENT_BOUNDS,
   areaPlace,
   clampToSlab,
@@ -38,15 +37,16 @@ import {
 import { prefersLite } from "@/components/map3d/webgl";
 import { stationDotColor } from "@/components/ui";
 import { groupPinColor } from "@/lib/mapGeo";
-import { PROJECTOR_CODE_NAMES, type MapLightbulb, type ProjectorLocation, type Station } from "@/lib/types";
+import type { Station } from "@/lib/types";
 
 import type { CampusMapViewProps } from "./CampusMap2DView";
-import { LayerSwitch, MapInfoCard } from "./CampusMapPanels";
+import { MapInfoCard } from "./CampusMapPanels";
 import { clusterStatus } from "./useCampusMapData";
 
 // The 3D view: the same data, taps and full-screen viewer as CampusMap2DView,
 // drawn on the 3D campus (map3d/). Stations sit on their building, group pins
-// at their true GPS spot (no warp), lightbulbs on their building.
+// at their true GPS spot (no warp). It has no Lightbulbs layer: the bulbs are
+// listed under the map (CampusMapPanels), and the funfair will show them.
 //
 // One scene serves the card and the full-screen viewer: its element moves
 // between the two, so the 3D context is made once. In the card the camera is
@@ -111,17 +111,27 @@ type Mark = { at: Vec3; dx: number; dy: number; order: number; opacity: number }
 type StationMark = Mark & { station: Station; big: boolean };
 type BadgeMark = Mark & { area: string; stations: Station[]; big: boolean };
 type PinMark = Mark & { groupId: number; color: string; big: boolean; dashed: boolean; manual: boolean };
-type BulbMark = Mark & { bulb: MapLightbulb; big: boolean };
+/** A name tag on the map during Admin's accuracy check: "You", another Admin, the tapped spot. */
+type TagMark = { key: string; text: string; at: Vec3 };
 
 type Taps = {
   station: (s: Station) => void;
   badge: (area: string) => void;
   building: (area: string) => boolean;
-  bulb: (loc: ProjectorLocation) => void;
   group: (id: number) => void;
+  /** Accuracy check: the ground was tapped here (world x, z). */
+  ground: (x: number, z: number) => void;
   /** Records that the scene used this click, so the card does not also open full screen. */
   used: (e: ThreeEvent<MouseEvent>) => void;
 };
+
+/** The light switch: a chosen look, or Auto (by the time of day). */
+const LOOKS: { mode: Mode | null; label: string; Icon: typeof Sun }[] = [
+  { mode: null, label: "Auto", Icon: Clock },
+  { mode: "sunset", label: "Sunset", Icon: Sunset },
+  { mode: "day", label: "Day", Icon: Sun },
+  { mode: "night", label: "Night", Icon: Moon },
+];
 
 /** Reports which areas the camera is close to (full screen only), as "A3|B1". */
 function SplitWatch({ enabled, onChange }: { enabled: boolean; onChange: (key: string) => void }) {
@@ -141,41 +151,30 @@ function SplitWatch({ enabled, onChange }: { enabled: boolean; onChange: (key: s
   return null;
 }
 
-/** A lightbulb, with a pulsing glow when lit. */
-function BulbMarker({
-  mark,
-  accent,
-  size,
-  onTap,
-}: {
-  mark: BulbMark;
-  accent: string;
-  size: number;
-  onTap: (e: ThreeEvent<MouseEvent>) => void;
-}) {
-  const { bulb, big } = mark;
-  const lit = !!bulb.activated_at;
-  const label = `${PROJECTOR_CODE_NAMES[bulb.location]}${lit && bulb.activated_by_group != null ? ` · G${bulb.activated_by_group}` : ""}`;
-  const art = bulbArt(lit, big ? accent : null, label);
-  const halo = useRef<THREE.Group>(null);
-  useFrame(({ clock }) => {
-    const sprite = halo.current?.children[0] as THREE.Sprite | undefined;
-    if (sprite) (sprite.material as THREE.SpriteMaterial).opacity = 0.75 + 0.25 * Math.sin(clock.elapsedTime * 2.6);
-  });
-  const dy = mark.dy + art.h - art.y;
+/**
+ * Accuracy check: the whole slab takes taps (buildings included, at the ground under the tap), so Admin can tap
+ * where they really are.
+ */
+function GroundTap({ taps }: { taps: Taps }) {
   return (
-    <>
-      {lit && (
-        <group ref={halo}>
-          <Marker position={mark.at} art={haloArt()} dy={dy} additive order={mark.order} size={size} />
-        </group>
-      )}
-      <Marker position={mark.at} art={art} dy={dy} order={mark.order + 1} size={size} onTap={onTap} />
-    </>
+    <mesh
+      visible={false}
+      rotation-x={-Math.PI / 2}
+      position-y={0.15}
+      onClick={(e) => {
+        if (!isTap(e)) return;
+        e.stopPropagation();
+        taps.used(e);
+        taps.ground(e.point.x, e.point.z);
+      }}
+    >
+      <planeGeometry args={[EXTENT.x * 2, EXTENT.z * 2]} />
+      <meshBasicMaterial />
+    </mesh>
   );
 }
 
-/** Ground marks, building tap areas and the camera: inside the scene. */
+/** Ground marks, tap areas and the camera: inside the scene. */
 function SceneMarks({
   circles,
   outlines,
@@ -183,6 +182,7 @@ function SceneMarks({
   flight,
   splitEnabled,
   onSplit,
+  checking,
   taps,
 }: {
   circles: GroundCircle[];
@@ -191,21 +191,27 @@ function SceneMarks({
   flight: Flight | null;
   splitEnabled: boolean;
   onSplit: (key: string) => void;
+  /** Admin's accuracy check: taps go to the ground, not the buildings. */
+  checking: boolean;
   taps: Taps;
 }) {
   return (
     <>
       <GroundMarks circles={circles} outlines={outlines} lite={lite} />
-      {AREA_PLACES.map((p) => (
-        <HitArea
-          key={p.area}
-          place={p}
-          height={p.height}
-          onTap={(e) => {
-            if (taps.building(p.area)) taps.used(e);
-          }}
-        />
-      ))}
+      {checking ? (
+        <GroundTap taps={taps} />
+      ) : (
+        AREA_PLACES.map((p) => (
+          <HitArea
+            key={p.area}
+            place={p}
+            height={p.height}
+            onTap={(e) => {
+              if (taps.building(p.area)) taps.used(e);
+            }}
+          />
+        ))
+      )}
       <CameraRig flight={flight} />
       <SplitWatch enabled={splitEnabled} onChange={onSplit} />
     </>
@@ -217,7 +223,7 @@ function SceneMarkers({
   stations,
   badges,
   pins,
-  bulbs,
+  tags,
   showNames,
   accent,
   size,
@@ -226,7 +232,7 @@ function SceneMarkers({
   stations: StationMark[];
   badges: BadgeMark[];
   pins: PinMark[];
-  bulbs: BulbMark[];
+  tags: TagMark[];
   showNames: boolean;
   accent: string;
   size: number;
@@ -235,6 +241,9 @@ function SceneMarkers({
   return (
     <>
       <DormTags />
+      {tags.map((t) => (
+        <Marker key={`tag-${t.key}`} position={t.at} art={tagArt(t.text)} dy={16} order={9} size={size} />
+      ))}
       {badges.map((b) => {
         const status = clusterStatus(b.stations);
         const open = b.stations.filter((s) => s.status === "available").length;
@@ -270,18 +279,6 @@ function SceneMarkers({
           onTap={(e) => {
             taps.used(e);
             taps.station(m.station);
-          }}
-        />
-      ))}
-      {bulbs.map((m) => (
-        <BulbMarker
-          key={`bulb-${m.bulb.location}`}
-          mark={m}
-          accent={accent}
-          size={size}
-          onTap={(e) => {
-            taps.used(e);
-            taps.bulb(m.bulb.location);
           }}
         />
       ))}
@@ -331,17 +328,17 @@ export function CampusMap3DView({
   camera,
 }: CampusMap3DViewProps) {
   const {
-    layer,
     mapStations,
     stations,
     activeSelected,
     openBuilding,
     clusterArea,
     showNames,
-    bulbs,
-    selectedBulb,
     drawnPins,
     selectedGroup,
+    checkMode,
+    check,
+    myId,
   } = data;
   const rootRef = useRef<HTMLDivElement>(null);
   const cardSlot = useRef<HTMLDivElement>(null);
@@ -353,8 +350,14 @@ export function CampusMap3DView({
   const [host, setHost] = useState<HTMLDivElement | null>(null);
   const [env, setEnv] = useState<{ lite: boolean; mode: Mode; touch: boolean; camera: CameraView } | null>(null);
   const [accent, setAccent] = useState(DEFAULT_ACCENT);
+  const [onAccent, setOnAccent] = useState("#ffffff");
   const [flight, setFlight] = useState<Flight | null>(null);
   const [splitKey, setSplitKey] = useState("");
+  // The light switch: null is Auto (by the time of day). It lasts until Auto is picked again or the page reloads.
+  const [look, setLook] = useState<Mode | null>(null);
+  // Accuracy check: where Admin last tapped (world x, z).
+  const [checkTap, setCheckTap] = useState<[number, number] | null>(null);
+  const checking = checkMode && canManageStations;
 
   // The scene's own element, moved between the card and the full-screen viewer.
   useEffect(() => {
@@ -382,11 +385,19 @@ export function CampusMap3DView({
     const el = rootRef.current;
     if (!el) return;
     const css = getComputedStyle(el);
-    setAccent(css.getPropertyValue("--fh-accent").trim() || css.getPropertyValue("--brand-1").trim() || DEFAULT_ACCENT);
+    const fh = css.getPropertyValue("--fh-accent").trim();
+    setAccent(fh || css.getPropertyValue("--brand-1").trim() || DEFAULT_ACCENT);
+    // Text on an accent fill: the group's own (a light group colour gets dark text), else white.
+    setOnAccent((fh && css.getPropertyValue("--fh-on-blue").trim()) || "#ffffff");
   }, [env, fullscreen]);
 
+  useEffect(() => {
+    if (!checkMode) setCheckTap(null);
+  }, [checkMode]);
+
   const isLite = lite ?? env?.lite ?? true;
-  const sceneMode = mode ?? env?.mode ?? "day";
+  // The light switch wins; Auto is the page's `mode`, else the time of day.
+  const sceneMode = look ?? mode ?? env?.mode ?? "day";
   const split = useMemo(() => new Set(fullscreen && splitKey ? splitKey.split("|") : []), [fullscreen, splitKey]);
 
   function fly(plan: FlightPlan) {
@@ -449,9 +460,10 @@ export function CampusMap3DView({
 
   const isSelected = (s: Station) => s.id === activeSelected?.id || s.id === highlightStationId;
 
+  // During Admin's accuracy check the map shows only the check: stations and groups step aside.
   const stationMarks: StationMark[] = [];
   const badgeMarks: BadgeMark[] = [];
-  if (layer === "stations") {
+  if (!checking) {
     for (const [area, list] of byArea) {
       if (list.length >= 2 && !split.has(area)) {
         const big = clusterArea === area || openBuilding === area || list.some(isSelected);
@@ -467,21 +479,33 @@ export function CampusMap3DView({
     }
   }
 
-  const bulbMarks: BulbMark[] =
-    layer === "bulbs"
-      ? bulbs.flatMap((bulb) => {
-          const place = areaPlace(BULB_AREAS[bulb.location]);
-          if (!place) return [];
-          const big = selectedBulb === bulb.location;
-          return [{ bulb, at: labelPoint(place), dx: 0, dy: LABEL_GAP, order: big ? 5 : 0, opacity: 1, big }];
-        })
-      : [];
+  // Accuracy check: "You" at this phone's GPS fix (with its accuracy circle), the other Admins checking, and
+  // the spot last tapped.
+  const tags: TagMark[] = [];
+  const circles: GroundCircle[] = [];
+  if (checking) {
+    for (const o of check.others) {
+      if (check.live && o.user_id === myId) continue;
+      const [x, z] = clampToSlab(gpsToWorld(o.lat, o.lng));
+      tags.push({ key: `admin-${o.user_id}`, text: o.full_name ?? "Admin", at: [x, 0.4, z] });
+      circles.push({ x, z, r: 0.5, color: "#334155", dashed: false });
+    }
+    if (check.live) {
+      const [x, z] = clampToSlab(gpsToWorld(check.live.lat, check.live.lng));
+      tags.push({ key: "you", text: "You", at: [x, 0.4, z] });
+      circles.push({ x, z, r: Math.max(0.5, check.live.acc * UNITS_PER_M), color: "#0284c7", dashed: false });
+    }
+    if (checkTap) {
+      const [x, z] = checkTap;
+      tags.push({ key: "tap", text: "Tapped", at: [x, 0.4, z] });
+      circles.push({ x, z, r: 0.6, color: accent, dashed: false });
+    }
+  }
 
   // Group pins: a GPS fix stands at its true spot, a check-in beside its station's marker. Several at one spot
   // stand side by side. Rough fixes, and the selected group's fix, show their accuracy circle on the ground.
   const pinMarks: PinMark[] = [];
-  const circles: GroundCircle[] = [];
-  if (showGroupPins) {
+  if (showGroupPins && !checking) {
     const beside = new Map<string, number>();
     const atSpot = new Map<string, PinMark[]>();
     for (const { g, pin } of drawnPins) {
@@ -523,7 +547,7 @@ export function CampusMap3DView({
   }
 
   const outlines: GroundOutline[] = [openBuilding, clusterArea].flatMap((area) => {
-    const place = layer === "stations" && area ? areaPlace(area) : null;
+    const place = area && !checking ? areaPlace(area) : null;
     return place ? [{ place, color: accent }] : [];
   });
 
@@ -549,11 +573,6 @@ export function CampusMap3DView({
     // A building or court itself: the same as its marker, or Admin's building panel. False when the tap does
     // nothing here (the card then opens full screen, as a tap on the 2D map's picture does).
     building: (area) => {
-      if (layer === "bulbs") {
-        const loc = bulbs.find((b) => BULB_AREAS[b.location] === area)?.location;
-        if (loc) taps.bulb(loc);
-        return !!loc;
-      }
       if (canManageStations) {
         toggleBuilding(area);
         return true;
@@ -563,8 +582,15 @@ export function CampusMap3DView({
       else if (list.length >= 2 && !split.has(area)) taps.badge(area);
       return list.length === 1 || (list.length >= 2 && !split.has(area));
     },
-    bulb: (loc) => data.setSelectedBulb((current) => (current === loc ? null : loc)),
     group: (id) => data.setSelectedGroup((current) => (current === id ? null : id)),
+    // The averaged GPS fix's distance from the tapped spot, in metres (true scale: no warp to undo).
+    ground: (x, z) => {
+      setCheckTap([x, z]);
+      data.measureCheck((lat, lng) => {
+        const [gx, gz] = gpsToWorld(lat, lng);
+        return Math.hypot(gx - x, gz - z) / UNITS_PER_M;
+      });
+    },
   };
 
   useEffect(() => {
@@ -654,7 +680,7 @@ export function CampusMap3DView({
                     stations={stationMarks}
                     badges={badgeMarks}
                     pins={pinMarks}
-                    bulbs={bulbMarks}
+                    tags={tags}
                     showNames={showNames}
                     accent={accent}
                     size={fullscreen ? 1 : CARD_MARKER_SIZE}
@@ -669,6 +695,7 @@ export function CampusMap3DView({
                   flight={flight}
                   splitEnabled={fullscreen}
                   onSplit={setSplitKey}
+                  checking={checking}
                   taps={taps}
                 />
               </CampusScene>,
@@ -708,10 +735,33 @@ export function CampusMap3DView({
               )}
             </div>
             <div
-              className="pointer-events-auto absolute inset-x-0 z-30 flex justify-center px-3"
-              style={{ top: "calc(max(0.75rem, env(safe-area-inset-top)) + 3.5rem)" }}
+              role="radiogroup"
+              aria-label="Map light"
+              className="pointer-events-auto absolute right-3 z-30 flex gap-0.5 rounded-full bg-white p-1 shadow-lg"
+              style={{ top: "calc(max(0.75rem, env(safe-area-inset-top)) + 3.75rem)" }}
             >
-              <LayerSwitch data={data} dark />
+              {LOOKS.map(({ mode: m, label, Icon }) => {
+                const on = look === m;
+                return (
+                  <button
+                    key={label}
+                    type="button"
+                    role="radio"
+                    aria-checked={on}
+                    aria-label={label}
+                    title={label}
+                    className="flex h-11 w-11 items-center justify-center rounded-full text-stone-700"
+                    style={on ? { background: accent, color: onAccent } : undefined}
+                    onClick={() => {
+                      setLook(m);
+                      // Auto reads the clock again (the map may have been open since before sunset).
+                      if (m === null) setEnv((current) => current && { ...current, mode: modeNow() });
+                    }}
+                  >
+                    <Icon className="h-5 w-5" />
+                  </button>
+                );
+              })}
             </div>
 
             <div

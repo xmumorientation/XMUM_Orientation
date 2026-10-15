@@ -18,7 +18,20 @@ import { DORMS, localToWorld } from "./places";
 /** Texture pixels per CSS pixel, so markers stay sharp on phones. */
 const RES = 2;
 /** A press that moves further than this (CSS px) is a drag, not a tap. */
-export const TAP_SLOP = 8;
+const TAP_SLOP = 8;
+/**
+ * A finger moves more: phones still report a tap after 10–15 px. With the mouse's 8 px, such taps did nothing
+ * (and only nudged the map), so a badge tap on a phone seemed not to centre on its building.
+ */
+const TOUCH_TAP_SLOP = 16;
+
+/** Whether a click in the scene was a tap, not the end of a drag. */
+export function isTap(e: ThreeEvent<MouseEvent>): boolean {
+  // Older Safari sends the click as a plain MouseEvent, without pointerType.
+  const type = (e.nativeEvent as Partial<PointerEvent>).pointerType;
+  const touch = type ? type === "touch" : window.matchMedia("(pointer: coarse)").matches;
+  return e.delta <= (touch ? TOUCH_TAP_SLOP : TAP_SLOP);
+}
 
 /** World size of one CSS pixel for a sprite drawn at a fixed size on screen (sizeAttenuation off). */
 export function usePxScale(): number {
@@ -209,107 +222,6 @@ export function pinArt(
   return { tex, w, h, x, y, r };
 }
 
-// The 2D map's bulb (CampusMap2DView), drawn round (0, 0) in its own units. Path2D is browser only.
-let bulbPaths: { glass: Path2D; shine: Path2D; filament: Path2D; tip: Path2D } | null = null;
-
-/** A lightbulb with its code name under it. Its point (x, y) is the centre of the glass; the name ends at h. */
-export function bulbArt(lit: boolean, ringColor: string | null, label: string): MarkerArt {
-  bulbPaths ??= {
-    glass: new Path2D("M -21 40 C -21 26 -46 12 -46 -8 A 46 46 0 1 1 46 -8 C 46 12 21 26 21 40 Z"),
-    shine: new Path2D("M -30 -14 A 32 32 0 0 1 -10 -38"),
-    filament: new Path2D("M -11 40 L -11 4 L -6 -6 L -1 4 L 4 -6 L 9 4 L 11 4 L 11 40"),
-    tip: new Path2D("M -12 68 L 12 68 L 6 78 L -6 78 Z"),
-  };
-  const paths = bulbPaths;
-  const k = 0.36;
-  const w = 132;
-  const x = 66;
-  const top = 4 + 92 * k;
-  const h = Math.ceil(top + 78 * k + 26);
-  const tex = cachedTexture(`bulb|${lit}|${ringColor}|${label}`, w, h, (ctx) => {
-    ctx.save();
-    ctx.translate(x, top);
-    ctx.scale(k, k);
-    if (ringColor) {
-      ctx.beginPath();
-      ctx.arc(0, -8, 60, 0, Math.PI * 2);
-      ctx.lineWidth = 10;
-      ctx.strokeStyle = ringColor;
-      ctx.stroke();
-    }
-    if (lit) {
-      ctx.strokeStyle = "#f59e0b";
-      ctx.lineWidth = 9;
-      ctx.lineCap = "round";
-      for (const deg of [-90, -45, 0, 180, 225]) {
-        const a = (deg * Math.PI) / 180;
-        ctx.beginPath();
-        ctx.moveTo(Math.cos(a) * 64, -6 + Math.sin(a) * 64);
-        ctx.lineTo(Math.cos(a) * 86, -6 + Math.sin(a) * 86);
-        ctx.stroke();
-      }
-    }
-    ctx.lineJoin = "round";
-    ctx.fillStyle = lit ? "#fcd34d" : "#e7e5e4";
-    ctx.fill(paths.glass);
-    ctx.lineWidth = 6;
-    ctx.strokeStyle = lit ? "#b45309" : "#a8a29e";
-    ctx.stroke(paths.glass);
-    if (lit) {
-      ctx.globalAlpha = 0.9;
-      ctx.fillStyle = "#fef3c7";
-      ctx.beginPath();
-      ctx.arc(0, -6, 28, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.globalAlpha = 1;
-    }
-    ctx.globalAlpha = lit ? 0.95 : 0.8;
-    ctx.lineWidth = 7;
-    ctx.lineCap = "round";
-    ctx.strokeStyle = "#ffffff";
-    ctx.stroke(paths.shine);
-    ctx.globalAlpha = 1;
-    ctx.lineWidth = 4.5;
-    ctx.strokeStyle = lit ? "#ea580c" : "#78716c";
-    ctx.stroke(paths.filament);
-    ctx.fillStyle = lit ? "#a8a29e" : "#78716c";
-    ctx.strokeStyle = "#ffffff";
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.roundRect(-23, 38, 46, 30, 6);
-    ctx.fill();
-    ctx.stroke();
-    ctx.fillStyle = "#44403c";
-    ctx.lineWidth = 3;
-    ctx.fill(paths.tip);
-    ctx.stroke(paths.tip);
-    if (!lit) {
-      ctx.font = `800 30px ${FONT}`;
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillStyle = "#78716c";
-      ctx.fillText("?", 0, -16);
-    }
-    ctx.restore();
-    outlinedText(ctx, label, x, h - 11, 12, lit ? "#b45309" : "#57534e");
-  });
-  return { tex, w, h, x, y: top - 8 * k, r: 46 * k };
-}
-
-/** Soft light round a lit bulb (drawn additively). */
-export function haloArt(): MarkerArt {
-  const w = 128;
-  const tex = cachedTexture("halo", w, w, (ctx) => {
-    const g = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
-    g.addColorStop(0, "rgba(253,230,138,0.9)");
-    g.addColorStop(0.55, "rgba(251,191,36,0.45)");
-    g.addColorStop(1, "rgba(245,158,11,0)");
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, w, w);
-  });
-  return { tex, w, h: w, x: 64, y: 64, r: 64 };
-}
-
 /** A small name tag (the dorms). */
 export function tagArt(text: string): MarkerArt {
   const h = 20;
@@ -383,7 +295,7 @@ export function Marker({
     ? {
         ...hover,
         onClick: (e: ThreeEvent<MouseEvent>) => {
-          if (e.delta > TAP_SLOP) return;
+          if (!isTap(e)) return;
           e.stopPropagation();
           onTap(e);
         },
@@ -420,7 +332,7 @@ export function HitArea({ place, height, onTap }: { place: Placed; height: numbe
       position={[place.pos[0], height / 2, place.pos[1]]}
       rotation-y={place.rotY}
       onClick={(e) => {
-        if (e.delta > TAP_SLOP) return;
+        if (!isTap(e)) return;
         e.stopPropagation();
         onTap(e);
       }}
@@ -577,6 +489,12 @@ export function CameraRig({ flight }: { flight: Flight | null }) {
       anim.current = null;
       return;
     }
+    // Play out what is left of the last drag's damped motion now, so it doesn't nudge the camera off the
+    // flight's end.
+    const damping = controls.enableDamping;
+    controls.enableDamping = false;
+    controls.update();
+    controls.enableDamping = damping;
     const p0 = camera.position.clone();
     const t0 = controls.target.clone();
     let p1: THREE.Vector3;

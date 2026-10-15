@@ -223,6 +223,12 @@ The design branches are merged. These remote branches are still not in `main` (c
 
 ## Done
 
+### Map: 3D campus map on every map page, 2026-10-16 (Ben, branch `map3d-batch4`)
+- `/map`, `/checkin` and `/committee` show the 3D campus (`src/components/map3d/`). The 2D art is the fallback: devices without WebGL, a 3D error, or `?map=2d`. Details: [map3d-implementation-plan.md](map3d-implementation-plan.md), "Progress".
+- The 3D map has no Lightbulbs layer: the lightbulb list is under the map (Admin keeps Reset; Move bulb is on the 2D map only). The Items page's "See it on the map" link scrolls to that list.
+- Full screen has an Auto / Sunset / Day / Night switch.
+- Admin's Accuracy check on the 3D map measures the GPS error in metres and saves nothing. Saved corrections (anchors) only bend the 2D map.
+
 ### Map: Admin accuracy check, and location every 20 s, 2026-10-14 (Zichien)
 Needs migration `0087_map_accuracy_check.sql` (after `0082`–`0085`). Until it runs, maps keep working with the built-in anchors; only the check fails.
 - **Faci phones report every 20 s**, moving or standing still (was 30 s moving, about 60 s still). The server still ignores reports under 10 s apart.
