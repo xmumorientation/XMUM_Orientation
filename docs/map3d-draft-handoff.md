@@ -23,6 +23,18 @@ Paused because Ben's usage limit was low. Pick up from "Next steps".
 3. Commit the fixes on `map-3d-draft`.
 4. Report to Ben in Chinese: the answer below, screenshots (north-up top-down, angled day and night), and the open questions.
 
+## True-scale rebuild (Ben approved 2026-10-15)
+
+Ben chose true scale over the Figma layout. Data: OSM shapes, aligned to the team's GPS points in `src/lib/mapGeo.ts`. World: 1 unit = 7 m, +X north, +Z east, plus a `gpsToWorld(lat, lng)`.
+
+- **Phase 1 (now):**
+  1. Data check: compare each GPS point in main with OSM; list anything more than 20 m off for Ben to confirm; decide on any global shift; cross-check against satellite imagery.
+  2. Lay out at true scale: A1–A5, B1, track and courts, stand, lake and bridge, LakeFront Café, statue and flags.
+  3. Ground: campus lawn, lake and those areas only. Remove the Figma roads and trees (they are in the wrong places).
+  4. A debug layer that shows the GPS points in 3D.
+- **Phase 2 (only after Ben approves):** roads, street lamps, dorms (D1–D5, LY1–LY9), other buildings, trees and landscape (OSM has 841 tree points and 101 tree rows), and the building style reference. That reference was stopped to save credits: heights from photo and imagery, the D towers (OSM says 7 levels, the photo looks taller), and whether B1 should look like the real building.
+- Raw OSM extract and scripts are in the session temp folder (`scratchpad/truescale/`). If it is gone, re-fetch with the query below (add `amenity=university`, landuse and `natural=tree`).
+
 ## Open questions for Ben
 
 - Volleyball: I drew 3 courts (OSM block 55 × 37 m). They are not visible in the photo.
