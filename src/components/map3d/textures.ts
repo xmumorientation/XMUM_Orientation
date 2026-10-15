@@ -125,6 +125,43 @@ export function makeFacade(cols: number, floors: number, seed: number) {
   return { map, emissiveMap };
 }
 
+type Grid = { rows: number; cols: number; wall: string; glass: string; repeat: [number, number] };
+
+/**
+ * A3's facade (photo): `rows` x `cols` square windows on a plain `wall`, tiled `repeat` times. As in
+ * makeFacade, the emissive map lights only some windows, so the walls stay dark at night.
+ */
+export function makeGridFacade(seed: number, { rows, cols, wall, glass, repeat }: Grid) {
+  const S = 256;
+  const [c, ctx] = canvas(S, S);
+  const [e, ectx] = canvas(S, S);
+  const r = rng(seed);
+  ctx.fillStyle = wall;
+  ctx.fillRect(0, 0, S, S);
+  ectx.fillStyle = "#000";
+  ectx.fillRect(0, 0, S, S);
+  const cw = S / cols;
+  const rh = S / rows;
+  for (let y = 0; y < rows; y++) {
+    for (let x = 0; x < cols; x++) {
+      const [wx, wy, ww, wh] = [x * cw + cw * 0.22, y * rh + rh * 0.23, cw * 0.56, rh * 0.56];
+      ctx.fillStyle = glass;
+      ctx.fillRect(wx, wy, ww, wh);
+      if (r() < 0.55) {
+        ectx.fillStyle = r() < 0.7 ? "#ffc875" : "#fff0c8";
+        ectx.fillRect(wx + 1, wy + 1, ww - 2, wh - 2);
+      }
+    }
+  }
+  const map = texture(c);
+  const emissiveMap = texture(e);
+  for (const t of [map, emissiveMap]) {
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    t.repeat.set(...repeat);
+  }
+  return { map, emissiveMap };
+}
+
 /** Glazed roof tiles: courses that run parallel to the eaves. */
 export function makeRoofTiles() {
   const [c, ctx] = canvas(32, 128);

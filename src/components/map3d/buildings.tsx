@@ -3,6 +3,7 @@
 import { useFrame } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
 import * as THREE from "three";
+import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 
 import {
   B1_PLACE,
@@ -21,7 +22,7 @@ import {
   type World,
 } from "./geo";
 import { TanKahKeeStatue } from "./statue";
-import { makeFacade, makeRoofTiles, makeXmumFlag } from "./textures";
+import { makeFacade, makeGridFacade, makeRoofTiles, makeXmumFlag } from "./textures";
 
 // DRAFT: the buildings and landmarks. A1–A5 follow the Jiageng style of
 // Xiamen University (cream walls, red brick, curved red-tile roofs with
@@ -158,15 +159,26 @@ const H_BLOCK = 5;
 
 type BlockProps = { position: [number, number, number]; rotY: number; seed: number; glow: number };
 
-/** `s` is the half width of the walls; the roof's eaves reach 0.7 further. */
-function JiagengBlock({ position, rotY, s, seed, glow }: BlockProps & { s: number }) {
+type Facade = { map: THREE.Texture; emissiveMap: THREE.Texture };
+
+/** A wall whose emissive map lights its windows at night. */
+function FacadeMaterial({ maps, glow }: { maps: Facade; glow: number }) {
+  return <meshStandardMaterial {...maps} emissive="#ffffff" emissiveIntensity={glow} roughness={0.85} />;
+}
+
+/** The ridge of a courtyard block's roof, as a distance from its centre. */
+const ridgeOf = (s: number) => (s + 0.7 + s * 0.42 - 0.35) / 2;
+
+/**
+ * The courtyard block (A1, A2, A4, A5): walls round a garden court under a ring roof with a red ridge.
+ * `s` is the half width of the walls; the roof's eaves reach 0.7 further. `lift` turns up the roof's corners.
+ */
+function Courtyard({ s, outer, court, lift, glow }: { s: number; outer: Facade; court: Facade; lift: number; glow: number }) {
   const inner = s * 0.42;
   const H = H_BLOCK;
-  const outer = useMemo(() => makeFacade(6, 5, seed), [seed]);
-  const court = useMemo(() => makeFacade(2, 5, seed + 3), [seed]);
   const tiles = useMemo(makeRoofTiles, []);
-  const roof = useMemo(() => ringRoofGeometry(s + 0.7, inner - 0.35, 1.9, 0.85), [s, inner]);
-  const r = (s + 0.7 + inner - 0.35) / 2;
+  const roof = useMemo(() => ringRoofGeometry(s + 0.7, inner - 0.35, 1.9, lift), [s, inner, lift]);
+  const r = ridgeOf(s);
   const facades: [number, number, number, number][] = [
     [0, s, 0, 2 * s],
     [0, -s, Math.PI, 2 * s],
@@ -180,30 +192,18 @@ function JiagengBlock({ position, rotY, s, seed, glow }: BlockProps & { s: numbe
     [-inner, 0, Math.PI / 2],
   ];
   return (
-    <group position={position} rotation-y={rotY}>
+    <>
       <Box size={[2 * s + 0.4, 0.3, 2 * s + 0.4]} pos={[0, 0.15, 0]} color="#d3cab9" />
       {facades.map(([x, z, ry, w], i) => (
         <mesh key={i} position={[x, H / 2 + 0.3, z]} rotation-y={ry} castShadow receiveShadow>
           <planeGeometry args={[w, H]} />
-          <meshStandardMaterial
-            map={outer.map}
-            emissiveMap={outer.emissiveMap}
-            emissive="#ffffff"
-            emissiveIntensity={glow}
-            roughness={0.85}
-          />
+          <FacadeMaterial maps={outer} glow={glow} />
         </mesh>
       ))}
       {courtWalls.map(([x, z, ry], i) => (
         <mesh key={i} position={[x, H / 2 + 0.3, z]} rotation-y={ry} receiveShadow>
           <planeGeometry args={[2 * inner, H]} />
-          <meshStandardMaterial
-            map={court.map}
-            emissiveMap={court.emissiveMap}
-            emissive="#ffffff"
-            emissiveIntensity={glow}
-            roughness={0.85}
-          />
+          <FacadeMaterial maps={court} glow={glow} />
         </mesh>
       ))}
       {/* courtyard garden */}
@@ -219,7 +219,7 @@ function JiagengBlock({ position, rotY, s, seed, glow }: BlockProps & { s: numbe
       <mesh geometry={roof} position={[0, H + 0.3, 0]} castShadow receiveShadow>
         <meshStandardMaterial map={tiles} roughness={0.55} metalness={0.05} side={THREE.DoubleSide} />
       </mesh>
-      {/* ridge, with swallowtail ends at each corner */}
+      {/* ridge */}
       {[0, 1].map((k) =>
         [-1, 1].map((sgn) => (
           <Box
@@ -231,18 +231,32 @@ function JiagengBlock({ position, rotY, s, seed, glow }: BlockProps & { s: numbe
           />
         )),
       )}
-      {[
-        [1, 1],
-        [1, -1],
-        [-1, 1],
-        [-1, -1],
-      ].map(([sx, sz]) => {
+    </>
+  );
+}
+
+const CORNERS = [
+  [1, 1],
+  [1, -1],
+  [-1, 1],
+  [-1, -1],
+] as const;
+
+/** A1, A2 and A4: cream walls, brick pilasters, arched windows; the ridge ends in swallowtails at each corner. */
+function JiagengBlock({ position, rotY, s, seed, glow }: BlockProps & { s: number }) {
+  const outer = useMemo(() => makeFacade(6, 5, seed), [seed]);
+  const court = useMemo(() => makeFacade(2, 5, seed + 3), [seed]);
+  const r = ridgeOf(s);
+  return (
+    <group position={position} rotation-y={rotY}>
+      <Courtyard s={s} outer={outer} court={court} lift={0.85} glow={glow} />
+      {CORNERS.map(([sx, sz]) => {
         const dir = new THREE.Vector3(sx, 1.3, sz).normalize();
         const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
         return (
           <mesh
             key={`${sx}${sz}`}
-            position={[sx * (r + 0.2), H + 0.3 + 2.25, sz * (r + 0.2)]}
+            position={[sx * (r + 0.2), H_BLOCK + 0.3 + 2.25, sz * (r + 0.2)]}
             quaternion={q}
             castShadow
           >
@@ -255,21 +269,133 @@ function JiagengBlock({ position, rotY, s, seed, glow }: BlockProps & { s: numbe
   );
 }
 
-/** A3's facade (photo): white walls, square windows in even rows with wide white piers between. */
-function gridFacade() {
-  const c = document.createElement("canvas");
-  c.width = 256;
-  c.height = 256;
-  const ctx = c.getContext("2d")!;
-  ctx.fillStyle = "#f1eee7";
-  ctx.fillRect(0, 0, 256, 256);
-  ctx.fillStyle = "#56677a";
-  for (let y = 0; y < 6; y++) for (let x = 0; x < 4; x++) ctx.fillRect(x * 64 + 14, y * (256 / 6) + 10, 36, 24);
-  const t = new THREE.CanvasTexture(c);
-  t.colorSpace = THREE.SRGBColorSpace;
-  t.wrapS = t.wrapT = THREE.RepeatWrapping;
-  t.anisotropy = 4;
-  return t;
+/** Merges boxes and extrusions into one geometry (one draw call). */
+function merge(parts: THREE.BufferGeometry[]) {
+  return mergeGeometries(parts.map((g) => (g.index ? g.toNonIndexed() : g)))!;
+}
+
+const boxAt = (w: number, h: number, d: number, x: number, y: number, z: number) =>
+  new THREE.BoxGeometry(w, h, d).translate(x, y, z);
+
+/** A curved Dutch gable (photo) standing on y = 0, 2w wide: curved shoulders, a neck, a round top. */
+function dutchGable(w: number) {
+  const n = w * 0.58;
+  const sh = new THREE.Shape();
+  sh.moveTo(-w, 0);
+  sh.lineTo(w, 0);
+  sh.lineTo(w, 0.3);
+  sh.quadraticCurveTo(n, 0.3, n, 0.85);
+  sh.lineTo(n, 1.3);
+  sh.absarc(0, 1.3, n, 0, Math.PI, false);
+  sh.lineTo(-n, 0.85);
+  sh.quadraticCurveTo(-n, 0.3, -w, 0.3);
+  sh.closePath();
+  return new THREE.ExtrudeGeometry(sh, { depth: 0.2, bevelEnabled: false, curveSegments: 10 });
+}
+
+const A5_WALL = { wall: "#f4f1ea", glass: "#4f6072", repeat: [1, 1] as [number, number] };
+const PLINTH = 0.3;
+/** Corner towers: half width, height (they rise past the eaves) and inset of their centres from the walls. */
+const A5_TOWER = { half: 0.65, h: H_BLOCK + 1.4, inset: 0.5 };
+/** Entrance: the bay stands `out` past the wall, beyond the eaves (0.7); porch, steps and ramps in front. */
+const A5_BAY = { half: 1.3, out: 0.75 };
+const A5_PORCH = { half: 1.6, depth: 1.25, steps: 3, stepRun: 0.25, stepHalf: 1.1, ramp: 1.2 };
+
+/**
+ * A5 (photo): white walls with square windows, a tower with a small hipped roof at each corner, and the main
+ * entrance on the side facing the track (local +Z): a bay under a curved Dutch gable with a gabled roof
+ * behind it, a porch on columns over glass doors, then steps between two ramps.
+ */
+function A5Block({ position, rotY, s, seed, glow }: BlockProps & { s: number }) {
+  const H = H_BLOCK;
+  const y0 = PLINTH;
+  const towerAt = s - A5_TOWER.inset;
+  const front = s + A5_BAY.out;
+  const maps = useMemo(
+    () => ({
+      outer: makeGridFacade(seed, { rows: 6, cols: 6, ...A5_WALL }),
+      court: makeGridFacade(seed + 3, { rows: 6, cols: 2, ...A5_WALL }),
+      tower: makeGridFacade(seed + 5, { rows: 8, cols: 1, ...A5_WALL }),
+      bay: makeGridFacade(seed + 6, { rows: 6, cols: 2, ...A5_WALL }),
+    }),
+    [seed],
+  );
+  const geo = useMemo(() => {
+    const { half: th, h: tH } = A5_TOWER;
+    const { half: bh } = A5_BAY;
+    const p = A5_PORCH;
+    const top = PLINTH + H_BLOCK;
+    const towers = merge(
+      CORNERS.map(([sx, sz]) => boxAt(2 * th, tH, 2 * th, sx * towerAt, PLINTH + tH / 2, sz * towerAt)),
+    );
+    // white trim: the porch roof and its columns
+    const trim = merge([
+      boxAt(2 * p.half - 0.2, 0.16, p.depth + 0.05, 0, PLINTH + 1.3, front + p.depth / 2 - 0.02),
+      ...[-1.35, -0.8, 0.8, 1.35].map((x) => boxAt(0.16, 1.22, 0.16, x, PLINTH + 0.61, front + p.depth - 0.15)),
+    ]);
+    // stone: the porch floor, steps down its middle and a ramp each side
+    const rampW = p.half - p.stepHalf;
+    const rampSide = new THREE.Shape([new THREE.Vector2(0, 0), new THREE.Vector2(p.ramp, 0), new THREE.Vector2(0, PLINTH)]);
+    const stone = merge([
+      boxAt(2 * p.half, PLINTH, p.depth, 0, PLINTH / 2, front + p.depth / 2),
+      ...Array.from({ length: p.steps }, (_, k) => {
+        const h = (PLINTH * (p.steps - k)) / (p.steps + 1);
+        return boxAt(2 * p.stepHalf, h, p.stepRun, 0, h / 2, front + p.depth + (k + 0.5) * p.stepRun);
+      }),
+      ...[-1, 1].map((sg) =>
+        new THREE.ExtrudeGeometry(rampSide, { depth: rampW, bevelEnabled: false })
+          .rotateY(-Math.PI / 2)
+          .translate(sg * p.stepHalf + (sg > 0 ? rampW : 0), 0, front + p.depth),
+      ),
+    ]);
+    // the gable, and a gabled roof behind it that runs back into the main roof
+    const roofSide = new THREE.Shape([new THREE.Vector2(-bh, 0), new THREE.Vector2(bh, 0), new THREE.Vector2(0, 1.3)]);
+    const gableRoof = new THREE.ExtrudeGeometry(roofSide, { depth: 1.6, bevelEnabled: false }).translate(0, top, front - 1.8);
+    const gable = dutchGable(bh).translate(0, top, front - 0.2);
+    return { towers, trim, stone, gableRoof, gable };
+  }, [towerAt, front]);
+  return (
+    <group position={position} rotation-y={rotY}>
+      <Courtyard s={s} outer={maps.outer} court={maps.court} lift={0} glow={glow} />
+      <mesh geometry={geo.towers} castShadow receiveShadow>
+        <FacadeMaterial maps={maps.tower} glow={glow} />
+      </mesh>
+      {CORNERS.map(([sx, sz]) => (
+        <group key={`${sx}${sz}`} position={[sx * towerAt, 0, sz * towerAt]}>
+          <HipRoof hx={A5_TOWER.half + 0.15} hz={A5_TOWER.half + 0.15} h={0.8} y={y0 + A5_TOWER.h} top={0.2} />
+        </group>
+      ))}
+      {/* entrance bay, from the ground up to the eaves */}
+      <mesh position={[0, (y0 + H) / 2, (s + front) / 2]} castShadow receiveShadow>
+        <boxGeometry args={[2 * A5_BAY.half, y0 + H, A5_BAY.out]} />
+        <FacadeMaterial maps={maps.bay} glow={glow} />
+      </mesh>
+      <mesh geometry={geo.gable} castShadow receiveShadow>
+        <meshStandardMaterial color="#f8f5ee" roughness={0.8} />
+      </mesh>
+      <mesh geometry={geo.gableRoof} castShadow receiveShadow>
+        <meshStandardMaterial color="#c8452c" roughness={0.6} flatShading />
+      </mesh>
+      <Box
+        size={[0.45, 0.5, 0.06]}
+        pos={[0, y0 + H + 1.25, front + 0.01]}
+        color="#4d5d70"
+        emissive={{ color: "#ffcf86", intensity: glow * 0.9 }}
+      />
+      <Box
+        size={[1.4, 1.0, 0.04]}
+        pos={[0, y0 + 0.5, front + 0.02]}
+        color="#4d5d70"
+        emissive={{ color: "#ffcf86", intensity: glow * 0.9 }}
+      />
+      <mesh geometry={geo.trim} castShadow receiveShadow>
+        <meshStandardMaterial color="#f4f1ea" roughness={0.8} />
+      </mesh>
+      <mesh geometry={geo.stone} castShadow receiveShadow>
+        <meshStandardMaterial color="#d3cab9" roughness={0.9} />
+      </mesh>
+    </group>
+  );
 }
 
 /** One tier of A3's roof: red tiles, white hip ridges; `top` closes it with a flat roof in a white ridge frame. */
@@ -343,18 +469,24 @@ function HipRoof({ hx, hz, h, y, top = 0.35 }: { hx: number; hz: number; h: numb
  * entrance, and a two-tier Chinese roof: wide red eaves with upturned corners and white hips, a set-back
  * storey, and a smaller upper tier with a flat top inside a white ridge frame.
  */
-function FlatBlock({ position, rotY, hx, hz, glow }: BlockProps & { hx: number; hz: number }) {
+function FlatBlock({ position, rotY, hx, hz, seed, glow }: BlockProps & { hx: number; hz: number }) {
   const H = 7.4;
-  const wall = useMemo(() => {
-    const t = gridFacade();
-    t.repeat.set(Math.max(1, Math.round(hx * 0.55)), 1.5);
-    return new THREE.MeshStandardMaterial({ map: t, roughness: 0.8, emissive: new THREE.Color("#ffd89a") });
-  }, [hx]);
-  wall.emissiveIntensity = glow * 0.25;
   const eave = H + 0.3;
   // the set-back storey stands on the lower tier's inner edge
   const cx = hx - 1.3;
   const cz = hz - 1.3;
+  // Only the windows glow at night (emissive map), as on the other A-blocks.
+  const [wall, storey] = useMemo(() => {
+    const lit = (maps: ReturnType<typeof makeGridFacade>) =>
+      new THREE.MeshStandardMaterial({ ...maps, roughness: 0.8, emissive: new THREE.Color("#ffffff") });
+    const across = (half: number) => Math.max(1, Math.round(half * 0.55));
+    return [
+      lit(makeGridFacade(seed, { rows: 6, cols: 4, wall: "#f1eee7", glass: "#56677a", repeat: [across(hx), 1.5] })),
+      lit(makeGridFacade(seed + 7, { rows: 1, cols: 4, wall: "#5d6a78", glass: "#46525f", repeat: [across(cx), 1] })),
+    ];
+  }, [seed, hx, cx]);
+  wall.emissiveIntensity = glow;
+  storey.emissiveIntensity = glow;
   // The front (local +Z) faces the statue and the main road.
   const cols = [-1.2, -0.4, 0.4, 1.2];
   return (
@@ -376,12 +508,7 @@ function FlatBlock({ position, rotY, hx, hz, glow }: BlockProps & { hx: number; 
       <Box size={[3.8, 0.25, 1.8]} pos={[0, 2.6, hz + 0.75]} color="#f4f1ea" />
       <HipRoof hx={1.9} hz={0.95} h={0.6} y={2.7} top={0.25} />
       <RoofTier ox={hx + 0.9} oz={hz + 0.9} w={2.2} h={1.3} lift={0.45} y={eave} />
-      <Box
-        size={[2 * cx, 1.1, 2 * cz]}
-        pos={[0, eave + 1.2 + 0.55, 0]}
-        color="#5d6a78"
-        emissive={{ color: "#ffcf86", intensity: glow * 0.5 }}
-      />
+      <Box size={[2 * cx, 1.1, 2 * cz]} pos={[0, eave + 1.2 + 0.55, 0]} material={storey} />
       <RoofTier ox={cx + 0.6} oz={cz + 0.6} w={1.7} h={1.0} lift={0.35} y={eave + 2.3} top />
     </group>
   );
@@ -393,6 +520,15 @@ export function Blocks({ glow }: { glow: number }) {
       {BLOCKS.map((b, i) =>
         b.flat ? (
           <FlatBlock key={b.name} position={at(b.pos)} rotY={b.rotY} hx={b.hx} hz={b.hz} seed={i + 1} glow={glow} />
+        ) : b.name === "A5" ? (
+          <A5Block
+            key={b.name}
+            position={at(b.pos)}
+            rotY={b.rotY}
+            s={(b.hx + b.hz) / 2 - 0.7}
+            seed={i + 1}
+            glow={glow}
+          />
         ) : (
           <JiagengBlock
             key={b.name}

@@ -79,3 +79,9 @@ The 2D map's accuracy work (the thin-plate-spline warp in `src/lib/mapGeo.ts`) o
 
 - Screenshot URL parameters: `?intro=0&mode=day|sunset|night&cam=x,y,z,tx,ty,tz`. North-up view of the courts: `cam=-19.5,58,27,-16.5,0,27`.
 - Screenshots were taken with headless Chrome over the DevTools protocol, with a phone size emulated for mobile shots (desktop Chrome won't go below 500 px wide). Run it with `node --experimental-websocket` (Node 20). The script was in the session's temp folder; write it again if it is gone.
+
+## A3 night windows and A5 detail (2026-10-15, not committed)
+
+- A3 at night: the whole wall glowed because its material had an emissive colour but no emissive map. `makeGridFacade` in `textures.ts` now draws an emissive map that lights about half the windows, as `makeFacade` does for the other blocks. The set-back storey uses it too. The glass bay over the entrance still glows as a whole, on purpose.
+- A5 (Ben's photos): `A5Block` in `buildings.tsx`. White walls with square windows, a corner tower with a small hipped roof at each corner, and the main entrance on the side facing the track (local +Z): a bay under a curved Dutch gable, a porch on columns over glass doors, steps and two ramps. A1, A2 and A4 now share the `Courtyard` shell with A5 and look the same as before.
+- Still to do: screenshot A5 by day and night and check it against the photos; keep trees and bushes off the entrance (it reaches about 2 units past the footprint, and `inKeepOut` does not know about it yet); commit.
