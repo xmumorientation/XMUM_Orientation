@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1139 478" width="1139" height="478" font-family="system-ui,sans-serif">
+<rect width="100%" height="100%" fill="#14111f"/>
+<text x="14" y="24" fill="#fff" font-size="17" font-weight="800">Vortexa Funfair · layout draft (north up, real positions of the dorm footprints)</text>
+<polygon points="485.0,532.9 496.7,540.3 531.6,553.9 553.2,559.3 582.8,561.0 607.4,560.8 644.6,575.1 661.8,576.3 680.3,573.2 708.7,564.9 725.2,561.7 742.4,564.7 756.0,569.7 782.7,589.2 798.5,593.3 807.5,593.1 815.7,591.6 823.0,587.0 827.0,581.4 830.6,568.1 829.8,550.1 819.7,512.0 811.6,502.0 780.8,477.4 769.9,463.2 764.0,449.8 764.3,409.5 762.3,398.3 757.4,387.4 749.7,376.4 734.7,367.4 717.7,361.9 697.3,358.9 653.0,360.7 618.8,360.1 600.8,355.1 580.7,344.2 568.0,334.7 538.2,294.1 522.8,281.7 489.3,270.1 470.6,267.8 458.0,270.1 427.2,288.0 409.5,295.1 381.3,303.3 355.8,302.8 319.9,296.5 303.1,290.0 302.4,301.8 316.9,321.0 318.9,326.4 329.6,327.6 330.6,335.4 318.2,336.3 313.1,353.3 309.4,357.0 304.1,358.9 303.6,365.0 315.0,379.9 327.2,386.9 342.7,390.3 385.1,388.8 415.0,384.5 445.7,374.3 474.6,367.5 499.6,366.0 531.6,374.5 549.9,386.8 559.3,401.5 558.8,419.4 543.1,431.8 500.6,442.7 482.8,449.6 475.3,457.1 473.1,466.3 463.1,473.8 463.1,484.0 478.4,486.4 481.8,502.5 478.6,523.6" fill="#1f5f8f" opacity="0.8"/>
+<polygon points="895.4,523.6 1099.4,525.3 1100.2,431.8 896.2,430.3" fill="#555" /><text x="998" y="482" fill="#ccc" font-size="11" text-anchor="middle">B1</text>
+<polygon points="256.7,362.8 257.7,371.6 260.4,378.2 266.4,384.4 272.2,387.3 280.8,387.9 289.0,385.1 295.1,379.1 299.2,368.9 299.5,355.6 296.1,344.6 290.2,338.3 280.2,334.7 269.6,336.6 261.5,343.6 257.4,353.8" fill="#c0392b"/>
+<polygon points="174.1,259.2 182.2,240.9 151.6,227.5 168.8,189.0 147.2,179.5 131.8,214.2 99.6,200.1 89.6,222.4 124.4,237.7 108.0,274.6 126.5,282.7 143.1,245.7" fill="#ff4fa3" fill-opacity="0.35" stroke="#ff4fa3" stroke-width="1.5"/>
+<text x="136" y="228" fill="#fff" font-size="11" font-weight="700" text-anchor="middle">LY1</text>
+<text x="136" y="240" fill="#ff4fa3" font-size="9.5" text-anchor="middle">Carousel</text>
+<polygon points="262.8,248.2 276.8,230.7 256.0,214.2 272.5,193.1 255.0,179.7 238.7,200.6 216.8,183.3 202.8,200.6 225.1,218.3 207.2,241.1 224.7,254.3 242.2,231.9" fill="#ff4fa3" fill-opacity="0.35" stroke="#ff4fa3" stroke-width="1.5"/>
+<text x="240" y="214" fill="#fff" font-size="11" font-weight="700" text-anchor="middle">LY2</text>
+<text x="240" y="227" fill="#ff4fa3" font-size="9.5" text-anchor="middle">Game booths (duck shoot)</text>
+<polygon points="309.7,169.5 403.9,156.7 389.5,52.2 295.5,64.9" fill="#ff4fa3" fill-opacity="0.35" stroke="#ff4fa3" stroke-width="1.5"/>
+<text x="350" y="109" fill="#fff" font-size="11" font-weight="700" text-anchor="middle">LY3</text>
+<text x="350" y="122" fill="#ff4fa3" font-size="9.5" text-anchor="middle">Vortexa Eye (Ferris wheel) + food stalls</text>
+<polygon points="110.8,118.5 124.8,101.0 104.0,84.5 120.4,63.4 103.0,50.0 86.7,70.9 64.8,53.5 50.8,70.9 72.9,88.4 55.2,111.3 72.8,124.6 90.3,102.2" fill="#ff4fa3" fill-opacity="0.35" stroke="#ff4fa3" stroke-width="1.5"/>
+<text x="88" y="85" fill="#fff" font-size="11" font-weight="700" text-anchor="middle">LY6</text>
+<text x="88" y="98" fill="#ff4fa3" font-size="9.5" text-anchor="middle">Spider ride</text>
+<polygon points="238.0,118.0 252.1,100.6 231.2,84.1 247.7,63.1 230.2,49.6 214.0,70.5 192.1,53.2 178.0,70.5 200.3,88.1 182.6,110.8 199.9,124.3 217.6,101.8" fill="#ff4fa3" fill-opacity="0.35" stroke="#ff4fa3" stroke-width="1.5"/>
+<text x="215" y="84" fill="#fff" font-size="11" font-weight="700" text-anchor="middle">LY7</text>
+<text x="215" y="97" fill="#ff4fa3" font-size="9.5" text-anchor="middle">Spider ride</text>
+<polygon points="493.7,227.3 507.6,209.9 486.9,193.5 503.4,172.2 485.9,158.8 469.5,179.7 447.6,162.3 433.7,179.7 455.9,197.4 438.1,220.2 455.6,233.6 473.1,211.0" fill="#2fd3ff" fill-opacity="0.35" stroke="#2fd3ff" stroke-width="1.5"/>
+<text x="471" y="194" fill="#fff" font-size="11" font-weight="700" text-anchor="middle">LY4</text>
+<text x="471" y="206" fill="#2fd3ff" font-size="9.5" text-anchor="middle">Teacups</text>
+<polygon points="616.4,229.2 632.2,213.5 613.5,194.8 632.2,175.6 616.4,160.3 597.9,179.2 578.0,159.5 562.2,175.3 582.2,195.2 562.0,215.9 577.8,231.0 597.9,210.6" fill="#2fd3ff" fill-opacity="0.35" stroke="#2fd3ff" stroke-width="1.5"/>
+<text x="597" y="193" fill="#fff" font-size="11" font-weight="700" text-anchor="middle">LY5</text>
+<text x="597" y="206" fill="#2fd3ff" font-size="9.5" text-anchor="middle">Bumper cars</text>
+<polygon points="489.4,111.5 503.4,94.0 482.6,77.5 498.9,56.4 481.6,43.0 465.3,63.9 443.4,46.6 429.4,63.9 451.5,81.6 433.8,104.4 451.3,117.6 468.9,95.2" fill="#2fd3ff" fill-opacity="0.35" stroke="#2fd3ff" stroke-width="1.5"/>
+<text x="466" y="78" fill="#fff" font-size="11" font-weight="700" text-anchor="middle">LY8</text>
+<text x="466" y="91" fill="#2fd3ff" font-size="9.5" text-anchor="middle">Swing ride</text>
+<polygon points="644.5,109.8 660.3,94.2 641.6,75.3 660.3,56.3 644.5,41.0 625.9,59.8 606.0,40.1 590.2,55.8 610.3,75.8 590.1,96.4 605.9,111.7 625.9,91.3" fill="#2fd3ff" fill-opacity="0.35" stroke="#2fd3ff" stroke-width="1.5"/>
+<text x="625" y="74" fill="#fff" font-size="11" font-weight="700" text-anchor="middle">LY9</text>
+<text x="625" y="87" fill="#2fd3ff" font-size="9.5" text-anchor="middle">Drop tower</text>
+<polygon points="957.3,342.2 965.4,374.8 1028.3,351.9 1038.9,378.4 1069.5,369.8 1054.3,332.5 1088.5,321.0 1080.3,295.1 1040.6,308.4 1033.1,284.2 1009.3,292.2 1018.0,320.4" fill="#ffd23f" fill-opacity="0.35" stroke="#ffd23f" stroke-width="1.5"/>
+<text x="1026" y="333" fill="#fff" font-size="11" font-weight="700" text-anchor="middle">D1</text>
+<text x="1026" y="346" fill="#ffd23f" font-size="9.5" text-anchor="middle">Arcade + prize stand</text>
+<polygon points="994.5,183.9 1003.2,210.8 942.3,230.0 952.5,261.6 1014.6,242.1 1024.4,272.7 1056.0,262.6 1044.6,227.3 1077.3,216.9 1068.3,188.9 1027.5,201.6 1019.3,176.1" fill="#ffd23f" fill-opacity="0.35" stroke="#ffd23f" stroke-width="1.5"/>
+<text x="1014" y="224" fill="#fff" font-size="11" font-weight="700" text-anchor="middle">D2</text>
+<text x="1014" y="237" fill="#ffd23f" font-size="9.5" text-anchor="middle">Haunted house</text>
+<polygon points="825.7,312.3 833.2,341.7 868.9,333.0 874.6,369.8 903.0,364.0 895.6,329.6 956.8,311.8 948.6,280.8 897.3,297.5 887.4,267.6 863.8,275.1 870.7,301.4" fill="#ffd23f" fill-opacity="0.35" stroke="#ffd23f" stroke-width="1.5"/>
+<text x="889" y="314" fill="#fff" font-size="11" font-weight="700" text-anchor="middle">D3</text>
+<text x="889" y="327" fill="#ffd23f" font-size="9.5" text-anchor="middle">Pirate ship</text>
+<polygon points="684.2,195.5 680.2,227.5 755.6,237.0 751.7,268.1 782.5,271.8 787.1,235.3 822.3,239.7 826.4,207.4 781.8,202.0 784.9,177.7 759.7,174.4 756.0,204.5" fill="#ffd23f" fill-opacity="0.35" stroke="#ffd23f" stroke-width="1.5"/>
+<text x="758" y="219" fill="#fff" font-size="11" font-weight="700" text-anchor="middle">D4</text>
+<text x="758" y="232" fill="#ffd23f" font-size="9.5" text-anchor="middle">Roller coaster (station)</text>
+<polygon points="707.9,65.8 701.4,98.9 737.6,106.1 730.8,140.1 755.6,145.0 761.1,117.5 842.0,133.4 848.3,101.8 780.1,88.4 786.8,55.2 759.4,49.8 754.3,75.0" fill="#ffd23f" fill-opacity="0.35" stroke="#ffd23f" stroke-width="1.5"/>
+<text x="770" y="98" fill="#fff" font-size="11" font-weight="700" text-anchor="middle">D5</text>
+<text x="770" y="111" fill="#ffd23f" font-size="9.5" text-anchor="middle">Roller coaster (loop)</text>
+<polygon points="907.6,115.6 886.9,130.4 875.8,143.7 867.2,162.0 863.8,182.8 874.1,210.3 908.8,224.1 930.8,217.1 952.2,198.7 967.8,166.1 966.6,139.1 954.4,119.5 934.1,109.6" fill="#ffd23f" fill-opacity="0.35" stroke="#ffd23f" stroke-width="1.5"/>
+<text x="917" y="165" fill="#fff" font-size="11" font-weight="700" text-anchor="middle">Canteen D6</text>
+<text x="917" y="178" fill="#ffd23f" font-size="9.5" text-anchor="middle">Big Top circus tent</text>
+<rect x="515" y="285" width="52" height="14" rx="7" fill="none" stroke="#ffd23f" stroke-width="2"/><text x="541" y="296" fill="#ffd23f" font-size="9" font-weight="800" text-anchor="middle">VORTEXA</text><text x="541" y="312" fill="#ccc" font-size="9" text-anchor="middle">neon gate (from the lake park)</text>
+<text x="187" y="157" fill="#ff4fa3" font-size="13" text-anchor="middle">⚡</text>
+<text x="541" y="140" fill="#2fd3ff" font-size="13" text-anchor="middle">⚡</text>
+<text x="850" y="276" fill="#ffd23f" font-size="13" text-anchor="middle">⚡</text>
+<rect x="14" y="420.0" width="12" height="12" fill="#ff4fa3"/><text x="32" y="430.0" fill="#fff" font-size="12">West · Neon Pier</text>
+<rect x="274" y="420.0" width="12" height="12" fill="#2fd3ff"/><text x="292" y="430.0" fill="#fff" font-size="12">Central · Starlight Midway</text>
+<rect x="534" y="420.0" width="12" height="12" fill="#ffd23f"/><text x="552" y="430.0" fill="#fff" font-size="12">East · Big Top</text>
+<text x="14" y="454.0" fill="#aaa" font-size="11">⚡ = zone power box. Each zone stays dark until the key(s) Admin assigns to it are unlocked; then it powers up. Lake blue, LakeFront Café red, B1 grey for reference.</text>
+</svg>

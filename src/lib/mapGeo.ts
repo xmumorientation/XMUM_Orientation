@@ -17,7 +17,7 @@ import { MAP_BUILDINGS } from "@/lib/mapBuildings";
 
 type Area = (typeof MAP_BUILDINGS)[number]["area"];
 
-const GPS_POINTS: Record<Area, { lat: number; lng: number }> = {
+export const GPS_POINTS: Record<Area, { lat: number; lng: number }> = {
   A1: { lat: 2.830716513626805, lng: 101.70238566331372 },
   A2: { lat: 2.830894481771187, lng: 101.70300445323068 },
   A3: { lat: 2.831185702312712, lng: 101.70377875057042 },
@@ -30,7 +30,7 @@ const GPS_POINTS: Record<Area, { lat: number; lng: number }> = {
 };
 
 /** Places on the art that are not buildings, to fill the gaps between them. */
-const LANDMARKS: { name: string; lat: number; lng: number; x: number; y: number }[] = [
+export const LANDMARKS: { name: string; lat: number; lng: number; x: number; y: number }[] = [
   // Red dome in the right-hand lake = LakeFront Café.
   { name: "LakeFront Café", lat: 2.833032, lng: 101.703063, x: 60.6, y: 29.8 },
   // Red bridge between the two lakes = middle of the causeway across the water.
