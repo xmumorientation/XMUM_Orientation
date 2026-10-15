@@ -1,6 +1,6 @@
 # 3D map: replacing the 2D Figma map (plan, 2026-10-15)
 
-Branch: `map-3d-draft` (Ben: stay on this branch). Not started yet. Pick up from "Steps".
+Branch: `map-3d-draft` (Ben: stay on this branch). In progress: see "Progress" at the end.
 
 ## Goal
 
@@ -116,4 +116,4 @@ Related components to check:
 
 ## Progress
 
-- (none yet)
+- 2026-10-15, step 1 done: `map3d/CampusScene.tsx` is the embeddable scene. It fills its parent and draws the OSM attribution itself. Props: `mode`, `lite` (default `prefersLite()`: viewport 768px or narrower, or 4 or fewer cores, or 4 GB memory or less), `camera` (start view, read once on mount; the default depends on container width), `intro`, `labels`, `controlsRef`, and `children` (rendered inside the Canvas, for markers and pins). `map3d/webgl.ts` has `canUseWebGL()` for step 4. `CampusMap3D.tsx` is now only the `/map3d` demo. It adds `?lite=0|1` and `?stats=1` (development only; logs one frame's draw calls and triangles as a `[map3d stats]` warning). Lite mode has no Effects or Stars, DPR up to 1.5, a 1024 shadow map, no tree shadows, half the estate palms and two thirds of the campus trees, and a ground canvas at 10 px per unit instead of 20. Measured (shadow and effect passes included): 1440x900 full 714 calls / 479k tris, lite 638 / 245k; 390x844 full 703 / 480k, lite 627 / 246k. Draw calls barely drop, most likely because they come from the many separate building and court meshes, drawn again in the shadow pass. If phones are slow, merge static meshes or turn shadows off in lite mode.

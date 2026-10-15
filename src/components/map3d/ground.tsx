@@ -26,14 +26,16 @@ import {
   type Img,
   type World,
 } from "./geo";
-import { campusTrees, plantation } from "./plants";
+import { campusTrees, plantation, thinForLite } from "./plants";
 import { drawCarPark, drawCourts } from "./sports";
 import { makeSoil } from "./textures";
 
 // DRAFT: the flat parts of the map (roads, paths, lawns, lakebeds, track)
 // are painted onto one top-down canvas and laid on the ground plane.
 
-const PX = 20; // canvas px per world unit
+// canvas px per world unit (lite mode: about a quarter of the pixels)
+const PX_FULL = 20;
+const PX_LITE = 10;
 
 function rng(seed: number) {
   return () => {
@@ -42,7 +44,8 @@ function rng(seed: number) {
   };
 }
 
-function makeGroundTexture(): THREE.CanvasTexture {
+function makeGroundTexture(lite: boolean): THREE.CanvasTexture {
+  const PX = lite ? PX_LITE : PX_FULL;
   const canvas = document.createElement("canvas");
   canvas.width = EXTENT.x * 2 * PX;
   canvas.height = EXTENT.z * 2 * PX;
@@ -202,7 +205,8 @@ function makeGroundTexture(): THREE.CanvasTexture {
   drawCourts(ctx);
 
   // soft shade under trees and buildings (cheap ambient occlusion)
-  for (const t of [...campusTrees(), ...plantation()]) {
+  const trees = lite ? [...thinForLite(campusTrees()), ...thinForLite(plantation())] : [...campusTrees(), ...plantation()];
+  for (const t of trees) {
     const rad = (t.kind === "oil" ? 1.9 : t.kind === "palm" ? 1.2 : 1.6) * t.s;
     const g = ctx.createRadialGradient(t.x, t.z, 0, t.x, t.z, rad);
     g.addColorStop(0, "rgba(0,0,0,0.3)");
@@ -231,7 +235,7 @@ function makeGroundTexture(): THREE.CanvasTexture {
 
   const tex = new THREE.CanvasTexture(canvas);
   tex.colorSpace = THREE.SRGBColorSpace;
-  tex.anisotropy = 8;
+  tex.anisotropy = lite ? 4 : 8;
   return tex;
 }
 
@@ -334,8 +338,8 @@ function drawTrack(ctx: CanvasRenderingContext2D) {
   ctx.restore();
 }
 
-export function Ground() {
-  const tex = useMemo(() => makeGroundTexture(), []);
+export function Ground({ lite = false }: { lite?: boolean }) {
+  const tex = useMemo(() => makeGroundTexture(lite), [lite]);
   useEffect(() => () => tex.dispose(), [tex]);
   return (
     <mesh rotation-x={-Math.PI / 2} receiveShadow>

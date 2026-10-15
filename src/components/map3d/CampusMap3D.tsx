@@ -1,47 +1,38 @@
 "use client";
 
-import { Html, MapControls } from "@react-three/drei";
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { useEffect, useMemo, useRef, useState } from "react";
-import * as THREE from "three";
+import { Html } from "@react-three/drei";
+import { useFrame, useThree } from "@react-three/fiber";
+import { useEffect, useRef, useState } from "react";
 import type { MapControls as MapControlsImpl } from "three-stdlib";
 
-import { Atmosphere, Effects, MODES, type Mode } from "./atmosphere";
-import { B1Building, Blocks, Bridge, Dome, Flag, Grandstand, Letters, Statue } from "./buildings";
-import { GPS_MARKERS, LABELS } from "./geo";
-import { Ground, Slab } from "./ground";
-import { SportsCourts, TrackFixtures } from "./sports";
-import { Lamps, Vegetation } from "./vegetation";
-import { Duck, Lakes } from "./water";
+import { MODES, type Mode } from "./atmosphere";
+import CampusScene, { type CameraView } from "./CampusScene";
+import { GPS_MARKERS } from "./geo";
+import { prefersLite } from "./webgl";
 
-// DRAFT (map-3d-draft branch, not for main): a 3D take on the Figma campus
-// map, to see how it looks. No stations, groups or lightbulbs yet.
+// DRAFT (map-3d-draft branch, not for main): the /map3d demo page. Wraps
+// CampusScene with a header, mode buttons and a labels toggle.
 
-type Vec3 = [number, number, number];
-const START: Vec3 = [118, 104, 118];
-// Phones look at the buildings and lakes rather than the middle of the slab.
-const TARGET_MOBILE: Vec3 = [-14, 0, -10];
-const START_MOBILE: Vec3 = [TARGET_MOBILE[0] + 190, 230, TARGET_MOBILE[2] + 190];
-
-type View = { mobile: boolean; pos: Vec3; target: Vec3; intro: boolean; gps: boolean };
+type Demo = { camera?: CameraView; intro: boolean; gps: boolean; lite: boolean; stats: boolean; touch: boolean };
 
 /**
- * Draft-only: ?cam=x,y,z,tx,ty,tz sets the start view, ?mode=day|sunset|night the look (for screenshots),
- * ?gps=1 shows the team's GPS points.
+ * Draft-only URL params, for screenshots: ?cam=x,y,z,tx,ty,tz the start view, ?mode=day|sunset|night the look,
+ * ?intro=0 no swoop, ?gps=1 the team's GPS points, ?lite=0|1 force lite mode, ?stats=1 log draw calls (dev only).
  */
-function readView(): { view: View; mode: Mode | null } {
+function readDemo(): { demo: Demo; mode: Mode | null } {
   const q = new URLSearchParams(window.location.search);
-  const mobile = window.matchMedia("(max-width: 768px)").matches;
   const v = q.get("cam")?.split(",").map(Number);
   const cam = v && v.length === 6 && !v.some(Number.isNaN) ? v : null;
   const m = q.get("mode");
+  const lite = q.get("lite");
   return {
-    view: {
-      mobile,
-      pos: cam ? [cam[0], cam[1], cam[2]] : mobile ? START_MOBILE : START,
-      target: cam ? [cam[3], cam[4], cam[5]] : mobile ? TARGET_MOBILE : [0, 0, 0],
+    demo: {
+      camera: cam ? { position: [cam[0], cam[1], cam[2]], target: [cam[3], cam[4], cam[5]] } : undefined,
       intro: !cam && q.get("intro") !== "0",
       gps: q.get("gps") === "1",
+      lite: lite === "1" ? true : lite === "0" ? false : prefersLite(),
+      stats: process.env.NODE_ENV === "development" && q.get("stats") === "1",
+      touch: window.matchMedia("(max-width: 768px)").matches,
     },
     mode: m === "day" || m === "sunset" || m === "night" ? m : null,
   };
@@ -81,95 +72,33 @@ function GpsMarkers() {
   );
 }
 
-/** Swoop in from high and to the side, then hand over to the controls. */
-function Intro({ view }: { view: View }) {
-  const { camera, controls } = useThree() as unknown as { camera: THREE.Camera; controls: MapControlsImpl | null };
-  const state = useRef<{ t: number; done: boolean; from?: THREE.Spherical; to?: THREE.Spherical }>({
-    t: 0,
-    done: !view.intro,
-  });
+/**
+ * Dev-only (?stats=1): logs draw calls and triangles for one whole frame (shadow and effect passes included),
+ * once, 6 s in. Logged as a warning so the screenshot script prints it.
+ */
+function RenderStats({ lite }: { lite: boolean }) {
+  const { gl, size } = useThree();
+  const done = useRef(false);
   useEffect(() => {
-    if (!controls) return;
-    controls.target.set(...view.target);
-    camera.position.set(...view.pos);
-    controls.update();
-    controls.saveState();
-    if (state.current.done) return;
-    const to = new THREE.Spherical().setFromVector3(
-      new THREE.Vector3(...view.pos).sub(new THREE.Vector3(...view.target)),
-    );
-    const from = to.clone();
-    from.radius *= 1.9;
-    from.phi *= 0.45;
-    from.theta -= 1.1;
-    state.current.from = from;
-    state.current.to = to;
-    const stop = () => (state.current.done = true);
-    controls.addEventListener("start", stop);
-    return () => controls.removeEventListener("start", stop);
-  }, [controls, camera, view]);
-  useFrame((_, dt) => {
-    const s = state.current;
-    if (s.done || !s.from || !s.to || !controls) return;
-    s.t = Math.min(1, s.t + dt / 2.6);
-    const k = 1 - Math.pow(1 - s.t, 3);
-    const sph = new THREE.Spherical(
-      THREE.MathUtils.lerp(s.from.radius, s.to.radius, k),
-      THREE.MathUtils.lerp(s.from.phi, s.to.phi, k),
-      THREE.MathUtils.lerp(s.from.theta, s.to.theta, k),
-    );
-    camera.position.setFromSpherical(sph).add(controls.target);
-    controls.update();
-    if (s.t >= 1) s.done = true;
-  });
+    gl.info.autoReset = false;
+    return () => {
+      gl.info.autoReset = true;
+    };
+  }, [gl]);
+  // Runs first in each frame, so gl.info holds everything the previous frame drew.
+  useFrame(({ clock }) => {
+    if (done.current) return;
+    if (clock.elapsedTime > 6) {
+      done.current = true;
+      const { calls, triangles } = gl.info.render;
+      console.warn(
+        `[map3d stats] lite=${lite} ${size.width}x${size.height} dpr=${gl.getPixelRatio()} calls=${calls} triangles=${triangles}`,
+      );
+      gl.info.autoReset = true;
+    }
+    gl.info.reset();
+  }, -1000);
   return null;
-}
-
-/** Minor labels fade in within this distance of the camera. */
-const MINOR_LABEL_DISTANCE = 95;
-
-function Label({ name, pos, y, minor }: (typeof LABELS)[number]) {
-  const ref = useRef<HTMLDivElement>(null);
-  const at = useMemo(() => new THREE.Vector3(pos[0], y, pos[1]), [pos, y]);
-  useFrame(({ camera }) => {
-    if (!minor || !ref.current) return;
-    const opacity = camera.position.distanceTo(at) < MINOR_LABEL_DISTANCE ? "1" : "0";
-    if (ref.current.style.opacity !== opacity) ref.current.style.opacity = opacity;
-  });
-  return (
-    <Html position={[pos[0], y, pos[1]]} center zIndexRange={[10, 0]} style={{ pointerEvents: "none" }}>
-      <div
-        ref={ref}
-        style={{
-          whiteSpace: "nowrap",
-          fontFamily: "system-ui, sans-serif",
-          fontSize: minor ? 10 : 11,
-          fontWeight: 700,
-          letterSpacing: 0.2,
-          color: "#fff",
-          background: "rgba(20,18,30,0.72)",
-          border: "1px solid rgba(255,255,255,0.22)",
-          borderRadius: 999,
-          padding: "3px 8px",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.3)",
-          opacity: minor ? 0 : 1,
-          transition: "opacity 0.25s",
-        }}
-      >
-        {name}
-      </div>
-    </Html>
-  );
-}
-
-function Labels() {
-  return (
-    <>
-      {LABELS.map((l) => (
-        <Label key={l.name} {...l} />
-      ))}
-    </>
-  );
 }
 
 const pill = (active: boolean): React.CSSProperties => ({
@@ -194,60 +123,30 @@ const glass: React.CSSProperties = {
 
 export default function CampusMap3D() {
   const controls = useRef<MapControlsImpl>(null);
-  const [view, setView] = useState<View | null>(null);
+  const [demo, setDemo] = useState<Demo | null>(null);
   const [mode, setMode] = useState<Mode>("sunset");
   const [labels, setLabels] = useState(true);
   useEffect(() => {
-    const r = readView();
-    setView(r.view);
+    const r = readDemo();
+    setDemo(r.demo);
     if (r.mode) setMode(r.mode);
   }, []);
-  const look = MODES[mode];
-  const mobile = view?.mobile ?? false;
+  const touch = demo?.touch ?? false;
 
   return (
-    <main style={{ position: "fixed", inset: 0, background: look.skyTop }}>
-      {view && (
-        <Canvas
-          shadows
-          dpr={mobile ? [1, 1.5] : [1, 1.75]}
-          camera={{ fov: 30, near: 1, far: 1600, position: view.pos }}
-          gl={{ antialias: true, preserveDrawingBuffer: true }}
-          onCreated={({ gl }) => {
-            gl.toneMapping = THREE.NeutralToneMapping;
-          }}
+    <main style={{ position: "fixed", inset: 0, background: MODES[mode].skyTop }}>
+      {demo && (
+        <CampusScene
+          mode={mode}
+          lite={demo.lite}
+          camera={demo.camera}
+          intro={demo.intro}
+          labels={labels}
+          controlsRef={controls}
         >
-          <Atmosphere look={look} mode={mode} shadows={!mobile} />
-          <Slab />
-          <Ground />
-          <Lakes />
-          <Duck />
-          <Blocks glow={look.windows} />
-          <B1Building glow={look.windows} />
-          <Grandstand />
-          <TrackFixtures glow={look.lamps} />
-          <SportsCourts glow={look.lamps} />
-          <Statue />
-          <Flag />
-          <Dome glow={look.windows} />
-          <Bridge />
-          <Letters />
-          <Vegetation shadows={!mobile} />
-          <Lamps glow={look.lamps} />
-          {labels && <Labels />}
-          {view.gps && <GpsMarkers />}
-          <MapControls
-            ref={controls}
-            makeDefault
-            enableDamping
-            minDistance={6}
-            maxDistance={420}
-            maxPolarAngle={1.3}
-            screenSpacePanning={false}
-          />
-          <Intro view={view} />
-          {!mobile && <Effects look={look} />}
-        </Canvas>
+          {demo.gps && <GpsMarkers />}
+          {demo.stats && <RenderStats lite={demo.lite} />}
+        </CampusScene>
       )}
 
       <div
@@ -270,7 +169,7 @@ export default function CampusMap3D() {
         <div style={{ minWidth: 0 }}>
           <div style={{ fontWeight: 800, fontSize: 18 }}>XMUM campus · 3D draft</div>
           <div style={{ fontSize: 12, opacity: 0.75, marginTop: 4 }}>
-            {mobile ? "1 finger: move · 2 fingers: rotate and zoom" : "Drag: move · Right-drag: rotate · Scroll: zoom"}
+            {touch ? "1 finger: move · 2 fingers: rotate and zoom" : "Drag: move · Right-drag: rotate · Scroll: zoom"}
           </div>
         </div>
         <button
@@ -309,29 +208,6 @@ export default function CampusMap3D() {
             Labels
           </button>
         </div>
-      </div>
-
-      <div
-        style={{
-          position: "absolute",
-          right: 8,
-          bottom: 4,
-          fontFamily: "system-ui, sans-serif",
-          fontSize: 10,
-          color: "rgba(255,255,255,0.8)",
-          textShadow: "0 1px 3px rgba(0,0,0,0.5)",
-          zIndex: 20,
-        }}
-      >
-        Map data ©{" "}
-        <a
-          href="https://www.openstreetmap.org/copyright"
-          target="_blank"
-          rel="noreferrer"
-          style={{ color: "inherit" }}
-        >
-          OpenStreetMap contributors
-        </a>
       </div>
     </main>
   );

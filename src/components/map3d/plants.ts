@@ -97,6 +97,11 @@ export function plantation(): Plant[] {
   return out;
 }
 
+/** Lite mode: every other estate palm and two thirds of the campus trees. */
+export function thinForLite(items: Plant[]): Plant[] {
+  return items.filter((t, i) => (t.kind === "oil" ? i % 2 === 0 : i % 3 !== 2));
+}
+
 export type Bush = { x: number; z: number; s: number; color: string };
 const BLOOMS = ["#d81b7a", "#ef4f9b", "#c2185b", "#f57fb0", "#ff8a3d", "#f4f1ea"];
 const HEDGE = ["#2e7d32", "#388e3c"];

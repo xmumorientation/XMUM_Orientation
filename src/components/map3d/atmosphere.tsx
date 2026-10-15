@@ -9,7 +9,7 @@ import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 
 // DRAFT: time of day. Sky, sun, reflections, clouds, stars and the
-// finishing effects (desktop only) for each mode.
+// finishing effects (full mode only) for each mode.
 
 export type Mode = "sunset" | "day" | "night";
 
@@ -198,7 +198,9 @@ function Clouds({ color }: { color: string }) {
   );
 }
 
-export function Atmosphere({ look, mode, shadows }: { look: ModeLook; mode: Mode; shadows: boolean }) {
+/** `lite` (phones): a smaller shadow map and no stars. */
+export function Atmosphere({ look, mode, lite = false }: { look: ModeLook; mode: Mode; lite?: boolean }) {
+  const shadowMap = lite ? 1024 : 2048;
   const sunDir = new THREE.Vector3(...look.sunPos).normalize();
   return (
     <>
@@ -209,7 +211,7 @@ export function Atmosphere({ look, mode, shadows }: { look: ModeLook; mode: Mode
         color={look.sun}
         intensity={look.sunIntensity}
         castShadow
-        shadow-mapSize={[shadows ? 2048 : 1024, shadows ? 2048 : 1024]}
+        shadow-mapSize={[shadowMap, shadowMap]}
         shadow-camera-left={-95}
         shadow-camera-right={95}
         shadow-camera-top={95}
@@ -231,7 +233,7 @@ export function Atmosphere({ look, mode, shadows }: { look: ModeLook; mode: Mode
         />
       </Environment>
       {look.clouds && <Clouds color={look.clouds} />}
-      {look.stars && <Stars radius={300} depth={80} count={3000} factor={7} saturation={0} fade speed={0.4} />}
+      {look.stars && !lite && <Stars radius={300} depth={80} count={3000} factor={7} saturation={0} fade speed={0.4} />}
     </>
   );
 }

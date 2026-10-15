@@ -4,7 +4,7 @@ import { useLayoutEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 
-import { bushes, campusTrees, lamps, plantation, type Plant } from "./plants";
+import { bushes, campusTrees, lamps, plantation, thinForLite, type Plant } from "./plants";
 import { makeGlow } from "./textures";
 
 // DRAFT: tropical planting. Rain trees and coconut palms on campus, oil
@@ -143,11 +143,13 @@ function PlantInstances({
   );
 }
 
-export function Vegetation({ shadows }: { shadows: boolean }) {
-  const trees = campusTrees();
+/** `lite`: fewer trees and no tree shadows (phones). */
+export function Vegetation({ lite = false }: { lite?: boolean }) {
+  const trees = useMemo(() => (lite ? thinForLite(campusTrees()) : campusTrees()), [lite]);
   const broad = useMemo(() => trees.filter((t) => t.kind === "broad"), [trees]);
   const palms = useMemo(() => trees.filter((t) => t.kind === "palm"), [trees]);
-  const oil = plantation();
+  const oil = useMemo(() => (lite ? thinForLite(plantation()) : plantation()), [lite]);
+  const shadows = !lite;
   const rainGeo = useMemo(rainTreeGeometry, []);
   const palmGeo = useMemo(() => palmGeometry("palm"), []);
   const oilGeo = useMemo(() => palmGeometry("oil"), []);
