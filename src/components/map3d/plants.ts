@@ -124,7 +124,7 @@ export function bushes(): Bush[] {
 
 export type Lamp = { x: number; z: number };
 let lampCache: Lamp[] | null = null;
-/** Street lamps along the paths and just inside the outer road. */
+/** Street lamps just inside the outer road (lamps along paths come back in phase 2). */
 export function lamps(): Lamp[] {
   if (lampCache) return lampCache;
   const out: Lamp[] = [];
@@ -142,7 +142,6 @@ export function lamps(): Lamp[] {
       out.push({ x: x + nx * s, z: z + nz * s });
     });
   };
-  for (const p of GROUND.paths) line(p.pts, 7, p.w / 2 + 0.5);
   // along the inner edge of the outer road ring
   const ring = GROUND.road.map(
     (p, i) => [p[0] + (GROUND.base[i][0] - p[0]) * 0.82, p[1] + (GROUND.base[i][1] - p[1]) * 0.82] as const,

@@ -3,7 +3,26 @@
 import { useEffect, useMemo } from "react";
 import * as THREE from "three";
 
-import { B1, BLOCKS, COLORS, EXTENT, GROUND, PITCH_M, STATUE, TRACK, TRACK_M, toWorld, type Img } from "./geo";
+import {
+  B1_PLACE,
+  BLOCKS,
+  COLORS,
+  EXTENT,
+  FOOTPATH_W,
+  FOOTPATHS,
+  GRASS,
+  GROUND,
+  LAKE,
+  PARK,
+  PITCH_M,
+  type Placed,
+  STATUE,
+  TRACK,
+  TRACK_M,
+  toWorld,
+  type Img,
+  type World,
+} from "./geo";
 import { campusTrees, plantation } from "./plants";
 import { drawCarPark, drawCourts } from "./sports";
 import { makeSoil } from "./textures";
@@ -30,21 +49,21 @@ function makeGroundTexture(): THREE.CanvasTexture {
   // world (x, z) → canvas px
   ctx.setTransform(PX, 0, 0, PX, EXTENT.x * PX, EXTENT.z * PX);
 
-  const trace = (pts: readonly Img[]) => {
+  const img = (pts: readonly Img[]) => pts.map(toWorld);
+  const trace = (pts: readonly World[]) => {
     ctx.beginPath();
-    pts.forEach((p, i) => {
-      const [x, z] = toWorld(p);
+    pts.forEach(([x, z], i) => {
       if (i === 0) ctx.moveTo(x, z);
       else ctx.lineTo(x, z);
     });
   };
-  const poly = (pts: readonly Img[], color: string) => {
+  const poly = (pts: readonly World[], color: string) => {
     trace(pts);
     ctx.closePath();
     ctx.fillStyle = color;
     ctx.fill();
   };
-  const stroke = (pts: readonly Img[], width: number, color: string) => {
+  const stroke = (pts: readonly World[], width: number, color: string) => {
     trace(pts);
     ctx.lineWidth = width;
     ctx.lineCap = "round";
@@ -52,8 +71,7 @@ function makeGroundTexture(): THREE.CanvasTexture {
     ctx.strokeStyle = color;
     ctx.stroke();
   };
-  const blob = (pts: readonly Img[]) => {
-    const w = pts.map(toWorld);
+  const blob = (w: readonly World[]) => {
     const mid = (a: number[], b: number[]) => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
     ctx.beginPath();
     const start = mid(w[w.length - 1], w[0]);
@@ -81,8 +99,7 @@ function makeGroundTexture(): THREE.CanvasTexture {
       ctx.fill();
     }
   };
-  const bounds = (pts: readonly Img[]) => {
-    const w = pts.map(toWorld);
+  const bounds = (w: readonly World[]) => {
     return [
       Math.min(...w.map((p) => p[0])),
       Math.min(...w.map((p) => p[1])),
@@ -104,11 +121,12 @@ function makeGroundTexture(): THREE.CanvasTexture {
     ctx.stroke();
   }
 
-  poly(GROUND.road, COLORS.road);
-  poly(GROUND.base, COLORS.path);
-  poly(GROUND.roadNotch, COLORS.road);
-  for (const p of GROUND.darkLawns) poly(p, COLORS.lawnDark);
-  for (const p of GROUND.lawns) {
+  poly(img(GROUND.road), COLORS.road);
+  poly(img(GROUND.base), COLORS.path);
+  poly(img(GROUND.roadNotch), COLORS.road);
+  for (const p of GROUND.darkLawns) poly(img(p), COLORS.lawnDark);
+  // lawns: the art's track lawn, then the real lake park and the lawns round the statue (OSM)
+  for (const p of [...GROUND.lawns.map(img), PARK, ...GRASS]) {
     poly(p, COLORS.lawn);
     ctx.save();
     trace(p);
@@ -117,18 +135,24 @@ function makeGroundTexture(): THREE.CanvasTexture {
     speckle(Math.round((x1 - x0) * (z1 - z0) * 2.4), x0, z0, x1, z1, "rgba(200,210,120,0.14)", "rgba(70,90,30,0.13)");
     ctx.restore();
   }
-  poly(GROUND.beige, COLORS.beige);
-  poly(GROUND.plaza, COLORS.plaza);
-  drawPaving(ctx, GROUND.plaza, 1.2);
-  for (const p of GROUND.paths) stroke(p.pts, p.w + 0.35, COLORS.pathEdge);
-  for (const p of GROUND.paths) stroke(p.pts, p.w, COLORS.path);
+  // paved plaza round the statue
+  {
+    const plaza: World[] = [-1, 1].flatMap((sx) =>
+      [-1, 1].map((sz) => [STATUE[0] + sx * 3.2, STATUE[1] + sx * sz * 3.2] as World),
+    );
+    poly(plaza, COLORS.plaza);
+    drawPaving(ctx, plaza, 0.8);
+  }
+  for (const p of FOOTPATHS) stroke(p, FOOTPATH_W + 0.25, COLORS.pathEdge);
+  for (const p of FOOTPATHS) stroke(p, FOOTPATH_W, COLORS.path);
 
-  poly(GROUND.brown, COLORS.brown);
+  const brown = img(GROUND.brown);
+  poly(brown, COLORS.brown);
   ctx.save();
-  trace(GROUND.brown);
+  trace(brown);
   ctx.clip();
   {
-    const [x0, z0, x1, z1] = bounds(GROUND.brown);
+    const [x0, z0, x1, z1] = bounds(brown);
     speckle(8000, x0, z0, x1, z1, "rgba(210,150,100,0.16)", "rgba(60,30,15,0.16)");
     // a few patches of grass coming through
     for (let i = 0; i < 26; i++) {
@@ -139,29 +163,28 @@ function makeGroundTexture(): THREE.CanvasTexture {
     }
   }
   ctx.restore();
-  poly(GROUND.roadSpur, COLORS.road);
+  poly(img(GROUND.roadSpur), COLORS.road);
 
   // dashed centre line around the outer road
-  const ring = GROUND.road.map((p, i) => [(p[0] + GROUND.base[i][0]) / 2, (p[1] + GROUND.base[i][1]) / 2] as const);
+  const ring = img(GROUND.road.map((p, i) => [(p[0] + GROUND.base[i][0]) / 2, (p[1] + GROUND.base[i][1]) / 2] as const));
   ctx.setLineDash([1.6, 1.4]);
   stroke([...ring, ring[0]], 0.18, COLORS.roadLine);
   ctx.setLineDash([]);
 
-  // lakes: sandy shore, then a lakebed that gets deeper toward the middle
-  for (const lake of GROUND.lakes) {
-    blob(lake);
-    ctx.lineWidth = 1.1;
+  // the lake (OSM): sandy shore, then a lakebed that gets deeper toward the middle
+  {
+    blob(LAKE);
+    ctx.lineWidth = 0.7;
     ctx.strokeStyle = COLORS.shore;
     ctx.stroke();
-    const w = lake.map(toWorld);
-    const cx = w.reduce((s, p) => s + p[0], 0) / w.length;
-    const cz = w.reduce((s, p) => s + p[1], 0) / w.length;
-    const rad = Math.max(...w.map((p) => Math.hypot(p[0] - cx, p[1] - cz)));
+    const cx = LAKE.reduce((s, p) => s + p[0], 0) / LAKE.length;
+    const cz = LAKE.reduce((s, p) => s + p[1], 0) / LAKE.length;
+    const rad = Math.max(...LAKE.map((p) => Math.hypot(p[0] - cx, p[1] - cz)));
     const g = ctx.createRadialGradient(cx, cz, rad * 0.1, cx, cz, rad);
     g.addColorStop(0, COLORS.lakeDeep);
-    g.addColorStop(0.75, "#3a87b5");
+    g.addColorStop(0.55, "#3a87b5");
     g.addColorStop(1, COLORS.lakeShallow);
-    blob(lake);
+    blob(LAKE);
     ctx.fillStyle = g;
     ctx.fill();
   }
@@ -183,13 +206,17 @@ function makeGroundTexture(): THREE.CanvasTexture {
   ctx.shadowColor = "rgba(0,0,0,0.45)";
   ctx.shadowBlur = 1.4 * PX;
   ctx.fillStyle = "rgba(0,0,0,0.45)";
-  const foot = (p: Img, w: number, d: number) => {
-    const [x, z] = toWorld(p);
-    ctx.fillRect(x - w / 2, z - d / 2, w, d);
+  // a footprint's shadow; canvas y is world z, so the canvas turns by -rotY
+  const foot = (p: Placed, grow: number) => {
+    ctx.save();
+    ctx.translate(p.pos[0], p.pos[1]);
+    ctx.rotate(-p.rotY);
+    ctx.fillRect(-p.hx - grow, -p.hz - grow, 2 * (p.hx + grow), 2 * (p.hz + grow));
+    ctx.restore();
   };
-  for (const b of BLOCKS) foot(b.at, b.flat ? 7.2 : 6.8, b.flat ? 7.2 : 6.8);
-  foot(B1, 7.8, 14.7);
-  foot(STATUE, 3.4, 3.4);
+  for (const b of BLOCKS) foot(b, b.flat ? 0.1 : -0.3);
+  foot(B1_PLACE, 0.1);
+  foot({ pos: STATUE, hx: 1.7, hz: 1.7, rotY: 0 }, 0);
   ctx.restore();
 
   const tex = new THREE.CanvasTexture(canvas);
@@ -198,8 +225,7 @@ function makeGroundTexture(): THREE.CanvasTexture {
   return tex;
 }
 
-function drawPaving(ctx: CanvasRenderingContext2D, pts: readonly Img[], step: number) {
-  const w = pts.map(toWorld);
+function drawPaving(ctx: CanvasRenderingContext2D, w: readonly World[], step: number) {
   ctx.save();
   ctx.beginPath();
   w.forEach(([x, z], i) => (i ? ctx.lineTo(x, z) : ctx.moveTo(x, z)));

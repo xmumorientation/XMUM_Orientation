@@ -8,7 +8,7 @@ import type { MapControls as MapControlsImpl } from "three-stdlib";
 
 import { Atmosphere, Effects, MODES, type Mode } from "./atmosphere";
 import { B1Building, Blocks, Bridge, Dome, Flags, Grandstand, Letters, Statue } from "./buildings";
-import { LABELS } from "./geo";
+import { GPS_MARKERS, LABELS } from "./geo";
 import { Ground, Slab } from "./ground";
 import { SportsCourts, TrackFixtures } from "./sports";
 import { Lamps, Vegetation } from "./vegetation";
@@ -23,9 +23,12 @@ const START: Vec3 = [118, 104, 118];
 const TARGET_MOBILE: Vec3 = [-14, 0, -10];
 const START_MOBILE: Vec3 = [TARGET_MOBILE[0] + 190, 230, TARGET_MOBILE[2] + 190];
 
-type View = { mobile: boolean; pos: Vec3; target: Vec3; intro: boolean };
+type View = { mobile: boolean; pos: Vec3; target: Vec3; intro: boolean; gps: boolean };
 
-/** Draft-only: ?cam=x,y,z,tx,ty,tz sets the start view, ?mode=day|sunset|night the look (for screenshots). */
+/**
+ * Draft-only: ?cam=x,y,z,tx,ty,tz sets the start view, ?mode=day|sunset|night the look (for screenshots),
+ * ?gps=1 shows the team's GPS points.
+ */
 function readView(): { view: View; mode: Mode | null } {
   const q = new URLSearchParams(window.location.search);
   const mobile = window.matchMedia("(max-width: 768px)").matches;
@@ -38,9 +41,44 @@ function readView(): { view: View; mode: Mode | null } {
       pos: cam ? [cam[0], cam[1], cam[2]] : mobile ? START_MOBILE : START,
       target: cam ? [cam[3], cam[4], cam[5]] : mobile ? TARGET_MOBILE : [0, 0, 0],
       intro: !cam && q.get("intro") !== "0",
+      gps: q.get("gps") === "1",
     },
     mode: m === "day" || m === "sunset" || m === "night" ? m : null,
   };
+}
+
+/** Debug layer: a magenta pin on each GPS point in src/lib/mapGeo.ts, to check the true-scale layout. */
+function GpsMarkers() {
+  return (
+    <>
+      {GPS_MARKERS.map(({ name, pos: [x, z] }) => (
+        <group key={name} position={[x, 0, z]}>
+          <mesh position={[0, 2, 0]}>
+            <cylinderGeometry args={[0.08, 0.08, 4, 6]} />
+            <meshBasicMaterial color="#ff2bd6" />
+          </mesh>
+          <mesh position={[0, 4.2, 0]}>
+            <sphereGeometry args={[0.45, 12, 8]} />
+            <meshBasicMaterial color="#ff2bd6" />
+          </mesh>
+          <Html position={[0, 5.2, 0]} center zIndexRange={[11, 0]} style={{ pointerEvents: "none" }}>
+            <div
+              style={{
+                font: "600 10px system-ui, sans-serif",
+                color: "#fff",
+                background: "#c0179f",
+                padding: "1px 5px",
+                borderRadius: 4,
+                whiteSpace: "nowrap",
+              }}
+            >
+              GPS · {name}
+            </div>
+          </Html>
+        </group>
+      ))}
+    </>
+  );
 }
 
 /** Swoop in from high and to the side, then hand over to the controls. */
@@ -197,6 +235,7 @@ export default function CampusMap3D() {
           <Vegetation shadows={!mobile} />
           <Lamps glow={look.lamps} />
           {labels && <Labels />}
+          {view.gps && <GpsMarkers />}
           <MapControls
             ref={controls}
             makeDefault
@@ -270,6 +309,29 @@ export default function CampusMap3D() {
             Labels
           </button>
         </div>
+      </div>
+
+      <div
+        style={{
+          position: "absolute",
+          right: 8,
+          bottom: 4,
+          fontFamily: "system-ui, sans-serif",
+          fontSize: 10,
+          color: "rgba(255,255,255,0.8)",
+          textShadow: "0 1px 3px rgba(0,0,0,0.5)",
+          zIndex: 20,
+        }}
+      >
+        Map data ©{" "}
+        <a
+          href="https://www.openstreetmap.org/copyright"
+          target="_blank"
+          rel="noreferrer"
+          style={{ color: "inherit" }}
+        >
+          OpenStreetMap contributors
+        </a>
       </div>
     </main>
   );

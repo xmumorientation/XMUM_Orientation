@@ -4,17 +4,26 @@ import { useFrame } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
 import * as THREE from "three";
 
-import { B1, BLOCKS, BRIDGE, COLORS, DOME, FLAGS, grandstandRect, LETTERS, STATUE, toWorld, type Img } from "./geo";
+import {
+  B1_PLACE,
+  BLOCKS,
+  BRIDGE,
+  COLORS,
+  DOME_PLACE,
+  FLAGS,
+  grandstandRect,
+  LETTERS,
+  STATUE,
+  toWorld,
+  type World,
+} from "./geo";
 import { makeChinaFlag, makeFacade, makeMalaysiaFlag, makeRoofTiles } from "./textures";
 
 // DRAFT: the buildings and landmarks. A1–A5 follow the Jiageng style of
 // Xiamen University (cream walls, red brick, curved red-tile roofs with
-// upturned eaves) as courtyard blocks; sizes are estimated from the Figma art.
+// upturned eaves) as courtyard blocks, placed and sized from OSM footprints.
 
-const at = (p: Img): [number, number, number] => {
-  const [x, z] = toWorld(p);
-  return [x, 0, z];
-};
+const at = ([x, z]: World): [number, number, number] => [x, 0, z];
 
 function Box({
   size,
@@ -101,10 +110,14 @@ function ringRoofGeometry(sOut: number, sIn: number, h: number, lift: number) {
   return g;
 }
 
-const BLOCK = { s: 3.3, inner: 1.4, H: 5 };
+const H_BLOCK = 5;
 
-function JiagengBlock({ position, seed, glow }: { position: [number, number, number]; seed: number; glow: number }) {
-  const { s, inner, H } = BLOCK;
+type BlockProps = { position: [number, number, number]; rotY: number; seed: number; glow: number };
+
+/** `s` is the half width of the walls; the roof's eaves reach 0.7 further. */
+function JiagengBlock({ position, rotY, s, seed, glow }: BlockProps & { s: number }) {
+  const inner = s * 0.42;
+  const H = H_BLOCK;
   const outer = useMemo(() => makeFacade(6, 5, seed), [seed]);
   const court = useMemo(() => makeFacade(2, 5, seed + 3), [seed]);
   const tiles = useMemo(makeRoofTiles, []);
@@ -123,7 +136,7 @@ function JiagengBlock({ position, seed, glow }: { position: [number, number, num
     [-inner, 0, Math.PI / 2],
   ];
   return (
-    <group position={position}>
+    <group position={position} rotation-y={rotY}>
       <Box size={[2 * s + 0.4, 0.3, 2 * s + 0.4]} pos={[0, 0.15, 0]} color="#d3cab9" />
       {facades.map(([x, z, ry, w], i) => (
         <mesh key={i} position={[x, H / 2 + 0.3, z]} rotation-y={ry} castShadow receiveShadow>
@@ -198,8 +211,8 @@ function JiagengBlock({ position, seed, glow }: { position: [number, number, num
   );
 }
 
-/** A3: flat red roof with a pale centre, as in the Figma art. */
-function FlatBlock({ position, seed, glow }: { position: [number, number, number]; seed: number; glow: number }) {
+/** A3: the big 9-level block, flat red roof with a pale centre as in the Figma art. */
+function FlatBlock({ position, rotY, hx, hz, seed, glow }: BlockProps & { hx: number; hz: number }) {
   const facade = useMemo(() => makeFacade(6, 6, seed), [seed]);
   const mats = useMemo(() => {
     const wall = new THREE.MeshStandardMaterial({
@@ -212,24 +225,18 @@ function FlatBlock({ position, seed, glow }: { position: [number, number, number
     return { wall, list: [wall, wall, top, top, wall, wall] };
   }, [facade]);
   mats.wall.emissiveIntensity = glow;
-  const half = 3.6;
-  const H = 6.2;
+  const H = 8;
   return (
-    <group position={position}>
-      <Box size={[2 * half + 0.4, 0.3, 2 * half + 0.4]} pos={[0, 0.15, 0]} color="#d3cab9" />
-      <Box size={[2 * half, H, 2 * half]} pos={[0, H / 2 + 0.3, 0]} material={mats.list} />
-      {[0, 1].map((k) =>
-        [-1, 1].map((sgn) => (
-          <Box
-            key={`${k}${sgn}`}
-            size={[2 * half + 0.6, 0.7, 0.4]}
-            pos={k ? [sgn * (half + 0.1), H + 0.65, 0] : [0, H + 0.65, sgn * (half + 0.1)]}
-            rotY={k ? Math.PI / 2 : 0}
-            color={COLORS.red}
-          />
-        )),
-      )}
-      <Box size={[4.2, 0.12, 4.2]} pos={[0, H + 0.36, 0]} color={COLORS.white} />
+    <group position={position} rotation-y={rotY}>
+      <Box size={[2 * hx + 0.4, 0.3, 2 * hz + 0.4]} pos={[0, 0.15, 0]} color="#d3cab9" />
+      <Box size={[2 * hx, H, 2 * hz]} pos={[0, H / 2 + 0.3, 0]} material={mats.list} />
+      {[-1, 1].map((sgn) => (
+        <Box key={`x${sgn}`} size={[0.4, 0.7, 2 * hz + 0.6]} pos={[sgn * (hx + 0.1), H + 0.65, 0]} color={COLORS.red} />
+      ))}
+      {[-1, 1].map((sgn) => (
+        <Box key={`z${sgn}`} size={[2 * hx + 0.6, 0.7, 0.4]} pos={[0, H + 0.65, sgn * (hz + 0.1)]} color={COLORS.red} />
+      ))}
+      <Box size={[hx * 1.15, 0.12, hz * 1.15]} pos={[0, H + 0.36, 0]} color={COLORS.white} />
     </group>
   );
 }
@@ -239,9 +246,16 @@ export function Blocks({ glow }: { glow: number }) {
     <>
       {BLOCKS.map((b, i) =>
         b.flat ? (
-          <FlatBlock key={b.name} position={at(b.at)} seed={i + 1} glow={glow} />
+          <FlatBlock key={b.name} position={at(b.pos)} rotY={b.rotY} hx={b.hx} hz={b.hz} seed={i + 1} glow={glow} />
         ) : (
-          <JiagengBlock key={b.name} position={at(b.at)} seed={i + 1} glow={glow} />
+          <JiagengBlock
+            key={b.name}
+            position={at(b.pos)}
+            rotY={b.rotY}
+            s={(b.hx + b.hz) / 2 - 0.7}
+            seed={i + 1}
+            glow={glow}
+          />
         ),
       )}
     </>
@@ -249,11 +263,13 @@ export function Blocks({ glow }: { glow: number }) {
 }
 
 // ── B1: white and red building by the courts ─────────────────────────────
+/** Modelled 7.6 x 14.5 (long side along local Z), then stretched to the OSM footprint. */
 export function B1Building({ glow }: { glow: number }) {
   const fins = [-3, -1.5, 0, 1.5, 3];
   const glass = { color: "#ffcf86", intensity: glow * 0.9 };
+  const b = B1_PLACE;
   return (
-    <group position={at(B1)}>
+    <group position={at(b.pos)} rotation-y={b.rotY + Math.PI / 2} scale={[(2 * b.hz) / 7.6, 1, (2 * b.hx) / 14.5]}>
       <Box size={[7.6, 6.5, 14.5]} pos={[0, 3.25, 0]} color={COLORS.white} />
       {fins.map((x) => (
         <Box key={x} size={[0.55, 6.5, 0.5]} pos={[x, 3.25, 7.45]} color={COLORS.red} />
@@ -403,7 +419,11 @@ export function Flags() {
 // ── LakeFront Café: red dome on a small island ───────────────────────────
 export function Dome({ glow }: { glow: number }) {
   return (
-    <group position={at(DOME)} scale={[1.2, 1, 1]}>
+    <group
+      position={at(DOME_PLACE.pos)}
+      rotation-y={DOME_PLACE.rotY}
+      scale={[DOME_PLACE.hx / 3.6, 0.8, DOME_PLACE.hz / 3.6]}
+    >
       <mesh position={[0, 0.3, 0]} castShadow receiveShadow>
         <cylinderGeometry args={[3.4, 3.6, 0.6, 40]} />
         <meshStandardMaterial color={COLORS.cream} roughness={0.8} />
@@ -430,26 +450,25 @@ export function Dome({ glow }: { glow: number }) {
   );
 }
 
-// ── Red causeway between the two lakes ───────────────────────────────────
+// ── Red footbridge across the lake (OSM) ─────────────────────────────────
 export function Bridge() {
-  const [ax, az] = toWorld(BRIDGE[0]);
-  const [bx, bz] = toWorld(BRIDGE[1]);
+  const [[ax, az], [bx, bz]] = BRIDGE;
   const len = Math.hypot(bx - ax, bz - az);
   const rot = -Math.atan2(bz - az, bx - ax);
   const posts = Array.from({ length: 9 }, (_, i) => -len / 2 + (i * len) / 8);
   return (
     <group position={[(ax + bx) / 2, 0, (az + bz) / 2]} rotation-y={rot}>
-      <Box size={[len, 0.35, 1.8]} pos={[0, 0.55, 0]} color={COLORS.red} />
-      {[-0.85, 0.85].map((z) => (
+      <Box size={[len, 0.3, 1.1]} pos={[0, 0.5, 0]} color={COLORS.red} />
+      {[-0.5, 0.5].map((z) => (
         <Box key={z} size={[len, 0.1, 0.1]} pos={[0, 1.25, z]} color={COLORS.red} />
       ))}
       {posts.map((x) =>
-        [-0.85, 0.85].map((z) => (
-          <Box key={`${x}${z}`} size={[0.12, 0.6, 0.12]} pos={[x, 0.95, z]} color={COLORS.red} />
+        [-0.5, 0.5].map((z) => (
+          <Box key={`${x}${z}`} size={[0.1, 0.6, 0.1]} pos={[x, 0.95, z]} color={COLORS.red} />
         )),
       )}
       {[-len / 3, 0, len / 3].map((x) => (
-        <Box key={x} size={[0.5, 0.5, 1.2]} pos={[x, 0.2, 0]} color="#a3000a" />
+        <Box key={x} size={[0.4, 0.45, 0.8]} pos={[x, 0.2, 0]} color="#a3000a" />
       ))}
     </group>
   );

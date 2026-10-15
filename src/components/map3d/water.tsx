@@ -4,17 +4,17 @@ import { useFrame } from "@react-three/fiber";
 import { useLayoutEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 
-import { BRIDGE, COLORS, DOME, DUCK, GROUND, toWorld } from "./geo";
+import { BRIDGE, COLORS, DOME, DUCK, LAKE, type World } from "./geo";
 import { makeWaterNormals } from "./textures";
 
-// DRAFT: the two lakes. Clear water with moving ripples over the painted
+// DRAFT: the lake (OSM outline). Clear water with moving ripples over the painted
 // lakebed, lotus pads near the shore, and the crowned duck.
 
 const WATER_Y = 0.08;
 
-function lakeShape(pts: readonly (readonly [number, number])[]) {
+function lakeShape(pts: readonly World[]) {
   // same smoothing as the lakebed on the ground texture; shape y = -world z
-  const w = pts.map(toWorld).map(([x, z]) => new THREE.Vector2(x, -z));
+  const w = pts.map(([x, z]) => new THREE.Vector2(x, -z));
   const mid = (a: THREE.Vector2, b: THREE.Vector2) => a.clone().add(b).multiplyScalar(0.5);
   const shape = new THREE.Shape();
   const start = mid(w[w.length - 1], w[0]);
@@ -33,7 +33,7 @@ export function Lakes() {
     return t;
   }, []);
   const geos = useMemo(
-    () => GROUND.lakes.map((l) => new THREE.ShapeGeometry(lakeShape(l), 24).rotateX(-Math.PI / 2)),
+    () => [new THREE.ShapeGeometry(lakeShape(LAKE), 24).rotateX(-Math.PI / 2)],
     [],
   );
   useFrame((_, dt) => {
@@ -74,13 +74,11 @@ function lotusSpots() {
     seed = (seed * 16807) % 2147483647;
     return seed / 2147483647;
   };
-  const [dx, dz] = toWorld(DUCK);
-  const [cx0, cz0] = toWorld(DOME);
-  const [ax, az] = toWorld(BRIDGE[0]);
-  const [bx, bz] = toWorld(BRIDGE[1]);
+  const [dx, dz] = DUCK.pos;
+  const [cx0, cz0] = DOME;
+  const [[ax, az], [bx, bz]] = BRIDGE;
   const out: { x: number; z: number; s: number; rot: number; flower: boolean }[] = [];
-  for (const lake of GROUND.lakes) {
-    const w = lake.map(toWorld);
+  for (const w of [LAKE]) {
     const cx = w.reduce((s, p) => s + p[0], 0) / w.length;
     const cz = w.reduce((s, p) => s + p[1], 0) / w.length;
     for (let k = 0; k < 60 && out.length < 70; k++) {
@@ -89,10 +87,10 @@ function lotusSpots() {
       const u = r();
       const ex = p[0] + (q[0] - p[0]) * u;
       const ez = p[1] + (q[1] - p[1]) * u;
-      const f = 0.68 + r() * 0.17;
+      const f = 0.82 + r() * 0.1;
       const x = cx + (ex - cx) * f;
       const z = cz + (ez - cz) * f;
-      if (Math.hypot(x - dx, z - dz) < 8.5) continue;
+      if (Math.hypot(x - dx, z - dz) < 8.5 * DUCK.scale) continue;
       if (Math.hypot(x - cx0, z - cz0) < 5) continue;
       if (distToSegment(x, z, ax, az, bx, bz) < 2.4) continue;
       // small clusters
@@ -167,9 +165,9 @@ export function Duck() {
     });
   });
   const white = { color: COLORS.duck, roughness: 0.55 };
-  const [dx, dz] = toWorld(DUCK);
+  const [dx, dz] = DUCK.pos;
   return (
-    <group position={[dx, 0, dz]} rotation-y={Math.PI / 4}>
+    <group position={[dx, 0, dz]} rotation-y={Math.PI / 4} scale={DUCK.scale}>
       {[0, 1, 2].map((i) => (
         <mesh key={i} ref={(m) => void (ripples.current[i] = m)} geometry={ringGeo} position={[0.6, WATER_Y + 0.02, 0]}>
           <meshBasicMaterial color="#ffffff" transparent opacity={0} depthWrite={false} />
