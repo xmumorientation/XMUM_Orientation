@@ -88,3 +88,15 @@ The visual work and the 2D→3D replacement live in different files, so they can
 - Checks: `npx tsc --noEmit -p .`. Errors under `tests/` and `vitest.config.ts` were there before: the test dependencies aren't installed, so the tests can't run. Then `npx eslint <changed files>`.
 - `scratchpad/impl/step3/probe.mjs` (session-local) replays taps, drags and screenshots from a JSON step list. It is useful for checking taps on a phone. Write it again in a new session if needed.
 - Workflows don't survive a session. A new conversation can't resume `w2i3sdadt` or `wwo3unxai`; it has to continue from the files and this note.
+
+## Paused 2026-10-16 01:30 (usage limit)
+
+- **Funfair Central:** WIP commit on local branch `funfair-central` (worktree `.claude/worktrees/wf_47f33182-f9e-1`; not pushed, not type-checked or reviewed). Next: finish, tsc/eslint, screenshots, review.
+- **Batch 5 review** (branch `map3d-batch4`) was stopped part way. The code reviewers had finished; the Freshie/Faci, Staff and Admin screenshot checks had not. These findings were confirmed (from the code):
+  1. High: if the 3D renderer cannot be created (WebGL1-only device, failed context), the card stays blank instead of falling back to 2D.
+  2. Medium: the 3D accuracy check measures to the ground behind a building when Admin taps a roof.
+  3. Medium: choosing Auto on the light switch flies the camera back to the start view.
+  4. Medium: the scene renders every frame while the card is still or off screen (battery, Faci phones on /checkin).
+  5. Medium: the 2D accuracy check text still says a correction applies to every map.
+  6. Low: no "new bulb lit" signal in 3D; Admin's Move bulb and save-correction tools only reachable with ?map=2d; tapping the OSM credit opens full screen; any touch stops a camera flight.
+- Also to do: "You" as a blue dot and the mock fix on open ground; keep trees off the A5 entrance; check A5 against Ben's photos; re-run the three screenshot checks.
