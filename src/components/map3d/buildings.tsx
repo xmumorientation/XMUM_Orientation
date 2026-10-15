@@ -215,32 +215,82 @@ function JiagengBlock({ position, rotY, s, seed, glow }: BlockProps & { s: numbe
   );
 }
 
-/** A3: the big 9-level block, flat red roof with a pale centre as in the Figma art. */
-function FlatBlock({ position, rotY, hx, hz, seed, glow }: BlockProps & { hx: number; hz: number }) {
-  const facade = useMemo(() => makeFacade(6, 6, seed), [seed]);
-  const mats = useMemo(() => {
-    const wall = new THREE.MeshStandardMaterial({
-      map: facade.map,
-      emissiveMap: facade.emissiveMap,
-      emissive: new THREE.Color("#ffffff"),
-      roughness: 0.85,
-    });
-    const top = new THREE.MeshStandardMaterial({ color: COLORS.red, roughness: 0.6 });
-    return { wall, list: [wall, wall, top, top, wall, wall] };
-  }, [facade]);
-  mats.wall.emissiveIntensity = glow;
-  const H = 8;
+/** A white grid of square windows, as on A3's facade (photo). */
+function gridFacade() {
+  const c = document.createElement("canvas");
+  c.width = 256;
+  c.height = 256;
+  const ctx = c.getContext("2d")!;
+  ctx.fillStyle = "#f1eee7";
+  ctx.fillRect(0, 0, 256, 256);
+  ctx.fillStyle = "#56677a";
+  for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) ctx.fillRect(x * 32 + 8, y * 32 + 7, 16, 18);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.anisotropy = 4;
+  return t;
+}
+
+/** Hipped roof over a hx x hz rectangle: a four-sided frustum, red tiles, rising to a white ridge. */
+function HipRoof({ hx, hz, h, y, top = 0.35 }: { hx: number; hz: number; h: number; y: number; top?: number }) {
+  const geo = useMemo(() => {
+    const g = new THREE.CylinderGeometry(top * Math.SQRT2, Math.SQRT2, h, 4, 1).rotateY(Math.PI / 4);
+    g.scale(hx, 1, hz);
+    g.computeVertexNormals();
+    return g;
+  }, [hx, hz, h, top]);
+  return (
+    <group position={[0, y, 0]}>
+      <mesh geometry={geo} position={[0, h / 2, 0]} castShadow receiveShadow>
+        <meshStandardMaterial color="#c8452c" roughness={0.6} flatShading />
+      </mesh>
+      <Box size={[2 * hx * top + 0.2, 0.18, 2 * hz * top + 0.2]} pos={[0, h + 0.09, 0]} color="#f4f1ea" />
+    </group>
+  );
+}
+
+/** A3: the big 9-level block (photo): white grid facade, a columned entrance, two tiers of red hipped roof. */
+function FlatBlock({ position, rotY, hx, hz, glow }: BlockProps & { hx: number; hz: number }) {
+  const H = 7.4;
+  const tex = useMemo(gridFacade, []);
+  const wall = useMemo(() => {
+    const t = tex.clone();
+    t.repeat.set(Math.max(1, Math.round(hx * 0.45)), 1.15);
+    t.needsUpdate = true;
+    return new THREE.MeshStandardMaterial({ map: t, roughness: 0.8, emissive: new THREE.Color("#ffd89a") });
+  }, [tex, hx]);
+  wall.emissiveIntensity = glow * 0.25;
+  // The front (local +Z) faces the statue and the main road.
+  const cols = [-1.2, -0.4, 0.4, 1.2];
   return (
     <group position={position} rotation-y={rotY}>
-      <Box size={[2 * hx + 0.4, 0.3, 2 * hz + 0.4]} pos={[0, 0.15, 0]} color="#d3cab9" />
-      <Box size={[2 * hx, H, 2 * hz]} pos={[0, H / 2 + 0.3, 0]} material={mats.list} />
-      {[-1, 1].map((sgn) => (
-        <Box key={`x${sgn}`} size={[0.4, 0.7, 2 * hz + 0.6]} pos={[sgn * (hx + 0.1), H + 0.65, 0]} color={COLORS.red} />
+      <Box size={[2 * hx + 0.5, 0.3, 2 * hz + 0.5]} pos={[0, 0.15, 0]} color="#d3cab9" />
+      <mesh position={[0, H / 2 + 0.3, 0]} material={wall} castShadow receiveShadow>
+        <boxGeometry args={[2 * hx, H, 2 * hz]} />
+      </mesh>
+      {/* corner towers, a little proud of the walls */}
+      {[-1, 1].map((sx) =>
+        [-1, 1].map((sz) => (
+          <Box
+            key={`${sx}${sz}`}
+            size={[1.4, H + 0.4, 1.4]}
+            pos={[sx * (hx - 0.5), (H + 0.4) / 2 + 0.3, sz * (hz - 0.5)]}
+            color="#f4f1ea"
+          />
+        )),
+      )}
+      {/* columned entrance with a small red roof */}
+      <Box size={[3.4, 2.4, 1.2]} pos={[0, 1.5, hz + 0.6]} color="#f4f1ea" />
+      {cols.map((x) => (
+        <Box key={x} size={[0.22, 2.2, 0.22]} pos={[x, 1.4, hz + 1.35]} color="#ffffff" />
       ))}
-      {[-1, 1].map((sgn) => (
-        <Box key={`z${sgn}`} size={[2 * hx + 0.6, 0.7, 0.4]} pos={[0, H + 0.65, sgn * (hz + 0.1)]} color={COLORS.red} />
-      ))}
-      <Box size={[hx * 1.15, 0.12, hz * 1.15]} pos={[0, H + 0.36, 0]} color={COLORS.white} />
+      <Box size={[3.8, 0.25, 1.8]} pos={[0, 2.6, hz + 0.75]} color="#f4f1ea" />
+      <HipRoof hx={1.9} hz={0.95} h={0.6} y={2.7} top={0.25} />
+      {/* wide lower roof with eaves, a white clerestory band, then the upper roof */}
+      <HipRoof hx={hx + 0.7} hz={hz + 0.7} h={1.1} y={H + 0.3} top={0.72} />
+      <Box size={[2 * hx * 0.66, 0.7, 2 * hz * 0.66]} pos={[0, H + 1.75, 0]} color="#f4f1ea" />
+      <HipRoof hx={hx * 0.78} hz={hz * 0.78} h={1.4} y={H + 2.1} top={0.4} />
     </group>
   );
 }
