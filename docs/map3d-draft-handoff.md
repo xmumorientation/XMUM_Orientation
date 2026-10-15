@@ -1,0 +1,54 @@
+# 3D map draft: handoff (2026-10-15)
+
+Branch `map-3d-draft` (local, not pushed, not for main). Draft page `/map3d`, dev only and no login (one condition in `src/middleware.ts`). Code: `src/components/map3d/`. The existing `/map` is untouched.
+
+Paused because Ben's usage limit was low. Pick up from "Next steps".
+
+## Done (typecheck, lint and screenshots pass)
+
+- 3D campus from the Figma art: Jiageng-style A1–A5 (curved red-tile roofs, courtyards), B1, statue with flags, lakes with lotus and the duck, tropical planting, oil-palm ring, sunset/day/night, labels, fly-in, desktop post-effects.
+- **Track (Ben's correction):** not slanted. Long axis along world X (north–south, parallel to the east road), north end facing B1. Real 400 m size: 8 lanes, 105 × 68 m pitch, red synthetic past the north goal line, goals, 4 floodlights, real-size grandstand on the east side (OSM 616496734).
+- **Courts (Ben's correction):** 2×2 in a north-up view: futsal ×3 south-west, basketball ×3 south-east, tennis ×3 north-west, volleyball ×3 north-east. Sizes and gaps come from OpenStreetMap (`COURTS_M` in `geo.ts`). Markings use standard court sizes. Hoops, goals, nets, fences and floodlights are in place; colours are taken from Ben's aerial photo.
+- Around the courts: B1's service road with parking and cars, a footpath south of basketball, a pad at the north curve, an outdoor gym, a tree belt. Trees, bushes and lamps are kept off all of these (`inKeepOut`). Two bush rows that sat on roads were removed.
+- Court labels only show when zoomed in (closer than 95 units).
+
+## Next steps
+
+1. **Review** (it was running when paused; workflows can't be resumed across sessions, so re-run it). Four lenses, each followed by a skeptic that tries to refute the findings:
+   - spec: track and 2×2 against OSM;
+   - collisions: script all tree, bush and lamp positions against courts, track, stand, buildings, lakes, road ring and paths;
+   - code correctness: hoop, goal and net orientation; markings; units; label fade; keep-out;
+   - visual QA: screenshots from several angles, all 3 modes and a phone.
+2. Fix the confirmed findings. Then run `npx tsc --noEmit -p .` and `npx eslint src/components/map3d src/app/map3d src/middleware.ts`, and take screenshots.
+3. Commit the fixes on `map-3d-draft`.
+4. Report to Ben in Chinese: the answer below, screenshots (north-up top-down, angled day and night), and the open questions.
+
+## Open questions for Ben
+
+- Volleyball: I drew 3 courts (OSM block 55 × 37 m). They are not visible in the photo.
+- 3rd futsal court: it is OSM's single court tagged basketball (OSM's futsal block is only 40 m wide, room for 2).
+- The real track is turned about 11° clockwise from north (OSM pitch, the stand, satellite imagery). It is drawn parallel to the road, as Ben said and as the Figma art draws it.
+- Real B1 looks different from the Figma box: white roof, green planted terraces, orange piers. Restyle it?
+- Lay out the whole campus at true scale from OSM (all footprints are there)? GPS pins would then map directly, without the 2D map's warp.
+
+## Answer to Ben's question: "did the 3D use the known lat/lng for proportions?"
+
+No. Positions were read off the Figma art. A least-squares fit of the 3D positions to OSM footprints and the GPS anchors gives:
+
+- On average 1 unit ≈ 7.2 m, with world +X about 8° east of true north. Distortion is local misplacement, not a uniform stretch.
+- Typical error is 33 m RMS. The worst is A1 at 55 m; the causeway is 50 m off and B1 45 m.
+- The A1–A5 row is drawn about 14% too short.
+
+The 2D map's accuracy work (the thin-plate-spline warp in `src/lib/mapGeo.ts`) only places GPS pins onto the stylised art. It shears shapes, so it can't be used to get geometry. The sports area is now laid out from real OSM metres at a local 6.73 m/unit, pinned to the track centre and B1 (`fromReal` in `geo.ts`).
+
+## Reference
+
+- Real metres are measured east/north of the Track & Field GPS point (`src/lib/mapGeo.ts`). OSM pitch centre (−3.1, −0.3); B1 centre (7.0, 229.0). Court blocks are in `geo.ts` `COURTS_M`.
+- To refetch the OSM data (POST with a User-Agent, or the server returns 406):
+
+  ```bash
+  curl -A "xmum-map-draft" -X POST https://overpass-api.de/api/interpreter --data-urlencode 'data=[out:json][timeout:60];(way["leisure"~"pitch|track|stadium"](2.8265,101.6990,2.8370,101.7105);way["building"](2.8265,101.6990,2.8370,101.7105);way["natural"="water"](2.8265,101.6990,2.8370,101.7105););out tags geom;' -o osm.json
+  ```
+
+- Screenshot URL parameters: `?intro=0&mode=day|sunset|night&cam=x,y,z,tx,ty,tz`. North-up view of the courts: `cam=-19.5,58,27,-16.5,0,27`.
+- Screenshots were taken with headless Chrome over the DevTools protocol, with a phone size emulated for mobile shots (desktop Chrome won't go below 500 px wide). Run it with `node --experimental-websocket` (Node 20). The script was in the session's temp folder; write it again if it is gone.

@@ -1,0 +1,668 @@
+// DRAFT (map-3d-draft branch): 3D rebuild of the Figma campus art.
+//
+// Every position below is read off public/campus-map.png, measured on the
+// image scaled to 2000 px wide. The art is an isometric drawing, so a point
+// on the ground maps to the flat world plane with one affine transform:
+// the image's left, top and bottom corners of the outer road become the
+// world's (-X,+Z), (-X,-Z) and (+X,+Z) corners. 1 world unit ≈ 10 image px.
+
+export type Img = readonly [number, number];
+export type World = [number, number]; // [x, z]
+
+const L: Img = [62, 487]; // left corner of the outer road
+const U: Img = [818, -479]; // left → top corner
+const V: Img = [1013, 618]; // left → bottom corner
+const DET = U[0] * V[1] - U[1] * V[0];
+
+export const WORLD_W = 118.7; // along +X (image left → bottom)
+export const WORLD_D = 94.8; // along -Z (image left → top)
+
+/** Half size of the diorama slab (campus + the plantation ring around it). */
+export const EXTENT = { x: 72, z: 61 };
+
+/** Image pixel (2000-wide art) → world [x, z] on the ground. */
+export function toWorld([px, py]: Img): World {
+  const dx = px - L[0];
+  const dy = py - L[1];
+  const a = (dx * V[1] - dy * V[0]) / DET;
+  const b = (U[0] * dy - U[1] * dx) / DET;
+  return [b * WORLD_W - WORLD_W / 2, WORLD_D / 2 - a * WORLD_D];
+}
+
+export const COLORS = {
+  road: "#6f6a73",
+  roadLine: "rgba(255,255,255,0.55)",
+  path: "#ec8d65",
+  pathEdge: "#d4764f",
+  lawn: "#9a9e52",
+  lawnDark: "#036a37",
+  plantation: "#41672f",
+  beige: "#efe1cd",
+  plaza: "#cfcac2",
+  brown: "#975937",
+  lakeDeep: "#1f5f8f",
+  lakeShallow: "#6cc0e0",
+  shore: "#e3d3ad",
+  track: "#b73a2c",
+  field: "#4e8848",
+  fieldLight: "#58944f",
+  line: "#f4efe6",
+  red: "#e3000f",
+  black: "#141414",
+  cream: "#f2e6cf",
+  white: "#f2f2f2",
+  stone: "#8e8e8e",
+  bronze: "#6d5d4b",
+  duck: "#ffffff",
+  beak: "#f3a43a",
+  crown: "#f2b33d",
+  letters: "#3f8f3a",
+} as const;
+
+// ── Ground layers (image px polygons), drawn in this order ───────────────
+export const GROUND = {
+  road: [
+    [62, 487],
+    [880, 8],
+    [1912, 597],
+    [1075, 1105],
+  ] as Img[],
+  base: [
+    [168, 473],
+    [883, 55],
+    [1808, 583],
+    [1080, 1035],
+  ] as Img[],
+  roadNotch: [
+    [318, 322],
+    [346, 312],
+    [522, 420],
+    [498, 430],
+  ] as Img[],
+  roadSpur: [
+    [648, 772],
+    [875, 645],
+    [920, 676],
+    [718, 810],
+  ] as Img[],
+  darkLawns: [
+    [
+      [1045, 105],
+      [1232, 210],
+      [1095, 196],
+    ],
+    [
+      [1440, 325],
+      [1552, 388],
+      [1518, 412],
+      [1468, 410],
+    ],
+  ] as Img[][],
+  lawns: [
+    // north lawn (statue)
+    [
+      [418, 340],
+      [880, 72],
+      [968, 122],
+      [512, 402],
+    ],
+    // track lawn
+    [
+      [212, 472],
+      [395, 360],
+      [683, 530],
+      [494, 641],
+    ],
+    // centre + lake park inside the arc
+    [
+      [600, 442],
+      [1012, 240],
+      [1090, 200],
+      [1200, 196],
+      [1305, 220],
+      [1395, 274],
+      [1448, 340],
+      [1466, 405],
+      [1455, 428],
+      [990, 700],
+      [905, 650],
+    ],
+  ] as Img[][],
+  beige: [
+    [495, 415],
+    [1005, 125],
+    [1095, 182],
+    [615, 440],
+  ] as Img[],
+  plaza: [
+    [640, 200],
+    [700, 168],
+    [812, 232],
+    [752, 266],
+  ] as Img[],
+  brown: [
+    [765, 805],
+    [942, 698],
+    [1015, 738],
+    [1500, 450],
+    [1745, 580],
+    [1068, 982],
+  ] as Img[],
+  paths: [
+    {
+      w: 2.6,
+      pts: [
+        [525, 435],
+        [905, 655],
+      ],
+    },
+    {
+      w: 2.6,
+      pts: [
+        [612, 425],
+        [1012, 238],
+        [1090, 196],
+      ],
+    },
+    {
+      w: 3.2,
+      pts: [
+        [1090, 196],
+        [1200, 190],
+        [1310, 214],
+        [1400, 268],
+        [1458, 340],
+        [1476, 408],
+        [1458, 448],
+      ],
+    },
+    {
+      w: 2.6,
+      pts: [
+        [985, 700],
+        [1470, 425],
+      ],
+    },
+    {
+      w: 2.0,
+      pts: [
+        [1250, 292],
+        [1300, 240],
+      ],
+    },
+    {
+      w: 2.0,
+      pts: [
+        [1305, 360],
+        [1440, 330],
+      ],
+    },
+    {
+      w: 2.0,
+      pts: [
+        [1000, 655],
+        [1150, 520],
+        [1175, 495],
+      ],
+    },
+  ] as { w: number; pts: Img[] }[],
+  lakes: [
+    [
+      [800, 500],
+      [850, 420],
+      [960, 388],
+      [1090, 418],
+      [1150, 480],
+      [1132, 560],
+      [1050, 610],
+      [940, 612],
+      [830, 572],
+    ],
+    [
+      [1030, 360],
+      [1065, 300],
+      [1150, 282],
+      [1250, 294],
+      [1310, 345],
+      [1300, 410],
+      [1240, 455],
+      [1162, 488],
+      [1110, 450],
+      [1050, 410],
+    ],
+  ] as Img[][],
+};
+
+// ── Real scale (sports area) ─────────────────────────────────────────────
+/**
+ * Standard 400 m track in metres: 176.9 x 92.5 m outside, 8 lanes of 1.22 m,
+ * kerb radius 36.5 m, and a 105 x 68 m football pitch inside.
+ */
+export const TRACK_M = { length: 176.9, width: 92.5, kerbR: 36.5, straight: 84.39, lanes: 8, lane: 1.22 };
+export const PITCH_M = { length: 105, width: 68 };
+
+/** Where the art draws the track's centre (measured from the art's red oval). */
+const TRACK_CENTER: Img = [447, 506];
+export const B1: Img = [720, 694];
+
+/**
+ * Real positions from OpenStreetMap, in metres east (e) and north (n) of the
+ * Track & Field GPS point in src/lib/mapGeo.ts: the football pitch inside the
+ * track, and B1's footprint.
+ */
+const PITCH_CENTRE_M = { e: -3.1, n: -0.3 };
+const B1_CENTRE_M = { e: 7.0, n: 229.0 };
+
+/**
+ * World units per real metre around the sports area. The art's track and B1
+ * stay where they are; they are 229 m apart in reality, which makes 1 unit
+ * = 6.73 m here. (Across the whole campus the art averages 7.2 m per unit,
+ * but single buildings are 20-55 m off, so only this area is laid out from
+ * real measurements.) World +X is north and +Z is east.
+ */
+export const UNITS_PER_M = (toWorld(B1)[0] - toWorld(TRACK_CENTER)[0]) / (B1_CENTRE_M.n - PITCH_CENTRE_M.n);
+
+const Z_EAST_0 =
+  (toWorld(TRACK_CENTER)[1] - UNITS_PER_M * PITCH_CENTRE_M.e + toWorld(B1)[1] - UNITS_PER_M * B1_CENTRE_M.e) / 2;
+
+/** Real metres (east, north of the Track & Field GPS point) → world [x, z]. */
+export function fromReal(e: number, n: number): World {
+  return [toWorld(TRACK_CENTER)[0] + (n - PITCH_CENTRE_M.n) * UNITS_PER_M, Z_EAST_0 + e * UNITS_PER_M];
+}
+
+// ── Buildings and landmarks ──────────────────────────────────────────────
+/**
+ * The track runs north-south (world X), parallel to the east road as in the
+ * art, with its north end facing B1, at real size. (In reality it is turned
+ * about 11 degrees clockwise from north.)
+ */
+export const TRACK = {
+  center: TRACK_CENTER,
+  length: TRACK_M.length * UNITS_PER_M,
+  width: TRACK_M.width * UNITS_PER_M,
+  angleDeg: 0,
+};
+
+/** Track-local metres (x along the track, toward north; y across, toward east) → world [x, z]. */
+export function trackToWorld(lx: number, ly: number): World {
+  const [cx, cz] = toWorld(TRACK.center);
+  const sx = TRACK.length / TRACK_M.length;
+  const sy = TRACK.width / TRACK_M.width;
+  const a = (TRACK.angleDeg * Math.PI) / 180;
+  const x = lx * sx;
+  const y = ly * sy;
+  return [cx + x * Math.cos(a) - y * Math.sin(a), cz + x * Math.sin(a) + y * Math.cos(a)];
+}
+
+/** Floodlights round the track, in track-local metres (the aerial photo shows three; a fourth is likely). */
+export const TRACK_LIGHTS_M: [number, number][] = [
+  [-70, -52],
+  [70, -52],
+  [-70, 52],
+  [70, 52],
+];
+
+/**
+ * The stand on the track's east side (OSM: 85.9 x 14.9 m, centre 65 m east of
+ * the track's centre line and 8 m south of its middle).
+ */
+export const GRANDSTAND = {
+  offset: 65.3 * UNITS_PER_M,
+  shiftX: -8.1 * UNITS_PER_M,
+  length: 85.9 * UNITS_PER_M,
+  depth: 14.9 * UNITS_PER_M,
+};
+
+/**
+ * The red-roof row (src/lib/mapBuildings.ts: A1 is the far end, A5 the end
+ * nearest the track). A3 is the flat-roofed one in the Figma art.
+ */
+export const BLOCKS: { name: string; at: Img; flat?: boolean }[] = [
+  { name: "A5", at: [705, 395] },
+  { name: "A4", at: [783, 345] },
+  { name: "A3", at: [862, 292], flat: true },
+  { name: "A2", at: [940, 242] },
+  { name: "A1", at: [1015, 195] },
+];
+
+export const STATUE: Img = [695, 195];
+export const FLAGS: Img[] = [
+  [742, 226],
+  [760, 236],
+];
+export const DUCK: Img = [950, 505];
+export const DOME: Img = [1215, 345];
+export const BRIDGE: [Img, Img] = [
+  [1035, 383],
+  [1162, 497],
+];
+export const LETTERS: [Img, Img] = [
+  [1305, 498],
+  [1462, 418],
+];
+
+// ── Sports courts between the track and B1 ───────────────────────────────
+export type Sport = "futsal" | "basketball" | "tennis" | "volleyball";
+
+/** A row of `count` courts side by side in a world rectangle; `long` is each court's long axis. */
+export type CourtBlock = {
+  sport: Sport;
+  count: number;
+  x: [number, number];
+  z: [number, number];
+  long: "x" | "z";
+  fence?: boolean;
+  label?: string;
+};
+
+/**
+ * Court blocks from OpenStreetMap (metres east / north, as above). In a
+ * north-up view: futsal bottom-left, basketball bottom-right, tennis top-left,
+ * volleyball top-right; each court's long axis runs north-south. The futsal
+ * block joins OSM's 2-court soccer block with the single multi-use court
+ * east of it (OSM tags it basketball), which makes the 3 futsal courts.
+ */
+const COURTS_M: {
+  sport: Sport;
+  count: number;
+  e: [number, number];
+  n: [number, number];
+  fence?: boolean;
+  label?: string;
+}[] = [
+  { sport: "futsal", count: 3, e: [-50.1, 12.0], n: [109.8, 141.1], fence: true, label: "Futsal Court" },
+  { sport: "basketball", count: 3, e: [20.8, 75.5], n: [109.7, 141.3], fence: true, label: "Basketball Court" },
+  { sport: "tennis", count: 3, e: [-47.3, 11.2], n: [145.3, 182.5], fence: true, label: "Tennis Court" },
+  { sport: "volleyball", count: 3, e: [21.6, 76.6], n: [146.0, 183.1], label: "Volleyball Court" },
+];
+
+export const SPORTS: CourtBlock[] = COURTS_M.map((c) => {
+  const [x0, z0] = fromReal(c.e[0], c.n[0]);
+  const [x1, z1] = fromReal(c.e[1], c.n[1]);
+  return { sport: c.sport, count: c.count, x: [x0, x1], z: [z0, z1], long: "x", fence: c.fence, label: c.label };
+});
+
+/** B1's footprint in the 3D (buildings.tsx B1Building): 7.6 along X, 14.5 along Z. */
+export const B1_SIZE = { x: 7.6, z: 14.5 };
+
+/**
+ * The service road between the north row of courts and B1 (real gap 18 m),
+ * with a row of parking bays along B1.
+ */
+export const CARPARK = (() => {
+  const [bx, bz] = toWorld(B1);
+  const north = Math.max(...SPORTS.map((b) => b.x[1]));
+  return {
+    x: [north + 0.4, bx - B1_SIZE.x / 2 - 0.3] as [number, number],
+    z: [bz - B1_SIZE.z / 2, bz + B1_SIZE.z / 2] as [number, number],
+  };
+})();
+
+/** Rectangle from a real centre and size (metres; the size is east-west by north-south). */
+function realRect(e: number, n: number, ew: number, ns: number): { x: [number, number]; z: [number, number] } {
+  const [x, z] = fromReal(e, n);
+  const hx = (ns / 2) * UNITS_PER_M;
+  const hz = (ew / 2) * UNITS_PER_M;
+  return { x: [x - hx, x + hx], z: [z - hz, z + hz] };
+}
+
+/**
+ * Next to the track's north end, from an aerial photo matched to OSM: a 3 m
+ * footpath along the south side of the basketball courts (to the east road),
+ * a concrete pad at the north curve, and an outdoor gym mat north-west of it.
+ * The gym is moved about 5 m north-west of where the photo puts it, because
+ * the map draws the track square to the road (in reality it is turned 11
+ * degrees) and the curve would otherwise run over it.
+ */
+export const TRACK_NORTH = {
+  footpath: (() => {
+    const [x0, z0] = fromReal(13, 96.5);
+    const [x1] = fromReal(13, 99.5);
+    return { x: [x0, x1] as [number, number], z: [z0, 40] as [number, number] };
+  })(),
+  pad: realRect(13, 93, 10, 7),
+  gym: (() => {
+    const r = realRect(-37, 81, 16, 11);
+    const dx = 0.4;
+    const dz = -1.1;
+    return { x: [r.x[0] + dx, r.x[1] + dx] as [number, number], z: [r.z[0] + dz, r.z[1] + dz] as [number, number] };
+  })(),
+};
+
+const label = (name: string, at: Img, y: number) => ({ name, pos: toWorld(at), y });
+
+/** Map labels. `minor` ones (the courts) only show when the camera is close. */
+export const LABELS: { name: string; pos: World; y: number; minor?: boolean }[] = [
+  ...BLOCKS.map((b) => label(b.name, b.at, b.flat ? 9.4 : 9.6)),
+  label("B1", B1, 11),
+  label("Track & Field", TRACK.center, 3),
+  ...SPORTS.filter((b) => b.label).map((b) => ({
+    name: b.label!,
+    pos: [(b.x[0] + b.x[1]) / 2, (b.z[0] + b.z[1]) / 2] as World,
+    y: 1.8,
+    minor: true,
+  })),
+  label("LakeFront Café", DOME, 5),
+  label("Tan Kah Kee Statue", STATUE, 11.5),
+];
+
+/** Grandstand footprint in world units (buildings.tsx Grandstand draws inside it). */
+export function grandstandRect(): { x: [number, number]; z: [number, number] } {
+  const [tx, tz] = toWorld(TRACK.center);
+  const cx = tx + GRANDSTAND.shiftX;
+  const cz = tz + GRANDSTAND.offset;
+  return {
+    x: [cx - GRANDSTAND.length / 2, cx + GRANDSTAND.length / 2],
+    z: [cz - GRANDSTAND.depth / 2, cz + GRANDSTAND.depth / 2],
+  };
+}
+
+/** Courts, service road, track and grandstand: no trees, bushes or lamps here. */
+export function inKeepOut(x: number, z: number, margin: number): boolean {
+  const inRect = (rx: [number, number], rz: [number, number]) =>
+    x > rx[0] - margin && x < rx[1] + margin && z > rz[0] - margin && z < rz[1] + margin;
+  if (SPORTS.some((b) => inRect(b.x, b.z))) return true;
+  if (inRect(CARPARK.x, CARPARK.z)) return true;
+  const [tx, tz] = toWorld(TRACK.center);
+  const half = (TRACK_M.straight / 2) * UNITS_PER_M;
+  const dx = Math.max(0, Math.abs(x - tx) - half);
+  if (Math.hypot(dx, z - tz) < TRACK.width / 2 + margin) return true;
+  if (inRect(TRACK_NORTH.pad.x, TRACK_NORTH.pad.z) || inRect(TRACK_NORTH.gym.x, TRACK_NORTH.gym.z)) return true;
+  if (
+    TRACK_LIGHTS_M.some(([lx, ly]) => Math.hypot(...trackToWorld(lx, ly).map((v, i) => v - [x, z][i])) < 0.9 + margin)
+  )
+    return true;
+  const g = grandstandRect();
+  return inRect(g.x, g.z);
+}
+
+// ── Plants ───────────────────────────────────────────────────────────────
+export type TreeKind = "broad" | "palm" | "mix";
+
+/** Tree rows: polylines in image px, a tree every `gap` world units. */
+export const TREE_ROWS: { gap: number; kind?: TreeKind; pts: Img[] }[] = [
+  {
+    gap: 1.9,
+    pts: [
+      [420, 336],
+      [878, 70],
+      [962, 116],
+    ],
+  },
+  {
+    gap: 1.9,
+    pts: [
+      [422, 348],
+      [510, 404],
+    ],
+  },
+  {
+    gap: 1.9,
+    pts: [
+      [738, 152],
+      [880, 82],
+    ],
+  },
+  {
+    gap: 1.8,
+    pts: [
+      [215, 462],
+      [382, 362],
+    ],
+  },
+  {
+    gap: 1.8,
+    pts: [
+      [352, 378],
+      [512, 436],
+    ],
+  },
+  {
+    gap: 1.8,
+    pts: [
+      [550, 474],
+      [690, 551],
+    ],
+  },
+  {
+    gap: 1.8,
+    pts: [
+      [460, 600],
+      [507, 627],
+    ],
+  },
+  {
+    gap: 1.8,
+    pts: [
+      [664, 550],
+      [751, 601],
+    ],
+  },
+  {
+    gap: 1.8,
+    pts: [
+      [730, 534],
+      [810, 589],
+    ],
+  },
+  {
+    gap: 1.6,
+    kind: "mix",
+    pts: [
+      [800, 548],
+      [950, 640],
+      [1090, 575],
+      [1145, 505],
+    ],
+  },
+  {
+    gap: 1.8,
+    pts: [
+      [880, 352],
+      [1000, 380],
+    ],
+  },
+  {
+    gap: 2.4,
+    kind: "palm",
+    pts: [
+      [1165, 488],
+      [1322, 432],
+    ],
+  },
+  {
+    gap: 2.0,
+    kind: "mix",
+    pts: [
+      [1035, 300],
+      [1040, 362],
+    ],
+  },
+  {
+    gap: 2.4,
+    pts: [
+      [720, 450],
+      [790, 545],
+    ],
+  },
+  // royal palms lining the promenade (gap left for the statue plaza)
+  {
+    gap: 3.0,
+    kind: "palm",
+    pts: [
+      [505, 413],
+      [735, 282],
+    ],
+  },
+  {
+    gap: 3.0,
+    kind: "palm",
+    pts: [
+      [825, 228],
+      [1000, 128],
+    ],
+  },
+  // belt between the track's north curve and the futsal courts (aerial photo)
+  {
+    gap: 1.7,
+    pts: [
+      [629, 548],
+      [560, 589],
+    ],
+  },
+];
+
+/** Single trees (clusters between buildings and in the park). */
+export const TREE_SPOTS: Img[] = [
+  [640, 378],
+  [770, 372],
+  [850, 322],
+  [1005, 236],
+  [1078, 196],
+  [945, 315],
+  [975, 300],
+  [1000, 330],
+  [960, 345],
+  [1020, 285],
+  [740, 470],
+  [760, 500],
+  [780, 440],
+  [705, 455],
+  [1230, 250],
+  [1350, 290],
+  [1395, 360],
+  [1260, 470],
+];
+
+/** Bougainvillea and hedges along paths and fronts. */
+export const BUSH_ROWS: { gap: number; pts: Img[] }[] = [
+  {
+    gap: 1.1,
+    pts: [
+      [640, 430],
+      [1085, 190],
+    ],
+  },
+  {
+    gap: 1.0,
+    pts: [
+      [1314, 507],
+      [1472, 427],
+    ],
+  },
+  {
+    gap: 1.2,
+    pts: [
+      [645, 206],
+      [700, 176],
+    ],
+  },
+  {
+    gap: 1.2,
+    pts: [
+      [1110, 214],
+      [1200, 206],
+      [1300, 230],
+    ],
+  },
+];
