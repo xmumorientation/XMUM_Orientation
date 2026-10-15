@@ -33,7 +33,12 @@ Ben chose true scale over the Figma layout. Data: OSM shapes, aligned to the tea
   3. Ground: campus lawn, lake and those areas only. Remove the Figma roads and trees (they are in the wrong places).
   4. A debug layer that shows the GPS points in 3D.
 - **Phase 2 (only after Ben approves):** roads, street lamps, dorms (D1–D5, LY1–LY9), other buildings, trees and landscape (OSM has 841 tree points and 101 tree rows), and the building style reference. That reference was stopped to save credits: heights from photo and imagery, the D towers (OSM says 7 levels, the photo looks taller), and whether B1 should look like the real building.
-- Raw OSM extract and scripts are in the session temp folder (`scratchpad/truescale/`). If it is gone, re-fetch with the query below (add `amenity=university`, landuse and `natural=tree`).
+- Data check done. All 9 building and court GPS points fall inside their OSM outlines (1–3 m mean offset), so no global shift was applied. One fix: Musical Island moved about 19 m to match the dome in the imagery. The causeway GPS point is 15 m off the bridge; the bridge midpoint is lat 2.8329767, lng 101.7046295, and Ben will decide whether to update main.
+- Data is in `scripts/map3d/`:
+  - `osm_full.json`: the raw Overpass extract;
+  - `build_dataset.py`: the generator;
+  - `campus.json`: local metres, ODbL.
+- To regenerate: `python3 -I scripts/map3d/build_dataset.py scripts/map3d/osm_full.json scripts/map3d/campus.json`. The Esri imagery was used only for checking and is not in the repo.
 
 ## Open questions for Ben
 
