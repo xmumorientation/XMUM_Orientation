@@ -12,6 +12,7 @@ import {
   DOME_PLACE,
   FLAGS,
   grandstandRect,
+  LANDMARK_SCALE,
   LETTERS,
   STATUE,
   STATUE_ROT_Y,
@@ -332,16 +333,16 @@ export function Grandstand() {
   );
 }
 
-// ── Tan Kah Kee statue and the flags on the plaza (real size) ────────────
+// ── Tan Kah Kee statue and the flags on the plaza (LANDMARK_SCALE x real) ─
 export function Statue() {
   return (
-    <group position={at(STATUE)} rotation-y={STATUE_ROT_Y} scale={UNITS_PER_M}>
+    <group position={at(STATUE)} rotation-y={STATUE_ROT_Y} scale={UNITS_PER_M * LANDMARK_SCALE}>
       <TanKahKeeStatue />
     </group>
   );
 }
 
-/** A flagpole with a waving flag, in metres: 12 m pole, 2.4 x 1.6 m flag. */
+/** A flagpole with a waving flag, modelled in metres: 12 m pole, 2.4 x 1.6 m flag. */
 function Flag({ position, texture, phase }: { position: [number, number, number]; texture: THREE.Texture; phase: number }) {
   const w = 2.4;
   const h = 1.6;
@@ -361,7 +362,7 @@ function Flag({ position, texture, phase }: { position: [number, number, number]
   });
   // the flag faces the default view (from the north-east)
   return (
-    <group position={position} rotation-y={Math.PI / 4} scale={UNITS_PER_M}>
+    <group position={position} rotation-y={Math.PI / 4} scale={UNITS_PER_M * LANDMARK_SCALE}>
       <mesh position={[0, 6, 0]} castShadow>
         <cylinderGeometry args={[0.06, 0.1, 12, 8]} />
         <meshStandardMaterial color="#dcdcdc" metalness={0.7} roughness={0.3} />

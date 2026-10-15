@@ -251,6 +251,12 @@ export const DOME: World = DOME_PLACE.pos;
 const STATUE_GPS = LANDMARKS.find((l) => l.name === "Tan Kah Kee statue")!;
 export const STATUE: World = gpsToWorld(STATUE_GPS.lat, STATUE_GPS.lng);
 
+/**
+ * The statue and its flags are modelled at real size (metres) and drawn this
+ * many times larger, so they read at the map's normal zoom (Ben's choice).
+ */
+export const LANDMARK_SCALE = 4;
+
 /** The statue stands with its back to A3. Its front is local +Z, which rotation-y θ turns to (sin θ, cos θ). */
 export const STATUE_ROT_Y = (() => {
   const a3 = BLOCKS.find((b) => b.name === "A3")!.pos;
@@ -390,7 +396,7 @@ export const LABELS: { name: string; pos: World; y: number; minor?: boolean }[] 
     minor: true,
   })),
   { name: "LakeFront Café", pos: DOME, y: 4 },
-  { name: "Tan Kah Kee Statue", pos: STATUE, y: 1.5 },
+  { name: "Tan Kah Kee Statue", pos: STATUE, y: 6.6 * UNITS_PER_M * LANDMARK_SCALE },
 ];
 
 /** The team's GPS points (src/lib/mapGeo.ts), shown by the ?gps=1 debug layer. */
