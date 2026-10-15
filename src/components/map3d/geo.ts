@@ -263,17 +263,12 @@ export const STATUE_ROT_Y = (() => {
   return Math.atan2(STATUE[0] - a3[0], STATUE[1] - a3[1]);
 })();
 
-/** The two flagpoles, kept where the art draws them relative to the statue. */
-export const FLAGS: World[] = (
-  [
-    [742, 226],
-    [760, 236],
-  ] as Img[]
-).map((p) => {
-  const [fx, fz] = toWorld(p);
+/** The one flagpole: between the art's two poles, kept where the art draws them relative to the statue. */
+export const FLAG: World = (() => {
+  const [fx, fz] = toWorld([751, 231]);
   const [sx, sz] = toWorld([695, 195]);
   return [STATUE[0] + fx - sx, STATUE[1] + fz - sz];
-});
+})();
 
 /** The lake, its park, lawns and footpaths (OSM). */
 export const LAKE: World[] = realPts(LAKE_M);

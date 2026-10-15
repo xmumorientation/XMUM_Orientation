@@ -7,7 +7,7 @@ import * as THREE from "three";
 import type { MapControls as MapControlsImpl } from "three-stdlib";
 
 import { Atmosphere, Effects, MODES, type Mode } from "./atmosphere";
-import { B1Building, Blocks, Bridge, Dome, Flags, Grandstand, Letters, Statue } from "./buildings";
+import { B1Building, Blocks, Bridge, Dome, Flag, Grandstand, Letters, Statue } from "./buildings";
 import { GPS_MARKERS, LABELS } from "./geo";
 import { Ground, Slab } from "./ground";
 import { SportsCourts, TrackFixtures } from "./sports";
@@ -228,7 +228,7 @@ export default function CampusMap3D() {
           <TrackFixtures glow={look.lamps} />
           <SportsCourts glow={look.lamps} />
           <Statue />
-          <Flags />
+          <Flag />
           <Dome glow={look.windows} />
           <Bridge />
           <Letters />

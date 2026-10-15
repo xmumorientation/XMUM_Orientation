@@ -10,7 +10,7 @@ import {
   BRIDGE,
   COLORS,
   DOME_PLACE,
-  FLAGS,
+  FLAG,
   grandstandRect,
   LANDMARK_SCALE,
   LETTERS,
@@ -342,11 +342,12 @@ export function Statue() {
   );
 }
 
-/** A flagpole with a waving flag, modelled in metres: 12 m pole, 2.4 x 1.6 m flag. */
-function Flag({ position, texture, phase }: { position: [number, number, number]; texture: THREE.Texture; phase: number }) {
-  const w = 2.4;
-  const h = 1.6;
-  const geo = useMemo(() => new THREE.PlaneGeometry(w, h, 20, 10).translate(w / 2, 0, 0), []);
+/** The XMUM flag on one big pole, modelled in metres: 15 m pole, 3.6 x 2.4 m flag. */
+export function Flag() {
+  const w = 3.6;
+  const h = 2.4;
+  const texture = useMemo(makeXmumFlag, []);
+  const geo = useMemo(() => new THREE.PlaneGeometry(w, h, 24, 12).translate(w / 2, 0, 0), []);
   const base = useMemo(() => Float32Array.from(geo.getAttribute("position").array), [geo]);
   useFrame(({ clock }) => {
     const t = clock.elapsedTime;
@@ -354,39 +355,27 @@ function Flag({ position, texture, phase }: { position: [number, number, number]
     for (let i = 0; i < p.count; i++) {
       const x = base[i * 3];
       const k = x / w;
-      p.setZ(i, (Math.sin(x * 2.2 - t * 3.4 + phase) * 0.16 + Math.sin(x * 4.1 - t * 5.2) * 0.05) * k);
-      p.setY(i, base[i * 3 + 1] - k * k * 0.12);
+      p.setZ(i, (Math.sin(x * 1.5 - t * 3.4) * 0.24 + Math.sin(x * 2.7 - t * 5.2) * 0.07) * k);
+      p.setY(i, base[i * 3 + 1] - k * k * 0.18);
     }
     p.needsUpdate = true;
     geo.computeVertexNormals();
   });
   // the flag faces the default view (from the north-east)
   return (
-    <group position={position} rotation-y={Math.PI / 4} scale={UNITS_PER_M * LANDMARK_SCALE}>
-      <mesh position={[0, 6, 0]} castShadow>
-        <cylinderGeometry args={[0.06, 0.1, 12, 8]} />
+    <group position={at(FLAG)} rotation-y={Math.PI / 4} scale={UNITS_PER_M * LANDMARK_SCALE}>
+      <mesh position={[0, 7.5, 0]} castShadow>
+        <cylinderGeometry args={[0.07, 0.12, 15, 8]} />
         <meshStandardMaterial color="#dcdcdc" metalness={0.7} roughness={0.3} />
       </mesh>
-      <mesh position={[0, 12.1, 0]}>
-        <sphereGeometry args={[0.14, 10, 8]} />
+      <mesh position={[0, 15.1, 0]}>
+        <sphereGeometry args={[0.17, 10, 8]} />
         <meshStandardMaterial color="#e8c46a" metalness={0.8} roughness={0.3} />
       </mesh>
-      <mesh geometry={geo} position={[0.08, 11.6 - h / 2, 0]} castShadow>
+      <mesh geometry={geo} position={[0.1, 14.5 - h / 2, 0]} castShadow>
         <meshStandardMaterial map={texture} side={THREE.DoubleSide} roughness={0.8} />
       </mesh>
     </group>
-  );
-}
-
-/** Two flagpoles, both flying the XMUM flag. */
-export function Flags() {
-  const xmum = useMemo(makeXmumFlag, []);
-  return (
-    <>
-      {FLAGS.map((f, i) => (
-        <Flag key={i} position={at(f)} texture={xmum} phase={i * 1.3} />
-      ))}
-    </>
   );
 }
 
