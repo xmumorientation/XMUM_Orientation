@@ -9,7 +9,7 @@ Ben may continue this work in a new Claude conversation. This file says where ev
 ## Rules Ben set
 
 - **Never push** (Ben pushes himself). Commits on the working branch are fine once the checks pass.
-- Branches: each batch gets its own branch from the latest `main`, and Ben merges it by PR. `map-3d-draft` (PR #39) and `map3d-batch4` (PR #40) are merged. Batch 5 is on `map3d-batch5`, from `main` at `3dff00a`.
+- Branches: `map-3d-draft` (PR #39), `map3d-batch4` (PR #40) and `map3d-batch5` (PR #41) are merged. **All funfair work is on `funfair-central`** (Ben, 2026-10-16: no more new branches). Before Ben pushes it, merge the latest `origin/main` into it and check that `git merge-tree --write-tree origin/main HEAD` is clean, so its PR merges without conflicts.
 - Work in **batches**: finish one, show Ben the results (screenshots in Chinese), and wait for his go before the next one.
 - He watches his usage limit closely. Keep agents few. If he says the 5-hour limit is above about 85%:
   - start nothing new;
@@ -29,8 +29,8 @@ Ben's batches map to the plan's steps as follows.
 | 1 | 1. Embeddable `CampusScene` + phone lite mode | **Done**, commit `3eca8cd` |
 | 2 | 2. Split `CampusMap.tsx` into a data hook (`campus-map/useCampusMapData.ts`), panels (`CampusMapPanels.tsx`) and the 2D view (`CampusMap2DView.tsx`), with no behaviour change | **Done**, commit `31cf14c` |
 | 3 | 3. `campus-map/CampusMap3DView.tsx`, `map3d/markers.tsx`, `map3d/places.ts` + the dev preview `/map3d/preview` (mock data; `?role=freshie\|faci\|staff\|admin`, `&full=1`, `&map=2d` (was `&view=2d`), `&check=1` for Admin's accuracy check) | **Done**, commit `0e24148`. Ben has seen the screenshots. One known issue: on a phone in fullscreen, tapping a station badge does not always centre the camera on the building (`CameraRig` at the end of `markers.tsx`; the badge tap is in `CampusMap3DView` `taps.badge`). Fix it in batch 4. |
-| 4 | 4 + 5 | **Done** on branch `map3d-batch4` (from `main`; not merged). `/map`, `/checkin` and `/committee` draw the 3D map through `campus-map/CampusMapView.tsx`: `next/dynamic` with `ssr: false`, a loading card, and the 2D view when WebGL is missing, when the 3D view throws (an error boundary), or with `?map=2d`. No lightbulb markers or layer in 3D; the lightbulb list sits under the 3D map (Admin keeps Reset; Move is 2D only). Fullscreen has an Auto / Sunset / Day / Night switch (top right, accent = group colour or Welcome cyan). Admin's accuracy check in 3D: tap the ground, see the GPS error in metres, nothing saved; saved anchors are labelled 2D only. Badge centring on phones: taps that moved 8–16 px were thrown away as drags; touch now allows 16 px (`isTap` in `markers.tsx`), and a flight first plays out the controls' damping. |
-| 5 | 6 | **Done** on branch `map3d-batch5` (not merged). See "Batch 5" below. |
+| 4 | 4 + 5 | **Done**, merged (PR #40). `/map`, `/checkin` and `/committee` draw the 3D map through `campus-map/CampusMapView.tsx`: `next/dynamic` with `ssr: false`, a loading card, and the 2D view when WebGL is missing, when the 3D view throws (an error boundary), or with `?map=2d`. No lightbulb markers or layer in 3D; the lightbulb list sits under the 3D map (Admin keeps Reset; Move is 2D only). Fullscreen has an Auto / Sunset / Day / Night switch (top right, accent = group colour or Welcome cyan). Admin's accuracy check in 3D: tap the ground, see the GPS error in metres, nothing saved; saved anchors are labelled 2D only. Badge centring on phones: taps that moved 8–16 px were thrown away as drags; touch now allows 16 px (`isTap` in `markers.tsx`), and a flight first plays out the controls' damping. |
+| 5 | 6 | **Done**, merged (PR #41). See "Batch 5" below. |
 
 ### Vortexa Funfair (plan step 7, done in parallel)
 
@@ -40,25 +40,28 @@ Ben's batches map to the plan's steps as follows.
   - put it **straight into the map** (no separate preview for Ben);
   - the land must not look empty;
   - the lightbulbs are shared by everyone, Admin chooses which zone powers up after which key, dorm names stay on the ride labels, fireworks come every few minutes after the finale, and there is no sound.
-- The scaffolding and the three style benches are **committed** (see git log, "funfair scaffolding"), so the chosen style code is safe. The zone build was **stopped at 17:23** to save usage (Ben's limit was at 65% and rising about 1.4%/min with four agents). The three zone files were still empty stubs, so nothing was lost; restart the zone build from scratch (same brief: one agent per zone). It had been running as workflow `wwo3unxai`, three agents, one per zone. The zone agents may write **only these files**:
-  - `src/components/map3d/funfair/west.tsx` and `gate.tsx`;
-  - `central.tsx`;
-  - `east.tsx` (plus optional sub-folders);
-  - preview routes `src/app/map3d/fz-west`, `fz-central` and `fz-east` (`?power=0|1&mode=night&lite=1&cam=…`).
+- **Batches** (Ben's go between each; all on `funfair-central`):
 
-  Shared helpers I wrote: `funfair/common.ts`, `funfair/dorms.ts` and `funfair/ZonePreview.tsx`.
-- Style benches from the first round (to be deleted once the funfair is wired in):
-  - `src/components/map3d/funfair-lab/`;
-  - `src/app/map3d/funfair-a|b|c`.
-- **Next: rebuild the three zones (one agent per zone, styles from `funfair-lab/styleA|B|C.tsx`), then integrate.** Integration touches shared files, so don't run it at the same time as batch 4.
+  | Batch | Work | State |
+  |---|---|---|
+  | F1 | Central zone (style C): LY4 teacups, LY5 bumper cars, LY8 swing ride, LY9 drop tower, the crossing with the Starlight pole and the power box, the north square (fountain, stalls, stage) | **Done.** Code: `funfair/central.tsx` and `funfair/central/`. Dev page `/map3d/fz-central` (`?power=0\|1`, `?flip=<ms>` powers up after a delay, `?stats=1`, `?zone=0`; add `?perf=0` for headless shots). Desktop cost: +28 draw calls, about +118k triangles (shadow pass included). |
+  | F2 | West zone (style A, brightened for day): LY3 Vortexa Eye with food stalls, LY1 carousel, LY2 game booths with the duck shoot, LY6 and LY7 spider rides; the shared VORTEXA gate | Next |
+  | F3 | East zone (style B): Canteen D6 Big Top, D4/D5 roller coaster, D2 haunted house, D3 pirate ship, D1 arcade | |
+  | F4 | Integration (below) | |
+
+- Until F4, the funfair touches only `src/components/map3d/funfair/`, `src/app/map3d/fz-*` and the docs, so teammates' work on `main` can't conflict with it. A zone writes only its own files: `west.tsx` and `gate.tsx` (plus `west/`), `east.tsx` (plus `east/`), and its `fz-*` route. Shared helpers: `funfair/common.ts`, `funfair/dorms.ts`, `funfair/ZonePreview.tsx`.
+- `usePowerRamp` (`common.ts`) asks for frames while it ramps, so a power-up plays to the end on a map that draws on demand (the card, lite mode). Rides only move on drawn frames.
+- Style benches from the first round (to be deleted once the funfair is wired in): `src/components/map3d/funfair-lab/` and `src/app/map3d/funfair-a|b|c`.
+- **F4, integration** (touches shared files: `CampusScene.tsx`, `ground.tsx`, `geo.ts`):
   1. Render the three zones and the gate inside `CampusScene`.
   2. Replace the brown field on the ground with funfair paving and paths.
   3. Keep trees off the rides.
   4. Add labels such as "LY3 · Vortexa Eye" and "Vortexa Funfair (game zone)".
   5. Power each zone from the lightbulbs, with the default mapping in code: east ← B1, west ← A3, central ← TF. On `/map3d`, `?funfair=1,0,1` forces the states.
-  6. Delete the lab and `fz-*` routes.
-  7. Run the checks, commit, and show Ben screenshots of the whole map.
-  8. The Admin mapping table (`funfair_zones`) and its UI need a migration. Write the file but **do not apply it** to the remote project.
+  6. Decide the drawing policy: while any zone is on, full screen should draw every frame (rides move), also in lite; the card stays on demand.
+  7. Delete the lab and `fz-*` routes.
+  8. Run the checks, commit, and show Ben screenshots of the whole map.
+  9. The Admin mapping table (`funfair_zones`) and its UI need a migration. Write the file but **do not apply it** to the remote project.
 
 ### Lightbulbs in 3D (Ben, 2026-10-15)
 
@@ -91,7 +94,7 @@ The visual work and the 2D→3D replacement live in different files, so they can
 
 ## Batch 5 (2026-10-16, branch `map3d-batch5`)
 
-Fixed, from the review findings and Ben's additions below:
+Fixed (the review's findings and Ben's additions):
 
 - 3D can't run → 2D map: `canUseWebGL()` asks for WebGL2 only. `CampusScene` makes the renderer itself (`gl` factory) and reports a failure through `onFail`, which `CampusMapView` turns into the 2D view (before, the card stayed blank).
 - Phone speed: the scene draws on demand (`frameloop="demand"`) except full screen on a non-lite device, so a still card costs nothing. Anything that animates asks for frames (`Intro`, `CameraRig`, `GroundMarks`, the flag's badge image). Lite mode has no shadow pass. `FrameRateProbe` measures the frame rate once (0.5–2.5 s after start): below 24 fps the full scene steps down to lite, and lite below 10 fps falls back to 2D (`onFail`). `?perf=0` turns the probe off; **use it for headless screenshots**, since SwiftShader runs lite at about 9 fps and would show 2D.
@@ -108,19 +111,3 @@ Not done (next):
 - No "new bulb lit" signal in 3D (the funfair will show it). Admin's Move bulb and save-correction stay 2D only (`?map=2d`).
 - A tap during a camera flight stops it (on purpose: a drag takes over).
 - Check A5 against Ben's photos; real pages behind login and a real phone are still unchecked.
-
-## Paused 2026-10-16 01:30 (usage limit)
-
-- **Funfair Central:** WIP commit on local branch `funfair-central` (worktree `.claude/worktrees/wf_47f33182-f9e-1`; not pushed, not type-checked or reviewed). Next: finish, tsc/eslint, screenshots, review.
-- **Batch 5 review** (branch `map3d-batch4`) was stopped part way. The code reviewers had finished; the Freshie/Faci, Staff and Admin screenshot checks had not. These findings were confirmed (from the code):
-  1. High: if the 3D renderer cannot be created (WebGL1-only device, failed context), the card stays blank instead of falling back to 2D.
-  2. Medium: the 3D accuracy check measures to the ground behind a building when Admin taps a roof.
-  3. Medium: choosing Auto on the light switch flies the camera back to the start view.
-  4. Medium: the scene renders every frame while the card is still or off screen (battery, Faci phones on /checkin).
-  5. Medium: the 2D accuracy check text still says a correction applies to every map.
-  6. Low: no "new bulb lit" signal in 3D; Admin's Move bulb and save-correction tools only reachable with ?map=2d; tapping the OSM credit opens full screen; any touch stops a camera flight.
-- Also to do: "You" as a blue dot and the mock fix on open ground; keep trees off the A5 entrance; check A5 against Ben's photos; re-run the three screenshot checks.
-- Added after the pause (Ben, 2026-10-16), also batch 5:
-  - Phone speed: render only when something changes (not every frame); merge static meshes (about 700 draw calls today, lite mode barely fewer); no shadows in lite mode; measure the frame rate at start and step down quality, then fall back to 2D if still too slow. Test on a cheap 2–3-year-old Android. Do on-demand rendering and the slow-device fallback first.
-  - WebGL check: canUseWebGL() accepts WebGL1, but three.js needs WebGL2 (iPhone 6/5s, iOS < 15, pre-2016 Android get a blank map). Check WebGL2 only.
-  - Accuracy check: record each 3D measurement (metres and direction) so a walk-through can tell a steady offset (fix with one global shift, Admin switch) from GPS noise (no fix). Nobody has field data yet.

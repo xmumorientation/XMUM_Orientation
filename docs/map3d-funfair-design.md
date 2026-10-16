@@ -4,7 +4,7 @@ The empty land in the dorm area of the 3D map becomes a funfair. It is part of t
 
 Layout: [map3d-funfair-layout.svg](map3d-funfair-layout.svg). North is up. The footprints are the real dorm positions from OpenStreetMap, stored in `scripts/map3d/campus.json`.
 
-Status: design only. No code yet. It is step 7 of [map3d-implementation-plan.md](map3d-implementation-plan.md), after the 3D map replaces the 2D one.
+Status: being built in batches on branch `funfair-central` (step 7 of [map3d-implementation-plan.md](map3d-implementation-plan.md)). F1, the Central zone, is done; West, East and the integration into the map follow. See [map3d-session-handoff.md](map3d-session-handoff.md), "Vortexa Funfair".
 
 ## Ben's decisions
 
