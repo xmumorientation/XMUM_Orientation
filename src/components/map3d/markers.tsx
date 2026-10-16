@@ -7,13 +7,14 @@ import type { MapControls as MapControlsImpl } from "three-stdlib";
 
 import type { Vec3 } from "./CampusScene";
 import { EXTENT, type Placed } from "./geo";
-import { DORMS, localToWorld } from "./places";
+import { RIDE_TAGS } from "./funfair/labels";
+import { localToWorld } from "./places";
 
 // DRAFT (map-3d-draft branch): map markers for the 3D campus. Markers are
 // sprites drawn from small canvases, a fixed size on screen like the 2D
 // map's dots; textures with the same look are shared. Ground marks (accuracy
-// circles, the open building's outline, the dorm footprints) are painted on
-// one canvas laid over the ground.
+// circles, the open building's outline) are painted on one canvas laid over
+// the ground.
 
 /** Texture pixels per CSS pixel, so markers stay sharp on phones. */
 const RES = 2;
@@ -368,8 +369,9 @@ export type GroundCircle = { x: number; z: number; r: number; color: string; das
 export type GroundOutline = { place: Placed; color: string };
 
 /**
- * Marks painted flat on the ground, clipped to the slab: accuracy circles, outlines round open buildings, and the
- * dorm footprints. One canvas, repainted when the marks change.
+ * Marks painted flat on the ground, clipped to the slab: accuracy circles and outlines round open buildings. One
+ * canvas, repainted when the marks change. (The dorm footprints are no longer drawn: the funfair's rides stand on
+ * them.)
  */
 export function GroundMarks({ circles, outlines, lite }: { circles: GroundCircle[]; outlines: GroundOutline[]; lite: boolean }) {
   const invalidate = useThree((s) => s.invalidate);
@@ -392,17 +394,6 @@ export function GroundMarks({ circles, outlines, lite }: { circles: GroundCircle
     const pz = (z: number) => (z + EXTENT.z) * pxPerUnit;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.lineJoin = "round";
-
-    for (const d of DORMS) {
-      ctx.beginPath();
-      d.ring.forEach(([x, z], i) => (i ? ctx.lineTo(px(x), pz(z)) : ctx.moveTo(px(x), pz(z))));
-      ctx.closePath();
-      ctx.fillStyle = "rgba(255,247,237,0.22)";
-      ctx.fill();
-      ctx.lineWidth = Math.max(1.5, 0.22 * pxPerUnit);
-      ctx.strokeStyle = "rgba(255,247,237,0.7)";
-      ctx.stroke();
-    }
 
     for (const o of outlines) {
       const m = 1.4;
@@ -452,10 +443,16 @@ export function GroundMarks({ circles, outlines, lite }: { circles: GroundCircle
   );
 }
 
-/** Dorm names: shown only when the camera is close, like the courts' labels. */
-export function DormTags() {
+/**
+ * The funfair's ride names, each with its dorm ("LY3 · Vortexa Eye"): shown only when the camera is close, like
+ * the courts' labels, whether or not place names are on.
+ */
+export function RideTags() {
   const k = usePxScale();
-  const tags = useMemo(() => DORMS.map((d) => ({ ...d, art: tagArt(d.name), at: new THREE.Vector3(d.pos[0], 0.4, d.pos[1]) })), []);
+  const tags = useMemo(
+    () => RIDE_TAGS.map((d) => ({ ...d, art: tagArt(d.name), at: new THREE.Vector3(d.pos[0], 0.4, d.pos[1]) })),
+    [],
+  );
   const refs = useRef<(THREE.Sprite | null)[]>([]);
   useFrame(({ camera }) => {
     tags.forEach((t, i) => {

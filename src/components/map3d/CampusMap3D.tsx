@@ -7,17 +7,27 @@ import type { MapControls as MapControlsImpl } from "three-stdlib";
 
 import { MODES, type Mode } from "./atmosphere";
 import CampusScene, { type CameraView } from "./CampusScene";
+import { parseFunfair, type FunfairPower } from "./funfair/Funfair";
 import { GPS_MARKERS } from "./geo";
 import { prefersLite } from "./webgl";
 
 // DRAFT (map-3d-draft branch, not for main): the /map3d demo page. Wraps
 // CampusScene with a header, mode buttons and a labels toggle.
 
-type Demo = { camera?: CameraView; intro: boolean; gps: boolean; lite: boolean; stats: boolean; touch: boolean };
+type Demo = {
+  camera?: CameraView;
+  intro: boolean;
+  gps: boolean;
+  lite: boolean;
+  stats: boolean;
+  touch: boolean;
+  funfair: FunfairPower;
+};
 
 /**
  * Draft-only URL params, for screenshots: ?cam=x,y,z,tx,ty,tz the start view, ?mode=day|sunset|night the look,
- * ?intro=0 no swoop, ?gps=1 the team's GPS points, ?lite=0|1 force lite mode, ?stats=1 log draw calls (dev only).
+ * ?intro=0 no swoop, ?gps=1 the team's GPS points, ?lite=0|1 force lite mode, ?stats=1 log draw calls (dev only),
+ * ?funfair=1,0,1 which funfair zones are on (west, central, east; default all on).
  */
 function readDemo(): { demo: Demo; mode: Mode | null } {
   const q = new URLSearchParams(window.location.search);
@@ -33,6 +43,7 @@ function readDemo(): { demo: Demo; mode: Mode | null } {
       lite: lite === "1" ? true : lite === "0" ? false : prefersLite(),
       stats: process.env.NODE_ENV === "development" && q.get("stats") === "1",
       touch: window.matchMedia("(max-width: 768px)").matches,
+      funfair: parseFunfair(q.get("funfair")) ?? { west: 1, central: 1, east: 1 },
     },
     mode: m === "day" || m === "sunset" || m === "night" ? m : null,
   };
@@ -143,6 +154,7 @@ export default function CampusMap3D() {
           intro={demo.intro}
           labels={labels}
           controlsRef={controls}
+          funfair={demo.funfair}
         >
           {demo.gps && <GpsMarkers />}
           {demo.stats && <RenderStats lite={demo.lite} />}

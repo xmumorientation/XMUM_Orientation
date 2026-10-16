@@ -8,6 +8,8 @@ import type { MapControls as MapControlsImpl } from "three-stdlib";
 
 import { Atmosphere, Effects, MODES, type Mode } from "./atmosphere";
 import { B1Building, Blocks, Bridge, Dome, Flag, Grandstand, Letters, Statue } from "./buildings";
+import { anyZoneOn, Funfair, FUNFAIR_OFF, type FunfairPower } from "./funfair/Funfair";
+import { FUNFAIR_LABEL } from "./funfair/labels";
 import { LABELS } from "./geo";
 import { Ground, Slab } from "./ground";
 import { SportsCourts, TrackFixtures } from "./sports";
@@ -139,10 +141,12 @@ function Label({ name, pos, y, minor }: (typeof LABELS)[number]) {
   );
 }
 
+const ALL_LABELS = [...LABELS, FUNFAIR_LABEL];
+
 const Labels = memo(function Labels() {
   return (
     <>
-      {LABELS.map((l) => (
+      {ALL_LABELS.map((l) => (
         <Label key={l.name} {...l} />
       ))}
     </>
@@ -251,6 +255,8 @@ export type CampusSceneProps = {
   controlsRef?: Ref<MapControlsImpl>;
   /** Camera controls on (default true). Off, the view stays still and touches scroll the page. */
   interactive?: boolean;
+  /** The funfair's zones: which are powered (default all off). A change plays the power-up. */
+  funfair?: FunfairPower;
   /** Rendered inside the Canvas, in the scene (depth-tested, post-processed): ground overlays, hit areas. */
   children?: ReactNode;
   /**
@@ -275,6 +281,7 @@ export default function CampusScene({
   labels = true,
   controlsRef,
   interactive = true,
+  funfair = FUNFAIR_OFF,
   children,
   overlay,
   onFail,
@@ -329,9 +336,10 @@ export default function CampusScene({
         <Canvas
           // Lite (phones): no shadow pass; the ground has painted footprint shadows.
           shadows={!isLite}
-          // Draw only when something changes (camera, markers, look), so a still card costs nothing. Full screen
-          // on a fast device keeps drawing every frame, so the water, duck, flag and clouds move.
-          frameloop={interactive && !isLite ? "always" : "demand"}
+          // Draw only when something changes (camera, markers, look, a power-up), so a still card costs nothing.
+          // Full screen keeps drawing every frame on a fast device (the water, duck, flag and clouds move), and
+          // on any device while a funfair zone is on, so its rides keep turning.
+          frameloop={interactive && (!isLite || anyZoneOn(funfair)) ? "always" : "demand"}
           dpr={isLite ? [1, 1.5] : [1, 1.75]}
           camera={{ fov: 30, near: 1, far: 1600, position: start.position }}
           gl={(defaults) => {
@@ -347,6 +355,7 @@ export default function CampusScene({
           }}
         >
           <Campus mode={mode} lite={isLite} />
+          <Funfair power={funfair} night={mode === "night"} lite={isLite} />
           {labels && <Labels />}
           {children}
           <MapControls

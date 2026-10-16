@@ -9,13 +9,14 @@ import type { MapControls as MapControlsImpl } from "three-stdlib";
 
 import { MODES, type Mode } from "@/components/map3d/atmosphere";
 import CampusScene, { type CameraView, type Vec3 } from "@/components/map3d/CampusScene";
+import { funfairFromBulbs } from "@/components/map3d/funfair/Funfair";
 import { EXTENT, UNITS_PER_M, gpsToWorld } from "@/components/map3d/geo";
 import {
   CameraRig,
-  DormTags,
   GroundMarks,
   HitArea,
   Marker,
+  RideTags,
   clusterArt,
   isTap,
   pinArt,
@@ -240,7 +241,7 @@ function SceneMarkers({
 }) {
   return (
     <>
-      <DormTags />
+      <RideTags />
       {tags.map((t) => (
         <Marker key={`tag-${t.key}`} position={t.at} art={tagArt(t.text)} dy={t.dot ? 24 : 16} order={9} size={size} />
       ))}
@@ -406,6 +407,8 @@ export function CampusMap3DView({
   const isLite = lite ?? env?.lite ?? true;
   // The light switch wins; Auto is the page's `mode`, else the time of day.
   const sceneMode = look ?? mode ?? env?.mode ?? "day";
+  // The funfair's zones power up with the lit lightbulbs (each zone's key: ZONE_KEYS in Funfair.tsx).
+  const funfair = useMemo(() => funfairFromBulbs(data.bulbs), [data.bulbs]);
   const split = useMemo(() => new Set(fullscreen && splitKey ? splitKey.split("|") : []), [fullscreen, splitKey]);
 
   function fly(plan: FlightPlan) {
@@ -681,6 +684,7 @@ export function CampusMap3DView({
             createPortal(
               <CampusScene
                 mode={sceneMode}
+                funfair={funfair}
                 lite={isLite}
                 camera={camera ?? env.camera}
                 intro={intro}
