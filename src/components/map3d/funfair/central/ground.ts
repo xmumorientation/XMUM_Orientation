@@ -1,7 +1,6 @@
 import { G, PAINT, mat } from "./kit";
 import {
   BOULEVARD,
-  BOUNDS,
   BUMPER,
   BUMPER_HX,
   BUMPER_HZ,
@@ -18,12 +17,11 @@ import {
 } from "./layout";
 import type { Parts } from "./parts";
 
-// DRAFT: the Central zone's ground: lawn, the midway and the promenade, the
-// ride plazas and the north square. Layers never share a height (no
-// z-fighting from the map's far camera): lawn 0.04, paths 0.12, plazas are
-// raised slabs (0.26 to 0.46).
+// DRAFT: the Central zone's ground: the midway and the promenade, the ride
+// plazas and the north square, on the campus lawn (y = 0; the zone has no
+// lawn of its own). Layers never share a height (no z-fighting from the map's
+// far camera): paths 0.12, plazas are raised slabs (0.26 to 0.46).
 
-const LAWN = ["#97bb5c", "#8db257"];
 const PATH = "#f6e6cf";
 const PATH_EDGE = "#c9aef0";
 const PATH_W = 5;
@@ -51,7 +49,8 @@ export function groundY(x: number, z: number) {
   if (x > SQUARE.x[0] - 0.6 && x < SQUARE.x[1] + 0.6 && z > SQUARE.z[0] - 0.6 && z < SQUARE.z[1] + 0.6) return 0.27;
   if (Math.abs(z) < BOULEVARD.hw && x > BOULEVARD.x[0]) return 0.12;
   if (x > PROMENADE.x[0] && x < PROMENADE.x[1]) return 0.12;
-  return 0.04;
+  // the campus lawn
+  return 0;
 }
 
 /** Plaza slab (top at y = h) with a darker rim. */
@@ -81,16 +80,6 @@ function star(p: Parts, x: number, z: number, r: number, c: string, y = 0.12, ry
 }
 
 export function bakeGround(p: Parts) {
-  const [X0, X1] = BOUNDS.x;
-  const [Z0, Z1] = BOUNDS.z;
-
-  // lawn in broad mowing stripes (adjacent strips, no overlap)
-  const stripe = 8;
-  for (let x = X0, i = 0; x < X1; x += stripe, i++) {
-    const w = Math.min(stripe, X1 - x);
-    p.paving.add(G.quad, mat(x + w / 2, 0.04, (Z0 + Z1) / 2, w, 1, Z1 - Z0), LAWN[i % 2]);
-  }
-
   // the midway (south to north) and the promenade (west to east)
   const hw = BOULEVARD.hw;
   path(p, BOULEVARD.x[0], SQUARE.x[0] + 1, -hw, hw);

@@ -80,6 +80,28 @@ function Intro({ start }: { start: Start }) {
   return null;
 }
 
+/** The camera's near plane, as a share of its distance to the target (DepthRange). */
+const NEAR_SHARE = 0.025;
+
+/**
+ * Moves the camera's near plane out as it backs away, so the depth buffer keeps its precision at map distances.
+ * With a fixed near plane of 1, ground layers a few centimetres apart flickered in dark bands on phones. At 2.5%
+ * of the distance it never cuts anything: the camera looks down at least 16 degrees (maxPolarAngle 1.3), so it
+ * is always well above the tallest model, and it stays at 1 within 40 units of the target.
+ */
+function DepthRange() {
+  const controls = useThree((s) => s.controls) as MapControlsImpl | null;
+  useFrame(({ camera }) => {
+    if (!controls || !(camera instanceof THREE.PerspectiveCamera)) return;
+    const near = THREE.MathUtils.clamp(camera.position.distanceTo(controls.target) * NEAR_SHARE, 1, 10);
+    if (Math.abs(near - camera.near) > camera.near * 0.05) {
+      camera.near = near;
+      camera.updateProjectionMatrix();
+    }
+  });
+  return null;
+}
+
 /** Minor labels fade in within this distance of the camera. */
 const MINOR_LABEL_DISTANCE = 95;
 
@@ -338,6 +360,7 @@ export default function CampusScene({
             screenSpacePanning={false}
           />
           <TouchPolicy interactive={interactive} />
+          <DepthRange />
           <Intro start={start} />
           {/* Measured once, and once more in lite after a step down. */}
           <FrameRateProbe key={stepDown ? "lite" : "first"} onResult={onFrameRate} />

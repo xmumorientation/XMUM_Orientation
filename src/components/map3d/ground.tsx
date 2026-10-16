@@ -10,6 +10,7 @@ import {
   EXTENT,
   FOOTPATH_W,
   FOOTPATHS,
+  FUNFAIR_LAND,
   GRASS,
   GROUND,
   LAKE,
@@ -157,21 +158,14 @@ function makeGroundTexture(lite: boolean): THREE.CanvasTexture {
   for (const p of FOOTPATHS) stroke(p, FOOTPATH_W, COLORS.path);
   ctx.restore();
 
-  const brown = img(GROUND.brown);
-  poly(brown, COLORS.brown);
+  // the funfair's land: lawn, like the lake park
+  poly(FUNFAIR_LAND, COLORS.lawn);
   ctx.save();
-  trace(brown);
+  trace(FUNFAIR_LAND);
   ctx.clip();
   {
-    const [x0, z0, x1, z1] = bounds(brown);
-    speckle(8000, x0, z0, x1, z1, "rgba(210,150,100,0.16)", "rgba(60,30,15,0.16)");
-    // a few patches of grass coming through
-    for (let i = 0; i < 26; i++) {
-      ctx.fillStyle = "rgba(120,140,60,0.28)";
-      ctx.beginPath();
-      ctx.ellipse(x0 + r() * (x1 - x0), z0 + r() * (z1 - z0), 1 + r() * 3, 0.6 + r() * 1.6, r() * 3, 0, Math.PI * 2);
-      ctx.fill();
-    }
+    const [x0, z0, x1, z1] = bounds(FUNFAIR_LAND);
+    speckle(Math.round((x1 - x0) * (z1 - z0) * 2.4), x0, z0, x1, z1, "rgba(200,210,120,0.14)", "rgba(70,90,30,0.13)");
   }
   ctx.restore();
   poly(img(GROUND.roadSpur), COLORS.road);
