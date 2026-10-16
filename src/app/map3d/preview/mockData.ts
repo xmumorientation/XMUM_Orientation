@@ -11,6 +11,7 @@ import {
   type CampusMapData,
   type MapLayer,
 } from "@/components/campus-map/useCampusMapData";
+import { funfairFromBulbs } from "@/lib/funfair";
 import { MAP_BUILDINGS } from "@/lib/mapBuildings";
 import { GPS_POINTS, LANDMARKS } from "@/lib/mapGeo";
 import type { GroupPosition, MapLightbulb, ProjectorLocation, Station, StationStatus } from "@/lib/types";
@@ -192,6 +193,8 @@ export function useMockMapData(opts: MockOptions): CampusMapData {
   const counts = useMemo(() => Object.fromEntries(mapStations.map((s) => [s.id, s.id % 3])), [mapStations]);
 
   const litCount = bulbs.filter((b) => b.activated_at).length;
+  // The funfair with its default keys (the preview never asks Supabase).
+  const funfair = useMemo(() => funfairFromBulbs(bulbs), [bulbs]);
   useEffect(() => {
     if (layer === "bulbs" && litCount !== seenLit) setSeenLit(litCount);
   }, [layer, litCount, seenLit]);
@@ -232,6 +235,7 @@ export function useMockMapData(opts: MockOptions): CampusMapData {
     setLayer,
     bulbs,
     litCount,
+    funfair,
     newLit,
     selectedBulb,
     setSelectedBulb,

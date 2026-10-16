@@ -9,7 +9,6 @@ import type { MapControls as MapControlsImpl } from "three-stdlib";
 
 import { MODES, type Mode } from "@/components/map3d/atmosphere";
 import CampusScene, { type CameraView, type Vec3 } from "@/components/map3d/CampusScene";
-import { funfairFromBulbs } from "@/components/map3d/funfair/Funfair";
 import { EXTENT, UNITS_PER_M, gpsToWorld } from "@/components/map3d/geo";
 import {
   CameraRig,
@@ -36,8 +35,10 @@ import {
   labelPoint,
   ringPoint,
 } from "@/components/map3d/places";
+import { ZONE_CENTERS } from "@/components/map3d/funfair/labels";
 import { prefersLite } from "@/components/map3d/webgl";
 import { stationDotColor } from "@/components/ui";
+import type { FunfairZone } from "@/lib/funfair";
 import { groupPinColor } from "@/lib/mapGeo";
 import type { Station } from "@/lib/types";
 
@@ -404,11 +405,33 @@ export function CampusMap3DView({
     if (!checkMode) setCheckTap(null);
   }, [checkMode]);
 
+  useEffect(() => {
+    const zone = new URLSearchParams(window.location.search).get("funfair_preview");
+    if (zone !== "west" && zone !== "central" && zone !== "east") return;
+    setPreview({ zone, on: false });
+    onFullscreenChange(true);
+    const [x, z] = ZONE_CENTERS[zone];
+    const toZone = window.setTimeout(() => fly({ kind: "focus", target: [x, 0, z], distance: 70 }), 1200);
+    const powerUp = window.setTimeout(() => setPreview({ zone, on: true }), 3200);
+    return () => {
+      window.clearTimeout(toZone);
+      window.clearTimeout(powerUp);
+    };
+    // Once, on open (fly and onFullscreenChange only set state).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const isLite = lite ?? env?.lite ?? true;
   // The light switch wins; Auto is the page's `mode`, else the time of day.
   const sceneMode = look ?? mode ?? env?.mode ?? "day";
-  // The funfair's zones power up with the lit lightbulbs (each zone's key: ZONE_KEYS in Funfair.tsx).
-  const funfair = useMemo(() => funfairFromBulbs(data.bulbs), [data.bulbs]);
+  // The funfair's zones (data.funfair: funfair_zones, or the default keys), and Admin's preview
+  // (?funfair_preview=west, from the Funfair card): full screen opens on that zone, which then powers up, on this
+  // screen only.
+  const [preview, setPreview] = useState<{ zone: FunfairZone; on: boolean } | null>(null);
+  const funfair = useMemo(
+    () => (preview ? { ...data.funfair, [preview.zone]: preview.on ? 1 : 0 } : data.funfair),
+    [data.funfair, preview],
+  );
   const split = useMemo(() => new Set(fullscreen && splitKey ? splitKey.split("|") : []), [fullscreen, splitKey]);
 
   function fly(plan: FlightPlan) {

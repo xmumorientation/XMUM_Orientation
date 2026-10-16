@@ -5,9 +5,11 @@ import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useRef, useState } from "react";
 import type { MapControls as MapControlsImpl } from "three-stdlib";
 
+import { parseFunfair, type FunfairPower } from "@/lib/funfair";
+
 import { MODES, type Mode } from "./atmosphere";
 import CampusScene, { type CameraView } from "./CampusScene";
-import { parseFunfair, type FunfairPower } from "./funfair/Funfair";
+
 import { GPS_MARKERS } from "./geo";
 import { prefersLite } from "./webgl";
 

@@ -6,9 +6,11 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState, type CSSProper
 import * as THREE from "three";
 import type { MapControls as MapControlsImpl } from "three-stdlib";
 
+import { anyZoneOn, FUNFAIR_OFF, type FunfairPower } from "@/lib/funfair";
+
 import { Atmosphere, Effects, MODES, type Mode } from "./atmosphere";
 import { B1Building, Blocks, Bridge, Dome, Flag, Grandstand, Letters, Statue } from "./buildings";
-import { anyZoneOn, Funfair, FUNFAIR_OFF, type FunfairPower } from "./funfair/Funfair";
+import { Funfair } from "./funfair/Funfair";
 import { FUNFAIR_LABEL } from "./funfair/labels";
 import { LABELS } from "./geo";
 import { Ground, Slab } from "./ground";

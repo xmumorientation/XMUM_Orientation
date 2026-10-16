@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { readingText, useAccuracyCheck, useCheckLog } from "@/components/AccuracyCheck";
 import { bulbTitle } from "@/components/LightbulbList";
 import { useProfile } from "@/components/ProfileProvider";
+import { funfairFromBulbs, funfairFromState, funfairMissing, type FunfairPower } from "@/lib/funfair";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import type {
   GroupPosition,
@@ -26,6 +27,8 @@ export type MapLayer = "stations" | "bulbs";
 /** Which map draws the data: the 3D campus, or the 2D art (the fallback). */
 export type MapView = "3d" | "2d";
 const LAYER_KEY = "campus-map-layer";
+/** How often the 3D map asks which funfair zones are on (a lit bulb also asks at once). */
+const FUNFAIR_POLL_MS = 30_000;
 const SEEN_LIT_KEY = "campus-map-seen-lit";
 
 export type MapSpot = { x: number; y: number };
@@ -142,11 +145,14 @@ export function useCampusMapData({
   showGroupPins,
   canManageStations,
   bulbLayer = true,
+  loadFunfair = false,
 }: {
   showGroupPins: boolean;
   canManageStations: boolean;
   /** The Lightbulbs layer (2D map only). Without it the layer stays on Stations. */
   bulbLayer?: boolean;
+  /** Ask which funfair zones are on (the 3D map draws the funfair). */
+  loadFunfair?: boolean;
 }) {
   const supabase = useMemo(() => supabaseBrowser(), []);
   const myId = useProfile().id;
@@ -287,6 +293,42 @@ export function useCampusMapData({
   }
 
   const litCount = bulbs.filter((b) => b.activated_at).length;
+
+  // The funfair's zones (3D map). fn_funfair_state (0088) decides, so Admin's keys and overrides count; until
+  // 0088 is applied, the default keys do (funfairFromBulbs). Asked again when the lit bulbs change (they come
+  // live) and every 30 s (Admin's changes reach other maps that way).
+  const [funfairState, setFunfairState] = useState<FunfairPower | null>(null);
+  const litKey = bulbs
+    .filter((b) => b.activated_at)
+    .map((b) => b.location)
+    .sort()
+    .join(",");
+  useEffect(() => {
+    if (!loadFunfair) return;
+    let active = true;
+    let missing = false;
+    async function load() {
+      if (missing) return;
+      const { data, error } = await supabase.rpc("fn_funfair_state");
+      if (!active) return;
+      if (error) {
+        // Not migrated yet: stop asking, the defaults decide. Other errors keep the last answer.
+        if (funfairMissing(error)) {
+          missing = true;
+          setFunfairState(null);
+        }
+        return;
+      }
+      setFunfairState(funfairFromState((data ?? []) as { zone: string; powered: boolean }[]));
+    }
+    void load();
+    const id = window.setInterval(load, FUNFAIR_POLL_MS);
+    return () => {
+      active = false;
+      window.clearInterval(id);
+    };
+  }, [supabase, loadFunfair, litKey]);
+  const funfair = useMemo(() => funfairState ?? funfairFromBulbs(bulbs), [funfairState, bulbs]);
 
   useEffect(() => {
     // ?layer=bulbs (from the demo scan) wins over the remembered choice.
@@ -501,6 +543,8 @@ export function useCampusMapData({
     // Lightbulbs
     bulbs,
     litCount,
+    // The funfair's zones (3D map)
+    funfair,
     newLit,
     selectedBulb,
     setSelectedBulb,
