@@ -222,6 +222,27 @@ export function pinArt(
   return { tex, w, h, x, y, r };
 }
 
+/** "You" in Admin's accuracy check: a blue dot with a white rim, as phone maps show your own location. */
+export function youArt(): MarkerArt {
+  const w = 32;
+  const h = 32;
+  const r = 8;
+  const tex = cachedTexture("you", w, h, (ctx) => {
+    ctx.beginPath();
+    ctx.arc(w / 2, h / 2, r + 5, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(2,132,199,0.25)";
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(w / 2, h / 2, r, 0, Math.PI * 2);
+    ctx.fillStyle = "#0284c7";
+    ctx.fill();
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = "#ffffff";
+    ctx.stroke();
+  });
+  return { tex, w, h, x: w / 2, y: h / 2, r };
+}
+
 /** A small name tag (the dorms). */
 export function tagArt(text: string): MarkerArt {
   const h = 20;
@@ -351,6 +372,7 @@ export type GroundOutline = { place: Placed; color: string };
  * dorm footprints. One canvas, repainted when the marks change.
  */
 export function GroundMarks({ circles, outlines, lite }: { circles: GroundCircle[]; outlines: GroundOutline[]; lite: boolean }) {
+  const invalidate = useThree((s) => s.invalidate);
   const pxPerUnit = (lite ? 1024 : 1600) / (EXTENT.x * 2);
   const { canvas, tex } = useMemo(() => {
     const c = document.createElement("canvas");
@@ -417,9 +439,10 @@ export function GroundMarks({ circles, outlines, lite }: { circles: GroundCircle
       ctx.globalAlpha = 1;
     }
     tex.needsUpdate = true;
+    invalidate();
     // `key` covers circles and outlines.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key, canvas, tex, pxPerUnit]);
+  }, [key, canvas, tex, pxPerUnit, invalidate]);
 
   return (
     <mesh rotation-x={-Math.PI / 2} position-y={0.14} renderOrder={1}>
@@ -481,6 +504,7 @@ export type Flight = FlightPlan & { id: number };
 export function CameraRig({ flight }: { flight: Flight | null }) {
   const controls = useThree((s) => s.controls) as MapControlsImpl | null;
   const camera = useThree((s) => s.camera);
+  const invalidate = useThree((s) => s.invalidate);
   const anim = useRef<{ t: number; p0: THREE.Vector3; t0: THREE.Vector3; p1: THREE.Vector3; t1: THREE.Vector3 } | null>(
     null,
   );
@@ -515,6 +539,7 @@ export function CameraRig({ flight }: { flight: Flight | null }) {
       p1 = new THREE.Vector3().setFromSpherical(dir).add(t1);
     }
     anim.current = { t: 0, p0, t0, p1, t1 };
+    invalidate();
     // Ends the scene's intro swoop, if it is still running.
     controls.dispatchEvent({ type: "start", target: controls });
     const stop = () => {
@@ -522,10 +547,11 @@ export function CameraRig({ flight }: { flight: Flight | null }) {
     };
     controls.addEventListener("start", stop);
     return () => controls.removeEventListener("start", stop);
-  }, [flight, controls, camera]);
-  useFrame((_, dt) => {
+  }, [flight, controls, camera, invalidate]);
+  useFrame(({ invalidate }, dt) => {
     const a = anim.current;
     if (!a || !controls) return;
+    invalidate();
     a.t = Math.min(1, a.t + dt / 0.7);
     const k = 1 - Math.pow(1 - a.t, 3);
     camera.position.lerpVectors(a.p0, a.p1, k);

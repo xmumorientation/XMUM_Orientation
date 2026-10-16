@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 
+import { readingText, useCheckLog } from "@/components/AccuracyCheck";
 import {
   buildClusters,
   buildGroupPins,
@@ -170,8 +171,12 @@ export function useMockMapData(opts: MockOptions): CampusMapData {
   const [editing, setEditing] = useState<Station | null>(null);
   const [checkMode, setCheckMode] = useState(opts.check);
   const [checkNotice, setCheckNotice] = useState<string | null>(null);
-  // A steady fix 12 m east of A3's GPS point, ±6 m.
-  const [fix] = useState(() => ({ ...near(GPS_POINTS.A3, 12, 0), acc: 6, t: nowMs }));
+  // A steady fix on the open lawn 30 m south of the statue, ±6 m.
+  const [fix] = useState(() => {
+    const statue = LANDMARKS.find((l) => l.name === "Tan Kah Kee statue")!;
+    return { ...near(statue, 0, -30), acc: 6, t: nowMs };
+  });
+  const checkLog = useCheckLog();
   // One bulb seen before: the second lit one makes the Lightbulbs tab pulse, as on the real map.
   const [seenLit, setSeenLit] = useState(1);
 
@@ -264,8 +269,12 @@ export function useMockMapData(opts: MockOptions): CampusMapData {
     checkError: null,
     anchors: [],
     placeAnchor: async () => {},
-    measureCheck: (metresTo: (lat: number, lng: number) => number) =>
-      setCheckNotice(`Your GPS is ${Math.round(metresTo(fix.lat, fix.lng))} m from where you tapped (±${fix.acc} m, 3 fixes).`),
+    measureCheck: (offsetTo: (lat: number, lng: number) => { east: number; north: number }) => {
+      const offset = offsetTo(fix.lat, fix.lng);
+      checkLog.add({ t: Date.now(), ...offset, acc: fix.acc, fixes: 3 });
+      setCheckNotice(`Your GPS reads ${readingText(offset)} of where you tapped (±${fix.acc} m, 3 fixes).`);
+    },
+    checkLog,
     deleteAnchor: async () => {},
   };
 }

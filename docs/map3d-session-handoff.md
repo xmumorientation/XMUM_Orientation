@@ -1,4 +1,4 @@
-# 3D map: handoff for a new conversation (updated 2026-10-15, about 17:55)
+# 3D map: handoff for a new conversation (updated 2026-10-16)
 
 Ben may continue this work in a new Claude conversation. This file says where everything stands. Read it before doing anything, then read:
 
@@ -8,8 +8,8 @@ Ben may continue this work in a new Claude conversation. This file says where ev
 
 ## Rules Ben set
 
-- Branch `map-3d-draft` only. **Never push** (Ben pushes himself). Commits on the branch are fine once the checks pass.
-- `map-3d-draft` is merged into `main` (PR #39). Batch 4 is on `map3d-batch4`, a new branch from `main` (Ben, 2026-10-16).
+- **Never push** (Ben pushes himself). Commits on the working branch are fine once the checks pass.
+- Branches: each batch gets its own branch from the latest `main`, and Ben merges it by PR. `map-3d-draft` (PR #39) and `map3d-batch4` (PR #40) are merged. Batch 5 is on `map3d-batch5`, from `main` at `3dff00a`.
 - Work in **batches**: finish one, show Ben the results (screenshots in Chinese), and wait for his go before the next one.
 - He watches his usage limit closely. Keep agents few. If he says the 5-hour limit is above about 85%:
   - start nothing new;
@@ -30,7 +30,7 @@ Ben's batches map to the plan's steps as follows.
 | 2 | 2. Split `CampusMap.tsx` into a data hook (`campus-map/useCampusMapData.ts`), panels (`CampusMapPanels.tsx`) and the 2D view (`CampusMap2DView.tsx`), with no behaviour change | **Done**, commit `31cf14c` |
 | 3 | 3. `campus-map/CampusMap3DView.tsx`, `map3d/markers.tsx`, `map3d/places.ts` + the dev preview `/map3d/preview` (mock data; `?role=freshie\|faci\|staff\|admin`, `&full=1`, `&map=2d` (was `&view=2d`), `&check=1` for Admin's accuracy check) | **Done**, commit `0e24148`. Ben has seen the screenshots. One known issue: on a phone in fullscreen, tapping a station badge does not always centre the camera on the building (`CameraRig` at the end of `markers.tsx`; the badge tap is in `CampusMap3DView` `taps.badge`). Fix it in batch 4. |
 | 4 | 4 + 5 | **Done** on branch `map3d-batch4` (from `main`; not merged). `/map`, `/checkin` and `/committee` draw the 3D map through `campus-map/CampusMapView.tsx`: `next/dynamic` with `ssr: false`, a loading card, and the 2D view when WebGL is missing, when the 3D view throws (an error boundary), or with `?map=2d`. No lightbulb markers or layer in 3D; the lightbulb list sits under the 3D map (Admin keeps Reset; Move is 2D only). Fullscreen has an Auto / Sunset / Day / Night switch (top right, accent = group colour or Welcome cyan). Admin's accuracy check in 3D: tap the ground, see the GPS error in metres, nothing saved; saved anchors are labelled 2D only. Badge centring on phones: taps that moved 8–16 px were thrown away as drags; touch now allows 16 px (`isTap` in `markers.tsx`), and a flight first plays out the controls' damping. |
-| 5 | 6 | Review and fixes. Waiting. |
+| 5 | 6 | **Done** on branch `map3d-batch5` (not merged). See "Batch 5" below. |
 
 ### Vortexa Funfair (plan step 7, done in parallel)
 
@@ -88,3 +88,39 @@ The visual work and the 2D→3D replacement live in different files, so they can
 - Checks: `npx tsc --noEmit -p .`. Errors under `tests/` and `vitest.config.ts` were there before: the test dependencies aren't installed, so the tests can't run. Then `npx eslint <changed files>`.
 - `scratchpad/impl/step3/probe.mjs` (session-local) replays taps, drags and screenshots from a JSON step list. It is useful for checking taps on a phone. Write it again in a new session if needed.
 - Workflows don't survive a session. A new conversation can't resume `w2i3sdadt` or `wwo3unxai`; it has to continue from the files and this note.
+
+## Batch 5 (2026-10-16, branch `map3d-batch5`)
+
+Fixed, from the review findings and Ben's additions below:
+
+- 3D can't run → 2D map: `canUseWebGL()` asks for WebGL2 only. `CampusScene` makes the renderer itself (`gl` factory) and reports a failure through `onFail`, which `CampusMapView` turns into the 2D view (before, the card stayed blank).
+- Phone speed: the scene draws on demand (`frameloop="demand"`) except full screen on a non-lite device, so a still card costs nothing. Anything that animates asks for frames (`Intro`, `CameraRig`, `GroundMarks`, the flag's badge image). Lite mode has no shadow pass. `FrameRateProbe` measures the frame rate once (0.5–2.5 s after start): below 24 fps the full scene steps down to lite, and lite below 10 fps falls back to 2D (`onFail`). `?perf=0` turns the probe off; **use it for headless screenshots**, since SwiftShader runs lite at about 9 fps and would show 2D.
+- Accuracy check: a roof or wall tap measures at the building (hit areas stay on during the check), not the ground behind it. "You" is a blue dot. Each reading is logged on the Admin's phone (localStorage `campus-map-check-log`, newest 50) with metres and compass direction; with 3+ readings the panel says whether it looks like a steady offset (average ≥ 5 m and bigger than the spread) or GPS noise, and Copy gives a CSV. Nothing goes to the server.
+- The light switch's Auto no longer flies the camera back to the start view.
+- 2D accuracy texts say a correction bends the 2D map only.
+- Tapping the OSM credit link no longer opens full screen.
+- Trees and bushes are kept off A5's entrance (`A5_ENTRANCE` in `geo.ts`).
+- Preview: the `?check=1` mock fix is on open ground (30 m south of the statue).
+
+Not done (next):
+
+- Merge static meshes (about 700 draw calls); measure on a cheap 2–3-year-old Android.
+- No "new bulb lit" signal in 3D (the funfair will show it). Admin's Move bulb and save-correction stay 2D only (`?map=2d`).
+- A tap during a camera flight stops it (on purpose: a drag takes over).
+- Check A5 against Ben's photos; real pages behind login and a real phone are still unchecked.
+
+## Paused 2026-10-16 01:30 (usage limit)
+
+- **Funfair Central:** WIP commit on local branch `funfair-central` (worktree `.claude/worktrees/wf_47f33182-f9e-1`; not pushed, not type-checked or reviewed). Next: finish, tsc/eslint, screenshots, review.
+- **Batch 5 review** (branch `map3d-batch4`) was stopped part way. The code reviewers had finished; the Freshie/Faci, Staff and Admin screenshot checks had not. These findings were confirmed (from the code):
+  1. High: if the 3D renderer cannot be created (WebGL1-only device, failed context), the card stays blank instead of falling back to 2D.
+  2. Medium: the 3D accuracy check measures to the ground behind a building when Admin taps a roof.
+  3. Medium: choosing Auto on the light switch flies the camera back to the start view.
+  4. Medium: the scene renders every frame while the card is still or off screen (battery, Faci phones on /checkin).
+  5. Medium: the 2D accuracy check text still says a correction applies to every map.
+  6. Low: no "new bulb lit" signal in 3D; Admin's Move bulb and save-correction tools only reachable with ?map=2d; tapping the OSM credit opens full screen; any touch stops a camera flight.
+- Also to do: "You" as a blue dot and the mock fix on open ground; keep trees off the A5 entrance; check A5 against Ben's photos; re-run the three screenshot checks.
+- Added after the pause (Ben, 2026-10-16), also batch 5:
+  - Phone speed: render only when something changes (not every frame); merge static meshes (about 700 draw calls today, lite mode barely fewer); no shadows in lite mode; measure the frame rate at start and step down quality, then fall back to 2D if still too slow. Test on a cheap 2–3-year-old Android. Do on-demand rendering and the slow-device fallback first.
+  - WebGL check: canUseWebGL() accepts WebGL1, but three.js needs WebGL2 (iPhone 6/5s, iOS < 15, pre-2016 Android get a blank map). Check WebGL2 only.
+  - Accuracy check: record each 3D measurement (metres and direction) so a walk-through can tell a steady offset (fix with one global shift, Admin switch) from GPS noise (no fix). Nobody has field data yet.

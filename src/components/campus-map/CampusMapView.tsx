@@ -40,7 +40,10 @@ export function useMapView(): [MapView | null, () => void] {
   return [view, fallBack];
 }
 
-/** Swaps to the 2D view if the 3D one throws (for example when a WebGL context can't be made). */
+/**
+ * Swaps to the 2D view if the 3D one throws. (A renderer that can't be made, or a device too slow even for the
+ * lite scene, is reported through the 3D view's onFail instead.)
+ */
 class Fallback extends Component<{ onError: () => void; children: ReactNode }, { failed: boolean }> {
   state = { failed: false };
 
@@ -71,7 +74,7 @@ export function CampusMapView({
   if (view === "2d") return <CampusMap2DView {...props} />;
   return (
     <Fallback onError={onFail}>
-      <CampusMap3DView {...props} {...scene} />
+      <CampusMap3DView {...props} {...scene} onFail={onFail} />
     </Fallback>
   );
 }

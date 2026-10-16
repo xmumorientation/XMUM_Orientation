@@ -2,7 +2,7 @@
 
 import { Html, Hud, MapControls } from "@react-three/drei";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { memo, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode, type Ref } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode, type Ref } from "react";
 import * as THREE from "three";
 import type { MapControls as MapControlsImpl } from "three-stdlib";
 
@@ -61,9 +61,11 @@ function Intro({ start }: { start: Start }) {
     controls.addEventListener("start", stop);
     return () => controls.removeEventListener("start", stop);
   }, [controls, camera, start]);
-  useFrame((_, dt) => {
+  useFrame(({ invalidate }, dt) => {
     const s = state.current;
     if (s.done || !s.from || !s.to || !controls) return;
+    // The scene draws only on request ("demand"): ask for the next frame while the swoop runs.
+    invalidate();
     s.t = Math.min(1, s.t + dt / 2.6);
     const k = 1 - Math.pow(1 - s.t, 3);
     const sph = new THREE.Spherical(
@@ -151,6 +153,34 @@ const Campus = memo(function Campus({ mode, lite }: { mode: Mode; lite: boolean 
   );
 });
 
+/** Frames per second below which the full scene steps down to lite, and lite gives up (the 2D map is shown). */
+const MIN_FPS_FULL = 24;
+const MIN_FPS_LITE = 10;
+
+/**
+ * Measures the frame rate once, just after the scene first shows: draws continuously for about two seconds
+ * (skipping the first half second, when shaders compile) and reports frames per second. Off with ?perf=0.
+ */
+function FrameRateProbe({ onResult }: { onResult: (fps: number) => void }) {
+  const run = useRef({ t: 0, frames: 0, done: false });
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("perf") === "0") run.current.done = true;
+  }, []);
+  useFrame(({ invalidate }, dt) => {
+    const r = run.current;
+    if (r.done) return;
+    invalidate();
+    r.t += Math.min(dt, 0.5);
+    if (r.t < 0.5) return;
+    r.frames += 1;
+    if (r.t >= 2.5) {
+      r.done = true;
+      onResult(r.frames / (r.t - 0.5));
+    }
+  });
+  return null;
+}
+
 /** A still scene (a card on a page) leaves touches to the page so it scrolls; the controls take them otherwise. */
 function TouchPolicy({ interactive }: { interactive: boolean }) {
   const controls = useThree((s) => s.controls) as MapControlsImpl | null;
@@ -206,6 +236,11 @@ export type CampusSceneProps = {
    * own scene: markers and pins. It has no lights unless it adds some. Its objects get pointer events first.
    */
   overlay?: ReactNode;
+  /**
+   * Called when the 3D map can't be used: the renderer could not be made (no WebGL2, a failed context), or the
+   * device is too slow even in lite mode. The caller shows the 2D map instead.
+   */
+  onFail?: (reason: Error) => void;
   className?: string;
   style?: CSSProperties;
 };
@@ -220,6 +255,7 @@ export default function CampusScene({
   interactive = true,
   children,
   overlay,
+  onFail,
   className,
   style,
 }: CampusSceneProps) {
@@ -233,9 +269,26 @@ export default function CampusScene({
     setStart({ ...(cam ?? (narrow ? START_NARROW : START)), intro: swoop });
     setAutoLite(prefersLite());
   }, []);
-  const isLite = lite ?? autoLite ?? false;
+  // Set when the frame rate probe finds the full scene too slow.
+  const [stepDown, setStepDown] = useState(false);
+  const isLite = stepDown || (lite ?? autoLite ?? false);
   const ready = start !== null && autoLite !== null;
   const look = MODES[mode];
+
+  const fail = useRef(onFail);
+  fail.current = onFail;
+  const reportFail = useCallback((reason: Error) => {
+    console.warn("[map3d]", reason.message);
+    fail.current?.(reason);
+  }, []);
+  const onFrameRate = useCallback(
+    (fps: number) => {
+      if (fps >= (isLite ? MIN_FPS_LITE : MIN_FPS_FULL)) return;
+      if (isLite) reportFail(new Error(`too slow: ${fps.toFixed(1)} fps in lite mode`));
+      else setStepDown(true);
+    },
+    [isLite, reportFail],
+  );
 
   return (
     <div
@@ -252,10 +305,21 @@ export default function CampusScene({
     >
       {ready && (
         <Canvas
-          shadows
+          // Lite (phones): no shadow pass; the ground has painted footprint shadows.
+          shadows={!isLite}
+          // Draw only when something changes (camera, markers, look), so a still card costs nothing. Full screen
+          // on a fast device keeps drawing every frame, so the water, duck, flag and clouds move.
+          frameloop={interactive && !isLite ? "always" : "demand"}
           dpr={isLite ? [1, 1.5] : [1, 1.75]}
           camera={{ fov: 30, near: 1, far: 1600, position: start.position }}
-          gl={{ antialias: true, preserveDrawingBuffer: true }}
+          gl={(defaults) => {
+            try {
+              return new THREE.WebGLRenderer({ ...defaults, antialias: true, preserveDrawingBuffer: true });
+            } catch (e) {
+              reportFail(e instanceof Error ? e : new Error(String(e)));
+              throw e;
+            }
+          }}
           onCreated={({ gl }) => {
             gl.toneMapping = THREE.NeutralToneMapping;
           }}
@@ -275,6 +339,8 @@ export default function CampusScene({
           />
           <TouchPolicy interactive={interactive} />
           <Intro start={start} />
+          {/* Measured once, and once more in lite after a step down. */}
+          <FrameRateProbe key={stepDown ? "lite" : "first"} onResult={onFrameRate} />
           {!isLite && <Effects look={look} />}
           {/* After the effects' pass (priority 1); in lite mode the Hud draws the scene itself first. */}
           {overlay && <Hud renderPriority={isLite ? 1 : 2}>{overlay}</Hud>}

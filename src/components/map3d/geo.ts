@@ -436,12 +436,21 @@ function nearLine(pts: readonly World[], x: number, z: number, d: number, closed
 }
 
 /** Buildings, the lake, footpaths, courts, service road, track and grandstand: no trees, bushes or lamps here. */
+/**
+ * A5's entrance (bay, porch, steps and ramps: A5Block in buildings.tsx) stands on its local +Z side, up to about
+ * 2.75 units past the walls, so it reaches beyond the footprint.
+ */
+const A5_ENTRANCE: Placed[] = BLOCKS.filter((b) => b.name === "A5").map((b) => {
+  const lz = (b.hx + b.hz) / 2 - 0.7 + 1.4;
+  return { pos: [b.pos[0] + lz * Math.sin(b.rotY), b.pos[1] + lz * Math.cos(b.rotY)], hx: 1.7, hz: 1.4, rotY: b.rotY };
+});
+
 export function inKeepOut(x: number, z: number, margin: number): boolean {
   const inRect = (rx: [number, number], rz: [number, number]) =>
     x > rx[0] - margin && x < rx[1] + margin && z > rz[0] - margin && z < rz[1] + margin;
   if (SPORTS.some((b) => inRect(b.x, b.z))) return true;
   if (inRect(CARPARK.x, CARPARK.z)) return true;
-  if ([...BLOCKS, B1_PLACE, DOME_PLACE].some((p) => inPlaced(p, x, z, margin + 0.4))) return true;
+  if ([...BLOCKS, ...A5_ENTRANCE, B1_PLACE, DOME_PLACE].some((p) => inPlaced(p, x, z, margin + 0.4))) return true;
   if (Math.hypot(x - STATUE[0], z - STATUE[1]) < 2.6 + margin) return true;
   if (inPolygon(LAKE, x, z) || nearLine(LAKE, x, z, 0.6 + margin, true)) return true;
   if (nearLine(BRIDGE, x, z, 0.8 + margin)) return true;

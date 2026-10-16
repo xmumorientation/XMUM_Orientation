@@ -6,10 +6,12 @@
 // every 20 s (fn_report_admin_gps; only Admins can read it back), and keeps
 // the last fixes so a tap on the map can save an averaged anchor
 // (fn_admin_add_map_anchor). Saved anchors are added to the built-in ones in
-// src/lib/mapGeo.ts on every map.
+// src/lib/mapGeo.ts and bend the 2D map only (the 3D map is drawn to true GPS).
+// On the 3D map a tap measures instead, and each reading is logged on this
+// device, so a walk round campus can tell a steady offset from GPS noise.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Crosshair, Trash2, X } from "lucide-react";
+import { Copy, Crosshair, Trash2, X } from "lucide-react";
 
 import { supabaseBrowser } from "@/lib/supabase/client";
 import type { AdminCheckLocation, MapAnchor } from "@/lib/types";
@@ -32,6 +34,128 @@ export interface AveragedFix {
   /** Mean accuracy of the fixes used, in metres. */
   accuracy: number;
   fixes: number;
+}
+
+/** One 3D reading: where the averaged GPS fix was, in metres east and north of the spot Admin tapped. */
+export type CheckReading = { t: number; east: number; north: number; acc: number; fixes: number };
+
+const CHECK_LOG_KEY = "campus-map-check-log";
+const CHECK_LOG_MAX = 50;
+const COMPASS = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+
+/** "12 m NE": how far, and which way, the GPS fix is from the tapped spot. */
+export function readingText({ east, north }: { east: number; north: number }): string {
+  const m = Math.hypot(east, north);
+  if (m < 0.5) return "0 m";
+  const deg = ((Math.atan2(east, north) * 180) / Math.PI + 360) % 360;
+  return `${Math.round(m)} m ${COMPASS[Math.round(deg / 45) % 8]}`;
+}
+
+/**
+ * Readings made on this device, newest first. Kept in localStorage (not the server), so a walk round campus
+ * survives a reload.
+ */
+export function useCheckLog() {
+  const [log, setLog] = useState<CheckReading[]>([]);
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(CHECK_LOG_KEY);
+      const parsed: unknown = raw ? JSON.parse(raw) : [];
+      if (Array.isArray(parsed)) setLog(parsed as CheckReading[]);
+    } catch {
+      // Private mode or a bad value: start empty.
+    }
+  }, []);
+  const store = (next: CheckReading[]) => {
+    try {
+      localStorage.setItem(CHECK_LOG_KEY, JSON.stringify(next));
+    } catch {
+      // Private mode: the log lasts until reload.
+    }
+  };
+  const add = useCallback((r: CheckReading) => {
+    setLog((current) => {
+      const next = [r, ...current].slice(0, CHECK_LOG_MAX);
+      store(next);
+      return next;
+    });
+  }, []);
+  const clear = useCallback(() => {
+    setLog([]);
+    store([]);
+  }, []);
+  return { log, add, clear };
+}
+
+/**
+ * Three or more readings: the average offset and the spread round it. A steady offset (average at least 5 m and
+ * larger than the spread) means one shift for the whole map would fix it; otherwise it is GPS noise.
+ */
+function summarise(log: CheckReading[]) {
+  if (log.length < 3) return null;
+  const east = log.reduce((sum, r) => sum + r.east, 0) / log.length;
+  const north = log.reduce((sum, r) => sum + r.north, 0) / log.length;
+  const spread = Math.sqrt(log.reduce((sum, r) => sum + (r.east - east) ** 2 + (r.north - north) ** 2, 0) / log.length);
+  const size = Math.hypot(east, north);
+  return { east, north, spread, steady: size >= 5 && size > spread };
+}
+
+function CheckLog({ log, nowMs, onClear }: { log: CheckReading[]; nowMs: number; onClear: () => void }) {
+  const [copied, setCopied] = useState(false);
+  const summary = summarise(log);
+  async function copy() {
+    const rows = log.map((r) =>
+      [new Date(r.t).toISOString(), r.east.toFixed(1), r.north.toFixed(1), Math.round(r.acc), r.fixes].join(","),
+    );
+    try {
+      await navigator.clipboard.writeText(["time,east_m,north_m,accuracy_m,fixes", ...rows].join("\n"));
+      setCopied(true);
+    } catch {
+      setCopied(false);
+    }
+  }
+  return (
+    <div className="space-y-1 border-t border-paper-200 pt-2">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-xs font-semibold">Readings on this phone ({log.length})</p>
+        <div className="flex gap-1">
+          <button
+            type="button"
+            onClick={copy}
+            className="inline-flex min-h-[32px] items-center gap-1 rounded-lg px-2 text-xs font-semibold hover:bg-paper-100"
+          >
+            <Copy className="h-3.5 w-3.5" />
+            {copied ? "Copied" : "Copy"}
+          </button>
+          <button
+            type="button"
+            onClick={() => window.confirm("Clear the readings on this phone?") && onClear()}
+            className="inline-flex min-h-[32px] items-center rounded-lg px-2 text-xs font-semibold text-red-600 hover:bg-red-50"
+          >
+            Clear
+          </button>
+        </div>
+      </div>
+      {summary && (
+        <p className="text-xs">
+          Average {readingText(summary)} over {log.length} readings, spread ±{Math.round(summary.spread)} m:{" "}
+          <span className="font-semibold">
+            {summary.steady
+              ? "looks like a steady offset (one shift for the whole map would fix it)."
+              : "looks like GPS noise (no fix needed)."}
+          </span>
+        </p>
+      )}
+      <ul className="divide-y divide-paper-200">
+        {log.slice(0, 5).map((r) => (
+          <li key={r.t} className="py-1 text-xs text-ink-faint">
+            GPS {readingText(r)} of the tap · ±{Math.round(r.acc)} m · {r.fixes} fixes ·{" "}
+            {timeAgo(new Date(r.t).toISOString(), nowMs)}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
 }
 
 export function useAccuracyCheck(active: boolean) {
@@ -165,6 +289,8 @@ export function AccuracyCheckPanel({
   onDelete,
   onClose,
   measure = false,
+  log = [],
+  onClearLog,
 }: {
   live: { acc: number } | null;
   goodFixes: number;
@@ -174,8 +300,11 @@ export function AccuracyCheckPanel({
   nowMs: number;
   onDelete: (id: number) => void;
   onClose: () => void;
-  /** 3D map: a tap measures the GPS error and saves nothing. The saved anchors only bend the 2D map. */
+  /** 3D map: a tap measures the GPS error and saves nothing to the server. The saved anchors only bend the 2D map. */
   measure?: boolean;
+  /** 3D map: this device's readings (useCheckLog). */
+  log?: CheckReading[];
+  onClearLog?: () => void;
 }) {
   const ready = goodFixes >= MIN_FIXES;
   return (
@@ -187,8 +316,8 @@ export function AccuracyCheckPanel({
           </h2>
           <p className="mt-0.5 text-xs text-ink-faint">
             {measure
-              ? "Walk to a spot, check your pin, then tap the map where you really are (full screen is more precise). The map shows how far your GPS is off, in metres. Nothing is saved."
-              : "Walk to a spot, check your pin, then tap the map where you really are (full screen is more precise). The tap saves a correction for every map."}
+              ? "Walk to a spot, check your pin, then tap the map where you really are (full screen is more precise). The map shows how far your GPS is off, and which way. Readings stay on this phone; nothing is saved to the map."
+              : "Walk to a spot, check your pin, then tap the map where you really are (full screen is more precise). The tap saves a correction for the 2D map (the 3D map needs none)."}
           </p>
         </div>
         <button
@@ -210,6 +339,7 @@ export function AccuracyCheckPanel({
       </p>
       {error && <p className="text-xs text-red-600">{error}</p>}
       {notice && <p className="text-xs font-medium text-green-700">{notice}</p>}
+      {measure && onClearLog && log.length > 0 && <CheckLog log={log} nowMs={nowMs} onClear={onClearLog} />}
       {anchors.length > 0 && (
         <details>
           <summary className="cursor-pointer text-xs font-semibold">
