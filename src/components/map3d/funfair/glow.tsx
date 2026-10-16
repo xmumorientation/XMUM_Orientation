@@ -19,8 +19,13 @@ export type GlowSpot = { p: [number, number, number]; r: number; c: string };
 /** Halos fade in between these camera distances (world units). */
 const FADE_NEAR = 45;
 const FADE_FAR = 110;
-/** Strength of a halo at full power. */
+/** Strength of a halo at full power, at night. */
 const STRENGTH = 0.9;
+/** At sunset, phones show the halos and light pools at this share of their night strength. */
+export const DUSK_SHARE = 0.4;
+
+/** How strong the halos are for the look: full at night, weaker at sunset, none by day. */
+export const glowStrength = (night: boolean, dusk = false) => (night ? 1 : dusk ? DUSK_SHARE : 0);
 
 const VERT = /* glsl */ `
   attribute float aSize;
@@ -49,9 +54,9 @@ const FRAG = /* glsl */ `
 
 /**
  * The halos of one zone. Render it inside the zone's group (metres), in lite only. `power` reads the zone's shown
- * power (0..1) each frame.
+ * power (0..1) each frame; `strength` comes from glowStrength().
  */
-export function LiteGlow({ spots, power, night }: { spots: GlowSpot[]; power: () => number; night: boolean }) {
+export function LiteGlow({ spots, power, strength }: { spots: GlowSpot[]; power: () => number; strength: number }) {
   const gl = useThree((s) => s.gl);
   const points = useMemo(() => {
     const pos = new Float32Array(spots.length * 3);
@@ -96,7 +101,7 @@ export function LiteGlow({ spots, power, night }: { spots: GlowSpot[]; power: ()
 
   useFrame(({ camera, size, viewport }) => {
     const u = (points.material as THREE.ShaderMaterial).uniforms;
-    const opacity = night ? STRENGTH * smooth(0.45, 1, power()) : 0;
+    const opacity = STRENGTH * strength * smooth(0.45, 1, power());
     u.uOpacity.value = opacity;
     points.visible = opacity > 0.01;
     const fov = camera instanceof THREE.PerspectiveCamera ? camera.fov : 30;

@@ -6,7 +6,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { UNITS_PER_M } from "../geo";
 import { smooth } from "./central/kit";
 import { LITE_LIGHT_SCALE, LITE_PAVING_LIT, LITE_SELF_LIT, usePowerRamp, type ZoneProps } from "./common";
-import { LiteGlow, type GlowSpot } from "./glow";
+import { glowStrength, LiteGlow, type GlowSpot } from "./glow";
 import { buildStatic } from "./west/build";
 import { Carousel } from "./west/carousel";
 import { Ducks } from "./west/ducks";
@@ -48,7 +48,7 @@ const GLOW: GlowSpot[] = [
   { p: [(FOOD.x[0] + FOOD.x[1]) / 2, 4, (FOOD.z[0] + FOOD.z[1]) / 2], r: 18, c: "#fc9e3d" },
 ];
 
-export function FunfairWest({ power, night, lite }: ZoneProps) {
+export function FunfairWest({ power, night, dusk = false, lite }: ZoneProps) {
   const kit = useMemo(makeWestKit, []);
   useEffect(() => () => disposeWestKit(kit), [kit]);
   const built = useMemo(() => buildStatic(lite), [lite]);
@@ -98,8 +98,8 @@ export function FunfairWest({ power, night, lite }: ZoneProps) {
       <Spiders kit={kit} live={live} />
       <Ducks kit={kit} live={live} lite={lite} />
       <Lighthouse kit={kit} live={live} night={night} />
-      <PowerFx kit={kit} live={live} night={night} lite={lite} boards={built.boards} pools={built.pools} />
-      {lite && <LiteGlow spots={GLOW} power={() => live.current.p} night={night} />}
+      <PowerFx kit={kit} live={live} night={night} dusk={dusk} lite={lite} boards={built.boards} pools={built.pools} />
+      {lite && <LiteGlow spots={GLOW} power={() => live.current.p} strength={glowStrength(night, dusk)} />}
     </group>
   );
 }

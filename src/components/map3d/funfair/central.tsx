@@ -14,7 +14,7 @@ import { PowerFx } from "./central/power";
 import { SwingTop } from "./central/swings";
 import { Teacups } from "./central/teacups";
 import { LITE_LIGHT_SCALE, LITE_PAVING_LIT, LITE_SELF_LIT, usePowerRamp, type ZoneProps } from "./common";
-import { LiteGlow, type GlowSpot } from "./glow";
+import { DUSK_SHARE, glowStrength, LiteGlow, type GlowSpot } from "./glow";
 
 // DRAFT: Vortexa Funfair, Central zone "Starlight Midway" (docs/map3d-funfair-design.md),
 // in the toy low-poly style (style C bench, in git history at 4eee382). Rides on their dorms'
@@ -40,7 +40,7 @@ const GLOW: GlowSpot[] = [
   { p: [STAGE[0], 6, STAGE[1]], r: 14, c: "#fc9e3d" },
 ];
 
-export function FunfairCentral({ power, night, lite }: ZoneProps) {
+export function FunfairCentral({ power, night, dusk = false, lite }: ZoneProps) {
   const kit = useMemo(makeKit, []);
   useEffect(() => () => disposeKit(kit), [kit]);
   const built = useMemo(() => buildStatic(lite), [lite]);
@@ -75,7 +75,7 @@ export function FunfairCentral({ power, night, lite }: ZoneProps) {
     const self = lite && night ? smooth(0.4, 1, p) : 0;
     u.self.value = LITE_SELF_LIT * self;
     kit.paving.emissiveIntensity = LITE_PAVING_LIT * self;
-    kit.pool.opacity = p * (night ? (lite ? 0.85 : 0.5) : 0.1);
+    kit.pool.opacity = p * (night ? (lite ? 0.85 : 0.5) : lite && dusk ? 0.1 + 0.75 * DUSK_SHARE : 0.1);
   });
 
   return (
@@ -89,7 +89,7 @@ export function FunfairCentral({ power, night, lite }: ZoneProps) {
       <Teacups kit={kit} live={live} lite={lite} />
       <BumperCars kit={kit} live={live} lite={lite} />
       <PowerFx kit={kit} live={live} night={night} lite={lite} boards={built.boards} pools={built.pools} />
-      {lite && <LiteGlow spots={GLOW} power={() => live.current.p} night={night} />}
+      {lite && <LiteGlow spots={GLOW} power={() => live.current.p} strength={glowStrength(night, dusk)} />}
     </group>
   );
 }

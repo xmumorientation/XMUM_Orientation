@@ -8,7 +8,7 @@ import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js
 import { UNITS_PER_M } from "../geo";
 import { Bake, lightBake, mat, smooth, type V3 } from "./central/kit";
 import { LITE_SELF_LIT, usePowerRamp, VX, type ZoneProps } from "./common";
-import { LiteGlow, type GlowSpot } from "./glow";
+import { glowStrength, LiteGlow, type GlowSpot } from "./glow";
 import { NEON, S, STEEL, bar, disposeWestKit, makeWestKit, tube } from "./west/kit";
 
 // DRAFT: the VORTEXA neon gate (docs/map3d-funfair-design.md), shared by all
@@ -207,7 +207,7 @@ const POOL = new THREE.Color("#ff9ad8");
 /** A halo over the arch for phones at night (glow.tsx), in the gate's own metres. */
 const GATE_GLOW: GlowSpot[] = [{ p: [0, 9, 0], r: 16, c: "#f2ff0b" }];
 
-export function FunfairGate({ power, night, lite }: ZoneProps) {
+export function FunfairGate({ power, night, dusk = false, lite }: ZoneProps) {
   const kit = useMemo(makeWestKit, []);
   const glowMat = useMemo(
     () =>
@@ -268,7 +268,7 @@ export function FunfairGate({ power, night, lite }: ZoneProps) {
       <mesh geometry={geo.frame} material={kit.frame} castShadow receiveShadow />
       <mesh geometry={geo.light} material={kit.light} />
       <mesh geometry={geo.fx} material={glowMat} renderOrder={3} />
-      {lite && <LiteGlow spots={GATE_GLOW} power={() => ramp.current} night={night} />}
+      {lite && <LiteGlow spots={GATE_GLOW} power={() => ramp.current} strength={glowStrength(night, dusk)} />}
     </group>
   );
 }

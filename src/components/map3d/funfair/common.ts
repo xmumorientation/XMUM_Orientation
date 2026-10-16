@@ -14,8 +14,11 @@ import { DORMS_M } from "./dorms";
 
 export type ZoneKey = "west" | "central" | "east";
 
-/** Props every zone component takes. `power` is the target (0 off, 1 on); animate towards it with usePowerRamp. */
-export type ZoneProps = { power: number; night: boolean; lite: boolean };
+/**
+ * Props every zone component takes. `power` is the target (0 off, 1 on); animate towards it with usePowerRamp.
+ * `dusk` is the sunset look (phones then show a weaker version of their night halos and light pools).
+ */
+export type ZoneProps = { power: number; night: boolean; lite: boolean; dusk?: boolean };
 
 /** Which dorm footprints each zone covers (design doc, "Zones and rides"). */
 export const ZONE_DORMS: Record<ZoneKey, string[]> = {

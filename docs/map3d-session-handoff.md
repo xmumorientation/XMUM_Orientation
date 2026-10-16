@@ -82,6 +82,7 @@ Ben's batches map to the plan's steps as follows.
   - Powered paint and paving glow a little at night (`LITE_SELF_LIT`, `LITE_PAVING_LIT`; `uSelf` in each kit's paint shader).
   - The light pools are 1.4× bigger and stronger.
   - Soft halos sit over each zone's landmarks (`funfair/glow.tsx`, one draw call per zone, fading out within about 45–110 units of the camera).
+  - At sunset, phones show the halos and light pools at about 40% of their night strength (`DUSK_SHARE` in `glow.tsx`; zones get `dusk`), with no self-glow.
   - Desktop and daytime are unchanged.
 - **Admin control (F5, 2026-10-16):**
   - **Migration** `supabase/migrations/0088_funfair_zones.sql`, written but **not applied**; Ben's team applies it.

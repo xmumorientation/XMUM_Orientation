@@ -357,7 +357,7 @@ export default function CampusScene({
           }}
         >
           <Campus mode={mode} lite={isLite} />
-          <Funfair power={funfair} night={mode === "night"} lite={isLite} />
+          <Funfair power={funfair} night={mode === "night"} dusk={mode === "sunset"} lite={isLite} />
           {labels && <Labels />}
           {children}
           <MapControls
