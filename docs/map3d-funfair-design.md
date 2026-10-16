@@ -4,13 +4,13 @@ The empty land in the dorm area of the 3D map becomes a funfair. It is part of t
 
 Layout: [map3d-funfair-layout.svg](map3d-funfair-layout.svg). North is up. The footprints are the real dorm positions from OpenStreetMap, stored in `scripts/map3d/campus.json`.
 
-Status: being built in batches on branch `funfair-central` (step 7 of [map3d-implementation-plan.md](map3d-implementation-plan.md)). All three zones and the gate are built and in the map (F1–F4); Admin's control (F5) follows. See [map3d-session-handoff.md](map3d-session-handoff.md), "Vortexa Funfair".
+Status: built and merged (F1–F5; step 7 of [map3d-implementation-plan.md](map3d-implementation-plan.md)). Admin's control needs migration `0088`, which is not applied yet. See [map3d-session-handoff.md](map3d-session-handoff.md), "Vortexa Funfair".
 
 ## Ben's decisions
 
 - The lightbulbs are **shared by everyone**. When any group unlocks one, every viewer sees its zone light up.
 - **Admin chooses which zone powers up** after which key or keys are unlocked. This is not fixed.
-- Draft rides on a separate preview page for Ben to pick from, the same way as the statue.
+- Ben picked the ride styles on a bench page; after that, everything went straight into the map (no separate preview).
 - The rides follow the dorm layout: the LY blocks hold some, the D blocks others. Positions are approximate. Each ride only has to sit on the empty land.
 
 ## Zones and rides
@@ -25,11 +25,11 @@ Each ride sits on the footprint of the dorm it replaces. An X-shaped LY block su
 | Shared | — | **VORTEXA neon gate** between the lake park and LY4/LY5, the entrance from the park side. One **power box** (generator) per zone; it sparks when its zone powers up. |
 
 - The car park to the north-east of the D blocks stays a car park. It is not part of the funfair.
-- The lake park, the lake and the LakeFront Café are unchanged.
+- The lake park and the lake are unchanged. The LakeFront Café became the lake stage ([map3d-lakefront-design.md](map3d-lakefront-design.md)), the venue for the finale's concert.
 
 ## Styles per zone (Ben chose three styles, 2026-10-15)
 
-Three styles were tried on the bench (`src/components/map3d/funfair-lab/styleA|B|C.tsx`, pages `/map3d/funfair-a|b|c`). Ben chose to give each zone its own style, like the themed lands of a theme park:
+Three styles were tried on a bench (since deleted). Ben chose to give each zone its own style, like the themed lands of a theme park:
 
 | Zone | Style | Why |
 |---|---|---|
@@ -77,7 +77,7 @@ The colours follow the Welcome page ([vortexa.css](../src/components/home/vortex
 
 ### All zones powered (the finale)
 
-The gate lights up fully, a short burst of fireworks plays over the funfair, and after that the fireworks repeat now and then.
+The gate lights up fully, and the lake stage plays its concert, with fireworks over the lake every 2 minutes ([map3d-lakefront-design.md](map3d-lakefront-design.md); batch L4 turns it on when all zones are on).
 
 ## Wayfinding
 
@@ -136,14 +136,14 @@ New pieces, as a sketch for the migration:
 - **Admin UI**: a "Funfair" card in the game console (Admin, and the HOGM Ops page).
   - For each zone: pick its key or keys and the any/all rule, see whether it is on now, and set a manual on/off override.
   - A preview button that plays the power-up animation for that zone, for testing during setup.
-- **Realtime**: changes to `funfair_zones` and `projectors` update every open map immediately. The animation plays only when a zone switches from off to on while the map is open. Anyone who opens the map later sees the zone already on.
+- **Realtime**: a newly lit bulb updates every open map at once; Admin's changes to `funfair_zones` reach other maps within about 30 s. The animation plays only when a zone switches from off to on while the map is open. Anyone who opens the map later sees the zone already on.
 
 ## Build notes
 
 - **Code location**: `src/components/map3d/funfair/`, one component per ride, each taking a `power` value from 0 (off) to 1 (on) that it animates towards.
 - **Placement**: from `campus.json`, using `fromReal` and the footprint's rotation. Rides are modelled in metres, like the statue. Sizes are near real; only the Ferris wheel is the big landmark.
 - **Bulbs and neon**: instanced meshes with emissive materials. No real point lights except one or two per zone on desktop. The phone lite mode keeps slow rotation, drops the bulb flicker and bloom, and lowers the bulb count.
-- **Preview page**: a dev-only bench, `/map3d/funfair-lab`, the same idea as `/map3d/statue-lab`. It switches each zone on and off and shows two or three ride styles for Ben to choose from.
+- **Viewing a zone**: `/map3d?cam=…&funfair=…&mode=…` (camera presets in [map3d-session-handoff.md](map3d-session-handoff.md)). The style benches and the per-zone dev pages are deleted.
 - **Screenshot parameter**: `?funfair=1,0,1` (west, central, east) forces the zone states on `/map3d`.
 
 ## Decided (Ben accepted the recommendations)
