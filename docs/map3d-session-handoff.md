@@ -104,6 +104,7 @@ Fixed (the review's findings and Ben's additions):
 - Tapping the OSM credit link no longer opens full screen.
 - Trees and bushes are kept off A5's entrance (`A5_ENTRANCE` in `geo.ts`).
 - Preview: the `?check=1` mock fix is on open ground (30 m south of the statue).
+- After the merge (Ben's phone, 2026-10-16): flickering dark bands on the map. The soil slab's top face sat only 0.01 below the ground plane, too close for a phone's depth buffer at map distances, so it showed through in horizontal stripes. The slab no longer draws its top face (`Slab` in `ground.tsx`). To reproduce depth problems on desktop, set the camera's `near` in `CampusScene` to 0.05 for a test (not committed): it makes the depth buffer about 20 times coarser.
 
 Not done (next):
 
