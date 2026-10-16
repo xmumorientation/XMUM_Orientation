@@ -23,6 +23,8 @@ This reflects only the migration files in the repo. Any manual changes made to t
 | Lightbulbs on the map (`fn_map_lightbulbs`) | Lit; unlit after unlock | Lit; unlit after unlock | Lit; unlit after unlock | Lit; unlit after unlock | All | All | All | All, can move | DB |
 | Demo NFC scan (only while NFC demo mode is on) | Own Group | Own Group | — | — | — | — | — | — | DB |
 | Reset a lightbulb | — | — | — | — | — | — | — | ✓ | DB |
+| Funfair zones on the 3D map, on or off (`fn_funfair_state`, 0088; before 0088 the default keys in code) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | DB |
+| Funfair setup: each zone's keys, any/all rule, manual override (`funfair_zones`, `fn_set_funfair_zone`, 0088). Only game leads can read it, because the keys would show where the unlit bulbs are. | — | — | — | — | — | — | ✓ ‡ | ✓ | DB |
 | Group locations on the map | — | Own Group | — | — | View All | View All | View All | View All | DB |
 | Phase Timer (view) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | DB |
 | Schedule (view) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | DB |
@@ -36,7 +38,7 @@ This reflects only the migration files in the repo. Any manual changes made to t
 | Day 1 Token Reward (amount from the token rules) | — | — | ✓ | ✓ | — | † | † | † | DB |
 | Day 2 Challenge (charge the tier's entry fee and grant a piece) | — | — | ✓ | ✓ | — | † | † | † | DB |
 | Show blind box QR + link on the Station page (own boxes and own station's shared boxes) | — | — | Own | Own | — | — | — | — | DB |
-| Set station status: Available / In Progress / Closed (`fn_set_station_status`; on the GM page's Status tab, Admin → Stations and the Live control list; manual only, never changed by the game timer or by check-ins; changes show live on every page) | — | — | Own Station | Own Station | — | All † | All † | All | DB |
+| Set station status: Available / In Progress / Closed (`fn_set_station_status`; on the GM page's Status tab, Admin → Stations and the Live control list; manual only, never changed by the game timer or by check-ins; changes show live on every page) | — | — | Own Station | Own Station | — | All † | All ‡ | All | DB |
 | Undo Token Transaction (own last one, within 2 minutes) | — | — | Own Actions | Own Actions | — | † | † | † | DB |
 | Grant a puzzle piece directly (fn_grant_item, no UI) | — | — | † | † | — | † | † | † | DB |
 | **Guardian** | | | | | | | | | |

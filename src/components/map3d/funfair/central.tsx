@@ -16,7 +16,7 @@ import { Teacups } from "./central/teacups";
 import { usePowerRamp, type ZoneProps } from "./common";
 
 // DRAFT: Vortexa Funfair, Central zone "Starlight Midway" (docs/map3d-funfair-design.md),
-// in the toy low-poly style (funfair-lab/styleC.tsx). Rides on their dorms'
+// in the toy low-poly style (style C bench, in git history at 4eee382). Rides on their dorms'
 // footprints: LY9 drop tower, LY8 swing ride, LY4 teacups, LY5 bumper cars.
 //
 // Power: off, the paint is grey and the bulbs and neon are dead, a red

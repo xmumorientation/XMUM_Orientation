@@ -32,7 +32,12 @@ export function CampusMap({
 }) {
   const [view, fallBack] = useMapView();
   // The Lightbulbs layer is on the 2D map only; the 3D map lists the bulbs under it.
-  const data = useCampusMapData({ showGroupPins, canManageStations, bulbLayer: view === "2d" });
+  const data = useCampusMapData({
+    showGroupPins,
+    canManageStations,
+    bulbLayer: view === "2d",
+    loadFunfair: view === "3d",
+  });
   // Full-screen viewer. The inline map stays still so the page can scroll.
   const [fullscreen, setFullscreen] = useState(false);
   const panelView = view ?? "3d";

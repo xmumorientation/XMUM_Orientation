@@ -1,11 +1,12 @@
 "use client";
 
-import { Coins, Gamepad2, ImageIcon, MapPin, Nfc, type LucideIcon } from "lucide-react";
+import { Coins, FerrisWheel, Gamepad2, ImageIcon, MapPin, Nfc, type LucideIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { vxDisplay, vxSlab } from "@/components/home/fonts";
 import { cn } from "@/lib/utils";
 
+import { FunfairSection } from "./FunfairSection";
 import "./game-control.css";
 import { GameSection } from "./GameSection";
 import { NfcSection } from "./NfcSection";
@@ -15,12 +16,13 @@ import { TokensSection } from "./TokensSection";
 
 // HOGM's Ops page (/committee): Admin's game console in the Welcome page
 // style. Game (start / end each day), Stations, Tokens (rules, reset),
-// Puzzles, NFC. Each group's tokens and puzzles are on the Scores tab
+// Puzzles, NFC, Funfair (which keys power each zone of the 3D map's funfair).
+// Each group's tokens and puzzles are on the Scores tab
 // (GroupScores); the HOGM's own blind-box QR is on Home (StaffHome).
-// Phones and portrait tablets switch sections with five equal icon tabs; landscape
+// Phones and portrait tablets switch sections with six equal icon tabs; landscape
 // tablets and desktops get a side rail. Server permissions: migration 0071.
 
-type SectionKey = "game" | "stations" | "tokens" | "puzzles" | "nfc";
+type SectionKey = "game" | "stations" | "tokens" | "puzzles" | "nfc" | "funfair";
 
 const SECTIONS: { key: SectionKey; label: string; Icon: LucideIcon }[] = [
   { key: "game", label: "Game", Icon: Gamepad2 },
@@ -28,6 +30,7 @@ const SECTIONS: { key: SectionKey; label: string; Icon: LucideIcon }[] = [
   { key: "tokens", label: "Tokens", Icon: Coins },
   { key: "puzzles", label: "Puzzles", Icon: ImageIcon },
   { key: "nfc", label: "NFC", Icon: Nfc },
+  { key: "funfair", label: "Funfair", Icon: FerrisWheel },
 ];
 
 /** Section from the link: #stations. */
@@ -87,6 +90,7 @@ export function GameControl() {
           {section === "tokens" && <TokensSection />}
           {section === "puzzles" && <PuzzlesSection />}
           {section === "nfc" && <NfcSection />}
+          {section === "funfair" && <FunfairSection />}
         </section>
       </div>
     </div>
