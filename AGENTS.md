@@ -41,3 +41,4 @@ HOF, HOGM and Committee (`OPS_ROLES` in `src/lib/types.ts`) are not a group, so 
 
 - [docs/permission-matrix.md](docs/permission-matrix.md): what each role can do, and known permission gaps.
 - [docs/SETUP.md](docs/SETUP.md): setup, migrations and environment variables.
+- [docs/map3d-session-handoff.md](docs/map3d-session-handoff.md): the 3D campus map, the Vortexa Funfair and the lake stage: where things stand and how to work on them without breaking the map.

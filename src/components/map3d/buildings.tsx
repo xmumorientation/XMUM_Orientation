@@ -14,10 +14,8 @@ import {
   FLAG,
   grandstandRect,
   LANDMARK_SCALE,
-  LETTERS,
   STATUE,
   STATUE_ROT_Y,
-  toWorld,
   UNITS_PER_M,
   type World,
 } from "./geo";
@@ -711,56 +709,6 @@ export function Bridge() {
       {[-len / 3, 0, len / 3].map((x) => (
         <Box key={x} size={[0.4, 0.45, 0.8]} pos={[x, 0.2, 0]} color="#a3000a" />
       ))}
-    </group>
-  );
-}
-
-// ── "XMUM" hedge letters on the lawn ─────────────────────────────────────
-type Seg = [number, number, number, number]; // x1, y1, x2, y2 in letter space
-const LETTER_SEGS: Record<string, Seg[]> = {
-  X: [
-    [0, 0, 2.4, 2.6],
-    [0, 2.6, 2.4, 0],
-  ],
-  M: [
-    [0, 0, 0, 2.6],
-    [2.4, 0, 2.4, 2.6],
-    [0, 2.6, 1.2, 1.1],
-    [2.4, 2.6, 1.2, 1.1],
-  ],
-  U: [
-    [0, 0.25, 0, 2.6],
-    [2.4, 0.25, 2.4, 2.6],
-    [0, 0.25, 2.4, 0.25],
-  ],
-};
-
-export function Letters() {
-  const [ax, az] = toWorld(LETTERS[0]);
-  const [bx, bz] = toWorld(LETTERS[1]);
-  const len = Math.hypot(bx - ax, bz - az);
-  const rot = -Math.atan2(bz - az, bx - ax);
-  const pitch = len / 4;
-  const stroke = 0.6;
-  return (
-    <group position={[ax, 0, az]} rotation-y={rot}>
-      {"XMUM".split("").map((ch, i) =>
-        LETTER_SEGS[ch].map(([x1, y1, x2, y2], j) => {
-          const l = Math.hypot(x2 - x1, y2 - y1) + stroke;
-          const a = Math.atan2(y2 - y1, x2 - x1);
-          return (
-            <mesh
-              key={`${i}-${j}`}
-              position={[i * pitch + 0.6 + (x1 + x2) / 2, (y1 + y2) / 2 + 0.3, 0]}
-              rotation-z={a}
-              castShadow
-            >
-              <boxGeometry args={[l, stroke, 0.7]} />
-              <meshStandardMaterial color={COLORS.letters} roughness={0.9} />
-            </mesh>
-          );
-        }),
-      )}
     </group>
   );
 }

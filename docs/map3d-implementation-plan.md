@@ -1,6 +1,6 @@
 # 3D map: replacing the 2D Figma map (plan, 2026-10-15)
 
-Branches: `map-3d-draft` (steps 1–3, merged), `map3d-batch4` (steps 4–5, merged), `map3d-batch5` (step 6). See "Progress" at the end.
+Status (2026-10-16): steps 1–7 are done and merged (PRs #39, #40, #41, #44, #45). This file is the plan and its log; for where things stand now, read [map3d-session-handoff.md](map3d-session-handoff.md).
 
 ## Goal
 
@@ -25,12 +25,11 @@ Related components to check:
 
 ## Ben's decisions
 
-- Stay on `map-3d-draft`.
 - Keep the 2D map as a fallback, used only when the device can't run 3D (no WebGL, or it is too slow).
 - Leave the dorms and other buildings that are not modelled unmodelled for now. Don't touch them. A simple marker is enough where a station or pin needs one.
 - Admin map anchors (`map_anchors`, the 2D warp): not used by the 3D map (`gpsToWorld` is exact); kept only for the 2D fallback (Ben accepted the recommendation).
 - Funfair: keep the dorm name in ride labels, fireworks every few minutes after the finale, no sound (Ben accepted the recommendations).
-- Ben approved starting the plan on 2026-10-15. Each step is committed on `map-3d-draft` when its checks pass (no push), and its status is recorded under "Progress" below.
+- Ben approved starting the plan on 2026-10-15. Each step was committed when its checks passed, and its status is recorded under "Progress" below.
 
 ## Approach: keep the logic, replace only the map view
 
@@ -52,7 +51,7 @@ Related components to check:
 | Stations | `stationPosition()` in `mapBuildings.ts`, relative to the building on the art | Attached to the 3D building they belong to (offset around its footprint) |
 | Group GPS pins | GPS warped onto the art by the thin-plate spline in `mapGeo.ts` | `gpsToWorld(lat, lng)` directly, with no warp |
 | Accuracy ellipses | `accuracyAxes()` in metres to percent | A circle on the ground: metres × `UNITS_PER_M` |
-| Lightbulbs / projectors | Percent positions | The same places, as glowing markers in 3D |
+| Lightbulbs / projectors | Percent positions | Not drawn in 3D (Ben, 2026-10-15): the funfair zones show which are lit, and the list stays under the map |
 | Places not modelled (dorms etc.) | Drawn on the art | A flat marker only. No building model for now. |
 
 ## How each feature carries over
@@ -61,10 +60,10 @@ Related components to check:
 |---|---|
 | Station markers and cluster badges | Floating markers next to the buildings; tapping one opens the same panel |
 | Group pins with fresh/faded/stale state and the accuracy area | 3D pins in the group colour (`groupPinColor`, `--fh-*` variables), with a ground circle |
-| Stations / Lightbulbs layer tabs, the "new lit" pulse | Same tabs; the bulbs glow in 3D |
+| Stations / Lightbulbs layer tabs, the "new lit" pulse | Stations only in 3D; the funfair shows lit bulbs. The tabs stay in the 2D fallback |
 | Zoom, pan, fullscreen viewer | 3D camera controls; a card on the page that expands to fullscreen |
-| Admin: add/edit stations, reset/move projectors | Kept, using the same dialogs |
-| Admin anchors (2D warp) | Not needed in 3D (pending Ben). Kept for the 2D fallback. |
+| Admin: add/edit stations, reset/move projectors | Kept, using the same dialogs. Move projector is 2D only |
+| Admin anchors (2D warp) | Not used in 3D (`gpsToWorld` is exact; Ben accepted). Kept for the 2D fallback. |
 | Admin accuracy check | Kept: compare the GPS reading with the true position in metres |
 
 ## Phone performance
@@ -91,7 +90,7 @@ Related components to check:
 3. **Build the 3D view:**
    - station markers and clusters;
    - group pins with the accuracy circle;
-   - lightbulbs;
+   - lightbulbs (later taken out of 3D, see the tables above);
    - tapping a building or marker;
    - highlighting the selected station.
 4. **Switch the three pages to the 3D view, with the 2D view as the fallback.**
@@ -112,7 +111,7 @@ Related components to check:
 
 - Ben is credit-sensitive. Keep each step small, and show results before moving to the next step.
 - Screenshots: headless Chrome through the DevTools protocol, run with `node --experimental-websocket`. The `?cam=` and `?mode=` URL parameters work on `/map3d`.
-- No push. Ben pushes the branch himself.
+- Push only when Ben asks.
 
 ## Progress
 

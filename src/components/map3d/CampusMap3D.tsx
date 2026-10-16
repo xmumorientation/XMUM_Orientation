@@ -24,12 +24,15 @@ type Demo = {
   stats: boolean;
   touch: boolean;
   funfair: FunfairPower;
+  /** The lake stage's concert: on, off, or "flip" (on 4 s after load, to watch the opening). */
+  concert: boolean | "flip";
 };
 
 /**
  * Draft-only URL params, for screenshots: ?cam=x,y,z,tx,ty,tz the start view, ?mode=day|sunset|night the look,
  * ?intro=0 no swoop, ?gps=1 the team's GPS points, ?lite=0|1 force lite mode, ?stats=1 log draw calls (dev only),
- * ?funfair=1,0,1 which funfair zones are on (west, central, east; default all on).
+ * ?funfair=1,0,1 which funfair zones are on (west, central, east; default all on), ?concert=1|flip the lake
+ * stage's concert (flip: on 4 s after load), ?showt=<seconds> (development) hold the concert at that moment.
  */
 function readDemo(): { demo: Demo; mode: Mode | null } {
   const q = new URLSearchParams(window.location.search);
@@ -46,6 +49,7 @@ function readDemo(): { demo: Demo; mode: Mode | null } {
       stats: process.env.NODE_ENV === "development" && q.get("stats") === "1",
       touch: window.matchMedia("(max-width: 768px)").matches,
       funfair: parseFunfair(q.get("funfair")) ?? { west: 1, central: 1, east: 1 },
+      concert: q.get("concert") === "1" ? true : q.get("concert") === "flip" ? "flip" : false,
     },
     mode: m === "day" || m === "sunset" || m === "night" ? m : null,
   };
@@ -145,6 +149,12 @@ export default function CampusMap3D() {
     if (r.mode) setMode(r.mode);
   }, []);
   const touch = demo?.touch ?? false;
+  const [flipped, setFlipped] = useState(false);
+  useEffect(() => {
+    if (demo?.concert !== "flip") return;
+    const id = window.setTimeout(() => setFlipped(true), 4000);
+    return () => window.clearTimeout(id);
+  }, [demo?.concert]);
 
   return (
     <main style={{ position: "fixed", inset: 0, background: MODES[mode].skyTop }}>
@@ -157,6 +167,7 @@ export default function CampusMap3D() {
           labels={labels}
           controlsRef={controls}
           funfair={demo.funfair}
+          concert={demo.concert === true || flipped}
         >
           {demo.gps && <GpsMarkers />}
           {demo.stats && <RenderStats lite={demo.lite} />}

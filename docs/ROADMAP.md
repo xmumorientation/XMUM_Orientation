@@ -5,7 +5,7 @@ Read it before starting a new round of development. When a decision changes, upd
 
 > **From Ben:** when you finish your work, write down what you completed in the "Done" section at the end of this file, so the next teammate can see it. Do this for partly finished items too: say which parts are done and which are left.
 
-Last updated: 2026-10-14
+Last updated: 2026-10-16
 
 ## Status key
 
@@ -155,19 +155,22 @@ The design branches are merged. These remote branches are still not in `main` (c
 **Figma:** [XMUM campus map](https://www.figma.com/design/3dcEv45KenmKcoTcbaZmQ0/Untitled?node-id=24-2) (frame `XMUM Block Cube_XMUM Map 1`).
 
 **Current state:**
-- Map page: [map/page.tsx](../src/app/(app)/map/page.tsx). Map component: [CampusMap.tsx](../src/components/CampusMap.tsx). The illustration is `public/campus-map.png`.
-- Labels on the art: A1–A5 along the red-roof row (A1 at the monument end, A5 at the lake end), Track & Field on the pitch, B1 on the white-and-red block, Tennis Court and Volleyball Court on the two pairs of green courts beside B1.
-- Station dots still show available / in progress / closed, and still update from the `stations` table without a refresh. Group pins still follow the permission rules below.
+- Pages: `/map` ([map/page.tsx](../src/app/(app)/map/page.tsx)), `/checkin` and `/committee`, all through [CampusMap.tsx](../src/components/CampusMap.tsx) and `campus-map/CampusMapView.tsx`.
+- The map is **3D** (`src/components/map3d/`, `CampusScene`): A1–A5 and B1 at true scale from OpenStreetMap, the track and courts, the lake and its park, the statue, the Vortexa Funfair on the dorm land, and the LakeFront Café as the lake stage.
+- The **2D art** (`CampusMap2DView`, `public/campus-map.png`) is only the fallback: devices without WebGL2, devices too slow for 3D, or `?map=2d`.
+- Where things stand and how to work on the 3D map: [map3d-session-handoff.md](map3d-session-handoff.md).
+- Labels: A1–A5, B1, Track & Field, the Tan Kah Kee Statue, the LakeFront Café and the Vortexa Funfair (game zone). The courts are labelled when the camera is close, and so are the rides (with their dorm name, such as "LY3 · Vortexa Eye").
+- Station dots and badges show available / in progress / closed, and update from the `stations` table without a refresh. Group pins follow the permission rules below.
 - `David-MapPage` colours dots by occupancy (`fn_public_station_occupancy`). That function is not on this branch, so it was not copied. The branch still uses the old rectangle map, not this Figma art.
 - Who can see what on the map: see the "Campus Map" and "Group locations" rows in [permission-matrix.md](permission-matrix.md).
 
 **Still open:**
 - Seeded stations are removed. New ones are created in Admin → Stations and sit on A1–A5, B1, Track & Field, Tennis Court or Volleyball Court.
-- GPS pins are drawn on the art (see Done, 2026-10-07 and 2026-10-13). The calibration needs a real walk-through to confirm: stand at each building and court with a phone and check the pin.
+- GPS pins: the 3D map places them straight from GPS (true scale); the 2D fallback warps them onto the art (see Done, 2026-10-07 and 2026-10-13). Both still need a real walk-through: stand at each building and court with a phone and check the pin. Admin's Accuracy check (Map page) measures the error.
 - Before the event: turn **NFC demo mode** off in Live control, and Reset any bulbs lit while testing.
 - Before the event: brief Facis that a phone only shares location while the app is open on screen, and that one phone per group should use Keep tracking with a power bank.
 - Admin → Stations "Other…" block: the database only accepts the listed buildings (and TBD), so saving a station with another block name fails.
-- The lake, monument, and brown field are in the picture and are not labeled.
+- The lake stage (LakeFront Café), batch L4 (Ben): play the concert when all three funfair zones are on, add `?funfair_preview=lakefront`, and show "● LIVE" by its label. See [map3d-lakefront-design.md](map3d-lakefront-design.md).
 
 ## 6. HOF sees every group's name and slogan (Done on branch `hof-page-setup`: Ops → Faci control shows them, read only)
 
@@ -223,6 +226,13 @@ The design branches are merged. These remote branches are still not in `main` (c
 
 ## Done
 
+### Map: LakeFront Café as the lake stage, 2026-10-16 (Ben, branch `funfair-central`; partly done)
+No migration. Design and batches: [map3d-lakefront-design.md](map3d-lakefront-design.md).
+- **Done (L1):** the 3D map's red dome is now the real venue from Ben's photos: the red ribbed shell over a round stage, the moat, the walkway, the footbridge, a grass amphitheatre and willows (`src/components/map3d/lakefront/`). The XMUM hedge letters are removed (Ben). Positions, the label, GPS, markers and the 2D map are unchanged.
+- **Done (L2):** evening lighting at sunset and night: LED ribs, a washed membrane, small lights, light pools, and sweeping concert beams in haze (Ben asked for the beams every evening, moving). Full screen on phones now draws every frame at night, so the beams move there too.
+- **Done (L3):** the concert: a 3 s opening (house lights down, a follow spot, the ribs one by one, a bang) and a 30 s show on the wall clock, the same on every phone: the shell as an LED screen, faster beams with sky beams, arch beams and lasers, about 900 crowd lightsticks, moat fountains, flame jets, confetti, and fireworks over the lake every 2 minutes. At most 2 flashes a second; reduced motion turns the motion off. Viewable on `/map3d?concert=1` (or `=flip` for the opening); real pages don't turn it on yet.
+- **Left:** L4: turn the concert on when all three funfair zones are on (Ben's option A), `?funfair_preview=lakefront`, and the "● LIVE" tag. Delete the old `Dome` in `buildings.tsx` once Ben accepts the new venue.
+
 ### Map: the Vortexa Funfair on the 3D map, 2026-10-16 (Ben, branch `funfair-central`)
 Optional migration `0088_funfair_zones.sql`. Without it the map works, and each zone powers up with its default key: West with A3, Central with Track & Field, East with B1. Admin's and HOGM's Funfair cards then only say that the migration is missing. With it applied, the cards change the setup.
 - **Funfair on the land:** three zones (West · Neon Pier, Central · Starlight Midway, East · Big Top) and the VORTEXA gate stand on the dorm land of the 3D map, now lawn. Ride tags carry the dorm names ("LY3 · Vortexa Eye") and show close up.
@@ -244,6 +254,14 @@ Needs migration `0087_map_accuracy_check.sql` (after `0082`–`0085`). Until it 
 - **Accuracy check** (Admin, Map page → "Accuracy check"): the Admin's phone tracks its GPS and reports it every 20 s to `admin_check_locations` (`fn_report_admin_gps`; only Admins can read it, through `fn_admin_check_locations`; kept apart from group pins; rows older than 1 hour are removed). A blue "You" pin with an accuracy halo shows where the map puts them; other Admins checking show as grey dots.
 - **Tap to correct:** tapping the map saves an anchor (`fn_admin_add_map_anchor` into `map_anchors`) from the average of the last 40 s of fixes at ±20 m or better (at least 2; otherwise "GPS too rough"). An anchor within 15 m replaces the old one; a tap more than 25% of the map from where the pin was asks to confirm. Saved anchors show as blue diamonds and can be deleted from the panel (`fn_admin_delete_map_anchor`); both are audit-logged.
 - Every map loads `map_anchors` and adds them to the built-in anchors (`setExtraAnchors` in [mapGeo.ts](../src/lib/mapGeo.ts)); one within 15 m of a built-in anchor overrides it. Bad data falls back to the built-in anchors. Other phones pick up new anchors the next time the map loads.
+
+### David, 2026-10-14 (Vortexa projector celebration)
+- Replaced the activation circuit animation with five converging light trails, a star burst and an illuminated amusement park, using CSS/SVG and reduced-motion support.
+- Added a development-only, backend-free `/activate/preview` for replaying B1/A3/TF. Activation routes skip the global intro so it cannot cover the celebration. Mobile browser preview checked; fixed particle-coordinate hydration mismatch.
+- This release contains the celebration only; the separate NFC backend integration remains on `codex/nfc-integration`.
+
+### David, 2026-10-14 (continuous projector ignition)
+- Matched the star charge/ignition transforms and synchronized all five trails to the same finish. Ignition now follows the actual CSS charge completion rather than a separate timer, avoiding a hydration-dependent pause. Reduced-motion mode still shows the result immediately.
 
 ### David, 2026-10-14 (Admin NFC card deletion)
 - Implemented per-card Delete with an in-page confirmation dialog on Admin → NFC. Used cards and visible projector links disable Delete. The database also rejects consumed Guardian links and live-schema `USED` status.
@@ -668,21 +686,3 @@ Branch `jiamin-blind-box-integration`. Migration `0070_blindbox_buy_flow.sql` (t
 - Admin redesign step A: Admin nav is now 4 sections (Live, Freshies, Game, Settings) with sub-tabs; Freshie control moved to `/admin/freshies` (old `/freshie-control` redirects); admin sidebar can collapse to icons. UI only. Step B done: Users (role chips, group filter, table, CSV import in a pop-up), Audit (action and role chips, table), Control room (phase rows, switches). Step C done: Stations (table, add in pop-up), Blind box (two tabs, table), NFC, Puzzles, FAQ (grouped, add in pop-up), Brand, Tokens (full width, layout only). Admin redesign complete.
 - Removed Interview Booking (`/booking`) and Practice Reservations (`/reservations`) for every role: pages, nav, dashboard cards. Migration `0039` drops any leftover booking tables, functions and types.
 - Facilitators set a group name and slogan on the home checklist. "Group 1" stays the number. HOF still cannot see the list.
-
-Example:
-
-```
-### David, 2026-10-10
-- Moved Day 1 and Day 2 GM pages from bonding-session. Pushed to main.
-- Blind box not done yet.
-```
-
-(No entries yet.)
-
-### David, 2026-10-14 (Vortexa projector celebration)
-- Replaced the activation circuit animation with five converging light trails, a star burst and an illuminated amusement park, using CSS/SVG and reduced-motion support.
-- Added a development-only, backend-free `/activate/preview` for replaying B1/A3/TF. Activation routes skip the global intro so it cannot cover the celebration. Mobile browser preview checked; fixed particle-coordinate hydration mismatch.
-- This release contains the celebration only; the separate NFC backend integration remains on `codex/nfc-integration`.
-
-### David, 2026-10-14 (continuous projector ignition)
-- Matched the star charge/ignition transforms and synchronized all five trails to the same finish. Ignition now follows the actual CSS charge completion rather than a separate timer, avoiding a hydration-dependent pause. Reduced-motion mode still shows the result immediately.
