@@ -2,13 +2,16 @@ import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 
 import { Bake, G, mat, type V3 } from "../funfair/central/kit";
+import { LITE_LIGHT_SCALE } from "../funfair/common";
 import {
   AISLE_HW,
   AISLES,
   BANK_W,
+  beams,
   BRIDGE_A,
   BRIDGE_HW,
   DECK_Y,
+  DEG,
   KERB,
   MOAT_R,
   polar,
@@ -48,6 +51,7 @@ export const PAINT = {
   trunk: "#6b4a2f",
   willow: "#9cc35a",
   willowDark: "#86b04c",
+  fixture: "#2b2d35",
 } as const;
 
 const UP: V3 = [0, 1, 0];
@@ -59,10 +63,15 @@ const radial = (a: number): V3 => polar(1, a);
 /** Direction of increasing angle at a. */
 const tangent = (a: number): V3 => [Math.cos(a), 0, Math.sin(a)];
 
-/** A quad a-b-c-d turned to face `want` (its winding is flipped if needed). */
-function face(bk: Bake, c: string, a: V3, b: V3, cc: V3, d: V3, want: V3) {
-  if (dot(cross(sub(b, a), sub(cc, a)), want) >= 0) bk.quad(c, a, b, cc, d);
-  else bk.quad(c, a, d, cc, b);
+/**
+ * A quad a-b-c-d turned to face `want` (its winding is flipped if needed). `kind` and `seed` go to the vertices'
+ * aTS (the lights mesh: which light, and where along its run).
+ */
+function face(bk: Bake, c: string, a: V3, b: V3, cc: V3, d: V3, want: V3, kind = 0, seed = 0) {
+  const fwd = dot(cross(sub(b, a), sub(cc, a)), want) >= 0;
+  const [p, q] = fwd ? [b, d] : [d, b];
+  bk.tri(c, a, p, cc, false, kind, seed);
+  bk.tri(c, a, cc, q, false, kind, seed);
 }
 
 /** Segments for an arc of radius r from a0 to a1, about `step` metres long each. */
@@ -78,14 +87,17 @@ function sector(bk: Bake, c: string, y: number, r0: number, r1: number, a0: numb
   }
 }
 
-/** A vertical band on the circle of radius r from y0 to y1, facing outwards (out = 1) or towards the centre (-1). */
-function band(bk: Bake, c: string, r: number, y0: number, y1: number, a0: number, a1: number, out: 1 | -1) {
+/**
+ * A vertical band on the circle of radius r from y0 to y1, facing outwards (out = 1) or towards the centre (-1).
+ * For the lights mesh, `kind` and `seed(angle)` tag each segment.
+ */
+function band(bk: Bake, c: string, r: number, y0: number, y1: number, a0: number, a1: number, out: 1 | -1, kind = 0, seed = (_a: number) => 0) {
   const n = steps(r, a0, a1);
   for (let i = 0; i < n; i++) {
     const p = a0 + ((a1 - a0) * i) / n;
     const q = a0 + ((a1 - a0) * (i + 1)) / n;
     const m = radial((p + q) / 2).map((v) => v * out) as V3;
-    face(bk, c, polar(r, p, y0), polar(r, q, y0), polar(r, q, y1), polar(r, p, y1), m);
+    face(bk, c, polar(r, p, y0), polar(r, q, y0), polar(r, q, y1), polar(r, p, y1), m, kind, seed((p + q) / 2));
   }
 }
 
@@ -179,6 +191,21 @@ function bakeWalkway(bk: Bake) {
   band(bk, PAINT.concrete, r1, 0, KERB.h, RING_ARC, 2 * Math.PI - RING_ARC, 1);
 }
 
+const BALUSTRADE_R = STAGE_R - 0.25;
+
+/** The balustrade's post angles, in two runs either side of the bridge (fewer posts in lite). */
+function balustradeRuns(lite: boolean): number[][] {
+  const gap = (BRIDGE_HW + 0.2) / BALUSTRADE_R;
+  const runs: [number, number][] = [
+    [-100 * DEG, BRIDGE_A - gap],
+    [BRIDGE_A + gap, 100 * DEG],
+  ];
+  return runs.map(([p, q]) => {
+    const n = Math.max(2, Math.round((BALUSTRADE_R * (q - p)) / (lite ? 1.4 : 0.7)));
+    return Array.from({ length: n + 1 }, (_, i) => p + ((q - p) * i) / n);
+  });
+}
+
 function bakeStage(bk: Bake, lite: boolean) {
   // the moat's bed, the stage's drum and its deck
   sector(bk, PAINT.bed, 0.12, STAGE_R - 0.2, MOAT_R + 0.1, 0, 2 * Math.PI);
@@ -186,24 +213,15 @@ function bakeStage(bk: Bake, lite: boolean) {
   bk.add(G.disc48, mat(0, DECK_Y, 0, STAGE_R, 1, STAGE_R), PAINT.deck);
 
   // the white balustrade round the front of the stage, open where the bridge lands
-  const r = STAGE_R - 0.25;
-  const a0 = -100 * (Math.PI / 180);
-  const a1 = 100 * (Math.PI / 180);
-  const gap = (BRIDGE_HW + 0.2) / r;
-  const runs: [number, number][] = [
-    [a0, BRIDGE_A - gap],
-    [BRIDGE_A + gap, a1],
-  ];
-  for (const [p, q] of runs) {
-    const n = Math.max(2, Math.round((r * (q - p)) / (lite ? 1.4 : 0.7)));
-    for (let i = 0; i <= n; i++) {
-      const a = p + ((q - p) * i) / n;
-      const at = polar(r, a, DECK_Y + 0.5);
-      bk.box(PAINT.white, at, [0.12, 1, 0.12], Math.PI - a);
-      if (i === n) continue;
-      const b = p + ((q - p) * (i + 1)) / n;
-      for (const h of [0.98, 0.18]) bk.seg(PAINT.white, polar(r, a, DECK_Y + h), polar(r, b, DECK_Y + h), h > 0.5 ? 0.14 : 0.1);
-    }
+  for (const run of balustradeRuns(lite)) {
+    run.forEach((a, i) => {
+      bk.box(PAINT.white, polar(BALUSTRADE_R, a, DECK_Y + 0.5), [0.12, 1, 0.12], Math.PI - a);
+      const b = run[i + 1];
+      if (b === undefined) return;
+      for (const h of [0.98, 0.18]) {
+        bk.seg(PAINT.white, polar(BALUSTRADE_R, a, DECK_Y + h), polar(BALUSTRADE_R, b, DECK_Y + h), h > 0.5 ? 0.14 : 0.1);
+      }
+    });
   }
 
   // the back wall round the back of the stage, under the shell
@@ -220,6 +238,14 @@ function bakeStage(bk: Bake, lite: boolean) {
 
   // the shell's feet: white plinths at the walkway's edge
   for (const sx of [-1, 1]) bk.box(PAINT.concrete, [sx * SHELL.span, SHELL.footY / 2, SHELL.footZ], [2.2, SHELL.footY, 2.2]);
+
+  // the beams' fixtures (layout.ts beams): a dark base and a head tipped along the beam's aim
+  for (const b of beams(lite)) {
+    const base = b.p[1] - 0.55;
+    bk.box(PAINT.fixture, [b.p[0], base + 0.15, b.p[2]], [0.6, 0.3, 0.6]);
+    const tip: V3 = [b.p[0] + b.dir[0] * 0.35, b.p[1] + b.dir[1] * 0.35, b.p[2] + b.dir[2] * 0.35];
+    bk.seg(PAINT.fixture, [b.p[0], base + 0.3, b.p[2]], tip, 0.42, G.cyl8);
+  }
 }
 
 function bakeBridge(bk: Bake) {
@@ -274,19 +300,90 @@ export function bakeVenue(lite: boolean) {
   return bk.geometry();
 }
 
-/** The shell's steel: the ribs (from foot to foot) and the cross tubes between them. */
+/** The kinds of light in the lights mesh (its aTS.x); kit.ts gives each its brightness and its look by day. */
+export const LIGHT = { bulb: 0, dot: 1, step: 2, riser: 3 } as const;
+
+export const LIGHT_COLORS = {
+  bulb: "#ffd28a",
+  dot: "#0dfcfd",
+  step: "#ffd9a0",
+  riser: "#ffe6c4",
+} as const;
+
+/**
+ * The venue's small lights, one mesh: bulbs on the balustrade's posts, dots along the walkway, a light on each
+ * aisle step and a strip under each terrace's stone edge. aTS = (kind, seed); a riser strip's seed is its terrace
+ * plus how far round the arc it is (0..1), for the concert's chases later. Bigger in lite (no bloom there).
+ */
+export function bakeLights(lite: boolean) {
+  const bk = new Bake();
+  const w = lite ? LITE_LIGHT_SCALE : 1;
+
+  // warm bulbs on every other balustrade post
+  for (const run of balustradeRuns(lite)) {
+    run.forEach((a, i) => {
+      if (i % 2) return;
+      bk.ball(LIGHT_COLORS.bulb, polar(BALUSTRADE_R, a, DECK_Y + 1.14), 0.13 * w, G.ico, LIGHT.bulb, i);
+    });
+  }
+
+  // dots along the walkway, at the foot of the terraces
+  const rDot = RING_R - 0.5;
+  const nDot = Math.round((rDot * 2 * RING_ARC) / (lite ? 3.6 : 2.4));
+  for (let i = 0; i <= nDot; i++) {
+    const a = -RING_ARC + (2 * RING_ARC * i) / nDot;
+    const p = polar(rDot, a, RING_Y + 0.02);
+    bk.add(G.cyl12, mat(p[0], p[1], p[2], 0.2 * w, 0.05, 0.2 * w), LIGHT_COLORS.dot, LIGHT.dot, i / nDot);
+  }
+
+  for (let k = 0; k < TERRACES; k++) {
+    const r0 = RING_R + k * TERRACE_D;
+    const y = terraceTop(k);
+    const below = k === 0 ? RING_Y : terraceTop(k - 1);
+    // a light on the face of each aisle step
+    for (const a of AISLES) {
+      for (const [r, h] of [
+        [r0, below + TERRACE_H / 4],
+        [r0 + TERRACE_D / 2, below + (3 * TERRACE_H) / 4],
+      ]) {
+        const p = polar(r - 0.03, a, h);
+        bk.box(LIGHT_COLORS.step, p, [1.1 * w, 0.05 * w, 0.04], Math.PI - a, LIGHT.step, k);
+      }
+    }
+    // a strip under the stone edge of each terrace
+    const span = SEATS_ARC[1] - SEATS_ARC[0];
+    for (const [a0, a1] of seatRuns(r0 + TERRACE_D / 2)) {
+      const seed = (a: number) => k + Math.min(0.999, (a - SEATS_ARC[0]) / span);
+      band(bk, LIGHT_COLORS.riser, r0 - 0.03, y - 0.08 - 0.03 * w, y - 0.04, a0, a1, -1, LIGHT.riser, seed);
+    }
+  }
+  return bk.geometry();
+}
+
+/**
+ * The shell's steel: the ribs (from foot to foot) and the cross tubes between them. aLed = (how far along the
+ * rib from the south foot, 0..1; the rib's index 0..6 from the front arch, or -1 for a cross tube): the ribs are
+ * the shell's LED lines at night (kit.ts).
+ */
 export function steelGeometry() {
   const parts: THREE.BufferGeometry[] = [];
+  const tag = (g: THREE.TubeGeometry, rib: number) => {
+    const uv = g.getAttribute("uv");
+    const led = new Float32Array(uv.count * 2);
+    for (let i = 0; i < uv.count; i++) led.set([uv.getX(i), rib], i * 2);
+    g.setAttribute("aLed", new THREE.BufferAttribute(led, 2));
+    parts.push(g);
+  };
   SHELL.ribs.forEach((t, k) => {
     const pts = Array.from({ length: 41 }, (_, i) => new THREE.Vector3(...shellPoint((Math.PI * i) / 40, t)));
     // the front arch is the thickest tube (photos)
-    parts.push(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 56, RIB_R * (k === 0 ? 1.4 : 1), 8, false));
+    tag(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 56, RIB_R * (k === 0 ? 1.4 : 1), 8, false), k);
   });
   const t0 = SHELL.ribs[0];
   const t1 = SHELL.ribs[SHELL.ribs.length - 1];
   for (const k of [0.2, 0.31, 0.42, 0.58, 0.69, 0.8]) {
     const pts = Array.from({ length: 13 }, (_, i) => new THREE.Vector3(...shellPoint(Math.PI * k, t0 + ((t1 - t0) * i) / 12, -0.05)));
-    parts.push(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 24, 0.16, 6, false));
+    tag(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 24, 0.16, 6, false), -1);
   }
   const g = mergeGeometries(parts)!;
   for (const p of parts) p.dispose();

@@ -91,6 +91,121 @@ export function shellUnderside(x: number, z: number, inset = 0.4): number | null
   return footY + up * lift;
 }
 
+/**
+ * Soft light pools at sunset and night (standby): centre, half sizes along x and z, colour. On the deck, on the
+ * moat under the shell and in front, and the shell's glow spilling onto the lake just behind it.
+ */
+export const POOLS: { p: V3; r: [number, number]; c: string }[] = [
+  { p: [0, DECK_Y + 0.12, 2.5], r: [8.5, 8.5], c: "#ffcf86" },
+  { p: [-8.5, WATER_Y + 0.08, 9.5], r: [5, 5], c: "#e0b4fc" },
+  { p: [8.5, WATER_Y + 0.08, 9.5], r: [5, 5], c: "#e0b4fc" },
+  { p: [0, WATER_Y + 0.08, -13.3], r: [7, 3], c: "#0bbcbd" },
+  { p: [0, 0.62, 21], r: [5, 6], c: "#9a76cf" },
+];
+
+/**
+ * A light beam (a moving head, or a floor fixture): its source (metres), its aim (a unit vector), its length, its
+ * width at the source and at the end, and its colour. It sweeps by turning its aim about `axis` by
+ * sway[0] · sin(time · sway[1] + sway[2]) (amplitude in radians, speed in radians a second, phase).
+ */
+export type Beam = { p: V3; dir: V3; len: number; w0: number; w1: number; c: string; axis: V3; sway: V3 };
+
+/** Up, leaning `lean` (radians from upright) towards the ground direction h = [x, z]. */
+function aim(h: [number, number], lean: number): V3 {
+  const l = Math.hypot(h[0], h[1]);
+  return [(Math.sin(lean) * h[0]) / l, Math.cos(lean), (Math.sin(lean) * h[1]) / l];
+}
+
+const BEAM_CYAN = "#22d3ff";
+const BEAM_BLUE = "#3b6cff";
+const BEAM_PINK = "#ff2fb8";
+const BEAM_LILAC = "#b98bff";
+
+/** Where the front row's moving heads stand on the deck (behind the balustrade). */
+export const HEADS_R = 10;
+/** Where the floor fixtures stand on the walkway, by the shell's feet. */
+export const FLOOR_R = 17;
+
+/**
+ * The beams (concert photo, Ben): a fan of moving heads along the stage's front edge, mostly cyan and blue with
+ * pink between. Seen from the audience they spread sideways like a V: the outer ones lean out, the inner ones
+ * cross. Floor fixtures by the shell's feet cross over the front of the stage. Phones (lite, no bloom) get fewer,
+ * wider beams.
+ */
+export function beams(lite: boolean): Beam[] {
+  const w = lite ? 1.35 : 1;
+  // [angle on the stage's edge, lean along the edge (+ towards north, degrees), colour]
+  const front: [number, number, string][] = lite
+    ? [
+        [-45, -30, BEAM_CYAN],
+        [-15, 16, BEAM_PINK],
+        [15, -16, BEAM_BLUE],
+        [45, 30, BEAM_CYAN],
+      ]
+    : [
+        [-60, -34, BEAM_CYAN],
+        [-36, 22, BEAM_PINK],
+        [-12, -14, BEAM_BLUE],
+        [12, 14, BEAM_BLUE],
+        [36, -22, BEAM_PINK],
+        [60, 34, BEAM_CYAN],
+      ];
+  const out: Beam[] = front.map(([d, lean, c]) => {
+    const a = d * DEG;
+    const s = Math.sign(lean);
+    // along the edge, and a little towards the audience so the beams stay in front of the shell
+    const h: [number, number] = [Math.cos(a) * s + Math.sin(a) * 0.3, Math.sin(a) * s - Math.cos(a) * 0.3];
+    return {
+      p: polar(HEADS_R, a, DECK_Y + 0.55),
+      dir: aim(h, Math.abs(lean) * DEG),
+      len: 52,
+      w0: 0.35 * w,
+      w1: 3.6 * w,
+      c,
+      // swings sideways along the edge (about the axis towards the audience); the two halves mirror each other,
+      // so the fan opens and closes like scissors and the crossing pairs sweep through each other
+      axis: polar(1, a),
+      sway: [(Math.abs(d) > 40 ? 20 : 15) * DEG, 0.75, (d < 0 ? 0 : Math.PI) + Math.abs(d) * DEG * 0.8],
+    };
+  });
+  const floor = lite ? [100] : [96, 118];
+  for (const side of [-1, 1])
+    floor.forEach((d, i) => {
+      const a = side * d * DEG;
+      // in over the stage and towards the audience, so the two sides cross in front of the shell
+      const h: [number, number] = [-Math.sin(a), Math.cos(a) - 0.6];
+      out.push({
+        p: polar(FLOOR_R, a, RING_Y + 0.5),
+        dir: aim(h, (i ? 34 : 26) * DEG),
+        len: 50,
+        w0: 0.4 * w,
+        w1: 3.8 * w,
+        c: i ? BEAM_LILAC : BEAM_PINK,
+        // pans slowly about the vertical, the two sides in opposite phase so they keep crossing
+        axis: [0, 1, 0],
+        sway: [24 * DEG, 0.45, (side < 0 ? 0 : Math.PI) + i * 1.3],
+      });
+    });
+  return out;
+}
+
+/** Haze in front of the stage, lit by the beams: soft blue and purple puffs (centre, radius, colour). */
+export const HAZE: { p: V3; r: number; c: string }[] = [
+  { p: [-7, 6, -9], r: 8, c: "#3b3fd0" },
+  { p: [6, 8, -12], r: 9, c: "#7a2fc8" },
+  { p: [0, 11, -6], r: 9, c: "#1d6fd8" },
+  { p: [-11, 9, -14], r: 7, c: "#7a2fc8" },
+  { p: [11, 5, -7], r: 7, c: "#3b3fd0" },
+  { p: [0, 4, -14], r: 8, c: "#1d6fd8" },
+  { p: [-4, 15, -10], r: 8, c: "#5a2fd0" },
+];
+
+/** Halos for phones at night (funfair/glow.tsx): the shell and the stage. */
+export const GLOW: { p: V3; r: number; c: string }[] = [
+  { p: [0, 15, 2], r: 15, c: "#e0b4fc" },
+  { p: [0, 4, 1], r: 11, c: "#ffcf86" },
+];
+
 /** Weeping willows along the lake shore, outside the amphitheatre (metres; checked against the lake outline). */
 export const WILLOWS: [number, number, number][] = [
   [20.5, 9.5, 1],

@@ -173,7 +173,7 @@ const Campus = memo(function Campus({ mode, lite }: { mode: Mode; lite: boolean 
       <SportsCourts glow={look.lamps} />
       <Statue />
       <Flag />
-      <LakefrontStage lite={lite} />
+      <LakefrontStage night={mode === "night"} dusk={mode === "sunset"} lite={lite} />
       <Bridge />
       <Vegetation lite={lite} />
       <Lamps glow={look.lamps} />
@@ -340,8 +340,9 @@ export default function CampusScene({
           shadows={!isLite}
           // Draw only when something changes (camera, markers, look, a power-up), so a still card costs nothing.
           // Full screen keeps drawing every frame on a fast device (the water, duck, flag and clouds move), and
-          // on any device while a funfair zone is on, so its rides keep turning.
-          frameloop={interactive && (!isLite || anyZoneOn(funfair)) ? "always" : "demand"}
+          // on any device while a funfair zone is on, so its rides keep turning, or at night, so the lake stage's
+          // beams sweep.
+          frameloop={interactive && (!isLite || anyZoneOn(funfair) || mode === "night") ? "always" : "demand"}
           dpr={isLite ? [1, 1.5] : [1, 1.75]}
           camera={{ fov: 30, near: 1, far: 1600, position: start.position }}
           gl={(defaults) => {

@@ -226,7 +226,8 @@ The design branches are merged. These remote branches are still not in `main` (c
 ### Map: LakeFront Café as the lake stage, 2026-10-16 (Ben, branch `funfair-central`; partly done)
 No migration. Design and batches: [map3d-lakefront-design.md](map3d-lakefront-design.md).
 - **Done (L1):** the 3D map's red dome is now the real venue from Ben's photos: the red ribbed shell over a round stage, the moat, the walkway, the footbridge, a grass amphitheatre and willows (`src/components/map3d/lakefront/`). The XMUM hedge letters are removed (Ben). Positions, the label, GPS, markers and the 2D map are unchanged.
-- **Left:** L2 standby lighting at sunset and night; L3 the concert (it plays when all three funfair zones are on, Ben's option A); L4 the trigger, preview and "LIVE" tag. Delete the old `Dome` in `buildings.tsx` once Ben accepts the new venue.
+- **Done (L2):** evening lighting at sunset and night: LED ribs, a washed membrane, small lights, light pools, and sweeping concert beams in haze (Ben asked for the beams every evening, moving). Full screen on phones now draws every frame at night, so the beams move there too.
+- **Left:** L3 the concert (it plays when all three funfair zones are on, Ben's option A); L4 the trigger, preview and "LIVE" tag. Delete the old `Dome` in `buildings.tsx` once Ben accepts the new venue.
 
 ### Map: the Vortexa Funfair on the 3D map, 2026-10-16 (Ben, branch `funfair-central`)
 Optional migration `0088_funfair_zones.sql`. Without it the map works, and each zone powers up with its default key: West with A3, Central with Track & Field, East with B1. Admin's and HOGM's Funfair cards then only say that the migration is missing. With it applied, the cards change the setup.

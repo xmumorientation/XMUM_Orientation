@@ -103,7 +103,8 @@ Ben's batches map to the plan's steps as follows.
 ### LakeFront Café: the lake stage (2026-10-16, on `funfair-central`)
 
 - The red dome is now the open-air stage from Ben's photos, and the concert venue for the funfair's finale. Design, decisions and batches L1–L4: [map3d-lakefront-design.md](map3d-lakefront-design.md). Code: `src/components/map3d/lakefront/`.
-- L1 (the model) is done, and the XMUM hedge letters are gone (Ben). L2–L4 (lighting, the concert, the trigger) wait for Ben's go, one batch at a time.
+- L1 (the model) and L2 (evening lighting with sweeping beams) are done, and the XMUM hedge letters are gone (Ben). L3–L4 (the concert, the trigger) wait for Ben's go, one batch at a time.
+- `CampusScene` now draws every frame in full screen at night on phones too, so the stage's beams sweep.
 
 ### Lightbulbs in 3D (Ben, 2026-10-15)
 
