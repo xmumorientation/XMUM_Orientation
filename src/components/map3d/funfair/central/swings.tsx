@@ -97,7 +97,7 @@ export function SwingTop({ kit, live, lite }: { kit: Kit; live: RefObject<Live>;
     chairs.frustumCulled = false;
     return { paint: paint.geometry(), light: light.geometry(), chairs };
   }, [kit, lite, n]);
-  useEffect(() => () => disposeAll([parts.paint, parts.light, parts.chairs.geometry]), [parts]);
+  useEffect(() => () => disposeAll([parts.paint, parts.light, parts.chairs.geometry, parts.chairs]), [parts]);
 
   useFrame(() => {
     const L = live.current;

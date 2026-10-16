@@ -34,7 +34,13 @@ export function FunfairCentral({ power, night, lite }: ZoneProps) {
   const built = useMemo(() => buildStatic(lite), [lite]);
   useEffect(() => () => built.dispose(), [built]);
   const bulbs = useMemo(() => built.bulbs.mesh(kit.bulb), [built, kit]);
-  useEffect(() => () => bulbs.geometry.dispose(), [bulbs]);
+  useEffect(
+    () => () => {
+      bulbs.geometry.dispose();
+      bulbs.dispose();
+    },
+    [bulbs],
+  );
 
   const ramp = usePowerRamp(power, 2);
   const live = useRef<Live>({ p: ramp.current, run: smooth(0.55, 1, ramp.current), dt: 0, time: 0 });

@@ -84,7 +84,7 @@ export function Teacups({ kit, live, lite }: { kit: Kit; live: RefObject<Live>; 
     cups.castShadow = true;
     return { deck: deck.geometry(), subs, cups, perSub: n / 3 };
   }, [kit, lite]);
-  useEffect(() => () => disposeAll([parts.deck, parts.subs.geometry, parts.cups.geometry]), [parts]);
+  useEffect(() => () => disposeAll([parts.deck, parts.subs.geometry, parts.cups.geometry, parts.subs, parts.cups]), [parts]);
 
   useFrame(() => {
     const L = live.current;

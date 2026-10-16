@@ -170,7 +170,7 @@ export function BumperCars({ kit, live, lite }: { kit: Kit; live: RefObject<Live
     }));
     return { cars, paths };
   }, [kit, lite]);
-  useEffect(() => () => disposeAll([parts.cars.geometry]), [parts]);
+  useEffect(() => () => disposeAll([parts.cars.geometry, parts.cars]), [parts]);
 
   useFrame(() => {
     const L = live.current;
