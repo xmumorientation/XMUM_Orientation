@@ -64,7 +64,6 @@ export const COLORS = {
   duck: "#ffffff",
   beak: "#f3a43a",
   crown: "#f2b33d",
-  letters: "#3f8f3a",
 } as const;
 
 // ── Ground layers (image px polygons), drawn in this order ───────────────
@@ -289,11 +288,6 @@ export const DUCK = {
   pos: fromReal(DUCK_M.e, DUCK_M.n),
   scale: Math.min(1, (DUCK_M.r * UNITS_PER_M) / 13),
 };
-
-export const LETTERS: [Img, Img] = [
-  [1305, 498],
-  [1462, 418],
-];
 
 // ── Sports courts between the track and B1 ───────────────────────────────
 export type Sport = "futsal" | "basketball" | "tennis" | "volleyball";

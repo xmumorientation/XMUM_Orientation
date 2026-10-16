@@ -100,6 +100,11 @@ Ben's batches map to the plan's steps as follows.
   - **Preview:** `?funfair_preview=west|central|east` on any map opens full screen, flies to the zone and plays its power-up on that screen only.
   - **Not seen running:** the two cards need a login and 0088, so they are typechecked only. The preview was checked on `/map3d/preview`.
 
+### LakeFront Café: the lake stage (2026-10-16, on `funfair-central`)
+
+- The red dome is now the open-air stage from Ben's photos, and the concert venue for the funfair's finale. Design, decisions and batches L1–L4: [map3d-lakefront-design.md](map3d-lakefront-design.md). Code: `src/components/map3d/lakefront/`.
+- L1 (the model) is done, and the XMUM hedge letters are gone (Ben). L2–L4 (lighting, the concert, the trigger) wait for Ben's go, one batch at a time.
+
 ### Lightbulbs in 3D (Ben, 2026-10-15)
 
 - Batch 3 was building lightbulb markers and a lightbulb layer into the 3D view, before this decision.
