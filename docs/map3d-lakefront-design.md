@@ -8,7 +8,8 @@ Status: built in batches on branch `funfair-central`. L1 (the model) is done; L2
 
 - **When the concert plays (option A, 2026-10-16):** the stage goes LIVE when all three funfair zones are on (the finale). No backend change. Admin can start it early by switching the three zones on in the existing Funfair card (manual override).
 - **XMUM hedge letters:** removed from the 3D map (Ben, 2026-10-16). They stood about 30 m north of the stage, where the amphitheatre now wraps round.
-- **Not yet confirmed (defaults in use):** the shell is drawn 1.4 times its real height, so it reads next to the A-blocks, which are drawn tall too (`SHELL.lift`). The label stays "LakeFront Café"; a "● LIVE" tag joins it during the concert (L4).
+- **Shell height (confirmed):** drawn 1.4 times its real height, so it reads next to the A-blocks, which are drawn tall too (`SHELL.lift`). The footprint stays at true size.
+- **Label (confirmed):** stays "LakeFront Café"; a "● LIVE" tag joins it while the concert plays (L4).
 
 ## The venue (from the photos)
 
