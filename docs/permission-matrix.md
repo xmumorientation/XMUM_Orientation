@@ -38,7 +38,7 @@ This reflects only the migration files in the repo. Any manual changes made to t
 | Day 1 Token Reward (amount from the token rules) | — | — | ✓ | ✓ | — | † | † | † | DB |
 | Day 2 Challenge (charge the tier's entry fee and grant a piece) | — | — | ✓ | ✓ | — | † | † | † | DB |
 | Show blind box QR + link on the Station page (own boxes and own station's shared boxes) | — | — | Own | Own | — | — | — | — | DB |
-| Set station status: Available / In Progress / Closed (`fn_set_station_status`; on the GM page's Status tab, Admin → Stations and the Live control list; manual only, never changed by the game timer or by check-ins; changes show live on every page) | — | — | Own Station | Own Station | — | All † | All † | All | DB |
+| Set station status: Available / In Progress / Closed (`fn_set_station_status`; on the GM page's Status tab, Admin → Stations and the Live control list; manual only, never changed by the game timer or by check-ins; changes show live on every page) | — | — | Own Station | Own Station | — | All † | All ‡ | All | DB |
 | Undo Token Transaction (own last one, within 2 minutes) | — | — | Own Actions | Own Actions | — | † | † | † | DB |
 | Grant a puzzle piece directly (fn_grant_item, no UI) | — | — | † | † | — | † | † | † | DB |
 | **Guardian** | | | | | | | | | |
