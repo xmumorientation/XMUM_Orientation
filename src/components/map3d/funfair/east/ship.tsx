@@ -4,7 +4,7 @@ import { useFrame } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, type RefObject } from "react";
 import type * as THREE from "three";
 
-import { Bake, G, TAU, mat, type V3 } from "../central/kit";
+import { Bake, G, TAU, lightBake, mat, type V3 } from "../central/kit";
 import { S, bar, tube } from "../west/kit";
 import { PLAZA_Y } from "./ground";
 import { NEON, PAINT, bulbC, type EastKit } from "./kit";
@@ -68,7 +68,7 @@ export function bakeShip(p: Parts) {
 /** The boat, in the pivot's frame (it hangs below it, swinging about z). */
 function boatGeometry(lite: boolean, t: number) {
   const fr = new Bake();
-  const li = new Bake();
+  const li = lightBake(lite);
   const D = -ARM;
   const gun = (x: number) => D + 1.2 + 2.4 * (x / HL) ** 4;
   const keel = (x: number) => D - 1.1 + 1.0 * (x / HL) ** 2;

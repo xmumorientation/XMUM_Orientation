@@ -5,13 +5,14 @@ import { useEffect, useMemo, useRef } from "react";
 
 import { UNITS_PER_M } from "../geo";
 import { smooth } from "./central/kit";
-import { usePowerRamp, type ZoneProps } from "./common";
+import { LITE_LIGHT_SCALE, LITE_PAVING_LIT, LITE_SELF_LIT, usePowerRamp, type ZoneProps } from "./common";
+import { glowStrength, LiteGlow, type GlowSpot } from "./glow";
 import { buildStatic } from "./west/build";
 import { Carousel } from "./west/carousel";
 import { Ducks } from "./west/ducks";
 import { bulbsMesh, disposeWestKit, makeWestKit } from "./west/kit";
 import { Lighthouse } from "./west/lagoon";
-import { ORIGIN } from "./west/layout";
+import { BOOTHS, CAROUSEL, DOME, FOOD, ISLAND, ORIGIN, SPIDERS, WHEEL } from "./west/layout";
 import type { Live } from "./west/parts";
 import { PowerFx } from "./west/power";
 import { Spiders } from "./west/spider";
@@ -36,12 +37,23 @@ import { VortexaEye } from "./west/wheel";
 // with about half the bulbs, stalls, tables and trees, no flicker and no
 // point light.
 
-export function FunfairWest({ power, night, lite }: ZoneProps) {
+/** Halos for phones at night (glow.tsx): the Vortexa Eye's hub, each ride, the lighthouse, the dome, the food court. */
+const GLOW: GlowSpot[] = [
+  { p: [WHEEL[0], 24.6, WHEEL[1]], r: 30, c: "#ff3fbf" },
+  { p: [CAROUSEL[0], 6, CAROUSEL[1]], r: 18, c: "#e0b4fc" },
+  ...SPIDERS.map((s): GlowSpot => ({ p: [s[0], 6, s[1]], r: 18, c: "#0dfcfd" })),
+  { p: [BOOTHS[0], 4, BOOTHS[1]], r: 20, c: "#f2ff0b" },
+  { p: [ISLAND.x, 16, ISLAND.z], r: 14, c: "#9ff6ff" },
+  { p: [DOME[0], 8, DOME[1]], r: 16, c: "#e0b4fc" },
+  { p: [(FOOD.x[0] + FOOD.x[1]) / 2, 4, (FOOD.z[0] + FOOD.z[1]) / 2], r: 18, c: "#fc9e3d" },
+];
+
+export function FunfairWest({ power, night, dusk = false, lite }: ZoneProps) {
   const kit = useMemo(makeWestKit, []);
   useEffect(() => () => disposeWestKit(kit), [kit]);
   const built = useMemo(() => buildStatic(lite), [lite]);
   useEffect(() => () => built.dispose(), [built]);
-  const bulbs = useMemo(() => bulbsMesh(built.bulbs.list, kit.light), [built, kit]);
+  const bulbs = useMemo(() => bulbsMesh(built.bulbs.list, kit.light, lite ? LITE_LIGHT_SCALE : 1), [built, kit, lite]);
   useEffect(
     () => () => {
       bulbs.geometry.dispose();
@@ -68,6 +80,10 @@ export function FunfairWest({ power, night, lite }: ZoneProps) {
     u.time.value = clock.elapsedTime;
     // flicker only while the power is changing (full mode)
     u.flick.value = !lite && p > 0 && p < 1 ? 1 : 0;
+    // phones at night: no point light or bloom there, so the powered rides and walks glow a little by themselves
+    const self = lite && night ? smooth(0.4, 1, p) : 0;
+    u.self.value = LITE_SELF_LIT * self;
+    kit.paving.emissiveIntensity = LITE_PAVING_LIT * self;
   });
 
   return (
@@ -82,7 +98,8 @@ export function FunfairWest({ power, night, lite }: ZoneProps) {
       <Spiders kit={kit} live={live} />
       <Ducks kit={kit} live={live} lite={lite} />
       <Lighthouse kit={kit} live={live} night={night} />
-      <PowerFx kit={kit} live={live} night={night} lite={lite} boards={built.boards} pools={built.pools} />
+      <PowerFx kit={kit} live={live} night={night} dusk={dusk} lite={lite} boards={built.boards} pools={built.pools} />
+      {lite && <LiteGlow spots={GLOW} power={() => live.current.p} strength={glowStrength(night, dusk)} />}
     </group>
   );
 }

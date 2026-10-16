@@ -4,7 +4,7 @@ import { useFrame } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, type RefObject } from "react";
 import * as THREE from "three";
 
-import { Bake, G, TAU, mat, type V3 } from "../central/kit";
+import { Bake, G, TAU, lightBake, mat, type V3 } from "../central/kit";
 import { LIGHTS, NEON, S, STEEL, bar, circlePts, tube, type WestKit } from "./kit";
 import { PLAZA_Y, WHEEL, WHEEL_R, WHEEL_ROT } from "./layout";
 import { STALL_COLORS, STALL_KINDS, disposeAll, frame, lamp, stall, tAt, umbrellaTable, bunting, type Live, type Parts } from "./parts";
@@ -145,7 +145,7 @@ export function bakeWheel(p: Parts) {
 /** The turning wheel (rims, spokes, hub, neon, bulbs) in its own frame: origin at the hub. */
 function wheelGeometry(lite: boolean) {
   const fr = new Bake();
-  const li = new Bake();
+  const li = lightBake(lite);
   const t0 = tAt(WHEEL[0], WHEEL[1]);
   // the eye opens: the wheel's lights run out from the hub to the rim
   const tr = (r: number) => t0 + 0.08 + 0.2 * (r / R);

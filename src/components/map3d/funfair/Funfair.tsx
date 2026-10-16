@@ -14,19 +14,20 @@ import { FunfairWest } from "./west";
 // zones on.
 
 export const Funfair = memo(
-  function Funfair({ power, night, lite }: { power: FunfairPower; night: boolean; lite: boolean }) {
+  function Funfair({ power, night, dusk, lite }: { power: FunfairPower; night: boolean; dusk: boolean; lite: boolean }) {
     const share = ((power.west > 0 ? 1 : 0) + (power.central > 0 ? 1 : 0) + (power.east > 0 ? 1 : 0)) / 3;
     return (
       <>
-        <FunfairWest power={power.west} night={night} lite={lite} />
-        <FunfairCentral power={power.central} night={night} lite={lite} />
-        <FunfairEast power={power.east} night={night} lite={lite} />
-        <FunfairGate power={share} night={night} lite={lite} />
+        <FunfairWest power={power.west} night={night} dusk={dusk} lite={lite} />
+        <FunfairCentral power={power.central} night={night} dusk={dusk} lite={lite} />
+        <FunfairEast power={power.east} night={night} dusk={dusk} lite={lite} />
+        <FunfairGate power={share} night={night} dusk={dusk} lite={lite} />
       </>
     );
   },
   (a, b) =>
     a.night === b.night &&
+    a.dusk === b.dusk &&
     a.lite === b.lite &&
     a.power.west === b.power.west &&
     a.power.central === b.power.central &&

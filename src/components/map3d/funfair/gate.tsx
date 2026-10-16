@@ -6,8 +6,9 @@ import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 
 import { UNITS_PER_M } from "../geo";
-import { Bake, mat, smooth, type V3 } from "./central/kit";
-import { usePowerRamp, VX, type ZoneProps } from "./common";
+import { Bake, lightBake, mat, smooth, type V3 } from "./central/kit";
+import { LITE_SELF_LIT, usePowerRamp, VX, type ZoneProps } from "./common";
+import { glowStrength, LiteGlow, type GlowSpot } from "./glow";
 import { NEON, S, STEEL, bar, disposeWestKit, makeWestKit, tube } from "./west/kit";
 
 // DRAFT: the VORTEXA neon gate (docs/map3d-funfair-design.md), shared by all
@@ -81,7 +82,7 @@ function holo(t: number) {
 
 function buildGate(lite: boolean) {
   const fr = new Bake();
-  const li = new Bake();
+  const li = lightBake(lite);
   let seed = 0;
   const bulb = (q: V3, r: number, c: THREE.ColorRepresentation, t: number) => {
     if (lite && seed % 2) {
@@ -203,7 +204,10 @@ function buildGate(lite: boolean) {
 const GLOW = new THREE.Color("#fff27a");
 const POOL = new THREE.Color("#ff9ad8");
 
-export function FunfairGate({ power, night, lite }: ZoneProps) {
+/** A halo over the arch for phones at night (glow.tsx), in the gate's own metres. */
+const GATE_GLOW: GlowSpot[] = [{ p: [0, 9, 0], r: 16, c: "#f2ff0b" }];
+
+export function FunfairGate({ power, night, dusk = false, lite }: ZoneProps) {
   const kit = useMemo(makeWestKit, []);
   const glowMat = useMemo(
     () =>
@@ -243,6 +247,7 @@ export function FunfairGate({ power, night, lite }: ZoneProps) {
     u.on.value = (night ? 2.7 : 1.35) * (1 + 0.45 * finale);
     u.time.value = clock.elapsedTime;
     u.flick.value = !lite && p !== power ? 1 : 0;
+    u.self.value = lite && night ? LITE_SELF_LIT * smooth(0.2, 1, p) : 0;
     const col = geo.fx.attributes.color as THREE.BufferAttribute;
     const g = finale * (night ? 0.75 : 0.26);
     const pl = p * (night ? 0.42 : 0.08) * (0.8 + 0.2 * finale);
@@ -263,6 +268,7 @@ export function FunfairGate({ power, night, lite }: ZoneProps) {
       <mesh geometry={geo.frame} material={kit.frame} castShadow receiveShadow />
       <mesh geometry={geo.light} material={kit.light} />
       <mesh geometry={geo.fx} material={glowMat} renderOrder={3} />
+      {lite && <LiteGlow spots={GATE_GLOW} power={() => ramp.current} strength={glowStrength(night, dusk)} />}
     </group>
   );
 }

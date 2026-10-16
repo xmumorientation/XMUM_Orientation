@@ -125,20 +125,25 @@ export function makeEastKit() {
     flick: { value: 0 } as Uniform<number>,
     /** Bulbs chase (a running dim wave). */
     chase: { value: 1 } as Uniform<number>,
+    /** Powered paint's own glow at night in lite (LITE_SELF_LIT). */
+    self: { value: 0 } as Uniform<number>,
   };
 
   // Painted wood, canvas and steel: matte, so the stripes stay bright by day.
   const frame = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.62, metalness: 0.04 });
   frame.onBeforeCompile = (s) => {
     s.uniforms.uFade = u.fade;
+    s.uniforms.uSelf = u.self;
     s.fragmentShader =
-      "uniform float uFade;\n" +
-      s.fragmentShader.replace(
-        "#include <color_fragment>",
-        `#include <color_fragment>
+      "uniform float uFade, uSelf;\n" +
+      s.fragmentShader
+        .replace(
+          "#include <color_fragment>",
+          `#include <color_fragment>
         float fadeL = dot(diffuseColor.rgb, vec3(0.299, 0.587, 0.114));
         diffuseColor.rgb = mix(diffuseColor.rgb, vec3(fadeL) * vec3(0.93, 0.93, 0.98) + 0.02, uFade * 0.7) * (1.0 - 0.08 * uFade);`,
-      );
+        )
+        .replace("#include <emissivemap_fragment>", "#include <emissivemap_fragment>\n        totalEmissiveRadiance += diffuseColor.rgb * uSelf;");
   };
   frame.customProgramCacheKey = () => "fz-east-frame";
 
@@ -151,6 +156,9 @@ export function makeEastKit() {
     polygonOffset: true,
     polygonOffsetFactor: -1,
     polygonOffsetUnits: -2,
+    // lit walkways at night in lite (emissiveIntensity set each frame)
+    emissive: "#fff0d8",
+    emissiveIntensity: 0,
   });
 
   const light = lightMaterial(u, "fz-east-light");

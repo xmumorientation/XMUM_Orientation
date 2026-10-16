@@ -5,11 +5,12 @@ import { useEffect, useMemo, useRef } from "react";
 
 import { UNITS_PER_M } from "../geo";
 import { smooth } from "./central/kit";
-import { usePowerRamp, type ZoneProps } from "./common";
+import { dormPlace, LITE_LIGHT_SCALE, LITE_PAVING_LIT, LITE_SELF_LIT, usePowerRamp, type ZoneProps } from "./common";
+import { glowStrength, LiteGlow, type GlowSpot } from "./glow";
 import { buildStatic } from "./east/build";
 import { Coaster } from "./east/coaster";
 import { disposeEastKit, makeEastKit } from "./east/kit";
-import { ORIGIN } from "./east/layout";
+import { ARCADE, BIGTOP, FOOD, HAUNTED, HS, ORIGIN, SHIP, STATION, toLocal } from "./east/layout";
 import type { Live } from "./east/parts";
 import { PowerFx } from "./east/power";
 import { PirateShip } from "./east/ship";
@@ -37,12 +38,27 @@ import { bulbsMesh } from "./west/kit";
 // same meshes with about half the bulbs, stalls, tables and trees, a coarser
 // track, no flicker and no point light.
 
-export function FunfairEast({ power, night, lite }: ZoneProps) {
+/** The coaster's loop stands over D5 (coaster.tsx). */
+const LOOP = toLocal(dormPlace("D5").pos);
+
+/** Halos for phones at night (glow.tsx): the Big Top, the coaster's loop and station, each ride, the food court. */
+const GLOW: GlowSpot[] = [
+  { p: [BIGTOP[0], 14, BIGTOP[1]], r: 34, c: "#ffd23f" },
+  { p: [LOOP[0], 11, LOOP[1]], r: 20, c: "#f2ff0b" },
+  { p: [STATION.x, 6, (STATION.z[0] + STATION.z[1]) / 2], r: 16, c: "#ff5a5a" },
+  { p: [SHIP[0], 10, SHIP[1]], r: 16, c: "#fc9e3d" },
+  { p: [HAUNTED[0], 8, HAUNTED[1]], r: 14, c: "#9dff7a" },
+  { p: [ARCADE[0], 5, ARCADE[1]], r: 16, c: "#fe06ab" },
+  { p: [HS[0], 10, HS[1]], r: 12, c: "#e0b4fc" },
+  { p: [(FOOD.x[0] + FOOD.x[1]) / 2, 4, (FOOD.z[0] + FOOD.z[1]) / 2], r: 18, c: "#fc9e3d" },
+];
+
+export function FunfairEast({ power, night, dusk = false, lite }: ZoneProps) {
   const kit = useMemo(makeEastKit, []);
   useEffect(() => () => disposeEastKit(kit), [kit]);
   const built = useMemo(() => buildStatic(lite), [lite]);
   useEffect(() => () => built.dispose(), [built]);
-  const bulbs = useMemo(() => bulbsMesh(built.bulbs.list, kit.light), [built, kit]);
+  const bulbs = useMemo(() => bulbsMesh(built.bulbs.list, kit.light, lite ? LITE_LIGHT_SCALE : 1), [built, kit, lite]);
   useEffect(
     () => () => {
       bulbs.geometry.dispose();
@@ -69,6 +85,10 @@ export function FunfairEast({ power, night, lite }: ZoneProps) {
     u.time.value = clock.elapsedTime;
     // flicker only while the power is changing (full mode)
     u.flick.value = !lite && p > 0 && p < 1 ? 1 : 0;
+    // phones at night: no point light or bloom there, so the powered rides and walks glow a little by themselves
+    const self = lite && night ? smooth(0.4, 1, p) : 0;
+    u.self.value = LITE_SELF_LIT * self;
+    kit.paving.emissiveIntensity = LITE_PAVING_LIT * self;
   });
 
   return (
@@ -79,7 +99,8 @@ export function FunfairEast({ power, night, lite }: ZoneProps) {
       <primitive object={bulbs} />
       <Coaster kit={kit} live={live} lite={lite} />
       <PirateShip kit={kit} live={live} lite={lite} />
-      <PowerFx kit={kit} live={live} night={night} lite={lite} boards={built.boards} pools={built.pools} />
+      <PowerFx kit={kit} live={live} night={night} dusk={dusk} lite={lite} boards={built.boards} pools={built.pools} />
+      {lite && <LiteGlow spots={GLOW} power={() => live.current.p} strength={glowStrength(night, dusk)} />}
     </group>
   );
 }

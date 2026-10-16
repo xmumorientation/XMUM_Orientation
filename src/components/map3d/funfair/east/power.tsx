@@ -10,6 +10,7 @@ import { groundY } from "./ground";
 import type { EastKit } from "./kit";
 import { HUB, POWER_BOX } from "./layout";
 import { disposeAll, type Board, type Live, type Pool } from "./parts";
+import { DUSK_SHARE } from "../glow";
 
 // DRAFT: the East zone's power look that isn't baked (West's, in yellow): the
 // power box's red standby light and its sparks, the CLOSED/OPEN boards, the
@@ -66,7 +67,24 @@ function boardGeometry(boards: Board[]) {
   return out;
 }
 
-export function PowerFx({ kit, live, night, lite, boards, pools }: { kit: EastKit; live: RefObject<Live>; night: boolean; lite: boolean; boards: Board[]; pools: Pool[] }) {
+export function PowerFx({
+  kit,
+  live,
+  night,
+  dusk = false,
+  lite,
+  boards,
+  pools,
+}: {
+  kit: EastKit;
+  live: RefObject<Live>;
+  night: boolean;
+  /** Sunset: phones show the light pools at part of their night strength. */
+  dusk?: boolean;
+  lite: boolean;
+  boards: Board[];
+  pools: Pool[];
+}) {
   const light = useRef<THREE.PointLight>(null);
   const halo = useRef<THREE.Sprite>(null);
   const prev = useRef(live.current?.p ?? 0);
@@ -78,7 +96,9 @@ export function PowerFx({ kit, live, night, lite, boards, pools }: { kit: EastKi
     const plane = new THREE.PlaneGeometry(2, 2).rotateX(-Math.PI / 2);
     const poolMesh = new THREE.InstancedMesh(plane, kit.pool, Math.max(1, pools.length));
     pools.forEach((pl, i) => {
-      poolMesh.setMatrixAt(i, mat(pl.x, groundY(pl.x, pl.z) + 0.15, pl.z, pl.r, 1, pl.r));
+      // bigger on phones, where they stand in for the point light and bloom
+      const r = pl.r * (lite ? 1.4 : 1);
+      poolMesh.setMatrixAt(i, mat(pl.x, groundY(pl.x, pl.z) + 0.15, pl.z, r, 1, r));
       poolMesh.setColorAt(i, _c.set(pl.c));
     });
     poolMesh.count = pools.length;
@@ -89,7 +109,7 @@ export function PowerFx({ kit, live, night, lite, boards, pools }: { kit: EastKi
     spark.visible = false;
     const standbyGeo = new THREE.IcosahedronGeometry(0.2, 1);
     return { tex, boardMat, board, poolMesh, plane, spark, standbyGeo, rand: rng(13) };
-  }, [kit, boards, pools]);
+  }, [kit, boards, pools, lite]);
   useEffect(
     () => () => {
       disposeAll([parts.tex, parts.boardMat, parts.board, parts.plane, parts.standbyGeo]);
@@ -131,7 +151,7 @@ export function PowerFx({ kit, live, night, lite, boards, pools }: { kit: EastKi
     parts.boardMat.emissiveIntensity = open ? (night ? 0.9 : 0.25) : night ? 0.12 : 0;
     // light pools follow the bulbs: soft by day, strong at night
     const glow = smooth(0.3, 0.85, p);
-    kit.pool.opacity = glow * (night ? 0.55 : 0.1);
+    kit.pool.opacity = glow * (night ? (lite ? 0.85 : 0.55) : lite && dusk ? 0.1 + 0.75 * DUSK_SHARE : 0.1);
     parts.poolMesh.visible = glow > 0.01;
     if (light.current) light.current.intensity = night ? glow * 16 : 0;
   });

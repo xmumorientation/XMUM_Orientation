@@ -14,8 +14,11 @@ import { DORMS_M } from "./dorms";
 
 export type ZoneKey = "west" | "central" | "east";
 
-/** Props every zone component takes. `power` is the target (0 off, 1 on); animate towards it with usePowerRamp. */
-export type ZoneProps = { power: number; night: boolean; lite: boolean };
+/**
+ * Props every zone component takes. `power` is the target (0 off, 1 on); animate towards it with usePowerRamp.
+ * `dusk` is the sunset look (phones then show a weaker version of their night halos and light pools).
+ */
+export type ZoneProps = { power: number; night: boolean; lite: boolean; dusk?: boolean };
 
 /** Which dorm footprints each zone covers (design doc, "Zones and rides"). */
 export const ZONE_DORMS: Record<ZoneKey, string[]> = {
@@ -23,6 +26,17 @@ export const ZONE_DORMS: Record<ZoneKey, string[]> = {
   central: ["LY4", "LY5", "LY8", "LY9"],
   east: ["D1", "D2", "D3", "D4", "D5", "Canteen D6"],
 };
+
+/**
+ * Phones (lite) draw the funfair without bloom or point lights, so at night a powered zone would hardly stand out
+ * from map distances. Lite makes the lights bigger (bulbs and neon tubes, this factor; lite also has fewer bulbs),
+ * lets the powered rides glow a little by themselves (LITE_SELF_LIT), and adds soft halos (glow.tsx).
+ */
+export const LITE_LIGHT_SCALE = 1.6;
+/** How brightly powered paint glows by itself at night in lite (no point lights there). */
+export const LITE_SELF_LIT = 0.35;
+/** How brightly the paving glows at night in lite once a zone is on (lit walkways). */
+export const LITE_PAVING_LIT = 0.14;
 
 /** The website palette (src/components/home/vortexa.css). */
 export const VX = {

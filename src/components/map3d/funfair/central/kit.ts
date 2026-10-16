@@ -1,6 +1,6 @@
 import * as THREE from "three";
 
-import { VX } from "../common";
+import { LITE_LIGHT_SCALE, VX } from "../common";
 
 // DRAFT: the shared kit of the Central zone (style C, "toy low-poly").
 // Everything is modelled in metres: x north, y up, z east (the zone group is
@@ -155,6 +155,8 @@ export class Bake {
   nor: number[] = [];
   col: number[] = [];
   ts: number[] = [];
+  /** Thickness factor for bars and tubes (`seg`, west/kit's `tube` and `bar`): lights are drawn thicker in lite. */
+  widen = 1;
 
   add(g: THREE.BufferGeometry, m: THREE.Matrix4, color: THREE.ColorRepresentation, t = 0, seed = 0) {
     const p = g.attributes.position;
@@ -191,7 +193,7 @@ export class Bake {
 
   /** A bar (box or cylinder) from a to b. */
   seg(c: THREE.ColorRepresentation, a: V3, b: V3, w: number, g = G.box, t = 0, seed = 0) {
-    return this.add(g, segMat(a, b, w), c, t, seed);
+    return this.add(g, segMat(a, b, w * this.widen), c, t, seed);
   }
 
   /** One flat triangle (both faces when `both`). */
@@ -264,6 +266,13 @@ export class Bake {
   }
 }
 
+/** A Bake for lights (neon tubes and bars): thicker in lite, so they read from map distances on phones. */
+export function lightBake(lite: boolean) {
+  const b = new Bake();
+  b.widen = lite ? LITE_LIGHT_SCALE : 1;
+  return b;
+}
+
 /** One base geometry, white vertex colours (for instancing with per-instance colour). */
 export function white(g: THREE.BufferGeometry, m = new THREE.Matrix4()) {
   return new Bake().add(g, m, "#ffffff").geometry();
@@ -296,7 +305,8 @@ export class Bulbs {
       this.add([cx + Math.cos(a) * rad, y, cz + Math.sin(a) * rz], r, colors[i % colors.length], t0 + ((t1 - t0) * i) / n);
     }
   }
-  mesh(material: THREE.Material) {
+  /** The instanced bulbs; `scale` sizes them all (bigger in lite, where there are fewer). */
+  mesh(material: THREE.Material, scale = 1) {
     const n = this.list.length;
     const mesh = new THREE.InstancedMesh(white(G.ico), material, Math.max(n, 1));
     mesh.count = n;
@@ -304,7 +314,8 @@ export class Bulbs {
     const c = new THREE.Color();
     const m = new THREE.Matrix4();
     this.list.forEach((b, i) => {
-      mesh.setMatrixAt(i, mat(b.p[0], b.p[1], b.p[2], b.r, b.r, b.r, i * 0.7, i * 0.3, 0, m));
+      const r = b.r * scale;
+      mesh.setMatrixAt(i, mat(b.p[0], b.p[1], b.p[2], r, r, r, i * 0.7, i * 0.3, 0, m));
       mesh.setColorAt(i, c.set(b.c));
       ts[i * 2] = b.t;
       ts[i * 2 + 1] = b.seed;
@@ -344,17 +355,22 @@ export function makeKit() {
     flick: { value: 1 } as Uniform<number>,
     chase: { value: 1 } as Uniform<number>,
     noChase: { value: 0 } as Uniform<number>,
+    /** Powered paint's own glow at night in lite (LITE_SELF_LIT). */
+    self: { value: 0 } as Uniform<number>,
   };
 
   const paint = new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.78, metalness: 0 });
   paint.onBeforeCompile = (s) => {
     s.uniforms.uFade = u.fade;
-    s.fragmentShader = "uniform float uFade;\n" + s.fragmentShader.replace(
-      "#include <color_fragment>",
-      `#include <color_fragment>
+    s.uniforms.uSelf = u.self;
+    s.fragmentShader = "uniform float uFade, uSelf;\n" + s.fragmentShader
+      .replace(
+        "#include <color_fragment>",
+        `#include <color_fragment>
       float fadeL = dot(diffuseColor.rgb, vec3(0.299, 0.587, 0.114));
       diffuseColor.rgb = mix(diffuseColor.rgb, vec3(fadeL) * vec3(0.78, 0.76, 0.84) + vec3(0.03), uFade * 0.82) * (1.0 - 0.28 * uFade);`,
-    );
+      )
+      .replace("#include <emissivemap_fragment>", "#include <emissivemap_fragment>\n      totalEmissiveRadiance += diffuseColor.rgb * uSelf;");
   };
   paint.customProgramCacheKey = () => "fz-central-paint";
 
@@ -367,6 +383,9 @@ export function makeKit() {
     polygonOffset: true,
     polygonOffsetFactor: -1,
     polygonOffsetUnits: -2,
+    // lit walkways at night in lite (emissiveIntensity set each frame)
+    emissive: "#fff0d8",
+    emissiveIntensity: 0,
   });
 
   const light = (chase: Uniform<number>, key: string) => {
