@@ -48,7 +48,7 @@ Ben's batches map to the plan's steps as follows.
   | F2 | West zone (style A, brightened for day): LY3 Vortexa Eye with food stalls, LY1 carousel, LY2 game booths with the duck shoot, LY6 and LY7 spider rides; the shared VORTEXA gate **Done.** `funfair/west.tsx` and `funfair/west/` (origin world (35.2, -38.2)), `funfair/gate.tsx` (world (20, -11.5); `power` = share of zones on: pillars at 1/3, letters at 2/3, arch at 1). Extras beyond the brief: a lagoon with a lighthouse and duck boats, a palm grove with a neon dome, a food court. Dev page `/map3d/fz-west` (`?gate=0..1\|off`, `?west=0`). Desktop: West +34 draw calls / +160k triangles, gate +5 / +7k; lite West +23 / +83k. |
   | F3 | East zone (style B): Canteen D6 Big Top, D4/D5 roller coaster, D2 haunted house, D3 pirate ship, D1 arcade | **Done.** `funfair/east.tsx` and `funfair/east/` (origin world (29, 18); `onLawn()` in `east/layout.ts`). The pirate ship moved 14 m north and the arcade 21 m north to stay on the lawn. Extras: a helter-skelter, a food court, circus wagons. A walk starts where Central's promenade ends. Dev page `/map3d/fz-east`. Desktop +15 draw calls / +127k triangles; lite +12 / +56k. |
   | F4 | Integration into the map | **Done** (see "In the map" below) |
-  | F5 | Admin control: `funfair_zones` migration file (not applied) and a "Funfair" card in the game console (Admin and HOGM) | Next |
+  | F5 | Admin control | **Done; migration 0088 not applied** (see "Admin control" below) |
 
 - **The land** (Ben, 2026-10-16): the brown field is gone. The whole dorm land is lawn like the lake park (`FUNFAIR_LAND` in `geo.ts`), reaching west to LY1 and LY6, and the zones may use all of it, not just the old field. Zones have no lawn plate of their own: they add paths and raised plazas on the campus lawn (Central dropped its plate).
 - **Depth precision:** `DepthRange` in `CampusScene` moves the camera's near plane out with its distance to the target (2.5%, 1 to 10). Thin layers (paths 0.12 m over the lawn, plaza rims) are then safe on phones at map distances. Still keep stacked flat layers at least 0.08 m apart.
@@ -75,9 +75,22 @@ Ben's batches map to the plan's steps as follows.
     - Central: `cam=72,42,28,32,0,-11.5`.
     - East: `cam=68,46,52,29,0,16`.
   - Cost: the whole map on desktop is 828 draw calls and about 901k triangles (shadow pass included). The funfair adds roughly +85 calls / +410k triangles on desktop, and +60 / +200k in lite (from the zone builds). On slow phones the frame-rate probe steps down to lite, then to the 2D map.
-  - Not done:
-    - A painted link path from West's Gate Walk to the gate. The orange strip along the park already joins them.
-    - Admin's control (F5).
+  - Not done: a painted link path from West's Gate Walk to the gate (the orange strip along the park already joins them).
+- **Admin control (F5, 2026-10-16):**
+  - **Migration** `supabase/migrations/0088_funfair_zones.sql`, written but **not applied**; Ben's team applies it.
+    - `funfair_zones`: one row per zone with its keys (`required`), `rule` (any/all) and `manual` override. It is seeded with the default keys, and only `is_game_lead()` can read it, since the keys would give away where the unlit bulbs are.
+    - `fn_funfair_state()`: zone and on/off, for everyone signed in.
+    - `fn_set_funfair_zone()`: game leads only.
+    - Realtime is on for the table.
+  - **Map side:**
+    - `src/lib/funfair.ts` holds the shared types, the defaults and `funfairMissing()`. It has no 3D code.
+    - `useCampusMapData({ loadFunfair })` (3D view only) asks `fn_funfair_state` on load, whenever the lit bulbs change, and every 30 s. If 0088 is missing it stops after the first 404 and uses `funfairFromBulbs()` with the default keys. The result is `data.funfair`; the dev preview's mock fills it from the default keys.
+  - **The cards:** `useFunfairZones()` (`src/components/useFunfairZones.ts`) loads and saves for both.
+    - Admin → Live control: `components/admin/FunfairZones.tsx`.
+    - HOGM → Game control, new Funfair tab: `components/staff/game/FunfairSection.tsx`.
+    - Each card has keys B1/A3/TF, any/all (when there are two or more keys), override Auto/On/Off, and Preview.
+  - **Preview:** `?funfair_preview=west|central|east` on any map opens full screen, flies to the zone and plays its power-up on that screen only.
+  - **Not seen running:** the two cards need a login and 0088, so they are typechecked only. The preview was checked on `/map3d/preview`.
 
 ### Lightbulbs in 3D (Ben, 2026-10-15)
 
