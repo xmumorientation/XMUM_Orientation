@@ -1,6 +1,6 @@
 # 3D map: replacing the 2D Figma map (plan, 2026-10-15)
 
-Branch: `map-3d-draft` (Ben: stay on this branch). In progress: see "Progress" at the end.
+Branches: `map-3d-draft` (steps 1–3, merged), `map3d-batch4` (steps 4–5, merged), `map3d-batch5` (step 6). See "Progress" at the end.
 
 ## Goal
 
@@ -127,3 +127,4 @@ Related components to check:
   - Admin tools: station add/edit already worked in 3D (building tap → `BuildingStationPanel`). Accuracy check in 3D (`measureCheck` in the hook): the slab takes taps, the map shows "You", other Admins and the tapped spot, and the card reports the averaged GPS fix's distance from the tap in metres. Nothing is written; the anchors list is labelled "2D map only". The preview has `?check=1` with a mock fix.
   - Badge centring on phones: a finger tap often moves 8–15 px, and phones still send the click, but the scene threw away anything over 8 px, so some badge taps only nudged the map. `isTap()` in `markers.tsx` allows 16 px for touch (8 px for the mouse). `CameraRig` also plays out the controls' damping before a flight. Checked on a 390x844 touch emulation with a clean tap and a 12 px tap: both centre on the building.
   - Not checked: the real pages behind login (the preview covers the same components with mock data), and a real phone.
+- 2026-10-16, step 6 (Ben's batch 5) on branch `map3d-batch5`: review fixes (2D fallback when the renderer can't be made, roof taps in the accuracy check, Auto no longer moves the camera, 2D accuracy texts, the credit link), phone speed (on-demand drawing, no shadows in lite, a frame rate probe that steps down to lite and then to 2D), WebGL2-only check, the accuracy reading log, and trees kept off A5's entrance. Details and what is left: `map3d-session-handoff.md`, "Batch 5".

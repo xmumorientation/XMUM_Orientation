@@ -116,6 +116,8 @@ export function MapToolbar({
           onDelete={data.deleteAnchor}
           onClose={() => data.setCheckMode(false)}
           measure={view === "3d"}
+          log={data.checkLog.log}
+          onClearLog={data.checkLog.clear}
         />
       )}
       {movingTitle && (

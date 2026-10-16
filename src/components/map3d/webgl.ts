@@ -3,12 +3,15 @@
 
 let webglCache: boolean | null = null;
 
-/** True when a WebGL context can be created (the 2D map is the fallback otherwise). */
+/**
+ * True when a WebGL2 context can be created (the 2D map is the fallback otherwise). three.js needs WebGL2:
+ * WebGL1-only devices (iOS before 15, older Android) would get a blank map.
+ */
 export function canUseWebGL(): boolean {
   if (webglCache !== null) return webglCache;
   try {
     const canvas = document.createElement("canvas");
-    const gl = canvas.getContext("webgl2") ?? canvas.getContext("webgl");
+    const gl = canvas.getContext("webgl2");
     webglCache = !!gl;
     (gl?.getExtension("WEBGL_lose_context") as { loseContext(): void } | null)?.loseContext();
   } catch {

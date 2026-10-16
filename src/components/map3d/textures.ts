@@ -1,3 +1,4 @@
+import { invalidate } from "@react-three/fiber";
 import * as THREE from "three";
 
 // DRAFT: textures drawn on canvases at runtime, so the scene needs no image
@@ -267,6 +268,8 @@ export function makeXmumFlag() {
     const s = H * 0.85;
     ctx.drawImage(img, (W - s) / 2, (H - s) / 2, s, s);
     t.needsUpdate = true;
+    // Scenes that draw on demand would not show it until the camera moves.
+    invalidate();
   };
   img.src = "/xmum-logo-badge.png";
   return t;

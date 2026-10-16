@@ -21,6 +21,7 @@ import {
   pinArt,
   stationArt,
   tagArt,
+  youArt,
   type Flight,
   type FlightPlan,
   type GroundCircle,
@@ -112,7 +113,7 @@ type StationMark = Mark & { station: Station; big: boolean };
 type BadgeMark = Mark & { area: string; stations: Station[]; big: boolean };
 type PinMark = Mark & { groupId: number; color: string; big: boolean; dashed: boolean; manual: boolean };
 /** A name tag on the map during Admin's accuracy check: "You", another Admin, the tapped spot. */
-type TagMark = { key: string; text: string; at: Vec3 };
+type TagMark = { key: string; text: string; at: Vec3; dot?: boolean };
 
 type Taps = {
   station: (s: Station) => void;
@@ -151,10 +152,7 @@ function SplitWatch({ enabled, onChange }: { enabled: boolean; onChange: (key: s
   return null;
 }
 
-/**
- * Accuracy check: the whole slab takes taps (buildings included, at the ground under the tap), so Admin can tap
- * where they really are.
- */
+/** Accuracy check: the open ground takes taps, so Admin can tap where they really are. */
 function GroundTap({ taps }: { taps: Taps }) {
   return (
     <mesh
@@ -198,20 +196,22 @@ function SceneMarks({
   return (
     <>
       <GroundMarks circles={circles} outlines={outlines} lite={lite} />
-      {checking ? (
-        <GroundTap taps={taps} />
-      ) : (
-        AREA_PLACES.map((p) => (
-          <HitArea
-            key={p.area}
-            place={p}
-            height={p.height}
-            onTap={(e) => {
-              if (taps.building(p.area)) taps.used(e);
-            }}
-          />
-        ))
-      )}
+      {checking && <GroundTap taps={taps} />}
+      {AREA_PLACES.map((p) => (
+        <HitArea
+          key={p.area}
+          place={p}
+          height={p.height}
+          onTap={(e) => {
+            if (checking) {
+              // A tap on a roof or wall means "in this building": the spot under the hit, not the ground the ray
+              // would reach behind it.
+              taps.used(e);
+              taps.ground(e.point.x, e.point.z);
+            } else if (taps.building(p.area)) taps.used(e);
+          }}
+        />
+      ))}
       <CameraRig flight={flight} />
       <SplitWatch enabled={splitEnabled} onChange={onSplit} />
     </>
@@ -242,8 +242,13 @@ function SceneMarkers({
     <>
       <DormTags />
       {tags.map((t) => (
-        <Marker key={`tag-${t.key}`} position={t.at} art={tagArt(t.text)} dy={16} order={9} size={size} />
+        <Marker key={`tag-${t.key}`} position={t.at} art={tagArt(t.text)} dy={t.dot ? 24 : 16} order={9} size={size} />
       ))}
+      {tags
+        .filter((t) => t.dot)
+        .map((t) => (
+          <Marker key={`dot-${t.key}`} position={t.at} art={youArt()} order={9} size={size} />
+        ))}
       {badges.map((b) => {
         const status = clusterStatus(b.stations);
         const open = b.stations.filter((s) => s.status === "available").length;
@@ -311,6 +316,8 @@ export type CampusMap3DViewProps = CampusMapViewProps & {
   intro?: boolean;
   /** Start view (and the view Reset goes back to). Defaults to the campus fitted to the card. */
   camera?: CameraView;
+  /** The 3D map can't be used on this device (no renderer, or too slow): show the 2D map. */
+  onFail?: () => void;
 };
 
 export function CampusMap3DView({
@@ -326,6 +333,7 @@ export function CampusMap3DView({
   lite,
   intro = true,
   camera,
+  onFail,
 }: CampusMap3DViewProps) {
   const {
     mapStations,
@@ -404,10 +412,12 @@ export function CampusMap3DView({
     setFlight({ ...plan, id: ++flights.current });
   }
 
-  // Full screen has another shape than the card: frame the campus for it (or the given start view).
+  // Full screen has another shape than the card: frame the campus for it (or the given start view). Only when
+  // full screen opens: the light switch also updates `env` (Auto rereads the clock) and must not move the camera.
+  const envReady = env !== null;
   const fullView = useMemo(
-    () => (fullscreen && env ? (camera ?? fitCamera(window.innerWidth / window.innerHeight)) : null),
-    [fullscreen, env, camera],
+    () => (fullscreen && envReady ? (camera ?? fitCamera(window.innerWidth / window.innerHeight)) : null),
+    [fullscreen, envReady, camera],
   );
   useEffect(() => {
     if (fullView) setFlight({ kind: "to", ...fullView, id: ++flights.current });
@@ -492,7 +502,7 @@ export function CampusMap3DView({
     }
     if (check.live) {
       const [x, z] = clampToSlab(gpsToWorld(check.live.lat, check.live.lng));
-      tags.push({ key: "you", text: "You", at: [x, 0.4, z] });
+      tags.push({ key: "you", text: "You", at: [x, 0.4, z], dot: true });
       circles.push({ x, z, r: Math.max(0.5, check.live.acc * UNITS_PER_M), color: "#0284c7", dashed: false });
     }
     if (checkTap) {
@@ -583,12 +593,13 @@ export function CampusMap3DView({
       return list.length === 1 || (list.length >= 2 && !split.has(area));
     },
     group: (id) => data.setSelectedGroup((current) => (current === id ? null : id)),
-    // The averaged GPS fix's distance from the tapped spot, in metres (true scale: no warp to undo).
+    // The averaged GPS fix's offset from the tapped spot, in metres (true scale: no warp to undo; +X is north,
+    // +Z east).
     ground: (x, z) => {
       setCheckTap([x, z]);
       data.measureCheck((lat, lng) => {
         const [gx, gz] = gpsToWorld(lat, lng);
-        return Math.hypot(gx - x, gz - z) / UNITS_PER_M;
+        return { east: (gz - z) / UNITS_PER_M, north: (gx - x) / UNITS_PER_M };
       });
     },
   };
@@ -647,7 +658,8 @@ export function CampusMap3DView({
           onClick={(e) => {
             // Clicks in the scene arrive here too (it is this element's child in React, wherever it is shown).
             if (fullscreen) return;
-            if ((e.target as Element).closest("button, [data-map-hit]")) return;
+            // Buttons, and the map data credit's link.
+            if ((e.target as Element).closest("button, a, [data-map-hit]")) return;
             if (e.nativeEvent.timeStamp === usedAt.current) return;
             openFullscreen();
           }}
@@ -675,6 +687,7 @@ export function CampusMap3DView({
                 labels={showNames}
                 controlsRef={controls}
                 interactive={fullscreen}
+                onFail={onFail}
                 overlay={
                   <SceneMarkers
                     stations={stationMarks}

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import { useAccuracyCheck } from "@/components/AccuracyCheck";
+import { readingText, useAccuracyCheck, useCheckLog } from "@/components/AccuracyCheck";
 import { bulbTitle } from "@/components/LightbulbList";
 import { useProfile } from "@/components/ProfileProvider";
 import { supabaseBrowser } from "@/lib/supabase/client";
@@ -164,6 +164,7 @@ export function useCampusMapData({
   const [checkNotice, setCheckNotice] = useState<string | null>(null);
   const [checkError, setCheckError] = useState<string | null>(null);
   const check = useAccuracyCheck(checkMode && canManageStations);
+  const checkLog = useCheckLog();
   const [bulbError, setBulbError] = useState<string | null>(null);
   // Lit bulbs the viewer has already seen in Lightbulbs mode; more lit than
   // this makes the Lightbulbs tab pulse.
@@ -248,22 +249,23 @@ export function useCampusMapData({
     setCheckError(null);
     const replaced = (data as { replaced?: number } | null)?.replaced ?? 0;
     setCheckNotice(
-      `Saved (±${Math.round(fix.accuracy)} m, ${fix.fixes} fixes)${replaced ? `, replaced ${replaced} nearby` : ""}. Every map now uses it.`,
+      `Saved (±${Math.round(fix.accuracy)} m, ${fix.fixes} fixes)${replaced ? `, replaced ${replaced} nearby` : ""}. The 2D map now uses it.`,
     );
     await loadAnchors();
   }
 
   async function deleteAnchor(id: number) {
-    if (!window.confirm("Delete this correction? Every map stops using it.")) return;
+    if (!window.confirm("Delete this correction? The 2D map stops using it.")) return;
     const { error } = await supabase.rpc("fn_admin_delete_map_anchor", { p_id: id });
     setCheckError(error ? friendlyError(error) : null);
     setCheckNotice(error ? null : "Correction deleted.");
     await loadAnchors();
   }
 
-  // 3D map: Admin taps where they really are, and sees how far the averaged GPS fix is from that spot.
-  // `metresTo` measures from the tapped spot to a GPS point. Nothing is saved (anchors only bend the 2D map).
-  function measureCheck(metresTo: (lat: number, lng: number) => number) {
+  // 3D map: Admin taps where they really are, and sees how far (and which way) the averaged GPS fix is from that
+  // spot. `offsetTo` gives a GPS point's offset from the tapped spot in metres. The reading is logged on this
+  // device only (anchors only bend the 2D map).
+  function measureCheck(offsetTo: (lat: number, lng: number) => { east: number; north: number }) {
     setCheckNotice(null);
     const fix = check.averaged();
     if (!fix) {
@@ -271,8 +273,10 @@ export function useCampusMapData({
       return;
     }
     setCheckError(null);
+    const offset = offsetTo(fix.lat, fix.lng);
+    checkLog.add({ t: Date.now(), ...offset, acc: fix.accuracy, fixes: fix.fixes });
     setCheckNotice(
-      `Your GPS is ${Math.round(metresTo(fix.lat, fix.lng))} m from where you tapped (±${Math.round(fix.accuracy)} m, ${fix.fixes} fixes).`,
+      `Your GPS reads ${readingText(offset)} of where you tapped (±${Math.round(fix.accuracy)} m, ${fix.fixes} fixes).`,
     );
   }
 
@@ -525,6 +529,7 @@ export function useCampusMapData({
     anchors,
     placeAnchor,
     measureCheck,
+    checkLog,
     deleteAnchor,
   };
 }
