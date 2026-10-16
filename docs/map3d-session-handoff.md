@@ -47,7 +47,8 @@ Ben's batches map to the plan's steps as follows.
   | F1 | Central zone (style C): LY4 teacups, LY5 bumper cars, LY8 swing ride, LY9 drop tower, the crossing with the Starlight pole and the power box, the north square (fountain, stalls, stage) | **Done.** Code: `funfair/central.tsx` and `funfair/central/`. Dev page `/map3d/fz-central` (`?power=0\|1`, `?flip=<ms>` powers up after a delay, `?stats=1`, `?zone=0`; add `?perf=0` for headless shots). Desktop cost: +28 draw calls, about +118k triangles (shadow pass included). |
   | F2 | West zone (style A, brightened for day): LY3 Vortexa Eye with food stalls, LY1 carousel, LY2 game booths with the duck shoot, LY6 and LY7 spider rides; the shared VORTEXA gate **Done.** `funfair/west.tsx` and `funfair/west/` (origin world (35.2, -38.2)), `funfair/gate.tsx` (world (20, -11.5); `power` = share of zones on: pillars at 1/3, letters at 2/3, arch at 1). Extras beyond the brief: a lagoon with a lighthouse and duck boats, a palm grove with a neon dome, a food court. Dev page `/map3d/fz-west` (`?gate=0..1\|off`, `?west=0`). Desktop: West +34 draw calls / +160k triangles, gate +5 / +7k; lite West +23 / +83k. |
   | F3 | East zone (style B): Canteen D6 Big Top, D4/D5 roller coaster, D2 haunted house, D3 pirate ship, D1 arcade | **Done.** `funfair/east.tsx` and `funfair/east/` (origin world (29, 18); `onLawn()` in `east/layout.ts`). The pirate ship moved 14 m north and the arcade 21 m north to stay on the lawn. Extras: a helter-skelter, a food court, circus wagons. A walk starts where Central's promenade ends. Dev page `/map3d/fz-east`. Desktop +15 draw calls / +127k triangles; lite +12 / +56k. |
-  | F4 | Integration (below) | Next |
+  | F4 | Integration into the map | **Done** (see "In the map" below) |
+  | F5 | Admin control: `funfair_zones` migration file (not applied) and a "Funfair" card in the game console (Admin and HOGM) | Next |
 
 - **The land** (Ben, 2026-10-16): the brown field is gone. The whole dorm land is lawn like the lake park (`FUNFAIR_LAND` in `geo.ts`), reaching west to LY1 and LY6, and the zones may use all of it, not just the old field. Zones have no lawn plate of their own: they add paths and raised plazas on the campus lawn (Central dropped its plate).
 - **Depth precision:** `DepthRange` in `CampusScene` moves the camera's near plane out with its distance to the target (2.5%, 1 to 10). Thin layers (paths 0.12 m over the lawn, plaza rims) are then safe on phones at map distances. Still keep stacked flat layers at least 0.08 m apart.
@@ -58,16 +59,25 @@ Ben's batches map to the plan's steps as follows.
   - All zones: bulb strings and pennants have no wire (they float up close); the bright neon cables at night (pink West, yellow East).
 - `usePowerRamp` (`common.ts`) asks for frames while it ramps, so a power-up plays to the end on a map that draws on demand (the card, lite mode). Rides only move on drawn frames.
 - Style benches from the first round (to be deleted once the funfair is wired in): `src/components/map3d/funfair-lab/` and `src/app/map3d/funfair-a|b|c`.
-- **F4, integration** (touches shared files: `CampusScene.tsx`, `ground.tsx`, `geo.ts`):
-  1. Render the three zones and the gate inside `CampusScene`.
-  2. Paths on the lawn linking the gate and the three zones (the brown field is already lawn).
-  3. Keep trees off the rides.
-  4. Add labels such as "LY3 · Vortexa Eye" and "Vortexa Funfair (game zone)".
-  5. Power each zone from the lightbulbs, with the default mapping in code: east ← B1, west ← A3, central ← TF. On `/map3d`, `?funfair=1,0,1` forces the states.
-  6. Decide the drawing policy: while any zone is on, full screen should draw every frame (rides move), also in lite; the card stays on demand.
-  7. Delete the lab and `fz-*` routes.
-  8. Run the checks, commit, and show Ben screenshots of the whole map.
-  9. The Admin mapping table (`funfair_zones`) and its UI need a migration. Write the file but **do not apply it** to the remote project.
+- **In the map (F4, 2026-10-16):**
+  - `funfair/Funfair.tsx`: `Funfair` renders the three zones and the gate. `CampusScene` takes `funfair` (each zone 0 or 1, default all off) and renders it.
+    - `ZONE_KEYS`: the default key for each zone (east ← B1, west ← A3, central ← TF).
+    - `funfairFromBulbs()` turns lit lightbulbs into zone power. `CampusMap3DView` feeds it `data.bulbs`, which every role gets for lit bulbs and which updates live, so a newly lit bulb plays the power-up.
+    - The gate gets the share of zones on.
+  - Labels:
+    - `funfair/labels.ts` has `RIDE_TAGS`, one per dorm with its ride ("LY3 · Vortexa Eye"). In the map view they are sprite tags shown when the camera is close, whether or not names are on (`RideTags` in `markers.tsx`, replacing `DormTags`).
+    - `FUNFAIR_LABEL` "Vortexa Funfair (game zone)" is shown with the place names.
+    - The dorm footprints are no longer drawn on the ground.
+  - Drawing: full screen draws every frame while any zone is on, also in lite (the rides turn). The card still draws on demand; a power-up there plays to the end and then stops.
+  - `/map3d` takes `?funfair=1,0,1` (west, central, east; default all on).
+  - The style benches and the `fz-*` dev pages are deleted. View a zone with `/map3d?cam=…&funfair=…&mode=…`.
+    - West: `cam=72,46,10,34,0,-30`.
+    - Central: `cam=72,42,28,32,0,-11.5`.
+    - East: `cam=68,46,52,29,0,16`.
+  - Cost: the whole map on desktop is 828 draw calls and about 901k triangles (shadow pass included). The funfair adds roughly +85 calls / +410k triangles on desktop, and +60 / +200k in lite (from the zone builds). On slow phones the frame-rate probe steps down to lite, then to the 2D map.
+  - Not done:
+    - A painted link path from West's Gate Walk to the gate. The orange strip along the park already joins them.
+    - Admin's control (F5).
 
 ### Lightbulbs in 3D (Ben, 2026-10-15)
 
