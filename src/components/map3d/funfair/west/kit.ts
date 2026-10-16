@@ -3,7 +3,7 @@ import * as THREE from "three";
 import { Bake, G, TAU, mat, segMat, type Bulbs, type V3 } from "../central/kit";
 import { VX } from "../common";
 
-// DRAFT: the West zone's kit, style A "Neon Cyber" (funfair-lab/styleA.tsx)
+// DRAFT: the West zone's kit, style A "Neon Cyber" (style A bench, in git history at 4eee382)
 // brightened for day: silver-white steel with Vortexa neon tubes, so the rides
 // don't read as dark holes from far away. Modelled in metres: x north, y up,
 // z east (the zone group is scaled by UNITS_PER_M). Static pieces are baked

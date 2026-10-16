@@ -16,7 +16,7 @@ import { PirateShip } from "./east/ship";
 import { bulbsMesh } from "./west/kit";
 
 // DRAFT: Vortexa Funfair, East zone "Big Top" (docs/map3d-funfair-design.md),
-// in the Retro Carnival style (funfair-lab/styleB.tsx) brightened for day: red
+// in the Retro Carnival style (style B bench, in git history at 4eee382) brightened for day: red
 // and cream stripes, gold trim, warm marquee bulbs and Vortexa yellow neon.
 // Rides on their dorms' footprints: Canteen D6 the Big Top with its ring road
 // and hub, D4 and D5 the VORTEX coaster (station on D4, loop over D5), D2 the

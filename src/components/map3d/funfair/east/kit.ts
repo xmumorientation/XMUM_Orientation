@@ -2,7 +2,7 @@ import * as THREE from "three";
 
 import { VX } from "../common";
 
-// DRAFT: the East zone's kit, style B "Retro Carnival" (funfair-lab/styleB.tsx)
+// DRAFT: the East zone's kit, style B "Retro Carnival" (style B bench, in git history at 4eee382)
 // brightened for day: red and cream stripes, gold trim, warm marquee bulbs,
 // with Vortexa yellow as the zone's neon. Modelled in metres: x north, y up,
 // z east (the zone group is scaled by UNITS_PER_M). Static pieces are baked

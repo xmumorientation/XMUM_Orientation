@@ -10,7 +10,7 @@ import { PLAZA_Y, WHEEL, WHEEL_R, WHEEL_ROT } from "./layout";
 import { STALL_COLORS, STALL_KINDS, disposeAll, frame, lamp, stall, tAt, umbrellaTable, bunting, type Live, type Parts } from "./parts";
 
 // DRAFT: LY3, the Vortexa Eye: a 45 m Ferris wheel, the funfair's landmark,
-// ported from funfair-lab/styleA.tsx and brightened for day. Silver-white
+// ported from style A bench, in git history at 4eee382 and brightened for day. Silver-white
 // A-frame legs, a turning wheel with pink, cyan and lilac neon, and a glowing
 // eye on each end of the axle (it stays still while the wheel turns round it).
 // Food stalls stand round the edge of its plaza. In the wheel's own frame the

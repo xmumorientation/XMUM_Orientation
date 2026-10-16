@@ -4,7 +4,7 @@ import { NEON, PAINT, bulbC } from "./kit";
 import { BIGTOP, BT_A, BT_B, BT_RY, btPoint } from "./layout";
 import { beads, commit, neonText, newLocal, placeM, tAt, type Parts } from "./parts";
 
-// DRAFT: Canteen D6, the Big Top (ported from funfair-lab/styleB.tsx): a red
+// DRAFT: Canteen D6, the Big Top (ported from style B bench, in git history at 4eee382): a red
 // and cream striped tent on the canteen's oval, its roof hung from two king
 // poles, a teal skirt, a scalloped valance with a bulb at every tip, bulbs
 // down every other roof seam, flags on the king poles and round the wall with

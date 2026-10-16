@@ -11,7 +11,7 @@ import { usePowerRamp, VX, type ZoneProps } from "./common";
 import { NEON, S, STEEL, bar, disposeWestKit, makeWestKit, tube } from "./west/kit";
 
 // DRAFT: the VORTEXA neon gate (docs/map3d-funfair-design.md), shared by all
-// zones, in the Neon Cyber style (funfair-lab/styleA.tsx) brightened for day.
+// zones, in the Neon Cyber style (style A bench, in git history at 4eee382) brightened for day.
 // It stands at the south end of Central's midway and faces the lake park: two
 // tapered white pillars with neon corners, a sign board with "VORTEXA" in
 // yellow neon (cyan and pink outlines), a holo arch over it, bulb rows.

@@ -18,7 +18,7 @@ import { Spiders } from "./west/spider";
 import { VortexaEye } from "./west/wheel";
 
 // DRAFT: Vortexa Funfair, West zone "Neon Pier" (docs/map3d-funfair-design.md),
-// in the Neon Cyber style (funfair-lab/styleA.tsx) brightened for day: silver-
+// in the Neon Cyber style (style A bench, in git history at 4eee382) brightened for day: silver-
 // white steel with Vortexa neon. Rides on their dorms' footprints: LY3 the
 // Vortexa Eye (Ferris wheel) with food stalls, LY1 the carousel, LY2 the game
 // booths with the duck shoot, LY6 and LY7 the spider rides. The north half

@@ -9,7 +9,7 @@ import { NEON, S, STEEL, bar, circlePts, tube, type WestKit } from "./kit";
 import { CAROUSEL, CAROUSEL_R, PLAZA_Y } from "./layout";
 import { disposeAll, fenceRing, tAt, type Live, type Parts } from "./parts";
 
-// DRAFT: LY1, the carousel (funfair-lab/styleA.tsx, brightened): a pink and
+// DRAFT: LY1, the carousel (style A bench, in git history at 4eee382, brightened): a pink and
 // white canopy with neon ribs and scalloped bulbs, a mirrored column with a
 // lilac neon spiral, glowing poles and pearl horses that bob as it turns.
 
