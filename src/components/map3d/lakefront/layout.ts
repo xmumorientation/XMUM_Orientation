@@ -189,6 +189,109 @@ export function beams(lite: boolean): Beam[] {
   return out;
 }
 
+// ── The concert's extra fixtures (L3; dark until the concert plays) ──────
+
+const UP: V3 = [0, 1, 0];
+const norm = (v: V3): V3 => {
+  const l = Math.hypot(v[0], v[1], v[2]);
+  return [v[0] / l, v[1] / l, v[2] / l];
+};
+
+/** Sky beams from the kerb behind the stage: tall shafts over the lake that read from all over the map. */
+export function skyBeams(lite: boolean): Beam[] {
+  const list: [number, string][] = lite
+    ? [
+        [166, "#d9fbff"],
+        [194, "#b98bff"],
+      ]
+    : [
+        [156, "#d9fbff"],
+        [171, "#b98bff"],
+        [189, "#b98bff"],
+        [204, "#d9fbff"],
+      ];
+  return list.map(([d, c], i) => {
+    const a = d * DEG;
+    const s = i % 2 ? 1 : -1;
+    // lean along the kerb (north or south), alternating, so neighbours cross high up
+    const h: [number, number] = [Math.cos(a) * s, Math.sin(a) * s];
+    return {
+      p: polar(MOAT_R + 0.2, a, KERB.h + 0.3),
+      dir: aim(h, 13 * DEG),
+      len: 130,
+      w0: 0.8,
+      w1: lite ? 13 : 10,
+      c,
+      axis: polar(1, a),
+      sway: [16 * DEG, 0.3, (a < Math.PI ? 0 : Math.PI) + i],
+    };
+  });
+}
+
+/** Beams hung under the front arch, raking the audience. */
+export function archBeams(lite: boolean): Beam[] {
+  const at = lite ? [0.38, 0.62] : [0.3, 0.42, 0.58, 0.7];
+  return at.map((f, i) => {
+    const [x, y, z] = shellPoint(Math.PI * f, SHELL.ribs[0], 0.8);
+    return {
+      p: [x, y - 0.4, z],
+      dir: norm([(f - 0.5) * 0.5, -0.62, -1]),
+      len: 40,
+      w0: 0.3,
+      w1: lite ? 4.2 : 3.2,
+      c: i % 2 ? BEAM_PINK : BEAM_CYAN,
+      axis: [1, 0, 0],
+      sway: [14 * DEG, 0.8, i * 1.1],
+    };
+  });
+}
+
+/** Lasers from the top of the back wall, fanned out over the audience's heads. */
+export function lasers(lite: boolean): Beam[] {
+  const n = lite ? 6 : 12;
+  const el = 7 * DEG;
+  return Array.from({ length: n }, (_, i) => {
+    const yaw = (-55 + (110 * i) / (n - 1)) * DEG;
+    return {
+      p: polar(WALL.r + 0.2, Math.PI, DECK_Y + WALL.h + 0.25),
+      dir: [Math.sin(yaw) * Math.cos(el), Math.sin(el), -Math.cos(yaw) * Math.cos(el)],
+      len: 70,
+      w0: lite ? 0.16 : 0.07,
+      w1: lite ? 0.16 : 0.07,
+      c: i % 2 ? "#0dfcfd" : "#2bff9e",
+      // the whole fan sweeps together
+      axis: UP,
+      sway: [22 * DEG, 0.9, 0],
+    };
+  });
+}
+
+/** Flame jets at the stage's front edge: [angle (degrees), height, width]. */
+export function flames(lite: boolean): { p: V3; h: number; w: number }[] {
+  return (lite ? [-30, 30] : [-46, -16, 16, 46]).map((d) => ({ p: polar(STAGE_R - 0.7, d * DEG, DECK_Y + 0.1), h: 7.5, w: lite ? 2.2 : 1.6 }));
+}
+
+/** Fountain jets in a ring round the moat (none where the bridge crosses): position, height, width, phase 0..1. */
+export function fountains(lite: boolean): { p: V3; h: number; w: number; phase: number }[] {
+  const n = lite ? 12 : 22;
+  const r = (STAGE_R + MOAT_R) / 2;
+  const out: { p: V3; h: number; w: number; phase: number }[] = [];
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * 2 * Math.PI + 0.2;
+    if (Math.abs(Math.atan2(Math.sin(a - BRIDGE_A), Math.cos(a - BRIDGE_A))) < 10 * DEG) continue;
+    out.push({ p: polar(r, a, WATER_Y), h: 7, w: lite ? 0.55 : 0.35, phase: i / n });
+  }
+  return out;
+}
+
+/** The follow spot that finds the stage as the concert opens, from the top of the amphitheatre. */
+export const SPOT: Beam = (() => {
+  const p = polar(RING_R + TERRACES * TERRACE_D - 1, 0, RING_Y + TERRACES * TERRACE_H + 2.5);
+  const target: V3 = [0, DECK_Y + 0.8, -3];
+  const d: V3 = [target[0] - p[0], target[1] - p[1], target[2] - p[2]];
+  return { p, dir: norm(d), len: Math.hypot(...d) + 1.5, w0: 0.25, w1: 2.6, c: "#fff2d6", axis: UP, sway: [0, 0, 0] };
+})();
+
 /** Haze in front of the stage, lit by the beams: soft blue and purple puffs (centre, radius, colour). */
 export const HAZE: { p: V3; r: number; c: string }[] = [
   { p: [-7, 6, -9], r: 8, c: "#3b3fd0" },

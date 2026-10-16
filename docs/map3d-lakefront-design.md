@@ -1,8 +1,8 @@
 # LakeFront Café: the lake stage (design, 2026-10-16)
 
-The 3D map's LakeFront Café was a plain red dome. It is now the real venue from Ben's photos: an open-air stage under a red ribbed shell, in a moat at the lake's west tip, with a grass amphitheatre in front. At night it will also be the funfair's finale venue, with concert lighting.
+The 3D map's LakeFront Café was a plain red dome. It is now the real venue from Ben's photos: an open-air stage under a red ribbed shell, in a moat at the lake's west tip, with a grass amphitheatre in front. It is lit every evening, and it holds a concert for the funfair's finale.
 
-Status: built in batches on branch `funfair-central`. L1 (the model) and L2 (the evening lighting and the beams) are done; L3–L4 follow, each after Ben's go.
+Status: built in batches on branch `funfair-central`. L1 (the model), L2 (the evening lighting and the beams) and L3 (the concert) are done; L4 (the trigger) follows after Ben's go.
 
 ## Ben's decisions
 
@@ -10,6 +10,7 @@ Status: built in batches on branch `funfair-central`. L1 (the model) and L2 (the
 - **XMUM hedge letters:** removed from the 3D map (Ben, 2026-10-16). They stood about 30 m north of the stage, where the amphitheatre now wraps round.
 - **Shell height (confirmed):** drawn 1.4 times its real height, so it reads next to the A-blocks, which are drawn tall too (`SHELL.lift`). The footprint stays at true size.
 - **Label (confirmed):** stays "LakeFront Café"; a "● LIVE" tag joins it while the concert plays (L4).
+- **The concert (L3): free hand (Ben, 2026-10-16),** building on the evening beams.
 - **Beams every evening, and they move (Ben, 2026-10-16, from a concert photo):** moving-head beams fan up from the stage at sunset and night, not only during the concert, and they sweep. The concert (L3) makes them faster and adds more.
 
 ## The venue (from the photos)
@@ -28,7 +29,9 @@ Status: built in batches on branch `funfair-central`. L1 (the model) and L2 (the
 - `layout.ts`: sizes, angles, the shell's shape (`shellPoint`, `shellUnderside`), the willows' spots, the light pools, the beams (`beams()`) and the haze.
 - `build.ts`: bakes the venue (one flat-colour mesh, with the beams' fixtures), the small lights (one mesh), the steel (ribs and cross tubes), the shell's skin and the moat's water.
 - `kit.ts`: materials, and the evening looks (`applyLook`: day, sunset, night). The skin is one double-sided surface: anti-aliased slats outside (they blend to pinkish red from far away instead of shimmering), the membrane inside.
-- `beams.ts`: the beams and the haze in one draw call. Each beam is a quad turned about its axis to face the camera, with a bright core, soft edges and a fade; the sweep runs in the shader.
+- `fx.ts`: every light effect in one draw call: the evening beams and haze, and the concert's sky beams, arch beams, lasers, flame jets, fountains and follow spot. Each is an instance of one quad: beams and lasers are turned about their axis to face the camera (a bright core, soft edges, a fade, never thinner than about 1.5 pixels), flames and fountains stand upright, haze faces the camera. The sweep runs in the shader. Each instance has a group whose strength is a uniform.
+- `show.ts`: the concert as a timeline (pure; tested in `tests/lakefront/show.test.ts`).
+- `crowd.ts`: the crowd's lightsticks (one draw call). `particles.ts`: fireworks and confetti (two draw calls).
 - `LakefrontStage.tsx`: the component, rendered by `CampusScene` in place of the old `Dome`.
 
 Unchanged: `DOME_PLACE`, `DOME`, the label, `inKeepOut`, the GPS anchor in `mapGeo.ts`, station markers and pins, the 2D map, the backend. Nothing (trees, bushes, lamps) stood within 50 m of the stage, and the lake's lotus pads already keep 33 m away.
@@ -55,11 +58,25 @@ No concert running: set when the look changes, except the beams' sweep.
 - from the lake: `12.5,6,-19,8.87,1.4,-34.67`
 - from the north: `23,9,-30,8.87,1.4,-34.67`
 
+## The concert (L3)
+
+`LakefrontStage`'s `live` (from `CampusScene`'s new `concert` prop; L4 ties it to the finale).
+
+- **Opening, about 3 s** (`usePowerRamp`): the evening light goes down, a follow spot from the top of the amphitheatre finds the stage, the ribs come on in white one by one from the front arch back, then the bang: one flash, the flame jets, confetti and two fireworks, and the show starts. Ending the concert plays it backwards. A map opened while the concert is already on shows it running, without the opening.
+- **The show** (`show.ts`) runs on the wall clock, so every map shows the same beat. A loop is 64 beats at 128 BPM (30 s): intro (cyan and blue), build (pink and cyan, speeding up, lasers come in), drop (yellow and pink: flash, flames, beams panning in figures of eight, fountains on every beat, confetti), breakdown (orange and lilac, slow, phone torches). Fireworks go up over the lake in the drop of every fourth loop (every 2 minutes).
+- **What plays:** the ribs chase, step and pulse; the shell's outside is an LED screen (a sweep, an equaliser, rings from the arch, the beat) and the membrane pulses; the terrace strips ripple outwards and the walkway's dots chase. Beams: the evening ones faster, plus four sky beams from the kerb behind the stage (the landmark from far away), four beams under the arch raking the crowd, and twelve lasers from the back wall over the audience. The crowd: about 900 lightsticks (steady, a wave round the bowl, rings out from the stage, torches). The moat's 21 fountains, four flame jets, confetti from two cannons, fireworks.
+- **By day** the beams, lasers and haze barely show against the sunlit ground; the shell's screen, the flames, the fountains, the confetti and the crowd's colours carry it (`CONCERT` levels in `kit.ts`).
+- **Phones:** about half the beams, lasers, lightsticks, fountains and sparks, all bigger.
+- **Photosensitivity:** at most 2 flashes a second (guidance: 3), tested. With `prefers-reduced-motion`: no flashes, flames, confetti or fireworks, and still beams, fountains and crowd; only slow colour changes.
+- **Frames:** full screen draws every frame while the concert plays, also on phones. A card shows one still moment.
+- **Cost:** about +4 draw calls on desktop and +2 on phones over the evening look (804 and 421 for the whole map at night).
+- **Dev (`/map3d`):** `?concert=1` (on), `?concert=flip` (on 4 s after load, to watch the opening); in development `?showt=<seconds>` holds the show at that moment (17 is the drop, 107.6 shows fireworks) and `?concertp=<0..1>` holds the opening (0.84 is the bang).
+
 ## Batches
 
 | Batch | Work | State |
 |---|---|---|
 | L1 | The model (day look), in the map | **Done** |
 | L2 | Evening lighting (sunset and night, no concert): LED ribs, membrane wash, uplights, small lights, light pools, and sweeping beams in haze (Ben's photo) | **Done** |
-| L3 | The concert: a power-up opening (house lights out, a follow spot, the ribs light from the front arch back, then a bang), and a looping show synced to the wall clock (120 BPM, intro / build / drop / breakdown): the shell as an LED screen, the beams faster and on the beat, sky beams, lasers, crowd lightsticks, moat fountains, flame jets, fireworks over the lake every couple of minutes. Phones: thicker lights, halos, fewer fixtures. At most 3 flashes a second; with `prefers-reduced-motion`, no flashes and only slow colour changes. | To do |
+| L3 | The concert: the opening, and the show on the wall clock (see above) | **Done** |
 | L4 | Wire the finale trigger, `?concert=0\|1` on `/map3d`, `?funfair_preview=lakefront`, the "● LIVE" tag, docs | To do |

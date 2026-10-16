@@ -173,7 +173,6 @@ const Campus = memo(function Campus({ mode, lite }: { mode: Mode; lite: boolean 
       <SportsCourts glow={look.lamps} />
       <Statue />
       <Flag />
-      <LakefrontStage night={mode === "night"} dusk={mode === "sunset"} lite={lite} />
       <Bridge />
       <Vegetation lite={lite} />
       <Lamps glow={look.lamps} />
@@ -259,6 +258,8 @@ export type CampusSceneProps = {
   interactive?: boolean;
   /** The funfair's zones: which are powered (default all off). A change plays the power-up. */
   funfair?: FunfairPower;
+  /** The lake stage's concert (default off). Turning it on plays the opening. */
+  concert?: boolean;
   /** Rendered inside the Canvas, in the scene (depth-tested, post-processed): ground overlays, hit areas. */
   children?: ReactNode;
   /**
@@ -284,6 +285,7 @@ export default function CampusScene({
   controlsRef,
   interactive = true,
   funfair = FUNFAIR_OFF,
+  concert = false,
   children,
   overlay,
   onFail,
@@ -340,9 +342,9 @@ export default function CampusScene({
           shadows={!isLite}
           // Draw only when something changes (camera, markers, look, a power-up), so a still card costs nothing.
           // Full screen keeps drawing every frame on a fast device (the water, duck, flag and clouds move), and
-          // on any device while a funfair zone is on, so its rides keep turning, or at night, so the lake stage's
-          // beams sweep.
-          frameloop={interactive && (!isLite || anyZoneOn(funfair) || mode === "night") ? "always" : "demand"}
+          // on any device while a funfair zone is on, so its rides keep turning, at night, so the lake stage's
+          // beams sweep, and while its concert plays.
+          frameloop={interactive && (!isLite || anyZoneOn(funfair) || mode === "night" || concert) ? "always" : "demand"}
           dpr={isLite ? [1, 1.5] : [1, 1.75]}
           camera={{ fov: 30, near: 1, far: 1600, position: start.position }}
           gl={(defaults) => {
@@ -359,6 +361,7 @@ export default function CampusScene({
         >
           <Campus mode={mode} lite={isLite} />
           <Funfair power={funfair} night={mode === "night"} dusk={mode === "sunset"} lite={isLite} />
+          <LakefrontStage night={mode === "night"} dusk={mode === "sunset"} lite={isLite} live={concert} />
           {labels && <Labels />}
           {children}
           <MapControls
