@@ -76,6 +76,13 @@ Ben's batches map to the plan's steps as follows.
     - East: `cam=68,46,52,29,0,16`.
   - Cost: the whole map on desktop is 828 draw calls and about 901k triangles (shadow pass included). The funfair adds roughly +85 calls / +410k triangles on desktop, and +60 / +200k in lite (from the zone builds). On slow phones the frame-rate probe steps down to lite, then to the 2D map.
   - Not done: a painted link path from West's Gate Walk to the gate (the orange strip along the park already joins them).
+- **Phones at night (2026-10-16, Ben: lit zones were hard to see on his iPhone):**
+  - Phones draw lite (no bloom, no point lights), so lit zones barely stood out. Lite now makes up for it.
+  - Bulbs and neon tubes are 1.6× bigger (`LITE_LIGHT_SCALE`; `lightBake()` sets `Bake.widen`).
+  - Powered paint and paving glow a little at night (`LITE_SELF_LIT`, `LITE_PAVING_LIT`; `uSelf` in each kit's paint shader).
+  - The light pools are 1.4× bigger and stronger.
+  - Soft halos sit over each zone's landmarks (`funfair/glow.tsx`, one draw call per zone, fading out within about 45–110 units of the camera).
+  - Desktop and daytime are unchanged.
 - **Admin control (F5, 2026-10-16):**
   - **Migration** `supabase/migrations/0088_funfair_zones.sql`, written but **not applied**; Ben's team applies it.
     - `funfair_zones`: one row per zone with its keys (`required`), `rule` (any/all) and `manual` override. It is seeded with the default keys, and only `is_game_lead()` can read it, since the keys would give away where the unlit bulbs are.

@@ -4,7 +4,7 @@ import { useFrame } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, type RefObject } from "react";
 import * as THREE from "three";
 
-import { Bake, G, TAU, mat, type V3 } from "../central/kit";
+import { Bake, G, TAU, lightBake, mat, type V3 } from "../central/kit";
 import { NEON, S, STEEL, bar, circlePts, tube, type WestKit } from "./kit";
 import { CAROUSEL, CAROUSEL_R, PLAZA_Y } from "./layout";
 import { disposeAll, fenceRing, tAt, type Live, type Parts } from "./parts";
@@ -38,7 +38,7 @@ function carouselGeometry(lite: boolean, slots: Slot[]) {
   const [x, z] = CAROUSEL;
   const t0 = tAt(x, z) + 0.05;
   const fr = new Bake();
-  const li = new Bake();
+  const li = lightBake(lite);
   // platform: pink edge, white and lilac wedges
   fr.revolve([0, 0, 0], [[PR, 0], [PR, 0.35], [0, 0.35]], 32, (s, k) => (k === 0 ? STEEL.pink : s % 2 ? STEEL.white : STEEL.lilac));
   // the column: white, mirrored lilac bands, gold caps

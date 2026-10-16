@@ -4,7 +4,7 @@ import { useFrame } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, type RefObject } from "react";
 import type * as THREE from "three";
 
-import { Bake, BULB_COLORS, G, PAINT, TAU, mat, smooth, starPoints, type Kit, type V3 } from "./kit";
+import { Bake, BULB_COLORS, G, PAINT, TAU, lightBake, mat, smooth, starPoints, type Kit, type V3 } from "./kit";
 import { DROP, DROP_R } from "./layout";
 import { disposeAll, fenceRing, tAt, type Live, type Parts } from "./parts";
 
@@ -79,7 +79,7 @@ export function DropRing({ kit, live, lite }: { kit: Kit; live: RefObject<Live>;
     const [x, z] = DROP;
     const t0 = tAt(x, z) + 0.12;
     const paint = new Bake();
-    const light = new Bake();
+    const light = lightBake(lite);
     paint.box(PAINT.yellow, [0, 1.1, 0], [3.6, 2.2, 3.6]);
     paint.add(G.cyl8, mat(0, 0.22, 0, 4.4, 0.44, 4.4, Math.PI / 8), PAINT.navy);
     const seats = [PAINT.pink, PAINT.cyan, PAINT.yellow, PAINT.lilac];

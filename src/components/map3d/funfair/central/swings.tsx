@@ -4,7 +4,7 @@ import { useFrame } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, type RefObject } from "react";
 import * as THREE from "three";
 
-import { Bake, BULB_COLORS, G, PAINT, TAU, mat, starPoints, type Kit, type V3 } from "./kit";
+import { Bake, BULB_COLORS, G, PAINT, TAU, lightBake, mat, starPoints, type Kit, type V3 } from "./kit";
 import { SWINGS, SWINGS_R } from "./layout";
 import { disposeAll, fenceRing, tAt, type Live, type Parts } from "./parts";
 
@@ -45,7 +45,7 @@ export function SwingTop({ kit, live, lite }: { kit: Kit; live: RefObject<Live>;
     const [x, z] = SWINGS;
     const t0 = tAt(x, z) + 0.1;
     const paint = new Bake();
-    const light = new Bake();
+    const light = lightBake(lite);
     paint.cyl(PAINT.navy, [0, -3.1, 0], 0.72, 6.2, G.cyl12);
     paint.cyl(PAINT.navy, [0, 0.2, 0], 1.8, 1.4, G.cyl12);
     // the umbrella: pink and white panels, a yellow and cyan valance with scallops

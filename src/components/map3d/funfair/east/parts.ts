@@ -1,6 +1,6 @@
 import * as THREE from "three";
 
-import { Bake, Bulbs, G, TAU, mat, type Bulb, type V3 } from "../central/kit";
+import { Bake, Bulbs, G, TAU, lightBake, mat, type Bulb, type V3 } from "../central/kit";
 import { S, bar, tube } from "../west/kit";
 import { disposeAll, frame, type Board, type Live, type Pool } from "../west/parts";
 import { MARQUEE, NEON, PAINT } from "./kit";
@@ -29,7 +29,7 @@ export type Parts = {
 };
 
 export function newParts(lite: boolean): Parts {
-  return { lite, paving: new Bake(), frame: new Bake(), light: new Bake(), bulbs: new Bulbs(lite ? 2 : 1), boards: [], pools: [] };
+  return { lite, paving: new Bake(), frame: new Bake(), light: lightBake(lite), bulbs: new Bulbs(lite ? 2 : 1), boards: [], pools: [] };
 }
 
 /** Farthest point of the zone from the power box (metres). */
@@ -48,7 +48,7 @@ export function tAt(x: number, z: number, extra = 0) {
 
 /** Paint, light and bulbs of one building or ride, in its own frame. */
 export type Local = { frame: Bake; light: Bake; bulbs: Bulbs };
-export const newLocal = (lite: boolean): Local => ({ frame: new Bake(), light: new Bake(), bulbs: new Bulbs(lite ? 2 : 1) });
+export const newLocal = (lite: boolean): Local => ({ frame: new Bake(), light: lightBake(lite), bulbs: new Bulbs(lite ? 2 : 1) });
 
 /** The matrix that puts a local frame at (x, z), turned ry (local +z, its front, then faces (sin ry, cos ry)). */
 export function placeM(x: number, z: number, ry: number, y = 0) {

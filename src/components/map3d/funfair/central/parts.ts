@@ -1,6 +1,6 @@
 import type * as THREE from "three";
 
-import { Bake, BULB_COLORS, Bulbs, G, PAINT, TAU, mat, type V3 } from "./kit";
+import { Bake, BULB_COLORS, Bulbs, G, PAINT, TAU, lightBake, mat, type V3 } from "./kit";
 import { POWER_BOX } from "./layout";
 
 // DRAFT: what the static build of the Central zone collects, and small
@@ -25,7 +25,7 @@ export type Parts = {
 };
 
 export function newParts(lite: boolean): Parts {
-  return { lite, paving: new Bake(), paint: new Bake(), neon: new Bake(), bulbs: new Bulbs(lite ? 2 : 1), boards: [], pools: [] };
+  return { lite, paving: new Bake(), paint: new Bake(), neon: lightBake(lite), bulbs: new Bulbs(lite ? 2 : 1), boards: [], pools: [] };
 }
 
 /** Farthest point of the zone from the power box (metres). */

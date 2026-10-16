@@ -81,7 +81,9 @@ export function PowerFx({ kit, live, night, lite, boards, pools }: { kit: Kit; l
     const plane = new THREE.PlaneGeometry(2, 2).rotateX(-Math.PI / 2);
     const poolMesh = new THREE.InstancedMesh(plane, kit.pool, Math.max(1, pools.length));
     pools.forEach((pl, i) => {
-      poolMesh.setMatrixAt(i, mat(pl.x, groundY(pl.x, pl.z) + 0.15, pl.z, pl.r, 1, pl.r));
+      // bigger on phones, where they stand in for the point light and bloom
+      const r = pl.r * (lite ? 1.4 : 1);
+      poolMesh.setMatrixAt(i, mat(pl.x, groundY(pl.x, pl.z) + 0.15, pl.z, r, 1, r));
       poolMesh.setColorAt(i, _c.set(pl.c));
     });
     poolMesh.count = pools.length;
@@ -116,7 +118,7 @@ export function PowerFx({ kit, live, night, lite, boards, pools }: { kit: Kit; l
     spark.visible = false;
     const standbyGeo = new THREE.IcosahedronGeometry(0.2, 1);
     return { tex, boardMat, board, poolMesh, plane, starGeo, jetGeo, jetMat, spark, standbyGeo, rand: rng(9) };
-  }, [kit, boards, pools]);
+  }, [kit, boards, pools, lite]);
   useEffect(
     () => () => {
       disposeAll([parts.tex, parts.boardMat, parts.board, parts.plane, parts.starGeo, parts.jetGeo, parts.jetMat, parts.standbyGeo]);

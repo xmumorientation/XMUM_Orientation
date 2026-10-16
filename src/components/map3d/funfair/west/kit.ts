@@ -125,14 +125,14 @@ export function tube(
     const e = pts[(i + 1) % pts.length];
     const col = typeof c === "function" ? c(i) : c;
     const ti = typeof t === "function" ? t(i) : t;
-    b.add(g, segMat(a, e, r), col, ti, tubeSeed(k + i));
-    if (joints && (closed || i > 0)) b.add(G.ico, mat(a[0], a[1], a[2], r * 1.08), col, ti, tubeSeed(k + i));
+    b.add(g, segMat(a, e, r * b.widen), col, ti, tubeSeed(k + i));
+    if (joints && (closed || i > 0)) b.add(G.ico, mat(a[0], a[1], a[2], r * b.widen * 1.08), col, ti, tubeSeed(k + i));
   }
 }
 
 /** A steel bar from a to b (frame Bake). */
 export function bar(b: Bake, c: THREE.ColorRepresentation, a: V3, e: V3, r: number, g = S.tube8) {
-  b.add(g, segMat(a, e, r), c);
+  b.add(g, segMat(a, e, r * b.widen), c);
 }
 
 // ---------- materials ----------
@@ -211,20 +211,25 @@ export function makeWestKit() {
     flick: { value: 0 } as Uniform<number>,
     /** Bulbs chase (a running dim wave). */
     chase: { value: 1 } as Uniform<number>,
+    /** Powered paint's own glow at night in lite (LITE_SELF_LIT). */
+    self: { value: 0 } as Uniform<number>,
   };
 
   // Steel and paint. A little metal, so the frames catch the sky; light colours, so they read by day.
   const frame = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.46, metalness: 0.12 });
   frame.onBeforeCompile = (s) => {
     s.uniforms.uFade = u.fade;
+    s.uniforms.uSelf = u.self;
     s.fragmentShader =
-      "uniform float uFade;\n" +
-      s.fragmentShader.replace(
-        "#include <color_fragment>",
-        `#include <color_fragment>
+      "uniform float uFade, uSelf;\n" +
+      s.fragmentShader
+        .replace(
+          "#include <color_fragment>",
+          `#include <color_fragment>
         float fadeL = dot(diffuseColor.rgb, vec3(0.299, 0.587, 0.114));
         diffuseColor.rgb = mix(diffuseColor.rgb, vec3(fadeL) * vec3(0.93, 0.93, 0.98) + 0.02, uFade * 0.7) * (1.0 - 0.08 * uFade);`,
-      );
+        )
+        .replace("#include <emissivemap_fragment>", "#include <emissivemap_fragment>\n        totalEmissiveRadiance += diffuseColor.rgb * uSelf;");
   };
   frame.customProgramCacheKey = () => "fz-west-frame";
 
@@ -237,6 +242,9 @@ export function makeWestKit() {
     polygonOffset: true,
     polygonOffsetFactor: -1,
     polygonOffsetUnits: -2,
+    // lit walkways at night in lite (emissiveIntensity set each frame)
+    emissive: "#fff0d8",
+    emissiveIntensity: 0,
   });
 
   const water = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.12, metalness: 0.1 });
@@ -283,8 +291,11 @@ export function disposeWestKit(k: WestKit) {
   k.glow.dispose();
 }
 
-/** The instanced bulbs (central/kit's Bulbs list), as octahedra: the same look at map distances for 8 triangles each. */
-export function bulbsMesh(list: Bulbs["list"], material: THREE.Material) {
+/**
+ * The instanced bulbs (central/kit's Bulbs list), as octahedra: the same look at map distances for 8 triangles each.
+ * `scale` sizes them all (bigger in lite, where there are fewer).
+ */
+export function bulbsMesh(list: Bulbs["list"], material: THREE.Material, scale = 1) {
   const n = list.length;
   const base = new Bake().add(S.bulb, new THREE.Matrix4(), "#ffffff").geometry();
   const mesh = new THREE.InstancedMesh(base, material, Math.max(n, 1));
@@ -293,7 +304,8 @@ export function bulbsMesh(list: Bulbs["list"], material: THREE.Material) {
   const c = new THREE.Color();
   const m = new THREE.Matrix4();
   list.forEach((b, i) => {
-    mesh.setMatrixAt(i, mat(b.p[0], b.p[1], b.p[2], b.r, b.r, b.r, i * 0.7, i * 0.3, 0, m));
+    const r = b.r * scale;
+    mesh.setMatrixAt(i, mat(b.p[0], b.p[1], b.p[2], r, r, r, i * 0.7, i * 0.3, 0, m));
     mesh.setColorAt(i, c.set(b.c));
     ts[i * 2] = b.t;
     ts[i * 2 + 1] = b.seed;

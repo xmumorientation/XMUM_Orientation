@@ -24,6 +24,17 @@ export const ZONE_DORMS: Record<ZoneKey, string[]> = {
   east: ["D1", "D2", "D3", "D4", "D5", "Canteen D6"],
 };
 
+/**
+ * Phones (lite) draw the funfair without bloom or point lights, so at night a powered zone would hardly stand out
+ * from map distances. Lite makes the lights bigger (bulbs and neon tubes, this factor; lite also has fewer bulbs),
+ * lets the powered rides glow a little by themselves (LITE_SELF_LIT), and adds soft halos (glow.tsx).
+ */
+export const LITE_LIGHT_SCALE = 1.6;
+/** How brightly powered paint glows by itself at night in lite (no point lights there). */
+export const LITE_SELF_LIT = 0.35;
+/** How brightly the paving glows at night in lite once a zone is on (lit walkways). */
+export const LITE_PAVING_LIT = 0.14;
+
 /** The website palette (src/components/home/vortexa.css). */
 export const VX = {
   yellow: "#f2ff0b",

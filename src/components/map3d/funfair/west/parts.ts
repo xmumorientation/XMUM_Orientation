@@ -1,6 +1,6 @@
 import type * as THREE from "three";
 
-import { Bake, Bulbs, G, TAU, mat, type V3 } from "../central/kit";
+import { Bake, Bulbs, G, TAU, lightBake, mat, type V3 } from "../central/kit";
 import { LIGHTS, NEON, STEEL, S, bar, tube } from "./kit";
 import { POWER_BOX } from "./layout";
 
@@ -34,7 +34,7 @@ export function newParts(lite: boolean): Parts {
     paving: new Bake(),
     water: new Bake(),
     frame: new Bake(),
-    light: new Bake(),
+    light: lightBake(lite),
     bulbs: new Bulbs(lite ? 2 : 1),
     boards: [],
     pools: [],
