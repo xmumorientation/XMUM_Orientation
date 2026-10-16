@@ -120,6 +120,8 @@ export function PowerFx({ kit, live, night, lite, boards, pools }: { kit: Kit; l
   useEffect(
     () => () => {
       disposeAll([parts.tex, parts.boardMat, parts.board, parts.plane, parts.starGeo, parts.jetGeo, parts.jetMat, parts.standbyGeo]);
+      // the instance buffers (the sparks' geometry is the shared G.ico: not disposed)
+      disposeAll([parts.poolMesh, parts.spark]);
     },
     [parts],
   );
@@ -161,7 +163,7 @@ export function PowerFx({ kit, live, night, lite, boards, pools }: { kit: Kit; l
       jets.current.visible = k > 0.02;
       jets.current.scale.set(1, k * (0.92 + 0.08 * Math.sin(L.time * 7)), 1);
     }
-    if (light.current) light.current.intensity = night ? p * 26 : 0;
+    if (light.current) light.current.intensity = night ? p * 12 : 0;
   });
 
   const [cx, cz] = CROSSING;
@@ -179,7 +181,8 @@ export function PowerFx({ kit, live, night, lite, boards, pools }: { kit: Kit; l
         </group>
       </group>
       <mesh ref={jets} geometry={parts.jetGeo} material={parts.jetMat} position={[fx, 0.27 + 4.95, fz]} visible={false} />
-      {!lite && <pointLight ref={light} color="#7ff6ff" position={[cx, 9, cz]} intensity={0} distance={9} decay={1.2} />}
+      {/* Kept soft: brighter, it washed the whole crossing out to white at night (with bloom). */}
+      {!lite && <pointLight ref={light} color="#7ff6ff" position={[cx, 9, cz]} intensity={0} distance={7} decay={1.2} />}
     </>
   );
 }

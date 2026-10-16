@@ -354,9 +354,12 @@ export function Slab() {
   const soil = useMemo(() => makeSoil(), []);
   const dark = useMemo(() => new THREE.MeshStandardMaterial({ color: "#2a1c14", roughness: 1 }), []);
   const side = useMemo(() => new THREE.MeshStandardMaterial({ map: soil, roughness: 1 }), [soil]);
+  // No top face: the ground plane covers it. Drawn 0.01 below the ground, it showed through in flickering dark
+  // bands on phones, where the depth buffer can't tell two layers that close apart at map distances.
+  const none = useMemo(() => new THREE.MeshBasicMaterial({ visible: false }), []);
   const H = 7;
   return (
-    <mesh position-y={-H / 2 - 0.01} material={[side, side, dark, dark, side, side]} receiveShadow>
+    <mesh position-y={-H / 2} material={[side, side, none, dark, side, side]} receiveShadow>
       <boxGeometry args={[EXTENT.x * 2, H, EXTENT.z * 2]} />
     </mesh>
   );

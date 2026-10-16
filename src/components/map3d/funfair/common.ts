@@ -1,7 +1,7 @@
 "use client";
 
-import { useFrame } from "@react-three/fiber";
-import { useRef } from "react";
+import { useFrame, useThree } from "@react-three/fiber";
+import { useEffect, useRef } from "react";
 
 import { fromReal, UNITS_PER_M, type Placed } from "../geo";
 import { DORMS_M } from "./dorms";
@@ -56,13 +56,22 @@ export const metresToWorld = fromReal;
 /**
  * Eases a zone's power towards its target over `seconds` (the power-up
  * sequence). Read `.current` inside useFrame; it never re-renders.
+ *
+ * A map that draws on demand (CampusScene's card, and lite mode) draws no
+ * frames by itself, so the ramp asks for one when the target changes and one
+ * per step until it arrives: the power-up plays to the end there too.
  */
 export function usePowerRamp(target: number, seconds = 2) {
   const value = useRef(target);
-  useFrame((_, dt) => {
+  const invalidate = useThree((s) => s.invalidate);
+  useEffect(() => {
+    if (value.current !== target) invalidate();
+  }, [target, invalidate]);
+  useFrame((state, dt) => {
     const step = Math.min(dt, 0.1) / seconds;
     const v = value.current;
     value.current = v < target ? Math.min(target, v + step) : Math.max(target, v - step);
+    if (value.current !== target) state.invalidate();
   });
   return value;
 }
