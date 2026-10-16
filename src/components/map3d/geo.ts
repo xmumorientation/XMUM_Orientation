@@ -48,7 +48,6 @@ export const COLORS = {
   plantation: "#41672f",
   beige: "#efe1cd",
   plaza: "#cfcac2",
-  brown: "#975937",
   lakeDeep: "#1f5f8f",
   lakeShallow: "#6cc0e0",
   shore: "#e3d3ad",
@@ -105,14 +104,6 @@ export const GROUND = {
       [494, 641],
     ],
   ] as Img[][],
-  brown: [
-    [765, 805],
-    [942, 698],
-    [1015, 738],
-    [1500, 450],
-    [1745, 580],
-    [1068, 982],
-  ] as Img[],
 };
 
 // ── Real scale (sports area) ─────────────────────────────────────────────
@@ -276,6 +267,19 @@ export const PARK: World[] = realPts(PARK_M);
 export const GRASS: World[][] = GRASS_M.map(realPts);
 export const FOOTPATHS: World[][] = FOOTPATHS_M.map(realPts);
 export const FOOTPATH_W = 5 * UNITS_PER_M;
+
+/**
+ * The dorm land north of the lake park, where the Vortexa Funfair stands (docs/map3d-funfair-design.md). Lawn like
+ * the park. It replaced the art's brown field and reaches further west, to LY1 and LY6 (Ben, 2026-10-16).
+ */
+export const FUNFAIR_LAND: World[] = [
+  [12.2, 36.7],
+  [11.8, 15.8],
+  [19.9, 15.4],
+  [19.5, -53],
+  [46.3, -53],
+  [46.9, 35.9],
+];
 
 /** The wooden footbridge across the lake. */
 export const BRIDGE: [World, World] = [fromReal(...FOOTBRIDGE_M[0]), fromReal(...FOOTBRIDGE_M[1])];
