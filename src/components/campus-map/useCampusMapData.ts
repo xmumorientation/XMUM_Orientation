@@ -481,18 +481,22 @@ export function useCampusMapData({
       .subscribe();
 
     // Pins fade with age, so re-check the clock even when no new report
-    // arrives. Reload too, in case a realtime event was missed.
+    // arrives. Reload too, in case a realtime event was missed: every 10 s,
+    // so a pin is never more than 15 s behind (Ben).
     const tick = showGroupPins
       ? setInterval(() => {
           setNowMs(Date.now());
           loadPositions();
-        }, 30_000)
+        }, 10_000)
       : null;
 
     // A phone back from another app may have missed realtime events while it slept, so reload the bulbs (a newly
-    // lit one then also asks the funfair again).
+    // lit one then also asks the funfair again) and the group pins.
     const onVisible = () => {
-      if (document.visibilityState === "visible") void loadBulbs();
+      if (document.visibilityState !== "visible") return;
+      void loadBulbs();
+      setNowMs(Date.now());
+      void loadPositions();
     };
     document.addEventListener("visibilitychange", onVisible);
 

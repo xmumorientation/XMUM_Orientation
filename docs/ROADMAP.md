@@ -235,6 +235,14 @@ No migration. Design and batches: [map3d-lakefront-design.md](map3d-lakefront-de
 - **Done (2026-10-17):** Ben accepted the venue; the old `Dome` in `buildings.tsx` is deleted. Opening the map with all three zones on replays the zones' power-ups and the concert's opening (Ben keeps this).
 - **Left:** check on a real phone.
 
+### Map: changes show within 15 s, 2026-10-17 (Ben, branch `funfair-central`)
+No migration. Ben asked that a lit zone and a group's location show on the map within 15 s.
+- **Funfair:** the 3D map asks `fn_funfair_state` every 10 s (was 30 s; `FUNFAIR_POLL_MS` in `useCampusMapData.ts`), so Admin's overrides and keys reach every map within about 10 s. A lit bulb still shows at once (Realtime).
+- **Group locations:** Faci phones report every 12 s, moving or standing still (was 20 s; `REPORT_INTERVAL_MS` and `HEARTBEAT_MS` in `FaciLocationTracker.tsx`). That stays above the server's 10 s floor and leaves time for the GPS fix and the map's reload. The map gets each report through Realtime about 2 s later. If it misses one, it reloads the pins every 10 s (was 30 s).
+- **Coming back to the app:** the map reloads the zones, the bulbs and the pins at once, since a phone in another app pauses its timers and can miss Realtime events.
+- The Funfair cards say a change shows within about 10 s.
+- Not changed: Admin's accuracy check still reports every 20 s.
+
 ### Map: the Vortexa Funfair on the 3D map, 2026-10-16 (Ben, branch `funfair-central`)
 Migration `0088_funfair_zones.sql` (applied on the project; Ben, 2026-10-17). Without it the map works, and each zone powers up with its default key: West with A3, Central with Track & Field, East with B1. Admin's and HOGM's Funfair cards then only say that the migration is missing. With it applied, the cards change the setup.
 - **Funfair on the land:** three zones (West · Neon Pier, Central · Starlight Midway, East · Big Top) and the VORTEXA gate stand on the dorm land of the 3D map, now lawn. Ride tags carry the dorm names ("LY3 · Vortexa Eye") and show close up.
@@ -252,7 +260,7 @@ Migration `0088_funfair_zones.sql` (applied on the project; Ben, 2026-10-17). Wi
 
 ### Map: Admin accuracy check, and location every 20 s, 2026-10-14 (Zichien)
 Needs migration `0087_map_accuracy_check.sql` (after `0082`–`0085`). Until it runs, maps keep working with the built-in anchors; only the check fails.
-- **Faci phones report every 20 s**, moving or standing still (was 30 s moving, about 60 s still). The server still ignores reports under 10 s apart.
+- **Faci phones report every 20 s**, moving or standing still (was 30 s moving, about 60 s still). The server still ignores reports under 10 s apart. (Now every 12 s: see 2026-10-17 below.)
 - **Accuracy check** (Admin, Map page → "Accuracy check"): the Admin's phone tracks its GPS and reports it every 20 s to `admin_check_locations` (`fn_report_admin_gps`; only Admins can read it, through `fn_admin_check_locations`; kept apart from group pins; rows older than 1 hour are removed). A blue "You" pin with an accuracy halo shows where the map puts them; other Admins checking show as grey dots.
 - **Tap to correct:** tapping the map saves an anchor (`fn_admin_add_map_anchor` into `map_anchors`) from the average of the last 40 s of fixes at ±20 m or better (at least 2; otherwise "GPS too rough"). An anchor within 15 m replaces the old one; a tap more than 25% of the map from where the pin was asks to confirm. Saved anchors show as blue diamonds and can be deleted from the panel (`fn_admin_delete_map_anchor`); both are audit-logged.
 - Every map loads `map_anchors` and adds them to the built-in anchors (`setExtraAnchors` in [mapGeo.ts](../src/lib/mapGeo.ts)); one within 15 m of a built-in anchor overrides it. Bad data falls back to the built-in anchors. Other phones pick up new anchors the next time the map loads.
