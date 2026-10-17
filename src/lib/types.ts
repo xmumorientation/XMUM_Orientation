@@ -368,6 +368,29 @@ export const PROJECTOR_CODE_NAMES: Record<ProjectorLocation, string> = {
   TF: "Orbit",
 };
 
+/** A saved map anchor (map_anchors): a real GPS point and the same spot on the art. */
+export interface MapAnchor {
+  id: number;
+  lat: number;
+  lng: number;
+  x: number;
+  y: number;
+  accuracy_m: number | null;
+  fixes: number | null;
+  created_by: string | null;
+  created_at: string;
+}
+
+/** One row of fn_admin_check_locations(): an Admin's live position in Accuracy check. */
+export interface AdminCheckLocation {
+  user_id: string;
+  full_name: string | null;
+  lat: number;
+  lng: number;
+  accuracy_m: number | null;
+  reported_at: string;
+}
+
 /** One row of fn_map_lightbulbs(): a lightbulb the viewer may see on the map. */
 export interface MapLightbulb {
   location: ProjectorLocation;

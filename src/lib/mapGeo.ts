@@ -17,7 +17,7 @@ import { MAP_BUILDINGS } from "@/lib/mapBuildings";
 
 type Area = (typeof MAP_BUILDINGS)[number]["area"];
 
-const GPS_POINTS: Record<Area, { lat: number; lng: number }> = {
+export const GPS_POINTS: Record<Area, { lat: number; lng: number }> = {
   A1: { lat: 2.830716513626805, lng: 101.70238566331372 },
   A2: { lat: 2.830894481771187, lng: 101.70300445323068 },
   A3: { lat: 2.831185702312712, lng: 101.70377875057042 },
@@ -30,7 +30,7 @@ const GPS_POINTS: Record<Area, { lat: number; lng: number }> = {
 };
 
 /** Places on the art that are not buildings, to fill the gaps between them. */
-const LANDMARKS: { name: string; lat: number; lng: number; x: number; y: number }[] = [
+export const LANDMARKS: { name: string; lat: number; lng: number; x: number; y: number }[] = [
   // Red dome in the right-hand lake = LakeFront Café.
   { name: "LakeFront Café", lat: 2.833032, lng: 101.703063, x: 60.6, y: 29.8 },
   // Red bridge between the two lakes = middle of the causeway across the water.
@@ -39,10 +39,25 @@ const LANDMARKS: { name: string; lat: number; lng: number; x: number; y: number 
   { name: "Tan Kah Kee statue", lat: 2.8299, lng: 101.703976, x: 34.7, y: 15.5 },
 ];
 
-export const GEO_ANCHORS = [
+export type GeoAnchor = { lat: number; lng: number; x: number; y: number };
+
+/** Anchors built into the code. Admin anchors (map_anchors) are added on top. */
+export const GEO_ANCHORS: GeoAnchor[] = [
   ...MAP_BUILDINGS.map((b) => ({ ...GPS_POINTS[b.area], x: b.x, y: b.y })),
   ...LANDMARKS.map(({ lat, lng, x, y }) => ({ lat, lng, x, y })),
 ];
+
+/** Distance in metres between two GPS points (haversine). */
+export function distanceM(aLat: number, aLng: number, bLat: number, bLng: number) {
+  const r = (d: number) => (d * Math.PI) / 180;
+  const h =
+    Math.sin(r(bLat - aLat) / 2) ** 2 +
+    Math.cos(r(aLat)) * Math.cos(r(bLat)) * Math.sin(r(bLng - aLng) / 2) ** 2;
+  return 2 * 6371000 * Math.asin(Math.sqrt(h));
+}
+
+/** An Admin anchor this close to another anchor replaces it. */
+export const ANCHOR_REPLACE_M = 15;
 
 // Local origin keeps the numbers small. 1e5 units is about 1.1 km.
 const LAT0 = 2.8315;
@@ -117,35 +132,65 @@ function solveN(a: number[][], b: number[]): number[] {
 
 const tpsU = (d2: number) => (d2 < 1e-12 ? 0 : 0.5 * d2 * Math.log(d2));
 
-const TPS_POINTS = GEO_ANCHORS.map((a) => toLocal(a.lat, a.lng));
+type Warp = {
+  points: { u: number; v: number }[];
+  cx: number[];
+  cy: number[];
+};
 
-function fitTps(pick: "x" | "y"): number[] {
-  const n = TPS_POINTS.length;
-  const size = n + 3;
-  const a = Array.from({ length: size }, () => new Array<number>(size).fill(0));
-  const b = new Array<number>(size).fill(0);
-  for (let i = 0; i < n; i++) {
-    const pi = TPS_POINTS[i];
-    for (let j = 0; j < n; j++) {
-      const pj = TPS_POINTS[j];
-      a[i][j] = tpsU((pi.u - pj.u) ** 2 + (pi.v - pj.v) ** 2);
+function buildWarp(anchors: GeoAnchor[]): Warp | null {
+  const points = anchors.map((a) => toLocal(a.lat, a.lng));
+  const fit = (pick: "x" | "y") => {
+    const n = points.length;
+    const size = n + 3;
+    const a = Array.from({ length: size }, () => new Array<number>(size).fill(0));
+    const b = new Array<number>(size).fill(0);
+    for (let i = 0; i < n; i++) {
+      const pi = points[i];
+      for (let j = 0; j < n; j++) {
+        const pj = points[j];
+        a[i][j] = tpsU((pi.u - pj.u) ** 2 + (pi.v - pj.v) ** 2);
+      }
+      a[i][n] = a[n][i] = 1;
+      a[i][n + 1] = a[n + 1][i] = pi.u;
+      a[i][n + 2] = a[n + 2][i] = pi.v;
+      b[i] = anchors[i][pick];
     }
-    a[i][n] = a[n][i] = 1;
-    a[i][n + 1] = a[n + 1][i] = pi.u;
-    a[i][n + 2] = a[n + 2][i] = pi.v;
-    b[i] = GEO_ANCHORS[i][pick];
-  }
-  return solveN(a, b);
+    return solveN(a, b);
+  };
+  const cx = fit("x");
+  const cy = fit("y");
+  if (![...cx, ...cy].every(Number.isFinite)) return null;
+  return { points, cx, cy };
 }
 
-const TPS_X = fitTps("x");
-const TPS_Y = fitTps("y");
+const BUILT_IN_WARP = buildWarp(GEO_ANCHORS)!;
+let warp: Warp = BUILT_IN_WARP;
+
+/**
+ * Add Admin anchors (from map_anchors) to the built-in ones and refit. An
+ * Admin anchor within ANCHOR_REPLACE_M of a built-in one overrides it. If
+ * the fit fails, the built-in anchors are used alone.
+ */
+export function setExtraAnchors(extra: GeoAnchor[]) {
+  const valid = extra.filter(
+    (a) =>
+      Number.isFinite(a.lat) &&
+      Number.isFinite(a.lng) &&
+      Number.isFinite(a.x) &&
+      Number.isFinite(a.y),
+  );
+  const kept = GEO_ANCHORS.filter(
+    (b) => !valid.some((a) => distanceM(a.lat, a.lng, b.lat, b.lng) < ANCHOR_REPLACE_M),
+  );
+  warp = (valid.length && buildWarp([...kept, ...valid])) || BUILT_IN_WARP;
+}
 
 function tps(coef: number[], u: number, v: number) {
-  const n = TPS_POINTS.length;
+  const n = warp.points.length;
   let out = coef[n] + coef[n + 1] * u + coef[n + 2] * v;
   for (let i = 0; i < n; i++) {
-    const p = TPS_POINTS[i];
+    const p = warp.points[i];
     out += coef[i] * tpsU((u - p.u) ** 2 + (v - p.v) ** 2);
   }
   return out;
@@ -181,8 +226,8 @@ function gpsToMapPercentRaw(
 ): { x: number; y: number } | null {
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
   const { u, v } = toLocal(lat, lng);
-  const x = tps(TPS_X, u, v);
-  const y = tps(TPS_Y, u, v);
+  const x = tps(warp.cx, u, v);
+  const y = tps(warp.cy, u, v);
   return { x, y };
 }
 

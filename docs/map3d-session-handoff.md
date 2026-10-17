@@ -1,0 +1,184 @@
+# 3D map: handoff for a new conversation (updated 2026-10-17)
+
+Ben may continue this work in a new Claude conversation. This file says where everything stands. Read it before doing anything, then read what you need:
+
+- [map3d-lakefront-design.md](map3d-lakefront-design.md): the lake stage (LakeFront Café), its concert and what starts it;
+- [map3d-funfair-design.md](map3d-funfair-design.md): the funfair design;
+- [map3d-draft-handoff.md](map3d-draft-handoff.md): how the 3D map itself was built (data, scale, the statue);
+- [map3d-implementation-plan.md](map3d-implementation-plan.md): the plan that replaced the 2D map, and its "Progress" log.
+
+## Rules Ben set
+
+- **Push only when Ben asks.** Commits on the working branch are fine once the checks pass.
+- **Branches:**
+  - `map-3d-draft` (PR #39), `map3d-batch4` (#40), `map3d-batch5` (#41) and `funfair-central` (#44, #45) are merged.
+  - The lake stage is on `funfair-central` too (Ben, 2026-10-16: no more new branches).
+  - Before a push, merge the latest `origin/main` into it and check that `git merge-tree --write-tree origin/main HEAD` is clean, so its PR merges without conflicts.
+- Work in **batches**: finish one, show Ben the results (screenshots, in Chinese), and wait for his go before the next one.
+- **Usage limit:** he watches it closely, so keep agents few. If he says the 5-hour limit is above about 85%:
+  - start nothing new;
+  - stop the optional work first;
+  - let the most important step finish and commit.
+- The Supabase project in `.env.local` is the **real remote project**. Never write to it: no migrations, no data changes. Check pages with the dev-only preview routes and mock data instead.
+- Talk to Ben in Chinese, short and direct.
+
+## Where things stand
+
+### The 3D map on every map page (plan steps 1–6, merged)
+
+- **Where it shows:** `/map`, `/checkin` and `/committee`, through `campus-map/CampusMapView.tsx`. The 3D view loads with `next/dynamic` (`ssr: false`) behind a loading card.
+- **When the 2D art shows instead:**
+  - the device has no WebGL2;
+  - the 3D view throws (an error boundary catches it);
+  - the device is too slow (see "Phone speed");
+  - the URL has `?map=2d`.
+- **The code:**
+  - one data hook for both views: `campus-map/useCampusMapData.ts`;
+  - the panels: `CampusMapPanels.tsx`;
+  - the 2D view: `CampusMap2DView.tsx`;
+  - the 3D view: `CampusMap3DView.tsx`, with `map3d/markers.tsx` and `map3d/places.ts`. The scene itself is `map3d/CampusScene.tsx`.
+- **Dev preview:** `/map3d/preview`, with mock data. Parameters: `?role=freshie|faci|staff|admin`, `&full=1`, `&map=2d`, `&check=1` (Admin's accuracy check).
+- **Lightbulbs (Ben, 2026-10-15):** no lightbulb markers or layer in 3D.
+  - The funfair zones show which bulbs are lit, and the location photos on the Items page tell groups where to go.
+  - The lightbulb list sits under the 3D map, and Admin keeps Reset there. Move bulb is in the 2D view only.
+  - See the funfair design, "How the game reaches the funfair".
+- **Light switch:** full screen has Auto / Sunset / Day / Night (top right). Its accent is the group colour, or the Welcome page's cyan.
+- **Admin's accuracy check in 3D:** tap the ground to see the GPS error in metres. Nothing is saved. Saved anchors bend the 2D map only.
+- **Badge taps on phones:** a touch may move up to 16 px (`isTap` in `markers.tsx`), and a camera flight first plays out the controls' damping.
+
+### Vortexa Funfair (plan step 7, merged)
+
+- **Ben's decisions:**
+  - each zone has its own style: west = A Neon Cyber (brightened for daytime), central = C Toy low-poly, east = B Retro carnival;
+  - all three share the A-style VORTEXA gate and the A-style powered-off look;
+  - put it **straight into the map** (no separate preview for Ben);
+  - the land must not look empty;
+  - the lightbulbs are shared by everyone; Admin chooses which zone powers up after which key;
+  - dorm names stay on the ride labels;
+  - fireworks come every few minutes after the finale (the lake stage's concert);
+  - there is no sound.
+- **What was built:**
+
+  | Batch | Work | Code, extras and cost |
+  |---|---|---|
+  | F1 | Central zone (style C): LY4 teacups, LY5 bumper cars, LY8 swing ride, LY9 drop tower, the crossing with the Starlight pole and the power box, the north square (fountain, stalls, stage) | `funfair/central.tsx` and `funfair/central/`. Desktop: +28 draw calls, about +118k triangles (shadow pass included). |
+  | F2 | West zone (style A): LY3 Vortexa Eye with food stalls, LY1 carousel, LY2 game booths with the duck shoot, LY6 and LY7 spider rides; the shared VORTEXA gate | `funfair/west.tsx` and `funfair/west/` (origin world (35.2, -38.2)); `funfair/gate.tsx` (world (20, -11.5); `power` = share of zones on: pillars at 1/3, letters at 2/3, arch at 1). Extras: a lagoon with a lighthouse and duck boats, a palm grove with a neon dome, a food court. Desktop: West +34 calls / +160k triangles, gate +5 / +7k; lite West +23 / +83k. |
+  | F3 | East zone (style B): Canteen D6 Big Top, D4/D5 roller coaster, D2 haunted house, D3 pirate ship, D1 arcade | `funfair/east.tsx` and `funfair/east/` (origin world (29, 18); `onLawn()` in `east/layout.ts`). The pirate ship moved 14 m north and the arcade 21 m north to stay on the lawn. Extras: a helter-skelter, a food court, circus wagons. Desktop +15 calls / +127k triangles; lite +12 / +56k. |
+  | F4 | The funfair in the map | See "In the map" below. |
+  | F5 | Admin control | Built. Migration `0088` is applied (Ben, 2026-10-17; see "Admin control" below). |
+
+- **The land** (Ben, 2026-10-16): the brown field is gone. The whole dorm land is lawn like the lake park (`FUNFAIR_LAND` in `geo.ts`), reaching west to LY1 and LY6, and the zones may use all of it. Zones have no lawn plate of their own: they add paths and raised plazas on the campus lawn.
+- **Depth precision:** `DepthRange` in `CampusScene` moves the camera's near plane out with its distance to the target (2.5%, 1 to 10). Thin layers (paths 0.12 m over the lawn, plaza rims) are then safe on phones at map distances. Still keep stacked flat layers at least 0.08 m apart.
+- `usePowerRamp` (`funfair/common.ts`) asks for frames while it ramps, so a power-up plays to the end on a map that draws on demand (the card, lite mode). Rides only move on drawn frames.
+- **In the map (F4):**
+  - `funfair/Funfair.tsx`: `Funfair` renders the three zones and the gate. `CampusScene` takes `funfair` (each zone 0 or 1, default all off) and renders it.
+    - The default key of each zone: east ← B1, west ← A3, central ← TF (`DEFAULT_ZONE_KEYS` in `src/lib/funfair.ts`).
+    - `funfairFromBulbs()` turns lit lightbulbs into zone power. `CampusMap3DView` feeds it `data.bulbs`, which every role gets for lit bulbs and which updates live, so a newly lit bulb plays the power-up.
+    - The gate gets the share of zones on.
+  - Labels:
+    - `funfair/labels.ts` has `RIDE_TAGS`, one per dorm with its ride ("LY3 · Vortexa Eye"). They are sprite tags shown when the camera is close, whether or not names are on (`RideTags` in `markers.tsx`).
+    - `FUNFAIR_LABEL` "Vortexa Funfair (game zone)" is shown with the place names.
+  - `/map3d` takes `?funfair=1,0,1` (west, central, east; default all on). To view a zone, use `/map3d?cam=…&funfair=…&mode=…`:
+    - West: `cam=72,46,10,34,0,-30`.
+    - Central: `cam=72,42,28,32,0,-11.5`.
+    - East: `cam=68,46,52,29,0,16`.
+  - Not done: a painted link path from West's Gate Walk to the gate (the orange strip along the park already joins them).
+- **Phones at night (Ben: lit zones were hard to see on his iPhone):**
+  - Phones draw lite (no bloom, no point lights), so lit zones barely stood out. Lite makes up for it:
+    - bulbs and neon tubes are 1.6× bigger (`LITE_LIGHT_SCALE`; `lightBake()` sets `Bake.widen`);
+    - powered paint and paving glow a little at night (`LITE_SELF_LIT`, `LITE_PAVING_LIT`; `uSelf` in each kit's paint shader);
+    - the light pools are 1.4× bigger and stronger;
+    - soft halos sit over each zone's landmarks (`funfair/glow.tsx`, one draw call per zone, fading out within about 45–110 units of the camera).
+  - At sunset, phones show the halos and light pools at about 40% of their night strength (`DUSK_SHARE` in `glow.tsx`), with no self-glow.
+  - Desktop and daytime are unchanged.
+- **Admin control (F5):**
+  - **Migration** `supabase/migrations/0088_funfair_zones.sql`, applied on the project (Ben, 2026-10-17).
+    - `funfair_zones`: one row per zone with its keys (`required`), `rule` (any/all) and `manual` override. It is seeded with the default keys. Only `is_game_lead()` can read it, since the keys would give away where the unlit bulbs are.
+    - `fn_funfair_state()`: zone and on/off, for everyone signed in.
+    - `fn_set_funfair_zone()`: game leads only.
+    - Realtime is on for the table.
+  - **Map side:**
+    - `src/lib/funfair.ts` holds the shared types, the defaults and `funfairMissing()`. It has no 3D code.
+    - `useCampusMapData({ loadFunfair })` (3D view only) asks `fn_funfair_state` on load, whenever the lit bulbs change, every 10 s (`FUNFAIR_POLL_MS`; Ben wants changes on the map within 15 s), and when the page comes back into view. The bulbs also reload then, in case the phone missed Realtime events while it slept. If 0088 is missing it stops after the first 404 and uses `funfairFromBulbs()` with the default keys. The result is `data.funfair`; the dev preview's mock fills it from the default keys.
+  - **The cards:** `useFunfairZones()` (`src/components/useFunfairZones.ts`) loads and saves for both.
+    - Admin → Live control: `components/admin/FunfairZones.tsx`.
+    - HOGM → Game control, Funfair tab: `components/staff/game/FunfairSection.tsx`.
+    - Each card has keys B1/A3/TF, any/all (when there are two or more keys), override Auto/On/Off, and Preview.
+  - **Preview:** `?funfair_preview=west|central|east` on any map opens full screen, flies to the zone and plays its power-up on that screen only.
+  - **Not seen running with data:** the two cards need a login, so they are typechecked only (L4 rendered them logged out, with no rows). The previews were checked on `/map3d/preview`.
+- **Later (polish; Ben: viewable and usable first, details later):**
+  - West: the wheel plaza's night light pool floods it pink; the lighthouse beam is strong under bloom; palm fronds are flat blades; the carousel horses look grey under the canopy; check the gate pillars against Central's south hedge.
+  - East: dim (and thin) the cables once a zone is on; the coaster train never stops in the station and its speed is a simple height formula; the loop is a rounded spline and there is no lift chain; ghosts and the prize wheel don't move, and the Big Top's flags don't wave; no searchlights (the material is in `east/kit.ts`, unused); the haunted house's porch post hides part of "HAUNTED" from some angles; no queue rails; no light strings across East's walks; trees on a plain grid and no hedges by the road; the Big Top's inside is a dark box.
+  - All zones: bulb strings and pennants have no wire (they float up close); the bright neon cables at night (pink West, yellow East).
+
+### LakeFront Café: the lake stage (2026-10-16 to 10-17, on `funfair-central`)
+
+- The red dome is now the open-air stage from Ben's photos, lit every evening and holding a concert. Design, decisions and batches L1–L4: [map3d-lakefront-design.md](map3d-lakefront-design.md). Code: `src/components/map3d/lakefront/`.
+- **Done:**
+  - L1, the model;
+  - L2, evening lighting with sweeping beams;
+  - L3, the concert;
+  - L4, the trigger: the concert plays while all three funfair zones are on, with a "● LIVE" tag on the label, and Admin's and HOGM's Funfair cards preview it (`?funfair_preview=lakefront`);
+  - the XMUM hedge letters are gone (Ben).
+- Ben accepted the venue; the old `Dome` is deleted (2026-10-17).
+- **Next:** check the stage on a real phone.
+- `CampusScene` takes `concert`: left out, it follows the funfair; true or false forces it. `/map3d?concert=0|1|flip`.
+
+## Working on the map without breaking it
+
+| What changes | Files | Safe? | Rule |
+|---|---|---|---|
+| How a building or landmark looks (roofs, colours, windows, the statue, B1, courts, water, trees) | `map3d/buildings.tsx`, `statue.tsx`, `sports.tsx`, `water.tsx`, `vegetation.tsx`, `textures.ts`, `atmosphere.tsx` | Yes | Keep the exported component names and props, and keep the lite-mode branches (phones). |
+| Where a building stands or how big it is | `map3d/geo.ts` (`BLOCKS`, `B1_PLACE`, `DOME_PLACE`, `STATUE`), `campusData.ts`, `scripts/map3d/*` | Careful | Station markers and hit areas follow `map3d/places.ts`, which reads these positions. After a move, check `/map3d/preview` (markers on the right buildings) and `inKeepOut` (no trees inside). Don't change `UNITS_PER_M`, the world axes or `gpsToWorld`: group GPS pins depend on them. |
+| The funfair and the lake stage | `map3d/funfair/`, `map3d/lakefront/` | Yes | Self-contained. They meet the rest of the map only in `CampusScene.tsx`, and in `geo.ts` (`FUNFAIR_LAND`, `DOME_PLACE`). |
+| The map pages and data | `components/CampusMap.tsx`, `components/campus-map/*`, the pages | Careful | Shared by the 3D view and the 2D fallback. Check both (`?map=2d`) on `/map3d/preview` for each role. |
+
+- **One task, one commit.** Commit visual tweaks on their own (for example "style(map3d): …"), and never mix them into a batch commit.
+- **When two things run at once,** each agent `git add`s only its own files.
+- **After any visual change,** look at `/map3d` (the whole map), `/map3d/preview` (markers still on their buildings) and a phone size (`390x844m`, lite mode).
+
+## Useful facts
+
+- **Dev server:** `npx next dev -p 3000`. If nothing is listening on port 3000, start it.
+- **Screenshots:** headless Chrome over the DevTools protocol.
+  - Start Chrome with `--headless=new --remote-debugging-port=9222 --user-data-dir=<a temp folder>`.
+  - A small script (written in each session's scratchpad, since it does not carry over) opens a tab per shot, emulates the size (phones: touch, DPR 2), waits, saves a PNG, and prints the console's errors and warnings.
+  - `/map3d` URL parameters: `?intro=0`, `?mode=day|sunset|night`, `?cam=x,y,z,tx,ty,tz`, `?lite=0|1`, `?perf=0`. In development, `?stats=1` logs draw calls and triangles.
+  - **Always use `?perf=0` for headless shots.** Without it, SwiftShader is slow enough that the 3D map gives up and shows 2D.
+- **Checks:**
+  - `npx tsc --noEmit -p .` (clean, tests included);
+  - `npx eslint <changed files>`;
+  - `npx vitest run`. The database tests use embedded Postgres; the lake stage has `tests/lakefront/show.test.ts`.
+- **Shaders:** clamp before `pow()`. A NaN from `pow()` of a tiny negative spreads through the desktop bloom into a black frame. Phones have no bloom, so a phone-size shot does not catch it.
+- A tap-replay helper (`probe.mjs`: taps, drags and screenshots from a JSON step list) was useful for checking taps on a phone. It lived in a session's scratchpad, so write it again if needed.
+
+## Batch 5 (2026-10-16, merged)
+
+Fixed (the review's findings and Ben's additions):
+
+- 3D can't run → 2D map: `canUseWebGL()` asks for WebGL2 only. `CampusScene` makes the renderer itself (`gl` factory) and reports a failure through `onFail`, which `CampusMapView` turns into the 2D view (before, the card stayed blank).
+- **Phone speed:**
+  - The scene draws on demand (`frameloop="demand"`), so a still card costs nothing. Anything that animates asks for frames (`Intro`, `CameraRig`, `GroundMarks`, the flag's badge image, power-ups).
+  - Full screen draws every frame on a fast device. Phones draw every frame in full screen while a funfair zone is on, at night (the lake stage's beams sweep), and during the concert.
+  - Lite mode has no shadow pass.
+  - `FrameRateProbe` measures the frame rate once, 0.5–2.5 s after start. Below 24 fps the full scene steps down to lite, and lite below 10 fps falls back to 2D (`onFail`). `?perf=0` turns the probe off.
+- Accuracy check:
+  - A roof or wall tap measures at the building (hit areas stay on during the check), not the ground behind it. "You" is a blue dot.
+  - Each reading is logged on the Admin's phone (localStorage `campus-map-check-log`, newest 50) with metres and compass direction.
+  - With 3+ readings, the panel says whether it looks like a steady offset (average ≥ 5 m and bigger than the spread) or GPS noise. Copy gives a CSV. Nothing goes to the server.
+- The light switch's Auto no longer flies the camera back to the start view.
+- 2D accuracy texts say a correction bends the 2D map only.
+- Tapping the OSM credit link no longer opens full screen.
+- Trees and bushes are kept off A5's entrance (`A5_ENTRANCE` in `geo.ts`).
+- Preview: the `?check=1` mock fix is on open ground (30 m south of the statue).
+- Flickering dark bands on Ben's phone:
+  - The soil slab's top face sat only 0.01 below the ground plane. That is too close for a phone's depth buffer at map distances, so it showed through in horizontal stripes.
+  - The slab no longer draws its top face (`Slab` in `ground.tsx`).
+  - To reproduce depth problems on desktop, set the camera's `near` in `CampusScene` to 0.05 for a test (do not commit it). It makes the depth buffer about 20 times coarser.
+
+Still open:
+
+- Merge static meshes (about 700 draw calls); measure on a cheap 2–3-year-old Android.
+- Admin's Move bulb and save-correction stay 2D only (`?map=2d`).
+- A tap during a camera flight stops it (on purpose: a drag takes over).
+- Check A5 against Ben's photos. Real pages behind login and a real phone are still unchecked.

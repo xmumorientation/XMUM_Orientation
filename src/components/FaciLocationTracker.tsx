@@ -80,12 +80,15 @@ const GEOLOCATION_OPTIONS: PositionOptions = {
   timeout: 20_000,
 };
 
-/** Least time between two reports while moving. */
-const REPORT_INTERVAL_MS = 30_000;
+/**
+ * Least time between two reports while moving. 12 s, so a group's pin moves on the map within 15 s (Ben), with
+ * room for the fix and the map's reload; above the server's 10 s floor (FORCED_GAP_MS).
+ */
+const REPORT_INTERVAL_MS = 12_000;
 /** Least time between two reports even when one is forced (resume, tap). The server ignores faster ones. */
 const FORCED_GAP_MS = 10_000;
 /** Ask for a fresh fix this often when standing still (watchPosition goes quiet). */
-const HEARTBEAT_MS = 55_000;
+const HEARTBEAT_MS = 12_000;
 /** After a timeout, try again this soon. */
 const TIMEOUT_RETRY_MS = 10_000;
 /** Check whether the group was off the map when the app comes back after this long. */
@@ -377,7 +380,7 @@ export function FaciLocationProvider({
       ) {
         getFix(false);
       }
-    }, 15_000);
+    }, 5_000);
 
     function onVisibility() {
       if (document.visibilityState === "hidden") {
