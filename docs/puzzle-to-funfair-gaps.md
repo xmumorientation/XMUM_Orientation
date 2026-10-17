@@ -21,7 +21,7 @@ Checked on 2026-10-16 against `main` (migrations up to `0088`). Nothing on this 
    - A3 → West · Neon Pier;
    - TF → Central · Starlight Midway.
 
-   Admin and HOGM can change them once `0088` runs.
+   Admin and HOGM can change them (`0088`, applied 2026-10-17).
 
    When all three zones are on, the lake stage (LakeFront Café) plays its concert, the finale, on every open 3D map.
 
@@ -76,12 +76,11 @@ Admin's Reset on a bulb turns its zone off again.
 16. **There is no pre-event checklist.** Before the event, someone has to:
     - turn off demo mode and Rehearsal mode;
     - make the cards for all three bulbs;
-    - run `0088`;
     - fill in the Guardian spots.
 
     Today this list is only in the docs. A Live control card could show what is not ready.
 17. **Unlit bulbs are not really secret.** Any logged-in user can read the `projectors` table, including where the unlit bulbs are (`map_x`, `map_y`). That also weakens the way `0088` hides the zone keys. This is ROADMAP item 3 (Deferred).
-18. **Until `0088` runs, the funfair setup cannot change.** Meanwhile the map uses the default keys, so the game still works.
+18. ~~**Until `0088` runs, the funfair setup cannot change.**~~ Done: `0088` is applied (Ben, 2026-10-17).
 
 ## Next steps
 
@@ -91,4 +90,4 @@ Admin's Reset on a bulb turns its zone off again.
 | Ben | Test 2 on a real iPhone: put the app on the Home Screen, then tap a card. |
 | HOGM team | The real Guardian spots and photos for 4. |
 | David | Before 13–15: `bonding-session` plans NFC redemption to replace the Guardian's check (see ROADMAP, "Read before merging `bonding-session`"). Decide on that first. |
-| To assign | 9, 10, 12 and 16, if there is time. Run `0088` (18). Item 17 stays under ROADMAP item 3. |
+| To assign | 9, 10, 12 and 16, if there is time. Item 17 stays under ROADMAP item 3. |

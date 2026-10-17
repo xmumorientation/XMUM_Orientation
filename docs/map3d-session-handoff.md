@@ -65,7 +65,7 @@ Ben may continue this work in a new Claude conversation. This file says where ev
   | F2 | West zone (style A): LY3 Vortexa Eye with food stalls, LY1 carousel, LY2 game booths with the duck shoot, LY6 and LY7 spider rides; the shared VORTEXA gate | `funfair/west.tsx` and `funfair/west/` (origin world (35.2, -38.2)); `funfair/gate.tsx` (world (20, -11.5); `power` = share of zones on: pillars at 1/3, letters at 2/3, arch at 1). Extras: a lagoon with a lighthouse and duck boats, a palm grove with a neon dome, a food court. Desktop: West +34 calls / +160k triangles, gate +5 / +7k; lite West +23 / +83k. |
   | F3 | East zone (style B): Canteen D6 Big Top, D4/D5 roller coaster, D2 haunted house, D3 pirate ship, D1 arcade | `funfair/east.tsx` and `funfair/east/` (origin world (29, 18); `onLawn()` in `east/layout.ts`). The pirate ship moved 14 m north and the arcade 21 m north to stay on the lawn. Extras: a helter-skelter, a food court, circus wagons. Desktop +15 calls / +127k triangles; lite +12 / +56k. |
   | F4 | The funfair in the map | See "In the map" below. |
-  | F5 | Admin control | Built. Migration `0088` is **not applied** (see "Admin control" below). |
+  | F5 | Admin control | Built. Migration `0088` is applied (Ben, 2026-10-17; see "Admin control" below). |
 
 - **The land** (Ben, 2026-10-16): the brown field is gone. The whole dorm land is lawn like the lake park (`FUNFAIR_LAND` in `geo.ts`), reaching west to LY1 and LY6, and the zones may use all of it. Zones have no lawn plate of their own: they add paths and raised plazas on the campus lawn.
 - **Depth precision:** `DepthRange` in `CampusScene` moves the camera's near plane out with its distance to the target (2.5%, 1 to 10). Thin layers (paths 0.12 m over the lawn, plaza rims) are then safe on phones at map distances. Still keep stacked flat layers at least 0.08 m apart.
@@ -92,7 +92,7 @@ Ben may continue this work in a new Claude conversation. This file says where ev
   - At sunset, phones show the halos and light pools at about 40% of their night strength (`DUSK_SHARE` in `glow.tsx`), with no self-glow.
   - Desktop and daytime are unchanged.
 - **Admin control (F5):**
-  - **Migration** `supabase/migrations/0088_funfair_zones.sql`, written but **not applied**; Ben's team applies it.
+  - **Migration** `supabase/migrations/0088_funfair_zones.sql`, applied on the project (Ben, 2026-10-17).
     - `funfair_zones`: one row per zone with its keys (`required`), `rule` (any/all) and `manual` override. It is seeded with the default keys. Only `is_game_lead()` can read it, since the keys would give away where the unlit bulbs are.
     - `fn_funfair_state()`: zone and on/off, for everyone signed in.
     - `fn_set_funfair_zone()`: game leads only.
@@ -105,7 +105,7 @@ Ben may continue this work in a new Claude conversation. This file says where ev
     - HOGM → Game control, Funfair tab: `components/staff/game/FunfairSection.tsx`.
     - Each card has keys B1/A3/TF, any/all (when there are two or more keys), override Auto/On/Off, and Preview.
   - **Preview:** `?funfair_preview=west|central|east` on any map opens full screen, flies to the zone and plays its power-up on that screen only.
-  - **Not seen running:** the two cards need a login and 0088, so they are typechecked only. The preview was checked on `/map3d/preview`.
+  - **Not seen running with data:** the two cards need a login, so they are typechecked only (L4 rendered them logged out, with no rows). The previews were checked on `/map3d/preview`.
 - **Later (polish; Ben: viewable and usable first, details later):**
   - West: the wheel plaza's night light pool floods it pink; the lighthouse beam is strong under bloom; palm fronds are flat blades; the carousel horses look grey under the canopy; check the gate pillars against Central's south hedge.
   - East: dim (and thin) the cables once a zone is on; the coaster train never stops in the station and its speed is a simple height formula; the loop is a rounded spline and there is no lift chain; ghosts and the prize wheel don't move, and the Big Top's flags don't wave; no searchlights (the material is in `east/kit.ts`, unused); the haunted house's porch post hides part of "HAUNTED" from some angles; no queue rails; no light strings across East's walks; trees on a plain grid and no hedges by the road; the Big Top's inside is a dark box.
