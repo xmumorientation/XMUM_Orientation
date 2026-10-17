@@ -27,8 +27,12 @@ export type MapLayer = "stations" | "bulbs";
 /** Which map draws the data: the 3D campus, or the 2D art (the fallback). */
 export type MapView = "3d" | "2d";
 const LAYER_KEY = "campus-map-layer";
-/** How often the 3D map asks which funfair zones are on (a lit bulb also asks at once). */
-const FUNFAIR_POLL_MS = 30_000;
+/**
+ * How often the 3D map asks which funfair zones are on (a lit bulb also asks at once). Admin's overrides and keys
+ * have no Realtime (only game leads can read funfair_zones), so this is how they reach other maps: within 15 s
+ * (Ben), with room for the request.
+ */
+const FUNFAIR_POLL_MS = 10_000;
 const SEEN_LIT_KEY = "campus-map-seen-lit";
 
 export type MapSpot = { x: number; y: number };
@@ -296,7 +300,7 @@ export function useCampusMapData({
 
   // The funfair's zones (3D map). fn_funfair_state (0088) decides, so Admin's keys and overrides count; until
   // 0088 is applied, the default keys do (funfairFromBulbs). Asked again when the lit bulbs change (they come
-  // live) and every 30 s (Admin's changes reach other maps that way).
+  // live), every 10 s (Admin's changes reach other maps that way), and when the page comes back into view.
   const [funfairState, setFunfairState] = useState<FunfairPower | null>(null);
   const litKey = bulbs
     .filter((b) => b.activated_at)
@@ -323,9 +327,15 @@ export function useCampusMapData({
     }
     void load();
     const id = window.setInterval(load, FUNFAIR_POLL_MS);
+    // Timers sleep while a phone is in another app, so ask at once on coming back instead of at the next tick.
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void load();
+    };
+    document.addEventListener("visibilitychange", onVisible);
     return () => {
       active = false;
       window.clearInterval(id);
+      document.removeEventListener("visibilitychange", onVisible);
     };
   }, [supabase, loadFunfair, litKey]);
   const funfair = useMemo(() => funfairState ?? funfairFromBulbs(bulbs), [funfairState, bulbs]);
@@ -471,18 +481,30 @@ export function useCampusMapData({
       .subscribe();
 
     // Pins fade with age, so re-check the clock even when no new report
-    // arrives. Reload too, in case a realtime event was missed.
+    // arrives. Reload too, in case a realtime event was missed: every 10 s,
+    // so a pin is never more than 15 s behind (Ben).
     const tick = showGroupPins
       ? setInterval(() => {
           setNowMs(Date.now());
           loadPositions();
-        }, 30_000)
+        }, 10_000)
       : null;
+
+    // A phone back from another app may have missed realtime events while it slept, so reload the bulbs (a newly
+    // lit one then also asks the funfair again) and the group pins.
+    const onVisible = () => {
+      if (document.visibilityState !== "visible") return;
+      void loadBulbs();
+      setNowMs(Date.now());
+      void loadPositions();
+    };
+    document.addEventListener("visibilitychange", onVisible);
 
     return () => {
       active = false;
       if (tick) clearInterval(tick);
       if (reloadTimer) clearTimeout(reloadTimer);
+      document.removeEventListener("visibilitychange", onVisible);
       supabase.removeChannel(channel);
     };
   }, [supabase, showGroupPins]);

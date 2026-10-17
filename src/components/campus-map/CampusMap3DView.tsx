@@ -36,9 +36,10 @@ import {
   ringPoint,
 } from "@/components/map3d/places";
 import { ZONE_CENTERS } from "@/components/map3d/funfair/labels";
+import { stageView } from "@/components/map3d/lakefront/layout";
 import { prefersLite } from "@/components/map3d/webgl";
 import { stationDotColor } from "@/components/ui";
-import type { FunfairZone } from "@/lib/funfair";
+import { isFunfairPreview, type FunfairPreview } from "@/lib/funfair";
 import { groupPinColor } from "@/lib/mapGeo";
 import type { Station } from "@/lib/types";
 
@@ -407,11 +408,14 @@ export function CampusMap3DView({
 
   useEffect(() => {
     const zone = new URLSearchParams(window.location.search).get("funfair_preview");
-    if (zone !== "west" && zone !== "central" && zone !== "east") return;
+    if (!isFunfairPreview(zone)) return;
     setPreview({ zone, on: false });
     onFullscreenChange(true);
-    const [x, z] = ZONE_CENTERS[zone];
-    const toZone = window.setTimeout(() => fly({ kind: "focus", target: [x, 0, z], distance: 70 }), 1200);
+    const plan: FlightPlan =
+      zone === "lakefront"
+        ? { kind: "to", ...stageView(window.innerWidth < window.innerHeight) }
+        : { kind: "focus", target: [ZONE_CENTERS[zone][0], 0, ZONE_CENTERS[zone][1]], distance: 70 };
+    const toZone = window.setTimeout(() => fly(plan), 1200);
     const powerUp = window.setTimeout(() => setPreview({ zone, on: true }), 3200);
     return () => {
       window.clearTimeout(toZone);
@@ -426,12 +430,15 @@ export function CampusMap3DView({
   const sceneMode = look ?? mode ?? env?.mode ?? "day";
   // The funfair's zones (data.funfair: funfair_zones, or the default keys), and Admin's preview
   // (?funfair_preview=west, from the Funfair card): full screen opens on that zone, which then powers up, on this
-  // screen only.
-  const [preview, setPreview] = useState<{ zone: FunfairZone; on: boolean } | null>(null);
+  // screen only. ?funfair_preview=lakefront opens on the lake stage and plays the concert's opening. Otherwise the
+  // concert follows the funfair (CampusScene: all three zones on).
+  const [preview, setPreview] = useState<{ zone: FunfairPreview; on: boolean } | null>(null);
   const funfair = useMemo(
-    () => (preview ? { ...data.funfair, [preview.zone]: preview.on ? 1 : 0 } : data.funfair),
+    () =>
+      preview && preview.zone !== "lakefront" ? { ...data.funfair, [preview.zone]: preview.on ? 1 : 0 } : data.funfair,
     [data.funfair, preview],
   );
+  const concert = preview?.zone === "lakefront" ? preview.on : undefined;
   const split = useMemo(() => new Set(fullscreen && splitKey ? splitKey.split("|") : []), [fullscreen, splitKey]);
 
   function fly(plan: FlightPlan) {
@@ -708,6 +715,7 @@ export function CampusMap3DView({
               <CampusScene
                 mode={sceneMode}
                 funfair={funfair}
+                concert={concert}
                 lite={isLite}
                 camera={camera ?? env.camera}
                 intro={intro}

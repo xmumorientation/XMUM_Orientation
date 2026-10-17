@@ -1,8 +1,8 @@
-# 3D map: handoff for a new conversation (updated 2026-10-16)
+# 3D map: handoff for a new conversation (updated 2026-10-17)
 
 Ben may continue this work in a new Claude conversation. This file says where everything stands. Read it before doing anything, then read what you need:
 
-- [map3d-lakefront-design.md](map3d-lakefront-design.md): the lake stage (LakeFront Café) and its concert, the work in progress;
+- [map3d-lakefront-design.md](map3d-lakefront-design.md): the lake stage (LakeFront Café), its concert and what starts it;
 - [map3d-funfair-design.md](map3d-funfair-design.md): the funfair design;
 - [map3d-draft-handoff.md](map3d-draft-handoff.md): how the 3D map itself was built (data, scale, the statue);
 - [map3d-implementation-plan.md](map3d-implementation-plan.md): the plan that replaced the 2D map, and its "Progress" log.
@@ -55,7 +55,7 @@ Ben may continue this work in a new Claude conversation. This file says where ev
   - the land must not look empty;
   - the lightbulbs are shared by everyone; Admin chooses which zone powers up after which key;
   - dorm names stay on the ride labels;
-  - fireworks come every few minutes after the finale (now the lake stage's concert, L4);
+  - fireworks come every few minutes after the finale (the lake stage's concert);
   - there is no sound.
 - **What was built:**
 
@@ -65,7 +65,7 @@ Ben may continue this work in a new Claude conversation. This file says where ev
   | F2 | West zone (style A): LY3 Vortexa Eye with food stalls, LY1 carousel, LY2 game booths with the duck shoot, LY6 and LY7 spider rides; the shared VORTEXA gate | `funfair/west.tsx` and `funfair/west/` (origin world (35.2, -38.2)); `funfair/gate.tsx` (world (20, -11.5); `power` = share of zones on: pillars at 1/3, letters at 2/3, arch at 1). Extras: a lagoon with a lighthouse and duck boats, a palm grove with a neon dome, a food court. Desktop: West +34 calls / +160k triangles, gate +5 / +7k; lite West +23 / +83k. |
   | F3 | East zone (style B): Canteen D6 Big Top, D4/D5 roller coaster, D2 haunted house, D3 pirate ship, D1 arcade | `funfair/east.tsx` and `funfair/east/` (origin world (29, 18); `onLawn()` in `east/layout.ts`). The pirate ship moved 14 m north and the arcade 21 m north to stay on the lawn. Extras: a helter-skelter, a food court, circus wagons. Desktop +15 calls / +127k triangles; lite +12 / +56k. |
   | F4 | The funfair in the map | See "In the map" below. |
-  | F5 | Admin control | Built. Migration `0088` is **not applied** (see "Admin control" below). |
+  | F5 | Admin control | Built. Migration `0088` is applied (Ben, 2026-10-17; see "Admin control" below). |
 
 - **The land** (Ben, 2026-10-16): the brown field is gone. The whole dorm land is lawn like the lake park (`FUNFAIR_LAND` in `geo.ts`), reaching west to LY1 and LY6, and the zones may use all of it. Zones have no lawn plate of their own: they add paths and raised plazas on the campus lawn.
 - **Depth precision:** `DepthRange` in `CampusScene` moves the camera's near plane out with its distance to the target (2.5%, 1 to 10). Thin layers (paths 0.12 m over the lawn, plaza rims) are then safe on phones at map distances. Still keep stacked flat layers at least 0.08 m apart.
@@ -92,35 +92,37 @@ Ben may continue this work in a new Claude conversation. This file says where ev
   - At sunset, phones show the halos and light pools at about 40% of their night strength (`DUSK_SHARE` in `glow.tsx`), with no self-glow.
   - Desktop and daytime are unchanged.
 - **Admin control (F5):**
-  - **Migration** `supabase/migrations/0088_funfair_zones.sql`, written but **not applied**; Ben's team applies it.
+  - **Migration** `supabase/migrations/0088_funfair_zones.sql`, applied on the project (Ben, 2026-10-17).
     - `funfair_zones`: one row per zone with its keys (`required`), `rule` (any/all) and `manual` override. It is seeded with the default keys. Only `is_game_lead()` can read it, since the keys would give away where the unlit bulbs are.
     - `fn_funfair_state()`: zone and on/off, for everyone signed in.
     - `fn_set_funfair_zone()`: game leads only.
     - Realtime is on for the table.
   - **Map side:**
     - `src/lib/funfair.ts` holds the shared types, the defaults and `funfairMissing()`. It has no 3D code.
-    - `useCampusMapData({ loadFunfair })` (3D view only) asks `fn_funfair_state` on load, whenever the lit bulbs change, and every 30 s. If 0088 is missing it stops after the first 404 and uses `funfairFromBulbs()` with the default keys. The result is `data.funfair`; the dev preview's mock fills it from the default keys.
+    - `useCampusMapData({ loadFunfair })` (3D view only) asks `fn_funfair_state` on load, whenever the lit bulbs change, every 10 s (`FUNFAIR_POLL_MS`; Ben wants changes on the map within 15 s), and when the page comes back into view. The bulbs also reload then, in case the phone missed Realtime events while it slept. If 0088 is missing it stops after the first 404 and uses `funfairFromBulbs()` with the default keys. The result is `data.funfair`; the dev preview's mock fills it from the default keys.
   - **The cards:** `useFunfairZones()` (`src/components/useFunfairZones.ts`) loads and saves for both.
     - Admin → Live control: `components/admin/FunfairZones.tsx`.
     - HOGM → Game control, Funfair tab: `components/staff/game/FunfairSection.tsx`.
     - Each card has keys B1/A3/TF, any/all (when there are two or more keys), override Auto/On/Off, and Preview.
   - **Preview:** `?funfair_preview=west|central|east` on any map opens full screen, flies to the zone and plays its power-up on that screen only.
-  - **Not seen running:** the two cards need a login and 0088, so they are typechecked only. The preview was checked on `/map3d/preview`.
+  - **Not seen running with data:** the two cards need a login, so they are typechecked only (L4 rendered them logged out, with no rows). The previews were checked on `/map3d/preview`.
 - **Later (polish; Ben: viewable and usable first, details later):**
   - West: the wheel plaza's night light pool floods it pink; the lighthouse beam is strong under bloom; palm fronds are flat blades; the carousel horses look grey under the canopy; check the gate pillars against Central's south hedge.
   - East: dim (and thin) the cables once a zone is on; the coaster train never stops in the station and its speed is a simple height formula; the loop is a rounded spline and there is no lift chain; ghosts and the prize wheel don't move, and the Big Top's flags don't wave; no searchlights (the material is in `east/kit.ts`, unused); the haunted house's porch post hides part of "HAUNTED" from some angles; no queue rails; no light strings across East's walks; trees on a plain grid and no hedges by the road; the Big Top's inside is a dark box.
   - All zones: bulb strings and pennants have no wire (they float up close); the bright neon cables at night (pink West, yellow East).
 
-### LakeFront Café: the lake stage (2026-10-16, on `funfair-central`)
+### LakeFront Café: the lake stage (2026-10-16 to 10-17, on `funfair-central`)
 
 - The red dome is now the open-air stage from Ben's photos, lit every evening and holding a concert. Design, decisions and batches L1–L4: [map3d-lakefront-design.md](map3d-lakefront-design.md). Code: `src/components/map3d/lakefront/`.
 - **Done:**
   - L1, the model;
   - L2, evening lighting with sweeping beams;
   - L3, the concert;
+  - L4, the trigger: the concert plays while all three funfair zones are on, with a "● LIVE" tag on the label, and Admin's and HOGM's Funfair cards preview it (`?funfair_preview=lakefront`);
   - the XMUM hedge letters are gone (Ben).
-- **Next:** L4 (turning the concert on at the funfair's finale, the preview, the LIVE tag) waits for Ben's go.
-- `CampusScene` takes `concert` (off by default). `/map3d?concert=1|flip` shows it.
+- Ben accepted the venue; the old `Dome` is deleted (2026-10-17).
+- **Next:** check the stage on a real phone.
+- `CampusScene` takes `concert`: left out, it follows the funfair; true or false forces it. `/map3d?concert=0|1|flip`.
 
 ## Working on the map without breaking it
 

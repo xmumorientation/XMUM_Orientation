@@ -6,7 +6,7 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState, type CSSProper
 import * as THREE from "three";
 import type { MapControls as MapControlsImpl } from "three-stdlib";
 
-import { anyZoneOn, FUNFAIR_OFF, type FunfairPower } from "@/lib/funfair";
+import { allZonesOn, anyZoneOn, FUNFAIR_OFF, type FunfairPower } from "@/lib/funfair";
 
 import { Atmosphere, Effects, MODES, type Mode } from "./atmosphere";
 import { B1Building, Blocks, Bridge, Flag, Grandstand, Statue } from "./buildings";
@@ -110,7 +110,7 @@ function DepthRange() {
 /** Minor labels fade in within this distance of the camera. */
 const MINOR_LABEL_DISTANCE = 95;
 
-function Label({ name, pos, y, minor }: (typeof LABELS)[number]) {
+function Label({ name, pos, y, minor, stage, live }: (typeof LABELS)[number] & { live?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
   const at = useMemo(() => new THREE.Vector3(pos[0], y, pos[1]), [pos, y]);
   useFrame(({ camera }) => {
@@ -139,6 +139,20 @@ function Label({ name, pos, y, minor }: (typeof LABELS)[number]) {
         }}
       >
         {name}
+        {stage && live && (
+          <span
+            style={{
+              marginLeft: 6,
+              padding: "1px 6px",
+              borderRadius: 999,
+              background: "#e11d48",
+              fontSize: 9,
+              letterSpacing: 0.6,
+            }}
+          >
+            <span className="motion-safe:animate-pulse">●</span> LIVE
+          </span>
+        )}
       </div>
     </Html>
   );
@@ -146,15 +160,37 @@ function Label({ name, pos, y, minor }: (typeof LABELS)[number]) {
 
 const ALL_LABELS = [...LABELS, FUNFAIR_LABEL];
 
-const Labels = memo(function Labels() {
+/** `live`: the lake stage's concert is playing, so its label gets a "● LIVE" tag. */
+const Labels = memo(function Labels({ live }: { live: boolean }) {
   return (
     <>
       {ALL_LABELS.map((l) => (
-        <Label key={l.name} {...l} />
+        <Label key={l.name} {...l} live={live} />
       ))}
     </>
   );
 });
+
+/** How long the concert waits after the last zone comes on, so that zone's power-up (2 s) plays first. */
+const FINALE_DELAY_MS = 2000;
+
+/**
+ * The finale: the lake stage's concert plays while all three funfair zones are on, starting once the last one has
+ * powered up, and stops as soon as one goes off. A map opened with all three on starts with it playing, without
+ * the opening.
+ */
+function useFinale(allOn: boolean) {
+  const [playing, setPlaying] = useState(allOn);
+  useEffect(() => {
+    if (!allOn) {
+      setPlaying(false);
+      return;
+    }
+    const start = window.setTimeout(() => setPlaying(true), FINALE_DELAY_MS);
+    return () => window.clearTimeout(start);
+  }, [allOn]);
+  return playing;
+}
 
 /** Everything that never changes after mount, so a caller's re-render (new markers) skips it. */
 const Campus = memo(function Campus({ mode, lite }: { mode: Mode; lite: boolean }) {
@@ -258,7 +294,10 @@ export type CampusSceneProps = {
   interactive?: boolean;
   /** The funfair's zones: which are powered (default all off). A change plays the power-up. */
   funfair?: FunfairPower;
-  /** The lake stage's concert (default off). Turning it on plays the opening. */
+  /**
+   * The lake stage's concert. By default it follows the funfair: it plays while all three zones are on (the
+   * finale). True or false forces it on or off (Admin's preview, dev pages). Turning it on plays the opening.
+   */
   concert?: boolean;
   /** Rendered inside the Canvas, in the scene (depth-tested, post-processed): ground overlays, hit areas. */
   children?: ReactNode;
@@ -285,7 +324,7 @@ export default function CampusScene({
   controlsRef,
   interactive = true,
   funfair = FUNFAIR_OFF,
-  concert = false,
+  concert: concertProp,
   children,
   overlay,
   onFail,
@@ -307,6 +346,8 @@ export default function CampusScene({
   const isLite = stepDown || (lite ?? autoLite ?? false);
   const ready = start !== null && autoLite !== null;
   const look = MODES[mode];
+  const finale = useFinale(allZonesOn(funfair));
+  const concert = concertProp ?? finale;
 
   const fail = useRef(onFail);
   fail.current = onFail;
@@ -362,7 +403,7 @@ export default function CampusScene({
           <Campus mode={mode} lite={isLite} />
           <Funfair power={funfair} night={mode === "night"} dusk={mode === "sunset"} lite={isLite} />
           <LakefrontStage night={mode === "night"} dusk={mode === "sunset"} lite={isLite} live={concert} />
-          {labels && <Labels />}
+          {labels && <Labels live={concert} />}
           {children}
           <MapControls
             ref={controlsRef}

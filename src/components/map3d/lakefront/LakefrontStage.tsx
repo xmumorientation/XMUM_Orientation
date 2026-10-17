@@ -16,8 +16,8 @@ import { GLOW, ORIGIN, POOLS, ROT_Y, WATER_Y } from "./layout";
 import { confettiGeometry, confettiMaterial, fireworkGeometry, fireworkMaterial, makeParticleUniforms, SHELL_SLOTS } from "./particles";
 import { CONFETTI_LIFE, SHELL_LIFE, showAt } from "./show";
 
-// DRAFT: the LakeFront Café (docs/map3d-lakefront-design.md): the open-air stage under its red ribbed shell, the
-// moat, the walkway and the grass amphitheatre, as in Ben's photos. Replaces the old red dome (buildings.tsx Dome).
+// The LakeFront Café (docs/map3d-lakefront-design.md): the open-air stage under its red ribbed shell, the
+// moat, the walkway and the grass amphitheatre, as in Ben's photos. It replaced the old red dome.
 //
 // Evening (sunset and night): LED ribs, the membrane's wash, uplights, small lights, light pools, and sweeping
 // beams in haze (Ben's concert photo); on phones also soft halos.

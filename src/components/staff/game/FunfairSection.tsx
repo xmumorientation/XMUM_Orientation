@@ -20,6 +20,8 @@ const OVERRIDES = [
 
 export function FunfairSection() {
   const { rows, missing, error, busy, save, isOn } = useFunfairZones();
+  // The finale (the lake stage's concert) plays while all three zones are on.
+  const finale = rows?.length ? rows.every(isOn) : null;
 
   if (missing) {
     return (
@@ -105,8 +107,26 @@ export function FunfairSection() {
           );
         })}
       </div>
+      <article className="gc-card gc-form">
+        <header className="gc-game-head">
+          <h3 className="gc-h4">Finale · Lake stage concert</h3>
+          {finale !== null && (
+            <span className="gc-chip" data-tone={finale ? "live" : "off"}>
+              {finale ? "LIVE" : "OFF"}
+            </span>
+          )}
+        </header>
+        <p className="gc-muted">
+          LakeFront Café plays a concert while all three zones are on. To start it early, set all three overrides to
+          On.
+        </p>
+        <a className="gc-btn" href={funfairPreviewHref("lakefront")} target="_blank" rel="noreferrer">
+          <ExternalLink size={16} aria-hidden /> Preview on the map
+        </a>
+      </article>
       <p className="gc-muted">
-        Auto: the zone is on when its keys are lit. Preview plays the zone&apos;s power-up on your screen only.
+        Auto: the zone is on when its keys are lit. A change shows on every map within about 10 s. Preview plays the
+        zone&apos;s power-up (or the concert&apos;s opening) on your screen only.
       </p>
     </div>
   );
