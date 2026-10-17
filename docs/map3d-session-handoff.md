@@ -120,7 +120,8 @@ Ben may continue this work in a new Claude conversation. This file says where ev
   - L3, the concert;
   - L4, the trigger: the concert plays while all three funfair zones are on, with a "● LIVE" tag on the label, and Admin's and HOGM's Funfair cards preview it (`?funfair_preview=lakefront`);
   - the XMUM hedge letters are gone (Ben).
-- **Next:** delete the old `Dome` in `buildings.tsx` once Ben accepts the venue; check the stage on a real phone.
+- Ben accepted the venue; the old `Dome` is deleted (2026-10-17).
+- **Next:** check the stage on a real phone.
 - `CampusScene` takes `concert`: left out, it follows the funfair; true or false forces it. `/map3d?concert=0|1|flip`.
 
 ## Working on the map without breaking it

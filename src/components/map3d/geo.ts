@@ -57,7 +57,6 @@ export const COLORS = {
   line: "#f4efe6",
   red: "#e3000f",
   black: "#141414",
-  cream: "#f2e6cf",
   white: "#f2f2f2",
   stone: "#8e8e8e",
   bronze: "#6d5d4b",

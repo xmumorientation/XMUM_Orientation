@@ -2,7 +2,7 @@
 
 The 3D map's LakeFront Café was a plain red dome. It is now the real venue from Ben's photos: an open-air stage under a red ribbed shell, in a moat at the lake's west tip, with a grass amphitheatre in front. It is lit every evening, and it holds a concert for the funfair's finale.
 
-Status: built in batches on branch `funfair-central`. All four are done: L1 (the model), L2 (the evening lighting and the beams), L3 (the concert) and L4 (the trigger, the preview and the LIVE tag). Left: delete the old `Dome` once Ben accepts the venue, and check it on a real phone.
+Status: built in batches on branch `funfair-central`. All four are done: L1 (the model), L2 (the evening lighting and the beams), L3 (the concert) and L4 (the trigger, the preview and the LIVE tag). Ben accepted the venue and the old `Dome` is deleted (2026-10-17). Left: check it on a real phone.
 
 ## Ben's decisions
 
@@ -32,11 +32,11 @@ Status: built in batches on branch `funfair-central`. All four are done: L1 (the
 - `fx.ts`: every light effect in one draw call: the evening beams and haze, and the concert's sky beams, arch beams, lasers, flame jets, fountains and follow spot. Each is an instance of one quad: beams and lasers are turned about their axis to face the camera (a bright core, soft edges, a fade, never thinner than about 1.5 pixels), flames and fountains stand upright, haze faces the camera. The sweep runs in the shader. Each instance has a group whose strength is a uniform.
 - `show.ts`: the concert as a timeline (pure; tested in `tests/lakefront/show.test.ts`).
 - `crowd.ts`: the crowd's lightsticks (one draw call). `particles.ts`: fireworks and confetti (two draw calls).
-- `LakefrontStage.tsx`: the component, rendered by `CampusScene` in place of the old `Dome`.
+- `LakefrontStage.tsx`: the component, rendered by `CampusScene`. It replaced the old red dome.
 
 Unchanged: `DOME_PLACE`, `DOME`, the label, `inKeepOut`, the GPS anchor in `mapGeo.ts`, station markers and pins, the 2D map, the backend. Nothing (trees, bushes, lamps) stood within 50 m of the stage, and the lake's lotus pads already keep 33 m away.
 
-The old `Dome` stays in `buildings.tsx` until Ben accepts the new venue (rolling back is one line in `CampusScene`); delete it then.
+The old red dome (`Dome` in `buildings.tsx`) is deleted (Ben accepted the venue, 2026-10-17); git history has it.
 
 **Cost (desktop):** 7 meshes, 3 of them in the shadow pass; the old dome had 4 and 3. About +22k triangles (+44k with the shadow pass). Removing the letters saved 26 draw calls. Whole map at night: 800 calls, 944k triangles at 1440×900; lite at 390×844: 419 calls, 390k triangles. Lite also has one halo draw call.
 
@@ -74,7 +74,7 @@ No concert running: set when the look changes, except the beams' sweep.
 
 ## The trigger (L4)
 
-- **The rule:** `CampusScene`'s `concert` prop, left out (as on the real pages), follows the funfair: the concert plays while all three zones are on (`allZonesOn` in `src/lib/funfair.ts`). `useFinale` in `CampusScene.tsx` starts it 2 s after the last zone comes on (`FINALE_DELAY_MS`, the zone's power-up) and stops it as soon as one goes off. A scene that mounts with all three on (as `/map3d` does) shows it already playing, without the opening. The real map usually learns the zones a moment after it opens, so there the zones power up and the opening plays each time the map opens, as the zones' power-ups already did. True or false forces it (the preview, `/map3d`).
+- **The rule:** `CampusScene`'s `concert` prop, left out (as on the real pages), follows the funfair: the concert plays while all three zones are on (`allZonesOn` in `src/lib/funfair.ts`). `useFinale` in `CampusScene.tsx` starts it 2 s after the last zone comes on (`FINALE_DELAY_MS`, the zone's power-up) and stops it as soon as one goes off. A scene that mounts with all three on (as `/map3d` does) shows it already playing, without the opening. The real map usually learns the zones a moment after it opens, so there the zones power up and the opening plays each time the map opens, as the zones' power-ups already did. Ben keeps it that way (2026-10-17). True or false forces it (the preview, `/map3d`).
 - **Real pages:** the zones come from `fn_funfair_state` (`useCampusMapData`: at once on a bulb's Realtime change, and every 30 s), so every open map starts the concert within seconds of the third zone. Admin and HOGM can start it early by setting all three overrides to On.
 - **Label:** "LakeFront Café" gets a red "● LIVE" tag while the concert plays (`LABELS` entry with `stage: true` in `geo.ts`). The dot pulses only when motion is allowed.
 - **Preview:** Admin → Live control → Funfair and HOGM's Game control → Funfair have a "Finale · Lake stage concert" row: LIVE or OFF, and a Preview link to `/map?funfair_preview=lakefront`. The map opens full screen, flies to the stage (`stageView()`: from behind the amphitheatre, further back on an upright phone) and plays the opening, on that screen only. Mock data: `/map3d/preview?funfair_preview=lakefront`.

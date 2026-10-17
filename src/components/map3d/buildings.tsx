@@ -10,7 +10,6 @@ import {
   BLOCKS,
   BRIDGE,
   COLORS,
-  DOME_PLACE,
   FLAG,
   grandstandRect,
   LANDMARK_SCALE,
@@ -650,40 +649,6 @@ export function Flag() {
       </mesh>
       <mesh geometry={geo} position={[0.1, 14.5 - h / 2, 0]} castShadow>
         <meshStandardMaterial map={texture} side={THREE.DoubleSide} roughness={0.8} />
-      </mesh>
-    </group>
-  );
-}
-
-// ── LakeFront Café: red dome on a small island ───────────────────────────
-export function Dome({ glow }: { glow: number }) {
-  return (
-    <group
-      position={at(DOME_PLACE.pos)}
-      rotation-y={DOME_PLACE.rotY}
-      scale={[DOME_PLACE.hx / 3.6, 0.8, DOME_PLACE.hz / 3.6]}
-    >
-      <mesh position={[0, 0.3, 0]} castShadow receiveShadow>
-        <cylinderGeometry args={[3.4, 3.6, 0.6, 40]} />
-        <meshStandardMaterial color={COLORS.cream} roughness={0.8} />
-      </mesh>
-      <mesh position={[0, 0.95, 0]} castShadow>
-        <cylinderGeometry args={[2.9, 2.9, 0.7, 40]} />
-        <meshStandardMaterial
-          color="#33475a"
-          roughness={0.15}
-          metalness={0.3}
-          emissive="#ffc46b"
-          emissiveIntensity={glow * 0.8}
-        />
-      </mesh>
-      <mesh position={[0, 1.3, 0]} scale={[3, 1.5, 3]} castShadow>
-        <sphereGeometry args={[1, 40, 16, 0, Math.PI * 2, 0, Math.PI / 2]} />
-        <meshStandardMaterial color={COLORS.red} roughness={0.35} />
-      </mesh>
-      <mesh position={[0, 2.85, 0]}>
-        <cylinderGeometry args={[0.12, 0.12, 0.5, 8]} />
-        <meshStandardMaterial color="#f2f2f2" />
       </mesh>
     </group>
   );
