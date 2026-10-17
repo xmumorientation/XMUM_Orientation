@@ -143,5 +143,9 @@ export function bakeGround(p: Parts) {
   plaza(p, ship.c[0], ship.c[1], ship.r, ship.top, ship.rim, (s, k) => (k === 4 ? ship.rim : k === 6 && s % 2 ? "#cfe9e6" : ship.top));
   plaza(p, haunted.c[0], haunted.c[1], haunted.r, haunted.top, haunted.rim);
   plaza(p, hs.c[0], hs.c[1], hs.r, hs.top, hs.rim, (s, k) => (k === 4 ? hs.rim : k === 6 && s % 2 ? "#ffd0cd" : hs.top));
+  // the midway's plazas: Midway Square, the bandstand's and the circus ring
+  for (const pl of PLAZAS.slice(4)) {
+    plaza(p, pl.c[0], pl.c[1], pl.r, pl.top, pl.rim, (s, k) => (k === 4 ? pl.rim : k === 6 && s % 2 && pl.wedge ? pl.wedge : pl.top));
+  }
   for (const c of COURTS) court(p, c);
 }

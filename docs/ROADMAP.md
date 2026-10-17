@@ -226,6 +226,30 @@ The design branches are merged. These remote branches are still not in `main` (c
 
 ## Done
 
+### Map: East funfair rides on their dorms' real middles, and the midway, 2026-10-17 (Ben, branch `funfair-east-layout`)
+No migration. Built on `map3d-footpaths` (the lawn round the funfair's land), so merge that first.
+- **Done (E1):** each East ride stands on the real middle of its dorm, the centroid of its OSM outline (`dormCentre` in `east/layout.ts`). They were 0.5–29 m off: the arcade (D1) 24 m, the pirate ship (D3) 16 m and the coaster's loop (D5) 29 m. The coaster has a new route: the station on D4's middle, the lift hill over the walk from Central, a turn round D5's north arm, the loop over D5's middle, then back over the walk into the station. Its old north turn is free land now.
+- The arcade's back wall keeps 6–7 m off B1's grey service road (Ben asked that D1 not touch the road). The zone may build south to x = -124 for the arcade and the pirate ship. West, Central and the campus are unchanged.
+- **Done (E2):** the land is used better (Ben: trees filled every empty spot). Trees now grow only in a belt along the road sides, plus a few shade trees (`greenery` and `inBelt` in `east/decor.ts`). The new pieces (`east/midway.ts`, placed in `decor.ts`, positions in `layout.ts`):
+  - Midway Square, on the coaster's old north turn: a striped mast with bulb strings, a high striker, and the VORTEX Diner with its terrace;
+  - the games alley from the North Walk to the square, under a GAMES arch: 12 game booths (ring toss, balloon darts, duck pond, hoop shot) with bulb strings across it;
+  - the west lane from the walk from Central to the square, with snack carts;
+  - the bandstand lawn: a bandstand, picnic tables, benches and flower beds;
+  - the circus ring: sawdust inside a red kerb, bleachers, and the wagons round it;
+  - the fortune teller's tent and the hall of mirrors on a new walk from the pirate ship to the arcade;
+  - a BIG TOP arch and a ticket booth where the walk from Central comes in;
+  - restrooms, first aid, snack carts and flower beds along the new walks.
+- Everything lights up with the zone and is baked into the zone's existing meshes, so the draw calls are unchanged. Phones get fewer tables, carts, flowers and bulbs.
+
+### Map: lawn and walkways on the 3D map, 2026-10-17 (Ben, branch `map3d-footpaths`)
+No migration.
+- Inside the outer road, the 3D map's ground is now lawn (it was orange), so only the walkways are paved. They use the 2D art's colours: an orange walk with a darker outline, and walks that meet join into one (`ground.tsx`). The funfair's land, the outer road and the plantation are unchanged.
+- The walkways are OpenStreetMap's (`FOOTPATHS_M` in `campusData.ts`). OSM was fetched again on 2026-10-17. Inside the campus it matches the 2026-10-15 extract in `scripts/map3d/osm_full.json`, so that file is unchanged.
+- Walks that OSM lacks, traced by hand from aerial imagery (`TRACED_PATHS_M` in `geo.ts`): the walk along the lake side of A3, A4 and A5 (it carries on OSM's walk along A1 and A2), the walk down A5's east side, and the sidewalk south of the lawn east of A5.
+- OSM draws the walk along that lawn's east edge about 11 m into the trees. It is traced again, and `emit_phase1.py` leaves the OSM way out.
+- Not drawn: OSM's sidewalks outside the outer road, car roads, and walks on the funfair's land.
+- To check on site: the imagery suggests a walk between A3 and A4, under trees. It is not drawn.
+
 ### Map: LakeFront Café as the lake stage, 2026-10-16 to 10-17 (Ben, branch `funfair-central`; partly done)
 No migration. Design and batches: [map3d-lakefront-design.md](map3d-lakefront-design.md).
 - **Done (L1):** the 3D map's red dome is now the real venue from Ben's photos: the red ribbed shell over a round stage, the moat, the walkway, the footbridge, a grass amphitheatre and willows (`src/components/map3d/lakefront/`). The XMUM hedge letters are removed (Ben). Positions, the label, GPS, markers and the 2D map are unchanged.

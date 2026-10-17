@@ -11,11 +11,9 @@ import {
   FOOTPATH_W,
   FOOTPATHS,
   FUNFAIR_LAND,
-  GRASS,
   GROUND,
   LAKE,
   LANDMARK_SCALE,
-  PARK,
   PITCH_M,
   type Placed,
   STATUE,
@@ -37,6 +35,9 @@ import { makeSoil } from "./textures";
 // canvas px per world unit (lite mode: about a quarter of the pixels)
 const PX_FULL = 20;
 const PX_LITE = 10;
+
+/** The darker outline on each side of a walkway (world units, about 1.1 m). */
+const PATH_EDGE = 0.16;
 
 function rng(seed: number) {
   return () => {
@@ -129,24 +130,26 @@ function makeGroundTexture(lite: boolean): THREE.CanvasTexture {
   }
 
   poly(img(GROUND.road), COLORS.road);
-  poly(img(GROUND.base), COLORS.path);
-  poly(img(GROUND.roadNotch), COLORS.road);
-  // inside the outer road only from here on
+  // Inside the outer road it is all lawn for now (Ben, 2026-10-17): only the walkways are paved.
   const base = img(GROUND.base);
+  poly(base, COLORS.lawn);
   ctx.save();
   trace(base);
   ctx.clip();
-  // lawns: the art's track lawn, then the real lake park and the lawns round the statue (OSM)
-  for (const p of [...GROUND.lawns.map(img), PARK, ...GRASS]) {
-    poly(p, COLORS.lawn);
-    ctx.save();
-    trace(p);
-    ctx.clip();
-    const [x0, z0, x1, z1] = bounds(p);
+  {
+    const [x0, z0, x1, z1] = bounds(base);
     speckle(Math.round((x1 - x0) * (z1 - z0) * 2.4), x0, z0, x1, z1, "rgba(200,210,120,0.14)", "rgba(70,90,30,0.13)");
-    ctx.restore();
   }
-  // paved plaza round the statue
+  ctx.restore();
+  poly(img(GROUND.roadNotch), COLORS.road);
+  // inside the outer road only from here on
+  ctx.save();
+  trace(base);
+  ctx.clip();
+  // The walkways (OSM): every outline first, then every fill, so walks that meet join into one, as in the art.
+  for (const p of FOOTPATHS) stroke(p, FOOTPATH_W + 2 * PATH_EDGE, COLORS.pathEdge);
+  for (const p of FOOTPATHS) stroke(p, FOOTPATH_W, COLORS.path);
+  // paved plaza round the statue, over the two walks that cross it
   {
     const plaza: World[] = [-1, 1].flatMap((sx) =>
       [-1, 1].map((sz) => [STATUE[0] + sx * 3.2, STATUE[1] + sx * sz * 3.2] as World),
@@ -154,8 +157,6 @@ function makeGroundTexture(lite: boolean): THREE.CanvasTexture {
     poly(plaza, COLORS.plaza);
     drawPaving(ctx, plaza, 0.8);
   }
-  for (const p of FOOTPATHS) stroke(p, FOOTPATH_W + 0.25, COLORS.pathEdge);
-  for (const p of FOOTPATHS) stroke(p, FOOTPATH_W, COLORS.path);
   ctx.restore();
 
   // the funfair's land: lawn, like the lake park

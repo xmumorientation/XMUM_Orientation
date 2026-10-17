@@ -13,6 +13,7 @@ Ben may continue this work in a new Claude conversation. This file says where ev
 - **Branches:**
   - `map-3d-draft` (PR #39), `map3d-batch4` (#40), `map3d-batch5` (#41) and `funfair-central` (#44, #45) are merged.
   - The lake stage is on `funfair-central` too (Ben, 2026-10-16: no more new branches).
+  - The lawn and the walkways are on `map3d-footpaths` (Ben asked for a new branch for them, 2026-10-17).
   - Before a push, merge the latest `origin/main` into it and check that `git merge-tree --write-tree origin/main HEAD` is clean, so its PR merges without conflicts.
 - Work in **batches**: finish one, show Ben the results (screenshots, in Chinese), and wait for his go before the next one.
 - **Usage limit:** he watches it closely, so keep agents few. If he says the 5-hour limit is above about 85%:
@@ -23,6 +24,12 @@ Ben may continue this work in a new Claude conversation. This file says where ev
 - Talk to Ben in Chinese, short and direct.
 
 ## Where things stand
+
+### Lawn and walkways (2026-10-17, branch `map3d-footpaths`)
+
+- Inside the outer road, the ground is lawn and only the walkways are paved, in the 2D art's colours (an orange walk with a darker outline). The walkways are OSM's, plus walks traced by hand round A3, A4 and A5 (`TRACED_PATHS_M` in `geo.ts`). Details: the roadmap's "Done".
+- To add a walk that OSM lacks, trace it on aerial imagery in metres east / north and add it to `TRACED_PATHS_M`. Trees, bushes and lamps keep off it by themselves (`inKeepOut` reads `FOOTPATHS`).
+- `PARK`, `GRASS` and the art's track lawn (`GROUND.lawns`) are no longer drawn. They are kept for when lawns and paved areas are told apart again.
 
 ### The 3D map on every map page (plan steps 1–6, merged)
 
@@ -63,7 +70,7 @@ Ben may continue this work in a new Claude conversation. This file says where ev
   |---|---|---|
   | F1 | Central zone (style C): LY4 teacups, LY5 bumper cars, LY8 swing ride, LY9 drop tower, the crossing with the Starlight pole and the power box, the north square (fountain, stalls, stage) | `funfair/central.tsx` and `funfair/central/`. Desktop: +28 draw calls, about +118k triangles (shadow pass included). |
   | F2 | West zone (style A): LY3 Vortexa Eye with food stalls, LY1 carousel, LY2 game booths with the duck shoot, LY6 and LY7 spider rides; the shared VORTEXA gate | `funfair/west.tsx` and `funfair/west/` (origin world (35.2, -38.2)); `funfair/gate.tsx` (world (20, -11.5); `power` = share of zones on: pillars at 1/3, letters at 2/3, arch at 1). Extras: a lagoon with a lighthouse and duck boats, a palm grove with a neon dome, a food court. Desktop: West +34 calls / +160k triangles, gate +5 / +7k; lite West +23 / +83k. |
-  | F3 | East zone (style B): Canteen D6 Big Top, D4/D5 roller coaster, D2 haunted house, D3 pirate ship, D1 arcade | `funfair/east.tsx` and `funfair/east/` (origin world (29, 18); `onLawn()` in `east/layout.ts`). The pirate ship moved 14 m north and the arcade 21 m north to stay on the lawn. Extras: a helter-skelter, a food court, circus wagons. Desktop +15 calls / +127k triangles; lite +12 / +56k. |
+  | F3 | East zone (style B): Canteen D6 Big Top, D4/D5 roller coaster, D2 haunted house, D3 pirate ship, D1 arcade | `funfair/east.tsx` and `funfair/east/` (origin world (29, 18); `onLawn()` in `east/layout.ts`). Since 2026-10-17 every ride stands on its dorm's real middle (`dormCentre`), and the coaster runs a new route with its loop over D5's middle; the arcade's back wall keeps 6–7 m off B1's grey service road. Extras: a helter-skelter, a food court, circus wagons. Desktop +15 calls / +127k triangles; lite +12 / +56k. |
   | F4 | The funfair in the map | See "In the map" below. |
   | F5 | Admin control | Built. Migration `0088` is applied (Ben, 2026-10-17; see "Admin control" below). |
 
@@ -108,7 +115,7 @@ Ben may continue this work in a new Claude conversation. This file says where ev
   - **Not seen running with data:** the two cards need a login, so they are typechecked only (L4 rendered them logged out, with no rows). The previews were checked on `/map3d/preview`.
 - **Later (polish; Ben: viewable and usable first, details later):**
   - West: the wheel plaza's night light pool floods it pink; the lighthouse beam is strong under bloom; palm fronds are flat blades; the carousel horses look grey under the canopy; check the gate pillars against Central's south hedge.
-  - East: dim (and thin) the cables once a zone is on; the coaster train never stops in the station and its speed is a simple height formula; the loop is a rounded spline and there is no lift chain; ghosts and the prize wheel don't move, and the Big Top's flags don't wave; no searchlights (the material is in `east/kit.ts`, unused); the haunted house's porch post hides part of "HAUNTED" from some angles; no queue rails; no light strings across East's walks; trees on a plain grid and no hedges by the road; the Big Top's inside is a dark box.
+  - East: dim (and thin) the cables once a zone is on; the coaster train never stops in the station and its speed is a simple height formula; the loop is a rounded spline and there is no lift chain; ghosts and the prize wheel don't move, and the Big Top's flags don't wave; no searchlights (the material is in `east/kit.ts`, unused); the haunted house's porch post hides part of "HAUNTED" from some angles; no queue rails; the Big Top's inside is a dark box. (The trees on a plain grid are gone: since E2, 2026-10-17, trees grow only along the road sides, and the land holds the midway: see the roadmap's "Done".)
   - All zones: bulb strings and pennants have no wire (they float up close); the bright neon cables at night (pink West, yellow East).
 
 ### LakeFront Café: the lake stage (2026-10-16 to 10-17, on `funfair-central`)
