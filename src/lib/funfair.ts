@@ -66,6 +66,15 @@ export function parseFunfair(value: string | null): FunfairPower | null {
 
 export const anyZoneOn = (p: FunfairPower) => p.west > 0 || p.central > 0 || p.east > 0;
 
+/** All three zones on: the finale, when the lake stage plays its concert (docs/map3d-lakefront-design.md). */
+export const allZonesOn = (p: FunfairPower) => p.west > 0 && p.central > 0 && p.east > 0;
+
+/** What `?funfair_preview=` can show: a zone's power-up, or the lake stage's concert (the finale). */
+export type FunfairPreview = FunfairZone | "lakefront";
+
+export const isFunfairPreview = (v: string | null): v is FunfairPreview =>
+  v === "lakefront" || FUNFAIR_ZONES.includes(v as FunfairZone);
+
 /** True when the error says migration 0088 is not applied (no such table or function). */
 export function funfairMissing(error: { code?: string; message?: string } | null): boolean {
   if (!error) return false;

@@ -1,12 +1,12 @@
-# LakeFront Café: the lake stage (design, 2026-10-16)
+# LakeFront Café: the lake stage (design, 2026-10-16, updated 2026-10-17)
 
 The 3D map's LakeFront Café was a plain red dome. It is now the real venue from Ben's photos: an open-air stage under a red ribbed shell, in a moat at the lake's west tip, with a grass amphitheatre in front. It is lit every evening, and it holds a concert for the funfair's finale.
 
-Status: built in batches on branch `funfair-central`. L1 (the model), L2 (the evening lighting and the beams) and L3 (the concert) are done; L4 (the trigger) follows after Ben's go.
+Status: built in batches on branch `funfair-central`. All four are done: L1 (the model), L2 (the evening lighting and the beams), L3 (the concert) and L4 (the trigger, the preview and the LIVE tag). Left: delete the old `Dome` once Ben accepts the venue, and check it on a real phone.
 
 ## Ben's decisions
 
-- **When the concert plays (option A, 2026-10-16):** the stage goes LIVE when all three funfair zones are on (the finale). No backend change. Admin can start it early by switching the three zones on in the existing Funfair card (manual override).
+- **When the concert plays (option A, 2026-10-16):** the stage goes LIVE when all three funfair zones are on (the finale). No backend change. Admin can start it early by switching the three zones on in the existing Funfair card (manual override). It starts 2 s after the last zone comes on, so that zone's power-up plays first.
 - **XMUM hedge letters:** removed from the 3D map (Ben, 2026-10-16). They stood about 30 m north of the stage, where the amphitheatre now wraps round.
 - **Shell height (confirmed):** drawn 1.4 times its real height, so it reads next to the A-blocks, which are drawn tall too (`SHELL.lift`). The footprint stays at true size.
 - **Label (confirmed):** stays "LakeFront Café"; a "● LIVE" tag joins it while the concert plays (L4).
@@ -26,7 +26,7 @@ Status: built in batches on branch `funfair-central`. L1 (the model), L2 (the ev
 
 `src/components/map3d/lakefront/`, modelled in metres round the stage's centre (x north, y up, z east; the audience is on −z), placed on `DOME_PLACE` from `geo.ts`:
 
-- `layout.ts`: sizes, angles, the shell's shape (`shellPoint`, `shellUnderside`), the willows' spots, the light pools, the beams (`beams()`) and the haze.
+- `layout.ts`: sizes, angles, the shell's shape (`shellPoint`, `shellUnderside`), the willows' spots, the light pools, the beams (`beams()`), the haze, and the preview's camera (`stageView()`).
 - `build.ts`: bakes the venue (one flat-colour mesh, with the beams' fixtures), the small lights (one mesh), the steel (ribs and cross tubes), the shell's skin and the moat's water.
 - `kit.ts`: materials, and the evening looks (`applyLook`: day, sunset, night). The skin is one double-sided surface: anti-aliased slats outside (they blend to pinkish red from far away instead of shimmering), the membrane inside.
 - `fx.ts`: every light effect in one draw call: the evening beams and haze, and the concert's sky beams, arch beams, lasers, flame jets, fountains and follow spot. Each is an instance of one quad: beams and lasers are turned about their axis to face the camera (a bright core, soft edges, a fade, never thinner than about 1.5 pixels), flames and fountains stand upright, haze faces the camera. The sweep runs in the shader. Each instance has a group whose strength is a uniform.
@@ -60,7 +60,7 @@ No concert running: set when the look changes, except the beams' sweep.
 
 ## The concert (L3)
 
-`LakefrontStage`'s `live` (from `CampusScene`'s new `concert` prop; L4 ties it to the finale).
+`LakefrontStage`'s `live`, from `CampusScene`'s `concert` (see "The trigger (L4)" below).
 
 - **Opening, about 3 s** (`usePowerRamp`): the evening light goes down, a follow spot from the top of the amphitheatre finds the stage, the ribs come on in white one by one from the front arch back, then the bang: one flash, the flame jets, confetti and two fireworks, and the show starts. Ending the concert plays it backwards. A map opened while the concert is already on shows it running, without the opening.
 - **The show** (`show.ts`) runs on the wall clock, so every map shows the same beat. A loop is 64 beats at 128 BPM (30 s): intro (cyan and blue), build (pink and cyan, speeding up, lasers come in), drop (yellow and pink: flash, flames, beams panning in figures of eight, fountains on every beat, confetti), breakdown (orange and lilac, slow, phone torches). Fireworks go up over the lake in the drop of every fourth loop (every 2 minutes).
@@ -70,7 +70,16 @@ No concert running: set when the look changes, except the beams' sweep.
 - **Photosensitivity:** at most 2 flashes a second (guidance: 3), tested. With `prefers-reduced-motion`: no flashes, flames, confetti or fireworks, and still beams, fountains and crowd; only slow colour changes.
 - **Frames:** full screen draws every frame while the concert plays, also on phones. A card shows one still moment.
 - **Cost:** about +4 draw calls on desktop and +2 on phones over the evening look (804 and 421 for the whole map at night).
-- **Dev (`/map3d`):** `?concert=1` (on), `?concert=flip` (on 4 s after load, to watch the opening); in development `?showt=<seconds>` holds the show at that moment (17 is the drop, 107.6 shows fireworks) and `?concertp=<0..1>` holds the opening (0.84 is the bang).
+- **Dev (`/map3d`):** `?concert=0` (off), `?concert=1` (on), `?concert=flip` (on 4 s after load, to watch the opening); without it the concert follows `?funfair=` (default all on, so it plays); in development `?showt=<seconds>` holds the show at that moment (17 is the drop, 107.6 shows fireworks) and `?concertp=<0..1>` holds the opening (0.84 is the bang).
+
+## The trigger (L4)
+
+- **The rule:** `CampusScene`'s `concert` prop, left out (as on the real pages), follows the funfair: the concert plays while all three zones are on (`allZonesOn` in `src/lib/funfair.ts`). `useFinale` in `CampusScene.tsx` starts it 2 s after the last zone comes on (`FINALE_DELAY_MS`, the zone's power-up) and stops it as soon as one goes off. A scene that mounts with all three on (as `/map3d` does) shows it already playing, without the opening. The real map usually learns the zones a moment after it opens, so there the zones power up and the opening plays each time the map opens, as the zones' power-ups already did. True or false forces it (the preview, `/map3d`).
+- **Real pages:** the zones come from `fn_funfair_state` (`useCampusMapData`: at once on a bulb's Realtime change, and every 30 s), so every open map starts the concert within seconds of the third zone. Admin and HOGM can start it early by setting all three overrides to On.
+- **Label:** "LakeFront Café" gets a red "● LIVE" tag while the concert plays (`LABELS` entry with `stage: true` in `geo.ts`). The dot pulses only when motion is allowed.
+- **Preview:** Admin → Live control → Funfair and HOGM's Game control → Funfair have a "Finale · Lake stage concert" row: LIVE or OFF, and a Preview link to `/map?funfair_preview=lakefront`. The map opens full screen, flies to the stage (`stageView()`: from behind the amphitheatre, further back on an upright phone) and plays the opening, on that screen only. Mock data: `/map3d/preview?funfair_preview=lakefront`.
+- **Tests:** `tests/lakefront/finale.test.ts` (the rule, and the preview values).
+- **Headless screenshots:** SwiftShader draws about one frame a second at desktop size, and the opening's ramp moves at most 0.1 s a frame, so the opening takes about 30 s there. Phones and real browsers take 3.2 s.
 
 ## Batches
 
@@ -79,4 +88,4 @@ No concert running: set when the look changes, except the beams' sweep.
 | L1 | The model (day look), in the map | **Done** |
 | L2 | Evening lighting (sunset and night, no concert): LED ribs, membrane wash, uplights, small lights, light pools, and sweeping beams in haze (Ben's photo) | **Done** |
 | L3 | The concert: the opening, and the show on the wall clock (see above) | **Done** |
-| L4 | Wire the finale trigger, `?concert=0\|1` on `/map3d`, `?funfair_preview=lakefront`, the "● LIVE" tag, docs | To do |
+| L4 | Wire the finale trigger, `?concert=0\|1` on `/map3d`, `?funfair_preview=lakefront`, the "● LIVE" tag, docs | **Done** |

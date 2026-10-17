@@ -1,8 +1,8 @@
-# 3D map: handoff for a new conversation (updated 2026-10-16)
+# 3D map: handoff for a new conversation (updated 2026-10-17)
 
 Ben may continue this work in a new Claude conversation. This file says where everything stands. Read it before doing anything, then read what you need:
 
-- [map3d-lakefront-design.md](map3d-lakefront-design.md): the lake stage (LakeFront Café) and its concert, the work in progress;
+- [map3d-lakefront-design.md](map3d-lakefront-design.md): the lake stage (LakeFront Café), its concert and what starts it;
 - [map3d-funfair-design.md](map3d-funfair-design.md): the funfair design;
 - [map3d-draft-handoff.md](map3d-draft-handoff.md): how the 3D map itself was built (data, scale, the statue);
 - [map3d-implementation-plan.md](map3d-implementation-plan.md): the plan that replaced the 2D map, and its "Progress" log.
@@ -55,7 +55,7 @@ Ben may continue this work in a new Claude conversation. This file says where ev
   - the land must not look empty;
   - the lightbulbs are shared by everyone; Admin chooses which zone powers up after which key;
   - dorm names stay on the ride labels;
-  - fireworks come every few minutes after the finale (now the lake stage's concert, L4);
+  - fireworks come every few minutes after the finale (the lake stage's concert);
   - there is no sound.
 - **What was built:**
 
@@ -111,16 +111,17 @@ Ben may continue this work in a new Claude conversation. This file says where ev
   - East: dim (and thin) the cables once a zone is on; the coaster train never stops in the station and its speed is a simple height formula; the loop is a rounded spline and there is no lift chain; ghosts and the prize wheel don't move, and the Big Top's flags don't wave; no searchlights (the material is in `east/kit.ts`, unused); the haunted house's porch post hides part of "HAUNTED" from some angles; no queue rails; no light strings across East's walks; trees on a plain grid and no hedges by the road; the Big Top's inside is a dark box.
   - All zones: bulb strings and pennants have no wire (they float up close); the bright neon cables at night (pink West, yellow East).
 
-### LakeFront Café: the lake stage (2026-10-16, on `funfair-central`)
+### LakeFront Café: the lake stage (2026-10-16 to 10-17, on `funfair-central`)
 
 - The red dome is now the open-air stage from Ben's photos, lit every evening and holding a concert. Design, decisions and batches L1–L4: [map3d-lakefront-design.md](map3d-lakefront-design.md). Code: `src/components/map3d/lakefront/`.
 - **Done:**
   - L1, the model;
   - L2, evening lighting with sweeping beams;
   - L3, the concert;
+  - L4, the trigger: the concert plays while all three funfair zones are on, with a "● LIVE" tag on the label, and Admin's and HOGM's Funfair cards preview it (`?funfair_preview=lakefront`);
   - the XMUM hedge letters are gone (Ben).
-- **Next:** L4 (turning the concert on at the funfair's finale, the preview, the LIVE tag) waits for Ben's go.
-- `CampusScene` takes `concert` (off by default). `/map3d?concert=1|flip` shows it.
+- **Next:** delete the old `Dome` in `buildings.tsx` once Ben accepts the venue; check the stage on a real phone.
+- `CampusScene` takes `concert`: left out, it follows the funfair; true or false forces it. `/map3d?concert=0|1|flip`.
 
 ## Working on the map without breaking it
 

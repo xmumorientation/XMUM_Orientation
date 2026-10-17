@@ -23,6 +23,8 @@ Checked on 2026-10-16 against `main` (migrations up to `0088`). Nothing on this 
 
    Admin and HOGM can change them once `0088` runs.
 
+   When all three zones are on, the lake stage (LakeFront Café) plays its concert, the finale, on every open 3D map.
+
 The funfair also follows a bulb lit in other ways:
 - the Guardian's manual activation (for a damaged card);
 - an Admin NFC test run;

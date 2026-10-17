@@ -90,6 +90,38 @@ function ZoneRow({ row, on, busy, save }: { row: FunfairZoneRow; on: boolean; bu
   );
 }
 
+/** The finale: the lake stage's concert, while all three zones are on. `live` is null while the rows load. */
+function FinaleRow({ live }: { live: boolean | null }) {
+  return (
+    <div className="space-y-1 px-4 py-3">
+      <div className="flex items-center gap-3">
+        <p className="min-w-0 flex-1 text-sm font-semibold">Finale · Lake stage concert</p>
+        {live !== null && (
+          <span
+            className={cn(
+              "rounded-full px-2.5 py-0.5 text-xs font-bold",
+              live ? "bg-rose-100 text-rose-700" : "bg-paper-200 text-ink-faint",
+            )}
+          >
+            {live ? "LIVE" : "OFF"}
+          </span>
+        )}
+        <a
+          href={funfairPreviewHref("lakefront")}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex min-h-[40px] items-center gap-1 text-xs font-semibold underline"
+        >
+          <ExternalLink className="h-3.5 w-3.5" /> Preview
+        </a>
+      </div>
+      <p className="text-xs text-ink-faint">
+        LakeFront Café plays a concert while all three zones are on. To start it early, set all three overrides to On.
+      </p>
+    </div>
+  );
+}
+
 export function FunfairZones() {
   const { rows, missing, error, busy, save, isOn } = useFunfairZones();
 
@@ -108,8 +140,10 @@ export function FunfairZones() {
       {rows?.map((row) => (
         <ZoneRow key={row.zone} row={row} on={isOn(row)} busy={busy} save={(r) => void save(r)} />
       ))}
+      <FinaleRow live={rows?.length ? rows.every(isOn) : null} />
       <p className="px-4 py-2 text-xs text-ink-faint">
-        Auto: a zone is on when its keys are lit. Preview plays its power-up on your screen only.
+        Auto: a zone is on when its keys are lit. Preview plays its power-up (or the concert&apos;s opening) on your
+        screen only.
       </p>
     </Card>
   );

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import { FUNFAIR_ZONES, funfairMissing, zoneIsOn, type FunfairZoneRow } from "@/lib/funfair";
+import { FUNFAIR_ZONES, funfairMissing, zoneIsOn, type FunfairPreview, type FunfairZoneRow } from "@/lib/funfair";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import type { MapLightbulb, ProjectorLocation } from "@/lib/types";
 import { friendlyError } from "@/lib/utils";
@@ -84,5 +84,8 @@ export function toggleKey(row: FunfairZoneRow, loc: ProjectorLocation): FunfairZ
   return { ...row, required };
 }
 
-/** Where a zone's Preview button goes: the map opens on that zone and plays its power-up (on that screen only). */
-export const funfairPreviewHref = (zone: FunfairZoneRow["zone"]) => `/map?funfair_preview=${zone}`;
+/**
+ * Where a Preview button goes: the map opens on that zone and plays its power-up, or ("lakefront") on the lake
+ * stage and plays the concert's opening. On that screen only.
+ */
+export const funfairPreviewHref = (zone: FunfairPreview) => `/map?funfair_preview=${zone}`;

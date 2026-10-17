@@ -1,8 +1,8 @@
-import { DOME_PLACE } from "../geo";
+import { DOME_PLACE, UNITS_PER_M } from "../geo";
 
 import type { V3 } from "../funfair/central/kit";
 
-// DRAFT: the LakeFront Café venue (docs/map3d-lakefront-design.md), from Ben's photos: an open-air stage under a
+// The LakeFront Café venue (docs/map3d-lakefront-design.md), from Ben's photos: an open-air stage under a
 // red ribbed shell, in a moat at the lake's west tip, with a grass amphitheatre on the west.
 //
 // Modelled in metres round the stage's centre: x north, y up, z east (the venue's group stands on DOME_PLACE,
@@ -17,6 +17,23 @@ export const ROT_Y = DOME_PLACE.rotY;
 
 /** The point at radius r and angle a (see above), at height y. */
 export const polar = (r: number, a: number, y = 0): V3 => [r * Math.sin(a), y, -r * Math.cos(a)];
+
+/** A venue point (metres) in world units: turned like the venue's group, scaled, and moved onto ORIGIN. */
+export function toWorld3([x, y, z]: V3): V3 {
+  const c = Math.cos(ROT_Y);
+  const s = Math.sin(ROT_Y);
+  return [ORIGIN[0] + (x * c + z * s) * UNITS_PER_M, y * UNITS_PER_M, ORIGIN[1] + (z * c - x * s) * UNITS_PER_M];
+}
+
+/**
+ * Where Admin's preview of the concert (`?funfair_preview=lakefront`) takes the camera: behind the amphitheatre
+ * and a little to the south, over the crowd to the stage with the lake behind it. `narrow` (a phone held upright)
+ * stands further back, so the whole bowl fits.
+ */
+export function stageView(narrow: boolean): { position: V3; target: V3 } {
+  const k = narrow ? 1.55 : 1;
+  return { position: toWorld3([-100 * k, 148 * k, -143 * k]), target: toWorld3([0, 7, 0]) };
+}
 
 /** The stage: a round deck standing in the moat. */
 export const STAGE_R = 11;

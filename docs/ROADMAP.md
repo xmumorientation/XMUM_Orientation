@@ -5,7 +5,7 @@ Read it before starting a new round of development. When a decision changes, upd
 
 > **From Ben:** when you finish your work, write down what you completed in the "Done" section at the end of this file, so the next teammate can see it. Do this for partly finished items too: say which parts are done and which are left.
 
-Last updated: 2026-10-16
+Last updated: 2026-10-17
 
 ## Status key
 
@@ -170,7 +170,7 @@ The design branches are merged. These remote branches are still not in `main` (c
 - Before the event: turn **NFC demo mode** off in Live control, and Reset any bulbs lit while testing.
 - Before the event: brief Facis that a phone only shares location while the app is open on screen, and that one phone per group should use Keep tracking with a power bank.
 - Admin → Stations "Other…" block: the database only accepts the listed buildings (and TBD), so saving a station with another block name fails.
-- The lake stage (LakeFront Café), batch L4 (Ben): play the concert when all three funfair zones are on, add `?funfair_preview=lakefront`, and show "● LIVE" by its label. See [map3d-lakefront-design.md](map3d-lakefront-design.md).
+- The lake stage (LakeFront Café): check it on a real phone, and check against satellite imagery that it faces west. Delete the old `Dome` in `buildings.tsx` once Ben accepts the venue. See [map3d-lakefront-design.md](map3d-lakefront-design.md).
 
 ## 6. HOF sees every group's name and slogan (Done on branch `hof-page-setup`: Ops → Faci control shows them, read only)
 
@@ -226,12 +226,13 @@ The design branches are merged. These remote branches are still not in `main` (c
 
 ## Done
 
-### Map: LakeFront Café as the lake stage, 2026-10-16 (Ben, branch `funfair-central`; partly done)
+### Map: LakeFront Café as the lake stage, 2026-10-16 to 10-17 (Ben, branch `funfair-central`; partly done)
 No migration. Design and batches: [map3d-lakefront-design.md](map3d-lakefront-design.md).
 - **Done (L1):** the 3D map's red dome is now the real venue from Ben's photos: the red ribbed shell over a round stage, the moat, the walkway, the footbridge, a grass amphitheatre and willows (`src/components/map3d/lakefront/`). The XMUM hedge letters are removed (Ben). Positions, the label, GPS, markers and the 2D map are unchanged.
 - **Done (L2):** evening lighting at sunset and night: LED ribs, a washed membrane, small lights, light pools, and sweeping concert beams in haze (Ben asked for the beams every evening, moving). Full screen on phones now draws every frame at night, so the beams move there too.
-- **Done (L3):** the concert: a 3 s opening (house lights down, a follow spot, the ribs one by one, a bang) and a 30 s show on the wall clock, the same on every phone: the shell as an LED screen, faster beams with sky beams, arch beams and lasers, about 900 crowd lightsticks, moat fountains, flame jets, confetti, and fireworks over the lake every 2 minutes. At most 2 flashes a second; reduced motion turns the motion off. Viewable on `/map3d?concert=1` (or `=flip` for the opening); real pages don't turn it on yet.
-- **Left:** L4: turn the concert on when all three funfair zones are on (Ben's option A), `?funfair_preview=lakefront`, and the "● LIVE" tag. Delete the old `Dome` in `buildings.tsx` once Ben accepts the new venue.
+- **Done (L3):** the concert: a 3 s opening (house lights down, a follow spot, the ribs one by one, a bang) and a 30 s show on the wall clock, the same on every phone: the shell as an LED screen, faster beams with sky beams, arch beams and lasers, about 900 crowd lightsticks, moat fountains, flame jets, confetti, and fireworks over the lake every 2 minutes. At most 2 flashes a second; reduced motion turns the motion off. Viewable on `/map3d?concert=1` (or `=flip` for the opening).
+- **Done (L4, 2026-10-17):** the concert plays on every 3D map while all three funfair zones are on (Ben's option A), starting 2 s after the last zone powers up; the "LakeFront Café" label gets a "● LIVE" tag. Admin's and HOGM's Funfair cards have a "Finale · Lake stage concert" row (LIVE or OFF) with a Preview link (`/map?funfair_preview=lakefront`, on that screen only). To start it early, set all three zones' overrides to On. No backend change.
+- **Left:** delete the old `Dome` in `buildings.tsx` once Ben accepts the new venue; check on a real phone.
 
 ### Map: the Vortexa Funfair on the 3D map, 2026-10-16 (Ben, branch `funfair-central`)
 Optional migration `0088_funfair_zones.sql`. Without it the map works, and each zone powers up with its default key: West with A3, Central with Track & Field, East with B1. Admin's and HOGM's Funfair cards then only say that the migration is missing. With it applied, the cards change the setup.

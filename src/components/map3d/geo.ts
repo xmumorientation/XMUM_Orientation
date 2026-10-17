@@ -377,8 +377,11 @@ export const TRACK_NORTH = {
   })(),
 };
 
-/** Map labels. `minor` ones (the courts) only show when the camera is close. */
-export const LABELS: { name: string; pos: World; y: number; minor?: boolean }[] = [
+/**
+ * Map labels. `minor` ones (the courts) only show when the camera is close. `stage`: the lake stage's, which
+ * gets a "● LIVE" tag while the concert plays.
+ */
+export const LABELS: { name: string; pos: World; y: number; minor?: boolean; stage?: boolean }[] = [
   ...BLOCKS.map((b) => ({ name: b.name, pos: b.pos, y: b.flat ? 12.2 : 9.6 })),
   { name: "B1", pos: B1_PLACE.pos, y: 11 },
   { name: "Track & Field", pos: toWorld(TRACK.center), y: 3 },
@@ -388,7 +391,7 @@ export const LABELS: { name: string; pos: World; y: number; minor?: boolean }[] 
     y: 1.8,
     minor: true,
   })),
-  { name: "LakeFront Café", pos: DOME, y: 4 },
+  { name: "LakeFront Café", pos: DOME, y: 4, stage: true },
   { name: "Tan Kah Kee Statue", pos: STATUE, y: 6.6 * UNITS_PER_M * LANDMARK_SCALE },
 ];
 

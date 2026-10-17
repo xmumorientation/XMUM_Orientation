@@ -77,7 +77,7 @@ The colours follow the Welcome page ([vortexa.css](../src/components/home/vortex
 
 ### All zones powered (the finale)
 
-The gate lights up fully, and the lake stage plays its concert, with fireworks over the lake every 2 minutes ([map3d-lakefront-design.md](map3d-lakefront-design.md); batch L4 turns it on when all zones are on).
+The gate lights up fully, and the lake stage plays its concert, with fireworks over the lake every 2 minutes ([map3d-lakefront-design.md](map3d-lakefront-design.md)). The concert starts 2 s after the last zone powers up, and stops when a zone goes off.
 
 ## Wayfinding
 
