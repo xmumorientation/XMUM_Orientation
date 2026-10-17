@@ -130,12 +130,75 @@ export const HS_R = 8;
 /** The food court: tables under festoons, stalls round its edge. */
 export const FOOD = { x: [66, 96] as [number, number], z: [8, 52] as [number, number] };
 
-/** The circus wagons, parked in a row on the lawn in the north-east. */
-export const WAGONS: [number, number][] = [
-  [26, 101],
-  [36, 103],
-  [46, 101],
-  [56, 103],
+/** The point `r` metres from c towards p. */
+function towards(c: [number, number], p: [number, number], r: number): [number, number] {
+  const dx = p[0] - c[0];
+  const dz = p[1] - c[1];
+  const l = Math.hypot(dx, dz) || 1;
+  return [c[0] + (dx / l) * r, c[1] + (dz / l) * r];
+}
+
+// ---------- the midway quarter (north-west, where the coaster's north turn was) ----------
+
+/** Midway Square: a round plaza with a striped mast, the diner on its north side and the high striker. */
+export const SQUARE: [number, number] = [80, -70];
+export const SQUARE_R = 13;
+/** The VORTEX Diner: `w` along z, `d` deep, its front facing the square (south). */
+export const DINER = { x: 105, z: -70, w: 22, d: 10 };
+/** The diner's terrace, between its front and the square. */
+export const TERRACE = { x: [94.6, 99.4] as [number, number], z: [-81, -59] as [number, number] };
+/** The high striker, on the square's south-west side. */
+export const STRIKER: [number, number] = [73, -79];
+
+/** The games alley: from the North Walk (at (26, -8)) to the square, with game booths down both sides. */
+export const ALLEY = { a: [26, -8] as [number, number], b: towards(SQUARE, [26, -8], SQUARE_R), hw: 3.5 };
+/** Along the alley: distances (metres from its start) of the booth pairs, and of the GAMES arch. */
+export const ALLEY_BOOTHS = [13, 22, 31, 40, 49, 58];
+export const ALLEY_ARCH = 5.5;
+
+/** The bandstand lawn: the bandstand on a round plaza, picnic tables and shade trees round it. */
+export const BANDSTAND: [number, number] = [72, -24];
+export const BANDSTAND_R = 6;
+export const PICNIC: [number, number][] = [
+  [84, -16],
+  [86, -28],
+  [80, -37],
+  [68, -33],
+  [60, -24],
+  [90, -14],
+  [78, -10],
+];
+
+// ---------- the circus ring (east) ----------
+
+/** The circus ring: a sawdust ring with bleachers north and south of it and the wagons round its east side. */
+export const CIRCUS: [number, number] = [50, 97];
+export const CIRCUS_R = 9;
+/** The circus wagons, round the ring's east side: position and turn (lengthwise along the ring). */
+export const WAGONS: [number, number, number][] = [-0.9, -0.3, 0.3, 0.9].map(
+  (a) => [CIRCUS[0] + 14 * Math.sin(a), CIRCUS[1] + 14 * Math.cos(a), a] as [number, number, number],
+);
+
+// ---------- the south corner and the rest ----------
+
+/** The fortune teller's tent and the hall of mirrors, beside the south walk. */
+export const FORTUNE: [number, number] = [-82, 44];
+export const MIRRORS: [number, number] = [-104, 44];
+/** The entrance arch over the walk from Central (its z); the ticket booth stands beside it (TICKETS, below). */
+export const ARCH_Z = -119.5;
+/** Restrooms by the square, first aid by the arcade. */
+export const WC: [number, number] = [92, -100];
+export const FIRST_AID: [number, number] = [-95, 98];
+/** Snack carts: position, the point their front faces, and what they sell. */
+export const CARTS: { at: [number, number]; face: [number, number]; kind: "popcorn" | "candy" | "ice" | "churros" }[] = [
+  { at: [12, -118.4], face: [12, -114], kind: "popcorn" },
+  { at: [28, -118.4], face: [28, -114], kind: "candy" },
+  { at: [44, -118.4], face: [44, -114], kind: "ice" },
+  { at: [88, -63.2], face: SQUARE, kind: "churros" },
+  { at: [86.5, -78.2], face: SQUARE, kind: "popcorn" },
+  { at: [56, -2], face: [51.7, -7.1], kind: "ice" },
+  { at: [30, 90], face: [36, 82], kind: "candy" },
+  { at: [-90, 62], face: [-95.3, 58.6], kind: "ice" },
 ];
 
 /** The power box, beside the hub (north-west of it). */
@@ -143,7 +206,8 @@ export const POWER_BOX: [number, number] = [8, -26];
 
 // ---------- walks ----------
 
-export type Walk = { pts: [number, number][]; hw: number; closed?: boolean };
+/** A walk: its centre line and half width. `lamps: false` leaves out the lamp posts along it (the games alley has bulb strings over it). */
+export type Walk = { pts: [number, number][]; hw: number; closed?: boolean; lamps?: boolean };
 
 /** Where Central's promenade ends (world 28.3, -1.4): the walk from Central starts there. */
 const PROM_END = toLocal([
@@ -154,6 +218,11 @@ const PROM_END = toLocal([
 /** The walk from Central's promenade to the hub, under both legs of the coaster. */
 export const MAIN: Walk = { pts: [PROM_END, [PROM_END[0], HUB[1] - 1]], hw: 4 };
 export const MAIN_X = PROM_END[0];
+/** The west lane: from the walk from Central (at z = -114) north, then to the square. */
+const LANE_BEND: [number, number] = [50, -114];
+export const LANE: [number, number][] = [[MAIN_X, -114], LANE_BEND, towards(SQUARE, LANE_BEND, SQUARE_R)];
+/** The ticket booth, on the walk's south side by the entrance arch. */
+export const TICKETS: [number, number] = [MAIN_X - MAIN.hw - 3.4, -115.5];
 /** The ring road. */
 export const RING_WALK: Walk = { pts: Array.from({ length: 72 }, (_, i) => ringPoint((i / 72) * Math.PI * 2)), hw: RING.hw, closed: true };
 
@@ -167,7 +236,7 @@ export const WALKS: Walk[] = [
   { pts: [ringPoint(-Math.PI / 2), [HH_PLAZA[0] + 2.5, HH_PLAZA[1] - 2.5]], hw: 2.6 },
   // the haunted house → the arcade
   { pts: [[HH_PLAZA[0] - 5, HH_PLAZA[1] + 2], [ARCADE_COURT.x[1] - 0.5, ARCADE[1] + 0.3]], hw: 2.6 },
-  // the East Walk: the haunted house → the circus wagons → the food court
+  // the East Walk: the haunted house → past the circus ring → the food court
   { pts: [[HH_PLAZA[0] + 4, HH_PLAZA[1] + 5], [-20, 82], [20, 86], [48, 74], [FOOD.x[0] + 1, FOOD.z[1] - 6]], hw: 3 },
   // the North Walk: the hub → the helter-skelter → the food court
   { pts: [[HUB[0] + 8, HUB[1] - 3], [26, -8], HS, [FOOD.x[0] + 1, 20]], hw: 3 },
@@ -175,6 +244,16 @@ export const WALKS: Walk[] = [
   { pts: [ringPoint(Math.PI), [FOOD.x[0] + 1, 36]], hw: 2.6 },
   // the main walk → the coaster's station
   { pts: [[MAIN_X, -72], [STATION_COURT.x[1] - 0.5, -72]], hw: 2.6 },
+  // the games alley: the North Walk → Midway Square
+  { pts: [ALLEY.a, ALLEY.b], hw: ALLEY.hw, lamps: false },
+  // the west lane: the walk from Central → Midway Square
+  { pts: LANE, hw: 2.8 },
+  // the helter-skelter → the bandstand
+  { pts: [towards(HS, BANDSTAND, HS_R + 0.9), towards(BANDSTAND, HS, BANDSTAND_R)], hw: 2.6 },
+  // the East Walk → the circus ring
+  { pts: [[36, 79.1], towards(CIRCUS, [36, 79.1], CIRCUS_R)], hw: 2.6 },
+  // the south walk: the pirate ship → past the fortune teller and the hall of mirrors → the arcade
+  { pts: [[SHIP[0] + 5, SHIP[1] + 14.6], [-94, 31], [-91, 52], [-102, 69], [ARCADE_COURT.x[0] + 4, ARCADE_COURT.z[0]]], hw: 2.6 },
 ];
 
 /** Round paved nodes over the joints: centre and radius. */
@@ -183,14 +262,24 @@ export const NODES: [number, number, number][] = [
   [...ringPoint(-Math.PI / 2), 4.4],
   [...ringPoint(Math.PI), 4.4],
   [MAIN_X, -72, 5.6],
+  [ALLEY.a[0], ALLEY.a[1], 5],
+  [MAIN_X, -114, 5],
+  [36, 79.1, 4],
 ];
 
-/** Raised round plazas: centre, radius, top colour, rim colour. */
-export const PLAZAS: { c: [number, number]; r: number; top: string; rim: string }[] = [
+/**
+ * Raised round plazas: centre, radius, top colour, rim colour, and (from the fifth on) the colour of every other
+ * wedge on the top. The first four have their own patterns in ground.ts.
+ */
+export const PLAZAS: { c: [number, number]; r: number; top: string; rim: string; wedge?: string }[] = [
   { c: HUB, r: HUB_R, top: "#fff0cf", rim: "#e6b84f" },
   { c: SHIP, r: SHIP_R, top: "#e3f3f1", rim: "#5fb9b2" },
   { c: HH_PLAZA, r: HH_PLAZA_R, top: "#ece0f7", rim: "#a98fd0" },
   { c: HS, r: HS_R, top: "#ffe3e1", rim: "#e78a8f" },
+  { c: SQUARE, r: SQUARE_R, top: "#fff6e6", rim: "#e6b84f", wedge: "#ffe2b8" },
+  { c: BANDSTAND, r: BANDSTAND_R, top: "#f6e6cf", rim: "#c9aef0" },
+  // the circus ring: sawdust inside a red kerb
+  { c: CIRCUS, r: CIRCUS_R, top: "#e8c38f", rim: "#c8323f", wedge: "#f0d3a6" },
 ];
 
 /** Rectangular courts (chequered tiles on a rim): ranges and colours. */
@@ -198,6 +287,7 @@ export const COURTS: { x: [number, number]; z: [number, number]; a: string; b: s
   { ...STATION_COURT, a: "#f7efe3", b: "#e5f1f4", rim: "#8fc7d6", tile: 4 },
   { ...ARCADE_COURT, a: "#fff2d6", b: "#f6dccf", rim: "#e0a96a", tile: 4.5 },
   { ...FOOD, a: "#fff1d8", b: "#f7dccd", rim: "#e6c27a", tile: 5.5 },
+  { ...TERRACE, a: "#fff1d8", b: "#f7dccd", rim: "#e6c27a", tile: 2.4 },
 ];
 
 /** Lamp post height (bulb strings hang from the top). */

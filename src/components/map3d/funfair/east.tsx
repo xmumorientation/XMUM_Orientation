@@ -10,7 +10,7 @@ import { glowStrength, LiteGlow, type GlowSpot } from "./glow";
 import { buildStatic } from "./east/build";
 import { Coaster } from "./east/coaster";
 import { disposeEastKit, makeEastKit } from "./east/kit";
-import { ARCADE, BIGTOP, FOOD, HAUNTED, HS, LOOP_C, ORIGIN, SHIP, STATION } from "./east/layout";
+import { ARCADE, BANDSTAND, BIGTOP, CIRCUS, DINER, FOOD, HAUNTED, HS, LOOP_C, ORIGIN, SHIP, SQUARE, STATION } from "./east/layout";
 import type { Live } from "./east/parts";
 import { PowerFx } from "./east/power";
 import { PirateShip } from "./east/ship";
@@ -51,6 +51,10 @@ const GLOW: GlowSpot[] = [
   { p: [ARCADE[0], 5, ARCADE[1]], r: 16, c: "#fe06ab" },
   { p: [HS[0], 10, HS[1]], r: 12, c: "#e0b4fc" },
   { p: [(FOOD.x[0] + FOOD.x[1]) / 2, 4, (FOOD.z[0] + FOOD.z[1]) / 2], r: 18, c: "#fc9e3d" },
+  { p: [SQUARE[0], 6, SQUARE[1]], r: 18, c: "#ffd23f" },
+  { p: [DINER.x - 4, 5, DINER.z], r: 14, c: "#fe06ab" },
+  { p: [BANDSTAND[0], 5, BANDSTAND[1]], r: 11, c: "#ffc978" },
+  { p: [CIRCUS[0], 6, CIRCUS[1]], r: 15, c: "#fc9e3d" },
 ];
 
 export function FunfairEast({ power, night, dusk = false, lite }: ZoneProps) {
