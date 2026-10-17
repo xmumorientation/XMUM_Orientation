@@ -45,6 +45,7 @@ Ben chose true scale over the Figma layout.
   - The lake, the lake park, the park footpaths and the statue lawns are from OSM.
   - The footbridge, the LakeFront Café and the statue are at their real positions. The flag keeps its offset from the statue as in the art. The duck sits in the widest open water and is scaled to fit.
   - The outer road, the plantation and the trees are still from the art (phase 2). The art's brown field became the funfair's lawn (2026-10-16).
+  - Inside the outer road, the ground is lawn with the walkways: OSM's, plus walks traced from imagery round A3, A4 and A5 (2026-10-17, branch `map3d-footpaths`).
 - **Debug:** `?gps=1` shows the GPS points from `src/lib/mapGeo.ts` (`GPS_POINTS`, `LANDMARKS`). The map credits OpenStreetMap at the bottom right.
 - **Data check:**
   - All 9 building and court GPS points fall inside their OSM outlines (1–3 m mean offset), so no global shift was applied.
@@ -58,7 +59,7 @@ Ben chose true scale over the Figma layout.
 - **Flag:** one big pole flies a white XMUM flag with `public/xmum-logo-badge.png` (Ben: one big flag, not two). It is modelled at real size: a 15 m pole and a 3.6 × 2.4 m flag.
 - **Landmark scale:** the statue and the flag are drawn 4× larger than real (`LANDMARK_SCALE` in `geo.ts`) so they read at normal zoom. The zoom limit is 6 units, so the statue can be seen up close.
 - **Phase 2 (not started; only after Ben approves):**
-  - roads, street lamps, the remaining buildings, trees and landscape (OSM has 841 tree points and 101 tree rows);
+  - roads (the walkways are drawn since 2026-10-17; the car roads are not), street lamps, the remaining buildings, trees and landscape (OSM has 841 tree points and 101 tree rows);
   - a building style reference: heights from photos and imagery, the D towers (OSM says 7 levels, the photo looks taller), and whether B1 should look like the real building.
 - **Data files** (`scripts/map3d/`):
   - `osm_full.json`: the raw Overpass extract;

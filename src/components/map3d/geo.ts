@@ -42,8 +42,9 @@ export function toWorld([px, py]: Img): World {
 export const COLORS = {
   road: "#6f6a73",
   roadLine: "rgba(255,255,255,0.55)",
-  path: "#ec8d65",
-  pathEdge: "#d4764f",
+  // walkways and their outline: the colours of the 2D art (Ben's reference, 2026-10-17)
+  path: "#e28662",
+  pathEdge: "#c66c46",
   lawn: "#9a9e52",
   plantation: "#41672f",
   beige: "#efe1cd",
@@ -259,11 +260,37 @@ export const FLAG: World = (() => {
   return [STATUE[0] + fx - sx, STATUE[1] + fz - sz];
 })();
 
-/** The lake, its park, lawns and footpaths (OSM). */
+/**
+ * Walks round A3, A4 and A5 that OSM lacks or misplaces, traced by hand from aerial imagery (Esri, zoom 19) after
+ * Ben pointed them out (2026-10-17). In metres east / north, like campusData.ts: the walk along the lake side of A3,
+ * A4 and A5 (it carries on OSM's walk along A1 and A2), the walk down A5's east side, the sidewalk along the south
+ * of the lawn east of A5, and the walk along that lawn's east edge (OSM way 1422330769, which OSM draws about 11 m
+ * east of it, in the trees; emit_phase1.py leaves the OSM one out).
+ */
+const TRACED_PATHS_M: EN[][] = [
+  // the lake side of A3, A4 and A5: from the end of OSM's walk north of A1 and A2 (way 1547736698), past A3's north
+  // door and the gap between A3 and A4, to the lawn's north-east corner
+  [
+    [-396.2, 135.7], [-391.1, 131.8], [-378.5, 130.3], [-363.6, 130.9], [-333.8, 134.2], [-324.9, 137.2],
+    [-312.9, 138.9], [-287.3, 138.3], [-265.8, 138.3], [-253.9, 136.6], [-239.0, 136.0], [-183.2, 130.6],
+    [-172.5, 127.7], [-120.6, 116.4], [-98.8, 106.6], [-72.0, 102.8],
+  ],
+  // down A5's east side
+  [[-109.2, 111.7], [-107.8, 103.4], [-111.6, 95.4], [-117.6, 75.8], [-120.6, 69.9], [-132.5, 22.5], [-137.0, 9.8]],
+  // the sidewalk along the south of the lawn
+  [[-168.9, 14.5], [-152.5, 10.7], [-138.5, 9.5], [-108.6, 0.6], [-98.8, -1.2], [-89.9, -1.5]],
+  // along the lawn's east edge, then north to the lake (OSM way 1422330769, traced again)
+  [
+    [-95.2, -17.2], [-91.3, -7.7], [-83.9, 22.5], [-81.8, 44.1], [-77.3, 71.7], [-75.8, 96.0], [-72.0, 102.8],
+    [-64.8, 110.8], [-64.5, 169.2], [-63.6, 196.7],
+  ],
+];
+
+/** The lake, its park, lawns and footpaths (OSM, plus the traced walks). */
 export const LAKE: World[] = realPts(LAKE_M);
 export const PARK: World[] = realPts(PARK_M);
 export const GRASS: World[][] = GRASS_M.map(realPts);
-export const FOOTPATHS: World[][] = FOOTPATHS_M.map(realPts);
+export const FOOTPATHS: World[][] = [...FOOTPATHS_M, ...TRACED_PATHS_M].map(realPts);
 export const FOOTPATH_W = 5 * UNITS_PER_M;
 
 /**

@@ -13,6 +13,7 @@ Ben may continue this work in a new Claude conversation. This file says where ev
 - **Branches:**
   - `map-3d-draft` (PR #39), `map3d-batch4` (#40), `map3d-batch5` (#41) and `funfair-central` (#44, #45) are merged.
   - The lake stage is on `funfair-central` too (Ben, 2026-10-16: no more new branches).
+  - The lawn and the walkways are on `map3d-footpaths` (Ben asked for a new branch for them, 2026-10-17).
   - Before a push, merge the latest `origin/main` into it and check that `git merge-tree --write-tree origin/main HEAD` is clean, so its PR merges without conflicts.
 - Work in **batches**: finish one, show Ben the results (screenshots, in Chinese), and wait for his go before the next one.
 - **Usage limit:** he watches it closely, so keep agents few. If he says the 5-hour limit is above about 85%:
@@ -23,6 +24,12 @@ Ben may continue this work in a new Claude conversation. This file says where ev
 - Talk to Ben in Chinese, short and direct.
 
 ## Where things stand
+
+### Lawn and walkways (2026-10-17, branch `map3d-footpaths`)
+
+- Inside the outer road, the ground is lawn and only the walkways are paved, in the 2D art's colours (an orange walk with a darker outline). The walkways are OSM's, plus walks traced by hand round A3, A4 and A5 (`TRACED_PATHS_M` in `geo.ts`). Details: the roadmap's "Done".
+- To add a walk that OSM lacks, trace it on aerial imagery in metres east / north and add it to `TRACED_PATHS_M`. Trees, bushes and lamps keep off it by themselves (`inKeepOut` reads `FOOTPATHS`).
+- `PARK`, `GRASS` and the art's track lawn (`GROUND.lawns`) are no longer drawn. They are kept for when lawns and paved areas are told apart again.
 
 ### The 3D map on every map page (plan steps 1–6, merged)
 
