@@ -99,7 +99,7 @@ Ben may continue this work in a new Claude conversation. This file says where ev
     - Realtime is on for the table.
   - **Map side:**
     - `src/lib/funfair.ts` holds the shared types, the defaults and `funfairMissing()`. It has no 3D code.
-    - `useCampusMapData({ loadFunfair })` (3D view only) asks `fn_funfair_state` on load, whenever the lit bulbs change, and every 30 s. If 0088 is missing it stops after the first 404 and uses `funfairFromBulbs()` with the default keys. The result is `data.funfair`; the dev preview's mock fills it from the default keys.
+    - `useCampusMapData({ loadFunfair })` (3D view only) asks `fn_funfair_state` on load, whenever the lit bulbs change, every 10 s (`FUNFAIR_POLL_MS`; Ben wants changes on the map within 15 s), and when the page comes back into view. The bulbs also reload then, in case the phone missed Realtime events while it slept. If 0088 is missing it stops after the first 404 and uses `funfairFromBulbs()` with the default keys. The result is `data.funfair`; the dev preview's mock fills it from the default keys.
   - **The cards:** `useFunfairZones()` (`src/components/useFunfairZones.ts`) loads and saves for both.
     - Admin → Live control: `components/admin/FunfairZones.tsx`.
     - HOGM → Game control, Funfair tab: `components/staff/game/FunfairSection.tsx`.

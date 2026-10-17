@@ -16,7 +16,7 @@ Checked on 2026-10-16 against `main` (migrations up to `0088`). Nothing on this 
 
    It then sets `projectors.activated_at`, and the phone shows the victory screen. At most three groups win: each bulb lights once, and each group lights one bulb.
 4. **Every map hears it.** `projectors` is in Realtime, so open maps reload the bulbs (`fn_map_lightbulbs`) at once.
-5. **The funfair powers up.** The 3D map then asks `fn_funfair_state` which zones are on, and asks again every 30 s. It plays the power-up of each zone that came on. The default keys are:
+5. **The funfair powers up.** The 3D map then asks `fn_funfair_state` which zones are on, and asks again every 10 s and when the page comes back into view. It plays the power-up of each zone that came on. The default keys are:
    - B1 → East · Big Top;
    - A3 → West · Neon Pier;
    - TF → Central · Starlight Midway.

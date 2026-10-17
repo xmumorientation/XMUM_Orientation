@@ -136,7 +136,7 @@ New pieces, as a sketch for the migration:
 - **Admin UI**: a "Funfair" card in the game console (Admin, and the HOGM Ops page).
   - For each zone: pick its key or keys and the any/all rule, see whether it is on now, and set a manual on/off override.
   - A preview button that plays the power-up animation for that zone, for testing during setup.
-- **Realtime**: a newly lit bulb updates every open map at once; Admin's changes to `funfair_zones` reach other maps within about 30 s. The animation plays only when a zone switches from off to on while the map is open. Anyone who opens the map later sees the zone already on.
+- **Realtime**: a newly lit bulb updates every open map at once; Admin's changes to `funfair_zones` reach other maps within about 10 s (Ben: under 15 s). The animation plays only when a zone switches from off to on while the map is open. Anyone who opens the map later sees the zone already on.
 
 ## Build notes
 

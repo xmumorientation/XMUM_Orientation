@@ -241,7 +241,7 @@ Migration `0088_funfair_zones.sql` (applied on the project; Ben, 2026-10-17). Wi
 - **Power:** a zone powers up when its keys (lightbulbs) are lit, with a 2 s power-up animation. The gate lights with the share of zones on.
 - **Funfair card:** on Admin → Live control and on HOGM's Game control (Funfair tab). It sets each zone's keys, the any/all rule and a manual on/off override (`fn_set_funfair_zone`, `is_game_lead()`). Preview opens `/map?funfair_preview=<zone>` and plays that zone's power-up on that screen only.
 - **Who sees what:** everyone gets only on or off (`fn_funfair_state`). Only game leads read the setup, since a zone's keys would tell players where the unlit bulbs are.
-- **How fast it shows:** maps ask again when a bulb is lit (live) and every 30 s, so Admin's changes reach other maps within about 30 s.
+- **How fast it shows:** maps ask again when a bulb is lit (live), every 10 s, and when the page comes back into view, so Admin's changes reach other maps within about 10 s (was 30 s; Ben asked for under 15 s, 2026-10-17).
 - **Details:** [map3d-session-handoff.md](map3d-session-handoff.md), "Vortexa Funfair".
 
 ### Map: 3D campus map on every map page, 2026-10-16 (Ben, branch `map3d-batch4`)

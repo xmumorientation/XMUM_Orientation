@@ -125,8 +125,8 @@ export function FunfairSection() {
         </a>
       </article>
       <p className="gc-muted">
-        Auto: the zone is on when its keys are lit. Preview plays the zone&apos;s power-up (or the concert&apos;s
-        opening) on your screen only.
+        Auto: the zone is on when its keys are lit. A change shows on every map within about 10 s. Preview plays the
+        zone&apos;s power-up (or the concert&apos;s opening) on your screen only.
       </p>
     </div>
   );
