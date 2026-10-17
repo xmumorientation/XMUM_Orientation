@@ -1,18 +1,20 @@
-import { UNITS_PER_M } from "../../geo";
+import { fromReal, UNITS_PER_M } from "../../geo";
 import { ORIGIN as CENTRAL_ORIGIN, PROMENADE } from "../central/layout";
 import { dormPlace } from "../common";
+import { DORMS_M } from "../dorms";
 
 // DRAFT: where things stand in the East zone, "Big Top", in metres from the
 // zone's origin (x north, z east; the same axes as the world). The land is the
 // east part of the campus lawn (FUNFAIR_LAND in geo.ts). It is L-shaped: its
-// south edge is x = -60 west of z = -12 and x = -111 east of it; x runs up to
+// south edge is x = -60 west of z = -12 and x = -124 east of it; x runs up to
 // 114 (the road side) and z from -121 (where Central ends) to 117.
 //
-// Canteen D6 holds the Big Top with a ring road round it, the hub plaza at its
-// door and the walk from Central's promenade. The coaster's station is on D4
-// and its loop over D5; the haunted house is on D2, the pirate ship on D3 and
-// the arcade on D1 (the last two moved north onto the lawn). The north holds
-// the helter-skelter, the food court and the circus wagons.
+// Each ride stands on the real middle of its dorm (dormCentre; Ben,
+// 2026-10-17). Canteen D6 holds the Big Top with a ring road round it, the hub
+// plaza at its door and the walk from Central's promenade. The coaster's
+// station is on D4 and its loop over D5; the haunted house is on D2, the
+// pirate ship on D3 and the arcade on D1. The north holds the helter-skelter,
+// the food court and the circus wagons.
 
 /** The zone's origin in world units. */
 export const ORIGIN: [number, number] = [29, 18];
@@ -22,13 +24,32 @@ export function toLocal([x, z]: [number, number]): [number, number] {
   return [(x - ORIGIN[0]) / UNITS_PER_M, (z - ORIGIN[1]) / UNITS_PER_M];
 }
 
-const at = (dorm: string, dx = 0, dz = 0): [number, number] => {
-  const [x, z] = toLocal(dormPlace(dorm).pos);
-  return [x + dx, z + dz];
-};
+/**
+ * The real middle of a dorm (the centroid of its OSM outline), in zone metres. dormPlace() gives the middle of the
+ * outline's bounding rectangle instead, which is 2-3 m off for the D blocks' cross shapes.
+ */
+export function dormCentre(name: string): [number, number] {
+  const r = DORMS_M[name].outline;
+  let a = 0;
+  let e = 0;
+  let n = 0;
+  for (let i = 0; i < r.length; i++) {
+    const [e1, n1] = r[i];
+    const [e2, n2] = r[(i + 1) % r.length];
+    const c = e1 * n2 - e2 * n1;
+    a += c;
+    e += (e1 + e2) * c;
+    n += (n1 + n2) * c;
+  }
+  return toLocal(fromReal(e / (3 * a), n / (3 * a)));
+}
 
-/** The lawn's box. The south-west corner (x < -60, z < -12) is the lake park: see onLawn. */
-export const BOUNDS = { x: [-111, 114] as [number, number], z: [-121, 117] as [number, number] };
+/**
+ * The lawn's box. The south-west corner (x < -60, z < -12) is the lake park: see onLawn. The south edge reaches past
+ * the funfair's land to x = -124, for the pirate ship and the arcade on the real middles of D3 and D1; that keeps
+ * at least 5 m off B1's grey service road (about x = -130 south of D1).
+ */
+export const BOUNDS = { x: [-124, 114] as [number, number], z: [-121, 117] as [number, number] };
 
 /** True when (x, z) is on the zone's lawn, at least `m` metres in from its edge. */
 export function onLawn(x: number, z: number, m = 0) {
@@ -38,8 +59,8 @@ export function onLawn(x: number, z: number, m = 0) {
 
 // ---------- the Big Top ----------
 
-/** Canteen D6: the Big Top, about (-20, 21). */
-export const BIGTOP = at("Canteen D6");
+/** Canteen D6: the Big Top, about (-21, 21). */
+export const BIGTOP = dormCentre("Canteen D6");
 /** The tent's long axis follows the canteen's oval; its door (local +z) faces the hub, west-north-west. */
 export const BT_RY = dormPlace("Canteen D6").rotY + Math.PI;
 /** The tent's semi-axes (the canteen's oval). */
@@ -64,31 +85,43 @@ export const HUB_R = 10;
 
 // ---------- the coaster (the track itself is in coaster.tsx) ----------
 
-/** The station on D4: the track runs east (+z) through it along x = STATION.x. */
-export const STATION = { x: -50, z: [-88, -64] as [number, number] };
-/** The station's paved court. */
-export const STATION_COURT = { x: [-57, -41] as [number, number], z: [-90, -60] as [number, number] };
+const D4 = dormCentre("D4");
+/** The station on D4's middle (about (-53, -72)): the track runs east (+z) through it along x = STATION.x. */
+export const STATION = { x: D4[0], z: [D4[1] - 12, D4[1] + 12] as [number, number] };
+/** The station's paved court. Its south edge keeps clear of the lake park (x = -60). */
+export const STATION_COURT = {
+  x: [STATION.x - 6.5, STATION.x + 9] as [number, number],
+  z: [STATION.z[0] - 2, STATION.z[1] + 4] as [number, number],
+};
+/** D5: the coaster's loop stands over its middle (about (19, -65)). */
+export const LOOP_C = dormCentre("D5");
 
 // ---------- the other rides ----------
 
-/** D3: the pirate ship, moved 14 m north onto the lawn (about (-92, 8)); it swings across the default view. */
-export const SHIP = at("D3", 14, 1);
+/** D3: the pirate ship on D3's middle (about (-108, 5)); it swings across the default view. */
+export const SHIP = dormCentre("D3");
 export const SHIP_R = 14;
 export const SHIP_RY = 0.8;
 
-/** D2: the haunted house (about (-58, 78)), facing its plaza on the Ghost Lane. */
-export const HAUNTED = at("D2", -2, 1);
-export const HH_PLAZA: [number, number] = [-48, 66];
+/** D2: the haunted house on D2's middle (about (-56, 78)), facing its plaza on the Ghost Lane. */
+export const HAUNTED = dormCentre("D2");
+export const HH_PLAZA: [number, number] = [HAUNTED[0] + 10.8, HAUNTED[1] - 11.8];
 export const HH_PLAZA_R = 8;
 export const HAUNTED_RY = Math.atan2(HH_PLAZA[0] - HAUNTED[0], HH_PLAZA[1] - HAUNTED[1]);
 
-/** D1: the arcade, moved 21 m north onto the lawn (about (-97, 84)); its front faces north (+x). */
-export const ARCADE = at("D1", 21, 0);
+/**
+ * D1: the arcade on D1's middle (about (-120, 86)); its front faces north (+x). Its back wall (x = -125) stays
+ * 6-7 m off B1's grey service road.
+ */
+export const ARCADE = dormCentre("D1");
 export const ARCADE_RY = Math.PI / 2;
 /** The prize stand beside it, also facing north, with the prize wheel on its roof. */
-export const PRIZE: [number, number] = [-93.5, 101.5];
+export const PRIZE: [number, number] = [ARCADE[0] + 2.8, ARCADE[1] + 17.8];
 /** The arcade's forecourt. */
-export const ARCADE_COURT = { x: [-91, -82] as [number, number], z: [72, 106] as [number, number] };
+export const ARCADE_COURT = {
+  x: [ARCADE[0] + 5.3, ARCADE[0] + 14.3] as [number, number],
+  z: [ARCADE[1] - 11.7, ARCADE[1] + 22.3] as [number, number],
+};
 
 /** The helter-skelter on its round plaza, north of the hub. */
 export const HS: [number, number] = [36, 6];
@@ -133,7 +166,7 @@ export const WALKS: Walk[] = [
   // the Ghost Lane: the ring's east side → the haunted house's plaza
   { pts: [ringPoint(-Math.PI / 2), [HH_PLAZA[0] + 2.5, HH_PLAZA[1] - 2.5]], hw: 2.6 },
   // the haunted house → the arcade
-  { pts: [[HH_PLAZA[0] - 5, HH_PLAZA[1] + 2], [ARCADE_COURT.x[1] - 0.5, 84]], hw: 2.6 },
+  { pts: [[HH_PLAZA[0] - 5, HH_PLAZA[1] + 2], [ARCADE_COURT.x[1] - 0.5, ARCADE[1] + 0.3]], hw: 2.6 },
   // the East Walk: the haunted house → the circus wagons → the food court
   { pts: [[HH_PLAZA[0] + 4, HH_PLAZA[1] + 5], [-20, 82], [20, 86], [48, 74], [FOOD.x[0] + 1, FOOD.z[1] - 6]], hw: 3 },
   // the North Walk: the hub → the helter-skelter → the food court

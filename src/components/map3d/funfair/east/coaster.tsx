@@ -8,35 +8,40 @@ import { Bake, G, TAU, mat, smooth, type V3 } from "../central/kit";
 import { S, bar } from "../west/kit";
 import { COURT_Y } from "./ground";
 import { NEON, PAINT, bulbC, type EastKit } from "./kit";
-import { MAIN, MAIN_X, STATION, STATION_COURT } from "./layout";
+import { LOOP_C, MAIN, MAIN_X, STATION, STATION_COURT } from "./layout";
 import { beads, commit, disposeAll, neonText, newLocal, placeM, tAt, type Live, type Parts } from "./parts";
 
-// DRAFT: D4 and D5, the coaster "VORTEX". The station is on D4: a deck under a
-// red and cream striped roof with the VORTEX sign. The train leaves east, turns
-// north up the lift hill (over the walk from Central), drops into the loop over
-// D5, swings round the north turn, runs back south over a camel hump and the
-// walk again, and brakes into the station. Red rails on a cream spine and white
-// supports; yellow neon and marquee bulbs along both sides light up from the
-// station round the circuit. The train (five cars) runs once the zone is on.
+// DRAFT: D4 and D5, the coaster "VORTEX". The station is on D4's middle: a
+// deck under a red and cream striped roof with the VORTEX sign. The train
+// leaves east, turns north up the lift hill (over the walk from Central),
+// drops, turns west and back south round D5's north arm, rides the loop over
+// D5's middle, swings west and runs back south over the walk again, and brakes
+// into the station. Red rails on a cream spine and white supports; yellow neon
+// and marquee bulbs along both sides light up from the station round the
+// circuit. The train (five cars) runs once the zone is on.
 
-const LOOP = { x: 39, y: 10.6, r: 8, z0: -46, z1: -42 };
+/** The loop, ridden heading south (-x), centred on D5's middle; the track steps sideways from z0 to z1 through it. */
+const LOOP = { x: LOOP_C[0], y: 10.6, r: 8, z0: LOOP_C[1] + 2, z1: LOOP_C[1] - 2 };
 
 const loopPts = (): V3[] =>
   Array.from({ length: 9 }, (_, i) => {
     const f = i / 8;
     const a = f * TAU;
-    return [LOOP.x + LOOP.r * Math.sin(a), LOOP.y - LOOP.r * Math.cos(a), LOOP.z0 + (LOOP.z1 - LOOP.z0) * f] as V3;
+    return [LOOP.x - LOOP.r * Math.sin(a), LOOP.y - LOOP.r * Math.cos(a), LOOP.z0 + (LOOP.z1 - LOOP.z0) * f] as V3;
   });
+
+const SX = STATION.x;
+const [SZ0, SZ1] = STATION.z;
 
 /** The circuit's control points, in travel order (a closed centripetal Catmull-Rom curve through them). */
 const CTRL: V3[] = [
   // 0-2: the station, heading east
-  [-50, 1.4, -86],
-  [-50, 1.4, -74],
-  [-50, 1.4, -63],
+  [SX, 1.4, SZ0 + 2],
+  [SX, 1.4, SZ0 + 12],
+  [SX, 1.4, SZ1 - 1],
   // 3-4: the turn north
-  [-45.9, 1.5, -50.1],
-  [-36, 1.7, -46],
+  [SX + 4.1, 1.5, -50],
+  [SX + 14, 1.7, -46],
   // 5-9: the lift hill, over the walk from Central
   [-26, 4.5, -46],
   [-14, 12, -46],
@@ -47,33 +52,36 @@ const CTRL: V3[] = [
   [17, 19, -46],
   [23, 9, -46],
   [29, 3.2, -46],
-  // 13-21: the loop over D5
+  // 13-18: the turn west and back south, round D5's north arm, to the loop
+  [34, 3.8, -46.2],
+  [40, 5.4, -48.5],
+  [42.5, 6.4, -54.5],
+  [40, 6, -60.5],
+  [34, 4.6, LOOP.z0],
+  [LOOP.x + 7.8, 3.2, LOOP.z0],
+  // 19-27: the loop over D5's middle
   ...loopPts(),
-  // 22-27: the north turn
-  [46, 2.8, -42],
-  [52, 3.4, -42],
-  [73.2, 6.5, -50.8],
-  [82, 9, -72],
-  [73.2, 8.5, -93.2],
-  [52, 7, -102],
-  // 28-34: the camel hump, then over the walk again
-  [40, 9.5, -102],
-  [29, 12.5, -102],
-  [18, 7, -102],
-  [9, 3.8, -102],
-  [-1, 7, -102],
+  // 28-35: the swing west, then south over the walk again
+  [LOOP.x - 6.2, 3.1, LOOP.z1 - 1.1],
+  [9.6, 4, -73],
+  [10.4, 5.2, -80],
+  [10.6, 6.6, -88],
+  [8.6, 7.6, -95.5],
+  [2.6, 8.2, -100.8],
   [-6, 8.2, -102],
   [-13, 6.5, -102],
-  // 35-39: the brakes and the turn into the station
+  // 36-40: the brakes and the turn into the station
   [-23, 3, -102],
   [-33, 1.6, -102],
   [-41, 1.4, -102],
-  [-47.4, 1.4, -99.4],
-  [-50, 1.4, -93],
+  [SX + 2.6, 1.4, -99.4],
+  [SX, 1.4, -93],
 ];
-const LOOP_K: [number, number] = [13, 21];
+const LOOP_K: [number, number] = [19, 27];
 const LIFT_K: [number, number] = [4, 9];
-const BRAKE_K = 35;
+const BRAKE_K = 36;
+/** The turn round D5's north arm, lit cyan. */
+const TURN_K: [number, number] = [12, 18];
 
 const curve = new THREE.CatmullRomCurve3(
   CTRL.map((q) => new THREE.Vector3(q[0], q[1], q[2])),
@@ -183,9 +191,9 @@ export function bakeCoaster(p: Parts) {
     if (i % 2 === 0) {
       bar(p.frame, PAINT.gold, off(i, -0.62, -0.12), off(i, 0.62, -0.12), 0.07, S.tube4);
       bar(p.frame, PAINT.gold, off(i, 0, -0.12), off(i, 0, -0.5), 0.07, S.tube4);
-      // neon along both sides: yellow, pink through the loop, cyan round the north turn
+      // neon along both sides: yellow, pink through the loop, cyan round the turn before it
       const k = Math.floor(curve.getUtoTmapping(i / n, (i / n) * LEN) * CTRL.length);
-      const neon = kind[i] === K_LOOP ? NEON.pink : k >= 22 && k < 28 ? NEON.cyan : NEON.yellow;
+      const neon = kind[i] === K_LOOP ? NEON.pink : k >= TURN_K[0] && k < TURN_K[1] ? NEON.cyan : NEON.yellow;
       const ti = t0 + 0.2 * (i / n);
       for (const sd of [-0.74, 0.74]) p.light.seg(neon, off(i, sd, -0.06), off(i + 2, sd, -0.06), 0.05, S.tube4, ti, -900 - i);
     }

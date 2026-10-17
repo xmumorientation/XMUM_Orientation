@@ -226,6 +226,12 @@ The design branches are merged. These remote branches are still not in `main` (c
 
 ## Done
 
+### Map: East funfair rides on their dorms' real middles, 2026-10-17 (Ben, branch `funfair-east-layout`; partly done)
+No migration. Built on `map3d-footpaths` (the lawn round the funfair's land), so merge that first.
+- **Done (E1):** each East ride stands on the real middle of its dorm, the centroid of its OSM outline (`dormCentre` in `east/layout.ts`). They were 0.5–29 m off: the arcade (D1) 24 m, the pirate ship (D3) 16 m and the coaster's loop (D5) 29 m. The coaster has a new route: the station on D4's middle, the lift hill over the walk from Central, a turn round D5's north arm, the loop over D5's middle, then back over the walk into the station. Its old north turn is free land now.
+- The arcade's back wall keeps 6–7 m off B1's grey service road (Ben asked that D1 not touch the road). The zone may build south to x = -124 for the arcade and the pirate ship. West, Central and the campus are unchanged.
+- **Left (E2):** use the land better. The trees on a 12.5 m grid (`greenery` in `east/decor.ts`) fill every empty spot; replace most of them with funfair content (walks, a restaurant, games, snack carts, a picnic lawn), keeping trees as a belt along the road.
+
 ### Map: lawn and walkways on the 3D map, 2026-10-17 (Ben, branch `map3d-footpaths`)
 No migration.
 - Inside the outer road, the 3D map's ground is now lawn (it was orange), so only the walkways are paved. They use the 2D art's colours: an orange walk with a darker outline, and walks that meet join into one (`ground.tsx`). The funfair's land, the outer road and the plantation are unchanged.

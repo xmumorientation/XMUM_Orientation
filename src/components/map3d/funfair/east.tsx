@@ -5,12 +5,12 @@ import { useEffect, useMemo, useRef } from "react";
 
 import { UNITS_PER_M } from "../geo";
 import { smooth } from "./central/kit";
-import { dormPlace, LITE_LIGHT_SCALE, LITE_PAVING_LIT, LITE_SELF_LIT, usePowerRamp, type ZoneProps } from "./common";
+import { LITE_LIGHT_SCALE, LITE_PAVING_LIT, LITE_SELF_LIT, usePowerRamp, type ZoneProps } from "./common";
 import { glowStrength, LiteGlow, type GlowSpot } from "./glow";
 import { buildStatic } from "./east/build";
 import { Coaster } from "./east/coaster";
 import { disposeEastKit, makeEastKit } from "./east/kit";
-import { ARCADE, BIGTOP, FOOD, HAUNTED, HS, ORIGIN, SHIP, STATION, toLocal } from "./east/layout";
+import { ARCADE, BIGTOP, FOOD, HAUNTED, HS, LOOP_C, ORIGIN, SHIP, STATION } from "./east/layout";
 import type { Live } from "./east/parts";
 import { PowerFx } from "./east/power";
 import { PirateShip } from "./east/ship";
@@ -19,7 +19,7 @@ import { bulbsMesh } from "./west/kit";
 // DRAFT: Vortexa Funfair, East zone "Big Top" (docs/map3d-funfair-design.md),
 // in the Retro Carnival style (style B bench, in git history at 4eee382) brightened for day: red
 // and cream stripes, gold trim, warm marquee bulbs and Vortexa yellow neon.
-// Rides on their dorms' footprints: Canteen D6 the Big Top with its ring road
+// Rides on their dorms' real middles: Canteen D6 the Big Top with its ring road
 // and hub, D4 and D5 the VORTEX coaster (station on D4, loop over D5), D2 the
 // haunted house, D3 the pirate ship, D1 the arcade and prize stand. The north
 // holds the helter-skelter, the food court and the circus wagons; a walk joins
@@ -38,8 +38,8 @@ import { bulbsMesh } from "./west/kit";
 // same meshes with about half the bulbs, stalls, tables and trees, a coarser
 // track, no flicker and no point light.
 
-/** The coaster's loop stands over D5 (coaster.tsx). */
-const LOOP = toLocal(dormPlace("D5").pos);
+/** The coaster's loop stands over D5's middle (coaster.tsx). */
+const LOOP = LOOP_C;
 
 /** Halos for phones at night (glow.tsx): the Big Top, the coaster's loop and station, each ride, the food court. */
 const GLOW: GlowSpot[] = [

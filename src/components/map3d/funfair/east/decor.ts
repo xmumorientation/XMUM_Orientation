@@ -5,6 +5,7 @@ import { COURT_Y, PLAZA_Y, groundY, segDist, walkDist } from "./ground";
 import { NEON, PAINT, bulbC } from "./kit";
 import {
   ARCADE,
+  ARCADE_COURT,
   BIGTOP,
   BT_A,
   BT_B,
@@ -271,7 +272,7 @@ function cableRoutes(): [number, number][][] {
     [[bx - 1.3, bz], [-0.3, bz - 6], [-0.3, -67.6], [STATION_COURT.x[1] - 0.6, -67.6]],
     [[bx - 0.6, bz - 1.2], [-14, -24.4], [-52, -9], [-63, 2], [SHIP[0] + SHIP_R - 1.5, 5]],
     [[bx - 0.2, bz - 1.3], [-14, -25.6], [-53, -10.2], [-66, 3.6], [-68.5, 40], [HH_PLAZA[0] - 4, HH_PLAZA[1] - 4]],
-    [[bx + 0.2, bz - 1.3], [-14, -26.8], [-54, -11.4], [-67.3, 5.2], [-70, 41], [-84, 77]],
+    [[bx + 0.2, bz - 1.3], [-14, -26.8], [-54, -11.4], [-67.3, 5.2], [-70, 41], [ARCADE_COURT.x[1] - 2, ARCADE_COURT.z[0] + 4]],
     [[bx + 1.2, bz + 0.8], [HS[0] - HS_R + 0.5, HS[1] - 3]],
     [[bx + 1.3, bz], [22, -26], [46, -16], [FOOD.x[0] - 0.5, 9]],
   ];

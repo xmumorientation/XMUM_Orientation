@@ -1,6 +1,5 @@
 import { UNITS_PER_M, type World } from "../geo";
 import * as C from "./central/layout";
-import { dormPlace } from "./common";
 import * as E from "./east/layout";
 import * as W from "./west/layout";
 
@@ -28,7 +27,7 @@ export const RIDE_TAGS: { name: string; pos: World }[] = [
   { name: "D2 · Haunted House", pos: world(E.ORIGIN, E.HAUNTED) },
   { name: "D3 · Pirate Ship", pos: world(E.ORIGIN, E.SHIP) },
   { name: "D4 · VORTEX Coaster", pos: world(E.ORIGIN, [E.STATION.x, (E.STATION.z[0] + E.STATION.z[1]) / 2]) },
-  { name: "D5 · Coaster Loop", pos: dormPlace("D5").pos },
+  { name: "D5 · Coaster Loop", pos: world(E.ORIGIN, E.LOOP_C) },
   { name: "D6 · Big Top", pos: world(E.ORIGIN, E.BIGTOP) },
 ];
 

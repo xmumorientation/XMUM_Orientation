@@ -12,6 +12,7 @@ Status: built and merged (F1–F5; step 7 of [map3d-implementation-plan.md](map3
 - **Admin chooses which zone powers up** after which key or keys are unlocked. This is not fixed.
 - Ben picked the ride styles on a bench page; after that, everything went straight into the map (no separate preview).
 - The rides follow the dorm layout: the LY blocks hold some, the D blocks others. Positions are approximate. Each ride only has to sit on the empty land.
+- **East zone, 2026-10-17:** each ride stands exactly on its dorm's real middle, the centroid of its OSM outline (`dormCentre` in `east/layout.ts`). The coaster's station is on D4's middle and its loop over D5's middle. West and Central are unchanged.
 
 ## Zones and rides
 
