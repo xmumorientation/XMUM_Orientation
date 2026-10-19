@@ -49,10 +49,6 @@ export function classifyScan(raw: string, origins: string[]): ScanRoute {
   } catch {
     url = null;
   }
-  if (!url || (url.protocol !== "http:" && url.protocol !== "https:")) {
-    return { kind: "text", text };
-  }
-
   const own = origins.filter(Boolean).map((o) => {
     try {
       return norm(new URL(o));
@@ -60,11 +56,29 @@ export function classifyScan(raw: string, origins: string[]): ScanRoute {
       return "";
     }
   });
+
+  // A link to this site minted without a scheme ("host/blindbox?t=..."), from
+  // before the site URL was normalised: open it as this site's https link.
+  // Scheme-less text naming any other host stays text.
+  if (!url || (url.protocol !== "http:" && url.protocol !== "https:")) {
+    let bare: URL | null = null;
+    try {
+      bare = /^[^\s/:]+(:\d+)?\//.test(text) ? new URL(`https://${text}`) : null;
+    } catch {
+      bare = null;
+    }
+    if (!bare || !own.includes(norm(bare))) return { kind: "text", text };
+    url = bare;
+  }
   if (!own.includes(norm(url))) {
     return { kind: "link", url: url.toString() };
   }
 
-  const path = url.pathname;
+  // "https://our-site//evil.com/x" has our origin, but "//evil.com/x" handed to
+  // the router is a protocol-relative link to another site. Collapse leading
+  // slashes so the path always stays on this site (this also fixes codes
+  // minted from a site URL that ended in "/").
+  const path = url.pathname.replace(/^[/\\]+/, "/");
   for (const b of BLOCKED) {
     if (path === b.prefix || path.startsWith(b.prefix + "/")) {
       return { kind: "blocked", reason: b.reason };

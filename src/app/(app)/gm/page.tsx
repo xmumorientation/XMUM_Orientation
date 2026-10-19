@@ -56,6 +56,31 @@ export default function GmPanelPage() {
   const [busy, setBusy] = useState(false);
   // Shown on the buttons only; the server applies the current rule.
   const [day1, setDay1] = useState({ win: 2, lose: 1 });
+  // The GM's station follows the day (the server switches profiles.station_id
+  // when a day's game starts or ends, or when Admin moves the GM), so it is
+  // re-read instead of trusting the value this page loaded with.
+  const [stationId, setStationId] = useState<number | null>(profile.station_id);
+
+  useEffect(() => {
+    async function refresh() {
+      const { data } = await supabase.from("profiles").select("station_id").eq("id", profile.id).maybeSingle();
+      if (data) setStationId((data as { station_id: number | null }).station_id);
+    }
+    // The layout's profile is from the first page load, not from opening /gm.
+    void refresh();
+    const channel = supabase
+      .channel(`gm-day-${crypto.randomUUID()}`)
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "phases" }, refresh)
+      .subscribe();
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void refresh();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      supabase.removeChannel(channel);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [supabase, profile.id]);
 
   useEffect(() => {
     let active = true;
@@ -63,34 +88,36 @@ export default function GmPanelPage() {
       const { data: gs } = await supabase.rpc("fn_list_groups");
       if (!active) return;
       setGroups(gs ?? []);
-      if (profile.station_id) {
+      if (stationId) {
         const { data: st } = await supabase
           .from("stations")
           .select("*")
-          .eq("id", profile.station_id)
+          .eq("id", stationId)
           .single();
         if (active) {
           setStation((st as Station) ?? null);
           // open on the tab for this station's day
           if ((st as Station | null)?.day === 2) setTab((t) => (t === "day1" ? "day2" : t));
         }
+      } else {
+        setStation(null);
       }
     }
     load();
     return () => {
       active = false;
     };
-  }, [supabase, profile.station_id]);
+  }, [supabase, stationId]);
 
   // The station's status changes from Admin (or another device): show it at
   // once. Only the status is merged, nothing else on the page is reloaded.
   useEffect(() => {
-    if (!profile.station_id) return;
+    if (!stationId) return;
     const channel = supabase
-      .channel(`gm-station-${profile.station_id}-${crypto.randomUUID()}`)
+      .channel(`gm-station-${stationId}-${crypto.randomUUID()}`)
       .on(
         "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "stations", filter: `id=eq.${profile.station_id}` },
+        { event: "UPDATE", schema: "public", table: "stations", filter: `id=eq.${stationId}` },
         (payload) => {
           const row = payload.new as Station;
           setStation((cur) => (cur && cur.id === row.id ? { ...cur, status: row.status } : cur));
@@ -100,7 +127,7 @@ export default function GmPanelPage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [supabase, profile.station_id]);
+  }, [supabase, stationId]);
 
   // Token rules can change during the event; keep the labels and the
   // station's entry fee (synced from its tier) current.
@@ -115,11 +142,11 @@ export default function GmPanelPage() {
       const value = (key: string, fallback: number) =>
         data.find((r) => r.rule_key === key)?.rule_value ?? fallback;
       setDay1({ win: value("DAY1_WIN_TOKENS", 2), lose: value("DAY1_LOSE_TOKENS", 1) });
-      if (profile.station_id) {
+      if (stationId) {
         const { data: st } = await supabase
           .from("stations")
           .select("entry_cost")
-          .eq("id", profile.station_id)
+          .eq("id", stationId)
           .single();
         if (active && st) {
           setStation((cur) => (cur ? { ...cur, entry_cost: st.entry_cost } : cur));
@@ -135,7 +162,7 @@ export default function GmPanelPage() {
       active = false;
       supabase.removeChannel(channel);
     };
-  }, [supabase, profile.id, profile.station_id]);
+  }, [supabase, profile.id, stationId]);
 
   function flash(msg: string) {
     setNotice(msg);

@@ -71,7 +71,7 @@ export function TypesTab({ data, onError, onNotice }: TabProps) {
     const used = (data.typeStats[t.id]?.assignments ?? 0) > 0;
     const ok = window.confirm(
       used
-        ? `"${t.name}" has already been assigned, so it will be ARCHIVED: its QR codes stop working and it cannot be assigned again. History is kept. Continue?`
+        ? `"${t.name}" has already been assigned, so it will be ARCHIVED: it can no longer be bought and cannot be assigned again. Sellers' QR codes keep working for their other box types, and boxes already bought can still be opened. History is kept. Continue?`
         : `Delete the box type "${t.name}"?`
     );
     if (!ok) return;
@@ -171,8 +171,9 @@ export function TypesTab({ data, onError, onNotice }: TabProps) {
           </label>
           <p className="text-xs text-ink-faint">
             Price 0 = free reward box. Stock is the number of boxes that exist;
-            hand them out on the Assign tab. Edits to range and price apply to
-            boxes opened from now on.
+            hand them out on the Assign tab. Price and range edits apply to
+            boxes bought from now on; boxes already bought keep the range they
+            were bought with.
           </p>
           <div className="flex gap-2">
             <button disabled={busy} type="submit" className="btn-primary flex-1">

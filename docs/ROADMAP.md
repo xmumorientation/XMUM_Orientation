@@ -5,7 +5,7 @@ Read it before starting a new round of development. When a decision changes, upd
 
 > **From Ben:** when you finish your work, write down what you completed in the "Done" section at the end of this file, so the next teammate can see it. Do this for partly finished items too: say which parts are done and which are left.
 
-Last updated: 2026-10-17
+Last updated: 2026-10-19
 
 ## Status key
 
@@ -149,7 +149,7 @@ The design branches are merged. These remote branches are still not in `main` (c
 **Scope:**
 - Build the map to match the Figma design.
 - Game station status on the map (for example open, busy, closed).
-- Group locations on the map, with the existing permission rules: Faci sees their own group, Committee and above see all groups.
+- Group locations on the map: Freshie, Faci and Committee and above see all groups (0089; before it, Faci and Freshie see only their own).
 - Anything else on the map page.
 
 **Figma:** [XMUM campus map](https://www.figma.com/design/3dcEv45KenmKcoTcbaZmQ0/Untitled?node-id=24-2) (frame `XMUM Block Cube_XMUM Map 1`).
@@ -183,7 +183,7 @@ The design branches are merged. These remote branches are still not in `main` (c
 
 ---
 
-## 7. Faci profiles backend (Ready)
+## 7. Faci profiles backend (Built, needs `0069` run and tested)
 
 **Owner:** to assign. The UI is built and in `main` (Ben); this item is the backend only.
 
@@ -220,7 +220,9 @@ The design branches are merged. These remote branches are still not in `main` (c
 
 **Test before running it on the live project** (on a test Supabase project): a Faci cannot change another Faci's row; a Freshie cannot select from `faci_profiles`; another group's members get nothing from `fn_group_facis()`; a Faci can upload only into their own avatar folder; Admin can clear a profile.
 
-**Release order:** run `0069` in Supabase first, then deploy the frontend. The other order calls functions that do not exist yet. Then add the new table and functions to [permission-matrix.md](permission-matrix.md).
+**Release order:** run `0069` in Supabase first, then deploy the frontend. The other order calls functions that do not exist yet. Then add the new table and functions to [permission-matrix.md](permission-matrix.md). (done)
+
+---
 
 ---
 
@@ -230,6 +232,94 @@ The design branches are merged. These remote branches are still not in `main` (c
 - Connected ordinary activation and Guardian verification to the live v2 handover contract; preserved explicit Admin test stickers and missing-function-only legacy fallback. Guardian now reads and refreshes persisted state.
 - Success animation now automatically opens the 3D map, focuses the newly powered funfair zone(s), and plays the existing lighting ramp after the scene is ready. Custom keys/overrides count, duplicate scans do not invent an unlock, portrait/reduced-motion/2D fallback are handled. No new 3D bulb markers, scene redesign or migration.
 - Verified authenticated G10/TF activation, retry, rejected Freshie activation and public G2 visibility; also checked a real signed link through the local browser app. All temporary account, zone and activation changes were restored; temporary card removed. 135 tests, typecheck and production build passed. Frontend is not pushed/deployed; physical NFC remains untested. Details: [test report](testing/nfc-journey-2026-10-19.md).
+
+### David, 2026-10-19 (logo intro frequency)
+- The global Vortexa logo intro now plays once per browser tab session. Refreshes and login redirects in the same tab skip it, with no overlay flash while checking session storage. Activation and its preview keep their existing exemption. If storage is disabled, repeat full-page loads cannot retain the seen flag.
+
+### Migrations to run on Supabase for the 2026-10-19 work
+Renumbered after main's own `0079`-`0089`. `0090` and `0091` were already run on the live project under their first names (`0079_blindbox_qr_hardening`, `0080_blindbox_review_fixes`); running them again is safe. `0092` still needs running.
+- `0090_blindbox_qr_hardening.sql` (after `0070`). ⚠ Every blind box QR changes when it runs: sellers' cards and Admin show the new one, and any QR already printed or shared stops working.
+- `0091_blindbox_review_fixes.sql` (after `0090`). The frontend works before or after it: if `fn_bb_buy_at` does not exist yet, the buy screen falls back to `fn_bb_buy` (without the price check).
+Both files are safe to run again if a run fails part-way, and every `UPDATE` has a `WHERE` (some Supabase setups refuse one without).
+- `0092_ops_reads_group_logins.sql`: HOF and Committee read the group passwords (Faci control, Ops → Freshies).
+
+### Ops: group badges and passwords for HOF and Committee, 2026-10-19
+Migration `0092_ops_reads_group_logins.sql` (until it runs, passwords show "—").
+- **HOF's Ops is Faci control** (from `main`, 2026-10-14): each group's folding card now starts with the group badge and lists the group's 4-digit password next to its name and slogan.
+- **Committee's Ops** (and Admin's) has three read-only, live tabs, one row per group: **Headcount** (Local / International / Total), **Location** (the group's latest manual update, who sent it and when) and **Freshies** (name, slogan and 4-digit password). The Map tab is removed (the same `CampusMap` with group pins as the Map page), and so is Balances (the Scores tab has it). `?view=headcount|location|freshies` opens a tab; the old `?view=attendance` still opens Headcount.
+- **Group badge** (`src/components/GroupBadge.tsx`): the group's number on a disc of its colour (`themeFromColor`, so the number is dark on a light colour). On Faci control, the Committee tabs and the Scores page next to the group name. Scores now shows the name the Facilitators set (`display_name`) when there is one.
+- **Scores on phones:** each row is two lines (rank, badge, name and tokens; then puzzles and the B1 / A3 / TF pieces), so the name is no longer cut to "Grou…". Wider screens keep one line.
+- **Permissions (`0092`):** HOF and Committee may read `group_login_codes` (read only; creating and changing passwords stays Admin only). See [permission-matrix.md](permission-matrix.md).
+- Checked: the badge colours and contrast in the browser. Not checked in the browser: Faci control, the Committee tabs and Scores (they need a staff sign-in).
+
+### Blind box review fixes, 2026-10-19
+Migration `0091_blindbox_review_fixes.sql`, plus frontend fixes. The rest of the 2026-10-19 review (after "Blind box QR hardening").
+- **Database (`0091`):**
+  - "Reset everything" also gives every seller a new random QR version, so rehearsal QRs stay dead.
+  - "Put tokens back" only undoes what is still in the balances: a box bought before the last Token page reset (`tokens.reset` in the audit log) refunds nothing, and only its prize if it was opened after that reset. Before, a token reset followed by a blind box reset left groups with tokens. Both token resets write `tokens.reset`: main's `fn_reset_tokens_and_puzzles` (`0056`) and `bonding-session`'s `fn_reset_token_state` (its `0024` / `0027`, which the live database may run), so this works with either.
+  - Changing a seller account to a role that cannot hold boxes (Faci, Freshie) turns their own boxes off (trigger on `profiles`), so a copy of their QR stops selling; changing the role back turns the same boxes on again (`blind_box_assignments.off_by_role`). If Admin switches an assignment on or off by hand, that choice wins over a later role change. Accounts already in that state are turned off when the migration runs. Station boxes are not affected.
+  - New `fn_bb_buy_at(..., p_expected_price)`: BUY at the price the Freshie was shown. If Admin changed it meanwhile, nothing is charged (`BB_PRICE_CHANGED`). `fn_bb_buy` is unchanged.
+- **Freshie:** the buy screen uses `fn_bb_buy_at` and reloads after any failed BUY, so balance, stock and price are current. A Freshie account with no group gets "Log in as your group" on `/blindbox` instead of a dead end. "Log in as a Freshie" signs out this device only (`scope: "local"`), not the account's other devices. Opening a box on the Items page reads the sealed boxes fresh and skips one another phone just opened, so one box is never revealed twice.
+- **Sellers:** the card ignores an older reload that answers after a newer one (so a dead QR never comes back), follows price and name edits live, says when buying is paused (blind boxes off or tokens frozen) instead of showing a QR that cannot sell, and on `/committee` and HOGM's Game control says "You have no blind boxes to sell yet" instead of showing nothing. The GM page re-reads the GM's station when it opens, when a day starts or ends, and when the phone comes back to the page, so scoring and status follow the day's station.
+- **Admin:** an empty quantity field no longer counts as 0, and setting 0 asks first. A removed assignment shows "That assignment no longer exists" instead of the Freshie message. Box type wording is corrected (range and price apply to boxes bought from now on; archiving keeps the seller's QR working for their other types). Assign counts each station's GMs over both days (`fn_admin_station_gms`).
+- **Scanner:** in a build without `NEXT_PUBLIC_SITE_URL`, `http://localhost:3000` links are no longer treated as this site.
+- **Tests:** `tests/blindbox/db.test.ts` loads `0091` and covers the price check (wrong price charges nothing, a retry still returns the purchase), the role change both ways (and Admin's by-hand choice winning), the refund after a token reset, Reset everything changing every QR version, and what a GM (own and current station only, following a station change) and a Freshie (nothing) can read. New `tests/blindbox/links-route.test.ts` covers `/api/blindbox/links`: refused for Freshie, Faci and signed-out callers, allowed for every seller role, bad ids rejected, one https link per seller whose token verifies. The test stub's `audit_log` gained `created_at`, as in the real schema, and `vitest.config.ts` resolves `@/`. A final review of all the 2026-10-19 blind box changes found nothing further. `npm test`: 115 pass; `tsc` and `next lint` are clean.
+
+### Blind box QR hardening, 2026-10-19
+Migration `0090_blindbox_qr_hardening.sql`. Fixes the five worst issues from the blind box review; the rest are in "Blind box review fixes" below.
+- **No buying without scanning.** `fn_bb_buy` / `fn_bb_seller_preview` / `fn_bb_seller_public` take (seller id, qr_version) from the QR, and only the Next page checks the signature. Versions were 1, 2, 3, so a Freshie could call `fn_bb_buy` from the browser for every seller without visiting them. `qr_version` is now a random 31-bit number (`bb_new_qr_version()`, from `gen_random_uuid()`), and Regenerate picks a new random one. Function signatures are unchanged.
+- **Scanner stays on this site.** `classifyScan` collapses leading slashes, so `https://<site>//evil.com/x` opens `/evil.com/x` on this site instead of `evil.com`. It also fixes codes minted from a site URL that ended in `/`.
+- **Regenerate shows at once.** `blind_box_sellers` joins the realtime publication (RLS still limits it to Admin and the seller), and the seller card and Admin page listen to it. Before, the old QR stayed on the GM's phone until a reload.
+- **Sold boxes keep their assignment.** A `before delete` trigger refuses to delete an assignment with sold boxes (`BB_HAS_SALES`), including through deleting its station or seller account. Before, the cascade turned sold boxes back into unassigned stock that could be handed out twice. Removing an unsold assignment and the blind box reset work as before. Admin → Stations and HOGM's station delete show a readable message.
+- **Seller card follows the GM's current station.** `BlindBoxCard` no longer filters by the station from page load for non-Admins (RLS already uses the current one). It reloads when a phase changes (that is when the day's station switches), when the seller row changes, and when the phone comes back to the page.
+- **Tests:** `tests/blindbox/db.test.ts` loads `0090` and checks random versions (guessed versions refused), the delete guard (direct and through deleting the seller) and the realtime publication. `tests/scan-route.test.ts` covers the double-slash cases. `npm test`: 105 pass; `tsc` and `next lint` are clean.
+- Run on the live project (as `0079`, before the renumbering); a guessed seller version is refused there.
+
+### Blind box and NFC links always start with https://, 2026-10-19
+A scanned blind box QR showed as plain text, because the live `NEXT_PUBLIC_SITE_URL` is set without a scheme (`xmum-orientation.vercel.app`) and the QR held a bare host. New `src/lib/site-url.ts` (`siteUrl()` / `normalizeSiteUrl()`) adds `https://` (or `http://` for a local host) and drops a trailing `/`; blind box links, NFC sticker links and the scanner's own-site check use it. The in-app scanner also opens scheme-less links to this site, so QRs already shown keep working there. `docs/SETUP.md` gives the expected format. No regeneration needed: the token is unchanged, only the address in front of it.
+
+### Big screen header: Vortexa logo and ticket countdown, 2026-10-19
+`/bigscreen`: the event-name text is replaced by the Vortexa logo, and the clock by Home's ticket countdown (Freshie Home's `Countdown` in the Welcome colours, `.fh .fh-vx`), sized for a projector (`bigscreen.css`). While a game phase runs it counts that phase ("<PHASE> ENDS IN", red for Endgame) through a new optional `override` prop on `Countdown`; otherwise it shows the event countdown. Checked in the browser at 1600×900 and 375 wide through a temporary public route (removed). Not checked: the Endgame red, because no game was running.
+
+### Faci profiles backend: migration written, 2026-10-13
+- `0069_faci_profiles.sql`: table `faci_profiles` (check constraints), select-only RLS, `fn_set_my_faci_profile`, `fn_group_facis` (`avatar_url` is a path relative to the Supabase URL, so the frontend prefixes `NEXT_PUBLIC_SUPABASE_URL`), `fn_admin_clear_faci_profile`, bucket `faci-avatars` (1 MB, webp/jpeg/png, own-folder writes), realtime.
+- Frontend done: `faciProfiles.ts` maps the new fields (`FaciRow`, avatar URL helpers); one `useGroupFacis()` in `FreshieHome.tsx` calls `fn_group_facis()` for both Faci and Freshie and reloads on `profiles` / `faci_profiles` changes; `ProfileEditor.tsx` saves Instagram, programme, languages, intro and photo (resized to a 512 px square webp on the phone, uploaded to `faci-avatars/<user id>/<timestamp>.webp` on Save, old file removed); `next.config.ts` allows the Supabase storage host for `next/image`; the sample Facis and "Sample" label are removed.
+- Not done: nothing has been run against a Supabase project. Run `0069` first, then deploy, then test the checks listed in item 7. Tell Jiamin `0069` is taken. `tsc` and `next lint` pass.
+
+### Map: the lake stage stays dark until the finale, 2026-10-19 (Ben, branch `lakefront-dark`)
+No migration. The LakeFront Café no longer lights up at sunset and night on its own: the ribs, the wash, the uplights, the small lights, the light pools, the beams and the phone halos stay off until all three funfair zones are on. Then the concert's opening starts from the dark stage (follow spot, ribs one by one, bang, show). When a zone goes off the show winds down and the stage is dark again.
+- `LakefrontStage.tsx` holds `dim` at 1; putting back `smooth(p / 0.18)` brings the evening light back. `kit.ts`: the small lights now go fully dark with `dim` (they kept 30%). The halos follow the concert's power.
+
+### Map: Freshie and Faci map page in the night look, 2026-10-19 (Ben, branch `freshie-map-night`)
+Migration `0089` (applied). Freshie's and Faci's `/map` dropped the white page and now matches Freshie Home and Schedule: the night background, the group's colour (`--fh-*`) and a display-font "Map" title (`freshie/FreshieMap.tsx`).
+- CampusMap's markup is unchanged; `.fh-map` in `freshie.css` recolours its cards, lists, chips, the inline map buttons and the 2D Stations / Lightbulbs tabs. The full-screen map keeps its own look, as on the ops crew's map.
+- AppShell treats `/map` as a night page for Freshie and Faci, so the light mobile header is hidden there.
+- Admin's `/map` and Faci's `/checkin` keep the light design.
+- Freshies and Facis see every group's location on the map (Ben: the group pins are public to them). Migration `0089_freshie_group_positions.sql` (applied on the project; Ben, 2026-10-19) lets `fn_group_positions()` return every group to a Freshie or Faci. This also applies to Faci's `/checkin` map.
+
+### Map: East funfair rides on their dorms' real middles, and the midway, 2026-10-17 (Ben, branch `funfair-east-layout`)
+No migration. Built on `map3d-footpaths` (the lawn round the funfair's land), so merge that first.
+- **Done (E1):** each East ride stands on the real middle of its dorm, the centroid of its OSM outline (`dormCentre` in `east/layout.ts`). They were 0.5–29 m off: the arcade (D1) 24 m, the pirate ship (D3) 16 m and the coaster's loop (D5) 29 m. The coaster has a new route: the station on D4's middle, the lift hill over the walk from Central, a turn round D5's north arm, the loop over D5's middle, then back over the walk into the station. Its old north turn is free land now.
+- The arcade's back wall keeps 6–7 m off B1's grey service road (Ben asked that D1 not touch the road). The zone may build south to x = -124 for the arcade and the pirate ship. West, Central and the campus are unchanged.
+- **Done (E2):** the land is used better (Ben: trees filled every empty spot). Trees now grow only in a belt along the road sides, plus a few shade trees (`greenery` and `inBelt` in `east/decor.ts`). The new pieces (`east/midway.ts`, placed in `decor.ts`, positions in `layout.ts`):
+  - Midway Square, on the coaster's old north turn: a striped mast with bulb strings, a high striker, and the VORTEX Diner with its terrace;
+  - the games alley from the North Walk to the square, under a GAMES arch: 12 game booths (ring toss, balloon darts, duck pond, hoop shot) with bulb strings across it;
+  - the west lane from the walk from Central to the square, with snack carts;
+  - the bandstand lawn: a bandstand, picnic tables, benches and flower beds;
+  - the circus ring: sawdust inside a red kerb, bleachers, and the wagons round it;
+  - the fortune teller's tent and the hall of mirrors on a new walk from the pirate ship to the arcade;
+  - a BIG TOP arch and a ticket booth where the walk from Central comes in;
+  - restrooms, first aid, snack carts and flower beds along the new walks.
+- Everything lights up with the zone and is baked into the zone's existing meshes, so the draw calls are unchanged. Phones get fewer tables, carts, flowers and bulbs.
+
+### Map: lawn and walkways on the 3D map, 2026-10-17 (Ben, branch `map3d-footpaths`)
+No migration.
+- Inside the outer road, the 3D map's ground is now lawn (it was orange), so only the walkways are paved. They use the 2D art's colours: an orange walk with a darker outline, and walks that meet join into one (`ground.tsx`). The funfair's land, the outer road and the plantation are unchanged.
+- The walkways are OpenStreetMap's (`FOOTPATHS_M` in `campusData.ts`). OSM was fetched again on 2026-10-17. Inside the campus it matches the 2026-10-15 extract in `scripts/map3d/osm_full.json`, so that file is unchanged.
+- Walks that OSM lacks, traced by hand from aerial imagery (`TRACED_PATHS_M` in `geo.ts`): the walk along the lake side of A3, A4 and A5 (it carries on OSM's walk along A1 and A2), the walk down A5's east side, and the sidewalk south of the lawn east of A5.
+- OSM draws the walk along that lawn's east edge about 11 m into the trees. It is traced again, and `emit_phase1.py` leaves the OSM way out.
+- Not drawn: OSM's sidewalks outside the outer road, car roads, and walks on the funfair's land.
+- To check on site: the imagery suggests a walk between A3 and A4, under trees. It is not drawn.
 
 ### Map: LakeFront Café as the lake stage, 2026-10-16 to 10-17 (Ben, branch `funfair-central`; partly done)
 No migration. Design and batches: [map3d-lakefront-design.md](map3d-lakefront-design.md).

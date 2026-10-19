@@ -43,10 +43,6 @@ const ERROR_SCREENS: Record<string, { title: string; message: string }> = {
     message:
       "This QR code isn't active any more. Ask the seller to show their latest QR.",
   },
-  NOT_IN_GROUP: {
-    title: "No group yet",
-    message: "Your account isn't assigned to a group yet — see the registration counter.",
-  },
 };
 
 export default async function BlindBoxPage({
@@ -93,6 +89,10 @@ export default async function BlindBoxPage({
   if (error) {
     if (error.message.includes("FRESHIE_ONLY")) {
       return <BlindBoxLogin sellerName={sellerName} notFreshie />;
+    }
+    // A personal Freshie account with no group: offer the group login.
+    if (error.message.includes("NOT_IN_GROUP")) {
+      return <BlindBoxLogin sellerName={sellerName} notFreshie noGroup />;
     }
     const code = Object.keys(ERROR_SCREENS).find((k) => error.message.includes(k));
     const screen = code

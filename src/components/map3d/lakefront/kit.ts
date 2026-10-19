@@ -11,7 +11,8 @@ import { SLATS_PER_BAY } from "./layout";
 // colour, uplights warm the shell's outside from below, and small lights (bulbs, dots, step lights, terrace strips)
 // and light pools come on. Static, set when the look changes.
 //
-// Concert (show.ts, set every frame): the evening light dims (`dim`), the ribs light one by one (`ribs`), then the
+// Concert (show.ts, set every frame): the evening light dims (`dim`; LakefrontStage holds it at 1, so the stage
+// is dark until the finale), the ribs light one by one (`ribs`), then the
 // show takes over (`live`): the ribs chase, step and pulse on the beat, the shell's outside is an LED screen
 // (a sweep, an equaliser, rings from the arch, the beat), the membrane pulses, the terrace strips ripple outwards
 // from the stage and the walkway's dots chase round, all in the show's two colours.
@@ -185,7 +186,7 @@ function lightMaterial(u: Uniforms) {
         `#include <color_fragment>
         float kind = vTS.x;
         float gain = kind < ${LIGHT.dot - 0.5} ? 1.0 : kind < ${LIGHT.step - 0.5} ? 0.9 : kind < ${LIGHT.riser - 0.5} ? 0.75 : 0.42;
-        vec3 evening = diffuseColor.rgb * uOn * gain * (1.0 - uDim * 0.7);
+        vec3 evening = diffuseColor.rgb * uOn * gain * (1.0 - uDim);
         float terrace = floor(vTS.y);
         float ripple = exp(-3.5 * fract(uBeat * 0.5 - terrace * 0.14));
         float chase = step(0.55, fract(vTS.y * 20.0 - uShowT * 1.6));
@@ -195,7 +196,7 @@ function lightMaterial(u: Uniforms) {
             ? uColB * (0.2 + 2.0 * chase)
             : diffuseColor.rgb * uOn * gain * (0.8 + 0.5 * uPulse);
         totalEmissiveRadiance = mix(evening, show, uLive);
-        float lit = max(uOn, uLive);
+        float lit = max(uOn * (1.0 - uDim), uLive);
         vec3 dead = kind < ${LIGHT.riser - 0.5} ? vec3(0.82, 0.82, 0.8) : uRiser;
         diffuseColor.rgb = dead * (1.0 - 0.5 * clamp(lit, 0.0, 1.0));`,
       );

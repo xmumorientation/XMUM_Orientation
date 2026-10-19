@@ -40,7 +40,7 @@ Use the guarded copy above so existing local keys are not overwritten.
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Project Settings → API → anon public |
 | `SUPABASE_SERVICE_ROLE_KEY` | Project Settings → API → service_role (**server only — never expose**) |
 | `NFC_TOKEN_SECRET` | `openssl rand -hex 32` — keep stable once stickers are written! |
-| `NEXT_PUBLIC_SITE_URL` | Your production URL (used inside NFC sticker URLs) |
+| `NEXT_PUBLIC_SITE_URL` | Your production URL, e.g. `https://xmum-orientation.vercel.app` (used inside NFC sticker and blind-box QR URLs; a missing `https://` is added automatically) |
 
 > ⚠️ **NFC_TOKEN_SECRET must not change after stickers are written** —
 > a rotated secret invalidates every sticker in the field.

@@ -4,6 +4,7 @@ import { Check, ChevronDown, History, Users } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { groupSwatch } from "@/components/freshie/groupTheme";
+import { GroupBadge } from "@/components/GroupBadge";
 import { vxDisplay, vxSlab } from "@/components/home/fonts";
 import "@/components/staff/game/game-control.css";
 import { Sheet, StatusLine, useStatus } from "@/components/staff/game/parts";
@@ -17,7 +18,8 @@ import { cn, friendlyError } from "@/lib/utils";
 // Facilitators, headcount, latest location update and recent changes. The
 // only thing HOF changes here is which Facilitators belong to the group
 // (fn_admin_set_group_facis, HOF + Admin since migration 0080). Everything
-// else is read through Committee-tier policies.
+// else is read through Committee-tier policies; the group's 4-digit password
+// through migration 0092 (HOF and Committee read group_login_codes).
 
 type Faci = { id: string; full_name: string | null; group_id: number | null };
 type Headcount = {
@@ -53,6 +55,7 @@ export function FaciControl() {
   const [facis, setFacis] = useState<Faci[]>([]);
   const [counts, setCounts] = useState<Record<number, Headcount>>({});
   const [locs, setLocs] = useState<FaciLocation[]>([]);
+  const [codes, setCodes] = useState<Record<number, string>>({});
   const [openId, setOpenId] = useState<number | null>(null);
   const [editing, setEditing] = useState<Group | null>(null);
   const [historyOf, setHistoryOf] = useState<Group | null>(null);
@@ -61,7 +64,7 @@ export function FaciControl() {
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
-    const [g, f, h, l] = await Promise.all([
+    const [g, f, h, l, c] = await Promise.all([
       supabase.from("groups").select("id, name, color, display_name, slogan, token_balance").order("id"),
       supabase.from("profiles").select("id, full_name, group_id").eq("role", "faci").order("full_name"),
       supabase.from("group_headcounts").select("group_id, headcount, local_count, international_count, updated_at"),
@@ -71,13 +74,16 @@ export function FaciControl() {
         .order("created_at", { ascending: false })
         .order("id", { ascending: false })
         .limit(1000),
+      supabase.from("group_login_codes").select("group_id, code"),
     ]);
+    // Passwords are optional here: before 0092 is run they are just not shown.
     const failed = g.error ?? f.error ?? h.error ?? l.error;
     if (failed) setError(friendlyError(failed));
     setGroups((g.data as Group[]) ?? []);
     setFacis((f.data as Faci[]) ?? []);
     setCounts(Object.fromEntries(((h.data as Headcount[]) ?? []).map((r) => [r.group_id, r])));
     setLocs((l.data as FaciLocation[]) ?? []);
+    setCodes(Object.fromEntries(((c.data as { group_id: number; code: string }[]) ?? []).map((r) => [r.group_id, r.code])));
   }, [supabase, setError]);
 
   useEffect(() => {
@@ -171,7 +177,7 @@ export function FaciControl() {
                   aria-expanded={open}
                   onClick={() => setOpenId(open ? null : g.id)}
                 >
-                  <i className="gc-swatch" style={{ background: groupSwatch(g.id, g.color) }} aria-hidden />
+                  <GroupBadge id={g.id} color={groupSwatch(g.id, g.color)} />
                   <span className="gc-fold-name">
                     {g.name}
                     <small>
@@ -189,6 +195,7 @@ export function FaciControl() {
                       <dl className="gc-facts">
                         <div><dt>Name</dt><dd>{g.display_name || "—"}</dd></div>
                         <div><dt>Slogan</dt><dd>{g.slogan || "—"}</dd></div>
+                        <div><dt>Password</dt><dd className="font-mono">{codes[g.id] ?? "—"}</dd></div>
                       </dl>
                       <button
                         type="button"

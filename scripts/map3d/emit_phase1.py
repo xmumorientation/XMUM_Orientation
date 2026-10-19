@@ -66,10 +66,17 @@ lake = ring(F["way/544590729"])
 park = ring(F["way/616520161"])
 grass = [ring(f) for f in d["features"] if f["kind"] == "landuse" and f.get("tags", {}).get("landuse") == "grass" and in_zone(f)]
 bridge = F["way/616517094"]["geometry"]["coordinates"]
+# Paths OSM has visibly off the imagery, traced again by hand in geo.ts (TRACED_PATHS_M): the walk along the east
+# edge of the lawn east of A5, which OSM draws about 11 m east of it, in the trees.
+RETRACED = {"way/1422330769"}
 paths = [
     f["geometry"]["coordinates"]
     for f in d["features"]
-    if f["kind"] == "path" and f["id"] != "way/616517094" and f["geometry"]["type"] == "LineString" and in_zone(f)
+    if f["kind"] == "path"
+    and f["id"] != "way/616517094"
+    and f["id"] not in RETRACED
+    and f["geometry"]["type"] == "LineString"
+    and in_zone(f)
 ]
 
 # The widest open water away from the footbridge and the dome: room for the duck.

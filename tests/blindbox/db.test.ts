@@ -129,6 +129,8 @@ beforeAll(async () => {
   await admin.query(sql("tests/blindbox/stub-schema.sql"));
   await admin.query(sql("supabase/migrations/0054_blindbox_v3.sql"));
   await admin.query(sql("supabase/migrations/0070_blindbox_buy_flow.sql"));
+  await admin.query(sql("supabase/migrations/0090_blindbox_qr_hardening.sql"));
+  await admin.query(sql("supabase/migrations/0091_blindbox_review_fixes.sql"));
 
   // 12 groups with 20 tokens each, one Freshie login per group
   for (let g = 1; g <= 12; g++) {
@@ -413,7 +415,7 @@ describe("Admin: regenerate, stock edits, reset", () => {
     expect(await fails(rpc(freshie(9), "fn_bb_seller_preview", [old.sellerId, old.version]))).toMatch(/BOX_UNKNOWN/);
     expect(await fails(buy(freshie(9), old, assignment, "k-old"))).toMatch(/BOX_UNKNOWN/);
     const fresh = await sellerOf(undefined, 4);
-    expect(fresh.version).toBe(old.version + 1);
+    expect(fresh.version).not.toBe(old.version);
     expect((await preview(freshie(9), fresh)).seller_name).toBe("Station Four");
     expect((await q("select count(*) n from blind_box_claims"))[0].n).toBe(claimsBefore);
   });
@@ -422,6 +424,26 @@ describe("Admin: regenerate, stock edits, reset", () => {
     const a = seller.gm.normal!;
     expect(await fails(rpc(ADMIN, "fn_bb_set_quantity", [a, 1]))).toMatch(/BB_QTY_BELOW_OPENED/);
     expect(await fails(rpc(freshie(1), "fn_bb_set_quantity", [a, 5]))).toMatch(/PERMISSION_DENIED/);
+  });
+
+  it("QR versions are random, so a guessed seller id + version cannot buy without scanning", async () => {
+    const versions = (await q<{ qr_version: number }>("select qr_version from blind_box_sellers")).map((r) => Number(r.qr_version));
+    expect(new Set(versions).size).toBe(versions.length);
+    expect(versions.every((v) => v > 1000)).toBe(true);
+    for (const guess of [1, 2, 3]) {
+      expect(await fails(buy(freshie(12), { sellerId: seller.s5.sellerId, version: guess }, seller.s5.normal!, `guess-${guess}`))).toMatch(/BOX_UNKNOWN/);
+    }
+  });
+
+  it("an assignment with sold boxes cannot be deleted, not even by deleting its seller", async () => {
+    expect(await fails(q("delete from blind_box_assignments where id = $1", [seller.gm.normal]))).toMatch(/BB_HAS_SALES/);
+    expect(await fails(q("delete from profiles where id = $1", [GM]))).toMatch(/BB_HAS_SALES/);
+    expect(Number((await q("select count(*) n from blind_box_assignments where id = $1", [seller.gm.normal]))[0].n)).toBe(1);
+  });
+
+  it("seller rows are in the realtime publication, so Regenerate reaches open screens", async () => {
+    const r = await q("select 1 from pg_publication_tables where pubname = 'supabase_realtime' and tablename = 'blind_box_sellers'");
+    expect(r.length).toBe(1);
   });
 
   it("reset puts tokens back (unopened boxes refund only their price) and clears everything", async () => {
@@ -526,3 +548,102 @@ describe("many people scanning the same code at once", () => {
     expect(txSum).toBe(net);
   });
 });
+
+describe("review fixes (0091)", () => {
+  const fresh = async () => {
+    await q("delete from blind_box_claims");
+    await q("update blind_box_assignments set opened = 0, active = true");
+    await q("update groups set token_balance = 20");
+    await q("delete from audit_log where action = 'tokens.reset'");
+  };
+  const buyAt = (user: string, s: { sellerId: number; version: number }, assignment: number, key: string, price: number) =>
+    rpc(user, "fn_bb_buy_at", [s.sellerId, s.version, assignment, key, price]);
+
+  it("BUY at a price that changed charges nothing; the shown price buys; a retry of a done purchase still returns it", async () => {
+    await fresh();
+    // Normal costs 3; the page showed 2
+    expect(await fails(buyAt(freshie(7), seller.s3, seller.s3.normal!, "pc-1", 2))).toMatch(/BB_PRICE_CHANGED/);
+    expect(await balance(7)).toBe(20);
+    expect(await q("select 1 from blind_box_claims where group_id = 7")).toHaveLength(0);
+    expect(Number((await q("select opened from blind_box_assignments where id = $1", [seller.s3.normal]))[0].opened)).toBe(0);
+
+    const ok = await buyAt(freshie(7), seller.s3, seller.s3.normal!, "pc-2", 3);
+    expect(ok.ok).toBe(true);
+    expect(await balance(7)).toBe(17);
+    const again = await buyAt(freshie(7), seller.s3, seller.s3.normal!, "pc-2", 2);
+    expect(again.duplicate).toBe(true);
+    expect(await balance(7)).toBe(17);
+  });
+
+  it("a seller changed to Faci has their own boxes turned off, and back on when they are a GM again", async () => {
+    await fresh();
+    const gm2 = uid(6);
+    await q("insert into profiles (id, role, full_name) values ($1, 'gm', 'Gus GM')", [gm2]);
+    await rpc(ADMIN, "fn_bb_assign", [normalType, 1, null, [gm2], null, false]);
+    const s = await sellerOf(gm2);
+    expect((await preview(freshie(7), s)).status).toBe("ok");
+
+    await q("update profiles set role = 'faci' where id = $1", [gm2]);
+    expect((await q("select active from blind_box_assignments where profile_id = $1", [gm2]))[0].active).toBe(false);
+    expect(await fails(preview(freshie(7), s))).toMatch(/BOX_UNKNOWN/);
+    // a station's boxes are not touched by anyone's role change
+    expect((await q("select bool_and(active) a from blind_box_assignments where station_id is not null"))[0].a).toBe(true);
+
+    // back to GM: the boxes the role change turned off come back on
+    await q("update profiles set role = 'gm' where id = $1", [gm2]);
+    expect((await q("select active from blind_box_assignments where profile_id = $1", [gm2]))[0].active).toBe(true);
+    expect((await preview(freshie(7), s)).status).toBe("ok");
+
+    // Admin switches them off by hand: a demote + promote does not undo that
+    const a = Number((await q("select id from blind_box_assignments where profile_id = $1", [gm2]))[0].id);
+    await rpc(ADMIN, "fn_bb_assignment_set_active", [a, false]);
+    await q("update profiles set role = 'faci' where id = $1", [gm2]);
+    await q("update profiles set role = 'gm' where id = $1", [gm2]);
+    expect((await q("select active from blind_box_assignments where id = $1", [a]))[0].active).toBe(false);
+  });
+
+  it("after a Token page reset, putting tokens back only refunds boxes bought since then", async () => {
+    await fresh();
+    const s4 = await sellerOf(undefined, 4); // regenerated by an earlier test
+    await buy(freshie(8), s4, seller.s4.normal!, "tr-8"); // 20 -> 17, before the token reset
+    // the Token page reset: every balance to 0, logged as tokens.reset
+    await q("update groups set token_balance = 0");
+    await q("insert into audit_log (action, target) values ('tokens.reset', 'tokens')");
+    await q("update groups set token_balance = 5 where id = 9");
+    await buy(freshie(9), seller.s5, seller.s5.normal!, "tr-9"); // 5 -> 2, after the token reset
+
+    await setConfig("rehearsal_mode", true);
+    await rpc(ADMIN, "fn_bb_reset", ["openings", "RESET", true]);
+    await setConfig("rehearsal_mode", false);
+    expect(await balance(8)).toBe(0); // its price was already wiped by the token reset
+    expect(await balance(9)).toBe(5); // bought after it: refunded
+  });
+
+  it("a GM reads only their own and their current station's boxes and seller rows; a Freshie reads none", async () => {
+    const rows = await asUser<{ profile_id: string | null; station_id: number | null }>(GM, "select profile_id, station_id from blind_box_assignments");
+    expect(rows.length).toBeGreaterThan(0);
+    expect(rows.every((r) => r.profile_id === GM || r.station_id === 1)).toBe(true);
+    const sellers = await asUser<{ profile_id: string | null; station_id: number | null }>(GM, "select profile_id, station_id from blind_box_sellers");
+    expect(sellers.every((r) => r.profile_id === GM || r.station_id === 1)).toBe(true);
+    // moved to station 2 for the day: station 1's pool disappears, station 2's appears
+    await q("update profiles set station_id = 2 where id = $1", [GM]);
+    const moved = await asUser<{ station_id: number | null }>(GM, "select station_id from blind_box_assignments where station_id is not null");
+    expect(moved.length).toBeGreaterThan(0);
+    expect(moved.every((r) => r.station_id === 2)).toBe(true);
+    await q("update profiles set station_id = 1 where id = $1", [GM]);
+    expect(await asUser(freshie(1), "select 1 from blind_box_assignments")).toHaveLength(0);
+    expect(await asUser(freshie(1), "select 1 from blind_box_sellers")).toHaveLength(0);
+  });
+
+  it("Reset everything gives every seller a new QR version, so rehearsal QRs stay dead", async () => {
+    await fresh();
+    const before = await q<{ id: number; qr_version: number }>("select id, qr_version from blind_box_sellers order by id");
+    await setConfig("rehearsal_mode", true);
+    await rpc(ADMIN, "fn_bb_reset", ["all", "RESET", false]);
+    await setConfig("rehearsal_mode", false);
+    const after = await q<{ id: number; qr_version: number }>("select id, qr_version from blind_box_sellers order by id");
+    expect(after.map((r) => r.id)).toEqual(before.map((r) => r.id));
+    after.forEach((r, i) => expect(r.qr_version).not.toBe(before[i].qr_version));
+  });
+});
+

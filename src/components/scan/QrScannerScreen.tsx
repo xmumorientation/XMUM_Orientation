@@ -7,6 +7,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type QrScannerType from "qr-scanner";
 
 import { classifyScan, type ScanRoute } from "@/lib/scan-route";
+import { siteUrl } from "@/lib/site-url";
 
 // Full-screen web QR scanner UI. Opens the rear camera, decodes a QR code
 // with `qr-scanner`, and shows the result. Photo upload is the fallback when
@@ -47,7 +48,8 @@ type Detected = { raw: string; route: ScanRoute };
 const IN_APP_UA = /MicroMessenger|Instagram|FBAN|FBAV|XHSDiscover|xiaohongshu|Line\/|musical_ly|BytedanceWebview|TikTok/i;
 
 function ownOrigins(): string[] {
-  return [window.location.origin, process.env.NEXT_PUBLIC_SITE_URL ?? ""];
+  // siteUrl() falls back to localhost; only count it when the URL is set.
+  return [window.location.origin, process.env.NEXT_PUBLIC_SITE_URL ? siteUrl() : ""];
 }
 
 type Props = {

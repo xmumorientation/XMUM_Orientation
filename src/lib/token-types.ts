@@ -15,6 +15,10 @@ export interface TokenGroup {
   current_tokens: number;
   puzzles_count?: number;
   location_pieces?: Record<number, string[]>; // location_id (1,2,3) -> piece_ids
+  /** groups.color: the group badge's colour. */
+  color?: string | null;
+  /** The name the group's Facilitators set, if any. */
+  display_name?: string | null;
 }
 
 export interface StationItem {
