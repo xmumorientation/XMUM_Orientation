@@ -149,7 +149,7 @@ The design branches are merged. These remote branches are still not in `main` (c
 **Scope:**
 - Build the map to match the Figma design.
 - Game station status on the map (for example open, busy, closed).
-- Group locations on the map, with the existing permission rules: Faci sees their own group, Committee and above see all groups.
+- Group locations on the map: Freshie, Faci and Committee and above see all groups (0089; before it, Faci and Freshie see only their own).
 - Anything else on the map page.
 
 **Figma:** [XMUM campus map](https://www.figma.com/design/3dcEv45KenmKcoTcbaZmQ0/Untitled?node-id=24-2) (frame `XMUM Block Cube_XMUM Map 1`).
@@ -230,6 +230,13 @@ The design branches are merged. These remote branches are still not in `main` (c
 - `0069_faci_profiles.sql`: table `faci_profiles` (check constraints), select-only RLS, `fn_set_my_faci_profile`, `fn_group_facis` (`avatar_url` is a path relative to the Supabase URL, so the frontend prefixes `NEXT_PUBLIC_SUPABASE_URL`), `fn_admin_clear_faci_profile`, bucket `faci-avatars` (1 MB, webp/jpeg/png, own-folder writes), realtime.
 - Frontend done: `faciProfiles.ts` maps the new fields (`FaciRow`, avatar URL helpers); one `useGroupFacis()` in `FreshieHome.tsx` calls `fn_group_facis()` for both Faci and Freshie and reloads on `profiles` / `faci_profiles` changes; `ProfileEditor.tsx` saves Instagram, programme, languages, intro and photo (resized to a 512 px square webp on the phone, uploaded to `faci-avatars/<user id>/<timestamp>.webp` on Save, old file removed); `next.config.ts` allows the Supabase storage host for `next/image`; the sample Facis and "Sample" label are removed.
 - Not done: nothing has been run against a Supabase project. Run `0069` first, then deploy, then test the checks listed in item 7. Tell Jiamin `0069` is taken. `tsc` and `next lint` pass.
+
+### Map: Freshie and Faci map page in the night look, 2026-10-19 (Ben, branch `freshie-map-night`)
+Migration `0089` (applied). Freshie's and Faci's `/map` dropped the white page and now matches Freshie Home and Schedule: the night background, the group's colour (`--fh-*`) and a display-font "Map" title (`freshie/FreshieMap.tsx`).
+- CampusMap's markup is unchanged; `.fh-map` in `freshie.css` recolours its cards, lists, chips, the inline map buttons and the 2D Stations / Lightbulbs tabs. The full-screen map keeps its own look, as on the ops crew's map.
+- AppShell treats `/map` as a night page for Freshie and Faci, so the light mobile header is hidden there.
+- Admin's `/map` and Faci's `/checkin` keep the light design.
+- Freshies and Facis see every group's location on the map (Ben: the group pins are public to them). Migration `0089_freshie_group_positions.sql` (applied on the project; Ben, 2026-10-19) lets `fn_group_positions()` return every group to a Freshie or Faci. This also applies to Faci's `/checkin` map.
 
 ### Map: East funfair rides on their dorms' real middles, and the midway, 2026-10-17 (Ben, branch `funfair-east-layout`)
 No migration. Built on `map3d-footpaths` (the lawn round the funfair's land), so merge that first.

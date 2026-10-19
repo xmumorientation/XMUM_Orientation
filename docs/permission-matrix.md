@@ -25,7 +25,7 @@ This reflects only the migration files in the repo. Any manual changes made to t
 | Reset a lightbulb | — | — | — | — | — | — | — | ✓ | DB |
 | Funfair zones on the 3D map, on or off (`fn_funfair_state`, 0088; before 0088 the default keys in code) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | DB |
 | Funfair setup: each zone's keys, any/all rule, manual override (`funfair_zones`, `fn_set_funfair_zone`, 0088). Only game leads can read it, because the keys would show where the unlit bulbs are. | — | — | — | — | — | — | ✓ ‡ | ✓ | DB |
-| Group locations on the map | — | Own Group | — | — | View All | View All | View All | View All | DB |
+| Group locations on the map (`fn_group_positions`; Freshie and Faci all groups from 0089) | View All | View All | — | — | View All | View All | View All | View All | DB |
 | Phase Timer (view) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | DB |
 | Schedule (view) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | DB |
 | FAQ (view; sidebar entry for Freshie only) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | DB |
