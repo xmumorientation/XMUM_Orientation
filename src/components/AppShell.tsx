@@ -135,14 +135,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   );
   // Freshie and facilitator phones share the night tab bar. Freshie Scan is
   // the raised center button; a facilitator gets Code there instead.
-  // Home, Schedule and Items hide the light mobile header for both roles.
+  // Home, Schedule, Items and Map hide the light mobile header for both roles.
   const { group } = useGroup();
   const groupTheme = isFreshie || isFaci ? themeFromColor(group?.color) : null;
-  // Only the --fh-* night colours; --brand-1 stays the brand so light pages (map) keep theirs.
+  // Only the --fh-* night colours; --brand-1 stays the brand so light pages keep theirs.
   const fhTheme = groupTheme ?? (isOps ? VORTEXA_THEME : null);
   const isNight = isStaffDashboard || (
     (isFreshie || isFaci) &&
-    (pathname === "/dashboard" || pathname === "/schedule" || pathname === "/inventory"));
+    (pathname === "/dashboard" || pathname === "/schedule" || pathname === "/inventory" || pathname === "/map"));
   const showTabBar = (isFreshie || isFaci || isOps) && !(isFreshie && pathname === "/scan");
 
   // Close the drawer on route change so it never lingers over a new page.

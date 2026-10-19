@@ -1,7 +1,7 @@
 "use client";
 
 import { CampusMap } from "@/components/CampusMap";
-import { FaciTrackingPanel } from "@/components/FaciTrackingPanel";
+import { FreshieMap } from "@/components/freshie/FreshieMap";
 import { vxDisplay, vxSlab } from "@/components/home/fonts";
 import { useProfile } from "@/components/ProfileProvider";
 import "@/components/staff/game/game-control.css";
@@ -12,10 +12,10 @@ import { cn } from "@/lib/utils";
 
 export default function MapPage() {
   const profile = useProfile();
-  // D-1: committee sees all group pins; Faci sees own group only (the RPC
+  // D-1: committee, Faci and Freshies see all group pins (0089; the RPC
   // enforces this server-side - the flag just requests pins).
   const showPins =
-    COMMITTEE_TIER.includes(profile.role) || profile.role === "faci";
+    COMMITTEE_TIER.includes(profile.role) || profile.role === "faci" || profile.role === "freshie";
   const map = (
     <CampusMap
       showGroupPins={showPins}
@@ -44,6 +44,11 @@ export default function MapPage() {
     );
   }
 
+  // Freshie and Faci: the night look and group colour of Freshie Home.
+  if (profile.role === "freshie" || profile.role === "faci") {
+    return <FreshieMap showGroupPins={showPins} />;
+  }
+
   return (
     <div>
       <PageTitle
@@ -54,7 +59,6 @@ export default function MapPage() {
             : "Day 2 stations. Tap the map for a full-screen view. Tap a station or a building's badge for details."
         }
       />
-      <FaciTrackingPanel />
       {map}
     </div>
   );

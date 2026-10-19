@@ -593,6 +593,48 @@ html.fh-snap { overflow-x: hidden; }
   .fh-sched-item b { font-size: 15px; }
 }
 
+/* ── Freshie / Faci map page (FreshieMap.tsx) ────────────────────────────────
+   CampusMap's own markup, recoloured to the night and the group colour:
+   night cards, mono accent headings, slab station codes, dark-glass map
+   buttons. The full-screen map is a portal outside .fh-map and keeps its own look. */
+.fh-map { max-width: 980px; margin: 0 auto; font-family: var(--font-nexus-body), Outfit, sans-serif; }
+.fh-map-top { display: grid; gap: 6px; padding: 8px 0 16px; }
+.fh-map-top .fh-h2 { font-family: var(--font-vx-display), Georgia, serif; font-weight: 400; font-size: clamp(38px, 9vw, 52px); }
+.fh-map-sub { margin: 0; font-size: 13.5px; color: var(--fh-mute); }
+
+.fh-map .card {
+  border-radius: 20px; border: 1px solid var(--fh-line); box-shadow: none;
+  background: color-mix(in srgb, var(--fh-ink-2) 88%, transparent); color: var(--fh-text);
+}
+.fh-map .card :is(.border-paper-200, .divide-paper-200 > *) { border-color: var(--fh-line); }
+.fh-map .card > h2 {
+  padding: 12px 16px 10px; font-family: var(--font-mono), "JetBrains Mono", ui-monospace, monospace;
+  font-size: 11px; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; color: var(--fh-accent);
+}
+/* GroupStatusList's "needs attention" card keeps red. */
+.fh-map .card > h2.bg-red-50 { background: rgba(255, 77, 94, 0.12); border-color: rgba(255, 77, 94, 0.35); color: #ff8a95; }
+.fh-map .card.border-red-200 { border-color: rgba(255, 77, 94, 0.35); }
+.fh-map .card li .w-14 { font-family: var(--font-vx-slab), Georgia, serif; font-weight: 400; font-size: 16px; color: var(--fh-text); }
+.fh-map .card .text-ink-faint { color: var(--fh-mute); }
+.fh-map .card :is(.text-ink-soft, .text-ink-base) { color: var(--fh-text-2); }
+.fh-map .card .text-green-700 { color: #4ade80; }
+.fh-map .card .text-amber-700 { color: #fcd34d; }
+.fh-map .card .chip { font-family: var(--font-mono), "JetBrains Mono", ui-monospace, monospace; font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; }
+.fh-map .card :is(.hover\:bg-paper-100, .hover\:bg-paper-200):hover { background: var(--fh-ink-3); }
+.fh-map .card .bg-amber-50:not(.text-amber-950) { background: rgba(251, 191, 36, 0.12); } /* selected lightbulb */
+.fh-map .bg-red-50 { background: rgba(255, 77, 94, 0.12); color: #ff8a95; }
+/* The inline map's "Show names" and "Full screen" buttons. */
+.fh-map .card .relative > button {
+  background: rgba(3, 11, 28, 0.78); color: var(--fh-text); box-shadow: 0 0 0 1px var(--fh-line-2);
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+}
+.fh-map .card .relative > button[aria-pressed="true"] { color: var(--fh-blue-light); box-shadow: 0 0 0 1px var(--fh-accent); }
+/* 2D map only: the Stations / Lightbulbs tabs. */
+.fh-map [role="tablist"][aria-label="Map view"] { background: var(--fh-ink-3); box-shadow: 0 0 0 1px var(--fh-line); }
+.fh-map [role="tablist"][aria-label="Map view"] > button { color: var(--fh-text-2); }
+.fh-map [role="tablist"][aria-label="Map view"] > button:hover { background: var(--fh-ink-2); }
+.fh-map [role="tablist"][aria-label="Map view"] > button[aria-selected="true"] { background: var(--fh-accent); color: var(--fh-on-blue); }
+
 /* ── Freshie Items page (items/FreshieItems.tsx) ─────────────────────────────
    Projectors over their puzzle keys → key banner → item shelf (tokens, boxes).
    A location's puzzle, the key, item details and Activity open in sheets.
