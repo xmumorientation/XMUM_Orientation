@@ -11,7 +11,8 @@ import {
   type CampusMapData,
   type MapLayer,
 } from "@/components/campus-map/useCampusMapData";
-import { funfairFromBulbs } from "@/lib/funfair";
+import { ACTIVATION_JOURNEY_KEY, readActivationJourney } from "@/lib/activation-journey";
+import { DEFAULT_ZONE_KEYS, funfairFromBulbs } from "@/lib/funfair";
 import { MAP_BUILDINGS } from "@/lib/mapBuildings";
 import { GPS_POINTS, LANDMARKS } from "@/lib/mapGeo";
 import type { GroupPosition, MapLightbulb, ProjectorLocation, Station, StationStatus } from "@/lib/types";
@@ -132,7 +133,18 @@ function mockBulbs(now: number): MapLightbulb[] {
       activated_manually: false,
     };
   };
-  return [bulb("B1", "B1 Basement", "B1", 3, 12), bulb("A3", "A3 Building", "A3", null, 0), bulb("TF", "Track & Field", "Track & Field", 7, 3)];
+  const result = [bulb("B1", "B1 Basement", "B1", 3, 12), bulb("A3", "A3 Building", "A3", null, 0), bulb("TF", "Track & Field", "Track & Field", 7, 3)];
+  // The local success harness simulates only this arrival's activation.
+  // No account, token or remote game state is touched.
+  if (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("arrival") === "activation") {
+    try {
+      const zones = readActivationJourney(sessionStorage.getItem(ACTIVATION_JOURNEY_KEY), now);
+      for (const row of result) if (zones.some(zone => DEFAULT_ZONE_KEYS[zone] === row.location)) {
+        row.activated_at = new Date(now).toISOString(); row.activated_by_group = 9; row.group_name = "Group 9";
+      }
+    } catch { /* Optional storage. */ }
+  }
+  return result;
 }
 
 export type MockOptions = {
@@ -236,6 +248,7 @@ export function useMockMapData(opts: MockOptions): CampusMapData {
     bulbs,
     litCount,
     funfair,
+    funfairReady: true,
     newLit,
     selectedBulb,
     setSelectedBulb,

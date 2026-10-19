@@ -2,7 +2,10 @@ import { redirect } from "next/navigation";
 
 import { VictoryTakeover } from "@/components/VictoryTakeover";
 import { hashToken, verifyNfcToken } from "@/lib/nfc";
-import { supabaseServer } from "@/lib/supabase/server";
+import { activateNfc } from "@/lib/nfc-flow";
+import { newlyPowered } from "@/lib/activation-journey";
+import { funfairFromState, funfairFromBulbs, funfairMissing, type FunfairPower } from "@/lib/funfair";
+import { supabaseAdmin, supabaseServer } from "@/lib/supabase/server";
 import { PROJECTOR_LABELS, type ProjectorLocation } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -12,7 +15,7 @@ export const dynamic = "force-dynamic";
 // codebase contains no Web NFC API usage anywhere.
 //
 // Validation chain: HMAC signature (server, Node crypto) -> RPC checks
-// unused, set redeemed by this group, projector free, Endgame phase.
+// role/group, Guardian handover, collected pieces, projector free and live phase.
 
 function ErrorScreen({ title, message }: { title: string; message: string }) {
   return (
@@ -50,7 +53,7 @@ const ERROR_SCREENS: Record<string, { title: string; message: string }> = {
   },
   NOT_ENDGAME: {
     title: "Too early!",
-    message: "Projectors can only be revived during the Endgame. Hold on to your card!",
+    message: "Activation is not open yet. Hold on to your card and follow the committee’s instructions!",
   },
   GROUP_ALREADY_ACTIVATED_ONE: {
     title: "One projector per group",
@@ -65,6 +68,11 @@ const ERROR_SCREENS: Record<string, { title: string; message: string }> = {
     message: "Your account isn't assigned to a group. See the committee for help.",
   },
 };
+
+ERROR_SCREENS.NFC_HANDOVER_NOT_VERIFIED = ERROR_SCREENS.SET_NOT_REDEEMED;
+ERROR_SCREENS.GROUP_NOT_ASSIGNED = ERROR_SCREENS.NOT_IN_GROUP;
+ERROR_SCREENS.NFC_PUZZLES_INCOMPLETE = { title: "Key incomplete", message: "Your group needs every piece of this key before activating. Check your Items and return to the Guardian." };
+ERROR_SCREENS.PERMISSION_DENIED = { title: "Facilitator account needed", message: "Ask your group's assigned Facilitator to sign in and tap this sticker." };
 
 export default async function ActivatePage({
   searchParams,
@@ -106,27 +114,29 @@ export default async function ActivatePage({
     .eq("id", user!.id)
     .single();
 
-  const { error } = await supabase.rpc("fn_activate_projector", {
-    p_token_hash: hashToken(t),
-  });
-
   const location: ProjectorLocation = verified.location;
+  const tokenHash = hashToken(t);
+  // Metadata lookup only. Redemption always runs with the caller's session,
+  // so the service client cannot bypass role, group or inventory checks.
+  const { data: card, error: cardError } = await supabaseAdmin()
+    .from("nfc_tokens").select("test_run_id, location").eq("token_hash", tokenHash).maybeSingle();
+  if (cardError || !card || card.location !== location) return <ErrorScreen title="Activation unavailable" message="Ask the Guardian to check this sticker, then try again." />;
 
-  // Look the projector up regardless — if activation failed because this
-  // same group already did it (e.g. page refresh), still show the victory.
-  const { data: projector } = await supabase
-    .from("projectors")
-    .select("activated_by_group")
-    .eq("location", location)
-    .single();
+  async function parkPower(): Promise<FunfairPower | null> {
+    const result = await supabase.rpc("fn_funfair_state");
+    if (!result.error) return funfairFromState(result.data ?? []);
+    if (!funfairMissing(result.error)) return null;
+    const bulbs = await supabase.rpc("fn_map_lightbulbs");
+    return bulbs.error ? null : funfairFromBulbs(bulbs.data ?? []);
+  }
+  const before = await parkPower();
+  const { data: activation, error } = await activateNfc(
+    (name, args) => supabase.rpc(name, args), tokenHash, card.test_run_id != null,
+  );
 
-  const ownGroupWon =
-    projector?.activated_by_group != null &&
-    projector.activated_by_group === profile?.group_id;
-
-  if (error && !ownGroupWon) {
-    const code = Object.keys(ERROR_SCREENS).find((k) =>
-      error.message.includes(k)
+  if (error || activation?.ok !== true) {
+    const code = Object.keys(ERROR_SCREENS).sort((a, b) => b.length - a.length).find((k) =>
+      error?.message.includes(k)
     );
     const screen = code
       ? ERROR_SCREENS[code]
@@ -137,15 +147,18 @@ export default async function ActivatePage({
     return <ErrorScreen title={screen.title} message={screen.message} />;
   }
 
+  const after = await parkPower();
+  const replayZones = before && after && !activation?.duplicate ? newlyPowered(before, after) : [];
+  const groupId = typeof activation?.group_id === "number" ? activation.group_id : profile?.group_id;
   let groupName: string | null = null;
-  if (profile?.group_id) {
+  if (groupId) {
     const { data: g } = await supabase
       .from("groups")
       .select("name")
-      .eq("id", profile.group_id)
+      .eq("id", groupId)
       .single();
     groupName = g?.name ?? null;
   }
 
-  return <VictoryTakeover location={location} groupName={groupName} />;
+  return <VictoryTakeover location={location} groupName={groupName} replayZones={replayZones} />;
 }

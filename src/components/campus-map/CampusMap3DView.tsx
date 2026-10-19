@@ -2,7 +2,7 @@
 
 import { useFrame, type ThreeEvent } from "@react-three/fiber";
 import { Clock, Maximize2, Minus, Moon, Plus, RotateCcw, Sun, Sunset, X } from "lucide-react";
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import * as THREE from "three";
 import type { MapControls as MapControlsImpl } from "three-stdlib";
@@ -39,13 +39,22 @@ import { ZONE_CENTERS } from "@/components/map3d/funfair/labels";
 import { stageView } from "@/components/map3d/lakefront/layout";
 import { prefersLite } from "@/components/map3d/webgl";
 import { stationDotColor } from "@/components/ui";
-import { isFunfairPreview, type FunfairPreview } from "@/lib/funfair";
+import { ACTIVATION_JOURNEY_KEY, readActivationJourney } from "@/lib/activation-journey";
+import { FUNFAIR_ZONE_NAMES, type FunfairPower, type FunfairZone, isFunfairPreview, type FunfairPreview } from "@/lib/funfair";
 import { groupPinColor } from "@/lib/mapGeo";
 import type { Station } from "@/lib/types";
 
 import type { CampusMapViewProps } from "./CampusMap2DView";
 import { MapInfoCard } from "./CampusMapPanels";
 import { clusterStatus } from "./useCampusMapData";
+
+// Signal an actual rendered frame, rather than starting the power-up while
+// the 3D bundle, shaders or phone GPU are still loading.
+function SceneReady({ onReady }: { onReady: () => void }) {
+  const sent = useRef(false);
+  useFrame(() => { if (!sent.current) { sent.current = true; onReady(); } });
+  return null;
+}
 
 // The 3D view: the same data, taps and full-screen viewer as CampusMap2DView,
 // drawn on the 3D campus (map3d/). Stations sit on their building, group pins
@@ -368,6 +377,10 @@ export function CampusMap3DView({
   const [look, setLook] = useState<Mode | null>(null);
   // Accuracy check: where Admin last tapped (world x, z).
   const [checkTap, setCheckTap] = useState<[number, number] | null>(null);
+  const [sceneReady, setSceneReady] = useState(false);
+  const markSceneReady = useCallback(() => setSceneReady(true), []);
+  const [arrival, setArrival] = useState<{ zones: FunfairZone[]; on: boolean } | null>(null);
+  const arrivalStarted = useRef(false);
   const checking = checkMode && canManageStations;
 
   // The scene's own element, moved between the card and the full-screen viewer.
@@ -407,7 +420,15 @@ export function CampusMap3DView({
   }, [checkMode]);
 
   useEffect(() => {
-    const zone = new URLSearchParams(window.location.search).get("funfair_preview");
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("arrival") === "activation") {
+      let zones: FunfairZone[] = [];
+      try { zones = readActivationJourney(sessionStorage.getItem(ACTIVATION_JOURNEY_KEY), Date.now()); } catch { /* Storage may be blocked. */ }
+      setArrival({ zones, on: false });
+      onFullscreenChange(true);
+      return;
+    }
+    const zone = params.get("funfair_preview");
     if (!isFunfairPreview(zone)) return;
     setPreview({ zone, on: false });
     onFullscreenChange(true);
@@ -435,8 +456,10 @@ export function CampusMap3DView({
   const [preview, setPreview] = useState<{ zone: FunfairPreview; on: boolean } | null>(null);
   const funfair = useMemo(
     () =>
-      preview && preview.zone !== "lakefront" ? { ...data.funfair, [preview.zone]: preview.on ? 1 : 0 } : data.funfair,
-    [data.funfair, preview],
+      preview && preview.zone !== "lakefront" ? { ...data.funfair, [preview.zone]: preview.on ? 1 : 0 }
+        : arrival && !arrival.on ? Object.fromEntries(Object.entries(data.funfair).map(([zone, power]) => [zone, arrival.zones.includes(zone as FunfairZone) ? 0 : power])) as FunfairPower
+        : data.funfair,
+    [data.funfair, preview, arrival],
   );
   const concert = preview?.zone === "lakefront" ? preview.on : undefined;
   const split = useMemo(() => new Set(fullscreen && splitKey ? splitKey.split("|") : []), [fullscreen, splitKey]);
@@ -456,6 +479,41 @@ export function CampusMap3DView({
     if (fullView) setFlight({ kind: "to", ...fullView, id: ++flights.current });
   }, [fullView]);
 
+  useEffect(() => {
+    if (!arrival || arrivalStarted.current || !sceneReady || !envReady || !fullscreen || !data.funfairReady) return;
+    // Wait until the shared read sees the activation too. A stale first read
+    // must not cause the power-up to play invisibly or invent a lit zone.
+    if (arrival.zones.some(zone => !data.funfair[zone])) return;
+    const zone = arrival.zones[0] ?? "central";
+    const move = window.setTimeout(() => {
+      const [x, z] = ZONE_CENTERS[zone];
+      fly({ kind: "focus", target: [x, 0, z], distance: arrival.zones.length > 1 ? 150 : window.innerWidth < window.innerHeight ? 115 : 70 });
+    }, 100);
+    const power = window.setTimeout(() => {
+      arrivalStarted.current = true;
+      setArrival(current => current && { ...current, on: true });
+      try { sessionStorage.removeItem(ACTIVATION_JOURNEY_KEY); } catch { /* Optional storage. */ }
+      const url = new URL(window.location.href);
+      url.searchParams.delete("arrival");
+      window.history.replaceState(window.history.state, "", url);
+    }, window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 150 : 1400);
+    return () => { window.clearTimeout(move); window.clearTimeout(power); };
+    // Setters and fly are stable; wait for rendering, fullscreen layout and shared state.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sceneReady, envReady, fullscreen, data.funfairReady, data.funfair, arrival]);
+
+  useEffect(() => {
+    if (!arrival || arrival.on) return;
+    // If connectivity drops or a committee member reverses the activation,
+    // reveal the real state rather than leaving a zone hidden indefinitely.
+    const timeout = window.setTimeout(() => {
+      arrivalStarted.current = true;
+      setArrival({ zones: [], on: true });
+      try { sessionStorage.removeItem(ACTIVATION_JOURNEY_KEY); } catch { /* Optional storage. */ }
+    }, 15000);
+    return () => window.clearTimeout(timeout);
+  }, [arrival]);
+
   function openFullscreen() {
     onFullscreenChange(true);
   }
@@ -463,6 +521,14 @@ export function CampusMap3DView({
   function closeFullscreen() {
     onFullscreenChange(false);
     setFlight(null);
+    if (arrival) {
+      setArrival(null);
+      arrivalStarted.current = true;
+      try { sessionStorage.removeItem(ACTIVATION_JOURNEY_KEY); } catch { /* Optional storage. */ }
+      const url = new URL(window.location.href);
+      url.searchParams.delete("arrival");
+      window.history.replaceState(window.history.state, "", url);
+    }
     controls.current?.reset();
   }
 
@@ -736,6 +802,7 @@ export function CampusMap3DView({
                   />
                 }
               >
+                <SceneReady onReady={markSceneReady} />
                 <SceneMarks
                   circles={circles}
                   outlines={outlines}
@@ -764,6 +831,9 @@ export function CampusMap3DView({
             onContextMenu={(e) => e.preventDefault()}
           >
             <div ref={fullSlot} className="absolute inset-0 cursor-grab active:cursor-grabbing" />
+            {arrival && <div role="status" className="pointer-events-none absolute inset-x-4 bottom-24 z-30 mx-auto max-w-sm rounded-2xl bg-black/80 px-5 py-3 text-center text-sm text-white">
+              {!arrival.on ? "Your magic is reaching the funfair…" : arrival.zones.length ? `${arrival.zones.map(zone => FUNFAIR_ZONE_NAMES[zone].split(" · ")[1]).join(" & ")} — lit up!` : "Your projector is revived. Explore the funfair!"}
+            </div>}
 
             <div
               className="pointer-events-none absolute inset-x-0 top-0 z-30 flex items-start justify-between gap-3 px-3"

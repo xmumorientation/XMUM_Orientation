@@ -301,6 +301,7 @@ export function useCampusMapData({
   // The funfair's zones (3D map). fn_funfair_state (0088) decides, so Admin's keys and overrides count; until
   // 0088 is applied, the default keys do (funfairFromBulbs). Asked again when the lit bulbs change (they come
   // live), every 10 s (Admin's changes reach other maps that way), and when the page comes back into view.
+  const [funfairReady, setFunfairReady] = useState(false);
   const [funfairState, setFunfairState] = useState<FunfairPower | null>(null);
   const litKey = bulbs
     .filter((b) => b.activated_at)
@@ -320,9 +321,11 @@ export function useCampusMapData({
         if (funfairMissing(error)) {
           missing = true;
           setFunfairState(null);
+          setFunfairReady(true);
         }
         return;
       }
+      setFunfairReady(true);
       setFunfairState(funfairFromState((data ?? []) as { zone: string; powered: boolean }[]));
     }
     void load();
@@ -567,6 +570,7 @@ export function useCampusMapData({
     litCount,
     // The funfair's zones (3D map)
     funfair,
+    funfairReady,
     newLit,
     selectedBulb,
     setSelectedBulb,
