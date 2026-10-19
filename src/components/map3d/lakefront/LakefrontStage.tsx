@@ -1,7 +1,7 @@
 "use client";
 
 import { useFrame, useThree } from "@react-three/fiber";
-import { memo, useEffect, useMemo, useRef } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 
 import { mat } from "../funfair/central/kit";
@@ -20,9 +20,10 @@ import { CONFETTI_LIFE, SHELL_LIFE, showAt } from "./show";
 // moat, the walkway and the grass amphitheatre, as in Ben's photos. It replaced the old red dome.
 //
 // Evening (sunset and night): LED ribs, the membrane's wash, uplights, small lights, light pools, and sweeping
-// beams in haze (Ben's concert photo); on phones also soft halos.
+// beams in haze (Ben's concert photo); on phones also soft halos. Off for now (Ben, 2026-10-19): the stage stays
+// dark until the funfair's finale, so `dim` is held at 1 below.
 //
-// The concert (`live`; L4 ties it to the funfair's finale): over about 3 s the evening light goes down, a follow
+// The concert (`live`; L4 ties it to the funfair's finale): over about 3 s, from the dark stage, a follow
 // spot finds the stage, the ribs come on one by one from the front arch back, then a bang (one flash, flames,
 // confetti, two fireworks) and the show (show.ts) runs on the wall clock: the shell as an LED screen, the beams
 // faster with sky beams, arch beams and lasers, the crowd's lightsticks, the moat's fountains, flame jets, confetti
@@ -33,7 +34,6 @@ import { CONFETTI_LIFE, SHELL_LIFE, showAt } from "./show";
 // the crowd, the confetti and the fireworks; lite adds the halos.
 
 const _c = new THREE.Color();
-const strongGlow = () => 1;
 /** Seconds within the current hour (small enough for the shaders' float precision). */
 const wallClock = () => (Date.now() / 1000) % 3600;
 const smooth = (x: number) => (x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x));
@@ -145,6 +145,8 @@ export const LakefrontStage = memo(function LakefrontStage({
   const frozen = useRef(wallClock());
   const hold = useMemo(() => ({ t: held("showt"), p: held("concertp") }), []);
   const ramp = usePowerRamp(live ? 1 : 0, 3.2);
+  // the phone's halos come on with the concert
+  const haloPower = useCallback(() => hold.p ?? ramp.current, [hold, ramp]);
   const opening = useRef({ prev: ramp.current, bangAt: -1 });
 
   useFrame(({ camera, size, viewport }) => {
@@ -156,8 +158,9 @@ export const LakefrontStage = memo(function LakefrontStage({
     const u = kit.u;
     const fx = kit.fx;
 
-    // the opening: the evening light goes down, a follow spot, the ribs one by one, then the bang and the show
-    const dim = smooth(p / 0.18);
+    // the opening: a follow spot, the ribs one by one, then the bang and the show. The evening light stays off
+    // (dim 1) so the stage is dark until the finale (Ben); smooth(p / 0.18) here brings the evening light back.
+    const dim = 1;
     const spot = smooth((p - 0.12) / 0.18) * (1 - smooth((p - 0.82) / 0.13));
     const liveK = smooth((p - BANG) / (1 - BANG));
     const o = opening.current;
@@ -265,7 +268,7 @@ export const LakefrontStage = memo(function LakefrontStage({
       <points ref={crowdRef} geometry={geo.crowd} material={kit.crowdMat} frustumCulled={false} renderOrder={3} />
       <points ref={fireRef} geometry={geo.fireworks} material={kit.fireMat} frustumCulled={false} renderOrder={4} />
       <points ref={confettiRef} geometry={geo.confetti} material={kit.confettiMat} frustumCulled={false} renderOrder={3} />
-      {lite && <LiteGlow spots={GLOW} power={strongGlow} strength={glowStrength(night, dusk)} />}
+      {lite && <LiteGlow spots={GLOW} power={haloPower} strength={glowStrength(night, dusk)} />}
     </group>
   );
 });
