@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarCheck, Eye, EyeOff, Gamepad2, ShieldCheck, Users } from "lucide-react";
+import { CalendarCheck, Eye, EyeOff, Gamepad2, ShieldCheck, Trophy, Users } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
@@ -16,6 +16,7 @@ const DEMO_ICONS: Record<string, typeof Users> = {
   Faci: Users,
   GM: Gamepad2,
   HOF: CalendarCheck,
+  HOGM: Trophy,
 };
 
 export function LoginForm({ demoLogins }: { demoLogins: DemoLogin[] }) {
@@ -143,7 +144,7 @@ export function LoginForm({ demoLogins }: { demoLogins: DemoLogin[] }) {
         <details className="vx-login-demo">
           <summary>Demo quick login</summary>
           <div className="vx-login-demo-box">
-            <p>Test accounts. Hidden on the live site.</p>
+            <p>Test accounts. Only on local dev.</p>
             <div className="vx-login-demo-row">
               {demoLogins.map((p) => {
                 const Icon = DEMO_ICONS[p.label] ?? Users;

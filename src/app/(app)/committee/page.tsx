@@ -2,10 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-import { BlindBoxCard } from "@/components/BlindBoxCard";
 import { GroupBadge } from "@/components/GroupBadge";
 import { useProfile } from "@/components/ProfileProvider";
-import { FaciControl } from "@/components/staff/faci/FaciControl";
+import { FaciAssign } from "@/components/staff/faci/FaciAssign";
 import { GameControl } from "@/components/staff/game/GameControl";
 import { Card, PageTitle } from "@/components/ui";
 import { clock, describeLocation, type FaciLocation } from "@/lib/faciLocation";
@@ -13,7 +12,7 @@ import { supabaseBrowser } from "@/lib/supabase/client";
 import type { Group } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-type OpsView = "headcount" | "location" | "freshies";
+type OpsView = "headcount" | "location" | "freshies" | "facis";
 
 type Headcount = {
   group_id: number;
@@ -22,23 +21,24 @@ type Headcount = {
   international_count: number | null;
 };
 
-// Ops. HOGM runs the game here (Game control: Admin's game console), HOF runs
-// the Facilitators (Faci control: every group's name, slogan, password,
-// Facilitators, headcount and location). Committee keeps the overview below.
+// Ops. HOGM runs the game here (Game control: Admin's game console). HOF,
+// Committee and Admin get the overview below.
 export default function CommitteePage() {
   const profile = useProfile();
   if (profile.role === "hogm") return <GameControl />;
-  if (profile.role === "hof") return <FaciControl />;
-  return <OpsOverview />;
+  return <OpsOverview canAssignFacis={profile.role === "hof" || profile.role === "admin"} />;
 }
 
-// Committee (and Admin): one row per group (its number on its colour) in three
-// tabs. All read only and live; Admin edits them in Admin → Freshies.
+// HOF, Committee and Admin: one row per group (its number on its colour) in
+// three read-only, live tabs; Admin edits them in Admin → Freshies. HOF and
+// Admin also get a fourth tab, Facilitators, to choose each group's
+// Facilitators (FaciAssign; fn_admin_set_group_facis allows only them).
 //   Headcount  Local / International / Total, as Facilitators report it
 //   Location   the group's latest manual location update
 //   Freshies   the group's name, slogan and 4-digit password (migration 0092)
-// The map is the Map tab, and token totals are the Scores tab.
-function OpsOverview() {
+// The map is the Map tab, token totals are the Scores tab, and the account's
+// own blind box QR is on Home ("My Blind Box").
+function OpsOverview({ canAssignFacis }: { canAssignFacis: boolean }) {
   const supabase = useMemo(() => supabaseBrowser(), []);
   const [groups, setGroups] = useState<Group[]>([]);
   const [headcounts, setHeadcounts] = useState<Record<number, Headcount>>({});
@@ -51,8 +51,9 @@ function OpsOverview() {
   useEffect(() => {
     const v = new URLSearchParams(window.location.search).get("view");
     if (v === "headcount" || v === "location" || v === "freshies") setView(v);
+    else if (v === "facis" && canAssignFacis) setView(v);
     else if (v === "attendance") setView("headcount"); // older links
-  }, []);
+  }, [canAssignFacis]);
 
   useEffect(() => {
     let active = true;
@@ -103,6 +104,7 @@ function OpsOverview() {
     { key: "headcount", label: "Headcount", desc: "People per group" },
     { key: "location", label: "Location", desc: "Where each group is" },
     { key: "freshies", label: "Freshies", desc: "Name, slogan, password" },
+    ...(canAssignFacis ? [{ key: "facis" as const, label: "Facilitators", desc: "Who is in each group" }] : []),
   ];
 
   const name = (g: Group) => g.display_name?.trim() || g.name;
@@ -111,7 +113,12 @@ function OpsOverview() {
     <div className="space-y-4">
       <PageTitle title="Operations" subtitle="Live situational awareness" />
 
-      <div className="grid grid-cols-3 gap-2 rounded-[1.5rem] bg-paper-200 p-1.5">
+      <div
+        className={cn(
+          "grid gap-2 rounded-[1.5rem] bg-paper-200 p-1.5",
+          tabs.length === 4 ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-3"
+        )}
+      >
         {tabs.map((tab) => (
           <button
             key={tab.key}
@@ -129,10 +136,6 @@ function OpsOverview() {
         ))}
       </div>
 
-      {/* Home's "My blind box QR" tool links here (#blindbox). */}
-      <div id="blindbox" className="scroll-mt-4">
-        <BlindBoxCard showEmpty />
-      </div>
 
       {view === "headcount" && (
         <section>
@@ -193,6 +196,13 @@ function OpsOverview() {
               );
             })}
           </Card>
+        </section>
+      )}
+
+      {view === "facis" && canAssignFacis && (
+        <section>
+          <h2 className="mb-2 font-semibold">Facilitators</h2>
+          <FaciAssign />
         </section>
       )}
 

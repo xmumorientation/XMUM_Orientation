@@ -179,25 +179,10 @@ export function useMyBlindBoxes() {
 // "My blind box QR": ONE card with ONE QR for the signed-in account (or its
 // station: a station's GMs share one pool and one code), listing every box type
 // it holds. The same QR works until all the boxes are sold.
-export function BlindBoxCard({
-  showEmpty = false,
-}: {
-  /** Say so when this account holds no boxes (where Home's "My blind box QR" links). */
-  showEmpty?: boolean;
-} = {}) {
-  const { loaded, error, sellers, copy, copied, paused } = useMyBlindBoxes();
+export function BlindBoxCard() {
+  const { error, sellers, copy, copied, paused } = useMyBlindBoxes();
 
-  if (sellers.length === 0 && !error) {
-    if (!showEmpty || !loaded) return null;
-    return (
-      <Card className="text-center">
-        <h2 className="font-semibold">My blind box QR</h2>
-        <p className="mt-1 text-sm text-ink-faint">
-          You have no blind boxes to sell yet. Admin hands them out in Admin → Blind box.
-        </p>
-      </Card>
-    );
-  }
+  if (sellers.length === 0 && !error) return null;
 
   return (
     <div className="space-y-3">
