@@ -51,7 +51,8 @@ create table public.game_config (key text primary key, value jsonb not null);
 
 create table public.audit_log (
   id bigserial primary key,
-  actor uuid, actor_role public.user_role, action text, target text, detail jsonb
+  actor uuid, actor_role public.user_role, action text, target text, detail jsonb,
+  created_at timestamptz not null default now()
 );
 
 -- tables fn_live_ops (0054) reads; never queried by these tests

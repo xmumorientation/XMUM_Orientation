@@ -1,4 +1,5 @@
 import { signPayloadStable, verifyToken } from "./signed-token";
+import { siteUrl } from "./site-url";
 
 // Blind-box QR tokens. Payload: { k: "bb3", s: sellerId, v: qrVersion }.
 // ONE code per seller (an account or a station), covering every box type the
@@ -27,8 +28,7 @@ export function verifyBlindBoxToken(
 }
 
 export function blindBoxUrl(token: string): string {
-  const base = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
-  return `${base}/blindbox?t=${encodeURIComponent(token)}`;
+  return `${siteUrl()}/blindbox?t=${encodeURIComponent(token)}`;
 }
 
 export function blindBoxUrlFor(sellerId: number, version: number): string {

@@ -78,7 +78,8 @@ This reflects only the migration files in the repo. Any manual changes made to t
 | Group Facis' sharing status (`fn_group_faci_status`) | — | Own Group, no phones | — | — | All, with phones | All, with phones | All, with phones | All, with phones | DB |
 | **Committee / Operations** | | | | | | | | | |
 | Committee Operations page (/committee) | — | — | — | — | ✓ | ✓ | ✓ | † | UI |
-| Group Balance overview | — | — | — | — | View All | View All | View All | View All | DB |
+| Ops tabs Headcount / Location / Freshies (Committee; HOF's Ops is Faci control, HOGM's is Game control) | — | — | — | — | View All | — | — | View All | DB |
+| Read the groups' 4-digit login passwords (`group_login_codes`; HOF on Ops → Faci control, Committee on Ops → Freshies; migration 0092) | — | — | — | — | ✓ | ✓ | — | ✓ | DB |
 | Freshie group assignment (Committee → Register tab) | — | — | — | — | ✓ | — | — | ✓ | DB |
 | Facilitator group assignment (`fn_admin_set_group_facis`; HOF on Ops → Faci control, Admin on Admin → Freshies; `is_faci_lead()`, migration 0080) | — | — | — | — | — | ✓ | — | ✓ | DB |
 | Faci control overview (every group's name, slogan, Facilitators, headcount, location updates and Faci-related audit entries; read only) | — | — | — | — | — | ✓ | — | ✓ | DB (Committee-tier reads) |

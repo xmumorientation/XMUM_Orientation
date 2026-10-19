@@ -167,6 +167,7 @@ export function useBlindBoxAdmin(onError: (m: string | null) => void): BlindBoxA
       .on("postgres_changes", { event: "*", schema: "public", table: "blind_box_types" }, reload)
       .on("postgres_changes", { event: "*", schema: "public", table: "blind_box_assignments" }, reload)
       .on("postgres_changes", { event: "*", schema: "public", table: "blind_box_claims" }, reload)
+      .on("postgres_changes", { event: "*", schema: "public", table: "blind_box_sellers" }, reload)
       .subscribe();
     return () => {
       supabase.removeChannel(channel);

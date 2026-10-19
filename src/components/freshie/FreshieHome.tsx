@@ -96,9 +96,16 @@ export function goTo(id: string) {
 
 // ── 01 Welcome ───────────────────────────────────────────────────────────────
 
-export function Countdown() {
+export function Countdown({
+  override,
+}: {
+  /** Counts this instead of the event, e.g. the big screen's live game phase. */
+  override?: { label: string; seconds: number; endgame?: boolean } | null;
+} = {}) {
   // D-day, then Day 2 and the phases between live games (see useEventCountdown).
-  const { label, seconds } = useEventCountdown();
+  const event = useEventCountdown();
+  const { label, seconds } = override ?? event;
+  const endgame = !!override?.endgame;
   const t = countdownParts(seconds);
 
   const pad = (n: number | undefined) => (n === undefined ? "--" : String(n).padStart(2, "0"));
@@ -110,12 +117,12 @@ export function Countdown() {
   ];
 
   return (
-    <div className="fh-countwrap">
+    <div className="fh-countwrap" data-endgame={endgame || undefined}>
       <div className="fh-clabel fh-mono">{label}</div>
       <div className="fh-count" role="timer" aria-label={label.toLowerCase()}>
         {units.map((u, i) => (
           <div key={u.label} className="fh-cell">
-            <b className="fh-slab" style={i === 0 ? { color: "var(--fh-blue-light)" } : undefined}>
+            <b className="fh-slab" style={i === 0 && !endgame ? { color: "var(--fh-blue-light)" } : undefined}>
               {pad(u.val)}
             </b>
             <span className="fh-mono">{u.label}</span>
