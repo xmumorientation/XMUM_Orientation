@@ -228,6 +228,11 @@ The design branches are merged. These remote branches are still not in `main` (c
 
 ## Done
 
+### David, 2026-10-19 (NFC success → 3D funfair)
+- Connected ordinary activation and Guardian verification to the live v2 handover contract; preserved explicit Admin test stickers and missing-function-only legacy fallback. Guardian now reads and refreshes persisted state.
+- Success animation now automatically opens the 3D map, focuses the newly powered funfair zone(s), and plays the existing lighting ramp after the scene is ready. Custom keys/overrides count, duplicate scans do not invent an unlock, portrait/reduced-motion/2D fallback are handled. No new 3D bulb markers, scene redesign or migration.
+- Verified authenticated G10/TF activation, retry, rejected Freshie activation and public G2 visibility; also checked a real signed link through the local browser app. All temporary account, zone and activation changes were restored; temporary card removed. Initial local checks passed (135 tests, typecheck and build). Release follow-up integrates current main (153 tests), prevents the global logo covering the reveal, removes overlapping camera entrances, and starts the replay safeguard after the first scene frame. Physical NFC remains untested. Details: [test report](testing/nfc-journey-2026-10-19.md).
+
 ### David, 2026-10-19 (logo intro frequency)
 - The global Vortexa logo intro now plays once per browser tab session. Refreshes and login redirects in the same tab skip it, with no overlay flash while checking session storage. Activation and its preview keep their existing exemption. If storage is disabled, repeat full-page loads cannot retain the seen flag.
 
