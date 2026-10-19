@@ -228,6 +228,9 @@ The design branches are merged. These remote branches are still not in `main` (c
 
 ## Done
 
+### David, 2026-10-19 (logo intro frequency)
+- The global Vortexa logo intro now plays once per browser tab session. Refreshes and login redirects in the same tab skip it, with no overlay flash while checking session storage. Activation and its preview keep their existing exemption. If storage is disabled, repeat full-page loads cannot retain the seen flag.
+
 ### Migrations to run on Supabase for the 2026-10-19 work
 Renumbered after main's own `0079`-`0089`. `0090` and `0091` were already run on the live project under their first names (`0079_blindbox_qr_hardening`, `0080_blindbox_review_fixes`); running them again is safe. `0092` still needs running.
 - `0090_blindbox_qr_hardening.sql` (after `0070`). ⚠ Every blind box QR changes when it runs: sellers' cards and Admin show the new one, and any QR already printed or shared stops working.
