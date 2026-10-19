@@ -8,6 +8,7 @@ import {
   PageTitle,
   SuccessBanner,
 } from "@/components/ui";
+import { FunfairZones } from "@/components/admin/FunfairZones";
 import { GameToggles } from "@/components/admin/GameToggles";
 import { usePhaseTimer } from "@/components/PhaseTimerProvider";
 import { NowOnWelcome } from "@/components/admin/NowOnWelcome";
@@ -30,7 +31,8 @@ interface LiveOps {
 }
 
 // FR-11.5 kill-switches + FR-11.6 live ops + FR-10.1 games (GameToggles,
-// started and ended by hand), filtered by the Day selector (All / Day 1 / Day 2).
+// started and ended by hand), filtered by the Day selector (All / Day 1 / Day 2),
+// and the funfair's keys (FunfairZones).
 export default function AdminControlRoomPage() {
   const supabase = useMemo(() => supabaseBrowser(), []);
   const [ops, setOps] = useState<LiveOps | null>(null);
@@ -95,6 +97,7 @@ export default function AdminControlRoomPage() {
     { key: "nfc_disabled", label: "Disable NFC activation", danger: "Sticker taps rejected" },
     { key: "rehearsal_mode", label: "Rehearsal mode", danger: "Bypasses ALL phase gating. Testing only" },
     { key: "day2_map_layer", label: "Day 2 map layer", danger: "Reveals projectors on everyone's map" },
+    { key: "nfc_demo_mode", label: "NFC demo mode", danger: "Freshies and Facis can light a lightbulb without the card. Testing only" },
   ];
 
   const onSwitches = SWITCHES.filter((s) => boolOf(s.key));
@@ -191,6 +194,10 @@ export default function AdminControlRoomPage() {
               );
             })}
           </Card>
+        </section>
+        <section>
+          <h2 className="mb-2 font-semibold">Funfair (3D map)</h2>
+          <FunfairZones />
         </section>
       </div>
     </div>

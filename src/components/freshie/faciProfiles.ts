@@ -1,13 +1,8 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Facilitator cards on Freshie Home.
-// - A Faci's "You & Your Partner" lists the real Facis of their group (Admin
-//   assigns them in Freshie Control; see useGroupFacis in FreshieHome). Only
-//   the name is stored today, so the other fields stay empty.
-// - A Freshie's "Your Facilitator" calls fn_group_facis() (Freshies cannot read
-//   other profiles under RLS). Until the backend adds it, the call fails with
-//   "function not found" and the page falls back to the SAMPLE profiles below.
-// TODO(backend): profile fields (photo, Instagram, programme,
-// languages, intro) and a way for a Faci to edit them.
+// Both a Faci's "You & Your Partner" and a Freshie's "Your Facilitator" read
+// fn_group_facis() (migration 0069): the real Facis of the caller's group with
+// their profile fields. A Faci edits their own through fn_set_my_faci_profile.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export type FaciProfile = {
@@ -26,46 +21,49 @@ export type FaciProfile = {
   isMe?: boolean;
 };
 
-export const SAMPLE_FACIS: FaciProfile[] = [
-  {
-    id: "sample-faci-1",
-    name: "Mei Lin Tan",
-    avatarUrl: null,
-    instagram: "meilin.sample",
-    programme: "Computer Science · Year 3",
-    languages: ["English", "中文", "Bahasa Melayu"],
-    intro: "Lost on campus or need help finding a station? Come find me.",
-  },
-  {
-    id: "sample-faci-2",
-    name: "Arjun Kumar",
-    avatarUrl: null,
-    instagram: "arjun.sample",
-    programme: "Finance · Year 2",
-    languages: ["English", "Bahasa Melayu", "Tamil"],
-    intro: "I'll keep our group moving and on time. Ask me anything.",
-  },
-];
+/** One row of fn_group_facis(). */
+export type FaciRow = {
+  id: string;
+  full_name: string;
+  instagram?: string | null;
+  programme?: string | null;
+  languages?: string[] | null;
+  intro?: string | null;
+  /** Path relative to the Supabase project URL, or null. */
+  avatar_url?: string | null;
+};
 
-/** A real Faci from profiles. Only the name is stored, so the rest is empty. */
-export function faciFromProfile(
-  row: { id: string; full_name: string; instagram?: string | null },
-  meId: string
-): FaciProfile {
+/** Fired on window after a Faci saves their profile, so Home reloads the cards at once. */
+export const FACI_PROFILE_SAVED_EVENT = "faci-profile-saved";
+
+const AVATAR_PREFIX = "/storage/v1/object/public/faci-avatars/";
+
+/** The Supabase project's storage host, for next/image (see next.config). */
+function supabaseUrl() {
+  return (process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").trim().replace(/\/$/, "");
+}
+
+/** Storage path (<user id>/<file>) inside faci-avatars, from an avatar URL. */
+export function avatarPathOf(url: string | null): string | null {
+  const i = url ? url.indexOf(AVATAR_PREFIX) : -1;
+  return url && i >= 0 ? url.slice(i + AVATAR_PREFIX.length).split("?")[0] : null;
+}
+
+/** Public URL of a faci-avatars path. */
+export function avatarUrlOf(path: string): string {
+  return `${supabaseUrl()}${AVATAR_PREFIX}${path}`;
+}
+
+/** A real Faci from fn_group_facis() (or just id and name before it loads). */
+export function faciFromProfile(row: FaciRow, meId: string): FaciProfile {
   return {
     id: row.id,
     name: row.full_name.trim() || "Facilitator",
-    avatarUrl: null,
+    avatarUrl: row.avatar_url ? `${supabaseUrl()}${row.avatar_url}` : null,
     instagram: row.instagram?.trim() || null,
-    programme: "",
-    languages: [],
-    intro: "",
+    programme: row.programme?.trim() ?? "",
+    languages: row.languages ?? [],
+    intro: row.intro?.trim() ?? "",
     isMe: row.id === meId,
   };
-}
-
-/** Sample Facilitators for a Freshie's group (the same two for every group for now). */
-export function faciProfilesFor(groupId: number | null): FaciProfile[] {
-  void groupId;
-  return SAMPLE_FACIS;
 }

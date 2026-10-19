@@ -10,45 +10,56 @@ import { useConfig } from "@/components/useConfig";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import type { BlindBoxAssignment, BlindBoxType } from "@/lib/types";
 
-type Row = BlindBoxAssignment & {
+export type BlindBoxRow = BlindBoxAssignment & {
   type: BlindBoxType | null;
   station: { name: string; code: string } | null;
 };
+
+type Row = BlindBoxRow;
 
 interface Shown {
   url: string;
   qr: string;
 }
 
-// "My blind box QR": ONE card with ONE QR for the signed-in account (or its
-// station: a station's GMs share one pool and one code), listing every box type
-// it holds. The same QR works until all the boxes are sold. Links are
-// recomputed by the server on demand, so showing a QR never invalidates one
-// that is already out there; only Admin's Regenerate does.
+/** One seller (an account or a station) and the box types it holds, with its QR once loaded. */
+export interface MyBlindBoxSeller {
+  id: number;
+  rows: BlindBoxRow[];
+  station: { name: string; code: string } | null;
+  /** At least one active, unarchived box type: false means Admin switched it off. */
+  live: boolean;
+  left: number;
+  qr: Shown | undefined;
+}
+
 // game_config values are jsonb: true or "true".
 const isOn = (v: unknown) => v === true || v === "true";
 
-export function BlindBoxCard({
-  showEmpty = false,
-}: {
-  /** Say so when this account holds no boxes (where Home's "My blind box QR" links). */
-  showEmpty?: boolean;
-} = {}) {
+// The signed-in account's blind boxes (personal + its station's shared pool),
+// grouped by seller, with each seller's QR. Used by BlindBoxCard and by Staff
+// Home's "My Blind Box" stop. Links are recomputed by the server on demand, so
+// showing a QR never invalidates one that is already out there; only Admin's
+// Regenerate does.
+export function useMyBlindBoxes() {
   const profile = useProfile();
   const { config } = useConfig();
-  const paused = isOn(config.blindbox_disabled)
-    ? "Blind boxes are switched off by Admin, so buying is paused. Your QR works again when they are back on."
-    : isOn(config.tokens_frozen)
-      ? "Tokens are frozen by Admin, so buying is paused. Your QR works again when they are unfrozen."
-      : null;
   const supabase = useMemo(() => supabaseBrowser(), []);
   const [rows, setRows] = useState<Row[]>([]);
   const [shown, setShown] = useState<Record<number, Shown>>({});
   const [copied, setCopied] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [loaded, setLoaded] = useState(false);
+
+  /** Why buying is paused right now (kill switches), or null. The QR cannot sell meanwhile. */
+  const paused = isOn(config.blindbox_disabled)
+    ? "Blind boxes are switched off by Admin, so buying is paused. Your QR works again when they are back on."
+    : isOn(config.tokens_frozen)
+      ? "Tokens are frozen by Admin, so buying is paused. Your QR works again when they are unfrozen."
+      : null;
 
   // Several events can start overlapping loads; only the newest one may
-  // update the card, so a slow older answer never brings back a dead QR.
+  // update the state, so a slow older answer never brings back a dead QR.
   const loadSeq = useRef(0);
 
   const load = useCallback(async () => {
@@ -70,6 +81,7 @@ export function BlindBoxCard({
     }
     const { data, error: err } = await query.order("id");
     if (stale()) return;
+    setLoaded(true);
     if (err) {
       setError(err.message);
       return;
@@ -148,8 +160,35 @@ export function BlindBoxCard({
     }
   }
 
-  if (rows.length === 0 && !error) {
-    if (!showEmpty) return null;
+  // A personal account has one seller; so does its station, and a GM can have
+  // both (own boxes + the station's shared pool).
+  const bySeller = new Map<number, Row[]>();
+  for (const r of rows) bySeller.set(r.seller_id, [...(bySeller.get(r.seller_id) ?? []), r]);
+  const sellers: MyBlindBoxSeller[] = [...bySeller.entries()].map(([id, list]) => ({
+    id,
+    rows: list,
+    station: list[0].station,
+    live: list.some((r) => r.active && !r.type?.archived),
+    left: list.reduce((n, r) => n + (r.active && !r.type?.archived ? Math.max(r.quantity - r.opened, 0) : 0), 0),
+    qr: shown[list[0].id],
+  }));
+
+  return { loaded, error, sellers, copy, copied, paused };
+}
+
+// "My blind box QR": ONE card with ONE QR for the signed-in account (or its
+// station: a station's GMs share one pool and one code), listing every box type
+// it holds. The same QR works until all the boxes are sold.
+export function BlindBoxCard({
+  showEmpty = false,
+}: {
+  /** Say so when this account holds no boxes (where Home's "My blind box QR" links). */
+  showEmpty?: boolean;
+} = {}) {
+  const { loaded, error, sellers, copy, copied, paused } = useMyBlindBoxes();
+
+  if (sellers.length === 0 && !error) {
+    if (!showEmpty || !loaded) return null;
     return (
       <Card className="text-center">
         <h2 className="font-semibold">My blind box QR</h2>
@@ -160,11 +199,6 @@ export function BlindBoxCard({
     );
   }
 
-  // One card per seller. A personal account has one seller; so does its
-  // station, and a GM can have both (own boxes + the station's shared pool).
-  const sellers = new Map<number, Row[]>();
-  for (const r of rows) sellers.set(r.seller_id, [...(sellers.get(r.seller_id) ?? []), r]);
-
   return (
     <div className="space-y-3">
       {error && (
@@ -172,20 +206,13 @@ export function BlindBoxCard({
           {error}
         </p>
       )}
-      {[...sellers.entries()].map(([sellerId, list]) => {
-        const first = list[0];
-        const live = list.some((r) => r.active && !r.type?.archived);
-        const totalLeft = list.reduce(
-          (n, r) => n + (r.active && !r.type?.archived ? Math.max(r.quantity - r.opened, 0) : 0),
-          0
-        );
-        const s = shown[first.id];
+      {sellers.map(({ id: sellerId, rows: list, station, live, left: totalLeft, qr: s }) => {
         return (
           <Card key={sellerId} className="text-center">
             <h2 className="font-semibold">My blind box QR</h2>
             <p className="text-sm text-ink-faint">
-              {first.station
-                ? `Station ${first.station.name} — shared with this station's other GMs`
+              {station
+                ? `Station ${station.name} — shared with this station's other GMs`
                 : "Your own boxes"}
             </p>
             <ul className="mx-auto mt-2 max-w-sm space-y-1 text-sm text-ink-faint">

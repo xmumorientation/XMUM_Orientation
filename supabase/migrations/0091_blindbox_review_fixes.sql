@@ -1,5 +1,7 @@
 -- ═══════════════════════════════════════════════════════════════════════
--- Migration 0080: blind box fixes from the 2026-10-19 review (run after 0079)
+-- Migration 0091: blind box fixes from the 2026-10-19 review (run after 0090)
+-- (Written as 0080 and already run on the live project under that name;
+-- renumbered after main's own 0079-0089. Safe to run again.)
 --
 -- 1. fn_bb_reset
 --    a. "Reset everything" also gives every seller a new random QR version,

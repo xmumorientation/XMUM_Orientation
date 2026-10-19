@@ -128,19 +128,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     (!isOps && (pathname === "/map" || pathname.startsWith("/map/"))) || pathname.startsWith("/inventory");
   const isStaffArea = !isFreshie && !keepsOwnDesign;
   const isStaffSubpage = isStaffArea && !isStaffDashboard;
+  // Roles whose subpages use Home's header (OpsHeader) instead of the staff phone header.
+  const hasOpsHeader = profile.role === "hogm" || profile.role === "hof";
   const items = NAV.filter((n) => n.roles.includes(profile.role)).map((item) =>
     isFaci && item.href === "/map" ? { ...item, href: "/checkin" } : item
   );
   // Freshie and facilitator phones share the night tab bar. Freshie Scan is
   // the raised center button; a facilitator gets Code there instead.
-  // Home, Schedule and Items hide the light mobile header for both roles.
+  // Home, Schedule, Items and Map hide the light mobile header for both roles.
   const { group } = useGroup();
   const groupTheme = isFreshie || isFaci ? themeFromColor(group?.color) : null;
-  // Only the --fh-* night colours; --brand-1 stays the brand so light pages (map) keep theirs.
+  // Only the --fh-* night colours; --brand-1 stays the brand so light pages keep theirs.
   const fhTheme = groupTheme ?? (isOps ? VORTEXA_THEME : null);
   const isNight = isStaffDashboard || (
     (isFreshie || isFaci) &&
-    (pathname === "/dashboard" || pathname === "/schedule" || pathname === "/inventory"));
+    (pathname === "/dashboard" || pathname === "/schedule" || pathname === "/inventory" || pathname === "/map"));
   const showTabBar = (isFreshie || isFaci || isOps) && !(isFreshie && pathname === "/scan");
 
   // Close the drawer on route change so it never lingers over a new page.
@@ -235,9 +237,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         primaryHref={isOps ? "/committee" : undefined}
         onSignOut={signOut}
       />
-      {/* HOGM subpages: Home's logo, role chip and account menu (OpsHeader). */}
-      {isStaffSubpage && profile.role === "hogm" && <OpsHeader />}
-      {!isNight && !(isStaffSubpage && profile.role === "hogm") && (
+      {/* HOGM and HOF subpages: Home's logo, role chip and account menu (OpsHeader). */}
+      {isStaffSubpage && hasOpsHeader && <OpsHeader />}
+      {!isNight && !(isStaffSubpage && hasOpsHeader) && (
       <header className={cn("sticky top-0 z-40 border-b border-paper-200 bg-paper-50/95 pt-[env(safe-area-inset-top)] shadow-[0_1px_0_rgba(28,26,23,0.03)] backdrop-blur lg:hidden", isStaffSubpage && "sp-header")}>
         {isStaffSubpage ? (
           <div className="sp-header-row">

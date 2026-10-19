@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { CampusMap } from "@/components/CampusMap";
-import { useFaciLocation } from "@/components/FaciLocationTracker";
+import { FaciTrackingPanel } from "@/components/FaciTrackingPanel";
 import {
   Card,
   ErrorBanner,
@@ -12,7 +12,7 @@ import {
 } from "@/components/ui";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import type { Station } from "@/lib/types";
-import { cn, friendlyError, timeAgo } from "@/lib/utils";
+import { friendlyError } from "@/lib/utils";
 
 // FR-3.1 (P0): one-tap manual check-in — the primary fallback that always
 // works. FR-3.2 (P1): automatic precise GPS reporting while logged in.
@@ -21,11 +21,6 @@ export default function CheckinPage() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [pending, setPending] = useState<Station | null>(null);
-  const {
-    status: faciGpsStatus,
-    lastReportedAt: faciGpsReportedAt,
-    requestLocation: requestFaciGps,
-  } = useFaciLocation();
 
   const [current, setCurrent] = useState<Station | null>(null);
   const [busy, setBusy] = useState(false);
@@ -161,40 +156,7 @@ export default function CheckinPage() {
         </div>
       )}
 
-      <Card className="flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <p className="font-semibold">GPS live reporting</p>
-            <span
-              className={cn(
-                "chip",
-                faciGpsStatus === "active"
-                  ? "bg-green-100 text-green-800"
-                  : "bg-amber-100 text-amber-800"
-              )}
-            >
-              {faciGpsStatus === "active" ? "Active" : "Paused"}
-            </span>
-          </div>
-          <p className="text-xs text-ink-faint mt-1">
-            {faciGpsStatus === "active"
-              ? `Automatically reporting your group's live position for the campus map${
-                  faciGpsReportedAt
-                    ? ` (last sent ${timeAgo(faciGpsReportedAt.toISOString())})`
-                    : ""
-                }.`
-              : "Location access is required so your group appears on the campus map."}
-          </p>
-        </div>
-        {faciGpsStatus !== "active" && (
-          <button
-            onClick={() => requestFaciGps()}
-            className="btn-primary shrink-0 text-sm"
-          >
-            Enable GPS
-          </button>
-        )}
-      </Card>
+      <FaciTrackingPanel />
     </div>
   );
 }

@@ -31,6 +31,14 @@ function denyGroupPass(request: NextRequest, reason: string, groupId?: string) {
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
 
+  // Development-only demos: no account, card or database access.
+  if (
+    process.env.NODE_ENV === "development" &&
+    (path === "/activate/preview" || path === "/map3d" || path.startsWith("/map3d/"))
+  ) {
+    return NextResponse.next({ request });
+  }
+
   // Public, backend-free routes (no Supabase). Group pages are NOT open URLs —
   // they require a signed expiring pass (see below).
   // /check-in/draw stays reachable as the backup website draw only; it must

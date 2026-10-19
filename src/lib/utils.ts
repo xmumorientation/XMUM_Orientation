@@ -86,6 +86,8 @@ const ERROR_MESSAGES: Record<string, string> = {
   SET_NOT_REDEEMED: "Your group's puzzle set hasn't been verified by a Guardian yet.",
   ALREADY_ACTIVATED: "This projector has already been revived!",
   GROUP_ALREADY_ACTIVATED_ONE: "Your group has already revived a projector.",
+  NFC_DEMO_OFF: "Demo scanning is off. Admin turns it on in Live control.",
+  PROJECTOR_NOT_FOUND: "That lightbulb doesn't exist.",
   NOT_YOUR_STATION: "You can only update your own station.",
   STATION_NOT_FOUND: "Station not found.",
   STATION_FULL: "This station is full. Pick another one.",

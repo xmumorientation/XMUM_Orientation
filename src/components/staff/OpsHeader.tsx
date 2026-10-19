@@ -13,7 +13,7 @@ import { ROLE_LABELS, type UserRole } from "@/lib/types";
 import "@/components/freshie/freshie.css";
 import "./staff-home.css";
 
-// HOGM's header on Ops, Map, Scores and Schedule (phones and portrait
+// HOGM's and HOF's header on Ops, Map, Scores and Schedule (phones and portrait
 // tablets): the same logo, role chip and account menu as their Home
 // (StaffHome), in normal flow above the scroller. The logo goes Home; Big
 // screen and Log Out are in the account menu. The running game shows under it.

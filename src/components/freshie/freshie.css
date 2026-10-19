@@ -325,7 +325,6 @@ html.fh-snap { overflow-x: hidden; }
 .fh-btn-block { width: 100%; }
 
 /* ── 02 Your Facilitator (Freshie only) ──────────────────────────────────── */
-.fh-faci-sample { border-color: var(--fh-orange); color: var(--fh-orange); }
 .fh-facis { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
 .fh-faci {
   padding: 12px 14px; border-radius: 20px; border: 1px solid var(--fh-line); background: var(--fh-ink-2);
@@ -598,6 +597,48 @@ html.fh-snap { overflow-x: hidden; }
   .fh-sched-item b { font-size: 15px; }
 }
 
+/* ── Freshie / Faci map page (FreshieMap.tsx) ────────────────────────────────
+   CampusMap's own markup, recoloured to the night and the group colour:
+   night cards, mono accent headings, slab station codes, dark-glass map
+   buttons. The full-screen map is a portal outside .fh-map and keeps its own look. */
+.fh-map { max-width: 980px; margin: 0 auto; font-family: var(--font-nexus-body), Outfit, sans-serif; }
+.fh-map-top { display: grid; gap: 6px; padding: 8px 0 16px; }
+.fh-map-top .fh-h2 { font-family: var(--font-vx-display), Georgia, serif; font-weight: 400; font-size: clamp(38px, 9vw, 52px); }
+.fh-map-sub { margin: 0; font-size: 13.5px; color: var(--fh-mute); }
+
+.fh-map .card {
+  border-radius: 20px; border: 1px solid var(--fh-line); box-shadow: none;
+  background: color-mix(in srgb, var(--fh-ink-2) 88%, transparent); color: var(--fh-text);
+}
+.fh-map .card :is(.border-paper-200, .divide-paper-200 > *) { border-color: var(--fh-line); }
+.fh-map .card > h2 {
+  padding: 12px 16px 10px; font-family: var(--font-mono), "JetBrains Mono", ui-monospace, monospace;
+  font-size: 11px; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; color: var(--fh-accent);
+}
+/* GroupStatusList's "needs attention" card keeps red. */
+.fh-map .card > h2.bg-red-50 { background: rgba(255, 77, 94, 0.12); border-color: rgba(255, 77, 94, 0.35); color: #ff8a95; }
+.fh-map .card.border-red-200 { border-color: rgba(255, 77, 94, 0.35); }
+.fh-map .card li .w-14 { font-family: var(--font-vx-slab), Georgia, serif; font-weight: 400; font-size: 16px; color: var(--fh-text); }
+.fh-map .card .text-ink-faint { color: var(--fh-mute); }
+.fh-map .card :is(.text-ink-soft, .text-ink-base) { color: var(--fh-text-2); }
+.fh-map .card .text-green-700 { color: #4ade80; }
+.fh-map .card .text-amber-700 { color: #fcd34d; }
+.fh-map .card .chip { font-family: var(--font-mono), "JetBrains Mono", ui-monospace, monospace; font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; }
+.fh-map .card :is(.hover\:bg-paper-100, .hover\:bg-paper-200):hover { background: var(--fh-ink-3); }
+.fh-map .card .bg-amber-50:not(.text-amber-950) { background: rgba(251, 191, 36, 0.12); } /* selected lightbulb */
+.fh-map .bg-red-50 { background: rgba(255, 77, 94, 0.12); color: #ff8a95; }
+/* The inline map's "Show names" and "Full screen" buttons. */
+.fh-map .card .relative > button {
+  background: rgba(3, 11, 28, 0.78); color: var(--fh-text); box-shadow: 0 0 0 1px var(--fh-line-2);
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+}
+.fh-map .card .relative > button[aria-pressed="true"] { color: var(--fh-blue-light); box-shadow: 0 0 0 1px var(--fh-accent); }
+/* 2D map only: the Stations / Lightbulbs tabs. */
+.fh-map [role="tablist"][aria-label="Map view"] { background: var(--fh-ink-3); box-shadow: 0 0 0 1px var(--fh-line); }
+.fh-map [role="tablist"][aria-label="Map view"] > button { color: var(--fh-text-2); }
+.fh-map [role="tablist"][aria-label="Map view"] > button:hover { background: var(--fh-ink-2); }
+.fh-map [role="tablist"][aria-label="Map view"] > button[aria-selected="true"] { background: var(--fh-accent); color: var(--fh-on-blue); }
+
 /* ── Freshie Items page (items/FreshieItems.tsx) ─────────────────────────────
    Projectors over their puzzle keys → key banner → item shelf (tokens, boxes).
    A location's puzzle, the key, item details and Activity open in sheets.
@@ -861,6 +902,8 @@ html.fh-snap { overflow-x: hidden; }
   .fi-key-actions { grid-template-columns: 1fr 1fr; }
 }
 .fi-key-actions .fh-btn { white-space: nowrap; }
+/* Demo scan (NFC demo mode only) takes the full row under the two main buttons. */
+.fi-key-actions .fi-key-demo { grid-column: 1 / -1; }
 .fi-key-foot { margin: 8px 2px 0; font-size: 12px; color: var(--fh-mute); text-align: center; }
 
 /* Blind box (BlindBox.tsx): ask → sealed → opening → reveal. Full screen
@@ -1088,17 +1131,14 @@ html.fh-snap { overflow-x: hidden; }
 .fh-edit .fi-sheet-title { padding-right: 44px; }
 .fh-edit-form { display: grid; gap: 16px; margin-top: 4px; }
 .fh-edit-photo { display: flex; align-items: center; gap: 14px; }
-.fh-edit-soonbtn {
+.fh-edit-photobtn {
   display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 16px; border-radius: 999px;
-  border: 1px solid var(--fh-line-2); background: transparent; color: var(--fh-mute); font: inherit; font-weight: 600; cursor: not-allowed;
+  border: 1px solid var(--fh-line-2); background: transparent; color: var(--fh-text); font: inherit; font-weight: 600; cursor: pointer;
 }
+.fh-edit-file { display: none; }
 .fh-edit-field { display: grid; gap: 8px; }
 .fh-edit-field > span:first-child { font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--fh-mute); }
 .fh-edit-field textarea { resize: vertical; min-height: 84px; line-height: 1.45; }
 .fh-edit-at { position: relative; display: block; }
 .fh-edit-at i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-style: normal; color: var(--fh-mute); }
 .fh-edit-at .fh-input { padding-left: 28px; }
-.fh-edit-soon { display: grid; gap: 14px; margin: 0; padding: 14px; border-radius: 16px; border: 1px dashed var(--fh-line-2); min-width: 0; }
-.fh-edit-soon legend { display: flex; align-items: center; gap: 8px; padding: 0 6px; font-size: 12.5px; color: var(--fh-text-2); }
-.fh-edit-soontag { font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; padding: 3px 8px; border-radius: 999px; border: 1px solid var(--fh-orange); color: var(--fh-orange); }
-.fh-edit-soon .fh-input { opacity: 0.55; cursor: not-allowed; }

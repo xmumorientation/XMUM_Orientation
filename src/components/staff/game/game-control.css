@@ -46,6 +46,23 @@
 
 /* ── Type ────────────────────────────────────────────────────────────────── */
 .gc .gc-title { margin: 0; font-family: var(--gc-display); font-weight: 400; font-size: clamp(36px, 9vw, 52px); line-height: 1.05; color: var(--gc-text); }
+/* OPS: the Welcome page's holo mark (vortexa.css .vx-welcome-mark). */
+.gc .gc-title-holo {
+  justify-self: start; padding: 0 0.08em 0.1em 0; font-size: clamp(52px, 16vw, 76px); line-height: 1;
+  background: linear-gradient(90deg, #0dfcfd 0%, #e0b4fc 22%, #fe06ab 44%, #fc9e3d 66%, #e0b4fc 84%, #0dfcfd 100%) 0 0 / 200% 100%;
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: transparent;
+  filter: drop-shadow(0 6px 28px rgba(13, 252, 253, 0.22));
+}
+@media (prefers-reduced-motion: no-preference) {
+  .gc .gc-title-holo { animation: gc-shimmer 8s linear infinite; }
+}
+@keyframes gc-shimmer { to { background-position: 200% 0; } }
+.gc-sub {
+  display: flex; align-items: center; gap: 8px; margin: 0;
+  font-family: var(--gc-mono); font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gc-mute);
+}
+.gc-sub b { font-weight: 500; color: var(--gc-cyan); }
+.gc-sub i { width: 6px; height: 6px; border-radius: 50%; background: var(--gc-cyan); box-shadow: 0 0 8px var(--gc-cyan); }
 .gc-eyebrow { margin: 0; font-family: var(--gc-mono); font-size: 11px; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gc-cyan); }
 .gc-h3 { margin: 0; font-family: var(--gc-slab); font-weight: 400; font-size: 22px; line-height: 1.15; }
 .gc-h4 { margin: 0; font-size: 16px; font-weight: 600; }
@@ -67,25 +84,30 @@
   .gc-grid3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
-/* Section switcher: chip row on phones / portrait tablets, side rail ≥1024px. */
+/* Section switcher: five equal icon tabs on phones / portrait tablets (all
+   visible, no sideways scroll), side rail ≥1024px. */
 .gc-nav {
-  position: sticky; top: 0; z-index: 5; display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none;
-  margin: 0 -12px; padding: 8px 12px; background: linear-gradient(rgba(7, 6, 11, 0.92) 75%, rgba(7, 6, 11, 0));
+  position: sticky; top: 8px; z-index: 5; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 4px;
+  padding: 4px; border-radius: 18px; border: 1px solid var(--gc-line);
+  background: rgba(14, 12, 21, 0.86); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
 }
-.gc-nav::-webkit-scrollbar { display: none; }
 .gc .gc-nav button {
-  flex: none; display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 14px;
-  border-radius: 999px; border: 1px solid var(--gc-line-2); background: rgba(14, 12, 21, 0.7);
-  color: var(--gc-text-2); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; box-shadow: none;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-width: 0;
+  min-height: 52px; padding: 6px 2px; border: 0; border-radius: 14px; background: transparent;
+  color: var(--gc-text-2); font: inherit; font-size: 11px; font-weight: 600; line-height: 1.1; cursor: pointer; box-shadow: none;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.gc .gc-nav button[aria-current="page"] { background: var(--gc-cyan); border-color: var(--gc-cyan); color: #001629; }
+.gc .gc-nav button[aria-current="page"] { background: var(--gc-cyan); color: #001629; }
 @media (min-width: 1024px) {
   .gc-layout { grid-template-columns: 200px minmax(0, 1fr); gap: 28px; align-items: start; }
   .gc-nav {
-    top: 16px; flex-direction: column; overflow: visible; margin: 0; padding: 8px;
+    top: 16px; display: flex; flex-direction: column; gap: 6px; padding: 8px;
     border: 1px solid var(--gc-line); border-radius: 18px; background: rgba(14, 12, 21, 0.75);
   }
-  .gc .gc-nav button { justify-content: flex-start; min-height: 44px; border-color: transparent; border-radius: 12px; background: transparent; }
+  .gc .gc-nav button {
+    flex-direction: row; justify-content: flex-start; gap: 6px; min-height: 44px; padding: 0 14px;
+    border-radius: 12px; font-size: 14px;
+  }
   .gc .gc-nav button[aria-current="page"] { background: var(--gc-raised); border-color: transparent; color: var(--gc-text); box-shadow: inset 3px 0 0 var(--gc-cyan); }
   .gc .gc-nav button svg { color: var(--gc-cyan); }
 }
@@ -230,7 +252,6 @@
 /* ── Plain rows (NFC issued) ──────────────────────────────────────── */
 .gc-rows { list-style: none; margin: 8px 0 0; padding: 0 0 6px; }
 .gc-rows > li { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 48px; padding: 8px 16px; border-top: 1px solid var(--gc-line); font-size: 14px; }
-.gc-bb:empty { display: none; }
 
 /* ── Scores (GroupScores, HOGM's /token) ─────────────────────────────────── */
 .gc-scores-head, .gc .gc-score-head { display: grid; grid-template-columns: 24px 10px minmax(0, 1fr) 52px 64px 18px; align-items: center; gap: 10px; }
@@ -280,3 +301,60 @@
 @media (prefers-reduced-motion: reduce) {
   .gc-btn, .gc-fold-chev { transition: none; }
 }
+
+/* ── Map (/map for HOF, HOGM, Committee) ─────────────────────────────────────
+   CampusMap's own markup and layout, recoloured to match Ops and Scores:
+   night cards, mono cyan headings, slab station codes, dark-glass map buttons.
+   The full-screen map is a portal outside .gc-map and keeps its own look. */
+.gc.gc-map .card { border-radius: 20px; border: 1px solid var(--gc-line); background: rgba(14, 12, 21, 0.86); }
+.gc.gc-map .card :is(.border-paper-200, .divide-paper-200 > *) { border-color: var(--gc-line); }
+.gc.gc-map .card > h2 {
+  padding: 12px 16px 10px; font-family: var(--gc-mono); font-size: 11px; font-weight: 500;
+  letter-spacing: 0.2em; text-transform: uppercase; color: var(--gc-cyan);
+}
+.gc.gc-map .card li .w-14 { font-family: var(--gc-slab); font-weight: 400; font-size: 16px; color: var(--gc-text); }
+.gc.gc-map .card .text-ink-faint { color: var(--gc-mute); }
+.gc.gc-map .card .chip { font-family: var(--gc-mono); font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; }
+.gc.gc-map .card .relative > button {
+  background: rgba(7, 6, 11, 0.78); color: var(--gc-text); box-shadow: 0 0 0 1px var(--gc-line-2);
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+}
+.gc.gc-map .card .relative > button[aria-pressed="true"] { color: var(--gc-cyan); box-shadow: 0 0 0 1px rgba(13, 252, 253, 0.5); }
+.gc.gc-map .gc-top { padding-bottom: 14px; }
+
+/* ── Faci control (HOF's Ops page, staff/faci/FaciControl.tsx) ───────────── */
+.gc-stats { margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.gc-stats > div { padding: 12px 14px; border-radius: 16px; border: 1px solid var(--gc-line); background: rgba(14, 12, 21, 0.86); }
+.gc-stats dt { font-family: var(--gc-mono); font-size: 9.5px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--gc-mute); }
+.gc-stats dd { margin: 4px 0 0; font-family: var(--gc-slab); font-size: 26px; line-height: 1; font-variant-numeric: tabular-nums; }
+.gc-stats dd small { font-size: 15px; color: var(--gc-mute); }
+@media (min-width: 640px) {
+  .gc-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+.gc-fold-head .gc-swatch { flex: none; }
+.gc-fold-top { display: flex; align-items: flex-start; gap: 10px; border-top: 1px solid var(--gc-line); }
+.gc-fold-top .gc-facts { flex: 1; border-top: 0; }
+.gc-fold-top .gc-icon { margin-top: 10px; color: var(--gc-cyan); }
+.gc-sub-block { display: grid; gap: 8px; padding-top: 12px; border-top: 1px solid var(--gc-line); }
+.gc-loc { display: grid; gap: 4px; padding: 10px 12px; border-radius: 14px; background: var(--gc-ink-3); }
+.gc-loc b { font-size: 15px; font-weight: 600; }
+.gc-loc p { margin: 0; font-size: 13.5px; color: var(--gc-text-2); }
+.gc-loc small, .gc-hist small { font-size: 12px; color: var(--gc-mute); }
+.gc-more summary { min-height: 40px; display: flex; align-items: center; font-size: 13px; font-weight: 600; color: var(--gc-cyan); cursor: pointer; }
+.gc-hist { list-style: none; margin: 0; padding: 0; display: grid; }
+.gc-hist li { display: grid; gap: 2px; padding: 8px 0; border-top: 1px solid var(--gc-line); font-size: 13.5px; }
+.gc-hist li:first-child { border-top: 0; }
+.gc-hist em { font-style: normal; color: var(--gc-text-2); }
+
+/* ── All stations under the map (staff/StationBoard.tsx) ─────────────────── */
+.gc-board { margin-top: 18px; }
+.gc-filter { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.gc .gc-filter button {
+  display: flex; flex-direction: column; align-items: center; gap: 2px; min-height: 52px; padding: 6px 4px;
+  border-radius: 14px; border: 1px solid var(--gc-line); background: rgba(14, 12, 21, 0.86);
+  color: var(--gc-text-2); font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; box-shadow: none;
+}
+.gc-filter button b { font-family: var(--gc-slab); font-size: 18px; font-weight: 400; color: var(--gc-text); }
+.gc .gc-filter button[aria-pressed="true"] { border-color: var(--gc-cyan); color: var(--gc-cyan); box-shadow: inset 0 0 0 1px var(--gc-cyan); }
+.gc-filter button[data-tone="ok"] b { color: var(--gc-green); }
+.gc-filter button[data-tone="warn"] b { color: var(--gc-orange); }

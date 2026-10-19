@@ -1,5 +1,7 @@
 -- ═══════════════════════════════════════════════════════════════════════
--- Migration 0079: blind box QR hardening (run after 0070)
+-- Migration 0090: blind box QR hardening (run after 0070)
+-- (Written as 0079 and already run on the live project under that name;
+-- renumbered after main's own 0079-0089. Safe to run again.)
 --
 -- 1. QR versions are random, not 1, 2, 3. fn_bb_buy / fn_bb_seller_preview /
 --    fn_bb_seller_public take (seller id, qr_version) straight from the

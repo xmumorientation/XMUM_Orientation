@@ -129,8 +129,8 @@ beforeAll(async () => {
   await admin.query(sql("tests/blindbox/stub-schema.sql"));
   await admin.query(sql("supabase/migrations/0054_blindbox_v3.sql"));
   await admin.query(sql("supabase/migrations/0070_blindbox_buy_flow.sql"));
-  await admin.query(sql("supabase/migrations/0079_blindbox_qr_hardening.sql"));
-  await admin.query(sql("supabase/migrations/0080_blindbox_review_fixes.sql"));
+  await admin.query(sql("supabase/migrations/0090_blindbox_qr_hardening.sql"));
+  await admin.query(sql("supabase/migrations/0091_blindbox_review_fixes.sql"));
 
   // 12 groups with 20 tokens each, one Freshie login per group
   for (let g = 1; g <= 12; g++) {
@@ -549,7 +549,7 @@ describe("many people scanning the same code at once", () => {
   });
 });
 
-describe("review fixes (0080)", () => {
+describe("review fixes (0091)", () => {
   const fresh = async () => {
     await q("delete from blind_box_claims");
     await q("update blind_box_assignments set opened = 0, active = true");

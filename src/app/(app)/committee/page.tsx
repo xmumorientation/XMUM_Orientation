@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { BlindBoxCard } from "@/components/BlindBoxCard";
 import { GroupBadge } from "@/components/GroupBadge";
 import { useProfile } from "@/components/ProfileProvider";
+import { FaciControl } from "@/components/staff/faci/FaciControl";
 import { GameControl } from "@/components/staff/game/GameControl";
 import { Card, PageTitle } from "@/components/ui";
 import { clock, describeLocation, type FaciLocation } from "@/lib/faciLocation";
@@ -21,18 +22,21 @@ type Headcount = {
   international_count: number | null;
 };
 
-// Ops. HOGM runs the game here (Game control: Admin's game console). HOF and
-// Committee keep the overview below.
+// Ops. HOGM runs the game here (Game control: Admin's game console), HOF runs
+// the Facilitators (Faci control: every group's name, slogan, password,
+// Facilitators, headcount and location). Committee keeps the overview below.
 export default function CommitteePage() {
   const profile = useProfile();
-  return profile.role === "hogm" ? <GameControl /> : <OpsOverview />;
+  if (profile.role === "hogm") return <GameControl />;
+  if (profile.role === "hof") return <FaciControl />;
+  return <OpsOverview />;
 }
 
-// HOF and Committee: one row per group (its number on its colour) in three
+// Committee (and Admin): one row per group (its number on its colour) in three
 // tabs. All read only and live; Admin edits them in Admin → Freshies.
 //   Headcount  Local / International / Total, as Facilitators report it
 //   Location   the group's latest manual location update
-//   Freshies   the group's name, slogan and 4-digit password (migration 0081)
+//   Freshies   the group's name, slogan and 4-digit password (migration 0092)
 // The map is the Map tab, and token totals are the Scores tab.
 function OpsOverview() {
   const supabase = useMemo(() => supabaseBrowser(), []);

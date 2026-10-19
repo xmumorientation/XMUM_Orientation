@@ -80,7 +80,7 @@ export function BlindBoxBuy({
       p_idempotency_key: key,
     };
     let { data, error: err } = await supabase.rpc("fn_bb_buy_at", { ...args, p_expected_price: option.price });
-    // Migration 0080 not run yet: buy without the price check.
+    // Migration 0091 not run yet: buy without the price check.
     if (err?.code === "PGRST202") ({ data, error: err } = await supabase.rpc("fn_bb_buy", args));
     setBusyId(null);
     if (err) {

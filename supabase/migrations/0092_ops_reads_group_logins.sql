@@ -1,9 +1,8 @@
 -- ═══════════════════════════════════════════════════════════════════════
--- Migration 0081: HOF and Committee read the group passwords
+-- Migration 0092: HOF and Committee read the group passwords
 --
--- Ops (/committee) has a Freshies tab for HOF and Committee: each group's
--- number, colour, name, slogan and 4-digit password, so they can help a group
--- that forgot it. Until now only Admin could read group_login_codes (0032).
+-- HOF (Ops → Faci control) and Committee (Ops → Freshies) see each group's
+-- 4-digit password, so they can help a group that forgot it. Until now only Admin could read group_login_codes (0032).
 -- Read only: creating or changing passwords stays Admin only.
 -- ═══════════════════════════════════════════════════════════════════════
 
