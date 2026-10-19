@@ -1,6 +1,6 @@
 # NFC activation → 3D funfair verification, 2026-10-19
 
-Branch: `codex/nfc-map-activation`; latest fetched `origin/main`: `5ecbbba` (merged as `c35059a`). Frontend changes are local, not pushed or deployed. No database migration was applied.
+Branch: `codex/nfc-map-activation`; latest fetched `origin/main`: `5ecbbba` (merged as `c35059a`). This section records the initial local verification; release checks are listed below. No database migration was applied.
 
 ## What changed
 
@@ -29,3 +29,13 @@ Branch: `codex/nfc-map-activation`; latest fetched `origin/main`: `5ecbbba` (mer
 - The live project already has v2 functions from the retained NFC integration work. A migration-only installation without them retains its original legacy behavior. The existing v2 function gates ordinary activation on Day 2 (`phase_active('day2')`); legacy ordinary activation still gates Endgame. This change does not alter either database phase rule.
 - All three live funfair zones were manually forced On before testing and were restored to that setting. For a genuine event-time off→on reveal, set the relevant zone override to Auto in Admin → Live → Funfair (or HOGM Game control → Funfair). A forced-On zone correctly stays lit and is not replayed as newly unlocked.
 - Group assignment is visible in Admin → Freshies (group Facis) and Admin → Users (individual role/group); HOF can also assign group Facis. Demo Faci was restored to G9 and demo Freshie to no group.
+
+## Release follow-up (2026-10-19)
+
+- Latest team main (`b8fe75a`) was merged into the isolated `codex/nfc-release` branch, preserving the newer East layout, night map, lake stage, login and blind-box changes. The primary workspace's local edits were left intact.
+- Reproduced the global logo returning over the map after an initial activation visit (one `.vx-intro` node after redirect). Activation now marks its own entrance as seen; a fresh browser visit to the fixed flow produced zero logo-overlay nodes.
+- Activation arrivals skip the ordinary campus swoop and whole-campus framing flight before the zone focus. The arrival mask is present from the first component render.
+- Reproduced a slow first 3D load exhausting the 15-second replay safeguard before a scene was visible. That safeguard now begins only after a rendered scene frame, preserving the reveal on a slow initial load.
+- Fresh browser flow completed A3 → map → Neon Pier power-up. The existing graphics warnings are unrelated deprecations; no claim is made about physical-phone FPS.
+- Full suite after integrating latest main: 12 files / 153 tests passed. The production build and PR deployment checks gate release. No new migration or permanent live game-setting change is part of this release.
+- Rollback: revert the release merge if authentication, ordinary activation or public map state regresses. No schema rollback is required. Production verification uses a temporary, guarded TF fixture and restores original assignments, zone override and projector state afterwards.

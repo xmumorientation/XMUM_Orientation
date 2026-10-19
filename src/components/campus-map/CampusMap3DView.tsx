@@ -48,6 +48,13 @@ import type { CampusMapViewProps } from "./CampusMap2DView";
 import { MapInfoCard } from "./CampusMapPanels";
 import { clusterStatus } from "./useCampusMapData";
 
+function initialActivationArrival(): { zones: FunfairZone[]; on: boolean } | null {
+  if (typeof window === "undefined" || new URLSearchParams(window.location.search).get("arrival") !== "activation") return null;
+  let zones: FunfairZone[] = [];
+  try { zones = readActivationJourney(sessionStorage.getItem(ACTIVATION_JOURNEY_KEY), Date.now()); } catch { /* Storage may be blocked. */ }
+  return { zones, on: false };
+}
+
 // Signal an actual rendered frame, rather than starting the power-up while
 // the 3D bundle, shaders or phone GPU are still loading.
 function SceneReady({ onReady }: { onReady: () => void }) {
@@ -379,7 +386,7 @@ export function CampusMap3DView({
   const [checkTap, setCheckTap] = useState<[number, number] | null>(null);
   const [sceneReady, setSceneReady] = useState(false);
   const markSceneReady = useCallback(() => setSceneReady(true), []);
-  const [arrival, setArrival] = useState<{ zones: FunfairZone[]; on: boolean } | null>(null);
+  const [arrival, setArrival] = useState(initialActivationArrival);
   const arrivalStarted = useRef(false);
   const checking = checkMode && canManageStations;
 
@@ -422,9 +429,6 @@ export function CampusMap3DView({
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("arrival") === "activation") {
-      let zones: FunfairZone[] = [];
-      try { zones = readActivationJourney(sessionStorage.getItem(ACTIVATION_JOURNEY_KEY), Date.now()); } catch { /* Storage may be blocked. */ }
-      setArrival({ zones, on: false });
       onFullscreenChange(true);
       return;
     }
@@ -476,8 +480,8 @@ export function CampusMap3DView({
     [fullscreen, envReady, camera],
   );
   useEffect(() => {
-    if (fullView) setFlight({ kind: "to", ...fullView, id: ++flights.current });
-  }, [fullView]);
+    if (fullView && !arrival) setFlight({ kind: "to", ...fullView, id: ++flights.current });
+  }, [fullView, arrival]);
 
   useEffect(() => {
     if (!arrival || arrivalStarted.current || !sceneReady || !envReady || !fullscreen || !data.funfairReady) return;
@@ -503,7 +507,7 @@ export function CampusMap3DView({
   }, [sceneReady, envReady, fullscreen, data.funfairReady, data.funfair, arrival]);
 
   useEffect(() => {
-    if (!arrival || arrival.on) return;
+    if (!arrival || arrival.on || !sceneReady) return;
     // If connectivity drops or a committee member reverses the activation,
     // reveal the real state rather than leaving a zone hidden indefinitely.
     const timeout = window.setTimeout(() => {
@@ -512,7 +516,7 @@ export function CampusMap3DView({
       try { sessionStorage.removeItem(ACTIVATION_JOURNEY_KEY); } catch { /* Optional storage. */ }
     }, 15000);
     return () => window.clearTimeout(timeout);
-  }, [arrival]);
+  }, [arrival, sceneReady]);
 
   function openFullscreen() {
     onFullscreenChange(true);
@@ -784,7 +788,7 @@ export function CampusMap3DView({
                 concert={concert}
                 lite={isLite}
                 camera={camera ?? env.camera}
-                intro={intro}
+                intro={arrival ? false : intro}
                 labels={showNames}
                 controlsRef={controls}
                 interactive={fullscreen}

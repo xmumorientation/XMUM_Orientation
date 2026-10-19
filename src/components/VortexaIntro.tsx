@@ -20,7 +20,14 @@ export function VortexaIntro() {
   const excluded = pathname === "/activate" || pathname === "/activate/preview";
 
   useEffect(() => {
-    if (excluded) return;
+    if (excluded) {
+      // The activation has its own entrance. Keep the next map route clear
+      // too, including a first visit from a physical sticker.
+      seenInPage = true;
+      setShow(false);
+      try { window.sessionStorage.setItem(INTRO_SEEN_KEY, "1"); } catch { /* In-page flag still applies. */ }
+      return;
+    }
 
     let seen = seenInPage;
     try {
