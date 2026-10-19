@@ -78,23 +78,37 @@ export function useBlindBoxes(groupId: number | null, enabled: boolean) {
     };
   }, [supabase, groupId, enabled, reload]);
 
-  /** Opens the oldest sealed box of this group of boxes. Null if it failed. */
+  /**
+   * Opens the oldest sealed box of this group of boxes. Null if it failed or
+   * there is none left. The sealed boxes are read fresh, and a box another
+   * phone on the same group login opened a moment ago (fn_bb_open answers
+   * `duplicate`) is skipped, so one box is never revealed twice.
+   */
   const openBox = useCallback(
     async (key: string): Promise<BoxReward | null> => {
-      const target = claims
-        .filter((c) => c.status === "owned" && `${c.type_name}|${c.special ? 1 : 0}` === key)
-        .sort((a, b) => a.created_at.localeCompare(b.created_at))[0];
-      if (!target) return null;
-      const { data, error } = await supabase.rpc("fn_bb_open", { p_claim_id: target.id });
-      if (error) {
+      if (!groupId) return null;
+      const [typeName, special] = [key.slice(0, key.lastIndexOf("|")), key.endsWith("|1")];
+      const { data: sealed } = await supabase
+        .from("blind_box_claims")
+        .select("id")
+        .eq("group_id", groupId)
+        .eq("status", "owned")
+        .eq("type_name", typeName)
+        .eq("special", special)
+        .order("created_at", { ascending: true })
+        .limit(3);
+      for (const target of (sealed as { id: number }[] | null) ?? []) {
+        const { data, error } = await supabase.rpc("fn_bb_open", { p_claim_id: target.id });
+        if (error) break;
+        const r = data as BlindBoxResult;
+        if (r.duplicate) continue;
         await reload();
-        return null;
+        return { type: "tokens", amount: r.tokens, real: { special: r.special, seller: r.seller_name, balance: r.balance } };
       }
       await reload();
-      const r = data as BlindBoxResult;
-      return { type: "tokens", amount: r.tokens, real: { special: r.special, seller: r.seller_name, balance: r.balance } };
+      return null;
     },
-    [supabase, claims, reload]
+    [supabase, groupId, reload]
   );
 
   return { claims, loaded, reload, openBox };

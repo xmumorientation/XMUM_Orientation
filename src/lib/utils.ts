@@ -114,6 +114,8 @@ const ERROR_MESSAGES: Record<string, string> = {
   BOXES_SOLD_OUT: "All blind boxes here have been given out!",
   BB_ALREADY_FROM_SELLER: "Your group has already bought a box from this seller.",
   BB_GROUP_CAP: "Your group has already bought the most blind boxes it is allowed.",
+  BB_PRICE_CHANGED: "The price of this box just changed. Nothing was charged. Check the new price and tap BUY again.",
+  BB_HAS_SALES: "Groups have already bought blind boxes from this seller, so it can't be deleted. Turn its boxes off in Admin → Blind box instead.",
   BB_TYPE_NAME_MISSING: "Enter a name for the box type.",
   BB_RANGE_INVALID: "Check the numbers: max must be at least min, and nothing can be negative.",
   BB_TYPE_EXISTS: "A box type with that name already exists.",

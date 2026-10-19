@@ -1,4 +1,5 @@
 import { hashToken, signPayload, verifyToken } from "./signed-token";
+import { siteUrl } from "./site-url";
 
 import type { ProjectorLocation } from "./types";
 
@@ -28,6 +29,5 @@ export function verifyNfcToken(
 }
 
 export function nfcUrl(token: string): string {
-  const base = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
-  return `${base}/activate?t=${encodeURIComponent(token)}`;
+  return `${siteUrl()}/activate?t=${encodeURIComponent(token)}`;
 }

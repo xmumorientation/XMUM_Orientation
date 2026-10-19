@@ -309,7 +309,7 @@ export default function AdminStationsPage() {
 
 Groups checked in here will lose that check-in.`)) return;
     const { error } = await supabase.from("stations").delete().eq("id", s.id);
-    if (error) setError(error.message);
+    if (error) setError(friendlyError(error));
     else {
       flash("Station deleted.");
       load();

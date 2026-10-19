@@ -5,7 +5,7 @@ Read it before starting a new round of development. When a decision changes, upd
 
 > **From Ben:** when you finish your work, write down what you completed in the "Done" section at the end of this file, so the next teammate can see it. Do this for partly finished items too: say which parts are done and which are left.
 
-Last updated: 2026-10-14
+Last updated: 2026-10-19
 
 ## Status key
 
@@ -214,7 +214,52 @@ The design branches are merged. These remote branches are still not in `main` (c
 
 ---
 
+---
+
 ## Done
+
+### Migrations to run on Supabase for the 2026-10-19 work
+- `0079_blindbox_qr_hardening.sql` (after `0070`). ⚠ Every blind box QR changes when it runs: sellers' cards and Admin show the new one, and any QR already printed or shared stops working.
+- `0080_blindbox_review_fixes.sql` (after `0079`). The frontend works before or after it: if `fn_bb_buy_at` does not exist yet, the buy screen falls back to `fn_bb_buy` (without the price check).
+Both files are safe to run again if a run fails part-way, and every `UPDATE` has a `WHERE` (some Supabase setups refuse one without).
+- `0081_ops_reads_group_logins.sql`: HOF and Committee read the group passwords (Ops → Freshies).
+
+### Ops page for HOF and Committee, and group badges, 2026-10-19
+Migration `0081_ops_reads_group_logins.sql` (run it before using the Freshies tab; without it the passwords show "—").
+- **Ops (`/committee`) for HOF and Committee** now has three read-only, live tabs, one row per group: **Headcount** (Local / International / Total), **Location** (the group's latest manual update, who sent it and when) and **Freshies** (the group's name, slogan and 4-digit password). The Map tab is removed (it was the same `CampusMap` with group pins as the Map page), and so is Balances (the Scores tab has it). Home's "people checked in" tile opens Headcount (`?view=headcount`; the old `?view=attendance` still works). HOGM's Ops stays Game control.
+- **Group badge** (`src/components/GroupBadge.tsx`): the group's number on a disc of its colour (`groups.color` through `themeFromColor`, so the number is dark on a light colour). Used on every Ops row and on the Scores page next to the group name. Scores now shows the name the Facilitators set (`display_name`) when there is one.
+- **Scores on phones:** each row is two lines (rank, badge, name and tokens; then puzzles and the B1 / A3 / TF pieces), so the name is no longer cut to "Grou…". Wider screens keep one line.
+- **Permissions (`0081`):** HOF and Committee may read `group_login_codes` (read only; creating and changing passwords stays Admin only). Added to [permission-matrix.md](permission-matrix.md).
+- Checked: the badge colours and contrast in the browser (red, blue, pink: white number; cyan, yellow: dark number; no colour: default blue). Not checked in the browser: the Ops and Scores pages themselves (they need a staff sign-in). `tsc` and `next lint` are clean.
+
+### Blind box review fixes, 2026-10-19
+Migration `0080_blindbox_review_fixes.sql`, plus frontend fixes. The rest of the 2026-10-19 review (after "Blind box QR hardening").
+- **Database (`0080`):**
+  - "Reset everything" also gives every seller a new random QR version, so rehearsal QRs stay dead.
+  - "Put tokens back" only undoes what is still in the balances: a box bought before the last Token page reset (`tokens.reset` in the audit log) refunds nothing, and only its prize if it was opened after that reset. Before, a token reset followed by a blind box reset left groups with tokens. Both token resets write `tokens.reset`: main's `fn_reset_tokens_and_puzzles` (`0056`) and `bonding-session`'s `fn_reset_token_state` (its `0024` / `0027`, which the live database may run), so this works with either.
+  - Changing a seller account to a role that cannot hold boxes (Faci, Freshie) turns their own boxes off (trigger on `profiles`), so a copy of their QR stops selling; changing the role back turns the same boxes on again (`blind_box_assignments.off_by_role`). If Admin switches an assignment on or off by hand, that choice wins over a later role change. Accounts already in that state are turned off when the migration runs. Station boxes are not affected.
+  - New `fn_bb_buy_at(..., p_expected_price)`: BUY at the price the Freshie was shown. If Admin changed it meanwhile, nothing is charged (`BB_PRICE_CHANGED`). `fn_bb_buy` is unchanged.
+- **Freshie:** the buy screen uses `fn_bb_buy_at` and reloads after any failed BUY, so balance, stock and price are current. A Freshie account with no group gets "Log in as your group" on `/blindbox` instead of a dead end. "Log in as a Freshie" signs out this device only (`scope: "local"`), not the account's other devices. Opening a box on the Items page reads the sealed boxes fresh and skips one another phone just opened, so one box is never revealed twice.
+- **Sellers:** the card ignores an older reload that answers after a newer one (so a dead QR never comes back), follows price and name edits live, says when buying is paused (blind boxes off or tokens frozen) instead of showing a QR that cannot sell, and on `/committee` and HOGM's Game control says "You have no blind boxes to sell yet" instead of showing nothing. The GM page re-reads the GM's station when it opens, when a day starts or ends, and when the phone comes back to the page, so scoring and status follow the day's station.
+- **Admin:** an empty quantity field no longer counts as 0, and setting 0 asks first. A removed assignment shows "That assignment no longer exists" instead of the Freshie message. Box type wording is corrected (range and price apply to boxes bought from now on; archiving keeps the seller's QR working for their other types). Assign counts each station's GMs over both days (`fn_admin_station_gms`).
+- **Scanner:** in a build without `NEXT_PUBLIC_SITE_URL`, `http://localhost:3000` links are no longer treated as this site.
+- **Tests:** `tests/blindbox/db.test.ts` loads `0080` and covers the price check (wrong price charges nothing, a retry still returns the purchase), the role change both ways (and Admin's by-hand choice winning), the refund after a token reset, Reset everything changing every QR version, and what a GM (own and current station only, following a station change) and a Freshie (nothing) can read. New `tests/blindbox/links-route.test.ts` covers `/api/blindbox/links`: refused for Freshie, Faci and signed-out callers, allowed for every seller role, bad ids rejected, one https link per seller whose token verifies. The test stub's `audit_log` gained `created_at`, as in the real schema, and `vitest.config.ts` resolves `@/`. A final review of all the 2026-10-19 blind box changes found nothing further. `npm test`: 115 pass; `tsc` and `next lint` are clean.
+
+### Blind box QR hardening, 2026-10-19
+Migration `0079_blindbox_qr_hardening.sql`. Fixes the five worst issues from the blind box review; the rest are in "Blind box review fixes" below.
+- **No buying without scanning.** `fn_bb_buy` / `fn_bb_seller_preview` / `fn_bb_seller_public` take (seller id, qr_version) from the QR, and only the Next page checks the signature. Versions were 1, 2, 3, so a Freshie could call `fn_bb_buy` from the browser for every seller without visiting them. `qr_version` is now a random 31-bit number (`bb_new_qr_version()`, from `gen_random_uuid()`), and Regenerate picks a new random one. Function signatures are unchanged.
+- **Scanner stays on this site.** `classifyScan` collapses leading slashes, so `https://<site>//evil.com/x` opens `/evil.com/x` on this site instead of `evil.com`. It also fixes codes minted from a site URL that ended in `/`.
+- **Regenerate shows at once.** `blind_box_sellers` joins the realtime publication (RLS still limits it to Admin and the seller), and the seller card and Admin page listen to it. Before, the old QR stayed on the GM's phone until a reload.
+- **Sold boxes keep their assignment.** A `before delete` trigger refuses to delete an assignment with sold boxes (`BB_HAS_SALES`), including through deleting its station or seller account. Before, the cascade turned sold boxes back into unassigned stock that could be handed out twice. Removing an unsold assignment and the blind box reset work as before. Admin → Stations and HOGM's station delete show a readable message.
+- **Seller card follows the GM's current station.** `BlindBoxCard` no longer filters by the station from page load for non-Admins (RLS already uses the current one). It reloads when a phase changes (that is when the day's station switches), when the seller row changes, and when the phone comes back to the page.
+- **Tests:** `tests/blindbox/db.test.ts` loads `0079` and checks random versions (guessed versions refused), the delete guard (direct and through deleting the seller) and the realtime publication. `tests/scan-route.test.ts` covers the double-slash cases. `npm test`: 105 pass; `tsc` and `next lint` are clean.
+- Not checked in the browser or on Supabase: `0079` has not been run, and the card's live refresh needs it.
+
+### Blind box and NFC links always start with https://, 2026-10-19
+A scanned blind box QR showed as plain text, because the live `NEXT_PUBLIC_SITE_URL` is set without a scheme (`xmum-orientation.vercel.app`) and the QR held a bare host. New `src/lib/site-url.ts` (`siteUrl()` / `normalizeSiteUrl()`) adds `https://` (or `http://` for a local host) and drops a trailing `/`; blind box links, NFC sticker links and the scanner's own-site check use it. The in-app scanner also opens scheme-less links to this site, so QRs already shown keep working there. `docs/SETUP.md` gives the expected format. No regeneration needed: the token is unchanged, only the address in front of it.
+
+### Big screen header: Vortexa logo and ticket countdown, 2026-10-19
+`/bigscreen`: the event-name text is replaced by the Vortexa logo, and the clock by Home's ticket countdown (Freshie Home's `Countdown` in the Welcome colours, `.fh .fh-vx`), sized for a projector (`bigscreen.css`). While a game phase runs it counts that phase ("<PHASE> ENDS IN", red for Endgame) through a new optional `override` prop on `Countdown`; otherwise it shows the event countdown. Checked in the browser at 1600×900 and 375 wide through a temporary public route (removed). Not checked: the Endgame red, because no game was running.
 
 ### Migrations to run on Supabase for the 2026-10-13 and 2026-10-14 work
 Run in this order (each only once; `0054`-`0058` and `0065` must already be there). `main` has its own `0071_hogm_game_control.sql` and `0072_hogm_game_length.sql`; the numbers below are this branch's, renumbered to stay clear of them:

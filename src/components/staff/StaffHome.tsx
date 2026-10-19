@@ -131,7 +131,7 @@ function FloorStop({ groups, checkedIn }: { groups: FloorGroup[] | null; checked
   const leader = groups?.[0];
   const tiles = [
     {
-      href: "/committee?view=attendance",
+      href: "/committee?view=headcount",
       Icon: Users,
       value: checkedIn == null ? "—" : checkedIn.toLocaleString("en"),
       label: "people checked in",

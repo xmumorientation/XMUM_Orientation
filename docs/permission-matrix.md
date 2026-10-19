@@ -63,7 +63,8 @@ This reflects only the migration files in the repo. Any manual changes made to t
 | GPS auto-report | — | ✓ | — | — | — | — | — | — | DB |
 | **Committee / Operations** | | | | | | | | | |
 | Committee Operations page (/committee) | — | — | — | — | ✓ | ✓ | ✓ | † | UI |
-| Group Balance overview | — | — | — | — | View All | View All | View All | View All | DB |
+| Ops tabs Headcount / Location / Freshies (HOF and Committee; HOGM's Ops is Game control) | — | — | — | — | View All | View All | — | View All | DB |
+| Read the groups' 4-digit login passwords (`group_login_codes`, Ops → Freshies; migration 0081) | — | — | — | — | ✓ | ✓ | — | ✓ | DB |
 | Freshie group assignment (Committee → Register tab) | — | — | — | — | ✓ | — | — | ✓ | DB |
 | Big Screen | — | — | — | — | ✓ | ✓ | ✓ | ✓ | UI + DB |
 | Live Ops stats | — | — | — | — | — | † | † | ✓ | DB |

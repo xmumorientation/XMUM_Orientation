@@ -85,7 +85,7 @@ export function GameControl() {
             <>
               <GameSection />
               <div id="blindbox" className="gc-bb">
-                <BlindBoxCard />
+                <BlindBoxCard showEmpty />
               </div>
             </>
           )}
