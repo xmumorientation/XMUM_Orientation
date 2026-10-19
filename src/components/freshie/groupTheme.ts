@@ -98,6 +98,20 @@ export function themeFromColor(color: string | null | undefined): GroupTheme {
   };
 }
 
+/**
+ * HOF, HOGM and Committee: not a group, so not a group colour. Their pages use
+ * the public Welcome page's colours (components/home/vortexa.css): cyan for
+ * "you are here", a navy light with a pink partner, as on the login screen.
+ * Yellow stays the primary action (set in staff-home.css, not here).
+ */
+export const VORTEXA_THEME: GroupTheme = {
+  ...themeFromColor("#0DFCFD"),
+  glow: "#0b5aa0",
+  glowStrength: 0.6,
+  glowSpread: 1,
+  partner: "#FE06AB",
+};
+
 /** Number of Freshie groups shown on the Home scoreboard placeholder. */
 export const GROUP_COUNT = 10;
 

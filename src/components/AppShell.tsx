@@ -7,10 +7,11 @@ import { useEffect, useState } from "react";
 
 import { nexusBody, vxDisplay } from "@/components/home/fonts";
 import { FreshieTabBar } from "@/components/freshie/FreshieTabBar";
-import { themeFromColor } from "@/components/freshie/groupTheme";
+import { themeFromColor, VORTEXA_THEME } from "@/components/freshie/groupTheme";
 import { ShellMenuProvider } from "@/components/ShellMenu";
 import { NavIcon } from "@/components/NavIcon";
 import { NewItemToast } from "@/components/NewItemToast";
+import { OpsHeader } from "@/components/staff/OpsHeader";
 import { PhaseTimer } from "@/components/PhaseTimer";
 import { FaciLocationBanner } from "@/components/FaciLocationTracker";
 import { useConfig } from "@/components/useConfig";
@@ -20,7 +21,7 @@ import { Dialog, DialogClose, DialogContent } from "@/components/ui/Dialog";
 import { Monogram } from "@/components/ui/Monogram";
 import { TopNav } from "@/components/TopNav";
 import { supabaseBrowser } from "@/lib/supabase/client";
-import { ROLE_LABELS, type UserRole } from "@/lib/types";
+import { OPS_ROLES, ROLE_LABELS, type UserRole } from "@/lib/types";
 import { cn, hexToRgbChannels } from "@/lib/utils";
 
 import "@/components/staff/staff-dashboard.css";
@@ -117,13 +118,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const isFreshie = profile.role === "freshie";
   const isFaci = profile.role === "faci";
   const isAdmin = profile.role === "admin";
+  // HOF, HOGM, Committee: Freshie-style home and tab bar in the Welcome page colours.
+  const isOps = OPS_ROLES.includes(profile.role);
   const isStaffDashboard = !isFreshie && pathname === "/dashboard";
   // Every Committee, Faci, GM, HOF, HOGM, Guardian GM and Admin page uses the
   // dark staff design. The map and Items pages keep their own design.
+  // The ops crew's map is the Ops page's map, so it gets the same dark design.
   const keepsOwnDesign =
-    pathname === "/map" || pathname.startsWith("/map/") || pathname.startsWith("/inventory");
+    (!isOps && (pathname === "/map" || pathname.startsWith("/map/"))) || pathname.startsWith("/inventory");
   const isStaffArea = !isFreshie && !keepsOwnDesign;
   const isStaffSubpage = isStaffArea && !isStaffDashboard;
+  // Roles whose subpages use Home's header (OpsHeader) instead of the staff phone header.
+  const hasOpsHeader = profile.role === "hogm" || profile.role === "hof";
   const items = NAV.filter((n) => n.roles.includes(profile.role)).map((item) =>
     isFaci && item.href === "/map" ? { ...item, href: "/checkin" } : item
   );
@@ -132,10 +138,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   // Home, Schedule and Items hide the light mobile header for both roles.
   const { group } = useGroup();
   const groupTheme = isFreshie || isFaci ? themeFromColor(group?.color) : null;
+  // Only the --fh-* night colours; --brand-1 stays the brand so light pages (map) keep theirs.
+  const fhTheme = groupTheme ?? (isOps ? VORTEXA_THEME : null);
   const isNight = isStaffDashboard || (
     (isFreshie || isFaci) &&
     (pathname === "/dashboard" || pathname === "/schedule" || pathname === "/inventory"));
-  const showTabBar = (isFreshie || isFaci) && !(isFreshie && pathname === "/scan");
+  const showTabBar = (isFreshie || isFaci || isOps) && !(isFreshie && pathname === "/scan");
 
   // Close the drawer on route change so it never lingers over a new page.
   // Radix Dialog owns focus-trap/Escape/backdrop-dismiss/focus-return; route
@@ -190,8 +198,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         // With the tab bar the page itself never scrolls (see .app-scroll below).
         showTabBar ? "h-dvh overflow-hidden" : "min-h-dvh",
         "w-full",
-        isNight && "bg-[#030b1c]",
-        isStaffArea && `staff-dashboard-shell ${nexusBody.variable} ${vxDisplay.variable}`
+        isNight && (isOps ? "bg-[#07060b]" : "bg-[#030b1c]"),
+        isStaffArea && `staff-dashboard-shell ${nexusBody.variable} ${vxDisplay.variable}`,
+        isStaffArea && isOps && "staff-vx"
       )}
       style={
         {
@@ -199,13 +208,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           "--brand-2": brand.brandSecondary,
           "--brand-1-rgb": hexToRgbChannels(groupTheme?.accent ?? brand.brandPrimary),
           "--brand-2-rgb": hexToRgbChannels(brand.brandSecondary),
-          ...(groupTheme
+          ...(fhTheme
             ? {
-                "--fh-accent": groupTheme.accent,
-                "--fh-glow": groupTheme.glow,
-                "--fh-blue": groupTheme.accent,
-                "--fh-blue-light": groupTheme.accentLight,
-                "--fh-on-blue": groupTheme.onAccent,
+                "--fh-accent": fhTheme.accent,
+                "--fh-glow": fhTheme.glow,
+                "--fh-blue": fhTheme.accent,
+                "--fh-blue-light": fhTheme.accentLight,
+                "--fh-on-blue": fhTheme.onAccent,
               }
             : {}),
         } as React.CSSProperties
@@ -225,9 +234,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         name={profile.full_name ?? ""}
         groupName={isFreshie || isFaci ? (group?.name ?? null) : null}
         canEditProfile={isFaci}
+        primaryHref={isOps ? "/committee" : undefined}
         onSignOut={signOut}
       />
-      {!isNight && (
+      {/* HOGM and HOF subpages: Home's logo, role chip and account menu (OpsHeader). */}
+      {isStaffSubpage && hasOpsHeader && <OpsHeader />}
+      {!isNight && !(isStaffSubpage && hasOpsHeader) && (
       <header className={cn("sticky top-0 z-40 border-b border-paper-200 bg-paper-50/95 pt-[env(safe-area-inset-top)] shadow-[0_1px_0_rgba(28,26,23,0.03)] backdrop-blur lg:hidden", isStaffSubpage && "sp-header")}>
         {isStaffSubpage ? (
           <div className="sp-header-row">
@@ -287,7 +299,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             title="Navigation menu"
             titleVisuallyHidden
             showClose={false}
-            className={cn("lg:hidden", isStaffArea && `sd-drawer sd-top-menu ${nexusBody.variable}`)}
+            className={cn("lg:hidden", isStaffArea && `sd-drawer sd-top-menu ${nexusBody.variable}`, isStaffArea && isOps && "staff-vx")}
             overlayClassName={isStaffArea ? "sd-menu-overlay" : undefined}
           >
             <div className={cn("flex flex-col", !isStaffArea && "h-full")}>

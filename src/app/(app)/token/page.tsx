@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 
+import { GroupScores } from "@/components/staff/game/GroupScores";
 import TokenControl from "@/components/token/TokenControl";
 import { supabaseServer } from "@/lib/supabase/server";
 
@@ -16,6 +17,8 @@ export default async function TokenPage() {
     .eq("id", userId)
     .maybeSingle();
   if (profile?.role === "faci") redirect("/dashboard");
+  // HOGM and HOF: tokens and puzzle keys per group (the Scores tab).
+  if (profile?.role === "hogm" || profile?.role === "hof") return <GroupScores />;
 
   return <TokenControl scoreboardOnly />;
 }

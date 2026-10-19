@@ -5,10 +5,11 @@ import Image from "next/image";
 import Link from "next/link";
 import type { CSSProperties } from "react";
 
-import { ChecklistStop, PhaseCard } from "@/components/freshie/FreshieHome";
+import { ChecklistStop, Countdown, PhaseCard } from "@/components/freshie/FreshieHome";
 import { themeFromColor } from "@/components/freshie/groupTheme";
 import { nexusBody, vxDisplay, vxSlab } from "@/components/home/fonts";
 import { NavIcon } from "@/components/NavIcon";
+import { usePhaseTimer } from "@/components/PhaseTimerProvider";
 import { useProfile } from "@/components/ProfileProvider";
 import { useOpenShellMenu } from "@/components/ShellMenu";
 import { useGroup } from "@/components/useGroup";
@@ -21,14 +22,14 @@ type Workspace = { title: string; description: string; primary: Tool; tools: Too
 const map: Tool = { href: "/map", code: "MP", title: "Campus map", description: "Find stations and group locations" };
 const schedule: Tool = { href: "/schedule", code: "PL", title: "Schedule", description: "See the two-day programme" };
 const tokens: Tool = { href: "/token", code: "TK", title: "Scoreboard", description: "Live group tokens and puzzle pieces" };
-const operations: Tool = { href: "/committee", code: "OP", title: "Open operations", description: "View the live map, roster and event tools" };
+const operations: Tool = { href: "/committee", code: "OP", title: "Open operations", description: "View the live map, headcount and balances" };
 const station: Tool = { href: "/gm", code: "GM", title: "Open station panel", description: "Manage results, rewards and station status" };
 const committee: Workspace = { title: "Event operations", description: "Keep the event moving. Your crew tools are here.", primary: operations, tools: [map, tokens, schedule, { href: "/bigscreen", code: "BS", title: "Big screen", description: "Open the event display" }] };
 const workspaces: Partial<Record<UserRole, Workspace>> = {
   faci: { title: "Your group", description: "Bring your team together, check attendance and head out.", primary: { href: "/code", code: "CD", title: "Show group code", description: "Help your freshies open their group page" }, tools: [{ href: "/checkin", code: "CK", title: "Group location", description: "Check your group in on the map" }, { href: "/inventory", code: "IT", title: "Group items", description: "View puzzle pieces and collected items" }, schedule] },
   gm: { title: "Your station", description: "Run the games and keep rewards up to date.", primary: station, tools: [tokens, map, schedule] },
   guardian_gm: { title: "Guardian station", description: "Check completed puzzles and manage activation.", primary: { href: "/guardian", code: "VG", title: "Guardian verification", description: "Verify puzzle sets and manage activation" }, tools: [station, tokens, map, schedule] },
-  committee, hof: committee, hogm: committee,
+  // HOF, HOGM and Committee use StaffHome; `committee` stays as the fallback.
   admin: { title: "Control room", description: "Manage the event, people and game settings.", primary: { href: "/admin", code: "AD", title: "Open admin console", description: "Access live controls and event settings" }, tools: [{ href: "/admin/freshies", code: "RC", title: "Freshie control", description: "Manage groups and registration" }, map, schedule, { href: "/bigscreen", code: "BS", title: "Big screen", description: "Open the event display" }] },
 };
 
@@ -38,6 +39,8 @@ export function StaffDashboard() {
   const openMenu = useOpenShellMenu();
   const workspace = workspaces[profile.role] ?? committee;
   const isFaci = profile.role === "faci";
+  const { phases } = usePhaseTimer();
+  const live = phases.some((p) => p.state === "active" || p.state === "paused");
   const theme = themeFromColor(isFaci ? group?.color : "#0DFCFD");
   const vars = {
     "--fh-accent": theme.accent, "--fh-glow": theme.glow,
@@ -57,7 +60,8 @@ export function StaffDashboard() {
         <p>{workspace.description}</p>
         {isFaci && <p className="sd-group">{loading ? "Loading your group…" : group ? `${group.name}${group.display_name ? `: ${group.display_name}` : ""}` : "No group assigned yet"}</p>}
       </section>
-      <PhaseCard />
+      {/* Same rule as Freshie Home: the running game, else the event countdown. */}
+      {live ? <PhaseCard /> : <Countdown />}
       <Link className="sd-primary" href={workspace.primary.href}>
         <NavIcon code={workspace.primary.code} size={25} aria-hidden />
         <span><strong>{workspace.primary.title}</strong><small>{workspace.primary.description}</small></span>

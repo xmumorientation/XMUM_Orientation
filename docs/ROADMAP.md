@@ -5,7 +5,7 @@ Read it before starting a new round of development. When a decision changes, upd
 
 > **From Ben:** when you finish your work, write down what you completed in the "Done" section at the end of this file, so the next teammate can see it. Do this for partly finished items too: say which parts are done and which are left.
 
-Last updated: 2026-10-13
+Last updated: 2026-10-17
 
 ## Status key
 
@@ -99,6 +99,10 @@ Migrations 0012 and 0013 caused most of these gaps. They replaced the earlier ro
 - Freshie records: `fn_admin_update_freshie`, `fn_admin_delete_freshie`.
 - Tokens and game: `fn_day1_record_result`, `fn_day2_deduct_entry`, `fn_day2_award_piece`, `fn_manual_token_adjust`, `fn_update_game_config_rule`.
 
+**D2. HOF can call game functions it has no use for.** HOF runs the Facilitators, not the game, and has no UI for these, but the backend still allows them (decided 2026-10-14: remove HOF from them):
+- `fn_adjust_tokens`, `fn_grant_item`, `fn_gm_day1_reward`, `fn_day2_challenge`, `fn_undo_last_transaction` (tokens and items),
+- `fn_redeem_puzzle_set` (Guardian's job), `fn_clear_station`, `fn_set_station_status` (stations are HOGM's).
+
 **E. `/api/token` has no role check.**
 - Source: [api/token/route.ts:18](../src/app/api/token/route.ts#L18).
 
@@ -151,18 +155,24 @@ The design branches are merged. These remote branches are still not in `main` (c
 **Figma:** [XMUM campus map](https://www.figma.com/design/3dcEv45KenmKcoTcbaZmQ0/Untitled?node-id=24-2) (frame `XMUM Block Cube_XMUM Map 1`).
 
 **Current state:**
-- Map page: [map/page.tsx](../src/app/(app)/map/page.tsx). Map component: [CampusMap.tsx](../src/components/CampusMap.tsx). The illustration is `public/campus-map.png`.
-- Labels on the art: A1–A5 along the red-roof row (A1 at the monument end, A5 at the lake end), Track & Field on the pitch, B1 on the white-and-red block.
-- Station dots still show available / in progress / closed, and still update from the `stations` table without a refresh. Group pins still follow the permission rules below.
+- Pages: `/map` ([map/page.tsx](../src/app/(app)/map/page.tsx)), `/checkin` and `/committee`, all through [CampusMap.tsx](../src/components/CampusMap.tsx) and `campus-map/CampusMapView.tsx`.
+- The map is **3D** (`src/components/map3d/`, `CampusScene`): A1–A5 and B1 at true scale from OpenStreetMap, the track and courts, the lake and its park, the statue, the Vortexa Funfair on the dorm land, and the LakeFront Café as the lake stage.
+- The **2D art** (`CampusMap2DView`, `public/campus-map.png`) is only the fallback: devices without WebGL2, devices too slow for 3D, or `?map=2d`.
+- Where things stand and how to work on the 3D map: [map3d-session-handoff.md](map3d-session-handoff.md).
+- Labels: A1–A5, B1, Track & Field, the Tan Kah Kee Statue, the LakeFront Café and the Vortexa Funfair (game zone). The courts are labelled when the camera is close, and so are the rides (with their dorm name, such as "LY3 · Vortexa Eye").
+- Station dots and badges show available / in progress / closed, and update from the `stations` table without a refresh. Group pins follow the permission rules below.
 - `David-MapPage` colours dots by occupancy (`fn_public_station_occupancy`). That function is not on this branch, so it was not copied. The branch still uses the old rectangle map, not this Figma art.
 - Who can see what on the map: see the "Campus Map" and "Group locations" rows in [permission-matrix.md](permission-matrix.md).
 
 **Still open:**
-- Seeded stations are removed. New ones are created in Admin → Stations and sit on A1–A5, B1, or Track & Field.
-- GPS pins are drawn on the art (see Done, 2026-10-07). The calibration needs a real walk-through to confirm.
-- The lake, monument, and brown field are in the picture and are not labeled.
+- Seeded stations are removed. New ones are created in Admin → Stations and sit on A1–A5, B1, Track & Field, Tennis Court or Volleyball Court.
+- GPS pins: the 3D map places them straight from GPS (true scale); the 2D fallback warps them onto the art (see Done, 2026-10-07 and 2026-10-13). Both still need a real walk-through: stand at each building and court with a phone and check the pin. Admin's Accuracy check (Map page) measures the error.
+- Before the event: turn **NFC demo mode** off in Live control, and Reset any bulbs lit while testing.
+- Before the event: brief Facis that a phone only shares location while the app is open on screen, and that one phone per group should use Keep tracking with a power bank.
+- Admin → Stations "Other…" block: the database only accepts the listed buildings (and TBD), so saving a station with another block name fails.
+- The lake stage (LakeFront Café): check it on a real phone, and check against satellite imagery that it faces west. See [map3d-lakefront-design.md](map3d-lakefront-design.md).
 
-## 6. HOF sees every group's name and slogan (Ready)
+## 6. HOF sees every group's name and slogan (Done on branch `hof-page-setup`: Ops → Faci control shows them, read only)
 
 **Owner:** Jiamin
 
@@ -221,13 +231,241 @@ The design branches are merged. These remote branches are still not in `main` (c
 - Frontend done: `faciProfiles.ts` maps the new fields (`FaciRow`, avatar URL helpers); one `useGroupFacis()` in `FreshieHome.tsx` calls `fn_group_facis()` for both Faci and Freshie and reloads on `profiles` / `faci_profiles` changes; `ProfileEditor.tsx` saves Instagram, programme, languages, intro and photo (resized to a 512 px square webp on the phone, uploaded to `faci-avatars/<user id>/<timestamp>.webp` on Save, old file removed); `next.config.ts` allows the Supabase storage host for `next/image`; the sample Facis and "Sample" label are removed.
 - Not done: nothing has been run against a Supabase project. Run `0069` first, then deploy, then test the checks listed in item 7. Tell Jiamin `0069` is taken. `tsc` and `next lint` pass.
 
+### Map: East funfair rides on their dorms' real middles, and the midway, 2026-10-17 (Ben, branch `funfair-east-layout`)
+No migration. Built on `map3d-footpaths` (the lawn round the funfair's land), so merge that first.
+- **Done (E1):** each East ride stands on the real middle of its dorm, the centroid of its OSM outline (`dormCentre` in `east/layout.ts`). They were 0.5–29 m off: the arcade (D1) 24 m, the pirate ship (D3) 16 m and the coaster's loop (D5) 29 m. The coaster has a new route: the station on D4's middle, the lift hill over the walk from Central, a turn round D5's north arm, the loop over D5's middle, then back over the walk into the station. Its old north turn is free land now.
+- The arcade's back wall keeps 6–7 m off B1's grey service road (Ben asked that D1 not touch the road). The zone may build south to x = -124 for the arcade and the pirate ship. West, Central and the campus are unchanged.
+- **Done (E2):** the land is used better (Ben: trees filled every empty spot). Trees now grow only in a belt along the road sides, plus a few shade trees (`greenery` and `inBelt` in `east/decor.ts`). The new pieces (`east/midway.ts`, placed in `decor.ts`, positions in `layout.ts`):
+  - Midway Square, on the coaster's old north turn: a striped mast with bulb strings, a high striker, and the VORTEX Diner with its terrace;
+  - the games alley from the North Walk to the square, under a GAMES arch: 12 game booths (ring toss, balloon darts, duck pond, hoop shot) with bulb strings across it;
+  - the west lane from the walk from Central to the square, with snack carts;
+  - the bandstand lawn: a bandstand, picnic tables, benches and flower beds;
+  - the circus ring: sawdust inside a red kerb, bleachers, and the wagons round it;
+  - the fortune teller's tent and the hall of mirrors on a new walk from the pirate ship to the arcade;
+  - a BIG TOP arch and a ticket booth where the walk from Central comes in;
+  - restrooms, first aid, snack carts and flower beds along the new walks.
+- Everything lights up with the zone and is baked into the zone's existing meshes, so the draw calls are unchanged. Phones get fewer tables, carts, flowers and bulbs.
+
+### Map: lawn and walkways on the 3D map, 2026-10-17 (Ben, branch `map3d-footpaths`)
+No migration.
+- Inside the outer road, the 3D map's ground is now lawn (it was orange), so only the walkways are paved. They use the 2D art's colours: an orange walk with a darker outline, and walks that meet join into one (`ground.tsx`). The funfair's land, the outer road and the plantation are unchanged.
+- The walkways are OpenStreetMap's (`FOOTPATHS_M` in `campusData.ts`). OSM was fetched again on 2026-10-17. Inside the campus it matches the 2026-10-15 extract in `scripts/map3d/osm_full.json`, so that file is unchanged.
+- Walks that OSM lacks, traced by hand from aerial imagery (`TRACED_PATHS_M` in `geo.ts`): the walk along the lake side of A3, A4 and A5 (it carries on OSM's walk along A1 and A2), the walk down A5's east side, and the sidewalk south of the lawn east of A5.
+- OSM draws the walk along that lawn's east edge about 11 m into the trees. It is traced again, and `emit_phase1.py` leaves the OSM way out.
+- Not drawn: OSM's sidewalks outside the outer road, car roads, and walks on the funfair's land.
+- To check on site: the imagery suggests a walk between A3 and A4, under trees. It is not drawn.
+
+### Map: LakeFront Café as the lake stage, 2026-10-16 to 10-17 (Ben, branch `funfair-central`; partly done)
+No migration. Design and batches: [map3d-lakefront-design.md](map3d-lakefront-design.md).
+- **Done (L1):** the 3D map's red dome is now the real venue from Ben's photos: the red ribbed shell over a round stage, the moat, the walkway, the footbridge, a grass amphitheatre and willows (`src/components/map3d/lakefront/`). The XMUM hedge letters are removed (Ben). Positions, the label, GPS, markers and the 2D map are unchanged.
+- **Done (L2):** evening lighting at sunset and night: LED ribs, a washed membrane, small lights, light pools, and sweeping concert beams in haze (Ben asked for the beams every evening, moving). Full screen on phones now draws every frame at night, so the beams move there too.
+- **Done (L3):** the concert: a 3 s opening (house lights down, a follow spot, the ribs one by one, a bang) and a 30 s show on the wall clock, the same on every phone: the shell as an LED screen, faster beams with sky beams, arch beams and lasers, about 900 crowd lightsticks, moat fountains, flame jets, confetti, and fireworks over the lake every 2 minutes. At most 2 flashes a second; reduced motion turns the motion off. Viewable on `/map3d?concert=1` (or `=flip` for the opening).
+- **Done (L4, 2026-10-17):** the concert plays on every 3D map while all three funfair zones are on (Ben's option A), starting 2 s after the last zone powers up; the "LakeFront Café" label gets a "● LIVE" tag. Admin's and HOGM's Funfair cards have a "Finale · Lake stage concert" row (LIVE or OFF) with a Preview link (`/map?funfair_preview=lakefront`, on that screen only). To start it early, set all three zones' overrides to On. No backend change.
+- **Done (2026-10-17):** Ben accepted the venue; the old `Dome` in `buildings.tsx` is deleted. Opening the map with all three zones on replays the zones' power-ups and the concert's opening (Ben keeps this).
+- **Left:** check on a real phone.
+
+### Map: changes show within 15 s, 2026-10-17 (Ben, branch `funfair-central`)
+No migration. Ben asked that a lit zone and a group's location show on the map within 15 s.
+- **Funfair:** the 3D map asks `fn_funfair_state` every 10 s (was 30 s; `FUNFAIR_POLL_MS` in `useCampusMapData.ts`), so Admin's overrides and keys reach every map within about 10 s. A lit bulb still shows at once (Realtime).
+- **Group locations:** Faci phones report every 12 s, moving or standing still (was 20 s; `REPORT_INTERVAL_MS` and `HEARTBEAT_MS` in `FaciLocationTracker.tsx`). That stays above the server's 10 s floor and leaves time for the GPS fix and the map's reload. The map gets each report through Realtime about 2 s later. If it misses one, it reloads the pins every 10 s (was 30 s).
+- **Coming back to the app:** the map reloads the zones, the bulbs and the pins at once, since a phone in another app pauses its timers and can miss Realtime events.
+- The Funfair cards say a change shows within about 10 s.
+- Not changed: Admin's accuracy check still reports every 20 s.
+
+### Map: the Vortexa Funfair on the 3D map, 2026-10-16 (Ben, branch `funfair-central`)
+Migration `0088_funfair_zones.sql` (applied on the project; Ben, 2026-10-17). Without it the map works, and each zone powers up with its default key: West with A3, Central with Track & Field, East with B1. Admin's and HOGM's Funfair cards then only say that the migration is missing. With it applied, the cards change the setup.
+- **Funfair on the land:** three zones (West · Neon Pier, Central · Starlight Midway, East · Big Top) and the VORTEXA gate stand on the dorm land of the 3D map, now lawn. Ride tags carry the dorm names ("LY3 · Vortexa Eye") and show close up.
+- **Power:** a zone powers up when its keys (lightbulbs) are lit, with a 2 s power-up animation. The gate lights with the share of zones on.
+- **Funfair card:** on Admin → Live control and on HOGM's Game control (Funfair tab). It sets each zone's keys, the any/all rule and a manual on/off override (`fn_set_funfair_zone`, `is_game_lead()`). Preview opens `/map?funfair_preview=<zone>` and plays that zone's power-up on that screen only.
+- **Who sees what:** everyone gets only on or off (`fn_funfair_state`). Only game leads read the setup, since a zone's keys would tell players where the unlit bulbs are.
+- **How fast it shows:** maps ask again when a bulb is lit (live), every 10 s, and when the page comes back into view, so Admin's changes reach other maps within about 10 s (was 30 s; Ben asked for under 15 s, 2026-10-17).
+- **Details:** [map3d-session-handoff.md](map3d-session-handoff.md), "Vortexa Funfair".
+
+### Map: 3D campus map on every map page, 2026-10-16 (Ben, branch `map3d-batch4`)
+- `/map`, `/checkin` and `/committee` show the 3D campus (`src/components/map3d/`). The 2D art is the fallback: devices without WebGL, a 3D error, or `?map=2d`. Details: [map3d-implementation-plan.md](map3d-implementation-plan.md), "Progress".
+- The 3D map has no Lightbulbs layer: the lightbulb list is under the map (Admin keeps Reset; Move bulb is on the 2D map only). The Items page's "See it on the map" link scrolls to that list.
+- Full screen has an Auto / Sunset / Day / Night switch.
+- Admin's Accuracy check on the 3D map measures the GPS error in metres and saves nothing. Saved corrections (anchors) only bend the 2D map.
+
+### Map: Admin accuracy check, and location every 20 s, 2026-10-14 (Zichien)
+Needs migration `0087_map_accuracy_check.sql` (after `0082`–`0085`). Until it runs, maps keep working with the built-in anchors; only the check fails.
+- **Faci phones report every 20 s**, moving or standing still (was 30 s moving, about 60 s still). The server still ignores reports under 10 s apart. (Now every 12 s: see 2026-10-17 below.)
+- **Accuracy check** (Admin, Map page → "Accuracy check"): the Admin's phone tracks its GPS and reports it every 20 s to `admin_check_locations` (`fn_report_admin_gps`; only Admins can read it, through `fn_admin_check_locations`; kept apart from group pins; rows older than 1 hour are removed). A blue "You" pin with an accuracy halo shows where the map puts them; other Admins checking show as grey dots.
+- **Tap to correct:** tapping the map saves an anchor (`fn_admin_add_map_anchor` into `map_anchors`) from the average of the last 40 s of fixes at ±20 m or better (at least 2; otherwise "GPS too rough"). An anchor within 15 m replaces the old one; a tap more than 25% of the map from where the pin was asks to confirm. Saved anchors show as blue diamonds and can be deleted from the panel (`fn_admin_delete_map_anchor`); both are audit-logged.
+- Every map loads `map_anchors` and adds them to the built-in anchors (`setExtraAnchors` in [mapGeo.ts](../src/lib/mapGeo.ts)); one within 15 m of a built-in anchor overrides it. Bad data falls back to the built-in anchors. Other phones pick up new anchors the next time the map loads.
+
+### David, 2026-10-14 (Vortexa projector celebration)
+- Replaced the activation circuit animation with five converging light trails, a star burst and an illuminated amusement park, using CSS/SVG and reduced-motion support.
+- Added a development-only, backend-free `/activate/preview` for replaying B1/A3/TF. Activation routes skip the global intro so it cannot cover the celebration. Mobile browser preview checked; fixed particle-coordinate hydration mismatch.
+- This release contains the celebration only; the separate NFC backend integration remains on `codex/nfc-integration`.
+
+### David, 2026-10-14 (continuous projector ignition)
+- Matched the star charge/ignition transforms and synchronized all five trails to the same finish. Ignition now follows the actual CSS charge completion rather than a separate timer, avoiding a hydration-dependent pause. Reduced-motion mode still shows the result immediately.
+
+### David, 2026-10-14 (Admin NFC card deletion)
+- Implemented per-card Delete with an in-page confirmation dialog on Admin → NFC. Used cards and visible projector links disable Delete. The database also rejects consumed Guardian links and live-schema `USED` status.
+- Migration `0086_nfc_token_delete.sql` adds an Admin-only transactional RPC. It locks the card against activation, preserves NFC logs, and audits the deleted card's ID, label, location and linked log IDs without token hashes or URLs. Unused puzzle requirements follow their existing cascade rule.
+- Embedded Postgres tests cover the base and enriched schema, roles, protected cards, retained logs, audit rollback and concurrent activation. This is implemented locally, not deployed. Apply migration `0086` before deploying the frontend. No existing live cards were deleted.
+
+### Map migrations to run (Zichien's map work, 2026-10-13/14)
+Renumbered after main's `0081` (and clear of `0069`, kept for Faci profiles). Run in order: `0082_multi_faci_group_position.sql`, `0083_map_lightbulbs.sql`, `0084_nfc_demo_scan.sql`, `0085_lightbulb_spots.sql`, then `0087_map_accuracy_check.sql` (`0086` is David's NFC card deletion). They were already run on the project under their old numbers (0069–0072); running them again is safe (all `create or replace` / guarded), and `0084` must be re-run anyway so Reset also clears `test_run_id`. Optional test data: `supabase/seeds/day2_map_stations.sql`. Before the event: turn off NFC demo mode.
+
+### Map: GPS precision from Google Maps anchors, 2026-10-14 (Zichien)
+- A pin between Furong Lake and the courts landed near the track (about 7% of the map off): the warp had no anchors around the lakes.
+- Added landmark anchors read off Google Maps satellite view, in `LANDMARKS` in [mapGeo.ts](../src/lib/mapGeo.ts): LakeFront Café (the red dome), the causeway between the two lakes (the red bridge), and the Statue of Tan Kah Kee (the monument). The art is the campus turned about 135° (north points down-right).
+- The pin position now uses a thin-plate spline through all anchors instead of a straight fit plus inverse-distance pull: exact at every anchor, smooth in between, no snapping toward the nearest anchor. The same test spot now lands about 1–2% from the right place.
+- A lake-centre anchor was tried and dropped: it folded the warp (the art draws the lakes bigger than they are). Use sharp points only.
+- Lightbulbs are drawn as a detailed bulb (pear glass, filament, screw base; rays and glow when lit) centred on their building; `0085_lightbulb_spots.sql` moves bulbs still on a default spot to the building centre.
+- The Admin walk-and-tap calibration tool is now built (Accuracy check, see above).
+
+### Map: Day 2 stations, building badges, demo NFC scan, 2026-10-14 (Zichien)
+Needs migration `0084_nfc_demo_scan.sql`.
+- **Day 2 stations only** on every campus map (`/map`, `/checkin`, `/committee`), including the "Available stations" list. Day 1 stations are still managed on Admin → Stations. Stations added from a building on the map are created as Day 2.
+- **Building badges:** a building with two or more Day 2 stations shows one disc with the number of open stations (a paler disc behind it means "several stations"), green if any is open, red ring if any is busy, grey cross if all closed. Single dots and badges sit on the building's centre. One station keeps its own dot. Tapping a badge lists that building's stations under the map (Admin: opens the building panel). In full screen, tapping a badge zooms in, and past 2.5× zoom the badges split into station dots.
+- **Demo NFC scan:** Live control has a new switch, "NFC demo mode". While it is on, the Key screen on Items shows "Demo scan", which lights that bulb for the user's group for real (`fn_demo_activate_projector`, skips the endgame, puzzle and token checks; still one group per bulb and one bulb per group; audit-logged) and links to `/map?layer=bulbs`.
+- **Reset a bulb:** Admin has Reset on each lit bulb in the map's Lightbulbs list (`fn_admin_reset_projector`, audit-logged). It does not free a used NFC token.
+
+### Map: Stations / Lightbulbs switch, 2026-10-13 (Zichien)
+Needs migration `0083_map_lightbulbs.sql`.
+- A Stations / Lightbulbs switch above the map (and in full screen) on every page that shows the campus map (`/map`, `/checkin`, `/committee`). The choice is remembered on the device. Group pins show in both modes.
+- **Stations** is the map as before, without the projector marks drawn on top.
+- **Lightbulbs** shows the three lightbulbs (projectors Star/B1, Wheel/A3, Orbit/TF): lit ones glow with the group that lit them and the time; unlit ones are grey with a "?". Read through `fn_map_lightbulbs()`: lit bulbs go to everyone; unlit bulbs only to Committee tier, or to everyone once Admin turns on "Day 2 map layer" (the map unlock). The `projectors` table itself is still readable by any logged-in user (item 3).
+- The Lightbulbs tab shows "N lit", and pulses when a bulb is lit while you are in Stations mode, until you open Lightbulbs.
+- **Admin moves a bulb** to where its NFC card really is: Lightbulbs → Move, then tap the map (full screen for precision). Saved to `projectors.map_x / map_y`. `PROJECTOR_SPOTS` is removed; the spots come from the table.
+- Star/Wheel/Orbit code names now live in `PROJECTOR_CODE_NAMES` (`src/lib/types.ts`), shared with the Items page.
+
+### Map: three Facis per group, courts, and location problems, 2026-10-13 (Zichien)
+Needs migration `0082_multi_faci_group_position.sql`.
+- **One pin per group.** `fn_group_positions()` takes the best fix across all of the group's Faci phones (smallest accuracy plus 1 m per second of age), plus the group's current station check-in. [groupPosition.ts](../src/lib/groupPosition.ts) draws whichever is newer, except that a check-in from the last 10 min beats a GPS fix worse than 100 m. Groups at the same spot sit side by side. Replaces the separate GPS pin and "G4" check-in tag (`fn_latest_gps_locations` / `fn_latest_locations` are no longer used by the map).
+- **Pins never disappear.** Fresh ≤ 2 min, faded ≤ 10 min, then grey. `fn_report_gps` keeps each Faci's newest fix past the 1-hour cleanup. A "Not seen for 10+ min" list (all groups with no usable fix) opens each group's Facis with when their phone last shared, and Call / WhatsApp links for Committee tier (`fn_group_faci_status`; phone numbers are not returned to Facis).
+- **Rough fixes** (worse than 100 m) draw with a dashed circle the size of the accuracy; worse than 1 km are stored but not drawn.
+- **Faci tracker rewrite** ([FaciLocationTracker.tsx](../src/components/FaciLocationTracker.tsx)): throttles on the attempt, not the success (and the server ignores reports < 10 s apart), so a failing phone no longer reports every second; no double report on start; "imprecise" status; the banner comes back when permission is revoked; a GPS timeout really retries; offline errors explained; a fix is sent on return to the app and when the connection comes back.
+- **Location help per phone** ([LocationHelp.tsx](../src/components/LocationHelp.tsx), [browserEnv.ts](../src/lib/browserEnv.ts)): steps for iOS Safari / Chrome and Android Chrome / Samsung for blocked, rough and unavailable location; detects WhatsApp / Instagram / Facebook / WeChat / LINE / TikTok in-app browsers and non-https.
+- **Keep tracking** ([FaciTrackingPanel.tsx](../src/components/FaciTrackingPanel.tsx), on the Map page for Facis): holds the screen awake with the Wake Lock API while the app is open, re-taken when the app returns; falls back to Auto-Lock steps when the browser can't. The panel shows which of the group's Faci phones are sharing. A Faci who reopens the app after their group was off the map for 10+ min is told so.
+- **Courts:** Tennis Court and Volleyball Court are map buildings and GPS anchors (Tennis 2.831869, 101.706675; Volleyball 2.831859, 101.707253), with 45 m check-in zones. Station codes TC-n and VC-n. Admin → Stations no longer offers the "Courts" block, which the database rejected.
+- Realtime map reloads are batched (one every 2 s at most).
+- Not tested on real phones yet. Web pages cannot read GPS in the background, so pins still depend on someone having the app open.
+
+### Migrations to run on Supabase for the 2026-10-13 and 2026-10-14 work
+Run in this order (each only once; `0054`-`0058` and `0065` must already be there). `main` has its own `0071_hogm_game_control.sql` and `0072_hogm_game_length.sql`; the numbers below are this branch's, renumbered to stay clear of them:
+- `0070_blindbox_buy_flow.sql`: one public QR per seller, BUY then open from Items (see "Blind boxes: one QR per seller").
+- `0077_fix_admin_station_gms_types.sql`: Admin → Stations showed every station as "Unassigned" after assigning Game Masters, because `fn_admin_station_gms()` declared `day` as integer while the live `gm_station_assignments.day` is smallint (Postgres: "structure of query does not match function result type"). The function now casts the columns, and allows Admin and HOGM so it is safe to run before or after `0071_hogm_game_control.sql`.
+- `0078_station_status_manual.sql`: station status is manual only.
+- `0073` to `0076`: Manual Location Update, details, per group, Admin-managed locations.
+- `0080_hof_faci_control.sql`: HOF assigns Facilitators to groups on Ops → Faci control (`is_faci_lead()`: HOF or Admin). Run before deploying branch `hof-page-setup`.
+- `0079_station_gms_game_lead.sql` (run after `0077`): HOGM → Ops → Stations showed "You don't have permission to do that." on load. On the live database `fn_admin_station_gms()` was the only one of 0071's functions without `is_game_lead()`. 0079 switches it to `is_game_lead()` and revokes `anon`. Before 0079, a caller who was not logged in could read every assignment, because `is_admin()` and `my_role()` return NULL for anon and `if not (NULL)` does not raise. Other `if not public.is_admin()` checks have the same NULL hole for anon; see section 3.
+- `0081_nfc_test_mode.sql`: Admin can prepare a test-only Guardian redemption, generate test sticker URLs, run the real NFC activation path without Endgame phase gating, reset and re-arm state tagged to that test run, then finish it to invalidate its URLs and clear its test state. The same test sticker can be used again after reset. The NFC kill-switch, group ownership, single-projector limit, and projector availability checks still apply. Run before deploying the updated Admin NFC page.
+Branch `jiamin-blind-box-integration` skips `0059`-`0069` on purpose (they live on `main`). The test files `tests/*/stub-schema.sql` are for the local test database only and must never be run on Supabase.
+
+### Manual Location Update + "Headcount and location", 2026-10-14 (changesv4.md)
+Migrations `0073_faci_location_updates.sql`, `0074_faci_location_details.sql`, `0075_faci_location_per_group.sql`, `0076_faci_location_options.sql` (run in that order).
+- **The location belongs to the GROUP.** Any Facilitator in Group 1 can send Group 1's location; the group shares one latest update (like the headcount). Each entry records which Facilitator sent it. A Facilitator with no group cannot send one.
+- **Facilitator page:** a fourth Checklist row, "Manual Location Update" (the lead says "Four things"). Status (Heading to / Arrived / Other; Other shows a text box, up to 60 characters), Building (the options Admin manages) and an optional "Details" comment (up to 200 characters; an update can be sent with it empty). The row shows the group's last update, whoever sent it, including "(edited by Admin)". Text only: no GPS, not the map, not station check-in (row 03 "Update Location" is unchanged).
+- **Admin page "Headcount and location"** (menu and title; the URL is still `/admin/freshies/headcount`) is now TWO separate tables, each with Group 1 to 10: **Headcount** (Local / International / Total, always open) and **Location** (status and building on one line, Details under them, and who sent it and when). From md up they are tables (about 560px each); on a phone each group is a compact card with 44px touch targets and no sideways scroll. Updates live. Admin corrects a group's latest update with the dropdowns / Details box and taps Save (marked "edited", audited with before and after); earlier updates are under "History". Admin does not add updates for a group; only Facilitators do. The headcount table on the Groups page is unchanged.
+- **Admin manages the location options** (`0076`): a "Locations" card under the Location table to add, rename, reorder (up/down) and delete the options (A1, A3, ...). Seeded with A1-A5, B1, Track & Field. Rename also renames earlier updates; deleting one that updates already used hides it (it leaves the dropdowns, those updates keep the text), deleting an unused one removes it. Everyone signed in reads the options; only Admin changes them (`fn_admin_location_option_save` / `_delete` / `_move`). The Facilitator dropdown and the Admin dropdowns follow them live: they also reload straight after Admin changes something and whenever the tab comes back into view (a page opened before `0076` was run kept showing the built-in list and "No locations yet" until reloaded), and the card says "Run migration 0076" if the table cannot be read.
+- **Database:** table `faci_location_updates` (user_id = sender, group_id = the group; no coordinates; status checked; Other needs text; the building is checked against the live options). Nobody writes directly: `fn_faci_log_location` (a Faci, for their group) and `fn_admin_edit_faci_location` (Admin, the group's latest entry). A Faci reads their group's entries; HOF / HOGM / Committee / Admin read all. `0075` moved entries made before it onto their Facilitator's group and removed entries from a Facilitator with no group.
+- **Tests:** `tests/faci-location/db.test.ts` (real Postgres + the real migrations, including the 0074 to 0075 data move): any Faci in a group updates the group's latest, another group is untouched, a Faci with no group is refused, Other text rules, optional details, read access by role, no direct writes, Admin edits (mark, audit, only a group's latest entry, validation, role checks), and the options (create, duplicate / invalid names, delete vs hide, rename carries the history, archived building kept on an edit, move, role checks). 32 tests; the test cleanup tolerates Windows keeping the temp folder locked.
+- **Checked on your Supabase project** (localhost; test entries removed): the Facilitator sent an update with a comment; Admin changed it and it was saved and marked "edited"; the page checked at 375px with no sideways scroll. Not checked live: the Locations card (needs `0076` run on Supabase).
+
+### Station status is manual only (changesv3.md), 2026-10-14
+Migration `0078_station_status_manual.sql`.
+- **Timer decoupled:** the trigger from `0049` that opened a day's stations when its game started and closed them all when it ended or expired is dropped. Start / End / Pause / Resume / the countdown (`fn_phase_control`, `fn_game_toggle`, `fn_game_expire`) now only run the timer. The Start/End confirmation says "Station statuses are not changed."
+- **Check-ins no longer change the status:** `fn_refresh_station` (the "full = In Progress, else Available" recompute from `0062`) is a no-op. A full station still refuses check-ins (`STATION_FULL`) and a Closed station still refuses them (`STATION_CLOSED`). Stations start Closed, so an Admin or Game Master has to open them. `stations.status_override` is unused now.
+- **Admin Stations:** the status badge is a dropdown (Available / In Progress / Closed) that calls `fn_set_station_status`, with live updates (a Game Master's change shows without a refresh). The "n/m stations open" list on Live control stays.
+- **Game Master page:** the Status tab has Available / In Progress / Closed ("Busy" renamed), the current one highlighted, and updates live when Admin changes it. A GM can set only their own station (the one `profiles.station_id` points to, which follows the day: Day 1 station, then the Day 2 station). HOF / HOGM / Admin can set any.
+- Existing statuses in the database are left as they are.
+- **Tests:** `tests/stations/db.test.ts` (real Postgres + the real `0062`, `0064`, `0078`): the old coupling is reproduced first, then after `0078` starting / pausing / ending / resetting games never changes a status; Admin, HOF, GM, Guardian GM and Faci / Freshie permissions; a Closed station refuses check-in; check-in, check-out, clear and a full station never change the status. 13 tests; `npm test` is 49 in total.
+- **Checked in the browser** (temporary test station, removed afterwards): GM page shows the three states and highlights the current one; Admin changes it and the GM page updates without a refresh; the GM taps In Progress and the database changes; the Admin Stations dropdown updates live when the GM side changes it, and changing it there is stored. Not checked live: the timer actually leaving statuses alone (needs `0078` run on Supabase and a real game start/end; covered by the database tests).
+
+### HOF / HOGM / Committee home redesign, 2026-10-14
+Branch `hogm-home-redesign`. Not merged yet. Do not merge to `main` until the PR is open and reviewed. No migration.
+- **New home** for HOF, HOGM and Committee: `StaffHome.tsx`, used by `/dashboard` for `OPS_ROLES`. It has the same layout as the Freshie Home Welcome stop:
+  - "Welcome to Vortexa" and "Hi {name} · {role}"
+  - the event countdown (follows the Schedule)
+  - the PhaseCard while a game phase runs; otherwise a dashed "No game running" line with the next phase
+  - an **Ops** button (to `/committee`) and a **More Info ↓** button
+  - the organiser and sponsor credits
+
+  More Info scrolls to: Live floor (people checked in, leading group, live map; each tile opens the matching Ops tab through `/committee?view=`), then the full scoreboard (the ferris wheel cabins use the group colours), then Event tools (Big screen, My blind box QR → `/committee#blindbox`, Campus map, Schedule, Scoreboard). Big screen is also in the account menu and in TopNav.
+- **Colours**: the Welcome page palette (`VORTEXA_THEME`, `.fh-vx`), not a group colour. Staff subpages now read `--sp-*` variables, and `.staff-vx` switches them for these three roles. GM, Guardian GM, Faci, Admin and their pages keep the navy look and are unchanged.
+- **Navigation**:
+  - Phones and portrait tablets: the Freshie tab bar with Home, Map, Ops (yellow center button), Scores and Schedule.
+  - 1024px and wider: TopNav, with Ops as a yellow pill.
+  - The hamburger menu stays on subpages.
+  - `/map` for the ops crew now uses the dark staff design, like the map on the Ops page (same `CampusMap` with group pins), instead of the light page. Other roles' map is unchanged.
+- The old StaffDashboard text "roster" is now "headcount" (there is no roster view).
+- **One timer at a time, every role's home** (Freshie, Faci, ops crew, GM, Guardian GM, Admin):
+  - While a game phase is active or paused, the home shows the PhaseCard and hides the event countdown.
+  - Otherwise it shows the countdown. The ops crew also gets the "No game running" line under it.
+  - That line always says "No game running", with the next pending phase if there is one. There is no "Games are over" text: phases left as "ended" after a rehearsal made it show weeks before Day 1.
+  - Only the "no game" case was checked in the browser (HOGM, GM, Freshie). No game was running, and none was started, to avoid writing to the live project.
+- Checked in the browser with `hogm.test@xmu.edu.my` (local dev server against the live project, read only) at 390×844, 820×1180 and 1180×820:
+  - home, More Info, a floor tile opening the Headcount tab, the subpage menu, `/committee` and `/token`.
+  - `tsc` is clean for `src/`. `next lint` shows no new warnings.
+- Not done:
+  - The HOF and Committee accounts were not opened (they use the same code).
+  - Not tested on real phones or iPads.
+- Known: the dev console shows a hydration warning on the `next/font` class names. It also shows on `/login`, which this branch does not change.
+- Left for later: the Ops page layout itself ("ops will coordinate later").
+
+### Live database runs bonding-session's game timer, 2026-10-14
+Found while running 0071 on the live project (orientation-2612). The account's saved SQL snippets `0018`–`0038` are the `bonding-session` branch's migrations, not `main`'s (for example `0035_role_permissions_and_allocations`, `0036_usability_and_gameplay_fixes`). The live database has both sets.
+
+The live `fn_phase_control` is bonding-session's `0036` version (checked by function length), and it differs from this repo's in three ways:
+- Start takes the length from `game_config` `bonding_session_duration_day1` / `_day2` (both 150), not from `phases.duration_minutes`.
+- It only adds time. A negative extend fails with `INVALID_EXTENSION`.
+- Only one game can run at a time. A second Start fails with `ANOTHER_SESSION_ACTIVE`.
+
+Fixed in Admin → Live control and HOGM → Game control:
+- The length now saves to both places (`src/lib/gameLength.ts`).
+- −5 is removed.
+- Start is disabled while the other day's game runs.
+
+`tests/game-lead/bonding-phase-control.sql` is a copy of the live version, and `tests/game-lead/bonding.test.ts` runs 0071 and 0072 against it.
+
+**Before porting `bonding-session`:** compare against the live database, not only this repo. Migrations that run `create or replace` on these functions can silently undo either side.
+
+### HOGM Game control (Ops page), 2026-10-14
+Branch `hogm-home-redesign`. Migrations `0071_hogm_game_control.sql` and `0072_hogm_game_length.sql` were run on the live project on 2026-10-14.
+- For HOGM only, `/committee` is now **Game control** (`src/components/staff/game/`), in the Welcome page style. HOF and Committee keep the old Ops overview. It has these sections:
+  - **Game**: Day 1 and Day 2 game cards with start, end, pause, resume, +5 min and length. Start and End ask for confirmation first. Start is disabled while the other day's game runs.
+  - **Stations**: folding cards (closed shows the name and status), with add, edit, delete, status and Game Masters.
+  - **Tokens**: token rules, and Reset (only in Rehearsal mode, and you must type RESET).
+  - **Puzzles**: upload the picture for each location.
+  - **NFC**: generate sticker links and see the issued list.
+  - My blind box QR sits under Game.
+- **Scores tab (`/token`) for HOGM**: `GroupScores`, every group's token total and puzzle total (out of 15), best first. Tap a group to see its three puzzle keys drawn like the Freshie Items page (`KeyEmblem`), with pieces per key and a Lit tag when that group lit the projector. Live from `groups`, `inventory` and `projectors`. No headcount (that stays on the HOF and Committee Ops page).
+- **Schedule tab for HOGM**: the Freshie / Faci schedule (`FreshieSchedule vortexa`) in the Welcome page colours. It has a day switcher and timeline cards with tags, and a NOW tag with a glow on the item that is running (`useEventCountdown`). The NOW tag was not seen in the browser, because nothing was running during the check. Read only; Admin still edits on its own schedule page. Freshie and Faci are unchanged.
+- **Header on HOGM subpages** (Ops, Map, Scores, Schedule; phones and portrait tablets): `OpsHeader`, the same logo, role chip and account menu (Big screen, Log Out) as Home, instead of "← Home" with the hamburger menu. The logo goes Home. The running game shows under the header. HOF and Committee keep the old subpage header.
+- Navigation: a chip row on phones and portrait tablets, a side rail on landscape tablets and desktops. The sections can be linked with `#game`, `#stations` and so on.
+- Not included, as asked: kill-switches, Now on Welcome, Live Ops numbers, the token log, Blind box management, and the map (the map is on the Map tab).
+- Backend (0071):
+  - New `is_game_lead()` (HOGM or Admin). 0071 takes each installed function and swaps its `is_admin()` check for it, keeping the rest of the live version. It stops without changing anything if a function does not have exactly one check. This applies to `fn_phase_control`, `fn_update_game_config_rule`, `fn_reset_tokens_and_puzzles`, `fn_admin_station_gms` and `fn_admin_set_station_gms`.
+  - RLS: HOGM may update `phases` (game length only; no insert or delete), manage `stations`, write to the `puzzle-images` storage bucket, and read `nfc_tokens`.
+  - `fn_set_config`: HOGM may set `puzzle_image_*` keys (0071) and `bonding_session_duration_day1/2` (0072) only. Kill-switches and other keys stay Admin only.
+  - `/api/admin/nfc` allows Admin and HOGM, and the audit log now records the caller's real role.
+- Tests: `tests/game-lead/db.test.ts` runs 0071 on a real Postgres. It checks that HOGM can do each of the above and that HOF, Committee and GM cannot, including the kill-switch keys. `tests/game-lead/bonding.test.ts` does the same against the live `fn_phase_control`. `npm test`: 52 pass. `tsc` and `next lint` are clean.
+- Checked in the browser as HOGM at 390×844 and 1180×820 against the live project, before 0071 was run: every section's layout, a station card opened, the Add station sheet, and the Start confirmation (cancelled). Nothing was saved, so a real start, save or upload after 0071 is still untested.
+
+### Blind boxes: one QR per seller, BUY then open from Items, 2026-10-13
+Branch `jiamin-blind-box-integration`. Migration `0070_blindbox_buy_flow.sql` (this branch skips `0059`-`0069` on purpose: they live on `main`; run `0054`-`0058` first).
+- **One public QR per seller** (account or station): `/blindbox?t=<token>`, token kind `bb3` = HMAC of (seller id, qr_version), stable and recomputed on demand. Works until the seller's boxes are all sold; Admin Regenerate kills it. If the seller has several box types the buyer picks one on the page. The old per-type links (`bb2`) stop working. New table `blind_box_sellers`; `blind_box_assignments.seller_id`.
+- **`/blindbox` is public** (middleware). Signed-in Freshie group: straight to the buy screen. Logged out: the seller's name, then group + 4-digit password inline, then the same URL shows the buy screen (no staff-login redirect, nothing to scan twice). Signed in as staff/Faci: "Log in as a Freshie" button.
+- **BUY** (`fn_bb_buy`): shows which group is buying, balance, each box type with price and stock. Charges the price, takes one box from stock, saves the prize range hidden (`blind_box_claim_ranges`, no policy) and records an owned box in `blind_box_claims` (`status` owned/opened). One box per seller per group and the group cap now count bought boxes. Group row then assignment row are locked, so simultaneous buys never oversell; a retry with the same key charges once. Blocked by the blind-box kill-switch and frozen tokens.
+- **OPEN** (`fn_bb_open`, from the Items page): rolls the prize from the saved range, adds the tokens. Always allowed for a bought box (also when boxes are off or tokens frozen). Opening twice returns the same prize.
+- **Items page**: the blind box shelf is live (grouped by box type, realtime, prize hidden until opened) on top of main's live Items data (`useItemsData`); the buy and open token changes show in Activity through the token log. `?demo=` keeps the sample. Only a Freshie group login opens boxes; a Faci sees them.
+- **In-app scanner** (`/scan`) is now general: links to this site open in the app (also recognises `NEXT_PUBLIC_SITE_URL`), `/join` and login links are refused, links to other sites show the address with an "Open link" button, plain text shows with Copy (`src/lib/scan-route.ts`).
+- **Admin / seller card**: "Opened" columns now say "Sold"; reset clears bought boxes and refunds only what was paid for unopened ones; the "My blind box QR" card is one card per seller.
+- **Tests** (`npm test`): `tests/blindbox/db.test.ts` runs the real `0054` + `0070` in a real Postgres (embedded-postgres) with a small Supabase stub: BUY/OPEN rules, limits, idempotency, kill-switches, regenerate, reset, and real concurrency (12 groups on a 3-box seller: exactly 3 succeed; 8 simultaneous taps by one group buy once; 10 simultaneous opens pay once). `tests/scan-route.test.ts` covers the scanner routing and the token. 36 tests pass; `tsc` and `next lint` are clean.
+- Checked live on the project after `0070` was run (localhost, rehearsal data, since restored): a logged-out scan of the seller link, group login on the page and BUY; re-scan while logged in ("Already bought"); the box on the Items shelf and opening it (+tokens, balance updated); the in-app route (client-side navigation to the link as Group 3 went straight to the buy screen and BUY worked); 6 groups buying one last box at once (exactly 1 succeeded, the rest "sold out"). Not done: the phone camera scan itself (camera scanning needs HTTPS or a phone), the Admin pages after the wording change, and the two-phones-at-once check on real devices. Merged with `main` (live Items data, Faci profiles `0069`); `tsc`, `next lint` and the tests pass after the merge, but the merged result was not re-run in the browser.
+
 ### Items page on live data: tokens and puzzle pieces, 2026-10-13
 - `/inventory` (Freshie and Faci) now shows the group's real data through `useItemsData()` ([useItemsData.ts](../src/components/freshie/items/useItemsData.ts)): tokens (`groups.token_balance`, same as Admin), puzzle pieces per key and piece number (`inventory` + `items`, written by a Day 2 station win), projectors lit and by whom (`projectors` + `fn_scoreboard`), phase and time left (Live control's `phases`), Day 2 entry costs (`stations`), and history (the group's `token_transactions`, pieces and lit projector). Live updates on all of them. Each group reads only its own rows (RLS); Admin, HOF, HOGM and Committee read all.
 - Freshie Home's Puzzle Pieces card reads the same hook, so Home and Items always match. The "Sample" labels are gone.
 - The map unlocks (real location names instead of Star / Wheel / Orbit) in the endgame.
 - **Replay demo is always on the live Items page**: it shows the sample for about 7 seconds (marked "Sample data"), the T&F key going from 4 to 5 pieces, then returns to the group's live data. The other samples stay at `?demo=day1|day2|ready|taken|won|complete`.
 - Admin → Tokens now counts puzzle pieces from `inventory` (it read `puzzle_inventory`, which the game never writes, so it always showed 0). Mapped B1 = 1, A3 = 2, TF = 3.
-- Not done yet: blind boxes on Items still show the sample and cannot be opened there (real boxes open from the seller's QR); Guardian spot text is still the sample. Left for the backend / token owner: Admin → Tokens' history reads the old `token_logs`, so it does not show GM rewards from `token_transactions`; Admin's Reset State clears `puzzle_inventory`, not the real pieces in `inventory`. A GM on `/token` cannot read `inventory` (RLS), so their scoreboard shows no pieces.
+- Blind boxes on Items are live now (see "Blind boxes: one QR per seller"); Guardian spot text is still the sample. Left for the backend / token owner: Admin → Tokens' history reads the old `token_logs`, so it does not show GM rewards from `token_transactions`; Admin's Reset State clears `puzzle_inventory`, not the real pieces in `inventory`. A GM on `/token` cannot read `inventory` (RLS), so their scoreboard shows no pieces.
 
 ### Top text nav instead of the sidebar on landscape tablets and desktops, 2026-10-13
 - At 1024px and wider (iPad landscape, desktop), every role gets `TopNav` ([TopNav.tsx](../src/components/TopNav.tsx), [topnav.css](../src/components/topnav.css)) instead of the left sidebar, in the public Welcome page's nav style: logo, the role's links as text (current page underlined in the group colour, else cyan), the live phase pill ("NOW Day 2 Game 1:13:58"), the role chip and an account menu (Log Out; Facis also get Edit Profile, which opens the editor on Home, via `/dashboard?edit=profile` from other pages).
@@ -279,7 +517,7 @@ The design branches are merged. These remote branches are still not in `main` (c
 
 ### Facilitator automatic precise location reporting, 2026-10-09
 - Facilitators now always ask for and report precise location (`enableHighAccuracy: true`) upon logging in or opening the app, regardless of which page they are on (dashboard, schedule, inventory, code, attendance, etc.).
-- `FaciLocationProvider` in `src/components/FaciLocationTracker.tsx` continuously reports coordinates to `fn_report_gps` (immediately on mount, throttled movement updates via `watchPosition`, 60s heartbeats while stationary, and instant refresh on returning to the foreground).
+- `FaciLocationProvider` in `src/components/FaciLocationTracker.tsx` continuously reports coordinates to `fn_report_gps` (immediately on mount, throttled movement updates via `watchPosition`, heartbeats while stationary (now every 20 s, see 2026-10-14), and instant refresh on returning to the foreground).
 - Prompts facilitator with a floating banner when precise location has not yet been allowed or is blocked, ensuring browser permission can be granted with a single tap.
 - Location Check-in page (`/checkin`) now displays the live global GPS status and last report time.
 
@@ -487,13 +725,3 @@ The design branches are merged. These remote branches are still not in `main` (c
 - Admin redesign step A: Admin nav is now 4 sections (Live, Freshies, Game, Settings) with sub-tabs; Freshie control moved to `/admin/freshies` (old `/freshie-control` redirects); admin sidebar can collapse to icons. UI only. Step B done: Users (role chips, group filter, table, CSV import in a pop-up), Audit (action and role chips, table), Control room (phase rows, switches). Step C done: Stations (table, add in pop-up), Blind box (two tabs, table), NFC, Puzzles, FAQ (grouped, add in pop-up), Brand, Tokens (full width, layout only). Admin redesign complete.
 - Removed Interview Booking (`/booking`) and Practice Reservations (`/reservations`) for every role: pages, nav, dashboard cards. Migration `0039` drops any leftover booking tables, functions and types.
 - Facilitators set a group name and slogan on the home checklist. "Group 1" stays the number. HOF still cannot see the list.
-
-Example:
-
-```
-### David, 2026-10-10
-- Moved Day 1 and Day 2 GM pages from bonding-session. Pushed to main.
-- Blind box not done yet.
-```
-
-(No entries yet.)

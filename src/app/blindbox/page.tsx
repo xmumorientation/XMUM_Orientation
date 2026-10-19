@@ -1,16 +1,23 @@
 import { Package } from "lucide-react";
-import { redirect } from "next/navigation";
 
-import { BlindBoxOpener } from "@/components/BlindBoxOpener";
+import { BlindBoxBuy } from "@/components/BlindBoxBuy";
+import { BlindBoxLogin } from "@/components/BlindBoxLogin";
 import { verifyBlindBoxToken } from "@/lib/blindbox";
 import { supabaseServer } from "@/lib/supabase/server";
 import type { BlindBoxPreview } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
-// Blind-box QR landing. The seller's QR encodes /blindbox?t=<signed-token>.
-// Opening this page only PREVIEWS the box (fn_bb_preview): nothing is paid
-// and no box is deducted until the Freshie taps Open (fn_open_blind_box).
+// Blind-box QR landing: ONE code per seller, /blindbox?t=<signed-token>. The
+// page is public, so it works from the in-app scanner and from any outside
+// scanner alike:
+//   signed in as a Freshie group -> the buy screen straight away
+//   not signed in                -> pick the group + 4-digit password, then the
+//                                   same URL shows the buy screen
+//   signed in as staff / Faci    -> offer to switch to a Freshie login
+// Opening the page only PREVIEWS (fn_bb_seller_preview): nothing is paid and
+// no box is taken until BUY is tapped (fn_bb_buy). The bought box is opened
+// from the Items page (fn_bb_open).
 
 function ErrorScreen({ title, message }: { title: string; message: string }) {
   return (
@@ -35,10 +42,6 @@ const ERROR_SCREENS: Record<string, { title: string; message: string }> = {
     title: "Code not active",
     message:
       "This QR code isn't active any more. Ask the seller to show their latest QR.",
-  },
-  FRESHIE_ONLY: {
-    title: "Freshies only",
-    message: "Blind boxes can only be opened by Freshie accounts.",
   },
   NOT_IN_GROUP: {
     title: "No group yet",
@@ -67,19 +70,31 @@ export default async function BlindBoxPage({
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  // Who is selling (public: the name only, and only for a valid code).
+  const { data: seller, error: sellerError } = await supabase.rpc("fn_bb_seller_public", {
+    p_seller_id: token.sellerId,
+    p_version: token.version,
+  });
+  if (sellerError) {
+    return <ErrorScreen {...ERROR_SCREENS.BOX_UNKNOWN} />;
+  }
+  const sellerName = (seller as { seller_name: string }).seller_name;
+
   if (!user) {
-    redirect(`/login?next=${encodeURIComponent(`/blindbox?t=${t}`)}`);
+    return <BlindBoxLogin sellerName={sellerName} />;
   }
 
-  const { data, error } = await supabase.rpc("fn_bb_preview", {
-    p_assignment_id: token.assignmentId,
+  const { data, error } = await supabase.rpc("fn_bb_seller_preview", {
+    p_seller_id: token.sellerId,
     p_version: token.version,
   });
 
   if (error) {
-    const code = Object.keys(ERROR_SCREENS).find((k) =>
-      error.message.includes(k)
-    );
+    if (error.message.includes("FRESHIE_ONLY")) {
+      return <BlindBoxLogin sellerName={sellerName} notFreshie />;
+    }
+    const code = Object.keys(ERROR_SCREENS).find((k) => error.message.includes(k));
     const screen = code
       ? ERROR_SCREENS[code]
       : {
@@ -90,8 +105,8 @@ export default async function BlindBoxPage({
   }
 
   return (
-    <BlindBoxOpener
-      assignmentId={token.assignmentId}
+    <BlindBoxBuy
+      sellerId={token.sellerId}
       version={token.version}
       preview={data as BlindBoxPreview}
     />

@@ -12,6 +12,9 @@ const PUBLIC_PATHS = [
   "/forgot-password",
   "/reset-password",
   "/auth/callback",
+  // Blind-box QR: scanned from any scanner, signed in or not. The page asks a
+  // logged-out visitor for their group and password (see /blindbox).
+  "/blindbox",
 ];
 
 function denyGroupPass(request: NextRequest, reason: string, groupId?: string) {
@@ -27,6 +30,14 @@ function denyGroupPass(request: NextRequest, reason: string, groupId?: string) {
 // (app) layout and — authoritatively — in RLS/RPCs server-side (NFR-4).
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
+
+  // Development-only demos: no account, card or database access.
+  if (
+    process.env.NODE_ENV === "development" &&
+    (path === "/activate/preview" || path === "/map3d" || path.startsWith("/map3d/"))
+  ) {
+    return NextResponse.next({ request });
+  }
 
   // Public, backend-free routes (no Supabase). Group pages are NOT open URLs —
   // they require a signed expiring pass (see below).

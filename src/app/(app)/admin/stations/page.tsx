@@ -13,7 +13,11 @@ import {
 } from "@/components/ui";
 import { Dialog, DialogContent } from "@/components/ui/Dialog";
 import { readAdminDayFilter } from "@/lib/adminDayFilter";
-import { MAP_BUILDINGS, stationPosition } from "@/lib/mapBuildings";
+import {
+  MAP_BUILDINGS,
+  stationCodePrefix,
+  stationPosition,
+} from "@/lib/mapBuildings";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import {
   RISK_TIER_META,
@@ -24,10 +28,7 @@ import {
 import { cn, friendlyError } from "@/lib/utils";
 
 const OTHER_BLOCK = "__other__";
-const DEFAULT_BLOCKS = [
-  ...MAP_BUILDINGS.map((b) => b.area),
-  "Courts",
-];
+const DEFAULT_BLOCKS: string[] = MAP_BUILDINGS.map((b) => b.area);
 
 type DayFilter = "all" | 1 | 2;
 
@@ -65,10 +66,19 @@ interface GmAssignment {
   day: number;
 }
 
-// stations.code is the location: block and floor, e.g. "A4-1".
+// stations.code is the location: block and floor, e.g. "A4-1" or "TC-1".
 function locationCode(block: string, floor: string) {
+  const prefix = stationCodePrefix(block);
   const f = floor.trim();
-  return f ? `${block}-${f}` : block;
+  return f ? `${prefix}-${f}` : prefix;
+}
+
+/** The floor part of a code, for either the short ("TF-1") or long ("Track & Field-1") form. */
+function codeFloor(code: string, area: string) {
+  for (const prefix of [stationCodePrefix(area), area]) {
+    if (code.startsWith(`${prefix}-`)) return code.slice(prefix.length + 1);
+  }
+  return "";
 }
 
 // FR-11.3: station management (count/IDs still open per D-2 — fully
@@ -112,6 +122,25 @@ export default function AdminStationsPage() {
     const saved = readAdminDayFilter();
     if (saved) setDayFilter(saved === "all" ? "all" : saved === "Day 1" ? 1 : 2);
   }, [load]);
+
+  // A Game Master (or another Admin) changes a status: it shows here at once.
+  // Only the status is merged, so a dialog being edited is not disturbed.
+  useEffect(() => {
+    const channel = supabase
+      .channel(`admin-stations-${crypto.randomUUID()}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "stations" }, (payload) => {
+        if (payload.eventType === "UPDATE") {
+          const row = payload.new as Station;
+          setStations((sts) => sts.map((s) => (s.id === row.id ? { ...s, status: row.status } : s)));
+        } else {
+          load();
+        }
+      })
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [supabase, load]);
 
   const blocks = useMemo(
     () =>
@@ -182,9 +211,7 @@ export default function AdminStationsPage() {
       day: s.day,
       block: known ? s.area : OTHER_BLOCK,
       otherBlock: known ? "" : s.area,
-      floor: s.code.startsWith(`${s.area}-`)
-        ? s.code.slice(s.area.length + 1)
-        : "",
+      floor: codeFloor(s.code, s.area),
       risk: s.risk_tier,
       purpose: s.purpose ?? "",
       max_groups: s.max_groups != null ? String(s.max_groups) : "",
@@ -212,9 +239,7 @@ export default function AdminStationsPage() {
 
     // Keep an existing code that doesn't follow block-floor unless the location changed
     const old = editing !== "new" ? editing : null;
-    const oldFloor = old?.code.startsWith(`${old.area}-`)
-      ? old.code.slice(old.area.length + 1)
-      : "";
+    const oldFloor = old ? codeFloor(old.code, old.area) : "";
     if (!old || old.area !== block || oldFloor !== form.floor.trim()) {
       row.code = locationCode(block, form.floor);
     }
@@ -237,12 +262,15 @@ export default function AdminStationsPage() {
     load();
   }
 
+  // Status is manual: Admin sets it here, a Game Master sets their own
+  // station's. Same server function for both (it checks the role).
   async function setStatus(id: number, status: StationStatus) {
-    const { error } = await supabase
-      .from("stations")
-      .update({ status })
-      .eq("id", id);
-    if (error) setError(error.message);
+    setError(null);
+    const { error } = await supabase.rpc("fn_set_station_status", {
+      p_station_id: id,
+      p_status: status,
+    });
+    if (error) setError(friendlyError(error));
     else
       setStations((sts) =>
         sts.map((s) => (s.id === id ? { ...s, status } : s))
@@ -379,7 +407,16 @@ Groups checked in here will lose that check-in.`)) return;
                     </td>
                     <td className="px-4 py-2.5 font-bold">{s.day}</td>
                     <td className="px-4 py-2.5">
-                      <StationStatusChip status={s.status} />
+                      <select
+                        className="input min-h-[36px] w-36 text-sm"
+                        aria-label={`${s.name} status`}
+                        value={s.status}
+                        onChange={(e) => setStatus(s.id, e.target.value as StationStatus)}
+                      >
+                        <option value="available">Available</option>
+                        <option value="in_progress">In Progress</option>
+                        <option value="closed">Closed</option>
+                      </select>
                     </td>
                     <td className="px-4 py-2.5">
                       {s.day === 2 ? RISK_TIER_META[s.risk_tier].label : "—"}
@@ -639,7 +676,7 @@ Groups checked in here will lose that check-in.`)) return;
                 type="number"
                 min="1"
                 className="input text-sm"
-                placeholder="How many groups fit (shows In Progress when full)"
+                placeholder="How many groups fit (a full station refuses more check-ins)"
                 value={form.max_groups}
                 onChange={(e) =>
                   setForm({ ...form, max_groups: e.target.value })

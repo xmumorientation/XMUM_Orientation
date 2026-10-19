@@ -10,7 +10,7 @@ import { cn, friendlyError } from "@/lib/utils";
 import type { TabProps } from "./TypesTab";
 
 // Group-wide blind box settings, plus the test reset. The cap is the most
-// boxes any one group can open in total (across every seller); "one per
+// boxes any one group can buy in total (across every seller); "one per
 // seller" is fixed.
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 
@@ -80,7 +80,7 @@ export function SettingsTab({ data, onError, onNotice }: TabProps) {
     onNotice(
       scope === "all"
         ? `Everything reset: openings, assignments and box types are cleared; ${tokens}.`
-        : `Restored: ${plural(r.claims, "opened box", "opened boxes")} back to unopened; ${tokens}.`
+        : `Restored: ${plural(r.claims, "bought box", "bought boxes")} cleared and back in the sellers' stock; ${tokens}.`
     );
     setConfirm("");
     data.reload();
@@ -93,7 +93,7 @@ export function SettingsTab({ data, onError, onNotice }: TabProps) {
         <form onSubmit={save} className="space-y-3">
           <div>
             <label className="label text-xs" htmlFor="bb-cap">
-              Most blind boxes one group can open in total
+              Most blind boxes one group can buy in total
             </label>
             <input
               id="bb-cap"
@@ -110,7 +110,7 @@ export function SettingsTab({ data, onError, onNotice }: TabProps) {
             Counts every box type and every seller. Right now{" "}
             <b>{data.overview.groupsAtCap}</b> group
             {data.overview.groupsAtCap === 1 ? " has" : "s have"} reached the cap.
-            Raising it lets those groups open more straight away.
+            Raising it lets those groups buy more straight away. Boxes count when they are bought, opened or not.
           </p>
           <button disabled={busy} type="submit" className="btn-primary">
             Save
@@ -118,7 +118,7 @@ export function SettingsTab({ data, onError, onNotice }: TabProps) {
         </form>
         <hr className="border-paper-200" />
         <p className="text-sm text-ink-faint">
-          Also fixed: a group can open <b>one</b> box per seller, and a station
+          Also fixed: a group can buy <b>one</b> box per seller, and a station
           counts as one seller however many GMs share it. To pause every blind
           box at once, use the &quot;Disable blind box&quot; kill-switch in{" "}
           <Link href="/admin" className="underline">
@@ -141,16 +141,17 @@ export function SettingsTab({ data, onError, onNotice }: TabProps) {
           </p>
         ) : (
           <p className="rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900">
-            Rehearsal mode is on. Don&apos;t let anyone open a box while you
+            Rehearsal mode is on. Don&apos;t let anyone buy or open a box while you
             reset.
           </p>
         )}
 
         <ul className="space-y-2 text-sm text-ink-faint">
           <li>
-            <b className="text-ink">Restore boxes</b>: {plural(preview.claims, "opened box goes", "opened boxes go")}{" "}
-            back to unopened, so every seller has their full assigned number
-            again. The groups&apos; opens are cleared, so they can open again.
+            <b className="text-ink">Restore boxes</b>: {plural(preview.claims, "bought box goes", "bought boxes go")}{" "}
+            back to the sellers (opened or not), so every seller has their full
+            assigned number again. The groups&apos; purchases are cleared, so
+            they can buy again.
             Box types, assignments and QR codes stay.
           </li>
           <li>
@@ -173,8 +174,8 @@ export function SettingsTab({ data, onError, onNotice }: TabProps) {
             <b className="text-ink">Also put the groups&apos; tokens back</b>
             <span className="block text-xs text-ink-faint">
               {putBack
-                ? `Each of the ${plural(preview.groups, "group", "groups")} with opened boxes gets back what it paid and won (a group that has already spent the tokens gets back what its balance allows).`
-                : "Group balances and the token log stay exactly as they are. Only the openings are cleared."}
+                ? `Each of the ${plural(preview.groups, "group", "groups")} with bought boxes gets back what it paid and won (a group that has already spent the tokens gets back what its balance allows).`
+                : "Group balances and the token log stay exactly as they are. Only the purchases are cleared."}
             </span>
           </span>
         </label>

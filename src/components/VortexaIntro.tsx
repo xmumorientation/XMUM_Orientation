@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useState } from "react";
+import { usePathname } from "next/navigation";
 
 import "./vortexa-intro.css";
 
@@ -16,6 +17,10 @@ import "./vortexa-intro.css";
  */
 export function VortexaIntro() {
   const [done, setDone] = useState(false);
+  const pathname = usePathname();
+
+  // Let the activation sequence show its own entrance without a logo cover.
+  if (pathname === "/activate" || pathname === "/activate/preview") return null;
 
   return (
     <div className={`vx-intro${done ? " vx-intro-done" : ""}`} onClick={() => setDone(true)} aria-hidden="true">

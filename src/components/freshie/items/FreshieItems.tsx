@@ -3,10 +3,14 @@
 import * as Dialog from "@radix-ui/react-dialog";
 import { Clock3, History, Info, KeyRound, Lock, MapPin, Nfc, X } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 
+import { BOX_REVEAL_VIDEO, BoxReveal } from "@/components/BoxReveal";
 import { vxSlab, vxDisplay, nexusBody } from "@/components/home/fonts";
+import { supabaseBrowser } from "@/lib/supabase/client";
 import { PROJECTOR_LABELS, type ProjectorLocation } from "@/lib/types";
+import { friendlyError } from "@/lib/utils";
 
 import "../freshie.css";
 import { themeFromColor } from "../groupTheme";
@@ -38,7 +42,7 @@ export function FreshieItems({
 }: {
   data: ItemsData;
   groupColor: string | null | undefined;
-  /** Facilitators open boxes; Freshies only see them. */
+  /** Only the group's Freshie login opens boxes; a Facilitator can see them. */
   canOpenBoxes: boolean;
   /** Opens one box and returns what it gave, or null if it failed. */
   onOpenBox: (kind: BoxKind) => Promise<BoxReward | null>;
@@ -59,10 +63,12 @@ export function FreshieItems({
   const [activityOpen, setActivityOpen] = useState(false);
   const [tokensOpen, setTokensOpen] = useState(false);
   const [boxFor, setBoxFor] = useState<BoxKind | null>(null);
+  // A real box that was just opened: the full-screen opening clip, then the prize.
+  const [revealed, setRevealed] = useState<Extract<BoxReward, { type: "tokens" }> | null>(null);
 
   function selectShelf(item: ShelfItem) {
     if (item === "tokens") setTokensOpen(true);
-    else setBoxFor(item);
+    else setBoxFor(item.replace(/^box:/, ""));
   }
 
   const keys = keyLocations(data);
@@ -127,9 +133,37 @@ export function FreshieItems({
         data={data}
         canOpen={canOpenBoxes}
         onOpenBox={onOpenBox}
+        onReveal={setRevealed}
         onClose={() => setBoxFor(null)}
         themeVars={themeVars}
       />
+
+      {/* In a portal so it covers the whole screen, tab bar included. */}
+      {revealed?.real &&
+        createPortal(
+          <BoxReveal
+            tokens={revealed.amount}
+            special={revealed.real.special}
+            memberName={revealed.real.seller}
+            balance={revealed.real.balance}
+            onContinue={() => setRevealed(null)}
+          />,
+          document.body
+        )}
+
+      {/* Warm the opening clip while there is a sealed box, so it starts the
+          moment the box is opened. Invisible and silent. */}
+      {data.boxes.some((b) => b.unopened > 0 && !b.range) && (
+        <video
+          src={BOX_REVEAL_VIDEO}
+          preload="auto"
+          muted
+          playsInline
+          aria-hidden="true"
+          tabIndex={-1}
+          className="pointer-events-none absolute h-px w-px opacity-0"
+        />
+      )}
 
       <Sheet open={activityOpen} onClose={() => setActivityOpen(false)} themeVars={themeVars} title="Activity">
         <h2 className="fi-sheet-title">Activity</h2>
@@ -170,7 +204,45 @@ function Sheet({
   );
 }
 
+/**
+ * Demo scan for testing the map's Lightbulbs view without the NFC cards.
+ * Shown only while Admin has "NFC demo mode" on (Live control); it lights the
+ * bulb for real through fn_demo_activate_projector.
+ */
+function useNfcDemo(loc: ProjectorLocation) {
+  const supabase = useMemo(() => supabaseBrowser(), []);
+  const [enabled, setEnabled] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    supabase
+      .from("game_config")
+      .select("value")
+      .eq("key", "nfc_demo_mode")
+      .maybeSingle()
+      .then(({ data }) => {
+        if (active) setEnabled(data?.value === true || data?.value === "true");
+      });
+    return () => {
+      active = false;
+    };
+  }, [supabase]);
+
+  async function scan() {
+    setBusy(true);
+    setResult(null);
+    const { error } = await supabase.rpc("fn_demo_activate_projector", { p_location: loc });
+    setBusy(false);
+    setResult(error ? { ok: false, text: friendlyError(error) } : { ok: true, text: "Lit for your group." });
+  }
+
+  return { enabled, busy, result, scan };
+}
+
 function KeySheet({ data, loc }: { data: ItemsData; loc: ProjectorLocation }) {
+  const demo = useNfcDemo(loc);
   const spot = data.guardian[loc];
   const endgame = data.phase === "endgame";
   const name = zoneNames(data)[loc];
@@ -238,7 +310,34 @@ function KeySheet({ data, loc }: { data: ItemsData; loc: ProjectorLocation }) {
         <button type="button" className="fh-btn fh-btn-primary" disabled>
           <Nfc size={16} aria-hidden /> Scan part card
         </button>
+        {demo.enabled && (
+          <button
+            type="button"
+            className="fh-btn fh-btn-ghost fi-key-demo"
+            onClick={demo.scan}
+            disabled={demo.busy || demo.result?.ok}
+          >
+            <Nfc size={16} aria-hidden /> {demo.busy ? "Scanning…" : "Demo scan"}
+          </button>
+        )}
       </div>
+      {demo.result && (
+        <p className="fi-key-foot" role="status">
+          {demo.result.ok ? (
+            <>
+              Demo: {name.short} is {demo.result.text.toLowerCase()}{" "}
+              <Link href="/map?layer=bulbs" className="underline">
+                See it on the map
+              </Link>
+            </>
+          ) : (
+            demo.result.text
+          )}
+        </p>
+      )}
+      {demo.enabled && !demo.result && (
+        <p className="fi-key-foot">Demo mode: lights this bulb without the card, for testing the map.</p>
+      )}
       <p className="fi-key-foot">
         {endgame
           ? "Part-card scanning is added in the NFC step. For now, show this screen to the Guardian."

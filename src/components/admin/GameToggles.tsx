@@ -5,6 +5,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { usePhaseTimer } from "@/components/PhaseTimerProvider";
 import { StationStatusChip } from "@/components/ui";
+import { useConfig } from "@/components/useConfig";
+import { gameLength, otherGameRunning, saveGameLength } from "@/lib/gameLength";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import type { Phase, Station, StationStatus } from "@/lib/types";
 import { cn, formatCountdown, friendlyError } from "@/lib/utils";
@@ -17,11 +19,16 @@ const DAY_GAME: Record<string, string> = { "Day 1": "day1", "Day 2": "day2" };
 
 // Live control header, beside the Day dropdown: that day's game. Set its
 // length, Start (green) runs it for that long (fn_phase_control); while it
-// runs: countdown, Pause / Resume, −5 / +5 min, End (red). It ends itself when
-// time is up (fn_game_expire, 0052). A running game unlocks its game rules;
-// starting it opens that day's stations, ending it closes them (0049). The
-// countdown is separate from the Welcome page's, which follows the schedule.
-// "n/m stations open" opens the per-station overrides.
+// runs: countdown, Pause / Resume, +5 min, End (red). It ends itself when
+// time is up (fn_game_expire, 0052). A running game unlocks its game rules.
+// It does NOT touch station statuses (0078): Start / End / the countdown only
+// run the timer, and every station is set by hand by Admin (here, or on Admin
+// → Stations) or by its Game Master. The countdown is separate from the
+// Welcome page's, which follows the schedule.
+// "n/m stations open" lists the day's stations with their status.
+// The live fn_phase_control (bonding-session 0032 / 0036) only adds time, runs
+// one game at a time and takes the length from game_config
+// (lib/gameLength), so there is no -5 and Start waits for the other game.
 export function GameToggles({
   day,
   onError,
@@ -34,6 +41,7 @@ export function GameToggles({
 }) {
   const supabase = useMemo(() => supabaseBrowser(), []);
   const { phases, offsetMs, tick } = usePhaseTimer();
+  const { config } = useConfig();
   const [lengthDraft, setLengthDraft] = useState("");
   const [stations, setStations] = useState<StationRow[]>([]);
   const [busy, setBusy] = useState(false);
@@ -56,25 +64,22 @@ export function GameToggles({
   }, [loadStations, supabase]);
 
   async function control(p: Phase, action: "start" | "pause" | "resume" | "extend" | "end", minutes = 0) {
-    const day = PHASE_DAY[p.key];
     // an unsaved length typed in the box counts for this Start
     const typed = Math.round(Number(lengthDraft));
-    const minutesToRun = action === "start" && typed >= 1 && typed <= 24 * 60 ? typed : p.duration_minutes;
+    const saved = gameLength(config, p);
+    const minutesToRun = action === "start" && typed >= 1 && typed <= 24 * 60 ? typed : saved;
     if (action === "start" || action === "end") {
-      const what = day ? ` Day ${day} stations will ${action === "start" ? "open" : "close"}.` : "";
       const length = action === "start" ? ` It runs for ${minutesToRun} min.` : "";
-      if (!window.confirm(`${action === "start" ? "Start" : "End"} ${p.name}?${length}${what}`)) return;
+      // Only the timer: station statuses are not changed.
+      if (!window.confirm(`${action === "start" ? "Start" : "End"} ${p.name}?${length} Station statuses are not changed.`)) return;
     }
     setBusy(true);
     onError(null);
-    if (action === "start" && minutesToRun !== p.duration_minutes) {
-      const { error: lengthError } = await supabase
-        .from("phases")
-        .update({ duration_minutes: minutesToRun })
-        .eq("key", p.key);
+    if (action === "start" && minutesToRun !== saved) {
+      const lengthError = await saveGameLength(supabase, p, minutesToRun);
       if (lengthError) {
         setBusy(false);
-        return onError(friendlyError(lengthError));
+        return onError(lengthError);
       }
       setLengthDraft("");
     }
@@ -93,15 +98,14 @@ export function GameToggles({
     }
   }
 
-  // Length before Start (phases.duration_minutes; admin can write phases).
+  // Length before Start (lib/gameLength: the game_config key Start reads, and the phase).
   async function saveLength(p: Phase) {
     const m = Math.round(Number(lengthDraft));
-    if (!(m >= 1 && m <= 24 * 60)) return onError("Game length must be 1 to 1440 minutes.");
     setBusy(true);
     onError(null);
-    const { error } = await supabase.from("phases").update({ duration_minutes: m }).eq("key", p.key);
+    const error = await saveGameLength(supabase, p, m);
     setBusy(false);
-    if (error) onError(friendlyError(error));
+    if (error) onError(error);
     else {
       setLengthDraft("");
       onNotice(`${p.name}: length ${m} min`);
@@ -127,6 +131,8 @@ export function GameToggles({
   const stationDay = PHASE_DAY[game.key];
   const dayStations = stations.filter((s) => s.day === stationDay);
   const openCount = dayStations.filter((s) => s.status !== "closed").length;
+  const length = gameLength(config, game);
+  const blocker = on ? undefined : otherGameRunning(phases, game);
 
   return (
     <div className="relative flex flex-wrap items-center gap-3">
@@ -134,7 +140,8 @@ export function GameToggles({
         type="button"
         aria-pressed={on}
         aria-label={`${on ? "End" : "Start"} ${game.name}`}
-        disabled={busy}
+        disabled={busy || !!blocker}
+        title={blocker ? `End ${blocker.name} first` : undefined}
         onClick={() => control(game, on ? "end" : "start")}
         className="min-h-[52px] shrink-0 rounded-xl px-5 text-base font-bold disabled:opacity-60"
         // green to start, red while running (set inline: the admin theme restyles buttons)
@@ -156,10 +163,7 @@ export function GameToggles({
               ⏸ Pause
             </button>
           )}
-          <button disabled={busy || left < 6 * 60} onClick={() => control(game, "extend", -5)} className="btn-secondary min-h-[36px] px-3 text-xs">
-            −5
-          </button>
-          <button disabled={busy || game.state !== "active"} onClick={() => control(game, "extend", 5)} className="btn-secondary min-h-[36px] px-3 text-xs">
+          <button disabled={busy} onClick={() => control(game, "extend", 5)} className="btn-secondary min-h-[36px] px-3 text-xs">
             +5
           </button>
         </div>
@@ -178,11 +182,11 @@ export function GameToggles({
               min={1}
               className="input min-h-[36px] w-20 text-sm"
               aria-label={`${game.name} length in minutes`}
-              value={lengthDraft || String(game.duration_minutes)}
+              value={lengthDraft || String(length)}
               onChange={(e) => setLengthDraft(e.target.value)}
             />
             <span className="text-ink-faint">min</span>
-            {lengthDraft && lengthDraft !== String(game.duration_minutes) && (
+            {lengthDraft && lengthDraft !== String(length) && (
               <button disabled={busy} className="btn-secondary min-h-[36px] px-2.5 text-xs">
                 Save
               </button>
@@ -193,6 +197,7 @@ export function GameToggles({
       <div className="text-xs leading-5 text-ink-faint">
         <p className="font-semibold">
           {game.state === "active" ? "Running" : game.state === "paused" ? "Paused" : game.state === "ended" ? "Ended" : "Not started"}
+          {blocker && ` · end ${blocker.name} first`}
         </p>
         <button
           type="button"
@@ -213,12 +218,12 @@ export function GameToggles({
               <StationStatusChip status={s.status} />
               <select
                 className="input min-h-[30px] w-28 text-xs"
-                aria-label={`${s.name} status override`}
+                aria-label={`${s.name} status`}
                 value={s.status}
                 onChange={(e) => setStationStatus(s.id, e.target.value as StationStatus)}
               >
                 <option value="available">Available</option>
-                <option value="in_progress">Busy</option>
+                <option value="in_progress">In Progress</option>
                 <option value="closed">Closed</option>
               </select>
             </div>

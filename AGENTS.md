@@ -27,7 +27,18 @@ All Freshie groups share one set of pages (Freshie Home, Items, Schedule; Facili
 - Do not branch on group id in components (for example `if (groupId === 3)`). Derive the difference from the group's colour in `themeFromColor()` instead.
 - Do not copy a page per group (for example `Group3Home.tsx`). There is one page, and each group's look comes from its colour.
 
+### HOF, HOGM and Committee pages: Welcome page colours
+
+HOF, HOGM and Committee (`OPS_ROLES` in `src/lib/types.ts`) are not a group, so they have no group colour. Their pages use the colours of the public Welcome page ([vortexa.css](src/components/home/vortexa.css)).
+
+- Home is [StaffHome.tsx](src/components/staff/StaffHome.tsx). It reuses Freshie Home's layout and parts (`Countdown`, `PhaseCard`, `Credits`, `AccountMenu`, `StopBar`, `FreshieSky`). Change those parts in `FreshieHome.tsx`, not in a copy.
+- The colours come from `VORTEXA_THEME` in [groupTheme.ts](src/components/freshie/groupTheme.ts), plus the `.fh-vx` overrides in [staff-home.css](src/components/staff/staff-home.css). The rules are the same as on the Welcome page: yellow for the primary action, cyan for "you are here", and pink, lilac and orange for decoration only.
+- Subpages (Ops, Scoreboard, Schedule) read the `--sp-*` variables in [staff-dashboard.css](src/components/staff/staff-dashboard.css). `.staff-vx` switches them to the Welcome colours. Do not hardcode navy hex values in staff CSS; use the variables.
+- HOGM's Ops page is Game control ([components/staff/game/](src/components/staff/game/)). It has the same controls as Admin's game console: game start and end, stations, token rules and reset, puzzle pictures, NFC, and the funfair's keys (migration 0088). Blind box is not included. On the server, `is_game_lead()` (migration 0071) allows HOGM and Admin. When you add a game control to Admin, decide whether HOGM gets it too, and if so use `is_game_lead()`, not `is_admin()`. Kill-switches stay Admin only.
+- The tab bar ([FreshieTabBar.tsx](src/components/freshie/FreshieTabBar.tsx), `data-variant="ops"`) has these tabs: Home, Map, Ops (the yellow center button), Scores and Schedule. On screens 1024px and wider, TopNav replaces it and shows Ops as a yellow pill (`primaryHref`).
+
 ## Other references
 
 - [docs/permission-matrix.md](docs/permission-matrix.md): what each role can do, and known permission gaps.
 - [docs/SETUP.md](docs/SETUP.md): setup, migrations and environment variables.
+- [docs/map3d-session-handoff.md](docs/map3d-session-handoff.md): the 3D campus map, the Vortexa Funfair and the lake stage: where things stand and how to work on them without breaking the map.

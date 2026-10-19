@@ -82,6 +82,26 @@ export default function GmPanelPage() {
     };
   }, [supabase, profile.station_id]);
 
+  // The station's status changes from Admin (or another device): show it at
+  // once. Only the status is merged, nothing else on the page is reloaded.
+  useEffect(() => {
+    if (!profile.station_id) return;
+    const channel = supabase
+      .channel(`gm-station-${profile.station_id}-${crypto.randomUUID()}`)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "stations", filter: `id=eq.${profile.station_id}` },
+        (payload) => {
+          const row = payload.new as Station;
+          setStation((cur) => (cur && cur.id === row.id ? { ...cur, status: row.status } : cur));
+        }
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [supabase, profile.station_id]);
+
   // Token rules can change during the event; keep the labels and the
   // station's entry fee (synced from its tier) current.
   useEffect(() => {
@@ -448,28 +468,28 @@ export default function GmPanelPage() {
                 <span className="font-semibold">{station.name}</span>
                 <StationStatusChip status={station.status} />
               </div>
-              <div className="grid grid-cols-3 gap-2">
-                <button
-                  disabled={busy}
-                  onClick={() => setStatus("available")}
-                  className="btn min-h-[72px] bg-green-700 text-sm text-white"
-                >
-                  Available
-                </button>
-                <button
-                  disabled={busy}
-                  onClick={() => setStatus("in_progress")}
-                  className="btn min-h-[72px] bg-red-600 text-sm text-white"
-                >
-                  Busy
-                </button>
-                <button
-                  disabled={busy}
-                  onClick={() => setStatus("closed")}
-                  className="btn min-h-[72px] bg-gray-600 text-sm text-white"
-                >
-                  Closed
-                </button>
+              <div className="grid grid-cols-3 gap-2" role="group" aria-label="Station status">
+                {(
+                  [
+                    ["available", "Available", "bg-green-700"],
+                    ["in_progress", "In Progress", "bg-red-600"],
+                    ["closed", "Closed", "bg-gray-600"],
+                  ] as const
+                ).map(([value, label, color]) => (
+                  <button
+                    key={value}
+                    disabled={busy}
+                    aria-pressed={station.status === value}
+                    onClick={() => setStatus(value)}
+                    className={cn(
+                      "btn min-h-[72px] text-sm text-white",
+                      color,
+                      station.status === value ? "ring-4 ring-white/80 ring-offset-2 ring-offset-night-900" : "opacity-60"
+                    )}
+                  >
+                    {label}
+                  </button>
+                ))}
               </div>
             </>
           ) : (

@@ -49,7 +49,7 @@ export interface Station {
   id: number;
   code: string;
   name: string;
-  /** A1–A5, B1, or Track & Field. */
+  /** A1–A5, B1, Track & Field, Tennis Court, Volleyball Court, or TBD. */
   area: string;
   /** Game or purpose set by an admin. Empty until one is chosen. */
   purpose: string;
@@ -59,13 +59,13 @@ export interface Station {
   risk_tier: RiskTier;
   entry_cost: number;
   day: 1 | 2;
-  /** How many groups fit at once. When full, status becomes In progress. */
+  /** How many groups fit at once. A full station refuses more check-ins; its status is not changed. */
   max_groups: number | null;
   /** Real-world position, used only to warn a far-away check-in. */
   lat: number | null;
   lng: number | null;
   radius_m: number | null;
-  /** An admin or GM forced In progress. Cleared when the station is cleared. */
+  /** Unused since 0078 (status is manual only). */
   status_override: boolean;
 }
 
@@ -161,15 +161,19 @@ export interface BlindBoxType {
 export interface BlindBoxAssignment {
   id: number;
   type_id: number;
+  /** The seller's row: one per account or station, and it holds the one QR version. */
+  seller_id: number;
   profile_id: string | null;
   station_id: number | null;
-  /** Total assigned, including boxes already opened. */
+  /** Total assigned, including boxes already sold. */
   quantity: number;
+  /** Boxes sold (bought) so far. Opened or not. */
   opened: number;
   qr_version: number;
   active: boolean;
 }
 
+/** A box a group has BOUGHT: owned until it is opened from the Items page. */
 export interface BlindBoxClaim {
   id: number;
   assignment_id: number | null;
@@ -180,35 +184,62 @@ export interface BlindBoxClaim {
   seller_station_id: number | null;
   group_id: number;
   price: number;
-  tokens: number;
+  /** Null until the box is opened. */
+  tokens: number | null;
   special: boolean;
+  status: "owned" | "opened";
+  /** When the box was bought. */
   created_at: string;
+  opened_at: string | null;
 }
 
-/** What a Freshie sees after scanning, before opening (fn_bb_preview). */
-export type BlindBoxPreviewStatus =
+/** What a Freshie sees after scanning a seller's QR, before buying (fn_bb_seller_preview). */
+export type BlindBoxPageStatus =
   | "ok"
   | "disabled"
   | "frozen"
   | "sold_out"
   | "already_from_seller"
-  | "cap_reached"
-  | "insufficient";
+  | "cap_reached";
 
-export interface BlindBoxPreview {
-  status: BlindBoxPreviewStatus;
-  seller_name: string;
+export type BlindBoxOptionStatus = "ok" | "sold_out" | "insufficient";
+
+export interface BlindBoxOption {
+  assignment_id: number;
   type_name: string;
   price: number;
   special: boolean;
+  left: number;
+  status: BlindBoxOptionStatus;
+}
+
+export interface BlindBoxPreview {
+  status: BlindBoxPageStatus;
+  seller_name: string;
+  group_name: string;
   balance: number;
   group_claims: number;
   cap: number;
+  options: BlindBoxOption[];
 }
 
+/** fn_bb_buy result. */
+export interface BlindBoxBuyResult {
+  ok: boolean;
+  duplicate: boolean;
+  claim_id: number;
+  price: number;
+  special: boolean;
+  seller_name: string;
+  type_name: string;
+  balance: number;
+}
+
+/** fn_bb_open result. */
 export interface BlindBoxResult {
   ok: boolean;
   duplicate: boolean;
+  claim_id: number;
   tokens: number;
   price: number;
   special: boolean;
@@ -286,6 +317,32 @@ export interface GpsLocation {
   reported_at: string;
 }
 
+/** One row of fn_group_positions(): a group's best GPS fix and its station check-in. */
+export interface GroupPosition {
+  group_id: number;
+  group_name: string;
+  gps_lat: number | null;
+  gps_lng: number | null;
+  gps_accuracy_m: number | null;
+  gps_at: string | null;
+  /** Facis whose phone reported in the last 2 minutes. */
+  facis_reporting: number;
+  facis_total: number;
+  checkin_station_id: number | null;
+  checkin_station_code: string | null;
+  checkin_station_name: string | null;
+  checkin_at: string | null;
+}
+
+/** One row of fn_group_faci_status(). phone is only filled in for Committee tier. */
+export interface FaciStatus {
+  user_id: string;
+  full_name: string | null;
+  phone: string | null;
+  last_gps_at: string | null;
+  last_accuracy_m: number | null;
+}
+
 export interface AuditEntry {
   id: number;
   actor: string | null;
@@ -304,6 +361,48 @@ export const PROJECTOR_LABELS: Record<ProjectorLocation, string> = {
   TF: "Track & Field",
 };
 
+/** Code names used until the full map unlocks, so a page never gives a location away. */
+export const PROJECTOR_CODE_NAMES: Record<ProjectorLocation, string> = {
+  B1: "Star",
+  A3: "Wheel",
+  TF: "Orbit",
+};
+
+/** A saved map anchor (map_anchors): a real GPS point and the same spot on the art. */
+export interface MapAnchor {
+  id: number;
+  lat: number;
+  lng: number;
+  x: number;
+  y: number;
+  accuracy_m: number | null;
+  fixes: number | null;
+  created_by: string | null;
+  created_at: string;
+}
+
+/** One row of fn_admin_check_locations(): an Admin's live position in Accuracy check. */
+export interface AdminCheckLocation {
+  user_id: string;
+  full_name: string | null;
+  lat: number;
+  lng: number;
+  accuracy_m: number | null;
+  reported_at: string;
+}
+
+/** One row of fn_map_lightbulbs(): a lightbulb the viewer may see on the map. */
+export interface MapLightbulb {
+  location: ProjectorLocation;
+  name: string;
+  map_x: number;
+  map_y: number;
+  activated_by_group: number | null;
+  group_name: string | null;
+  activated_at: string | null;
+  activated_manually: boolean;
+}
+
 export const ROLE_LABELS: Record<UserRole, string> = {
   freshie: "Freshie",
   faci: "Facilitator",
@@ -316,6 +415,9 @@ export const ROLE_LABELS: Record<UserRole, string> = {
 };
 
 export const COMMITTEE_TIER: UserRole[] = ["hof", "hogm", "committee", "admin"];
+
+/** Event operations crew: the Vortexa staff home, the Ops tab bar and the Welcome page colours. */
+export const OPS_ROLES: UserRole[] = ["hof", "hogm", "committee"];
 
 /** Roles that can hold blind boxes: everyone except Facilitator and Freshie.
  *  Mirrors bb_holder_role() in migration 0054. */

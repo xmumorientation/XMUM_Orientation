@@ -34,6 +34,8 @@ import { useGroup } from "@/components/useGroup";
 import { countdownParts, useEventCountdown } from "@/components/useEventCountdown";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { PIECES_PER_SET, PROJECTOR_LOCATIONS, type Group } from "@/lib/types";
+import { DETAILS_MAX, LOC_STATUSES, OTHER_TEXT_MAX, clock, describeLocation, type FaciLocation, type LocStatus } from "@/lib/faciLocation";
+import { useLocationOptions } from "@/components/useLocationOptions";
 import { formatCountdown, friendlyError } from "@/lib/utils";
 
 import "./freshie.css";
@@ -87,14 +89,14 @@ function groupLabel(group: Group) {
   return group.display_name?.trim() || group.name;
 }
 
-function goTo(id: string) {
+export function goTo(id: string) {
   const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   document.getElementById(id)?.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
 }
 
 // ── 01 Welcome ───────────────────────────────────────────────────────────────
 
-function Countdown() {
+export function Countdown() {
   // D-day, then Day 2 and the phases between live games (see useEventCountdown).
   const { label, seconds } = useEventCountdown();
   const t = countdownParts(seconds);
@@ -200,9 +202,9 @@ function WelcomeStop({
           Welcome {group && <b>{groupLabel(group)}</b>} Freshie!
         </p>
       )}
-      {/* The countdown follows Live control's schedule timer; the card shows a running game. */}
-      <Countdown />
-      {live && <PhaseCard />}
+      {/* One timer at a time: the running game while a phase is on or paused,
+          else the event countdown (follows the Schedule). */}
+      {live ? <PhaseCard /> : <Countdown />}
       <div className="fh-actions">
         <Link href={isFaci ? "/code" : "/scan"} className="fh-btn fh-btn-primary">
           {isFaci ? <KeyRound size={18} aria-hidden /> : <ScanLine size={18} aria-hidden />}
@@ -289,8 +291,21 @@ export function ChecklistStop({ group, groupId }: { group: Group | null; groupId
   const [countError, setCountError] = useState<string | null>(null);
   const [countNotice, setCountNotice] = useState<string | null>(null);
   // Tap a row to open it; one at a time so the checklist stays on one screen.
-  const [open, setOpen] = useState<1 | 2 | null>(null);
-  const toggle = (n: 1 | 2) => setOpen((cur) => (cur === n ? null : n));
+  const [open, setOpen] = useState<1 | 2 | 4 | null>(null);
+  const toggle = (n: 1 | 2 | 4) => setOpen((cur) => (cur === n ? null : n));
+
+  // Manual Location Update: a text-only note of where the GROUP is (status +
+  // building), sent by any Faci in it. Not GPS, not the map, not station check-in. Each submit adds an
+  // entry; Admin sees the latest one on Headcount and location.
+  const [locStatus, setLocStatus] = useState<LocStatus>("heading_to");
+  const [locOther, setLocOther] = useState("");
+  const [locBuilding, setLocBuilding] = useState("");
+  const [locDetails, setLocDetails] = useState("");
+  const { names: locNames } = useLocationOptions();
+  const [locLast, setLocLast] = useState<FaciLocation | null>(null);
+  const [locSaving, setLocSaving] = useState(false);
+  const [locError, setLocError] = useState<string | null>(null);
+  const [locNotice, setLocNotice] = useState<string | null>(null);
 
   useEffect(() => {
     if (!group || seeded) return;
@@ -318,6 +333,51 @@ export function ChecklistStop({ group, groupId }: { group: Group | null; groupId
       active = false;
     };
   }, [supabase, groupId]);
+
+  // The group's latest entry (RLS: their group's rows), whoever in the group
+  // sent it. Live, so a colleague's update and an Admin correction show up here.
+  useEffect(() => {
+    let active = true;
+    async function loadLast() {
+      const { data } = await supabase
+        .from("faci_location_updates")
+        .select("id, user_id, group_id, status, other_text, building, details, created_at, edited_by, edited_at")
+        .order("created_at", { ascending: false })
+        .order("id", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (active) setLocLast((data as FaciLocation | null) ?? null);
+    }
+    loadLast();
+    const channel = supabase
+      .channel(`faci-loc-${crypto.randomUUID()}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "faci_location_updates" }, loadLast)
+      .subscribe();
+    return () => {
+      active = false;
+      supabase.removeChannel(channel);
+    };
+  }, [supabase]);
+
+  async function saveLocation(e: React.FormEvent) {
+    e.preventDefault();
+    setLocError(null);
+    setLocNotice(null);
+    if (!locBuilding) return setLocError("Choose a building.");
+    if (locStatus === "other" && !locOther.trim()) return setLocError("Type your status.");
+    setLocSaving(true);
+    const { error } = await supabase.rpc("fn_faci_log_location", {
+      p_status: locStatus,
+      p_other_text: locStatus === "other" ? locOther : null,
+      p_building: locBuilding,
+      p_details: locDetails,
+    });
+    setLocSaving(false);
+    if (error) return setLocError(friendlyError(error));
+    setLocNotice("Saved. Admin can see it now.");
+    setLocOther("");
+    setLocDetails("");
+  }
 
   async function saveProfile(e: React.FormEvent) {
     e.preventDefault();
@@ -363,7 +423,7 @@ export function ChecklistStop({ group, groupId }: { group: Group | null; groupId
     <section id="fh-check" className="fh-stop fh-check-stop" aria-labelledby="fh-check-title">
       <div className="fh-stop-head">
         <h2 id="fh-check-title" className="fh-h2 fh-slab">Checklist</h2>
-        <p className="fh-lead">Three things to do with your group.</p>
+        <p className="fh-lead">Four things to do with your group.</p>
       </div>
       <ol className="fh-checks">
         <li className={`fh-check${open === 1 ? " is-open" : ""}`}>
@@ -462,6 +522,86 @@ export function ChecklistStop({ group, groupId }: { group: Group | null; groupId
             </span>
             <MapPin size={20} aria-hidden className="fh-check-chev" />
           </Link>
+        </li>
+        <li className={`fh-check${open === 4 ? " is-open" : ""}`}>
+          <button
+            type="button"
+            className="fh-check-head"
+            aria-expanded={open === 4}
+            aria-controls="fh-check-4"
+            onClick={() => toggle(4)}
+          >
+            <span className="fh-check-no fh-mono">04</span>
+            <span className="fh-check-title">
+              <b>Manual Location Update</b>
+              <small>{locLast ? `${describeLocation(locLast)} · ${clock(locLast.created_at)}` : "Not sent yet"}</small>
+            </span>
+            <ChevronDown size={20} aria-hidden className="fh-check-chev" />
+          </button>
+          <div id="fh-check-4" className="fh-check-body" hidden={open !== 4}>
+            <p>Tell Admin where your group is. Any Facilitator in your group can update it, and your group shares the latest one. This is a note only: it is not GPS and not a station check-in.</p>
+            <form onSubmit={saveLocation}>
+              <label>
+                Status
+                <select className="fh-input" value={locStatus} onChange={(e) => setLocStatus(e.target.value as LocStatus)}>
+                  {LOC_STATUSES.map((st) => (
+                    <option key={st.value} value={st.value}>
+                      {st.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              {locStatus === "other" && (
+                <label>
+                  Your status
+                  <input
+                    className="fh-input"
+                    required
+                    maxLength={OTHER_TEXT_MAX}
+                    value={locOther}
+                    onChange={(e) => setLocOther(e.target.value)}
+                    placeholder="e.g. Taking photos"
+                  />
+                </label>
+              )}
+              <label>
+                Building
+                <select className="fh-input" required value={locBuilding} onChange={(e) => setLocBuilding(e.target.value)}>
+                  <option value="" disabled>
+                    Choose a building
+                  </option>
+                  {locNames.map((b) => (
+                    <option key={b} value={b}>
+                      {b}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Details (optional)
+                <textarea
+                  className="fh-input"
+                  rows={2}
+                  maxLength={DETAILS_MAX}
+                  value={locDetails}
+                  onChange={(e) => setLocDetails(e.target.value)}
+                  placeholder="Anything else Admin should know"
+                />
+              </label>
+              <button type="submit" className="fh-btn fh-btn-primary" disabled={locSaving}>
+                {locSaving ? "Sending…" : "Send update"}
+              </button>
+              {locError && <small className="fh-check-msg" role="alert">{locError}</small>}
+              {locNotice && <small className="fh-check-msg">{locNotice}</small>}
+              {locLast && (
+                <small className="fh-check-msg">
+                  Last update: {describeLocation(locLast)} · {clock(locLast.created_at)}
+                  {locLast.details ? ` · "${locLast.details}"` : ""}
+                  {locLast.edited_at ? " (edited by Admin)" : ""}
+                </small>
+              )}
+            </form>
+          </div>
         </li>
       </ol>
     </section>
@@ -823,7 +963,7 @@ function ScoresStop({ groupId, onRows }: { groupId: number | null; onRows?: (row
 }
 
 /** Organiser + sponsors, under the Welcome buttons. Same list as the public homepage. */
-function Credits() {
+export function Credits() {
   return (
     <div className="fh-credits" data-example-sponsors={SPONSORS_ARE_EXAMPLES || undefined}>
       <div className="fh-credits-col">
@@ -868,13 +1008,14 @@ function Credits() {
 
 // ── Chrome: header, account menu, stop bar ───────────────────────────────────
 
-function AccountMenu({
+export function AccountMenu({
   name,
   groupName,
   roleLabel,
   logoutHref,
   avatarUrl,
   onEditProfile,
+  links,
 }: {
   name: string;
   groupName: string | null;
@@ -884,6 +1025,8 @@ function AccountMenu({
   avatarUrl?: string | null;
   /** Faci only: shows "Edit Profile" in the menu. */
   onEditProfile?: () => void;
+  /** Extra pages above Log Out (staff home: Big screen). */
+  links?: { href: string; label: string }[];
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -944,6 +1087,11 @@ function AccountMenu({
               <Pencil size={15} aria-hidden /> Edit Profile
             </button>
           )}
+          {links?.map((l) => (
+            <Link key={l.href} href={l.href} role="menuitem" className="fh-menu-link" onClick={() => setOpen(false)}>
+              {l.label}
+            </Link>
+          ))}
           <button type="button" role="menuitem" onClick={signOut}>
             Log Out
           </button>
@@ -959,7 +1107,7 @@ function AccountMenu({
  * fill animation stutter. The fill animates width, not transform: Safari can
  * skip transform transitions under the header's backdrop-filter.
  */
-function StopBar({ stops }: { stops: readonly { id: string; label: string }[] }) {
+export function StopBar({ stops }: { stops: readonly { id: string; label: string }[] }) {
   const [active, setActive] = useState(0);
 
   useEffect(() => {
