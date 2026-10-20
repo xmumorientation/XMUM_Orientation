@@ -4,6 +4,7 @@ import { Check, CircleDashed, TriangleAlert, Undo2, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { groupSwatch } from "@/components/freshie/groupTheme";
+import { KEY_COLORS, KEY_NAMES } from "@/components/freshie/items/KeyEmblem";
 import { vxDisplay, vxSlab } from "@/components/home/fonts";
 import { usePhaseTimer } from "@/components/PhaseTimerProvider";
 import { useProfile } from "@/components/ProfileProvider";
@@ -791,20 +792,30 @@ export default function GmPanelPage() {
                           {needPicks === 2 ? "Pick 2 locations" : "Pick the location"} ·{" "}
                           {RISK_TIER_META[tier].label}
                         </span>
-                        <div className="gc-seg gc-st-locs" role="group" aria-label="Locations">
+                        <div className="gc-st-locs" role="group" aria-label="Locations">
                           {PROJECTOR_LOCATIONS.map((loc) => {
                             const n = counts?.[loc];
                             const full = n !== undefined && n >= PIECES_PER_SET;
+                            const picked = locations.includes(loc);
                             return (
                               <button
                                 key={loc}
                                 type="button"
-                                aria-pressed={locations.includes(loc)}
+                                className="gc-st-loc"
+                                style={{ "--key": KEY_COLORS[loc].main } as React.CSSProperties}
+                                aria-pressed={picked}
                                 // High risk guarantees a piece of this location, so a full one cannot be picked.
                                 disabled={needPicks === 1 && full}
                                 onClick={() => toggleLocation(loc)}
                               >
-                                {PROJECTOR_LABELS[loc]}
+                                {picked && <Check size={16} className="gc-st-loc-tick" aria-hidden />}
+                                <span className="gc-st-loc-key">{KEY_NAMES[loc]}</span>
+                                <b>{PROJECTOR_LABELS[loc]}</b>
+                                <span className="gc-st-loc-dots" aria-hidden>
+                                  {Array.from({ length: PIECES_PER_SET }, (_, i) => (
+                                    <i key={i} data-on={n !== undefined && i < n ? "" : undefined} />
+                                  ))}
+                                </span>
                                 <small>{n === undefined ? "…" : full ? "Full 5/5" : `Has ${n}/${PIECES_PER_SET}`}</small>
                               </button>
                             );
