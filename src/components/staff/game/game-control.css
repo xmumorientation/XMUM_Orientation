@@ -491,6 +491,7 @@
 .gc .gc-st-award[data-tone]:disabled { background: var(--gc-ink-3); border-color: var(--gc-line); color: var(--gc-mute); }
 .gc .gc-st-groups button:disabled { opacity: 0.35; cursor: not-allowed; }
 .gc-st-status-chip { font-size: 11px; padding: 5px 11px; }
+.gc .gc-st-open { width: 100%; }
 
 /* The GM's station on each day, under the title. */
 .gc-st-days { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }

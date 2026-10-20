@@ -92,7 +92,7 @@ function day2Checks({
   const fee = station.entry_cost;
 
   if (station.status === "closed") {
-    checks.push({ label: "Station", text: "Closed by Admin or HOGM. Ask them to open it.", state: "bad" });
+    checks.push({ label: "Station", text: "Closed. Open it in Station status first.", state: "bad" });
   } else if (station.status === "in_progress") {
     checks.push({ label: "Station", text: "Shows In progress. If no other group is playing here, you can still start.", state: "warn" });
   }
@@ -136,9 +136,10 @@ function day2Checks({
 
 // GM's Station panel (/gm), in the Game control look (game-control.css) of the
 // ops crew's Ops page. Phones, top to bottom:
-//  Status    - the station's state, shown only. A Day 2 game sets it: In
-//              progress when it starts, Available when its result is submitted
-//              or it is cancelled. Admin and HOGM can still set it (Closed).
+//  Status    - the station's state, shown. A Day 2 game sets it: In progress
+//              when it starts, Available when its result is submitted or it is
+//              cancelled. Admin and HOGM can still set it. The GM's only manual
+//              step: Open station (Closed → Available), after a confirm.
 //  Group     - tap the group at the station (fn_scoreboard: name, colour, tokens)
 //  Result    - Day 1: win or participation reward, confirmed in a sheet first.
 //              Amounts are the admin's token rules (Token page); the server
@@ -182,6 +183,7 @@ export default function GmPanelPage() {
   const [undoAsk, setUndoAsk] = useState<UndoPreview | null>(null);
   // Day 1 reward waiting for the GM's confirmation.
   const [day1Ask, setDay1Ask] = useState<"win" | "lose" | null>(null);
+  const [openAsk, setOpenAsk] = useState(false);
 
   // a station runs either Day 1 or Day 2, not both
   const day = station?.day ?? pickedDay;
@@ -955,11 +957,32 @@ export default function GmPanelPage() {
             <p className="gc-muted">
               {!station
                 ? "No station assigned to your account. Ask Admin to set your station."
-                : station.day === 2
-                  ? "Changes by itself: In progress when you start a game, Available when you submit or cancel it. Admin and HOGM can close the station."
-                  : "Admin and HOGM set the status of Day 1 stations."}
+                : station.status === "closed"
+                  ? "Groups cannot check in or play here while it is closed. Open it when your station is ready."
+                  : station.day === 2
+                    ? "Changes by itself: In progress when you start a game, Available when you submit or cancel it. Admin and HOGM can close the station."
+                    : "Admin and HOGM set the status of Day 1 stations."}
             </p>
+            {station?.status === "closed" && (
+              <button type="button" className="gc-btn gc-btn-go gc-st-open" disabled={busy} onClick={() => setOpenAsk(true)}>
+                Open station
+              </button>
+            )}
             <StatusLine error={statusMsg.error} notice={statusMsg.notice} />
+            <ConfirmSheet
+              open={openAsk}
+              onClose={() => setOpenAsk(false)}
+              onConfirm={async () => {
+                setBusy(true);
+                await autoStatus("available");
+                setBusy(false);
+                setOpenAsk(false);
+              }}
+              busy={busy}
+              title={`Open ${station?.name ?? "your station"}?`}
+              confirmLabel="Open station"
+              body="It was closed by Admin or HOGM. Opening sets it to Available, so groups can check in and play here. The change is logged."
+            />
           </section>
         </div>
       </div>
