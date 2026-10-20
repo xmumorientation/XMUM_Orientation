@@ -1,11 +1,11 @@
 "use client";
 
-import { Pause, Play, Plus, Square } from "lucide-react";
+import { Lock, Pause, Play, Plus, RotateCcw, Square } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { usePhaseTimer } from "@/components/PhaseTimerProvider";
 import { useConfig } from "@/components/useConfig";
-import { gameLength, otherGameRunning, saveGameLength } from "@/lib/gameLength";
+import { gameLength, otherGameRunning, resetGames, saveGameLength } from "@/lib/gameLength";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import type { Phase } from "@/lib/types";
 import { formatCountdown, friendlyError } from "@/lib/utils";
@@ -169,20 +169,79 @@ function GameCard({ game, day }: { game: Phase; day: 1 | 2 }) {
   );
 }
 
+/** Rehearsal only: every game back to Not started (lib/gameLength resetGames). */
+function ResetGames() {
+  const supabase = useMemo(() => supabaseBrowser(), []);
+  const { phases } = usePhaseTimer();
+  const { config } = useConfig();
+  const { error, setError, notice, flash } = useStatus();
+  const [busy, setBusy] = useState(false);
+  const [asking, setAsking] = useState(false);
+  const rehearsal = config["rehearsal_mode"] === true || config["rehearsal_mode"] === "true";
+  const started = phases.some((p) => p.state !== "pending");
+
+  async function reset() {
+    setBusy(true);
+    const err = await resetGames(supabase, phases);
+    setBusy(false);
+    setAsking(false);
+    if (err) setError(err);
+    else flash("Games reset. Every GM is back on their Day 1 station.");
+  }
+
+  return (
+    <>
+      <section className="gc-card gc-danger" aria-labelledby="gc-reset-games">
+        <div>
+          <h3 id="gc-reset-games" className="gc-h4">Reset games</h3>
+          <p>
+            {rehearsal
+              ? "Day 1, Day 2 and the endgame back to Not started, so the next run starts from Day 1."
+              : "Locked until Admin turns on Rehearsal mode."}
+          </p>
+        </div>
+        <button
+          type="button"
+          className="gc-btn gc-btn-danger"
+          disabled={!rehearsal || !started || busy}
+          onClick={() => setAsking(true)}
+        >
+          {rehearsal ? <RotateCcw size={15} aria-hidden /> : <Lock size={15} aria-hidden />} Reset
+        </button>
+      </section>
+      <StatusLine error={error} notice={notice} />
+      <ConfirmSheet
+        open={asking}
+        onClose={() => setAsking(false)}
+        onConfirm={reset}
+        busy={busy}
+        danger
+        title="Reset every game?"
+        confirmLabel="Reset games"
+        typeToConfirm="RESET"
+        body="Day 1, Day 2 and the endgame go back to Not started and their timers clear. Every Game Master moves back to their Day 1 station. Tokens and pieces are not changed."
+      />
+    </>
+  );
+}
+
 export function GameSection() {
   const { phases } = usePhaseTimer();
   const games = GAMES.map((g) => ({ ...g, phase: phases.find((p) => p.key === g.key) }));
   return (
-    <div className="gc-grid2">
-      {games.map(({ key, day, phase }) =>
-        phase ? (
-          <GameCard key={key} game={phase} day={day} />
-        ) : (
-          <p key={key} className="gc-empty">
-            Day {day} game not set up yet.
-          </p>
-        )
-      )}
+    <div className="gc-stack">
+      <div className="gc-grid2">
+        {games.map(({ key, day, phase }) =>
+          phase ? (
+            <GameCard key={key} game={phase} day={day} />
+          ) : (
+            <p key={key} className="gc-empty">
+              Day {day} game not set up yet.
+            </p>
+          )
+        )}
+      </div>
+      <ResetGames />
     </div>
   );
 }
