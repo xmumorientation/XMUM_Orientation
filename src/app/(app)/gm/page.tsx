@@ -9,6 +9,7 @@ import { usePhaseTimer } from "@/components/PhaseTimerProvider";
 import { useProfile } from "@/components/ProfileProvider";
 import "@/components/staff/game/game-control.css";
 import { ConfirmSheet, StatusLine, useStatus } from "@/components/staff/game/parts";
+import { undoWindowMinutes } from "@/components/token/UndoWindowSetting";
 import { useConfig } from "@/components/useConfig";
 import { useOfflineQueue } from "@/components/useOfflineQueue";
 import { supabaseBrowser } from "@/lib/supabase/client";
@@ -31,6 +32,21 @@ type Counts = Record<ProjectorLocation, number>;
 /** A Day 2 game the GM started: locked until its result is submitted or it is cancelled. Kept on this phone. */
 type Day2Game = { stationId: number; groupId: number; locations: ProjectorLocation[] };
 type CheckState = "ok" | "warn" | "bad" | "wait";
+/** What Undo would reverse (fn_undo_preview, 0090). fallback: that function is not on the database yet. */
+type UndoPreview =
+  | { fallback: true }
+  | {
+      fallback?: false;
+      found: boolean;
+      undoable?: boolean;
+      why?: string | null;
+      group_id?: number;
+      group_name?: string;
+      delta?: number;
+      reason?: string;
+      created_at?: string;
+      window_minutes: number;
+    };
 type Day2Check = { label: string; text: string; state: CheckState };
 
 const STATUS: Record<StationStatus, { label: string; tone: "ok" | "warn" | "off" }> = {
@@ -42,6 +58,10 @@ const STATUS: Record<StationStatus, { label: string; tone: "ok" | "warn" | "off"
 const TOTAL_PIECES = PIECES_PER_SET * PROJECTOR_LOCATIONS.length;
 const labels = (locs: ProjectorLocation[], join: string) => locs.map((l) => PROJECTOR_LABELS[l]).join(join);
 const flag = (v: unknown) => v === true || v === "true";
+const minutesAgo = (iso: string) => {
+  const m = Math.max(0, Math.round((Date.now() - Date.parse(iso)) / 60000));
+  return m === 0 ? "just now" : `${m} min ago`;
+};
 
 /**
  * Day 2 checks before a game, from what a GM may read. They are the reasons
@@ -121,7 +141,8 @@ function day2Checks({
 //  Group     - tap the group at the station (fn_scoreboard: name, colour, tokens)
 //  Result    - Day 1: win or participation reward. Amounts are the admin's
 //              token rules (Token page); the server reads them, the GM cannot
-//              pick one. Undo the last transaction within 2 minutes.
+//              pick one. Undo shows what it would reverse (fn_undo_preview)
+//              and asks first; Admin sets the window (Token page, default 10 min).
 //              Day 2: three steps, one group at a time. 1 Check: tokens, the
 //              Day 2 game running, no token freeze, a piece to win (the tier's
 //              locations are picked here). 2 Play: the group is locked. 3 Submit:
@@ -157,6 +178,7 @@ export default function GmPanelPage() {
   const [confirmWin, setConfirmWin] = useState<boolean | null>(null);
   const [piecesFor, setPiecesFor] = useState<{ groupId: number; counts: Counts | null } | null>(null);
   const [days, setDays] = useState<DayStation[]>([]);
+  const [undoAsk, setUndoAsk] = useState<UndoPreview | null>(null);
 
   // a station runs either Day 1 or Day 2, not both
   const day = station?.day ?? pickedDay;
@@ -366,11 +388,25 @@ export default function GmPanelPage() {
     }
   }
 
+  // Step 1: what would be undone. Step 2 (the sheet's confirm): undo it.
+  async function askUndo() {
+    setBusy(true);
+    result.setError(null);
+    const { data, error } = await supabase.rpc("fn_undo_preview");
+    setBusy(false);
+    if (error) return setUndoAsk({ fallback: true });
+    const p = data as Exclude<UndoPreview, { fallback: true }>;
+    if (!p.found) return result.setError(friendlyError({ message: "NOTHING_TO_UNDO" }));
+    if (!p.undoable) return result.setError(friendlyError({ message: p.why ?? "NOTHING_TO_UNDO" }));
+    setUndoAsk(p);
+  }
+
   async function undo() {
     setBusy(true);
     result.setError(null);
     const { data, error } = await supabase.rpc("fn_undo_last_transaction");
     setBusy(false);
+    setUndoAsk(null);
     if (error) result.setError(friendlyError(error));
     else {
       result.flash(`Undone. Balance: ${(data as { balance?: number })?.balance ?? "updated"}`);
@@ -661,11 +697,38 @@ export default function GmPanelPage() {
                   </button>
                 </div>
                 <StatusLine error={result.error} notice={result.notice} />
-                <button type="button" className="gc-btn gc-st-undo" disabled={busy} onClick={undo}>
+                <button type="button" className="gc-btn gc-st-undo" disabled={busy} onClick={askUndo}>
                   <Undo2 size={16} aria-hidden />
                   Undo my last transaction
-                  <small>2 min window</small>
+                  <small>within {undoWindowMinutes(config["undo_window_minutes"])} min</small>
                 </button>
+                <ConfirmSheet
+                  open={undoAsk !== null}
+                  onClose={() => setUndoAsk(null)}
+                  onConfirm={undo}
+                  busy={busy}
+                  danger
+                  title="Undo your last transaction?"
+                  confirmLabel="Undo"
+                  body={
+                    !undoAsk || undoAsk.fallback ? (
+                      "It reverses the last token change you made, if it is recent enough."
+                    ) : (
+                      <>
+                        <b>{undoAsk.group_name}</b>: {undoAsk.reason} ·{" "}
+                        <b>
+                          {(undoAsk.delta ?? 0) > 0 ? "+" : ""}
+                          {undoAsk.delta}
+                        </b>{" "}
+                        · {undoAsk.created_at ? minutesAgo(undoAsk.created_at) : ""}.
+                        {(() => {
+                          const g = groups.find((x) => x.id === undoAsk.group_id);
+                          return g ? ` ${g.name} goes from ${g.token_balance} to ${g.token_balance - (undoAsk.delta ?? 0)} tokens.` : "";
+                        })()}
+                      </>
+                    )
+                  }
+                />
               </>
             ) : (
               <>

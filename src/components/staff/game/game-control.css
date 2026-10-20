@@ -143,6 +143,10 @@
 .gc-btn-go { background: #16a34a; border-color: #16a34a; color: #fff; }
 .gc-btn-stop { background: #dc2626; border-color: #dc2626; color: #fff; }
 .gc-btn-go:hover:not(:disabled), .gc-btn-stop:hover:not(:disabled) { border-color: #fff; }
+/* In a sheet, .gc-sheet .gc-btn (transparent) would win over these. */
+.gc-sheet .gc-btn-go { background: #16a34a; border-color: #16a34a; color: #fff; }
+.gc-sheet .gc-btn-stop { background: #dc2626; border-color: #dc2626; color: #fff; }
+.gc-sheet .gc-btn-go:disabled, .gc-sheet .gc-btn-stop:disabled { opacity: 0.4; }
 .gc-btn-danger { color: var(--gc-red); border-color: rgba(255, 77, 94, 0.5); }
 .gc-grow { flex: 1; }
 .gc-link { border: 0; background: none; padding: 6px 0; color: var(--gc-cyan); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }

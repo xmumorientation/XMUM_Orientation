@@ -39,7 +39,7 @@ This reflects only the migration files in the repo. Any manual changes made to t
 | Day 2 Challenge (charge the tier's entry fee and grant a piece) | — | — | ✓ | ✓ | — | † | † | † | DB |
 | Show blind box QR + link on the Station page (own boxes and own station's shared boxes) | — | — | Own | Own | — | — | — | — | DB |
 | Set station status: Available / In Progress / Closed (`fn_set_station_status`; Admin → Stations and the Live control list; the GM page sets its own station by itself: In Progress when a Day 2 game starts, Available when it is submitted or cancelled; never changed by the game timer or by check-ins; changes show live on every page) | — | — | Own Station | Own Station | — | All † | All ‡ | All | DB |
-| Undo Token Transaction (own last one in `token_transactions`, within 2 minutes; not a Day 2 entry; 0090 — the live database ran bonding-session's version, which read `token_logs`) | — | — | Own Actions | Own Actions | — | † | † | † | DB |
+| Undo Token Transaction (own last one in `token_transactions`, within Admin's undo window, default 10 minutes; not a Day 2 entry; the GM confirms what it reverses first; 0090 — the live database ran bonding-session's version, which read `token_logs`) | — | — | Own Actions | Own Actions | — | † | † | † | DB |
 | Grant a puzzle piece directly (fn_grant_item, no UI) | — | — | † | † | — | † | † | † | DB |
 | **Guardian** | | | | | | | | | |
 | Guardian Verification page (dashboard card is the only entry) | — | — | — | ✓ | — | — | — | — | UI |
