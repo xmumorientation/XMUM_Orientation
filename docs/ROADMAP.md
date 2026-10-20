@@ -22,8 +22,9 @@ Last updated: 2026-10-17
 | Jiamin | HOF sees every group's name and slogan | [6](#6-hof-sees-every-groups-name-and-slogan-ready) |
 | Zichien | Everything on the map: Figma design, game station status, and so on | [5](#5-map-ready) |
 | _To assign_ | Backend for Faci profiles (the UI is built) | [7](#7-faci-profiles-backend-ready) |
+| _To assign_ | Take GM out of the database's blind box holders | [8](#8-gm-blind-boxes-bring-the-database-in-line-with-the-app-later) |
 
-Items 3 and 7 have no owner yet.
+Items 3, 7 and 8 have no owner yet.
 
 ---
 
@@ -222,6 +223,19 @@ The design branches are merged. These remote branches are still not in `main` (c
 
 **Release order:** run `0069` in Supabase first, then deploy the frontend. The other order calls functions that do not exist yet. Then add the new table and functions to [permission-matrix.md](permission-matrix.md). (done)
 
+## 8. GM blind boxes: bring the database in line with the app (Later)
+
+**From Ben:** do this when there is a chance. Nothing is broken today.
+
+Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR anywhere, and `BLINDBOX_HOLDER_ROLES` in `src/lib/types.ts` no longer includes them. The database was left as it is, so it still treats them as holders:
+- `bb_holder_role()` ([0054_blindbox_v3.sql](../supabase/migrations/0054_blindbox_v3.sql)) still returns true for `gm` and `guardian_gm`. Assigning to them works if someone calls the RPC directly, and the "holder reads ..." policies (0054, 0070) still let them read their own and their station's boxes.
+- Assigning to stations (one station, By station, All stations) checks no role. Only a station's GMs could show those boxes, so they cannot be sold now. Ben will change Admin's assign modes himself.
+
+**How to fix:**
+1. Add a new migration (the next free number after `0089`; do not edit 0054). Redefine `bb_holder_role()` as `p_role in ('committee', 'hof', 'hogm', 'admin')`, the same as `BLINDBOX_HOLDER_ROLES`.
+2. Decide what to do with station pools: reject the station modes in the assign function, or leave them if a station seller comes back later.
+3. Before applying, check the live database for boxes already held by GMs or stations (on 2026-10-20 there were none) and revoke them first.
+
 ---
 
 ## Done
@@ -234,8 +248,9 @@ The design branches are merged. These remote branches are still not in `main` (c
 ### GM pages in the Welcome page look, 2026-10-20 (Ben, branch `gm-redesign`)
 No migration. The Game Master's five tabs now match HOF and HOGM: the Welcome page colours (`VORTEXA_ROLES` in `types.ts`), the ops tab bar with **Station** (`/gm`) as the yellow center button, and OpsHeader on subpages.
 - Home: `StaffHome`, with Station in place of Ops, no Big screen (`opsAccountLinks`) and no blind box stop. Map: the ops map with `StationBoard` (the GM's own station is marked "Yours"). Schedule: `FreshieSchedule vortexa`. Scores: `GroupScores tokensOnly`.
-- Station (`app/(app)/gm/page.tsx`) rebuilt in the Game control look (`.gc-st` in `game-control.css`): station status, group buttons with colours and tokens, Day 1 Win / Participation / Undo, Day 2 result + locations + submit, offline queue. Same RPCs and the same offline queue as before. GMs show no blind box QR any more, on Station or on Home (Ben, 2026-10-20). `BLINDBOX_HOLDER_ROLES` drops GM and Guardian GM, so Admin's assign lists no longer show them and `/api/blindbox/links` refuses them. The database (`bb_holder_role`, 0054) is unchanged and still allows them. Left for Ben: Admin's station modes (one station, By station, All stations) still give boxes to stations, which only their GMs could show.
+- Station (`app/(app)/gm/page.tsx`) rebuilt in the Game control look (`.gc-st` in `game-control.css`): station status, group buttons with colours and tokens, Day 1 Win / Participation / Undo, Day 2 result + locations + submit, offline queue. Same RPCs and the same offline queue as before. GMs show no blind box QR any more, on Station or on Home (Ben, 2026-10-20). `BLINDBOX_HOLDER_ROLES` drops GM and Guardian GM, so Admin's assign lists no longer show them and `/api/blindbox/links` refuses them. The database (`bb_holder_role`, 0054) is unchanged and still allows them; item 8 covers changing it later. Left for Ben: Admin's station modes (one station, By station, All stations) still give boxes to stations, which only their GMs could show.
 - Fix: a GM cannot select `groups` (0002 RLS), so the old GM Scoreboard showed cached or made-up numbers. Scores, Home and Station now read `fn_scoreboard()` (refreshed every 30 s). GMs see tokens only, because they cannot read other groups' puzzle pieces.
+- Map (HOF, HOGM, Committee, GM): the station list under the map shows Day 1 or Day 2, no "All days". It opens on Day 1 until the day1 phase ends, then Day 2 (`StationBoard.tsx`).
 - Checked in the browser as `gm.test` (phone and desktop), with no button that writes data pressed. Not checked yet: a GM with a station assigned. Not done: Guardian GM still uses the old staff design.
 
 ### Map: the lake stage stays dark until the finale, 2026-10-19 (Ben, branch `lakefront-dark`)
