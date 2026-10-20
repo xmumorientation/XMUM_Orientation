@@ -2,6 +2,7 @@
 
 import { Package } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
 import { supabaseBrowser } from "@/lib/supabase/client";
@@ -60,24 +61,33 @@ export function BlindBoxBuy({
   preview: BlindBoxPreview;
 }) {
   const supabase = useMemo(() => supabaseBrowser(), []);
+  const router = useRouter();
   // One key per screen visit: a double-tap or a retry applies exactly once.
   const [key] = useState(() => idemKey());
   const [busyId, setBusyId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [bought, setBought] = useState<BlindBoxBuyResult | null>(null);
 
-  async function buy(assignmentId: number) {
-    setBusyId(assignmentId);
+  async function buy(option: BlindBoxOption) {
+    setBusyId(option.assignment_id);
     setError(null);
-    const { data, error: err } = await supabase.rpc("fn_bb_buy", {
+    // Charged only at the price shown here: if Admin changed it meanwhile,
+    // nothing is charged (BB_PRICE_CHANGED).
+    const args = {
       p_seller_id: sellerId,
       p_version: version,
-      p_assignment_id: assignmentId,
+      p_assignment_id: option.assignment_id,
       p_idempotency_key: key,
-    });
+    };
+    let { data, error: err } = await supabase.rpc("fn_bb_buy_at", { ...args, p_expected_price: option.price });
+    // Migration 0091 not run yet: buy without the price check.
+    if (err?.code === "PGRST202") ({ data, error: err } = await supabase.rpc("fn_bb_buy", args));
     setBusyId(null);
-    if (err) setError(friendlyError(err));
-    else setBought(data as BlindBoxBuyResult);
+    if (err) {
+      setError(friendlyError(err));
+      // Balance, stock or price changed since this screen loaded: show them.
+      router.refresh();
+    } else setBought(data as BlindBoxBuyResult);
   }
 
   if (bought) {
@@ -156,7 +166,7 @@ export function BlindBoxBuy({
                     {note && <p className="text-xs text-amber-300">{note}</p>}
                   </div>
                   <button
-                    onClick={() => buy(o.assignment_id)}
+                    onClick={() => buy(o)}
                     disabled={busyId !== null || o.status !== "ok"}
                     className="btn-primary min-h-[48px] min-w-[96px]"
                   >

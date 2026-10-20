@@ -11,6 +11,7 @@ This reflects only the migration files in the repo. Any manual changes made to t
 - View All / Manage = can view everything / can manage
 - † = the backend allows it, but there is no menu entry or UI; reachable only by typing the URL or calling the RPC directly
 - ‡ = HOGM does this on Ops → Game control, after migration 0071 (`is_game_lead()`). Kill-switches and other config keys stay Admin only.
+- § = the server still allows HOGM (`is_game_lead()` / `/api/admin/nfc`), but HOGM's Ops page no longer has the control (Game, Tokens and NFC tabs removed 2026-10-19). Admin does it on Live control / Admin → Token / Admin → NFC. Tighten the server check if HOGM must not do it at all.
 - Enforcement: DB = enforced by the database; UI = hidden in the frontend only; ⚠ = no server-side check
 
 ## Matrix
@@ -39,7 +40,7 @@ This reflects only the migration files in the repo. Any manual changes made to t
 | Day 2 Challenge (charge the tier's entry fee and grant a piece) | — | — | ✓ | ✓ | — | † | † | † | DB |
 | Show blind box QR + link on the Station page (own boxes and own station's shared boxes) | — | — | Own | Own | — | — | — | — | DB |
 | Set station status: Available / In Progress / Closed (`fn_set_station_status`; Admin → Stations and the Live control list; the GM page sets its own station by itself: In Progress when a Day 2 game starts, Available when it is submitted or cancelled, and the GM can open a Closed one (Open station); never changed by the game timer or by check-ins; changes show live on every page) | — | — | Own Station | Own Station | — | All † | All ‡ | All | DB |
-| Undo Token Transaction (own last one in `token_transactions`, within Admin's undo window, default 10 minutes; not a Day 2 entry; the GM confirms what it reverses first; 0090 — the live database ran bonding-session's version, which read `token_logs`) | — | — | Own Actions | Own Actions | — | † | † | † | DB |
+| Undo Token Transaction (own last one in `token_transactions`, within Admin's undo window, default 10 minutes; not a Day 2 entry; the GM confirms what it reverses first; 0093 — the live database ran bonding-session's version, which read `token_logs`) | — | — | Own Actions | Own Actions | — | † | † | † | DB |
 | Grant a puzzle piece directly (fn_grant_item, no UI) | — | — | † | † | — | † | † | † | DB |
 | **Guardian** | | | | | | | | | |
 | Guardian Verification page (dashboard card is the only entry) | — | — | — | ✓ | — | — | — | — | UI |
@@ -78,10 +79,11 @@ This reflects only the migration files in the repo. Any manual changes made to t
 | Group Facis' sharing status (`fn_group_faci_status`) | — | Own Group, no phones | — | — | All, with phones | All, with phones | All, with phones | All, with phones | DB |
 | **Committee / Operations** | | | | | | | | | |
 | Committee Operations page (/committee) | — | — | — | — | ✓ | ✓ | ✓ | † | UI |
-| Group Balance overview | — | — | — | — | View All | View All | View All | View All | DB |
+| Ops tabs Headcount / Location / Freshies (HOF, Committee, Admin; HOGM's Ops is Game control) | — | — | — | — | View All | View All | — | View All | DB |
+| Read the groups' 4-digit login passwords (`group_login_codes`, Ops → Freshies; migration 0092) | — | — | — | — | ✓ | ✓ | — | ✓ | DB |
 | Freshie group assignment (Committee → Register tab) | — | — | — | — | ✓ | — | — | ✓ | DB |
-| Facilitator group assignment (`fn_admin_set_group_facis`; HOF on Ops → Faci control, Admin on Admin → Freshies; `is_faci_lead()`, migration 0080) | — | — | — | — | — | ✓ | — | ✓ | DB |
-| Faci control overview (every group's name, slogan, Facilitators, headcount, location updates and Faci-related audit entries; read only) | — | — | — | — | — | ✓ | — | ✓ | DB (Committee-tier reads) |
+| Facilitator group assignment (`fn_admin_set_group_facis`; HOF on Ops → Facilitators, Admin on Ops → Facilitators and Admin → Freshies; `is_faci_lead()`, migration 0080) | — | — | — | — | — | ✓ | — | ✓ | DB |
+| Ops → Facilitators: each group's Facilitators and its Faci-related audit entries (Recent changes) | — | — | — | — | — | ✓ | — | ✓ | DB (Committee-tier reads) |
 | Big Screen | — | — | — | — | ✓ | ✓ | ✓ | ✓ | UI + DB |
 | Live Ops stats | — | — | — | — | — | † | † | ✓ | DB |
 | Audit Log | — | — | — | — | — | † | † | ✓ | DB |
@@ -90,11 +92,11 @@ This reflects only the migration files in the repo. Any manual changes made to t
 | View the live group scoreboard (no rules, no log) | — | — | ✓ | ✓ | ✓ | ✓ | ✓ | — | UI |
 | **Token page (/admin/token)** | | | | | | | | | |
 | View token rules, scoreboard and log | — | — | — | — | — | — | — | ✓ | UI |
-| Set token rules (Day 1 rewards, Day 2 fee per tier) | — | — | — | — | — | — | ✓ ‡ | ✓ | DB |
+| Set token rules (Day 1 rewards, Day 2 fee per tier) | — | — | — | — | — | — | § | ✓ | DB |
 | Edit / delete logs | — | — | — | — | — | — | — | ✓ | ⚠ UI |
-| Reset All (Rehearsal mode only) | — | — | — | — | — | — | ✓ ‡ | ✓ | DB |
+| Reset All (Rehearsal mode only) | — | — | — | — | — | — | § | ✓ | DB |
 | **Admin Console (/admin/*)** | | | | | | | | | |
-| Phase Control (start / pause / extend / end, game length: runs the game timer only, station statuses are not changed) | — | — | — | — | — | — | ✓ ‡ | ✓ | DB |
+| Phase Control (start / pause / extend / end, game length: runs the game timer only, station statuses are not changed) | — | — | — | — | — | — | § | ✓ | DB |
 | Kill-switches | — | — | — | — | — | — | — | ✓ | DB |
 | Users (CSV import; edit role / group / station) | — | — | — | — | — | — | — | ✓ | DB + API |
 | Stations config (add / edit / delete, Game Masters) | — | — | — | — | — | — | ✓ ‡ | ✓ | DB |
@@ -102,7 +104,7 @@ This reflects only the migration files in the repo. Any manual changes made to t
 | Attendance Sessions open / close | — | — | — | — | — | — | — | ✓ | DB |
 | Schedule / FAQ management | — | — | — | — | — | — | — | ✓ | DB |
 | Brand config | — | — | — | — | — | — | — | ✓ | DB |
-| NFC Token generation | — | — | — | — | — | — | ✓ ‡ | ✓ | API + DB |
+| NFC Token generation | — | — | — | — | — | — | § | ✓ | API + DB |
 | Seed Test Accounts | Any logged-in user | Any logged-in user | Any logged-in user | Any logged-in user | Any logged-in user | Any logged-in user | Any logged-in user | Any logged-in user | ⚠ No check |
 
 ## Issues Found

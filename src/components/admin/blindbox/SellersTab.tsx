@@ -39,7 +39,13 @@ export function SellersTab({ data, onError, onNotice }: TabProps) {
     onError(null);
     const { error } = await supabase.rpc(fn, args);
     if (error) {
-      onError(friendlyError(error));
+      // BOX_UNKNOWN is worded for Freshies; here it means the row is gone.
+      onError(
+        error.message.includes("BOX_UNKNOWN")
+          ? "That assignment no longer exists (it may have been removed in another tab). The list is refreshed."
+          : friendlyError(error)
+      );
+      data.reload();
       return false;
     }
     onNotice(okMsg);
@@ -48,8 +54,14 @@ export function SellersTab({ data, onError, onNotice }: TabProps) {
   }
 
   async function saveQty(a: BlindBoxAssignment) {
-    const next = Math.floor(Number(edits[a.id]));
-    if (!Number.isFinite(next)) return;
+    const raw = (edits[a.id] ?? "").trim();
+    // An empty field is not 0: 0 removes the seller's boxes.
+    if (raw === "") return;
+    const next = Math.floor(Number(raw));
+    if (!Number.isFinite(next) || next < 0) return;
+    if (next === 0 && !window.confirm(`Set ${data.sellerName(a)}'s quantity to 0? The boxes not sold yet return to stock.`)) {
+      return;
+    }
     const ok = await call(
       "fn_bb_set_quantity",
       { p_assignment_id: a.id, p_quantity: next },
@@ -152,7 +164,7 @@ export function SellersTab({ data, onError, onNotice }: TabProps) {
               const left = a.quantity - a.opened;
               const link = data.links[a.id];
               const dead = !a.active || type?.archived;
-              const editing = edits[a.id] !== undefined && Number(edits[a.id]) !== a.quantity;
+              const editing = edits[a.id] !== undefined && edits[a.id].trim() !== "" && Number(edits[a.id]) !== a.quantity;
               return (
                 <tr key={a.id} className={cn(dead && "opacity-60")}>
                   <td className="px-4 py-2.5">

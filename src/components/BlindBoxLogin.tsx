@@ -17,15 +17,18 @@ type FreshieGroup = { id: number; name: string };
  * password, and the same page reloads on the buy screen: the scan link is
  * kept, so nothing needs scanning twice.
  *
- * `notFreshie`: the visitor is signed in, but as staff or a Faci. Only Freshie
- * groups can buy, so offer to switch to a Freshie login.
+ * `notFreshie`: the visitor is signed in, but as staff or a Faci (or, with
+ * `noGroup`, as a Freshie account with no group). Only Freshie group logins
+ * can buy, so offer to switch to one.
  */
 export function BlindBoxLogin({
   sellerName,
   notFreshie = false,
+  noGroup = false,
 }: {
   sellerName: string;
   notFreshie?: boolean;
+  noGroup?: boolean;
 }) {
   const supabase = useMemo(() => supabaseBrowser(), []);
   const router = useRouter();
@@ -53,7 +56,9 @@ export function BlindBoxLogin({
 
   async function switchToFreshie() {
     setBusy(true);
-    await supabase.auth.signOut();
+    // This device only: a global sign-out would end the account's sessions on
+    // every other device too.
+    await supabase.auth.signOut({ scope: "local" });
     setBusy(false);
     setSwitching(true);
   }
@@ -80,13 +85,17 @@ export function BlindBoxLogin({
     return (
       <AuthShell
         role="Blind box"
-        lead={`${sellerName} is selling blind boxes. Only Freshie groups can buy them, and you are signed in with a staff or Facilitator account.`}
+        lead={
+          noGroup
+            ? `${sellerName} is selling blind boxes. Your account is not in a group yet, so it cannot buy. Log in with your group's 4-digit password instead.`
+            : `${sellerName} is selling blind boxes. Only Freshie groups can buy them, and you are signed in with a staff or Facilitator account.`
+        }
         backHref="/dashboard"
         backLabel="Back to home"
       >
         <div className="vx-login-form">
           <button type="button" className="vx-btn vx-btn-primary" onClick={switchToFreshie} disabled={busy}>
-            {busy ? "Signing out…" : "Log in as a Freshie"}
+            {busy ? "Signing out…" : noGroup ? "Log in as your group" : "Log in as a Freshie"}
           </button>
         </div>
       </AuthShell>

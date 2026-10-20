@@ -1,8 +1,12 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
+import { Countdown } from "@/components/freshie/FreshieHome";
+import { VORTEXA_THEME } from "@/components/freshie/groupTheme";
+import { nexusBody, vxSlab } from "@/components/home/fonts";
 import { usePhaseTimer } from "@/components/PhaseTimerProvider";
 import { useConfig } from "@/components/useConfig";
 import { supabaseBrowser } from "@/lib/supabase/client";
@@ -11,7 +15,11 @@ import {
   PROJECTOR_LOCATIONS,
   type ProjectorLocation,
 } from "@/lib/types";
-import { cn, formatCountdown, hexToRgbChannels } from "@/lib/utils";
+import { cn, hexToRgbChannels } from "@/lib/utils";
+
+import "@/components/freshie/freshie.css";
+import "@/components/staff/staff-home.css";
+import "./bigscreen.css";
 
 interface GroupRow {
   id: number;
@@ -46,51 +54,27 @@ function compareStandings(a: Standing, b: Standing): number {
   return a.group.name.localeCompare(b.group.name);
 }
 
+// Home's ticket countdown (Freshie Home's Countdown, in the Welcome colours).
+// While a game phase runs it counts that phase; otherwise the event countdown.
 function ScreenClock() {
   const { phases, offsetMs, tick } = usePhaseTimer();
   void tick;
 
-  const active = phases.find((p) => p.state === "active");
-  const paused = phases.find((p) => p.state === "paused");
-  const current = active ?? paused;
-  const serverNow = Date.now() + offsetMs;
+  const current = phases.find((p) => p.state === "active") ?? phases.find((p) => p.state === "paused");
+  // A game started by hand in Live control has no end time: show the event.
+  const timed = current && (current.ends_at || current.state === "paused") ? current : null;
+  const override = timed
+    ? {
+        label: `${(timed.is_endgame ? "Endgame" : timed.name).toUpperCase()} ${timed.state === "paused" ? "PAUSED" : "ENDS IN"}`,
+        seconds:
+          timed.state === "paused"
+            ? (timed.paused_remaining ?? 0)
+            : Math.max(0, (new Date(timed.ends_at as string).getTime() - (Date.now() + offsetMs)) / 1000),
+        endgame: timed.is_endgame,
+      }
+    : null;
 
-  if (!current) {
-    return (
-      <p className="text-right font-mono text-2xl tabular-nums text-white/60 lg:text-4xl">
-        {new Date(serverNow).toLocaleTimeString("en-GB")}
-      </p>
-    );
-  }
-
-  const remaining =
-    current.state === "paused"
-      ? (current.paused_remaining ?? 0)
-      : current.ends_at
-        ? (new Date(current.ends_at).getTime() - serverNow) / 1000
-        : 0;
-
-  return (
-    <div className="text-right">
-      <p
-        className={cn(
-          "text-xs font-black uppercase tracking-[0.3em] lg:text-sm",
-          current.is_endgame ? "text-red-400" : "text-white/50"
-        )}
-      >
-        {current.is_endgame ? "Endgame" : current.name}
-        {current.state === "paused" ? " · paused" : ""}
-      </p>
-      <p
-        className={cn(
-          "font-mono text-4xl font-black tabular-nums lg:text-6xl",
-          current.is_endgame ? "animate-pulse text-red-400" : "text-white"
-        )}
-      >
-        {current.ends_at || current.state === "paused" ? formatCountdown(remaining) : "LIVE"}
-      </p>
-    </div>
-  );
+  return <Countdown override={override} />;
 }
 
 function PieceDots({ have }: { have: number }) {
@@ -237,18 +221,20 @@ export default function BigScreenPage() {
         } as React.CSSProperties
       }
     >
-      <header className="flex items-start justify-between gap-4">
-        <Link href="/committee" className="min-w-0">
-          <p className="truncate text-3xl font-black tracking-tight lg:text-6xl">
-            <span className="bg-gradient-to-r from-[var(--brand-1)] to-[var(--brand-2)] bg-clip-text text-transparent">
-              {brand.eventName}
-            </span>
-          </p>
-          {brand.eventTagline && (
-            <p className="mt-1 truncate text-sm text-white/50 lg:text-xl">
-              {brand.eventTagline}
-            </p>
-          )}
+      <header
+        className={`fh fh-vx bs-head ${nexusBody.variable} ${vxSlab.variable}`}
+        style={
+          {
+            "--fh-accent": VORTEXA_THEME.accent,
+            "--fh-blue": VORTEXA_THEME.accent,
+            "--fh-blue-light": VORTEXA_THEME.accentLight,
+            "--fh-on-blue": VORTEXA_THEME.onAccent,
+          } as React.CSSProperties
+        }
+      >
+        <Link href="/committee" className="bs-brand">
+          <Image src="/vortexa-logo.webp" alt={brand.eventName} width={1600} height={918} priority />
+          {brand.eventTagline && <span className="bs-tagline">{brand.eventTagline}</span>}
         </Link>
         <ScreenClock />
       </header>

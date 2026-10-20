@@ -2,10 +2,11 @@
 
 import { Check, Copy, Sparkles } from "lucide-react";
 import QRCode from "qrcode";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { useProfile } from "@/components/ProfileProvider";
 import { Card } from "@/components/ui";
+import { useConfig } from "@/components/useConfig";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import type { BlindBoxAssignment, BlindBoxType } from "@/lib/types";
 
@@ -32,6 +33,9 @@ export interface MyBlindBoxSeller {
   qr: Shown | undefined;
 }
 
+// game_config values are jsonb: true or "true".
+const isOn = (v: unknown) => v === true || v === "true";
+
 // The signed-in account's blind boxes (personal + its station's shared pool),
 // grouped by seller, with each seller's QR. Used by BlindBoxCard and by Staff
 // Home's "My Blind Box" stop. Links are recomputed by the server on demand, so
@@ -39,6 +43,7 @@ export interface MyBlindBoxSeller {
 // Regenerate does.
 export function useMyBlindBoxes() {
   const profile = useProfile();
+  const { config } = useConfig();
   const supabase = useMemo(() => supabaseBrowser(), []);
   const [rows, setRows] = useState<Row[]>([]);
   const [shown, setShown] = useState<Record<number, Shown>>({});
@@ -46,17 +51,36 @@ export function useMyBlindBoxes() {
   const [error, setError] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
 
+  /** Why buying is paused right now (kill switches), or null. The QR cannot sell meanwhile. */
+  const paused = isOn(config.blindbox_disabled)
+    ? "Blind boxes are switched off by Admin, so buying is paused. Your QR works again when they are back on."
+    : isOn(config.tokens_frozen)
+      ? "Tokens are frozen by Admin, so buying is paused. Your QR works again when they are unfrozen."
+      : null;
+
+  // Several events can start overlapping loads; only the newest one may
+  // update the state, so a slow older answer never brings back a dead QR.
+  const loadSeq = useRef(0);
+
   const load = useCallback(async () => {
-    // Admin's RLS lets them read every assignment, so filter to this account's
-    // own boxes (personal + own station) explicitly.
-    const mine = profile.station_id
-      ? `profile_id.eq.${profile.id},station_id.eq.${profile.station_id}`
-      : `profile_id.eq.${profile.id}`;
-    const { data, error: err } = await supabase
+    const seq = ++loadSeq.current;
+    const stale = () => seq !== loadSeq.current;
+    // Everyone else's RLS already limits rows to their own account and their
+    // CURRENT station (a GM's station changes by day on the server, so the
+    // station_id this page loaded with can be stale). Admin's RLS reads every
+    // assignment, so Admin filters to their own boxes explicitly.
+    let query = supabase
       .from("blind_box_assignments")
-      .select("*, type:blind_box_types(*), station:stations(name, code)")
-      .or(mine)
-      .order("id");
+      .select("*, type:blind_box_types(*), station:stations(name, code)");
+    if (profile.role === "admin") {
+      query = query.or(
+        profile.station_id
+          ? `profile_id.eq.${profile.id},station_id.eq.${profile.station_id}`
+          : `profile_id.eq.${profile.id}`
+      );
+    }
+    const { data, error: err } = await query.order("id");
+    if (stale()) return;
     setLoaded(true);
     if (err) {
       setError(err.message);
@@ -64,7 +88,11 @@ export function useMyBlindBoxes() {
     }
     const list = (data as unknown as Row[]) ?? [];
     setRows(list);
-    if (list.length === 0) return;
+    if (list.length === 0) {
+      setShown({});
+      setError(null);
+      return;
+    }
 
     try {
       const res = await fetch("/api/blindbox/links", {
@@ -76,6 +104,7 @@ export function useMyBlindBoxes() {
         links?: { id: number; url: string }[];
         error?: string;
       };
+      if (stale()) return;
       if (!res.ok || !json.links) {
         setError(json.error ?? "Couldn't load your QR.");
         return;
@@ -87,26 +116,37 @@ export function useMyBlindBoxes() {
           qr: await QRCode.toDataURL(l.url, { width: 480, margin: 2 }),
         };
       }
+      if (stale()) return;
       setShown(next);
       setError(null);
     } catch (e) {
-      setError(String(e));
+      if (!stale()) setError(String(e));
     }
-  }, [supabase, profile.id, profile.station_id]);
+  }, [supabase, profile.id, profile.role, profile.station_id]);
 
   useEffect(() => {
     load();
     // Unique name per mount: the browser client is shared across components.
+    //   assignments: stock sold or changed
+    //   types:       Admin changed a price or name
+    //   sellers:     Admin regenerated this seller's QR
+    //   phases:      a day starting or ending moves a GM to that day's station
     const channel = supabase
       .channel(`bb-card-${crypto.randomUUID()}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "blind_box_assignments" },
-        load
-      )
+      .on("postgres_changes", { event: "*", schema: "public", table: "blind_box_assignments" }, load)
+      .on("postgres_changes", { event: "*", schema: "public", table: "blind_box_types" }, load)
+      .on("postgres_changes", { event: "*", schema: "public", table: "blind_box_sellers" }, load)
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "phases" }, load)
       .subscribe();
+    // Admin moving a GM to another station sends no event: catch up whenever
+    // the phone comes back to this page.
+    const onVisible = () => {
+      if (document.visibilityState === "visible") load();
+    };
+    document.addEventListener("visibilitychange", onVisible);
     return () => {
       supabase.removeChannel(channel);
+      document.removeEventListener("visibilitychange", onVisible);
     };
   }, [supabase, load]);
 
@@ -133,14 +173,14 @@ export function useMyBlindBoxes() {
     qr: shown[list[0].id],
   }));
 
-  return { loaded, error, sellers, copy, copied };
+  return { loaded, error, sellers, copy, copied, paused };
 }
 
 // "My blind box QR": ONE card with ONE QR for the signed-in account (or its
 // station: a station's GMs share one pool and one code), listing every box type
 // it holds. The same QR works until all the boxes are sold.
 export function BlindBoxCard() {
-  const { error, sellers, copy, copied } = useMyBlindBoxes();
+  const { error, sellers, copy, copied, paused } = useMyBlindBoxes();
 
   if (sellers.length === 0 && !error) return null;
 
@@ -187,6 +227,8 @@ export function BlindBoxCard() {
               <p className="mt-3 text-sm font-semibold text-red-600">
                 Switched off by Admin — this code doesn&apos;t work right now.
               </p>
+            ) : paused && totalLeft > 0 ? (
+              <p className="mt-3 text-sm font-semibold text-amber-600">{paused}</p>
             ) : totalLeft <= 0 ? (
               <p className="mt-3 text-sm font-semibold text-ink-faint">
                 All boxes sold.

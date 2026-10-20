@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { Card } from "@/components/ui";
 import { supabaseBrowser } from "@/lib/supabase/client";
@@ -38,10 +38,20 @@ export function AssignTab({ data, onError, onNotice }: TabProps) {
   const [bRole, setBRole] = useState<UserRole>("gm");
   const [bStations, setBStations] = useState<number[]>([]);
 
+  // GMs per station over BOTH days (profiles.station_id is only today's).
+  // Falls back to today's GMs if the per-day list cannot be read.
+  const [dayGms, setDayGms] = useState<{ user_id: string; station_id: number }[] | null>(null);
+  useEffect(() => {
+    supabase.rpc("fn_admin_station_gms").then(({ data: rows, error }) => {
+      if (!error) setDayGms((rows as { user_id: string; station_id: number }[]) ?? []);
+    });
+  }, [supabase]);
   const gmCount = (stationId: number) =>
-    data.staff.filter(
-      (s) => s.station_id === stationId && (s.role === "gm" || s.role === "guardian_gm")
-    ).length;
+    dayGms
+      ? new Set(dayGms.filter((g) => g.station_id === stationId).map((g) => g.user_id)).size
+      : data.staff.filter(
+          (s) => s.station_id === stationId && (s.role === "gm" || s.role === "guardian_gm")
+        ).length;
 
   const bTargets =
     bMode === "role"

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { blindBoxToken, blindBoxUrl, verifyBlindBoxToken } from "../src/lib/blindbox";
 import { classifyScan } from "../src/lib/scan-route";
+import { normalizeSiteUrl } from "../src/lib/site-url";
 
 const SITE = "https://vortexa.example";
 const ORIGINS = [SITE, "http://localhost:3000"];
@@ -42,6 +43,48 @@ describe("classifyScan", () => {
     expect(classifyScan("tel:+60123456789", ORIGINS).kind).toBe("text");
     expect(classifyScan("javascript:alert(1)", ORIGINS).kind).toBe("text");
     expect(classifyScan("", ORIGINS).kind).toBe("text");
+  });
+
+  it("never turns a double-slash path into a link to another site", () => {
+    expect(classifyScan(`${SITE}//evil.com/x`, ORIGINS)).toMatchObject({ kind: "app", path: "/evil.com/x" });
+    expect(classifyScan("vortexa.example//evil.com/x", ORIGINS)).toMatchObject({ kind: "app", path: "/evil.com/x" });
+    expect(classifyScan(`${SITE}/\\evil.com`, ORIGINS)).toMatchObject({ kind: "app", path: "/evil.com" });
+    // a code minted from a site URL ending in "/" still opens the blind box
+    expect(classifyScan(`${SITE}//blindbox?t=abc`, ORIGINS)).toEqual({ kind: "app", path: "/blindbox?t=abc", label: "Blind box" });
+    // and the login block still applies
+    expect(classifyScan(`${SITE}//join?group1=1`, ORIGINS).kind).toBe("blocked");
+  });
+
+  it("opens a scheme-less link to this site, but leaves other bare hosts as text", () => {
+    expect(classifyScan("vortexa.example/blindbox?t=abc.def", ORIGINS)).toEqual({ kind: "app", path: "/blindbox?t=abc.def", label: "Blind box" });
+    expect(classifyScan("example.com/promo", ORIGINS).kind).toBe("text");
+    expect(classifyScan("vortexa.example", ORIGINS).kind).toBe("text");
+  });
+});
+
+describe("normalizeSiteUrl", () => {
+  it("adds https to a bare host, so a QR built from it is a link", () => {
+    expect(normalizeSiteUrl("xmum-orientation.vercel.app")).toBe("https://xmum-orientation.vercel.app");
+    expect(normalizeSiteUrl(" xmum-orientation.vercel.app/ ")).toBe("https://xmum-orientation.vercel.app");
+  });
+
+  it("keeps a given scheme, uses http for a local host, and defaults to localhost", () => {
+    expect(normalizeSiteUrl("https://vortexa.example/")).toBe("https://vortexa.example");
+    expect(normalizeSiteUrl("http://localhost:3000")).toBe("http://localhost:3000");
+    expect(normalizeSiteUrl("localhost:3000")).toBe("http://localhost:3000");
+    expect(normalizeSiteUrl(undefined)).toBe("http://localhost:3000");
+    expect(normalizeSiteUrl("")).toBe("http://localhost:3000");
+  });
+
+  it("blind box links always carry a scheme", () => {
+    const prev = process.env.NEXT_PUBLIC_SITE_URL;
+    process.env.NEXT_PUBLIC_SITE_URL = "xmum-orientation.vercel.app";
+    try {
+      expect(blindBoxUrl("abc.def")).toBe("https://xmum-orientation.vercel.app/blindbox?t=abc.def");
+    } finally {
+      if (prev === undefined) delete process.env.NEXT_PUBLIC_SITE_URL;
+      else process.env.NEXT_PUBLIC_SITE_URL = prev;
+    }
   });
 });
 

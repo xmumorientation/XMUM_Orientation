@@ -143,7 +143,7 @@ function WelcomeStop({ name, role }: { name: string; role: UserRole }) {
 
 /** The account's own blind boxes: what is left and the QR a Freshie scans. Same data as BlindBoxCard. */
 function BlindBoxStop() {
-  const { loaded, error, sellers, copy, copied } = useMyBlindBoxes();
+  const { loaded, error, sellers, copy, copied, paused } = useMyBlindBoxes();
   const left = sellers.reduce((n, s) => n + s.left, 0);
   return (
     <section id="sh-bb" className="fh-stop" aria-labelledby="sh-bb-title">
@@ -189,6 +189,8 @@ function BlindBoxStop() {
               <div className="sh-bb-code">
                 {!s.live ? (
                   <p className="sh-bb-state" data-tone="off">Switched off by Admin. This code doesn&apos;t work right now.</p>
+                ) : paused && s.left > 0 ? (
+                  <p className="sh-bb-state" data-tone="off">{paused}</p>
                 ) : s.left <= 0 ? (
                   <p className="sh-bb-state">All boxes sold.</p>
                 ) : s.qr ? (

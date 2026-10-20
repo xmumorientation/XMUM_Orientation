@@ -33,7 +33,7 @@ type Counts = Record<ProjectorLocation, number>;
 /** A Day 2 game the GM started: locked until its result is submitted or it is cancelled. Kept on this phone. */
 type Day2Game = { stationId: number; groupId: number; locations: ProjectorLocation[] };
 type CheckState = "ok" | "warn" | "bad" | "wait";
-/** What Undo would reverse (fn_undo_preview, 0090). fallback: that function is not on the database yet. */
+/** What Undo would reverse (fn_undo_preview, 0093). fallback: that function is not on the database yet. */
 type UndoPreview =
   | { fallback: true }
   | {
@@ -151,6 +151,8 @@ function day2Checks({
 //              Success or Failed, then a confirm sheet. The entry fee is charged
 //              only on submit (fn_day2_challenge), win or lose.
 // Under the title: the GM's station on each day, the current one marked Now.
+// The current station is re-read when the phases change or the page comes
+// back into view (from main), so Day 1 → Day 2 needs no reload.
 // The database picks the current one from Live control's phases (0065:
 // profiles.station_id, Day 2 once Day 1 has ended), not from the date, so it
 // follows a rehearsal too. Only the current station can be operated.
@@ -184,6 +186,32 @@ export default function GmPanelPage() {
   // Day 1 reward waiting for the GM's confirmation.
   const [day1Ask, setDay1Ask] = useState<"win" | "lose" | null>(null);
   const [openAsk, setOpenAsk] = useState(false);
+
+  // The GM's station follows the day (the server switches profiles.station_id
+  // when a day's game starts or ends, or when Admin moves the GM), so it is
+  // re-read instead of trusting the value this page loaded with.
+  const [stationId, setStationId] = useState<number | null>(profile.station_id);
+
+  useEffect(() => {
+    async function refresh() {
+      const { data } = await supabase.from("profiles").select("station_id").eq("id", profile.id).maybeSingle();
+      if (data) setStationId((data as { station_id: number | null }).station_id);
+    }
+    // The layout's profile is from the first page load, not from opening /gm.
+    void refresh();
+    const channel = supabase
+      .channel(`gm-day-${crypto.randomUUID()}`)
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "phases" }, refresh)
+      .subscribe();
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void refresh();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      supabase.removeChannel(channel);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [supabase, profile.id]);
 
   // a station runs either Day 1 or Day 2, not both
   const day = station?.day ?? pickedDay;
@@ -243,11 +271,14 @@ export default function GmPanelPage() {
   useEffect(() => {
     let active = true;
     async function load() {
-      if (!profile.station_id) return;
+      if (!stationId) {
+        setStation(null);
+        return;
+      }
       const { data: st } = await supabase
         .from("stations")
         .select("*")
-        .eq("id", profile.station_id)
+        .eq("id", stationId)
         .single();
       if (active) setStation((st as Station) ?? null);
     }
@@ -266,17 +297,17 @@ export default function GmPanelPage() {
     return () => {
       active = false;
     };
-  }, [supabase, profile.id, profile.station_id]);
+  }, [supabase, profile.id, stationId]);
 
   // The station's status changes from Admin (or another device): show it at
   // once. Only the status is merged, nothing else on the page is reloaded.
   useEffect(() => {
-    if (!profile.station_id) return;
+    if (!stationId) return;
     const channel = supabase
-      .channel(`gm-station-${profile.station_id}-${crypto.randomUUID()}`)
+      .channel(`gm-station-${stationId}-${crypto.randomUUID()}`)
       .on(
         "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "stations", filter: `id=eq.${profile.station_id}` },
+        { event: "UPDATE", schema: "public", table: "stations", filter: `id=eq.${stationId}` },
         (payload) => {
           const row = payload.new as Station;
           setStation((cur) => (cur && cur.id === row.id ? { ...cur, status: row.status } : cur));
@@ -286,7 +317,7 @@ export default function GmPanelPage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [supabase, profile.station_id]);
+  }, [supabase, stationId]);
 
   // Token rules can change during the event; keep the labels and the
   // station's entry fee (synced from its tier) current.
@@ -301,11 +332,11 @@ export default function GmPanelPage() {
       const value = (key: string, fallback: number) =>
         data.find((r) => r.rule_key === key)?.rule_value ?? fallback;
       setDay1({ win: value("DAY1_WIN_TOKENS", 2), lose: value("DAY1_LOSE_TOKENS", 1) });
-      if (profile.station_id) {
+      if (stationId) {
         const { data: st } = await supabase
           .from("stations")
           .select("entry_cost")
-          .eq("id", profile.station_id)
+          .eq("id", stationId)
           .single();
         if (active && st) {
           setStation((cur) => (cur ? { ...cur, entry_cost: st.entry_cost } : cur));
@@ -321,11 +352,10 @@ export default function GmPanelPage() {
       active = false;
       supabase.removeChannel(channel);
     };
-  }, [supabase, profile.id, profile.station_id]);
+  }, [supabase, profile.id, stationId]);
 
   // A started game survives a reload or a locked phone, on this phone only.
   const gameKey = `gm-day2-game:${profile.id}`;
-  const stationId = station?.id ?? null;
   useEffect(() => {
     if (stationId === null) return;
     try {

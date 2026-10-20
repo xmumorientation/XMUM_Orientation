@@ -1,5 +1,9 @@
 -- ═══════════════════════════════════════════════════════════════════════
--- Migration 0090: the GM's Undo reads token_transactions again
+-- Migration 0093: the GM's Undo reads token_transactions again
+--
+-- First written as 0090_gm_undo_token_transactions and run on the live
+-- database under that name on 2026-10-20; renumbered after main's own
+-- 0090-0092 (blind box). Running it again changes nothing.
 --
 -- The live database runs bonding-session's fn_undo_last_transaction
 -- (bonding-session 0035), which looks for the caller's last row in

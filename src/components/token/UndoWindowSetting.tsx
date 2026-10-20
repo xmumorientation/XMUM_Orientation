@@ -7,7 +7,7 @@ import { supabaseBrowser } from "@/lib/supabase/client";
 import { cn, friendlyError } from "@/lib/utils";
 
 // How long a GM may undo their last transaction on the Station page:
-// game_config "undo_window_minutes", read by fn_undo_window_minutes() (0090),
+// game_config "undo_window_minutes", read by fn_undo_window_minutes() (0093),
 // 1 to 120 minutes, default 10. Shown in the Token page's Token Rules card;
 // only Admin can change it (fn_set_config).
 

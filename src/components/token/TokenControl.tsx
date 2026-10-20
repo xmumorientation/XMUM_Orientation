@@ -50,6 +50,7 @@ import {
   type TokenRuleKey,
   type TransactionType,
 } from "@/lib/token-types";
+import { GroupBadge } from "@/components/GroupBadge";
 import { cn } from "@/lib/utils";
 
 import "./token-control.css";
@@ -659,13 +660,19 @@ export default function TokenControl({ scoreboardOnly = false }: { scoreboardOnl
                   >
                     {index + 1}
                   </span>
-                  <span className="truncate font-black text-slate-900">{grp.group_name}</span>
+                  <GroupBadge id={grp.group_id} color={grp.color} />
+                  <span className="truncate font-black text-slate-900" title={grp.display_name?.trim() || grp.group_name}>
+                    {grp.display_name?.trim() || grp.group_name}
+                  </span>
                 </div>
 
                 <div className="flex items-center gap-1.5 text-lg font-black tabular-nums text-amber-600">
                   <Coins size={16} className="text-amber-500" />
                   {grp.current_tokens}
                 </div>
+                {/* Phones: puzzles and pieces drop to a second line (indented under
+                    the name) so the group name keeps the first line's width. */}
+                <div className="flex basis-full items-center gap-x-4 gap-y-2 pl-9 sm:basis-auto sm:pl-0">
                 <div className="flex items-center gap-1 text-sm font-black tabular-nums text-indigo-600">
                   <Layers size={14} />
                   {grp.puzzles_count || 0}/15
@@ -688,6 +695,7 @@ export default function TokenControl({ scoreboardOnly = false }: { scoreboardOnl
                       </span>
                     );
                   })}
+                </div>
                 </div>
               </div>
             );

@@ -83,6 +83,8 @@ export async function fetchTokenGroups(inventory?: Promise<PuzzleInventoryItem[]
           current_tokens: tokens,
           puzzles_count: inv.count,
           location_pieces: inv.locs,
+          color: row.color ?? null,
+          display_name: row.display_name ?? null,
         };
       });
 

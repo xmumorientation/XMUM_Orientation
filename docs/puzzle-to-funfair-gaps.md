@@ -1,6 +1,6 @@
 # Puzzle to funfair: the flow and what is missing
 
-Checked on 2026-10-16 against `main` (migrations up to `0088`). Nothing on this list is built yet. When you fix an item, mark it done here and add it to the "Done" section of [ROADMAP.md](ROADMAP.md).
+Checked on 2026-10-16 against `main` (migrations up to `0088`). Local fixes verified on 2026-10-19 are marked below; they are not yet deployed. When you fix an item, mark it done here and add it to the "Done" section of [ROADMAP.md](ROADMAP.md).
 
 ## The flow today
 
@@ -57,7 +57,7 @@ Admin's Reset on a bulb turns its zone off again.
 
 ### B. It works, but players lose the thread
 
-6. **The victory screen is a dead end.** [VictoryTakeover.tsx](../src/components/VictoryTakeover.tsx) has no button to Home or to the map, and it does not say which funfair zone came on.
+6. **Locally fixed, 2026-10-19: victory → 3D map.** Success now automatically opens the map, focuses newly powered zones and replays their lighting after the scene is ready. See [verification report](testing/nfc-journey-2026-10-19.md). Previous gap: [VictoryTakeover.tsx](../src/components/VictoryTakeover.tsx) has no button to Home or to the map, and it does not say which funfair zone came on.
 7. **"Show on map" opens the default view.** Items links to `/map?focus=B1`, but no map code reads `focus`.
 8. **Three sets of names are never joined.** Keys are Star / Wheel / Orbit (`PROJECTOR_CODE_NAMES`), bulbs are B1 / A3 / TF, and zones are West / Central / East (`FUNFAIR_ZONE_NAMES`). Nothing tells players which key powers which zone. Also, the Star key powers the Big Top, while Starlight Midway is powered by Orbit.
 9. **Nobody is told when a zone comes on.** Only someone looking at the 3D map at that moment sees the power-up. Home and Items show no notice such as "Group 3 lit Star: the Big Top is open".
@@ -67,7 +67,7 @@ Admin's Reset on a bulb turns its zone off again.
 
 ### C. Guardian and Admin
 
-13. **The Guardian page does not update live** ([guardian/page.tsx](../src/app/(app)/guardian/page.tsx)). After the group taps the card, the page still says the group should tap it, until the Guardian picks the group again.
+13. **Locally fixed, 2026-10-19: Guardian polls persisted handover/projector state every 5 s.** Previous gap: **The Guardian page does not update live** ([guardian/page.tsx](../src/app/(app)/guardian/page.tsx)). After the group taps the card, the page still says the group should tap it, until the Guardian picks the group again.
 14. **The Guardian page makes mistakes easy:**
     - The location is picked each time (B1 by default), so a Guardian at A3 can redeem B1 by mistake.
     - A set redeemed for the wrong group cannot be undone.

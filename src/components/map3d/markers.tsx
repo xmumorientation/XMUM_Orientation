@@ -535,7 +535,7 @@ export function CameraRig({ flight }: { flight: Flight | null }) {
       dir.phi = Math.min(dir.phi, 1.05);
       p1 = new THREE.Vector3().setFromSpherical(dir).add(t1);
     }
-    anim.current = { t: 0, p0, t0, p1, t1 };
+    anim.current = { t: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 1 : 0, p0, t0, p1, t1 };
     invalidate();
     // Ends the scene's intro swoop, if it is still running.
     controls.dispatchEvent({ type: "start", target: controls });

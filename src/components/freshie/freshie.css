@@ -289,6 +289,10 @@ html.fh-snap { overflow-x: hidden; }
 .fh-cell:first-child { border-color: var(--fh-blue); background: #08254f; }
 .fh-cell b { display: block; font-size: clamp(28px, 8vw, 40px); line-height: 1; font-variant-numeric: tabular-nums; }
 .fh-cell span { font-size: 9.5px; letter-spacing: 0.2em; color: var(--fh-mute); }
+/* Endgame (big screen's live phase): red, like .fh-phasecard[data-endgame]. */
+.fh-countwrap[data-endgame] .fh-clabel { color: #ff3b4f; }
+.fh-countwrap[data-endgame] .fh-cell b { color: #ff3b4f; }
+.fh-countwrap[data-endgame] .fh-cell:first-child { border-color: #bc071d; background: rgba(188, 7, 29, 0.16); }
 
 .fh-phasecard {
   width: 100%; max-width: 440px; text-align: left; padding: 18px; border-radius: 22px;
