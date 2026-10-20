@@ -424,11 +424,11 @@ export const OPS_ROLES: UserRole[] = ["hof", "hogm", "committee"];
  *  Station (/gm) instead of Ops. */
 export const VORTEXA_ROLES: UserRole[] = [...OPS_ROLES, "gm"];
 
-/** Roles that can hold blind boxes: everyone except Facilitator and Freshie.
- *  Mirrors bb_holder_role() in migration 0054. */
+/** Roles that can hold blind boxes: Committee, HOF, HOGM and Admin. Used by
+ *  Admin's assign lists and /api/blindbox/links. Stricter than bb_holder_role()
+ *  in migration 0054 on purpose: GM and Guardian GM have no blind box QR any
+ *  more (Ben, 2026-10-20), but the database still allows them. */
 export const BLINDBOX_HOLDER_ROLES: UserRole[] = [
-  "gm",
-  "guardian_gm",
   "committee",
   "hof",
   "hogm",
