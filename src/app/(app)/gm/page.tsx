@@ -1,9 +1,8 @@
 "use client";
 
-import { Check, Copy, Sparkles, Undo2 } from "lucide-react";
+import { Undo2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import { useMyBlindBoxes } from "@/components/BlindBoxCard";
 import { groupSwatch } from "@/components/freshie/groupTheme";
 import { vxDisplay, vxSlab } from "@/components/home/fonts";
 import { useProfile } from "@/components/ProfileProvider";
@@ -39,10 +38,9 @@ const STATUS: { value: StationStatus; label: string; tone: "ok" | "warn" | "off"
 //              pick one. Undo the last transaction within 2 minutes.
 //              Day 2: success or failed (+ tier locations); the system deducts
 //              the tier's entry fee and grants a random piece the group lacks.
-//  Blind box - this GM's own boxes and the station's shared pool, with the QR
-//              a Freshie scans to open one.
-// Landscape tablets and desktops: Group and Result left, Status and Blind box
-// right. A station runs Day 1 or Day 2; with no station, a Day switch shows both.
+// No blind box here: a GM's blind box QR is on Home (StaffHome).
+// Landscape tablets and desktops: Group and Result left, Status right.
+// A station runs Day 1 or Day 2; with no station, a Day switch shows both.
 // All submissions carry idempotency keys and queue offline (NFR-6).
 export default function GmPanelPage() {
   const profile = useProfile();
@@ -504,81 +502,8 @@ export default function GmPanelPage() {
             )}
             <StatusLine error={statusMsg.error} notice={statusMsg.notice} />
           </section>
-
-          <BlindBoxSection />
         </div>
       </div>
     </div>
-  );
-}
-
-/** This GM's blind boxes (own + the station's shared pool) and the QR a Freshie scans. Same data as BlindBoxCard. */
-function BlindBoxSection() {
-  const { loaded, error, sellers, copy, copied } = useMyBlindBoxes();
-  const left = sellers.reduce((n, s) => n + s.left, 0);
-  return (
-    <section className="gc-card gc-st-card" aria-labelledby="st-bb">
-      <div className="gc-st-head">
-        <h2 id="st-bb" className="gc-eyebrow">Blind box</h2>
-        {sellers.length > 0 && (
-          <span className="gc-chip" data-tone="live">
-            {left} left
-          </span>
-        )}
-      </div>
-      {error && <p className="gc-status gc-status-err" role="alert">{error}</p>}
-      {!loaded ? (
-        <p className="gc-muted">Loading…</p>
-      ) : sellers.length === 0 ? (
-        <p className="gc-muted">No blind boxes yet. When Admin gives you boxes to sell, your QR shows up here.</p>
-      ) : (
-        sellers.map((s) => (
-          <div key={s.id} className="gc-st-bb">
-            <p className="gc-st-bb-who">
-              {s.station ? `Station ${s.station.name} · shared with its other GMs` : "Your own boxes"}
-            </p>
-            <ul className="gc-st-bb-types">
-              {s.rows.map((r) => (
-                <li key={r.id}>
-                  <span>
-                    <b>
-                      {r.type?.name ?? "Box"}
-                      {r.type?.is_special && <Sparkles size={13} aria-label="special" />}
-                    </b>
-                    <small>
-                      {r.type ? (r.type.price > 0 ? `${r.type.price} token${r.type.price !== 1 ? "s" : ""}` : "Free") : ""}
-                    </small>
-                  </span>
-                  <span className="gc-num">
-                    {Math.max(r.quantity - r.opened, 0)}
-                    <small>/{r.quantity}</small>
-                  </span>
-                </li>
-              ))}
-            </ul>
-            {!s.live ? (
-              <p className="gc-status gc-status-err">Switched off by Admin. This code doesn&apos;t work right now.</p>
-            ) : s.left <= 0 ? (
-              <p className="gc-muted">All boxes sold.</p>
-            ) : s.qr ? (
-              <div className="gc-st-qr">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={s.qr.qr} alt="Blind box QR code" />
-                <p className="gc-muted">
-                  Let a Freshie scan this after your mini-game. Any phone camera works. Each group can buy
-                  one box; the code keeps working until all are sold.
-                </p>
-                <button type="button" className="gc-btn" onClick={() => copy(s.id, s.qr!.url)}>
-                  {copied === s.id ? <Check size={16} aria-hidden /> : <Copy size={16} aria-hidden />}
-                  {copied === s.id ? "Copied" : "Copy link"}
-                </button>
-              </div>
-            ) : (
-              <p className="gc-muted">Loading QR…</p>
-            )}
-          </div>
-        ))
-      )}
-    </section>
   );
 }

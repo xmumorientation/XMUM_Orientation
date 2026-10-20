@@ -367,8 +367,8 @@
 .gc .gc-scores-tokens .gc-score-head { cursor: default; }
 
 /* ── Station panel (GM's /gm, app/(app)/gm/page.tsx) ─────────────────────────
-   Phones: one column, Status first. ≥1024px: Group + Result left, Status +
-   Blind box right. The columns are display: contents on phones so Status can
+   Phones: one column, Status first. ≥1024px: Group + Result left, Status
+   right. The columns are display: contents on phones so Status can
    move to the top with order. Cyan = picked group, yellow = Win / Submit. */
 .gc-st-msgs { display: grid; gap: 8px; margin-bottom: 14px; }
 .gc-st-msgs:empty { display: none; }
@@ -432,13 +432,3 @@
 .gc .gc-st-outcome button[aria-pressed="true"][data-tone="bad"] { box-shadow: inset 0 0 0 1.5px var(--gc-red); color: var(--gc-red); }
 .gc .gc-st-submit { width: 100%; min-height: 56px; font-size: 16px; }
 
-.gc-st-bb { display: grid; gap: 10px; padding-top: 12px; border-top: 1px solid var(--gc-line); }
-.gc-st-bb-who { margin: 0; font-family: var(--gc-mono); font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--gc-mute); }
-.gc-st-bb-types { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
-.gc-st-bb-types li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 12px; border-radius: 12px; background: var(--gc-ink-3); }
-.gc-st-bb-types li > span:first-child { display: grid; min-width: 0; }
-.gc-st-bb-types b { display: inline-flex; align-items: center; gap: 5px; font-size: 14px; font-weight: 600; }
-.gc-st-bb-types b svg { color: var(--gc-yellow); }
-.gc-st-bb-types small { font-size: 12px; color: var(--gc-mute); }
-.gc-st-qr { display: grid; justify-items: center; gap: 10px; text-align: center; }
-.gc-st-qr img { width: min(224px, 100%); height: auto; padding: 8px; border-radius: 16px; background: #fff; }
