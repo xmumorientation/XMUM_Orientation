@@ -32,7 +32,7 @@ import "./staff-home.css";
 // Welcome page's colours instead of a group colour (VORTEXA_THEME, .fh-vx in
 // staff-home.css). Then the account's own blind boxes and QR, the scoreboard
 // and the event tools. A GM's main button and first tool are its Station panel
-// (/gm) instead of Ops, and it has no Big screen. Navigation is the tab bar
+// (/gm) instead of Ops, and it has no Big screen and no blind box stop. Navigation is the tab bar
 // (phones and portrait tablets) or TopNav (landscape tablets and desktops).
 
 const STOPS = [
@@ -41,6 +41,8 @@ const STOPS = [
   { id: "sh-scores", label: "Scores" },
   { id: "sh-tools", label: "Tools" },
 ] as const;
+
+const GM_STOPS = STOPS.filter((s) => s.id !== "sh-bb");
 
 type HomeGroup = { id: number; name: string; color: string | null; token_balance: number };
 
@@ -130,7 +132,7 @@ function WelcomeStop({ name, role }: { name: string; role: UserRole }) {
             Ops
           </Link>
         )}
-        <button type="button" className="fh-btn fh-btn-ghost" onClick={() => goTo("sh-bb")}>
+        <button type="button" className="fh-btn fh-btn-ghost" onClick={() => goTo(role === "gm" ? "sh-scores" : "sh-bb")}>
           More Info ↓
         </button>
       </div>
@@ -277,6 +279,7 @@ function ToolsStop({ role }: { role: UserRole }) {
 export function StaffHome() {
   const profile = useProfile();
   const groups = useGroups();
+  const isGm = profile.role === "gm";
 
   // Section-by-section snapping, this page only (same as Freshie Home).
   useEffect(() => {
@@ -323,11 +326,11 @@ export function StaffHome() {
             />
           </div>
         </div>
-        <StopBar stops={STOPS} />
+        <StopBar stops={isGm ? GM_STOPS : STOPS} />
       </header>
 
       <WelcomeStop name={profile.full_name ?? ""} role={profile.role} />
-      <BlindBoxStop />
+      {!isGm && <BlindBoxStop />}
       <ScoresStop groups={groups} />
       <ToolsStop role={profile.role} />
     </div>

@@ -38,7 +38,7 @@ const STATUS: { value: StationStatus; label: string; tone: "ok" | "warn" | "off"
 //              pick one. Undo the last transaction within 2 minutes.
 //              Day 2: success or failed (+ tier locations); the system deducts
 //              the tier's entry fee and grants a random piece the group lacks.
-// No blind box here: a GM's blind box QR is on Home (StaffHome).
+// No blind box: GMs show no blind box QR (not here, not on Home).
 // Landscape tablets and desktops: Group and Result left, Status right.
 // A station runs Day 1 or Day 2; with no station, a Day switch shows both.
 // All submissions carry idempotency keys and queue offline (NFR-6).
