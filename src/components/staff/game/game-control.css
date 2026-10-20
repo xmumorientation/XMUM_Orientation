@@ -84,10 +84,10 @@
   .gc-grid3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
-/* Section switcher: five equal icon tabs on phones / portrait tablets (all
+/* Section switcher: three equal icon tabs on phones / portrait tablets (all
    visible, no sideways scroll), side rail ≥1024px. */
 .gc-nav {
-  position: sticky; top: 8px; z-index: 5; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 4px;
+  position: sticky; top: 8px; z-index: 5; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px;
   padding: 4px; border-radius: 18px; border: 1px solid var(--gc-line);
   background: rgba(14, 12, 21, 0.86); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
 }
@@ -322,25 +322,9 @@
 .gc.gc-map .card .relative > button[aria-pressed="true"] { color: var(--gc-cyan); box-shadow: 0 0 0 1px rgba(13, 252, 253, 0.5); }
 .gc.gc-map .gc-top { padding-bottom: 14px; }
 
-/* ── Faci control (HOF's Ops page, staff/faci/FaciControl.tsx) ───────────── */
-.gc-stats { margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-.gc-stats > div { padding: 12px 14px; border-radius: 16px; border: 1px solid var(--gc-line); background: rgba(14, 12, 21, 0.86); }
-.gc-stats dt { font-family: var(--gc-mono); font-size: 9.5px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--gc-mute); }
-.gc-stats dd { margin: 4px 0 0; font-family: var(--gc-slab); font-size: 26px; line-height: 1; font-variant-numeric: tabular-nums; }
-.gc-stats dd small { font-size: 15px; color: var(--gc-mute); }
-@media (min-width: 640px) {
-  .gc-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-}
+/* ── Ops → Facilitators: the recent-changes sheet (staff/faci/FaciAssign.tsx) */
 .gc-fold-head .gc-swatch { flex: none; }
-.gc-fold-top { display: flex; align-items: flex-start; gap: 10px; border-top: 1px solid var(--gc-line); }
-.gc-fold-top .gc-facts { flex: 1; border-top: 0; }
-.gc-fold-top .gc-icon { margin-top: 10px; color: var(--gc-cyan); }
-.gc-sub-block { display: grid; gap: 8px; padding-top: 12px; border-top: 1px solid var(--gc-line); }
-.gc-loc { display: grid; gap: 4px; padding: 10px 12px; border-radius: 14px; background: var(--gc-ink-3); }
-.gc-loc b { font-size: 15px; font-weight: 600; }
-.gc-loc p { margin: 0; font-size: 13.5px; color: var(--gc-text-2); }
-.gc-loc small, .gc-hist small { font-size: 12px; color: var(--gc-mute); }
-.gc-more summary { min-height: 40px; display: flex; align-items: center; font-size: 13px; font-weight: 600; color: var(--gc-cyan); cursor: pointer; }
+.gc-hist small { font-size: 12px; color: var(--gc-mute); }
 .gc-hist { list-style: none; margin: 0; padding: 0; display: grid; }
 .gc-hist li { display: grid; gap: 2px; padding: 8px 0; border-top: 1px solid var(--gc-line); font-size: 13.5px; }
 .gc-hist li:first-child { border-top: 0; }
