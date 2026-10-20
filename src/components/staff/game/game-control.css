@@ -465,3 +465,13 @@
 .gc .gc-st-groups button:disabled { opacity: 0.35; cursor: not-allowed; }
 .gc-st-status-chip { font-size: 11px; padding: 5px 11px; }
 
+/* The GM's station on each day, under the title. */
+.gc-st-days { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.gc-st-days li {
+  display: flex; align-items: center; gap: 8px; min-height: 36px; padding: 0 6px 0 12px; border-radius: 12px;
+  border: 1px solid var(--gc-line); background: rgba(14, 12, 21, 0.86); font-size: 13.5px; color: var(--gc-text-2);
+}
+.gc-st-days li:not([data-now]) { padding-right: 12px; }
+.gc-st-days li b { font-family: var(--gc-mono); font-size: 10.5px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gc-mute); }
+.gc-st-days li[data-now] { border-color: rgba(13, 252, 253, 0.5); color: var(--gc-text); }
+.gc-st-days li[data-now] b { color: var(--gc-cyan); }

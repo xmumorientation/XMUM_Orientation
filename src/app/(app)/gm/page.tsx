@@ -25,6 +25,8 @@ import {
 import { cn, friendlyError, idemKey } from "@/lib/utils";
 
 type GroupRow = { id: number; name: string; color: string | null; token_balance: number };
+/** One of this GM's stations: one per day (gm_station_assignments, 0065). */
+type DayStation = { day: 1 | 2; station: { id: number; name: string } | null };
 type Counts = Record<ProjectorLocation, number>;
 /** A Day 2 game the GM started: locked until its result is submitted or it is cancelled. Kept on this phone. */
 type Day2Game = { stationId: number; groupId: number; locations: ProjectorLocation[] };
@@ -125,6 +127,10 @@ function day2Checks({
 //              locations are picked here). 2 Play: the group is locked. 3 Submit:
 //              Success or Failed, then a confirm sheet. The entry fee is charged
 //              only on submit (fn_day2_challenge), win or lose.
+// Under the title: the GM's station on each day, the current one marked Now.
+// The database picks the current one from Live control's phases (0065:
+// profiles.station_id, Day 2 once Day 1 has ended), not from the date, so it
+// follows a rehearsal too. Only the current station can be operated.
 // No blind box: GMs show no blind box QR (not here, not on Home).
 // Landscape tablets and desktops: Group and Result left, Status right.
 // A station runs Day 1 or Day 2; with no station, a Day switch shows both.
@@ -150,6 +156,7 @@ export default function GmPanelPage() {
   // The result being confirmed: true = success, false = failed.
   const [confirmWin, setConfirmWin] = useState<boolean | null>(null);
   const [piecesFor, setPiecesFor] = useState<{ groupId: number; counts: Counts | null } | null>(null);
+  const [days, setDays] = useState<DayStation[]>([]);
 
   // a station runs either Day 1 or Day 2, not both
   const day = station?.day ?? pickedDay;
@@ -217,11 +224,22 @@ export default function GmPanelPage() {
         .single();
       if (active) setStation((st as Station) ?? null);
     }
+    // Both days' stations. Read on the live database; if the table is not
+    // readable the line under the title is simply left out.
+    async function loadDays() {
+      const { data } = await supabase
+        .from("gm_station_assignments")
+        .select("day, station:stations(id, name)")
+        .eq("user_id", profile.id)
+        .order("day");
+      if (active && data) setDays(data as unknown as DayStation[]);
+    }
     load();
+    loadDays();
     return () => {
       active = false;
     };
-  }, [supabase, profile.station_id]);
+  }, [supabase, profile.id, profile.station_id]);
 
   // The station's status changes from Admin (or another device): show it at
   // once. Only the status is merged, nothing else on the page is reloaded.
@@ -497,6 +515,25 @@ export default function GmPanelPage() {
             "Ask Admin to assign your station"
           )}
         </p>
+        {days.length > 0 && (
+          <ul className="gc-st-days" aria-label="Your stations">
+            {([1, 2] as const).map((d) => {
+              const own = days.find((x) => Number(x.day) === d)?.station ?? null;
+              const now = !!own && own.id === station?.id;
+              return (
+                <li key={d} data-now={now || undefined}>
+                  <b>Day {d}</b>
+                  <span>{own?.name ?? "Not assigned"}</span>
+                  {now && (
+                    <span className="gc-chip" data-tone="live">
+                      Now
+                    </span>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </header>
 
       <div className="gc-st-msgs">
