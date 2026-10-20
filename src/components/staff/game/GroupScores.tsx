@@ -16,32 +16,59 @@ import "./game-control.css";
 // group to see its three puzzle keys, drawn like the Freshie Items page
 // (KeyEmblem). Data: groups.token_balance, inventory + items (pieces, the rows
 // a Day 2 station win writes) and projectors (who lit which). Live.
-// tokensOnly (GM's /token): tokens alone from fn_scoreboard(), because a GM may
-// not read the groups or inventory tables (0002 RLS). Rows do not fold.
+// countsOnly (GM's /token): a GM may not read the groups or inventory tables
+// (0002 RLS), so tokens come from fn_scoreboard() and each key's piece count
+// from fn_puzzle_status() (one call per group and key), refreshed every 30 s.
+// It is a count, not which pieces, so the open row shows numbers, not key art.
 
 type GroupRow = { id: number; name: string; color: string | null; token_balance: number };
 type PieceRow = { group_id: number; items: { puzzle_location: ProjectorLocation | null; puzzle_index: number | null } | null };
 type ProjectorRow = { location: ProjectorLocation; activated_by_group: number | null };
 type Pieces = Record<ProjectorLocation, number[]>;
+type Counts = Record<ProjectorLocation, number>;
 
 const TOTAL = PIECES_PER_SET * PROJECTOR_LOCATIONS.length;
 const emptyPieces = (): Pieces => ({ B1: [], A3: [], TF: [] });
 
-export function GroupScores({ tokensOnly = false }: { tokensOnly?: boolean }) {
+export function GroupScores({ countsOnly = false }: { countsOnly?: boolean }) {
   const supabase = useMemo(() => supabaseBrowser(), []);
   const [groups, setGroups] = useState<GroupRow[]>([]);
   const [pieces, setPieces] = useState<Record<number, Pieces>>({});
+  const [counts, setCounts] = useState<Record<number, Counts>>({});
   const [lit, setLit] = useState<ProjectorRow[]>([]);
   const [openId, setOpenId] = useState<number | null>(null);
 
   useEffect(() => {
     let active = true;
+    async function loadCounts() {
+      const [sb, pj] = await Promise.all([
+        supabase.rpc("fn_scoreboard"),
+        supabase.from("projectors").select("location, activated_by_group"),
+      ]);
+      if (!active || !sb.data) return;
+      const gs = (sb.data as GroupRow[]).map((g) => ({ ...g, token_balance: g.token_balance ?? 0 }));
+      setGroups(gs);
+      setLit((pj.data ?? []) as ProjectorRow[]);
+      const found = await Promise.all(
+        gs.flatMap((g) =>
+          PROJECTOR_LOCATIONS.map(async (loc) => {
+            const { data } = await supabase.rpc("fn_puzzle_status", { p_group_id: g.id, p_location: loc });
+            return { id: g.id, loc, n: (data as { pieces?: number } | null)?.pieces ?? null };
+          })
+        )
+      );
+      if (!active) return;
+      // A failed call keeps the last count instead of showing 0.
+      setCounts((cur) => {
+        const next: Record<number, Counts> = {};
+        for (const { id, loc, n } of found) {
+          (next[id] ??= { B1: 0, A3: 0, TF: 0 })[loc] = n ?? cur[id]?.[loc] ?? 0;
+        }
+        return next;
+      });
+    }
     async function load() {
-      if (tokensOnly) {
-        const { data } = await supabase.rpc("fn_scoreboard");
-        if (active && data) setGroups((data as GroupRow[]).map((g) => ({ ...g, token_balance: g.token_balance ?? 0 })));
-        return;
-      }
+      if (countsOnly) return loadCounts();
       const [gs, inv, pj] = await Promise.all([
         supabase.from("groups").select("id, name, color, token_balance").order("id"),
         supabase.from("inventory").select("group_id, items!inner(type, puzzle_location, puzzle_index)").eq("items.type", "puzzle"),
@@ -61,10 +88,10 @@ export function GroupScores({ tokensOnly = false }: { tokensOnly?: boolean }) {
       setLit((pj.data ?? []) as ProjectorRow[]);
     }
     load();
-    // Realtime sends a GM no groups events (RLS), so tokensOnly also refreshes every 30 s.
+    // Realtime sends a GM no groups or inventory events (RLS), so countsOnly also refreshes every 30 s.
     const refreshVisible = () => { if (document.visibilityState === "visible") void load(); };
-    const timer = tokensOnly ? window.setInterval(refreshVisible, 30000) : undefined;
-    if (tokensOnly) document.addEventListener("visibilitychange", refreshVisible);
+    const timer = countsOnly ? window.setInterval(refreshVisible, 30000) : undefined;
+    if (countsOnly) document.addEventListener("visibilitychange", refreshVisible);
     const channel = supabase
       .channel(`gc-scores-${crypto.randomUUID()}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "groups" }, load)
@@ -77,9 +104,11 @@ export function GroupScores({ tokensOnly = false }: { tokensOnly?: boolean }) {
       document.removeEventListener("visibilitychange", refreshVisible);
       supabase.removeChannel(channel);
     };
-  }, [supabase, tokensOnly]);
+  }, [supabase, countsOnly]);
 
-  const count = (id: number) => PROJECTOR_LOCATIONS.reduce((n, loc) => n + (pieces[id]?.[loc].length ?? 0), 0);
+  const owned = (id: number, loc: ProjectorLocation) =>
+    countsOnly ? (counts[id]?.[loc] ?? 0) : (pieces[id]?.[loc].length ?? 0);
+  const count = (id: number) => PROJECTOR_LOCATIONS.reduce((n, loc) => n + owned(id, loc), 0);
   const rows = [...groups].sort((a, b) => b.token_balance - a.token_balance || count(b.id) - count(a.id) || a.id - b.id);
 
   return (
@@ -94,25 +123,13 @@ export function GroupScores({ tokensOnly = false }: { tokensOnly?: boolean }) {
         <h1 className="gc-title">Scores</h1>
       </header>
 
-      <div className={cn("gc-scores-head", tokensOnly && "gc-scores-tokens")} aria-hidden>
+      <div className="gc-scores-head" aria-hidden>
         <span>Group</span>
         <span>Tokens</span>
-        {!tokensOnly && <span>Puzzles</span>}
+        <span>Puzzles</span>
       </div>
-      <ol className={cn("gc-list gc-scores", tokensOnly && "gc-scores-tokens")}>
+      <ol className="gc-list gc-scores">
         {rows.map((g, i) => {
-          if (tokensOnly) {
-            return (
-              <li key={g.id} className="gc-card">
-                <div className="gc-fold-head gc-score-head">
-                  <span className="gc-rank">{String(i + 1).padStart(2, "0")}</span>
-                  <i className="gc-swatch" style={{ background: groupSwatch(g.id, g.color) }} aria-hidden />
-                  <span className="gc-fold-name">{g.name}</span>
-                  <b className="gc-num">{g.token_balance}</b>
-                </div>
-              </li>
-            );
-          }
           const open = openId === g.id;
           const own = pieces[g.id] ?? emptyPieces();
           return (
@@ -138,20 +155,33 @@ export function GroupScores({ tokensOnly = false }: { tokensOnly?: boolean }) {
                   <ul className="gc-keys" aria-label={`${g.name} puzzle keys`}>
                     {PROJECTOR_LOCATIONS.map((loc) => {
                       const ours = lit.some((p) => p.location === loc && p.activated_by_group === g.id);
+                      const n = owned(g.id, loc);
+                      const full = n >= PIECES_PER_SET;
                       return (
                         <li key={loc} className="gc-key" data-lit={ours || undefined}>
-                          <KeyEmblem className="gc-key-art" loc={loc} owned={own[loc]} mode={ours ? "lit" : "normal"} />
+                          {countsOnly ? (
+                            <b className="gc-key-count">
+                              {n}
+                              <small>/{PIECES_PER_SET}</small>
+                            </b>
+                          ) : (
+                            <KeyEmblem className="gc-key-art" loc={loc} owned={own[loc]} mode={ours ? "lit" : "normal"} />
+                          )}
                           <b>{KEY_NAMES[loc]}</b>
                           <small>{PROJECTOR_LABELS[loc]}</small>
-                          <span className="gc-chip" data-tone={ours ? "live" : own[loc].length >= PIECES_PER_SET ? "ok" : "off"}>
-                            {ours ? (
-                              <>
-                                <Lightbulb size={11} aria-hidden /> Lit
-                              </>
-                            ) : (
-                              `${own[loc].length}/${PIECES_PER_SET}`
-                            )}
-                          </span>
+                          {(!countsOnly || ours || full) && (
+                            <span className="gc-chip" data-tone={ours ? "live" : full ? "ok" : "off"}>
+                              {ours ? (
+                                <>
+                                  <Lightbulb size={11} aria-hidden /> Lit
+                                </>
+                              ) : countsOnly ? (
+                                "Full set"
+                              ) : (
+                                `${n}/${PIECES_PER_SET}`
+                              )}
+                            </span>
+                          )}
                         </li>
                       );
                     })}

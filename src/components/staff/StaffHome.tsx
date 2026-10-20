@@ -247,7 +247,7 @@ const GM_TOOLS = [
   { href: "/gm", Icon: Flag, title: "Station panel", text: "Results, rewards and station status" },
   { href: "/map", Icon: Map, title: "Campus map", text: "Every station and its status" },
   { href: "/schedule", Icon: CalendarDays, title: "Schedule", text: "The two-day programme" },
-  { href: "/token", Icon: Coins, title: "Scoreboard", text: "Live group tokens" },
+  { href: "/token", Icon: Coins, title: "Scoreboard", text: "Live tokens and puzzle counts" },
 ];
 
 function ToolsStop({ role }: { role: UserRole }) {

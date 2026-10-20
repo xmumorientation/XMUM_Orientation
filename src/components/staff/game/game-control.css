@@ -361,10 +361,13 @@
 .gc-fold[data-mine] { border-color: rgba(13, 252, 253, 0.45); }
 .gc-fold-name .gc-chip-mine { margin-left: 8px; vertical-align: 2px; color: var(--gc-cyan); border-color: rgba(13, 252, 253, 0.5); }
 
-/* ── Scores, tokens only (GM's /token: GroupScores tokensOnly) ───────────── */
-.gc-scores-head.gc-scores-tokens, .gc .gc-scores-tokens .gc-score-head { grid-template-columns: 24px 10px minmax(0, 1fr) 64px; }
-.gc-scores-head.gc-scores-tokens span:last-child { grid-column: 4; }
-.gc .gc-scores-tokens .gc-score-head { cursor: default; }
+/* ── Scores, piece counts (GM's /token: GroupScores countsOnly) ──────────── */
+.gc-key .gc-key-count {
+  display: flex; align-items: baseline; justify-content: center; min-height: 56px; padding-top: 10px;
+  font-family: var(--gc-slab); font-weight: 400; font-size: 34px; line-height: 1; font-variant-numeric: tabular-nums;
+}
+.gc-key .gc-key-count small { font-family: var(--gc-mono); font-size: 12px; line-height: 1; color: var(--gc-mute); margin-left: 2px; }
+.gc-key[data-lit] .gc-key-count { color: var(--gc-cyan); }
 
 /* ── Station panel (GM's /gm, app/(app)/gm/page.tsx) ─────────────────────────
    Phones: one column, Status first. ≥1024px: Group + Result left, Status

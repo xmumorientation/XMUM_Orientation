@@ -19,8 +19,9 @@ export default async function TokenPage() {
   if (profile?.role === "faci") redirect("/dashboard");
   // HOGM and HOF: tokens and puzzle keys per group (the Scores tab).
   if (profile?.role === "hogm" || profile?.role === "hof") return <GroupScores />;
-  // GM: the same list, tokens only. A GM cannot read other groups' pieces (0002 RLS).
-  if (profile?.role === "gm") return <GroupScores tokensOnly />;
+  // GM: the same list. A GM cannot read other groups' pieces (0002 RLS), so it
+  // shows each key's piece count (fn_puzzle_status), not which pieces.
+  if (profile?.role === "gm") return <GroupScores countsOnly />;
 
   return <TokenControl scoreboardOnly />;
 }
