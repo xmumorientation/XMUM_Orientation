@@ -27,15 +27,17 @@ All Freshie groups share one set of pages (Freshie Home, Items, Schedule; Facili
 - Do not branch on group id in components (for example `if (groupId === 3)`). Derive the difference from the group's colour in `themeFromColor()` instead.
 - Do not copy a page per group (for example `Group3Home.tsx`). There is one page, and each group's look comes from its colour.
 
-### HOF, HOGM and Committee pages: Welcome page colours
+### HOF, HOGM, Committee and GM pages: Welcome page colours
 
-HOF, HOGM and Committee (`OPS_ROLES` in `src/lib/types.ts`) are not a group, so they have no group colour. Their pages use the colours of the public Welcome page ([vortexa.css](src/components/home/vortexa.css)).
+HOF, HOGM and Committee (`OPS_ROLES` in `src/lib/types.ts`) and GM (`VORTEXA_ROLES` is `OPS_ROLES` plus GM) are not a group, so they have no group colour. Their pages use the colours of the public Welcome page ([vortexa.css](src/components/home/vortexa.css)). Guardian GM still uses the older staff design.
 
 - Home is [StaffHome.tsx](src/components/staff/StaffHome.tsx). It reuses Freshie Home's layout and parts (`Countdown`, `PhaseCard`, `Credits`, `AccountMenu`, `StopBar`, `FreshieSky`). Change those parts in `FreshieHome.tsx`, not in a copy.
 - The colours come from `VORTEXA_THEME` in [groupTheme.ts](src/components/freshie/groupTheme.ts), plus the `.fh-vx` overrides in [staff-home.css](src/components/staff/staff-home.css). The rules are the same as on the Welcome page: yellow for the primary action, cyan for "you are here", and pink, lilac and orange for decoration only.
 - Subpages (Ops, Scoreboard, Schedule) read the `--sp-*` variables in [staff-dashboard.css](src/components/staff/staff-dashboard.css). `.staff-vx` switches them to the Welcome colours. Do not hardcode navy hex values in staff CSS; use the variables.
 - HOGM's Ops page is Game control ([components/staff/game/](src/components/staff/game/)). It has part of Admin's game console: stations, puzzle pictures, and the funfair's keys (migration 0088). Starting and ending the games, token rules and the reset, NFC and blind box are not included (Admin does those). On the server, `is_game_lead()` (migration 0071) allows HOGM and Admin. When you add a game control to Admin, decide whether HOGM gets it too, and if so use `is_game_lead()`, not `is_admin()`. Kill-switches stay Admin only.
 - The tab bar ([FreshieTabBar.tsx](src/components/freshie/FreshieTabBar.tsx), `data-variant="ops"`) has these tabs: Home, Map, Ops (the yellow center button), Scores and Schedule. On screens 1024px and wider, TopNav replaces it and shows Ops as a yellow pill (`primaryHref`).
+- GM has the same tabs and look, with **Station** (`/gm`) instead of Ops. The Station page ([gm/page.tsx](src/app/(app)/gm/page.tsx)) uses the Game control classes (`.gc-st` in [game-control.css](src/components/staff/game/game-control.css)). Day 2 on the Station page runs in three steps: Check (tokens, the Day 2 game running, no token freeze, a piece to win), Play (the group is locked) and Submit (confirm sheet; the entry fee is charged only then). The GM does not set the station status by hand: starting a Day 2 game sets In progress, and submitting or cancelling it sets Available. The one manual step is Open station (Closed → Available, after a confirm). GM's Home is `StaffHome` with Station in place of Ops, no Big screen and no blind box. GMs show no blind box QR anywhere. Its Scores tab is `GroupScores countsOnly`: tokens from `fn_scoreboard()` and each key's piece count from `fn_puzzle_status()`, because a GM may not read which pieces a group owns.
+- A GM cannot select the `groups` or `inventory` tables (0002 RLS). Read group names, colours and tokens with `fn_scoreboard()` on any page a GM sees. Realtime sends a GM no `groups` events, so refresh on a timer as well.
 
 ## Other references
 

@@ -7,7 +7,7 @@ import { useProfile } from "@/components/ProfileProvider";
 import "@/components/staff/game/game-control.css";
 import { StationBoard } from "@/components/staff/StationBoard";
 import { PageTitle } from "@/components/ui";
-import { COMMITTEE_TIER, OPS_ROLES } from "@/lib/types";
+import { COMMITTEE_TIER, VORTEXA_ROLES } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 export default function MapPage() {
@@ -23,10 +23,11 @@ export default function MapPage() {
     />
   );
 
-  // HOF, HOGM, Committee: the same night, eyebrow and title as their other
-  // tabs (Ops, Scores). Under the map, every station read only (StationBoard)
-  // in place of the map's own "Available stations" list.
-  if (OPS_ROLES.includes(profile.role)) {
+  // HOF, HOGM, Committee and GM: the same night, eyebrow and title as their
+  // other tabs (Ops or Station, Scores). Under the map, every station read only
+  // (StationBoard) in place of the map's own "Available stations" list. A GM's
+  // own station is marked; GMs see no group pins, so no check-ins either.
+  if (VORTEXA_ROLES.includes(profile.role)) {
     return (
       <div className={cn("gc gc-map", vxDisplay.variable, vxSlab.variable)}>
         <div className="gc-bg" aria-hidden>
@@ -39,7 +40,10 @@ export default function MapPage() {
           <p className="gc-muted">Tap the map for a full-screen view. Tap a station for details.</p>
         </header>
         <CampusMap showGroupPins={showPins} hasSelection />
-        <StationBoard />
+        <StationBoard
+          myStationId={profile.role === "gm" ? profile.station_id : null}
+          showCheckIns={showPins}
+        />
       </div>
     );
   }

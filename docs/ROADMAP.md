@@ -5,7 +5,7 @@ Read it before starting a new round of development. When a decision changes, upd
 
 > **From Ben:** when you finish your work, write down what you completed in the "Done" section at the end of this file, so the next teammate can see it. Do this for partly finished items too: say which parts are done and which are left.
 
-Last updated: 2026-10-19
+Last updated: 2026-10-20
 
 ## Status key
 
@@ -22,8 +22,9 @@ Last updated: 2026-10-19
 | Jiamin | HOF sees every group's name and slogan | [6](#6-hof-sees-every-groups-name-and-slogan-ready) |
 | Zichien | Everything on the map: Figma design, game station status, and so on | [5](#5-map-ready) |
 | _To assign_ | Backend for Faci profiles (the UI is built) | [7](#7-faci-profiles-backend-ready) |
+| _To assign_ | Take GM out of the database's blind box holders | [8](#8-gm-blind-boxes-bring-the-database-in-line-with-the-app-later) |
 
-Items 3 and 7 have no owner yet.
+Items 3, 7 and 8 have no owner yet.
 
 ---
 
@@ -222,6 +223,19 @@ The design branches are merged. These remote branches are still not in `main` (c
 
 **Release order:** run `0069` in Supabase first, then deploy the frontend. The other order calls functions that do not exist yet. Then add the new table and functions to [permission-matrix.md](permission-matrix.md). (done)
 
+## 8. GM blind boxes: bring the database in line with the app (Later)
+
+**From Ben:** do this when there is a chance. Nothing is broken today.
+
+Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR anywhere, and `BLINDBOX_HOLDER_ROLES` in `src/lib/types.ts` no longer includes them. The database was left as it is, so it still treats them as holders:
+- `bb_holder_role()` ([0054_blindbox_v3.sql](../supabase/migrations/0054_blindbox_v3.sql)) still returns true for `gm` and `guardian_gm`. Assigning to them works if someone calls the RPC directly, and the "holder reads ..." policies (0054, 0070) still let them read their own and their station's boxes.
+- Assigning to stations (one station, By station, All stations) checks no role. Only a station's GMs could show those boxes, so they cannot be sold now. Ben will change Admin's assign modes himself.
+
+**How to fix:**
+1. Add a new migration (the next free number after `0089`; do not edit 0054). Redefine `bb_holder_role()` as `p_role in ('committee', 'hof', 'hogm', 'admin')`, the same as `BLINDBOX_HOLDER_ROLES`.
+2. Decide what to do with station pools: reject the station modes in the assign function, or leave them if a station seller comes back later.
+3. Before applying, check the live database for boxes already held by GMs or stations (on 2026-10-20 there were none) and revoke them first.
+
 ---
 
 ---
@@ -294,6 +308,29 @@ A scanned blind box QR showed as plain text, because the live `NEXT_PUBLIC_SITE_
 - `0069_faci_profiles.sql`: table `faci_profiles` (check constraints), select-only RLS, `fn_set_my_faci_profile`, `fn_group_facis` (`avatar_url` is a path relative to the Supabase URL, so the frontend prefixes `NEXT_PUBLIC_SUPABASE_URL`), `fn_admin_clear_faci_profile`, bucket `faci-avatars` (1 MB, webp/jpeg/png, own-folder writes), realtime.
 - Frontend done: `faciProfiles.ts` maps the new fields (`FaciRow`, avatar URL helpers); one `useGroupFacis()` in `FreshieHome.tsx` calls `fn_group_facis()` for both Faci and Freshie and reloads on `profiles` / `faci_profiles` changes; `ProfileEditor.tsx` saves Instagram, programme, languages, intro and photo (resized to a 512 px square webp on the phone, uploaded to `faci-avatars/<user id>/<timestamp>.webp` on Save, old file removed); `next.config.ts` allows the Supabase storage host for `next/image`; the sample Facis and "Sample" label are removed.
 - Not done: nothing has been run against a Supabase project. Run `0069` first, then deploy, then test the checks listed in item 7. Tell Jiamin `0069` is taken. `tsc` and `next lint` pass.
+
+### GM pages in the Welcome page look, 2026-10-20 (Ben, branch `gm-redesign`)
+One migration, `0093` (already applied on the live database, under its first name `0090_gm_undo_token_transactions`). The Game Master's five tabs now match HOF and HOGM: the Welcome page colours (`VORTEXA_ROLES` in `types.ts`), the ops tab bar with **Station** (`/gm`) as the yellow center button, and OpsHeader on subpages.
+- Home: `StaffHome`, with Station in place of Ops, no Big screen (`opsAccountLinks`) and no blind box stop. Map: the ops map with `StationBoard` (the GM's own station is marked "Yours"). Schedule: `FreshieSchedule vortexa`. Scores: `GroupScores countsOnly` (tokens, and each key's piece count from `fn_puzzle_status()`; a GM sees how many pieces, not which).
+- Station (`app/(app)/gm/page.tsx`) rebuilt in the Game control look (`.gc-st` in `game-control.css`): station status, group buttons with colours and tokens, Day 1 Win / Participation / Undo, Day 2 result + locations + submit, offline queue. Same RPCs and the same offline queue as before. GMs show no blind box QR any more, on Station or on Home (Ben, 2026-10-20). `BLINDBOX_HOLDER_ROLES` drops GM and Guardian GM, so Admin's assign lists no longer show them and `/api/blindbox/links` refuses them. The database (`bb_holder_role`, 0054) is unchanged and still allows them; item 8 covers changing it later. Left for Ben: Admin's station modes (one station, By station, All stations) still give boxes to stations, which only their GMs could show.
+- Fix: a GM cannot select `groups` (0002 RLS), so the old GM Scoreboard showed cached or made-up numbers. Scores, Home and Station now read `fn_scoreboard()` (refreshed every 30 s). GMs cannot read other groups' pieces either, so Scores shows counts from `fn_puzzle_status()` (30 calls per refresh: 10 groups × 3 keys). A summary RPC would make it one call but needs a migration.
+- Station, Day 2 in three steps (UI only, no migration): **Check** before the game (fresh tokens vs the entry fee, the Day 2 game running, no token freeze, a piece left to win per `fn_puzzle_status`; Medium and High pick their locations here, High cannot pick a full one), **Play** (the group is locked, kept on the phone across a reload, can be cancelled), **Submit** (Success or Failed, then a confirm sheet). The entry fee is still charged only on submit, by `fn_day2_challenge`, so a group that spends tokens elsewhere during the game is still refused at submit. Charging at the start would need a backend change.
+- Station header lists the GM's station on each day (`gm_station_assignments`), the current one marked Now. The database picks the current one from Live control's phases (`fn_gm_current_day()`, 0065), not from the date, so it follows a rehearsal. Only the current station can be operated: `fn_gm_day1_reward`, `fn_day2_challenge` and `fn_set_station_status` all read `profiles.station_id`. Operating both days from separate Day 1 / Day 2 tabs would need those functions to take a station id and check `gm_station_assignments` (a migration).
+- `gm_station_assignments` has RLS on but no policy in the repo's migrations; the live database lets a GM read their own rows, so that policy was made outside the migrations. Add it to a migration when the database is next changed.
+- **Live database ≠ repo** (checked 2026-10-20 with `pg_get_functiondef`): the live `fn_undo_last_transaction` is bonding-session's (0035, reads `token_logs`), and `role_permissions` / `has_permission` exist, so at least part of bonding-session's migrations ran on the live database. `fn_phase_control` was already known to be bonding-session's (0071, 0072). Also redefined by bonding-session and called by this app: `fn_activate_projector_manual`, `fn_redeem_puzzle_set`, `fn_admin_update_profile`; on the live database these three are the repo's versions (one overload each, no `has_permission`), so only Undo was affected. Tell David (bonding-session merge): a full comparison of the live database with the migrations is still needed.
+- Migration `0093` (**applied** on the live database 2026-10-20, checked: Undo no longer reads `token_logs`, window 10 min, `fn_undo_preview` works for a GM and is refused to anon): Undo reads `token_transactions` again, where GM results are written, so the GM's Undo works. It skips bonding-session's "Quick undo of" rows and refuses a Day 2 entry (`UNDO_DAY2_NOT_ALLOWED`: the piece would stay). The window is Admin's `undo_window_minutes` (Admin → Token page, Token Rules card; 1–120, default 10; was a fixed 2 minutes). `fn_undo_preview()` tells the GM page what Undo would reverse, and the GM confirms in a sheet first. On a database without 0093 the sheet shows a plain question.
+- Reset games (rehearsal only), on Admin's Live control (main moved starting and ending the games to Admin only, so it is not on HOGM's Game control): Day 1, Day 2 and the endgame back to Not started, so a rehearsal can run from Day 1 again (`resetGames` in `lib/gameLength.ts`). No migration: the live `fn_phase_control` (bonding-session 0036) has a `reset` action. The repo's 0003 version does not, and answers UNKNOWN_ACTION. Every GM's current station follows (0065 trigger). Why it was needed: `fn_gm_current_day()` counts Day 2 as soon as day2 has ended, so after one run every GM stayed on Day 2 even with Day 1 restarted.
+- Day 1 rewards ask first too: the buttons read "+5 tokens" / "+3 tokens", and a sheet shows the group, the station, the balance before and after and the undo window.
+- Station status is shown, not set by hand. Starting a Day 2 game sets In progress, and submitting or cancelling it sets Available (`fn_set_station_status`). A Closed station blocks a start and is not reopened by a game; the GM can open it with Open station (Closed → Available, after a confirm; logged by `fn_set_station_status`). Day 1 stations: Admin and HOGM set the status.
+- Map (HOF, HOGM, Committee, GM): the station list under the map shows Day 1 or Day 2, no "All days". It opens on Day 1 until the day1 phase ends, then Day 2 (`StationBoard.tsx`).
+- Checked in the browser as `gm.test` (phone and desktop; assigned to Day 1 Station 1 and Day 2 Station 1), with no button that writes data pressed by the assistant: every page, the Day 2 checks for a short and a ready group, the location cards, and every confirm sheet up to the confirm. Ben tests the writes: Start game, Submit, Cancel, Day 1 reward, Undo, Open station, Reset games.
+- **Left to do** (none started):
+  - Guardian GM still uses the old staff design.
+  - The Station page reads the GM's current station once; after a phase change (Day 1 → Day 2) the GM must reload. Re-read it when the phases change (front end only).
+  - Day 1 stations have no automatic status (only Admin, HOGM, or the GM's Open station). Decide whether a Day 1 reward should set it too.
+  - Repo vs live: add the `gm_station_assignments` read policy to a migration; the repo's `fn_phase_control` (0003) has no `reset`; a full comparison with bonding-session (David).
+  - One summary RPC for GM piece counts instead of 30 `fn_puzzle_status` calls.
+  - Blind boxes: Admin's station assign modes (Ben) and `bb_holder_role` (item 8).
 
 ### Map: the lake stage stays dark until the finale, 2026-10-19 (Ben, branch `lakefront-dark`)
 No migration. The LakeFront Café no longer lights up at sunset and night on its own: the ribs, the wash, the uplights, the small lights, the light pools, the beams and the phone halos stay off until all three funfair zones are on. Then the concert's opening starts from the dark stage (follow spot, ribs one by one, bang, show). When a zone goes off the show winds down and the stage is dark again.

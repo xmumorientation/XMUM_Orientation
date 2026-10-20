@@ -27,6 +27,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Card, PageTitle } from "@/components/ui";
 import { useProfile } from "@/components/ProfileProvider";
 import { useConfig } from "@/components/useConfig";
+import { UndoWindowSetting } from "@/components/token/UndoWindowSetting";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import {
   fetchGameConfigRules,
@@ -560,6 +561,7 @@ export default function TokenControl({ scoreboardOnly = false }: { scoreboardOnl
             </div>
           ))}
         </div>
+        <UndoWindowSetting config={config} canEdit={isAdmin} onError={setErrorMsg} onSaved={setSuccessMsg} />
       </Card>
         </>
       )}

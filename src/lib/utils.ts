@@ -99,6 +99,8 @@ const ERROR_MESSAGES: Record<string, string> = {
   NOTHING_TO_UNDO: "No recent transaction to undo.",
   UNDO_WINDOW_EXPIRED: "The 2-minute undo window has passed.",
   UNDO_WOULD_GO_NEGATIVE: "Undo rejected: it would make the balance negative.",
+  UNDO_DAY2_NOT_ALLOWED: "A Day 2 result can't be undone here (the piece stays). Ask Admin to correct it.",
+  UNKNOWN_ACTION: "The database doesn't support this action yet.",
   NO_STATION_ASSIGNED: "Your account has no station assigned — ask Admin.",
   SESSION_NOT_OPEN: "This session hasn't been opened yet.",
   NO_END_TIME: "Set an end time first (here, or the planned end on the Schedule page).",

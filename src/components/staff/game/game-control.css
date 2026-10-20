@@ -143,6 +143,10 @@
 .gc-btn-go { background: #16a34a; border-color: #16a34a; color: #fff; }
 .gc-btn-stop { background: #dc2626; border-color: #dc2626; color: #fff; }
 .gc-btn-go:hover:not(:disabled), .gc-btn-stop:hover:not(:disabled) { border-color: #fff; }
+/* In a sheet, .gc-sheet .gc-btn (transparent) would win over these. */
+.gc-sheet .gc-btn-go { background: #16a34a; border-color: #16a34a; color: #fff; }
+.gc-sheet .gc-btn-stop { background: #dc2626; border-color: #dc2626; color: #fff; }
+.gc-sheet .gc-btn-go:disabled, .gc-sheet .gc-btn-stop:disabled { opacity: 0.4; }
 .gc-btn-danger { color: var(--gc-red); border-color: rgba(255, 77, 94, 0.5); }
 .gc-grow { flex: 1; }
 .gc-link { border: 0; background: none; padding: 6px 0; color: var(--gc-cyan); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
@@ -342,3 +346,144 @@
 .gc .gc-filter button[aria-pressed="true"] { border-color: var(--gc-cyan); color: var(--gc-cyan); box-shadow: inset 0 0 0 1px var(--gc-cyan); }
 .gc-filter button[data-tone="ok"] b { color: var(--gc-green); }
 .gc-filter button[data-tone="warn"] b { color: var(--gc-orange); }
+.gc-fold[data-mine] { border-color: rgba(13, 252, 253, 0.45); }
+.gc-fold-name .gc-chip-mine { margin-left: 8px; vertical-align: 2px; color: var(--gc-cyan); border-color: rgba(13, 252, 253, 0.5); }
+
+/* ── Scores, piece counts (GM's /token: GroupScores countsOnly) ──────────── */
+.gc-key .gc-key-count {
+  display: flex; align-items: baseline; justify-content: center; min-height: 56px; padding-top: 10px;
+  font-family: var(--gc-slab); font-weight: 400; font-size: 34px; line-height: 1; font-variant-numeric: tabular-nums;
+}
+.gc-key .gc-key-count small { font-family: var(--gc-mono); font-size: 12px; line-height: 1; color: var(--gc-mute); margin-left: 2px; }
+.gc-key[data-lit] .gc-key-count { color: var(--gc-cyan); }
+
+/* ── Station panel (GM's /gm, app/(app)/gm/page.tsx) ─────────────────────────
+   Phones: one column, Status first. ≥1024px: Group + Result left, Status
+   right. The columns are display: contents on phones so Status can
+   move to the top with order. Cyan = picked group, yellow = Win / Submit. */
+.gc-st-msgs { display: grid; gap: 8px; margin-bottom: 14px; }
+.gc-st-msgs:empty { display: none; }
+.gc-status b { display: block; font-weight: 700; }
+.gc-status p { margin: 2px 0 0; }
+.gc-status-warn { background: rgba(252, 158, 61, 0.12); border: 1px solid rgba(252, 158, 61, 0.5); color: #ffdcb5; }
+.gc-st-failed { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 6px; }
+.gc-st-failed li { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.gc .gc-st-failed .gc-btn { min-height: 36px; font-size: 13px; color: inherit; border-color: rgba(255, 77, 94, 0.5); }
+
+.gc-st-grid { display: flex; flex-direction: column; gap: 14px; }
+.gc-st-col { display: contents; }
+.gc-st-grid .gc-st-status { order: -1; }
+@media (min-width: 1024px) {
+  .gc-st-grid { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(300px, 1fr); gap: 20px; align-items: start; }
+  .gc-st-col { display: grid; gap: 14px; }
+  .gc-st-grid .gc-st-status { order: 0; }
+}
+.gc-st-card { display: grid; gap: 12px; padding: 16px; align-content: start; }
+.gc-st-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 26px; }
+.gc-st-step { color: var(--gc-mute); margin-right: 4px; }
+.gc-st-target { color: var(--gc-text); font-weight: 600; }
+
+.gc-st-groups { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+@media (min-width: 480px) { .gc-st-groups { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.gc .gc-st-groups button {
+  display: flex; align-items: center; gap: 8px; min-width: 0; min-height: 52px; padding: 0 12px;
+  border-radius: 14px; border: 1px solid var(--gc-line); background: var(--gc-ink-3); color: var(--gc-text-2);
+  font: inherit; font-size: 14px; font-weight: 600; text-align: left; cursor: pointer; box-shadow: none;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+.gc .gc-st-groups button span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gc .gc-st-groups button .gc-swatch { flex: none; }
+.gc .gc-st-groups button:active { transform: scale(0.97); }
+.gc .gc-st-groups button[aria-checked="true"] {
+  background: var(--gc-raised); border-color: var(--gc-cyan); color: var(--gc-text);
+  box-shadow: inset 0 0 0 1px var(--gc-cyan), 0 0 18px rgba(13, 252, 253, 0.14);
+}
+
+.gc .gc-st-award {
+  display: grid; justify-items: center; align-content: center; gap: 4px; min-height: 108px; padding: 10px;
+  border-radius: 18px; border: 1px solid var(--gc-line-2); background: var(--gc-ink-3); color: var(--gc-text);
+  font: inherit; cursor: pointer; box-shadow: none; transition: transform 0.15s ease;
+}
+.gc-st-award b { font-family: var(--gc-slab); font-weight: 400; font-size: 42px; line-height: 1; font-variant-numeric: tabular-nums; }
+.gc-st-award span { font-size: 14px; font-weight: 700; }
+.gc-st-award b small { font-family: var(--font-nexus-body), Outfit, system-ui, sans-serif; font-size: 16px; font-weight: 700; }
+.gc .gc-st-award[data-tone="win"] { background: var(--gc-yellow); border-color: var(--gc-yellow); color: #111; }
+.gc .gc-st-award:active:not(:disabled) { transform: scale(0.97); }
+/* No group picked (or sending): quiet grey, not a faded yellow. */
+.gc .gc-st-award:disabled, .gc .gc-st-award[data-tone="win"]:disabled {
+  background: var(--gc-ink-3); border-color: var(--gc-line); color: var(--gc-mute); cursor: default;
+}
+.gc .gc-st-undo { width: 100%; }
+.gc-st-undo small { font-weight: 500; color: var(--gc-mute); }
+
+.gc .gc-st-card .gc-seg button { min-height: 52px; padding: 6px 8px; line-height: 1.2; }
+.gc .gc-st-submit { width: 100%; min-height: 56px; font-size: 16px; }
+
+/* Day 2: Check → Play → Submit. */
+.gc-st-steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.gc-st-steps li {
+  display: flex; align-items: center; gap: 6px; min-height: 34px; padding: 0 10px; border-radius: 10px;
+  background: var(--gc-ink-3); color: var(--gc-mute); font-size: 12.5px; font-weight: 600;
+}
+.gc-st-steps li b { font-family: var(--gc-mono); font-size: 11px; font-weight: 500; }
+.gc-st-steps li[aria-current="step"] { color: var(--gc-text); box-shadow: inset 0 0 0 1.5px var(--gc-cyan); }
+.gc-st-steps li[aria-current="step"] b { color: var(--gc-cyan); }
+/* Location picks: one card per key, in the key's colour (KEY_COLORS, as on
+   Freshie Items) for decoration only; cyan marks the picked ones. */
+.gc-st-locs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.gc .gc-st-loc {
+  position: relative; display: grid; justify-items: start; align-content: start; gap: 5px; min-width: 0;
+  min-height: 104px; padding: 10px 10px 10px 13px; border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--key) 38%, var(--gc-line));
+  background: linear-gradient(155deg, color-mix(in srgb, var(--key) 16%, transparent) 0%, rgba(14, 12, 21, 0.92) 72%);
+  box-shadow: inset 3px 0 0 var(--key);
+  color: var(--gc-text); font: inherit; text-align: left; cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+.gc .gc-st-loc:active:not(:disabled) { transform: scale(0.97); }
+.gc-st-loc-key { font-family: var(--gc-mono); font-size: 9.5px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--key); }
+.gc-st-loc b { font-size: 13.5px; font-weight: 700; line-height: 1.2; overflow-wrap: anywhere; }
+.gc-st-loc-dots { display: flex; gap: 3px; margin-top: 2px; }
+.gc-st-loc-dots i { width: 8px; height: 8px; border-radius: 50%; border: 1px solid color-mix(in srgb, var(--key) 55%, transparent); }
+.gc-st-loc-dots i[data-on] { background: var(--key); border-color: var(--key); box-shadow: 0 0 6px color-mix(in srgb, var(--key) 60%, transparent); }
+.gc-st-loc small { font-family: var(--gc-mono); font-size: 10.5px; font-weight: 500; color: var(--gc-mute); }
+.gc-st-loc-tick { position: absolute; top: 9px; right: 9px; color: var(--gc-cyan); }
+.gc .gc-st-loc[aria-pressed="true"] {
+  border-color: var(--gc-cyan);
+  box-shadow: inset 3px 0 0 var(--key), 0 0 0 1.5px var(--gc-cyan), 0 0 22px rgba(13, 252, 253, 0.16);
+}
+.gc .gc-st-loc:disabled { opacity: 0.45; cursor: not-allowed; }
+.gc-st-checks { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.gc-st-checks li { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--gc-line); background: var(--gc-ink-3); }
+.gc-st-checks li > svg { flex: none; margin-top: 1px; }
+.gc-st-checks li > span { display: grid; gap: 1px; min-width: 0; }
+.gc-st-checks b { font-size: 13.5px; font-weight: 600; }
+.gc-st-checks small { font-size: 12.5px; color: var(--gc-text-2); }
+.gc-st-checks [data-state="ok"] > svg { color: var(--gc-green); }
+.gc-st-checks [data-state="warn"] { border-color: rgba(252, 158, 61, 0.45); }
+.gc-st-checks [data-state="warn"] > svg { color: var(--gc-orange); }
+.gc-st-checks [data-state="bad"] { border-color: rgba(255, 77, 94, 0.5); }
+.gc-st-checks [data-state="bad"] > svg { color: var(--gc-red); }
+.gc-st-checks [data-state="wait"] > svg { color: var(--gc-mute); }
+.gc-st-game { display: grid; gap: 2px; padding: 12px 14px 0; border-radius: 14px; border: 1px solid rgba(252, 158, 61, 0.5); background: rgba(252, 158, 61, 0.06); }
+.gc-st-game-who { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 16px; }
+.gc-st-game-who b { flex: 1; min-width: 0; font-weight: 700; }
+.gc-st-game .gc-facts { border-top: 0; }
+.gc .gc-st-word b { font-family: inherit; font-size: 22px; font-weight: 800; }
+.gc .gc-st-award[data-tone="ok"] { background: #16a34a; border-color: #16a34a; color: #fff; }
+.gc .gc-st-award[data-tone="bad"] { border-color: rgba(255, 77, 94, 0.6); color: var(--gc-red); }
+.gc .gc-st-award[data-tone]:disabled { background: var(--gc-ink-3); border-color: var(--gc-line); color: var(--gc-mute); }
+.gc .gc-st-groups button:disabled { opacity: 0.35; cursor: not-allowed; }
+.gc-st-status-chip { font-size: 11px; padding: 5px 11px; }
+.gc .gc-st-open { width: 100%; }
+
+/* The GM's station on each day, under the title. */
+.gc-st-days { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.gc-st-days li {
+  display: flex; align-items: center; gap: 8px; min-height: 36px; padding: 0 6px 0 12px; border-radius: 12px;
+  border: 1px solid var(--gc-line); background: rgba(14, 12, 21, 0.86); font-size: 13.5px; color: var(--gc-text-2);
+}
+.gc-st-days li:not([data-now]) { padding-right: 12px; }
+.gc-st-days li b { font-family: var(--gc-mono); font-size: 10.5px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gc-mute); }
+.gc-st-days li[data-now] { border-color: rgba(13, 252, 253, 0.5); color: var(--gc-text); }
+.gc-st-days li[data-now] b { color: var(--gc-cyan); }

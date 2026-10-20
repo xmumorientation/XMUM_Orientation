@@ -3,15 +3,18 @@
 import { ChevronDown } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { usePhaseTimer } from "@/components/PhaseTimerProvider";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { RISK_TIER_META, type Station, type StationStatus } from "@/lib/types";
 
-// Every station, read only, under the map on /map for HOF, HOGM and
-// Committee: status, location, game, how full it is and which groups are
-// checked in. Changing stations is HOGM's Game control and Admin, not here.
+// Every station, read only, under the map on /map for HOF, HOGM, Committee
+// and GM: status, location, game, how full it is and which groups are
+// checked in (not for a GM, who gets no group locations). A GM's own station
+// is marked "Yours". One day at a time (no "All days"): Day 1 until the day1
+// phase has ended, then Day 2, same rule as Admin's day filter; a tap overrides. Changing stations is HOGM's Game control and Admin, not here.
 // Sits inside .gc-map, so it uses the Game control (.gc) classes.
 
-type DayFilter = "all" | 1 | 2;
+type DayFilter = 1 | 2;
 type StatusFilter = "all" | StationStatus;
 type CheckIn = { group_id: number; group_name: string; station_id: number | null };
 
@@ -21,12 +24,20 @@ const STATUS: { value: StationStatus; label: string; tone: string }[] = [
   { value: "closed", label: "Closed", tone: "off" },
 ];
 
-export function StationBoard() {
+export function StationBoard({
+  myStationId = null,
+  showCheckIns = true,
+}: {
+  myStationId?: number | null;
+  showCheckIns?: boolean;
+}) {
   const supabase = useMemo(() => supabaseBrowser(), []);
   const [stations, setStations] = useState<Station[]>([]);
   const [counts, setCounts] = useState<Record<number, number>>({});
   const [checkIns, setCheckIns] = useState<CheckIn[]>([]);
-  const [day, setDay] = useState<DayFilter>("all");
+  const { phases } = usePhaseTimer();
+  const [picked, setDay] = useState<DayFilter | null>(null);
+  const day: DayFilter = picked ?? (phases.find((p) => p.key === "day1")?.state === "ended" ? 2 : 1);
   const [status, setStatus] = useState<StatusFilter>("all");
   const [openId, setOpenId] = useState<number | null>(null);
 
@@ -55,7 +66,7 @@ export function StationBoard() {
     };
   }, [supabase, load]);
 
-  const ofDay = stations.filter((s) => day === "all" || s.day === day);
+  const ofDay = stations.filter((s) => s.day === day);
   const visible = ofDay.filter((s) => status === "all" || s.status === status);
   const meta = (v: StationStatus) => STATUS.find((x) => x.value === v)!;
 
@@ -63,9 +74,9 @@ export function StationBoard() {
     <section className="gc-stack gc-board" aria-labelledby="sb-title">
       <h2 id="sb-title" className="gc-eyebrow">All stations</h2>
       <div className="gc-seg" role="tablist" aria-label="Day">
-        {(["all", 1, 2] as DayFilter[]).map((d) => (
+        {([1, 2] as DayFilter[]).map((d) => (
           <button key={d} type="button" role="tab" aria-selected={day === d} onClick={() => setDay(d)}>
-            {d === "all" ? "All days" : `Day ${d}`}
+            Day {d}
           </button>
         ))}
       </div>
@@ -84,10 +95,11 @@ export function StationBoard() {
           const here = checkIns.filter((c) => c.station_id === s.id);
           const n = counts[s.id] ?? here.length;
           return (
-            <li key={s.id} className="gc-card gc-fold" data-open={open || undefined}>
+            <li key={s.id} className="gc-card gc-fold" data-open={open || undefined} data-mine={s.id === myStationId || undefined}>
               <button type="button" className="gc-fold-head" aria-expanded={open} onClick={() => setOpenId(open ? null : s.id)}>
                 <span className="gc-fold-name">
                   {s.name}
+                  {s.id === myStationId && <span className="gc-chip gc-chip-mine">Yours</span>}
                   <small>
                     Day {s.day} · {s.code}
                     {n > 0 && ` · ${n} group${n !== 1 ? "s" : ""} here`}
@@ -107,9 +119,11 @@ export function StationBoard() {
                       <div><dt>Risk · entry</dt><dd>{RISK_TIER_META[s.risk_tier].label} · −{s.entry_cost}</dd></div>
                     )}
                   </dl>
-                  <p className="gc-muted">
-                    {here.length ? `Checked in: ${here.map((c) => c.group_name).join(", ")}` : "No group checked in."}
-                  </p>
+                  {showCheckIns && (
+                    <p className="gc-muted">
+                      {here.length ? `Checked in: ${here.map((c) => c.group_name).join(", ")}` : "No group checked in."}
+                    </p>
+                  )}
                 </div>
               )}
             </li>

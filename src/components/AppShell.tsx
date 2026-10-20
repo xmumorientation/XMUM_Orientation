@@ -21,7 +21,7 @@ import { Dialog, DialogClose, DialogContent } from "@/components/ui/Dialog";
 import { Monogram } from "@/components/ui/Monogram";
 import { TopNav } from "@/components/TopNav";
 import { supabaseBrowser } from "@/lib/supabase/client";
-import { OPS_ROLES, ROLE_LABELS, type UserRole } from "@/lib/types";
+import { OPS_ROLES, ROLE_LABELS, VORTEXA_ROLES, type UserRole } from "@/lib/types";
 import { cn, hexToRgbChannels } from "@/lib/utils";
 
 import "@/components/staff/staff-dashboard.css";
@@ -120,16 +120,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const isAdmin = profile.role === "admin";
   // HOF, HOGM, Committee: Freshie-style home and tab bar in the Welcome page colours.
   const isOps = OPS_ROLES.includes(profile.role);
+  // GM gets the same look; its center tab and yellow pill are Station (/gm).
+  const isGm = profile.role === "gm";
+  const isVortexa = VORTEXA_ROLES.includes(profile.role);
   const isStaffDashboard = !isFreshie && pathname === "/dashboard";
   // Every Committee, Faci, GM, HOF, HOGM, Guardian GM and Admin page uses the
   // dark staff design. The map and Items pages keep their own design.
-  // The ops crew's map is the Ops page's map, so it gets the same dark design.
+  // The ops crew's and GM's map is the Ops page's map, so it gets the same dark design.
   const keepsOwnDesign =
-    (!isOps && (pathname === "/map" || pathname.startsWith("/map/"))) || pathname.startsWith("/inventory");
+    (!isVortexa && (pathname === "/map" || pathname.startsWith("/map/"))) || pathname.startsWith("/inventory");
   const isStaffArea = !isFreshie && !keepsOwnDesign;
   const isStaffSubpage = isStaffArea && !isStaffDashboard;
   // Roles whose subpages use Home's header (OpsHeader) instead of the staff phone header.
-  const hasOpsHeader = profile.role === "hogm" || profile.role === "hof";
+  const hasOpsHeader = profile.role === "hogm" || profile.role === "hof" || isGm;
   const items = NAV.filter((n) => n.roles.includes(profile.role)).map((item) =>
     isFaci && item.href === "/map" ? { ...item, href: "/checkin" } : item
   );
@@ -139,11 +142,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { group } = useGroup();
   const groupTheme = isFreshie || isFaci ? themeFromColor(group?.color) : null;
   // Only the --fh-* night colours; --brand-1 stays the brand so light pages keep theirs.
-  const fhTheme = groupTheme ?? (isOps ? VORTEXA_THEME : null);
+  const fhTheme = groupTheme ?? (isVortexa ? VORTEXA_THEME : null);
   const isNight = isStaffDashboard || (
     (isFreshie || isFaci) &&
     (pathname === "/dashboard" || pathname === "/schedule" || pathname === "/inventory" || pathname === "/map"));
-  const showTabBar = (isFreshie || isFaci || isOps) && !(isFreshie && pathname === "/scan");
+  const showTabBar = (isFreshie || isFaci || isVortexa) && !(isFreshie && pathname === "/scan");
 
   // Close the drawer on route change so it never lingers over a new page.
   // Radix Dialog owns focus-trap/Escape/backdrop-dismiss/focus-return; route
@@ -198,9 +201,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         // With the tab bar the page itself never scrolls (see .app-scroll below).
         showTabBar ? "h-dvh overflow-hidden" : "min-h-dvh",
         "w-full",
-        isNight && (isOps ? "bg-[#07060b]" : "bg-[#030b1c]"),
+        isNight && (isVortexa ? "bg-[#07060b]" : "bg-[#030b1c]"),
         isStaffArea && `staff-dashboard-shell ${nexusBody.variable} ${vxDisplay.variable}`,
-        isStaffArea && isOps && "staff-vx"
+        isStaffArea && isVortexa && "staff-vx"
       )}
       style={
         {
@@ -234,7 +237,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         name={profile.full_name ?? ""}
         groupName={isFreshie || isFaci ? (group?.name ?? null) : null}
         canEditProfile={isFaci}
-        primaryHref={isOps ? "/committee" : undefined}
+        primaryHref={isOps ? "/committee" : isGm ? "/gm" : undefined}
         onSignOut={signOut}
       />
       {/* HOGM and HOF subpages: Home's logo, role chip and account menu (OpsHeader). */}
@@ -299,7 +302,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             title="Navigation menu"
             titleVisuallyHidden
             showClose={false}
-            className={cn("lg:hidden", isStaffArea && `sd-drawer sd-top-menu ${nexusBody.variable}`, isStaffArea && isOps && "staff-vx")}
+            className={cn("lg:hidden", isStaffArea && `sd-drawer sd-top-menu ${nexusBody.variable}`, isStaffArea && isVortexa && "staff-vx")}
             overlayClassName={isStaffArea ? "sd-menu-overlay" : undefined}
           >
             <div className={cn("flex flex-col", !isStaffArea && "h-full")}>
