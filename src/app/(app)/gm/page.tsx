@@ -1,16 +1,19 @@
 "use client";
 
-import { Undo2 } from "lucide-react";
+import { Check, CircleDashed, TriangleAlert, Undo2, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { groupSwatch } from "@/components/freshie/groupTheme";
 import { vxDisplay, vxSlab } from "@/components/home/fonts";
+import { usePhaseTimer } from "@/components/PhaseTimerProvider";
 import { useProfile } from "@/components/ProfileProvider";
 import "@/components/staff/game/game-control.css";
-import { StatusLine, useStatus } from "@/components/staff/game/parts";
+import { ConfirmSheet, StatusLine, useStatus } from "@/components/staff/game/parts";
+import { useConfig } from "@/components/useConfig";
 import { useOfflineQueue } from "@/components/useOfflineQueue";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import {
+  PIECES_PER_SET,
   PROJECTOR_LABELS,
   PROJECTOR_LOCATIONS,
   RISK_TIER_META,
@@ -22,22 +25,106 @@ import {
 import { cn, friendlyError, idemKey } from "@/lib/utils";
 
 type GroupRow = { id: number; name: string; color: string | null; token_balance: number };
+type Counts = Record<ProjectorLocation, number>;
+/** A Day 2 game the GM started: locked until its result is submitted or it is cancelled. Kept on this phone. */
+type Day2Game = { stationId: number; groupId: number; locations: ProjectorLocation[] };
+type CheckState = "ok" | "warn" | "bad" | "wait";
+type Day2Check = { label: string; text: string; state: CheckState };
 
-const STATUS: { value: StationStatus; label: string; tone: "ok" | "warn" | "off" }[] = [
-  { value: "available", label: "Available", tone: "ok" },
-  { value: "in_progress", label: "In progress", tone: "warn" },
-  { value: "closed", label: "Closed", tone: "off" },
-];
+const STATUS: Record<StationStatus, { label: string; tone: "ok" | "warn" | "off" }> = {
+  available: { label: "Available", tone: "ok" },
+  in_progress: { label: "In progress", tone: "warn" },
+  closed: { label: "Closed", tone: "off" },
+};
+
+const TOTAL_PIECES = PIECES_PER_SET * PROJECTOR_LOCATIONS.length;
+const labels = (locs: ProjectorLocation[], join: string) => locs.map((l) => PROJECTOR_LABELS[l]).join(join);
+const flag = (v: unknown) => v === true || v === "true";
+
+/**
+ * Day 2 checks before a game, from what a GM may read. They are the reasons
+ * fn_day2_challenge refuses a result (INSUFFICIENT_BALANCE, PHASE_LOCKED,
+ * TOKENS_FROZEN, POOL_EXHAUSTED), so they show before the group plays instead
+ * of after. The server still checks again on submit. counts: undefined while
+ * loading, null when fn_puzzle_status failed. "warn" may start, "bad" and
+ * "wait" may not.
+ */
+function day2Checks({
+  station,
+  balance,
+  counts,
+  locations,
+  phaseOn,
+  frozen,
+}: {
+  station: Station | null;
+  balance: number | null;
+  counts: Counts | null | undefined;
+  locations: ProjectorLocation[];
+  phaseOn: boolean;
+  frozen: boolean;
+}): Day2Check[] {
+  if (!station) return [{ label: "Station", text: "No station assigned to your account. Ask Admin.", state: "bad" }];
+  const checks: Day2Check[] = [];
+  const fee = station.entry_cost;
+
+  if (station.status === "closed") {
+    checks.push({ label: "Station", text: "Closed by Admin or HOGM. Ask them to open it.", state: "bad" });
+  } else if (station.status === "in_progress") {
+    checks.push({ label: "Station", text: "Shows In progress. If no other group is playing here, you can still start.", state: "warn" });
+  }
+
+  if (balance !== null) {
+    checks.push(
+      balance >= fee
+        ? { label: "Tokens", text: `Has ${balance} · entry ${fee} · ${balance - fee} left after`, state: "ok" }
+        : { label: "Tokens", text: `Has ${balance}, needs ${fee}. Short by ${fee - balance}.`, state: "bad" }
+    );
+  }
+  if (frozen) checks.push({ label: "Token freeze", text: "Admin froze tokens. Results are refused until they unfreeze.", state: "bad" });
+  checks.push(
+    phaseOn
+      ? { label: "Day 2 game", text: "Running", state: "ok" }
+      : { label: "Day 2 game", text: "Not started yet. Results are refused until Live control starts it.", state: "bad" }
+  );
+
+  const need = RISK_TIER_META[station.risk_tier].pick;
+  const piece = "Puzzle piece";
+  if (counts === undefined) checks.push({ label: piece, text: "Checking…", state: "wait" });
+  else if (counts === null) checks.push({ label: piece, text: "Could not check. The server still checks when you submit.", state: "warn" });
+  else if (need === 0) {
+    const total = PROJECTOR_LOCATIONS.reduce((n, l) => n + counts[l], 0);
+    checks.push(
+      total >= TOTAL_PIECES
+        ? { label: piece, text: `Owns all ${TOTAL_PIECES} pieces. A win gives nothing.`, state: "bad" }
+        : { label: piece, text: `Owns ${total}/${TOTAL_PIECES}. A win gives a piece they don't have.`, state: "ok" }
+    );
+  } else if (locations.length < need) {
+    checks.push({ label: piece, text: need === 2 ? "Pick 2 locations above." : "Pick the location above.", state: "wait" });
+  } else {
+    const open = locations.filter((l) => counts[l] < PIECES_PER_SET);
+    const full = locations.filter((l) => counts[l] >= PIECES_PER_SET);
+    if (open.length === 0) checks.push({ label: piece, text: `${labels(full, " and ")} ${full.length > 1 ? "are" : "is"} full. A win gives nothing.`, state: "bad" });
+    else if (full.length > 0) checks.push({ label: piece, text: `${labels(full, " and ")} is full, so a win gives a ${labels(open, " or ")} piece.`, state: "warn" });
+    else checks.push({ label: piece, text: `A win gives a piece from ${labels(open, " or ")}.`, state: "ok" });
+  }
+  return checks;
+}
 
 // GM's Station panel (/gm), in the Game control look (game-control.css) of the
 // ops crew's Ops page. Phones, top to bottom:
-//  Status    - the station's queue state (Available / In progress / Closed)
+//  Status    - the station's state, shown only. A Day 2 game sets it: In
+//              progress when it starts, Available when its result is submitted
+//              or it is cancelled. Admin and HOGM can still set it (Closed).
 //  Group     - tap the group at the station (fn_scoreboard: name, colour, tokens)
 //  Result    - Day 1: win or participation reward. Amounts are the admin's
 //              token rules (Token page); the server reads them, the GM cannot
 //              pick one. Undo the last transaction within 2 minutes.
-//              Day 2: success or failed (+ tier locations); the system deducts
-//              the tier's entry fee and grants a random piece the group lacks.
+//              Day 2: three steps, one group at a time. 1 Check: tokens, the
+//              Day 2 game running, no token freeze, a piece to win (the tier's
+//              locations are picked here). 2 Play: the group is locked. 3 Submit:
+//              Success or Failed, then a confirm sheet. The entry fee is charged
+//              only on submit (fn_day2_challenge), win or lose.
 // No blind box: GMs show no blind box QR (not here, not on Home).
 // Landscape tablets and desktops: Group and Result left, Status right.
 // A station runs Day 1 or Day 2; with no station, a Day switch shows both.
@@ -46,6 +133,8 @@ export default function GmPanelPage() {
   const profile = useProfile();
   const supabase = useMemo(() => supabaseBrowser(), []);
   const { queue, failed, dismissFailed, submit } = useOfflineQueue();
+  const { phases, offsetMs } = usePhaseTimer();
+  const { config } = useConfig();
   const result = useStatus();
   const statusMsg = useStatus();
 
@@ -53,23 +142,45 @@ export default function GmPanelPage() {
   const [groupId, setGroupId] = useState<number | null>(null);
   const [station, setStation] = useState<Station | null>(null);
   const [pickedDay, setPickedDay] = useState<1 | 2>(1);
-  const [success, setSuccess] = useState(true);
   const [locations, setLocations] = useState<ProjectorLocation[]>([]);
   const [busy, setBusy] = useState(false);
   // Shown on the buttons only; the server applies the current rule.
   const [day1, setDay1] = useState({ win: 2, lose: 1 });
+  const [game, setGame] = useState<Day2Game | null>(null);
+  // The result being confirmed: true = success, false = failed.
+  const [confirmWin, setConfirmWin] = useState<boolean | null>(null);
+  const [piecesFor, setPiecesFor] = useState<{ groupId: number; counts: Counts | null } | null>(null);
+
+  // a station runs either Day 1 or Day 2, not both
+  const day = station?.day ?? pickedDay;
 
   // Groups with their colour and tokens. A GM cannot select the groups table,
   // so this is fn_scoreboard; reloaded after each result and every 30 s.
   const loadGroups = useCallback(async () => {
     const { data } = await supabase.rpc("fn_scoreboard");
-    if (!data) return;
-    setGroups(
-      (data as GroupRow[])
-        .map((g) => ({ ...g, token_balance: g.token_balance ?? 0 }))
-        .sort((a, b) => a.id - b.id)
-    );
+    if (!data) return null;
+    const rows = (data as GroupRow[])
+      .map((g) => ({ ...g, token_balance: g.token_balance ?? 0 }))
+      .sort((a, b) => a.id - b.id);
+    setGroups(rows);
+    return rows;
   }, [supabase]);
+
+  // One group's piece count per location. A GM may not read inventory, but
+  // fn_puzzle_status gives the counts. null if any call fails.
+  const loadPieces = useCallback(
+    async (id: number): Promise<Counts | null> => {
+      const found = await Promise.all(
+        PROJECTOR_LOCATIONS.map(async (loc) => {
+          const { data, error } = await supabase.rpc("fn_puzzle_status", { p_group_id: id, p_location: loc });
+          return error || !data ? null : ([loc, (data as { pieces: number }).pieces] as const);
+        })
+      );
+      if (found.some((f) => f === null)) return null;
+      return Object.fromEntries(found as (readonly [ProjectorLocation, number])[]) as Counts;
+    },
+    [supabase]
+  );
 
   useEffect(() => {
     void loadGroups();
@@ -81,6 +192,19 @@ export default function GmPanelPage() {
       document.removeEventListener("visibilitychange", refreshVisible);
     };
   }, [loadGroups]);
+
+  // Day 2: picking a group reads its tokens and pieces fresh, for the checks.
+  useEffect(() => {
+    if (day !== 2 || !groupId) return;
+    let active = true;
+    void loadGroups();
+    loadPieces(groupId).then((counts) => {
+      if (active) setPiecesFor({ groupId, counts });
+    });
+    return () => {
+      active = false;
+    };
+  }, [day, groupId, loadGroups, loadPieces]);
 
   useEffect(() => {
     let active = true;
@@ -154,6 +278,47 @@ export default function GmPanelPage() {
     };
   }, [supabase, profile.id, profile.station_id]);
 
+  // A started game survives a reload or a locked phone, on this phone only.
+  const gameKey = `gm-day2-game:${profile.id}`;
+  const stationId = station?.id ?? null;
+  useEffect(() => {
+    if (stationId === null) return;
+    try {
+      const saved = JSON.parse(window.localStorage.getItem(gameKey) ?? "null") as Day2Game | null;
+      if (saved?.stationId === stationId) {
+        setGame(saved);
+        setGroupId(saved.groupId);
+        setLocations(saved.locations);
+      }
+    } catch {
+      // no storage: the game is not restored
+    }
+  }, [gameKey, stationId]);
+
+  function keepGame(next: Day2Game | null) {
+    setGame(next);
+    try {
+      if (next) window.localStorage.setItem(gameKey, JSON.stringify(next));
+      else window.localStorage.removeItem(gameKey);
+    } catch {
+      // no storage: the game lasts until the page closes
+    }
+  }
+
+  // The GM no longer sets the status by hand; a Day 2 game does (fn_set_station_status, own station only).
+  async function autoStatus(next: StationStatus) {
+    if (!station) return;
+    const { error } = await supabase.rpc("fn_set_station_status", {
+      p_station_id: station.id,
+      p_status: next,
+    });
+    if (error) statusMsg.setError(`Could not set the station to ${STATUS[next].label}: ${friendlyError(error)}`);
+    else {
+      statusMsg.setError(null);
+      setStation((cur) => (cur ? { ...cur, status: next } : cur));
+    }
+  }
+
   async function day1Reward(outcome: "win" | "lose") {
     if (!groupId) return result.setError("先选组别 Select a group first.");
     const label = outcome === "win" ? "Station win" : "Station participation";
@@ -197,6 +362,7 @@ export default function GmPanelPage() {
 
   const tier = station?.risk_tier ?? "low";
   const needPicks = RISK_TIER_META[tier].pick;
+  const fee = station?.entry_cost ?? 0;
 
   function toggleLocation(loc: ProjectorLocation) {
     setLocations((cur) => {
@@ -209,62 +375,100 @@ export default function GmPanelPage() {
     });
   }
 
-  async function submitDay2() {
-    if (!groupId) return result.setError("先选组别 Select a group first.");
-    if (needPicks > 0 && locations.length !== needPicks) {
-      return result.setError(
-        needPicks === 2 ? "Pick exactly 2 locations." : "Pick exactly 1 location."
-      );
-    }
+  function pickGroup(id: number) {
+    if (game) return;
+    if (id !== groupId) setLocations([]);
+    setGroupId(id);
+  }
+
+  // Same rule as the server's phase_active(): rehearsal mode, or the day2 or
+  // endgame phase active and not past its end.
+  const serverNow = Date.now() + offsetMs;
+  const phaseOn =
+    flag(config["rehearsal_mode"]) ||
+    phases.some(
+      (p) =>
+        (p.key === "day2" || p.key === "endgame") &&
+        p.state === "active" &&
+        (!p.ends_at || Date.parse(p.ends_at) > serverNow)
+    );
+  const frozen = flag(config["tokens_frozen"]);
+  const group = groups.find((g) => g.id === groupId) ?? null;
+  const counts = piecesFor && piecesFor.groupId === groupId ? piecesFor.counts : undefined;
+  const checks = group
+    ? day2Checks({ station, balance: group.token_balance, counts, locations, phaseOn, frozen })
+    : [];
+  const canStart = !!group && checks.every((c) => c.state === "ok" || c.state === "warn");
+  const step = game ? (confirmWin !== null ? 2 : 1) : 0;
+  const gameGroup = game ? (groups.find((g) => g.id === game.groupId) ?? null) : null;
+
+  // Step 1 → 2: check again with fresh tokens and pieces, lock the group, set In progress.
+  async function startGame() {
+    if (!groupId || !station) return;
+    setBusy(true);
+    result.setError(null);
+    const [rows, fresh] = await Promise.all([loadGroups(), loadPieces(groupId)]);
+    setBusy(false);
+    setPiecesFor({ groupId, counts: fresh });
+    const balance = rows?.find((g) => g.id === groupId)?.token_balance ?? group?.token_balance ?? null;
+    const blocked = day2Checks({ station, balance, counts: fresh, locations, phaseOn, frozen }).find(
+      (c) => c.state === "bad" || c.state === "wait"
+    );
+    if (blocked) return result.setError(`${blocked.label}: ${blocked.text}`);
+    keepGame({ stationId: station.id, groupId, locations });
+    if (station.status === "available") void autoStatus("in_progress");
+  }
+
+  // Back to Available after a game, unless Admin or HOGM closed the station meanwhile.
+  function endGame() {
+    keepGame(null);
+    setConfirmWin(null);
+    if (station?.status === "in_progress") void autoStatus("available");
+  }
+
+  function cancelGame() {
+    result.setError(null);
+    endGame();
+  }
+
+  // Step 3: the entry fee is charged here, win or lose.
+  async function submitDay2(won: boolean) {
+    if (!game) return;
     setBusy(true);
     result.setError(null);
     const res = await submit(
       "fn_day2_challenge",
       {
-        p_group_id: groupId,
-        p_success: success,
-        p_locations: needPicks > 0 ? locations : null,
+        p_group_id: game.groupId,
+        p_success: won,
+        p_locations: needPicks > 0 ? game.locations : null,
         p_idempotency_key: idemKey(),
       },
-      `day2 ${success ? "win" : "lose"} to group ${groupId}`
+      `day2 ${won ? "win" : "lose"} to group ${game.groupId}`
     );
     setBusy(false);
     if (res.status === "confirmed") {
       const d = res.data as Day2Result;
-      if (d.duplicate) return result.flash("Duplicate ignored (already recorded).");
       result.flash(
-        d.success && d.piece_name
-          ? `-${d.cost} tokens · granted ${d.piece_name} · balance ${d.balance}`
-          : `-${d.cost} tokens (challenge lost) · balance ${d.balance}`
+        d.duplicate
+          ? "Duplicate ignored (already recorded)."
+          : d.success && d.piece_name
+            ? `-${d.cost} tokens · granted ${d.piece_name} · balance ${d.balance}`
+            : `-${d.cost} tokens (challenge lost) · balance ${d.balance}`
       );
-      setLocations([]);
-      void loadGroups();
     } else if (res.status === "queued") {
       result.flash("Offline. Queued and will send automatically.");
     } else {
-      result.setError(friendlyError({ message: res.error }));
+      setConfirmWin(null);
+      return result.setError(friendlyError({ message: res.error }));
     }
+    endGame();
+    setLocations([]);
+    setGroupId(null);
+    void loadGroups();
   }
 
-  async function setStatus(status: StationStatus) {
-    if (!station) return;
-    setBusy(true);
-    const { error } = await supabase.rpc("fn_set_station_status", {
-      p_station_id: station.id,
-      p_status: status,
-    });
-    setBusy(false);
-    if (error) statusMsg.setError(friendlyError(error));
-    else {
-      statusMsg.setError(null);
-      setStation({ ...station, status });
-    }
-  }
-
-  // a station runs either Day 1 or Day 2, not both
-  const day = station?.day ?? pickedDay;
-  const group = groups.find((g) => g.id === groupId) ?? null;
-  const fee = station?.entry_cost ?? "?";
+  const status = station ? STATUS[station.status] : null;
 
   return (
     <div className={cn("gc gc-st", vxDisplay.variable, vxSlab.variable)}>
@@ -350,7 +554,8 @@ export default function GmPanelPage() {
                   type="button"
                   role="radio"
                   aria-checked={groupId === g.id}
-                  onClick={() => setGroupId(g.id)}
+                  disabled={!!game && game.groupId !== g.id}
+                  onClick={() => pickGroup(g.id)}
                 >
                   <i className="gc-swatch" style={{ background: groupSwatch(g.id, g.color) }} aria-hidden />
                   <span>{g.name}</span>
@@ -358,6 +563,7 @@ export default function GmPanelPage() {
               ))}
             </div>
             {groups.length === 0 && <p className="gc-muted">Loading groups…</p>}
+            {game && <p className="gc-muted">A game is running. Submit its result or cancel it to switch groups.</p>}
           </section>
 
           <section className="gc-card gc-st-card" aria-labelledby="st-result">
@@ -376,6 +582,7 @@ export default function GmPanelPage() {
                     type="button"
                     role="tab"
                     aria-selected={pickedDay === d}
+                    disabled={!!game}
                     onClick={() => setPickedDay(d)}
                   >
                     Day {d}
@@ -384,21 +591,17 @@ export default function GmPanelPage() {
               </div>
             )}
 
-            <p className="gc-muted">
-              {group ? (
-                <>
-                  For <b className="gc-st-target">{group.name}</b>.{" "}
-                  {day === 1
-                    ? "Tokens are added at once."
-                    : `${RISK_TIER_META[tier].label}: ${RISK_TIER_META[tier].desc}. Entry −${fee} is charged win or lose; a win grants a random piece the group doesn't own yet.`}
-                </>
-              ) : (
-                "Pick the group at your station first."
-              )}
-            </p>
-
             {day === 1 ? (
               <>
+                <p className="gc-muted">
+                  {group ? (
+                    <>
+                      For <b className="gc-st-target">{group.name}</b>. Tokens are added at once.
+                    </>
+                  ) : (
+                    "Pick the group at your station first."
+                  )}
+                </p>
                 <div className="gc-row2">
                   <button
                     type="button"
@@ -429,47 +632,169 @@ export default function GmPanelPage() {
               </>
             ) : (
               <>
-                <div className="gc-seg gc-st-outcome" role="group" aria-label="Result">
-                  <button type="button" aria-pressed={success} data-tone="ok" onClick={() => setSuccess(true)}>
-                    <b>Success</b>
-                    <small>Charge + piece</small>
-                  </button>
-                  <button type="button" aria-pressed={!success} data-tone="bad" onClick={() => setSuccess(false)}>
-                    <b>Failed</b>
-                    <small>Charge only</small>
-                  </button>
-                </div>
+                <ol className="gc-st-steps" aria-label="Day 2 steps">
+                  {["Check", "Play", "Submit"].map((label, i) => (
+                    <li key={label} aria-current={step === i ? "step" : undefined}>
+                      <b>{i + 1}</b>
+                      {label}
+                    </li>
+                  ))}
+                </ol>
 
-                {needPicks > 0 && (
-                  <div className="gc-field">
-                    <span>{needPicks === 2 ? "Pick 2 locations" : "Pick the location"}</span>
-                    <div className="gc-seg gc-st-locs" role="group" aria-label="Locations">
-                      {PROJECTOR_LOCATIONS.map((loc) => (
-                        <button
-                          key={loc}
-                          type="button"
-                          aria-pressed={locations.includes(loc)}
-                          onClick={() => toggleLocation(loc)}
-                        >
-                          {PROJECTOR_LABELS[loc]}
-                        </button>
-                      ))}
+                {!game ? (
+                  <>
+                    <p className="gc-muted">
+                      {group ? (
+                        <>
+                          Check <b className="gc-st-target">{group.name}</b> before the game. Nothing is
+                          charged until you submit the result.
+                        </>
+                      ) : (
+                        "Pick the group at your station first."
+                      )}
+                    </p>
+
+                    {group && needPicks > 0 && (
+                      <div className="gc-field">
+                        <span>
+                          {needPicks === 2 ? "Pick 2 locations" : "Pick the location"} ·{" "}
+                          {RISK_TIER_META[tier].label}
+                        </span>
+                        <div className="gc-seg gc-st-locs" role="group" aria-label="Locations">
+                          {PROJECTOR_LOCATIONS.map((loc) => {
+                            const n = counts?.[loc];
+                            const full = n !== undefined && n >= PIECES_PER_SET;
+                            return (
+                              <button
+                                key={loc}
+                                type="button"
+                                aria-pressed={locations.includes(loc)}
+                                // High risk guarantees a piece of this location, so a full one cannot be picked.
+                                disabled={needPicks === 1 && full}
+                                onClick={() => toggleLocation(loc)}
+                              >
+                                {PROJECTOR_LABELS[loc]}
+                                <small>{n === undefined ? "…" : full ? "Full 5/5" : `Has ${n}/${PIECES_PER_SET}`}</small>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {group && (
+                      <ul className="gc-st-checks" aria-label="Checks">
+                        {checks.map((c) => (
+                          <li key={c.label} data-state={c.state}>
+                            {c.state === "ok" ? (
+                              <Check size={17} aria-label="OK" />
+                            ) : c.state === "bad" ? (
+                              <X size={17} aria-label="Blocked" />
+                            ) : c.state === "warn" ? (
+                              <TriangleAlert size={17} aria-label="Note" />
+                            ) : (
+                              <CircleDashed size={17} aria-label="Waiting" />
+                            )}
+                            <span>
+                              <b>{c.label}</b>
+                              <small>{c.text}</small>
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+
+                    <button
+                      type="button"
+                      className="gc-btn gc-btn-primary gc-st-submit"
+                      disabled={busy || !canStart}
+                      onClick={startGame}
+                    >
+                      Start game · entry −{fee} on submit
+                    </button>
+                    <StatusLine error={result.error} notice={result.notice} />
+                  </>
+                ) : (
+                  <>
+                    <div className="gc-st-game">
+                      <p className="gc-st-game-who">
+                        {gameGroup && (
+                          <i className="gc-swatch" style={{ background: groupSwatch(gameGroup.id, gameGroup.color) }} aria-hidden />
+                        )}
+                        <b>{gameGroup?.name ?? `Group ${game.groupId}`}</b>
+                        <span className="gc-chip" data-tone="warn">
+                          Playing
+                        </span>
+                      </p>
+                      <dl className="gc-facts">
+                        <div>
+                          <dt>Risk</dt>
+                          <dd>{RISK_TIER_META[tier].label}</dd>
+                        </div>
+                        <div>
+                          <dt>Locations</dt>
+                          <dd>{game.locations.length ? labels(game.locations, " + ") : "Any"}</dd>
+                        </div>
+                        <div>
+                          <dt>Entry</dt>
+                          <dd>−{fee} on submit</dd>
+                        </div>
+                        <div>
+                          <dt>Tokens now</dt>
+                          <dd>{gameGroup?.token_balance ?? "—"}</dd>
+                        </div>
+                      </dl>
                     </div>
-                  </div>
+                    <p className="gc-muted">Game over? Tap the result, then confirm.</p>
+                    <div className="gc-row2">
+                      <button
+                        type="button"
+                        className="gc-st-award gc-st-word"
+                        data-tone="ok"
+                        disabled={busy}
+                        onClick={() => setConfirmWin(true)}
+                      >
+                        <b>Success</b>
+                        <span>Charge + piece</span>
+                      </button>
+                      <button
+                        type="button"
+                        className="gc-st-award gc-st-word"
+                        data-tone="bad"
+                        disabled={busy}
+                        onClick={() => setConfirmWin(false)}
+                      >
+                        <b>Failed</b>
+                        <span>Charge only</span>
+                      </button>
+                    </div>
+                    <StatusLine error={result.error} notice={result.notice} />
+                    <button type="button" className="gc-btn gc-st-undo" disabled={busy} onClick={cancelGame}>
+                      <X size={16} aria-hidden />
+                      Cancel game
+                      <small>nothing is charged</small>
+                    </button>
+                  </>
                 )}
 
-                <button
-                  type="button"
-                  className="gc-btn gc-btn-primary gc-st-submit"
-                  disabled={busy || !station || !groupId}
-                  onClick={submitDay2}
-                >
-                  Submit · −{fee} tokens{success ? " + piece" : ""}
-                </button>
-                <StatusLine error={result.error} notice={result.notice} />
-                {!station && (
-                  <p className="gc-status gc-status-err">No station assigned to your account. Ask Admin.</p>
-                )}
+                <ConfirmSheet
+                  open={confirmWin !== null}
+                  onClose={() => setConfirmWin(null)}
+                  onConfirm={() => submitDay2(confirmWin === true)}
+                  title={`${gameGroup?.name ?? "This group"} ${confirmWin ? "won" : "lost"}?`}
+                  body={
+                    <>
+                      Charge <b>{fee}</b> token{fee !== 1 ? "s" : ""}
+                      {confirmWin
+                        ? ` and grant a random piece from ${game?.locations.length ? labels(game.locations, " or ") : "any location"} that the group doesn't have yet.`
+                        : ". No piece."}
+                      {gameGroup && ` Tokens: ${gameGroup.token_balance} → ${gameGroup.token_balance - fee}.`}
+                    </>
+                  }
+                  confirmLabel={`Submit ${confirmWin ? "win" : "loss"} · −${fee}`}
+                  danger={confirmWin === false}
+                  busy={busy}
+                />
               </>
             )}
           </section>
@@ -479,27 +804,19 @@ export default function GmPanelPage() {
           <section className="gc-card gc-st-card gc-st-status" aria-labelledby="st-status">
             <div className="gc-st-head">
               <h2 id="st-status" className="gc-eyebrow">Station status</h2>
+              {status && (
+                <span className="gc-chip gc-st-status-chip" data-tone={status.tone}>
+                  {status.label}
+                </span>
+              )}
             </div>
-            {station ? (
-              <div className="gc-seg gc-seg-status" role="group" aria-label="Station status">
-                {STATUS.map((s) => (
-                  <button
-                    key={s.value}
-                    type="button"
-                    disabled={busy}
-                    aria-pressed={station.status === s.value}
-                    data-tone={s.tone}
-                    onClick={() => setStatus(s.value)}
-                  >
-                    {s.label}
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <p className="gc-muted">
-                No station assigned to your account. Ask Admin to set your station.
-              </p>
-            )}
+            <p className="gc-muted">
+              {!station
+                ? "No station assigned to your account. Ask Admin to set your station."
+                : station.day === 2
+                  ? "Changes by itself: In progress when you start a game, Available when you submit or cancel it. Admin and HOGM can close the station."
+                  : "Admin and HOGM set the status of Day 1 stations."}
+            </p>
             <StatusLine error={statusMsg.error} notice={statusMsg.notice} />
           </section>
         </div>

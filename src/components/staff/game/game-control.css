@@ -428,10 +428,40 @@
 .gc-st-undo small { font-weight: 500; color: var(--gc-mute); }
 
 .gc .gc-st-card .gc-seg button { min-height: 52px; padding: 6px 8px; line-height: 1.2; }
-.gc .gc-st-outcome button { display: grid; place-content: center; gap: 2px; }
-.gc-st-outcome button b { font-size: 16px; font-weight: 700; }
-.gc-st-outcome button small { font-size: 11.5px; font-weight: 500; color: var(--gc-mute); }
-.gc .gc-st-outcome button[aria-pressed="true"][data-tone="ok"] { box-shadow: inset 0 0 0 1.5px var(--gc-green); color: var(--gc-green); }
-.gc .gc-st-outcome button[aria-pressed="true"][data-tone="bad"] { box-shadow: inset 0 0 0 1.5px var(--gc-red); color: var(--gc-red); }
 .gc .gc-st-submit { width: 100%; min-height: 56px; font-size: 16px; }
+
+/* Day 2: Check → Play → Submit. */
+.gc-st-steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.gc-st-steps li {
+  display: flex; align-items: center; gap: 6px; min-height: 34px; padding: 0 10px; border-radius: 10px;
+  background: var(--gc-ink-3); color: var(--gc-mute); font-size: 12.5px; font-weight: 600;
+}
+.gc-st-steps li b { font-family: var(--gc-mono); font-size: 11px; font-weight: 500; }
+.gc-st-steps li[aria-current="step"] { color: var(--gc-text); box-shadow: inset 0 0 0 1.5px var(--gc-cyan); }
+.gc-st-steps li[aria-current="step"] b { color: var(--gc-cyan); }
+.gc .gc-st-locs button { display: grid; place-content: center; gap: 2px; }
+.gc-st-locs button small { font-family: var(--gc-mono); font-size: 10.5px; font-weight: 500; color: var(--gc-mute); }
+.gc .gc-st-locs button:disabled { opacity: 0.45; cursor: not-allowed; }
+.gc-st-checks { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.gc-st-checks li { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--gc-line); background: var(--gc-ink-3); }
+.gc-st-checks li > svg { flex: none; margin-top: 1px; }
+.gc-st-checks li > span { display: grid; gap: 1px; min-width: 0; }
+.gc-st-checks b { font-size: 13.5px; font-weight: 600; }
+.gc-st-checks small { font-size: 12.5px; color: var(--gc-text-2); }
+.gc-st-checks [data-state="ok"] > svg { color: var(--gc-green); }
+.gc-st-checks [data-state="warn"] { border-color: rgba(252, 158, 61, 0.45); }
+.gc-st-checks [data-state="warn"] > svg { color: var(--gc-orange); }
+.gc-st-checks [data-state="bad"] { border-color: rgba(255, 77, 94, 0.5); }
+.gc-st-checks [data-state="bad"] > svg { color: var(--gc-red); }
+.gc-st-checks [data-state="wait"] > svg { color: var(--gc-mute); }
+.gc-st-game { display: grid; gap: 2px; padding: 12px 14px 0; border-radius: 14px; border: 1px solid rgba(252, 158, 61, 0.5); background: rgba(252, 158, 61, 0.06); }
+.gc-st-game-who { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 16px; }
+.gc-st-game-who b { flex: 1; min-width: 0; font-weight: 700; }
+.gc-st-game .gc-facts { border-top: 0; }
+.gc .gc-st-word b { font-family: inherit; font-size: 22px; font-weight: 800; }
+.gc .gc-st-award[data-tone="ok"] { background: #16a34a; border-color: #16a34a; color: #fff; }
+.gc .gc-st-award[data-tone="bad"] { border-color: rgba(255, 77, 94, 0.6); color: var(--gc-red); }
+.gc .gc-st-award[data-tone]:disabled { background: var(--gc-ink-3); border-color: var(--gc-line); color: var(--gc-mute); }
+.gc .gc-st-groups button:disabled { opacity: 0.35; cursor: not-allowed; }
+.gc-st-status-chip { font-size: 11px; padding: 5px 11px; }
 
