@@ -19,6 +19,8 @@ export default async function TokenPage() {
   if (profile?.role === "faci") redirect("/dashboard");
   // HOGM and HOF: tokens and puzzle keys per group (the Scores tab).
   if (profile?.role === "hogm" || profile?.role === "hof") return <GroupScores />;
+  // GM: the same list, tokens only. A GM cannot read other groups' pieces (0002 RLS).
+  if (profile?.role === "gm") return <GroupScores tokensOnly />;
 
   return <TokenControl scoreboardOnly />;
 }

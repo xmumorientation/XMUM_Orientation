@@ -1,17 +1,15 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Check, Copy, Sparkles, Undo2 } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
-import { BlindBoxCard } from "@/components/BlindBoxCard";
+import { useMyBlindBoxes } from "@/components/BlindBoxCard";
+import { groupSwatch } from "@/components/freshie/groupTheme";
+import { vxDisplay, vxSlab } from "@/components/home/fonts";
 import { useProfile } from "@/components/ProfileProvider";
+import "@/components/staff/game/game-control.css";
+import { StatusLine, useStatus } from "@/components/staff/game/parts";
 import { useOfflineQueue } from "@/components/useOfflineQueue";
-import {
-  Card,
-  ErrorBanner,
-  PageTitle,
-  StationStatusChip,
-  SuccessBanner,
-} from "@/components/ui";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import {
   PROJECTOR_LABELS,
@@ -24,57 +22,78 @@ import {
 } from "@/lib/types";
 import { cn, friendlyError, idemKey } from "@/lib/utils";
 
-type Tab = "day1" | "day2" | "station";
+type GroupRow = { id: number; name: string; color: string | null; token_balance: number };
 
-const TASKS: Record<Tab, { title: string; desc: string }> = {
-  day1: { title: "Day 1", desc: "Award station result" },
-  day2: { title: "Day 2", desc: "Charge entry and grant piece" },
-  station: { title: "Status", desc: "Update queue state" },
-};
+const STATUS: { value: StationStatus; label: string; tone: "ok" | "warn" | "off" }[] = [
+  { value: "available", label: "Available", tone: "ok" },
+  { value: "in_progress", label: "In progress", tone: "warn" },
+  { value: "closed", label: "Closed", tone: "off" },
+];
 
-// GM control panel v2 (HOGM redesign):
-//  Day 1 - win/lose rewards. Amounts are the admin's token rules
-//          (Token page); the server reads them, the GM cannot pick one.
-//  Day 2 - pick group + result (+ tier locations); the system deducts the
-//          tier's entry fee and auto-grants a random non-duplicate piece
-//  Blind boxes - the QR card at the bottom shows this GM's own boxes and the
-//          station's shared pool; Freshies scan it and open the box themselves.
+// GM's Station panel (/gm), in the Game control look (game-control.css) of the
+// ops crew's Ops page. Phones, top to bottom:
+//  Status    - the station's queue state (Available / In progress / Closed)
+//  Group     - tap the group at the station (fn_scoreboard: name, colour, tokens)
+//  Result    - Day 1: win or participation reward. Amounts are the admin's
+//              token rules (Token page); the server reads them, the GM cannot
+//              pick one. Undo the last transaction within 2 minutes.
+//              Day 2: success or failed (+ tier locations); the system deducts
+//              the tier's entry fee and grants a random piece the group lacks.
+//  Blind box - this GM's own boxes and the station's shared pool, with the QR
+//              a Freshie scans to open one.
+// Landscape tablets and desktops: Group and Result left, Status and Blind box
+// right. A station runs Day 1 or Day 2; with no station, a Day switch shows both.
 // All submissions carry idempotency keys and queue offline (NFR-6).
 export default function GmPanelPage() {
   const profile = useProfile();
   const supabase = useMemo(() => supabaseBrowser(), []);
   const { queue, failed, dismissFailed, submit } = useOfflineQueue();
+  const result = useStatus();
+  const statusMsg = useStatus();
 
-  const [tab, setTab] = useState<Tab>("day1");
-  const [groups, setGroups] = useState<{ id: number; name: string }[]>([]);
+  const [groups, setGroups] = useState<GroupRow[]>([]);
   const [groupId, setGroupId] = useState<number | null>(null);
   const [station, setStation] = useState<Station | null>(null);
+  const [pickedDay, setPickedDay] = useState<1 | 2>(1);
   const [success, setSuccess] = useState(true);
   const [locations, setLocations] = useState<ProjectorLocation[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   // Shown on the buttons only; the server applies the current rule.
   const [day1, setDay1] = useState({ win: 2, lose: 1 });
 
+  // Groups with their colour and tokens. A GM cannot select the groups table,
+  // so this is fn_scoreboard; reloaded after each result and every 30 s.
+  const loadGroups = useCallback(async () => {
+    const { data } = await supabase.rpc("fn_scoreboard");
+    if (!data) return;
+    setGroups(
+      (data as GroupRow[])
+        .map((g) => ({ ...g, token_balance: g.token_balance ?? 0 }))
+        .sort((a, b) => a.id - b.id)
+    );
+  }, [supabase]);
+
+  useEffect(() => {
+    void loadGroups();
+    const refreshVisible = () => { if (document.visibilityState === "visible") void loadGroups(); };
+    const timer = window.setInterval(refreshVisible, 30000);
+    document.addEventListener("visibilitychange", refreshVisible);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", refreshVisible);
+    };
+  }, [loadGroups]);
+
   useEffect(() => {
     let active = true;
     async function load() {
-      const { data: gs } = await supabase.rpc("fn_list_groups");
-      if (!active) return;
-      setGroups(gs ?? []);
-      if (profile.station_id) {
-        const { data: st } = await supabase
-          .from("stations")
-          .select("*")
-          .eq("id", profile.station_id)
-          .single();
-        if (active) {
-          setStation((st as Station) ?? null);
-          // open on the tab for this station's day
-          if ((st as Station | null)?.day === 2) setTab((t) => (t === "day1" ? "day2" : t));
-        }
-      }
+      if (!profile.station_id) return;
+      const { data: st } = await supabase
+        .from("stations")
+        .select("*")
+        .eq("id", profile.station_id)
+        .single();
+      if (active) setStation((st as Station) ?? null);
     }
     load();
     return () => {
@@ -137,47 +156,45 @@ export default function GmPanelPage() {
     };
   }, [supabase, profile.id, profile.station_id]);
 
-  function flash(msg: string) {
-    setNotice(msg);
-    setError(null);
-    setTimeout(() => setNotice(null), 4000);
-  }
-
-  async function day1Reward(result: "win" | "lose") {
-    if (!groupId) return setError("先选组别 Select a group first.");
-    const label = result === "win" ? "Station win" : "Station participation";
+  async function day1Reward(outcome: "win" | "lose") {
+    if (!groupId) return result.setError("先选组别 Select a group first.");
+    const label = outcome === "win" ? "Station win" : "Station participation";
     setBusy(true);
-    setError(null);
+    result.setError(null);
     const res = await submit(
       "fn_gm_day1_reward",
       {
         p_group_id: groupId,
-        p_result: result,
+        p_result: outcome,
         p_idempotency_key: idemKey(),
       },
-      `Day 1 ${result} to group ${groupId}`
+      `Day 1 ${outcome} to group ${groupId}`
     );
     setBusy(false);
     if (res.status === "confirmed") {
       const d = res.data as { delta?: number; balance?: number; duplicate?: boolean };
-      if (d?.duplicate) return flash("Duplicate ignored (already recorded).");
-      flash(
+      if (d?.duplicate) return result.flash("Duplicate ignored (already recorded).");
+      result.flash(
         `${label}: +${d?.delta ?? "?"}${d?.balance !== undefined ? ` · balance ${d.balance}` : ""}`
       );
+      void loadGroups();
     } else if (res.status === "queued") {
-      flash("Offline. Queued and will send automatically.");
+      result.flash("Offline. Queued and will send automatically.");
     } else {
-      setError(friendlyError({ message: res.error }));
+      result.setError(friendlyError({ message: res.error }));
     }
   }
 
   async function undo() {
     setBusy(true);
-    setError(null);
+    result.setError(null);
     const { data, error } = await supabase.rpc("fn_undo_last_transaction");
     setBusy(false);
-    if (error) setError(friendlyError(error));
-    else flash(`Undone. Balance: ${(data as { balance?: number })?.balance ?? "updated"}`);
+    if (error) result.setError(friendlyError(error));
+    else {
+      result.flash(`Undone. Balance: ${(data as { balance?: number })?.balance ?? "updated"}`);
+      void loadGroups();
+    }
   }
 
   const tier = station?.risk_tier ?? "low";
@@ -195,14 +212,14 @@ export default function GmPanelPage() {
   }
 
   async function submitDay2() {
-    if (!groupId) return setError("先选组别 Select a group first.");
+    if (!groupId) return result.setError("先选组别 Select a group first.");
     if (needPicks > 0 && locations.length !== needPicks) {
-      return setError(
+      return result.setError(
         needPicks === 2 ? "Pick exactly 2 locations." : "Pick exactly 1 location."
       );
     }
     setBusy(true);
-    setError(null);
+    result.setError(null);
     const res = await submit(
       "fn_day2_challenge",
       {
@@ -216,17 +233,18 @@ export default function GmPanelPage() {
     setBusy(false);
     if (res.status === "confirmed") {
       const d = res.data as Day2Result;
-      if (d.duplicate) return flash("Duplicate ignored (already recorded).");
-      flash(
+      if (d.duplicate) return result.flash("Duplicate ignored (already recorded).");
+      result.flash(
         d.success && d.piece_name
           ? `-${d.cost} tokens · granted ${d.piece_name} · balance ${d.balance}`
           : `-${d.cost} tokens (challenge lost) · balance ${d.balance}`
       );
       setLocations([]);
+      void loadGroups();
     } else if (res.status === "queued") {
-      flash("Offline. Queued and will send automatically.");
+      result.flash("Offline. Queued and will send automatically.");
     } else {
-      setError(friendlyError({ message: res.error }));
+      result.setError(friendlyError({ message: res.error }));
     }
   }
 
@@ -238,270 +256,329 @@ export default function GmPanelPage() {
       p_status: status,
     });
     setBusy(false);
-    if (error) setError(friendlyError(error));
-    else setStation({ ...station, status });
+    if (error) statusMsg.setError(friendlyError(error));
+    else {
+      statusMsg.setError(null);
+      setStation({ ...station, status });
+    }
   }
 
   // a station runs either Day 1 or Day 2, not both
-  const tabs = (Object.keys(TASKS) as Tab[]).filter(
-    (t) =>
-      !station ||
-      ((t !== "day1" || station.day === 1) && (t !== "day2" || station.day === 2))
-  );
+  const day = station?.day ?? pickedDay;
+  const group = groups.find((g) => g.id === groupId) ?? null;
+  const fee = station?.entry_cost ?? "?";
 
   return (
-    <div className="space-y-4">
-      <PageTitle
-        title="Station panel"
-        subtitle={
-          station
-            ? `${station.name} · ${RISK_TIER_META[tier].label} (entry ${station.entry_cost})`
-            : undefined
-        }
-      />
-      <ErrorBanner message={error} />
-      <SuccessBanner message={notice} />
-
-      {queue.length > 0 && (
-        <div className="rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 shadow-card">
-          <p className="font-bold">Offline queue active</p>
-          <p className="mt-1">
-            {queue.length} submission{queue.length > 1 ? "s" : ""} waiting.
-            Keep this page open; they will send when the connection returns.
-          </p>
-        </div>
-      )}
-
-      {failed.length > 0 && (
-        <div className="rounded-2xl border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-900 shadow-card">
-          <p className="font-bold">
-            {failed.length} queued submission{failed.length > 1 ? "s" : ""} rejected
-          </p>
-          <p className="mt-1">
-            These were sent after reconnecting but the server refused them.
-            They were NOT applied — redo them manually if still needed.
-          </p>
-          <ul className="mt-2 space-y-1">
-            {failed.map((f) => (
-              <li key={f.id} className="flex items-center justify-between gap-2">
-                <span>
-                  {f.label} — {f.error}
-                </span>
-                <button
-                  type="button"
-                  className="shrink-0 rounded-lg border border-red-300 px-2 py-1 text-xs font-bold"
-                  onClick={() => dismissFailed(f.id)}
-                >
-                  Dismiss
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      <Card className="border-brand-1/20">
-        <label className="label" htmlFor="group">
-          Active group
-        </label>
-        <select
-          id="group"
-          className="input text-lg font-bold"
-          value={groupId ?? ""}
-          onChange={(e) => setGroupId(Number(e.target.value) || null)}
-        >
-          <option value="">Select group…</option>
-          {groups.map((g) => (
-            <option key={g.id} value={g.id}>
-              {g.name}
-            </option>
-          ))}
-        </select>
-      </Card>
-
-      <div
-        className={cn(
-          "grid grid-cols-2 gap-2 rounded-[1.5rem] bg-paper-200 p-1.5",
-          tabs.length === 3 ? "sm:grid-cols-3" : "sm:grid-cols-2"
-        )}
-      >
-        {tabs.map((t) => (
-          <button
-            key={t}
-            type="button"
-            aria-pressed={tab === t}
-            onClick={() => setTab(t)}
-            className={cn(
-              "min-h-[72px] rounded-[1.15rem] px-3 text-left transition active:scale-[0.99]",
-              tab === t
-                ? "bg-white text-ink shadow-card"
-                : "text-ink-faint hover:bg-white/50"
-            )}
-          >
-            <span className="block text-sm font-black">{TASKS[t].title}</span>
-            <span className="mt-1 block text-xs leading-4">{TASKS[t].desc}</span>
-          </button>
-        ))}
+    <div className={cn("gc gc-st", vxDisplay.variable, vxSlab.variable)}>
+      <div className="gc-bg" aria-hidden>
+        <i className="gc-orb gc-orb-navy" />
+        <i className="gc-orb gc-orb-pink" />
       </div>
 
-      {tab === "day1" && (
-        <Card className="space-y-4">
-          <div>
-            <h2 className="font-semibold">Day 1 rewards</h2>
-            <p className="text-sm text-ink-faint">
-              Big buttons for fast station scoring. Confirm the active group before tapping.
-            </p>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              disabled={busy}
-              onClick={() => day1Reward("win")}
-              className="btn min-h-[92px] flex-col bg-green-800 text-white"
-            >
-              <span className="text-2xl font-black">+{day1.win}</span>
-              <span className="text-sm">Win</span>
-            </button>
-            <button
-              disabled={busy}
-              onClick={() => day1Reward("lose")}
-              className="btn min-h-[92px] flex-col bg-green-700 text-white"
-            >
-              <span className="text-2xl font-black">+{day1.lose}</span>
-              <span className="text-sm">Participation</span>
-            </button>
-          </div>
-          <button disabled={busy} onClick={undo} className="btn-secondary w-full">
-            Undo my last transaction (2 min window)
-          </button>
-        </Card>
-      )}
-
-      {tab === "day2" && (
-        <Card className="space-y-4">
-          <div>
-            <h2 className="font-semibold">Day 2 challenge result</h2>
-            <p className="text-sm text-ink-faint">
-              {RISK_TIER_META[tier].label}: {RISK_TIER_META[tier].desc}. Entry
-              fee -{station?.entry_cost ?? "?"} is charged win or lose; a win
-              grants a random piece the group doesn&apos;t own yet.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              aria-pressed={success}
-              onClick={() => setSuccess(true)}
-              className={cn(
-                "btn min-h-[76px] flex-col text-base",
-                success
-                  ? "bg-green-700 text-white"
-                  : "border border-paper-300 bg-white text-ink-soft"
-              )}
-            >
-              <span className="text-xl font-black">Success</span>
-              <span className="text-xs">Charge + grant</span>
-            </button>
-            <button
-              type="button"
-              aria-pressed={!success}
-              onClick={() => setSuccess(false)}
-              className={cn(
-                "btn min-h-[76px] flex-col text-base",
-                !success
-                  ? "bg-red-600 text-white"
-                  : "border border-paper-300 bg-white text-ink-soft"
-              )}
-            >
-              <span className="text-xl font-black">Failed</span>
-              <span className="text-xs">Charge only</span>
-            </button>
-          </div>
-
-          {needPicks > 0 && (
-            <div>
-              <label className="label">
-                {needPicks === 2 ? "Pick 2 locations" : "Pick the location"}
-              </label>
-              <div className="grid grid-cols-3 gap-2">
-                {PROJECTOR_LOCATIONS.map((loc) => (
-                  <button
-                    key={loc}
-                    type="button"
-                    aria-pressed={locations.includes(loc)}
-                    onClick={() => toggleLocation(loc)}
-                    className={cn(
-                      "btn min-h-[64px] text-sm",
-                      locations.includes(loc)
-                        ? "bg-brand-2 text-white"
-                        : "border border-paper-300 bg-white"
-                    )}
-                  >
-                    {PROJECTOR_LABELS[loc]}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <button
-            disabled={busy || !station}
-            onClick={submitDay2}
-            className="btn-primary min-h-[64px] w-full text-lg"
-          >
-            Submit (-{station?.entry_cost ?? "?"} tokens
-            {success ? " + piece" : ""})
-          </button>
-          {!station && (
-            <p className="text-sm text-red-600">
-              No station assigned to your account. Ask Admin.
-            </p>
-          )}
-        </Card>
-      )}
-
-      {tab === "station" && (
-        <Card className="space-y-3">
+      <header className="gc-top">
+        <p className="gc-eyebrow">{station ? `Day ${station.day} station` : "Station panel"}</p>
+        <h1 className="gc-title">{station?.name ?? "No station yet"}</h1>
+        <p className="gc-sub">
+          <i aria-hidden />
           {station ? (
-            <>
-              <div className="flex items-center justify-between">
-                <span className="font-semibold">{station.name}</span>
-                <StationStatusChip status={station.status} />
-              </div>
-              <div className="grid grid-cols-3 gap-2" role="group" aria-label="Station status">
-                {(
-                  [
-                    ["available", "Available", "bg-green-700"],
-                    ["in_progress", "In Progress", "bg-red-600"],
-                    ["closed", "Closed", "bg-gray-600"],
-                  ] as const
-                ).map(([value, label, color]) => (
+            station.day === 2 ? (
+              <>
+                {station.code} · {RISK_TIER_META[tier].label} · <b>Entry −{station.entry_cost}</b>
+              </>
+            ) : (
+              <>
+                {station.code}
+                {station.purpose && <> · <b>{station.purpose}</b></>}
+              </>
+            )
+          ) : (
+            "Ask Admin to assign your station"
+          )}
+        </p>
+      </header>
+
+      <div className="gc-st-msgs">
+        {queue.length > 0 && (
+          <div className="gc-status gc-status-warn" role="status">
+            <b>Offline queue active</b>
+            <p>
+              {queue.length} submission{queue.length > 1 ? "s" : ""} waiting. Keep this page open;
+              they will send when the connection returns.
+            </p>
+          </div>
+        )}
+        {failed.length > 0 && (
+          <div className="gc-status gc-status-err" role="alert">
+            <b>
+              {failed.length} queued submission{failed.length > 1 ? "s" : ""} rejected
+            </b>
+            <p>
+              These were sent after reconnecting but the server refused them. They were NOT
+              applied. Redo them by hand if still needed.
+            </p>
+            <ul className="gc-st-failed">
+              {failed.map((f) => (
+                <li key={f.id}>
+                  <span>
+                    {f.label}: {f.error}
+                  </span>
+                  <button type="button" className="gc-btn" onClick={() => dismissFailed(f.id)}>
+                    Dismiss
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+
+      <div className="gc-st-grid">
+        <div className="gc-st-col">
+          <section className="gc-card gc-st-card" aria-labelledby="st-group">
+            <div className="gc-st-head">
+              <h2 id="st-group" className="gc-eyebrow">
+                <span className="gc-st-step">01</span> Group
+              </h2>
+              {group && (
+                <span className="gc-chip" data-tone="live">
+                  {group.token_balance} token{group.token_balance !== 1 ? "s" : ""}
+                </span>
+              )}
+            </div>
+            <div className="gc-st-groups" role="radiogroup" aria-label="Active group">
+              {groups.map((g) => (
+                <button
+                  key={g.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={groupId === g.id}
+                  onClick={() => setGroupId(g.id)}
+                >
+                  <i className="gc-swatch" style={{ background: groupSwatch(g.id, g.color) }} aria-hidden />
+                  <span>{g.name}</span>
+                </button>
+              ))}
+            </div>
+            {groups.length === 0 && <p className="gc-muted">Loading groups…</p>}
+          </section>
+
+          <section className="gc-card gc-st-card" aria-labelledby="st-result">
+            <div className="gc-st-head">
+              <h2 id="st-result" className="gc-eyebrow">
+                <span className="gc-st-step">02</span> Result
+              </h2>
+              {station && <span className="gc-chip">Day {station.day}</span>}
+            </div>
+
+            {!station && (
+              <div className="gc-seg" role="tablist" aria-label="Day">
+                {([1, 2] as const).map((d) => (
                   <button
-                    key={value}
-                    disabled={busy}
-                    aria-pressed={station.status === value}
-                    onClick={() => setStatus(value)}
-                    className={cn(
-                      "btn min-h-[72px] text-sm text-white",
-                      color,
-                      station.status === value ? "ring-4 ring-white/80 ring-offset-2 ring-offset-night-900" : "opacity-60"
-                    )}
+                    key={d}
+                    type="button"
+                    role="tab"
+                    aria-selected={pickedDay === d}
+                    onClick={() => setPickedDay(d)}
                   >
-                    {label}
+                    Day {d}
                   </button>
                 ))}
               </div>
-            </>
-          ) : (
-            <p className="text-sm text-ink-faint">
-              No station assigned to your account. Ask Admin to set your
-              station.
-            </p>
-          )}
-        </Card>
-      )}
+            )}
 
-      <BlindBoxCard />
+            <p className="gc-muted">
+              {group ? (
+                <>
+                  For <b className="gc-st-target">{group.name}</b>.{" "}
+                  {day === 1
+                    ? "Tokens are added at once."
+                    : `${RISK_TIER_META[tier].label}: ${RISK_TIER_META[tier].desc}. Entry −${fee} is charged win or lose; a win grants a random piece the group doesn't own yet.`}
+                </>
+              ) : (
+                "Pick the group at your station first."
+              )}
+            </p>
+
+            {day === 1 ? (
+              <>
+                <div className="gc-row2">
+                  <button
+                    type="button"
+                    className="gc-st-award"
+                    data-tone="win"
+                    disabled={busy || !groupId}
+                    onClick={() => day1Reward("win")}
+                  >
+                    <b>+{day1.win}</b>
+                    <span>Win</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="gc-st-award"
+                    disabled={busy || !groupId}
+                    onClick={() => day1Reward("lose")}
+                  >
+                    <b>+{day1.lose}</b>
+                    <span>Participation</span>
+                  </button>
+                </div>
+                <StatusLine error={result.error} notice={result.notice} />
+                <button type="button" className="gc-btn gc-st-undo" disabled={busy} onClick={undo}>
+                  <Undo2 size={16} aria-hidden />
+                  Undo my last transaction
+                  <small>2 min window</small>
+                </button>
+              </>
+            ) : (
+              <>
+                <div className="gc-seg gc-st-outcome" role="group" aria-label="Result">
+                  <button type="button" aria-pressed={success} data-tone="ok" onClick={() => setSuccess(true)}>
+                    <b>Success</b>
+                    <small>Charge + piece</small>
+                  </button>
+                  <button type="button" aria-pressed={!success} data-tone="bad" onClick={() => setSuccess(false)}>
+                    <b>Failed</b>
+                    <small>Charge only</small>
+                  </button>
+                </div>
+
+                {needPicks > 0 && (
+                  <div className="gc-field">
+                    <span>{needPicks === 2 ? "Pick 2 locations" : "Pick the location"}</span>
+                    <div className="gc-seg gc-st-locs" role="group" aria-label="Locations">
+                      {PROJECTOR_LOCATIONS.map((loc) => (
+                        <button
+                          key={loc}
+                          type="button"
+                          aria-pressed={locations.includes(loc)}
+                          onClick={() => toggleLocation(loc)}
+                        >
+                          {PROJECTOR_LABELS[loc]}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  className="gc-btn gc-btn-primary gc-st-submit"
+                  disabled={busy || !station || !groupId}
+                  onClick={submitDay2}
+                >
+                  Submit · −{fee} tokens{success ? " + piece" : ""}
+                </button>
+                <StatusLine error={result.error} notice={result.notice} />
+                {!station && (
+                  <p className="gc-status gc-status-err">No station assigned to your account. Ask Admin.</p>
+                )}
+              </>
+            )}
+          </section>
+        </div>
+
+        <div className="gc-st-col">
+          <section className="gc-card gc-st-card gc-st-status" aria-labelledby="st-status">
+            <div className="gc-st-head">
+              <h2 id="st-status" className="gc-eyebrow">Station status</h2>
+            </div>
+            {station ? (
+              <div className="gc-seg gc-seg-status" role="group" aria-label="Station status">
+                {STATUS.map((s) => (
+                  <button
+                    key={s.value}
+                    type="button"
+                    disabled={busy}
+                    aria-pressed={station.status === s.value}
+                    data-tone={s.tone}
+                    onClick={() => setStatus(s.value)}
+                  >
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className="gc-muted">
+                No station assigned to your account. Ask Admin to set your station.
+              </p>
+            )}
+            <StatusLine error={statusMsg.error} notice={statusMsg.notice} />
+          </section>
+
+          <BlindBoxSection />
+        </div>
+      </div>
     </div>
+  );
+}
+
+/** This GM's blind boxes (own + the station's shared pool) and the QR a Freshie scans. Same data as BlindBoxCard. */
+function BlindBoxSection() {
+  const { loaded, error, sellers, copy, copied } = useMyBlindBoxes();
+  const left = sellers.reduce((n, s) => n + s.left, 0);
+  return (
+    <section className="gc-card gc-st-card" aria-labelledby="st-bb">
+      <div className="gc-st-head">
+        <h2 id="st-bb" className="gc-eyebrow">Blind box</h2>
+        {sellers.length > 0 && (
+          <span className="gc-chip" data-tone="live">
+            {left} left
+          </span>
+        )}
+      </div>
+      {error && <p className="gc-status gc-status-err" role="alert">{error}</p>}
+      {!loaded ? (
+        <p className="gc-muted">Loading…</p>
+      ) : sellers.length === 0 ? (
+        <p className="gc-muted">No blind boxes yet. When Admin gives you boxes to sell, your QR shows up here.</p>
+      ) : (
+        sellers.map((s) => (
+          <div key={s.id} className="gc-st-bb">
+            <p className="gc-st-bb-who">
+              {s.station ? `Station ${s.station.name} · shared with its other GMs` : "Your own boxes"}
+            </p>
+            <ul className="gc-st-bb-types">
+              {s.rows.map((r) => (
+                <li key={r.id}>
+                  <span>
+                    <b>
+                      {r.type?.name ?? "Box"}
+                      {r.type?.is_special && <Sparkles size={13} aria-label="special" />}
+                    </b>
+                    <small>
+                      {r.type ? (r.type.price > 0 ? `${r.type.price} token${r.type.price !== 1 ? "s" : ""}` : "Free") : ""}
+                    </small>
+                  </span>
+                  <span className="gc-num">
+                    {Math.max(r.quantity - r.opened, 0)}
+                    <small>/{r.quantity}</small>
+                  </span>
+                </li>
+              ))}
+            </ul>
+            {!s.live ? (
+              <p className="gc-status gc-status-err">Switched off by Admin. This code doesn&apos;t work right now.</p>
+            ) : s.left <= 0 ? (
+              <p className="gc-muted">All boxes sold.</p>
+            ) : s.qr ? (
+              <div className="gc-st-qr">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={s.qr.qr} alt="Blind box QR code" />
+                <p className="gc-muted">
+                  Let a Freshie scan this after your mini-game. Any phone camera works. Each group can buy
+                  one box; the code keeps working until all are sold.
+                </p>
+                <button type="button" className="gc-btn" onClick={() => copy(s.id, s.qr!.url)}>
+                  {copied === s.id ? <Check size={16} aria-hidden /> : <Copy size={16} aria-hidden />}
+                  {copied === s.id ? "Copied" : "Copy link"}
+                </button>
+              </div>
+            ) : (
+              <p className="gc-muted">Loading QR…</p>
+            )}
+          </div>
+        ))
+      )}
+    </section>
   );
 }

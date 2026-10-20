@@ -1,6 +1,6 @@
 "use client";
 
-import { Activity, ArrowRight, CalendarDays, Check, Coins, Copy, Gift, Map, Monitor, Sparkles } from "lucide-react";
+import { Activity, ArrowRight, CalendarDays, Check, Coins, Copy, Flag, Gift, Map, Monitor, Sparkles } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
@@ -19,20 +19,21 @@ import { nexusBody, vxDisplay, vxSlab } from "@/components/home/fonts";
 import { useMyBlindBoxes } from "@/components/BlindBoxCard";
 import { usePhaseTimer } from "@/components/PhaseTimerProvider";
 import { useProfile } from "@/components/ProfileProvider";
-import { OPS_CHIP } from "@/components/staff/OpsHeader";
+import { OPS_CHIP, opsAccountLinks } from "@/components/staff/OpsHeader";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { ROLE_LABELS, type UserRole } from "@/lib/types";
 
 import "@/components/freshie/freshie.css";
 import "./staff-home.css";
 
-// Home (/dashboard) for HOF, HOGM and Committee (OPS_ROLES). Same layout as
+// Home (/dashboard) for HOF, HOGM, Committee and GM (VORTEXA_ROLES). Same layout as
 // Freshie Home: one-screen stops that snap, starting with the Welcome stop
 // (Vortexa lockup, countdown, live game, two buttons, credits), in the public
 // Welcome page's colours instead of a group colour (VORTEXA_THEME, .fh-vx in
 // staff-home.css). Then the account's own blind boxes and QR, the scoreboard
-// and the event tools. Navigation is the tab bar (phones and portrait tablets)
-// or TopNav (landscape tablets and desktops).
+// and the event tools. A GM's main button and first tool are its Station panel
+// (/gm) instead of Ops, and it has no Big screen. Navigation is the tab bar
+// (phones and portrait tablets) or TopNav (landscape tablets and desktops).
 
 const STOPS = [
   { id: "sh-welcome", label: "Welcome" },
@@ -43,7 +44,9 @@ const STOPS = [
 
 type HomeGroup = { id: number; name: string; color: string | null; token_balance: number };
 
-/** Groups and their tokens, live: the scoreboard and the sky's cabins. */
+/** Groups and their tokens, live: the scoreboard and the sky's cabins. Reads
+ *  fn_scoreboard() because a GM may not select the groups table (0002 RLS); the
+ *  30-second refresh covers the realtime events RLS does not send to a GM. */
 function useGroups() {
   const supabase = useMemo(() => supabaseBrowser(), []);
   const [groups, setGroups] = useState<HomeGroup[] | null>(null);
@@ -51,21 +54,26 @@ function useGroups() {
   useEffect(() => {
     let active = true;
     async function load() {
-      const { data: gs } = await supabase.from("groups").select("id, name, color, token_balance").order("id");
-      if (!active) return;
+      const { data: gs } = await supabase.rpc("fn_scoreboard");
+      if (!active || !gs) return;
       setGroups(
-        ((gs as HomeGroup[]) ?? [])
+        (gs as HomeGroup[])
           .map((g) => ({ ...g, token_balance: g.token_balance ?? 0 }))
           .sort((a, b) => b.token_balance - a.token_balance || a.id - b.id)
       );
     }
     load();
+    const refreshVisible = () => { if (document.visibilityState === "visible") void load(); };
+    const timer = window.setInterval(refreshVisible, 30000);
+    document.addEventListener("visibilitychange", refreshVisible);
     const channel = supabase
       .channel(`sh-groups-${crypto.randomUUID()}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "groups" }, load)
       .subscribe();
     return () => {
       active = false;
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", refreshVisible);
       supabase.removeChannel(channel);
     };
   }, [supabase]);
@@ -111,10 +119,17 @@ function WelcomeStop({ name, role }: { name: string; role: UserRole }) {
         </>
       )}
       <div className="fh-actions">
-        <Link href="/committee" className="fh-btn fh-btn-primary">
-          <Activity size={18} aria-hidden />
-          Ops
-        </Link>
+        {role === "gm" ? (
+          <Link href="/gm" className="fh-btn fh-btn-primary">
+            <Flag size={18} aria-hidden />
+            Station
+          </Link>
+        ) : (
+          <Link href="/committee" className="fh-btn fh-btn-primary">
+            <Activity size={18} aria-hidden />
+            Ops
+          </Link>
+        )}
         <button type="button" className="fh-btn fh-btn-ghost" onClick={() => goTo("sh-bb")}>
           More Info ↓
         </button>
@@ -226,14 +241,21 @@ const TOOLS = [
   { href: "/token", Icon: Coins, title: "Scoreboard", text: "Live tokens and puzzle pieces" },
 ];
 
-function ToolsStop() {
+const GM_TOOLS = [
+  { href: "/gm", Icon: Flag, title: "Station panel", text: "Results, rewards and station status" },
+  { href: "/map", Icon: Map, title: "Campus map", text: "Every station and its status" },
+  { href: "/schedule", Icon: CalendarDays, title: "Schedule", text: "The two-day programme" },
+  { href: "/token", Icon: Coins, title: "Scoreboard", text: "Live group tokens" },
+];
+
+function ToolsStop({ role }: { role: UserRole }) {
   return (
     <section id="sh-tools" className="fh-stop" aria-labelledby="sh-tools-title">
       <div className="fh-stop-head">
         <h2 id="sh-tools-title" className="fh-h2 fh-slab">Event Tools</h2>
       </div>
       <ul className="sh-tools">
-        {TOOLS.map(({ href, Icon, title, text }) => (
+        {(role === "gm" ? GM_TOOLS : TOOLS).map(({ href, Icon, title, text }) => (
           <li key={href}>
             <Link href={href} className="sh-tool">
               <span className="sh-tool-ic" aria-hidden>
@@ -297,7 +319,7 @@ export function StaffHome() {
               groupName={null}
               roleLabel={ROLE_LABELS[profile.role]}
               logoutHref="/login"
-              links={[{ href: "/bigscreen", label: "Big screen" }]}
+              links={opsAccountLinks(profile.role)}
             />
           </div>
         </div>
@@ -307,7 +329,7 @@ export function StaffHome() {
       <WelcomeStop name={profile.full_name ?? ""} role={profile.role} />
       <BlindBoxStop />
       <ScoresStop groups={groups} />
-      <ToolsStop />
+      <ToolsStop role={profile.role} />
     </div>
   );
 }

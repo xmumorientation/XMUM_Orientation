@@ -419,6 +419,11 @@ export const COMMITTEE_TIER: UserRole[] = ["hof", "hogm", "committee", "admin"];
 /** Event operations crew: the Vortexa staff home, the Ops tab bar and the Welcome page colours. */
 export const OPS_ROLES: UserRole[] = ["hof", "hogm", "committee"];
 
+/** Roles with no group whose pages use the Welcome page colours: the ops crew and
+ *  Game Masters. Same Vortexa home, tab bar and subpage look; a GM's center tab is
+ *  Station (/gm) instead of Ops. */
+export const VORTEXA_ROLES: UserRole[] = [...OPS_ROLES, "gm"];
+
 /** Roles that can hold blind boxes: everyone except Facilitator and Freshie.
  *  Mirrors bb_holder_role() in migration 0054. */
 export const BLINDBOX_HOLDER_ROLES: UserRole[] = [

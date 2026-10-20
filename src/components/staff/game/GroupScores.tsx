@@ -16,6 +16,8 @@ import "./game-control.css";
 // group to see its three puzzle keys, drawn like the Freshie Items page
 // (KeyEmblem). Data: groups.token_balance, inventory + items (pieces, the rows
 // a Day 2 station win writes) and projectors (who lit which). Live.
+// tokensOnly (GM's /token): tokens alone from fn_scoreboard(), because a GM may
+// not read the groups or inventory tables (0002 RLS). Rows do not fold.
 
 type GroupRow = { id: number; name: string; color: string | null; token_balance: number };
 type PieceRow = { group_id: number; items: { puzzle_location: ProjectorLocation | null; puzzle_index: number | null } | null };
@@ -25,7 +27,7 @@ type Pieces = Record<ProjectorLocation, number[]>;
 const TOTAL = PIECES_PER_SET * PROJECTOR_LOCATIONS.length;
 const emptyPieces = (): Pieces => ({ B1: [], A3: [], TF: [] });
 
-export function GroupScores() {
+export function GroupScores({ tokensOnly = false }: { tokensOnly?: boolean }) {
   const supabase = useMemo(() => supabaseBrowser(), []);
   const [groups, setGroups] = useState<GroupRow[]>([]);
   const [pieces, setPieces] = useState<Record<number, Pieces>>({});
@@ -35,6 +37,11 @@ export function GroupScores() {
   useEffect(() => {
     let active = true;
     async function load() {
+      if (tokensOnly) {
+        const { data } = await supabase.rpc("fn_scoreboard");
+        if (active && data) setGroups((data as GroupRow[]).map((g) => ({ ...g, token_balance: g.token_balance ?? 0 })));
+        return;
+      }
       const [gs, inv, pj] = await Promise.all([
         supabase.from("groups").select("id, name, color, token_balance").order("id"),
         supabase.from("inventory").select("group_id, items!inner(type, puzzle_location, puzzle_index)").eq("items.type", "puzzle"),
@@ -54,6 +61,10 @@ export function GroupScores() {
       setLit((pj.data ?? []) as ProjectorRow[]);
     }
     load();
+    // Realtime sends a GM no groups events (RLS), so tokensOnly also refreshes every 30 s.
+    const refreshVisible = () => { if (document.visibilityState === "visible") void load(); };
+    const timer = tokensOnly ? window.setInterval(refreshVisible, 30000) : undefined;
+    if (tokensOnly) document.addEventListener("visibilitychange", refreshVisible);
     const channel = supabase
       .channel(`gc-scores-${crypto.randomUUID()}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "groups" }, load)
@@ -62,9 +73,11 @@ export function GroupScores() {
       .subscribe();
     return () => {
       active = false;
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", refreshVisible);
       supabase.removeChannel(channel);
     };
-  }, [supabase]);
+  }, [supabase, tokensOnly]);
 
   const count = (id: number) => PROJECTOR_LOCATIONS.reduce((n, loc) => n + (pieces[id]?.[loc].length ?? 0), 0);
   const rows = [...groups].sort((a, b) => b.token_balance - a.token_balance || count(b.id) - count(a.id) || a.id - b.id);
@@ -81,13 +94,25 @@ export function GroupScores() {
         <h1 className="gc-title">Scores</h1>
       </header>
 
-      <div className="gc-scores-head" aria-hidden>
+      <div className={cn("gc-scores-head", tokensOnly && "gc-scores-tokens")} aria-hidden>
         <span>Group</span>
         <span>Tokens</span>
-        <span>Puzzles</span>
+        {!tokensOnly && <span>Puzzles</span>}
       </div>
-      <ol className="gc-list gc-scores">
+      <ol className={cn("gc-list gc-scores", tokensOnly && "gc-scores-tokens")}>
         {rows.map((g, i) => {
+          if (tokensOnly) {
+            return (
+              <li key={g.id} className="gc-card">
+                <div className="gc-fold-head gc-score-head">
+                  <span className="gc-rank">{String(i + 1).padStart(2, "0")}</span>
+                  <i className="gc-swatch" style={{ background: groupSwatch(g.id, g.color) }} aria-hidden />
+                  <span className="gc-fold-name">{g.name}</span>
+                  <b className="gc-num">{g.token_balance}</b>
+                </div>
+              </li>
+            );
+          }
           const open = openId === g.id;
           const own = pieces[g.id] ?? emptyPieces();
           return (

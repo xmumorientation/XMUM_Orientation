@@ -6,9 +6,10 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { RISK_TIER_META, type Station, type StationStatus } from "@/lib/types";
 
-// Every station, read only, under the map on /map for HOF, HOGM and
-// Committee: status, location, game, how full it is and which groups are
-// checked in. Changing stations is HOGM's Game control and Admin, not here.
+// Every station, read only, under the map on /map for HOF, HOGM, Committee
+// and GM: status, location, game, how full it is and which groups are
+// checked in (not for a GM, who gets no group locations). A GM's own station
+// is marked "Yours". Changing stations is HOGM's Game control and Admin, not here.
 // Sits inside .gc-map, so it uses the Game control (.gc) classes.
 
 type DayFilter = "all" | 1 | 2;
@@ -21,7 +22,13 @@ const STATUS: { value: StationStatus; label: string; tone: string }[] = [
   { value: "closed", label: "Closed", tone: "off" },
 ];
 
-export function StationBoard() {
+export function StationBoard({
+  myStationId = null,
+  showCheckIns = true,
+}: {
+  myStationId?: number | null;
+  showCheckIns?: boolean;
+}) {
   const supabase = useMemo(() => supabaseBrowser(), []);
   const [stations, setStations] = useState<Station[]>([]);
   const [counts, setCounts] = useState<Record<number, number>>({});
@@ -84,10 +91,11 @@ export function StationBoard() {
           const here = checkIns.filter((c) => c.station_id === s.id);
           const n = counts[s.id] ?? here.length;
           return (
-            <li key={s.id} className="gc-card gc-fold" data-open={open || undefined}>
+            <li key={s.id} className="gc-card gc-fold" data-open={open || undefined} data-mine={s.id === myStationId || undefined}>
               <button type="button" className="gc-fold-head" aria-expanded={open} onClick={() => setOpenId(open ? null : s.id)}>
                 <span className="gc-fold-name">
                   {s.name}
+                  {s.id === myStationId && <span className="gc-chip gc-chip-mine">Yours</span>}
                   <small>
                     Day {s.day} · {s.code}
                     {n > 0 && ` · ${n} group${n !== 1 ? "s" : ""} here`}
@@ -107,9 +115,11 @@ export function StationBoard() {
                       <div><dt>Risk · entry</dt><dd>{RISK_TIER_META[s.risk_tier].label} · −{s.entry_cost}</dd></div>
                     )}
                   </dl>
-                  <p className="gc-muted">
-                    {here.length ? `Checked in: ${here.map((c) => c.group_name).join(", ")}` : "No group checked in."}
-                  </p>
+                  {showCheckIns && (
+                    <p className="gc-muted">
+                      {here.length ? `Checked in: ${here.map((c) => c.group_name).join(", ")}` : "No group checked in."}
+                    </p>
+                  )}
                 </div>
               )}
             </li>

@@ -358,3 +358,87 @@
 .gc .gc-filter button[aria-pressed="true"] { border-color: var(--gc-cyan); color: var(--gc-cyan); box-shadow: inset 0 0 0 1px var(--gc-cyan); }
 .gc-filter button[data-tone="ok"] b { color: var(--gc-green); }
 .gc-filter button[data-tone="warn"] b { color: var(--gc-orange); }
+.gc-fold[data-mine] { border-color: rgba(13, 252, 253, 0.45); }
+.gc-fold-name .gc-chip-mine { margin-left: 8px; vertical-align: 2px; color: var(--gc-cyan); border-color: rgba(13, 252, 253, 0.5); }
+
+/* ── Scores, tokens only (GM's /token: GroupScores tokensOnly) ───────────── */
+.gc-scores-head.gc-scores-tokens, .gc .gc-scores-tokens .gc-score-head { grid-template-columns: 24px 10px minmax(0, 1fr) 64px; }
+.gc-scores-head.gc-scores-tokens span:last-child { grid-column: 4; }
+.gc .gc-scores-tokens .gc-score-head { cursor: default; }
+
+/* ── Station panel (GM's /gm, app/(app)/gm/page.tsx) ─────────────────────────
+   Phones: one column, Status first. ≥1024px: Group + Result left, Status +
+   Blind box right. The columns are display: contents on phones so Status can
+   move to the top with order. Cyan = picked group, yellow = Win / Submit. */
+.gc-st-msgs { display: grid; gap: 8px; margin-bottom: 14px; }
+.gc-st-msgs:empty { display: none; }
+.gc-status b { display: block; font-weight: 700; }
+.gc-status p { margin: 2px 0 0; }
+.gc-status-warn { background: rgba(252, 158, 61, 0.12); border: 1px solid rgba(252, 158, 61, 0.5); color: #ffdcb5; }
+.gc-st-failed { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 6px; }
+.gc-st-failed li { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.gc .gc-st-failed .gc-btn { min-height: 36px; font-size: 13px; color: inherit; border-color: rgba(255, 77, 94, 0.5); }
+
+.gc-st-grid { display: flex; flex-direction: column; gap: 14px; }
+.gc-st-col { display: contents; }
+.gc-st-grid .gc-st-status { order: -1; }
+@media (min-width: 1024px) {
+  .gc-st-grid { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(300px, 1fr); gap: 20px; align-items: start; }
+  .gc-st-col { display: grid; gap: 14px; }
+  .gc-st-grid .gc-st-status { order: 0; }
+}
+.gc-st-card { display: grid; gap: 12px; padding: 16px; align-content: start; }
+.gc-st-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 26px; }
+.gc-st-step { color: var(--gc-mute); margin-right: 4px; }
+.gc-st-target { color: var(--gc-text); font-weight: 600; }
+
+.gc-st-groups { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+@media (min-width: 480px) { .gc-st-groups { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.gc .gc-st-groups button {
+  display: flex; align-items: center; gap: 8px; min-width: 0; min-height: 52px; padding: 0 12px;
+  border-radius: 14px; border: 1px solid var(--gc-line); background: var(--gc-ink-3); color: var(--gc-text-2);
+  font: inherit; font-size: 14px; font-weight: 600; text-align: left; cursor: pointer; box-shadow: none;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+.gc .gc-st-groups button span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gc .gc-st-groups button .gc-swatch { flex: none; }
+.gc .gc-st-groups button:active { transform: scale(0.97); }
+.gc .gc-st-groups button[aria-checked="true"] {
+  background: var(--gc-raised); border-color: var(--gc-cyan); color: var(--gc-text);
+  box-shadow: inset 0 0 0 1px var(--gc-cyan), 0 0 18px rgba(13, 252, 253, 0.14);
+}
+
+.gc .gc-st-award {
+  display: grid; justify-items: center; align-content: center; gap: 4px; min-height: 108px; padding: 10px;
+  border-radius: 18px; border: 1px solid var(--gc-line-2); background: var(--gc-ink-3); color: var(--gc-text);
+  font: inherit; cursor: pointer; box-shadow: none; transition: transform 0.15s ease;
+}
+.gc-st-award b { font-family: var(--gc-slab); font-weight: 400; font-size: 42px; line-height: 1; font-variant-numeric: tabular-nums; }
+.gc-st-award span { font-size: 14px; font-weight: 700; }
+.gc .gc-st-award[data-tone="win"] { background: var(--gc-yellow); border-color: var(--gc-yellow); color: #111; }
+.gc .gc-st-award:active:not(:disabled) { transform: scale(0.97); }
+/* No group picked (or sending): quiet grey, not a faded yellow. */
+.gc .gc-st-award:disabled, .gc .gc-st-award[data-tone="win"]:disabled {
+  background: var(--gc-ink-3); border-color: var(--gc-line); color: var(--gc-mute); cursor: default;
+}
+.gc .gc-st-undo { width: 100%; }
+.gc-st-undo small { font-weight: 500; color: var(--gc-mute); }
+
+.gc .gc-st-card .gc-seg button { min-height: 52px; padding: 6px 8px; line-height: 1.2; }
+.gc .gc-st-outcome button { display: grid; place-content: center; gap: 2px; }
+.gc-st-outcome button b { font-size: 16px; font-weight: 700; }
+.gc-st-outcome button small { font-size: 11.5px; font-weight: 500; color: var(--gc-mute); }
+.gc .gc-st-outcome button[aria-pressed="true"][data-tone="ok"] { box-shadow: inset 0 0 0 1.5px var(--gc-green); color: var(--gc-green); }
+.gc .gc-st-outcome button[aria-pressed="true"][data-tone="bad"] { box-shadow: inset 0 0 0 1.5px var(--gc-red); color: var(--gc-red); }
+.gc .gc-st-submit { width: 100%; min-height: 56px; font-size: 16px; }
+
+.gc-st-bb { display: grid; gap: 10px; padding-top: 12px; border-top: 1px solid var(--gc-line); }
+.gc-st-bb-who { margin: 0; font-family: var(--gc-mono); font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--gc-mute); }
+.gc-st-bb-types { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.gc-st-bb-types li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 12px; border-radius: 12px; background: var(--gc-ink-3); }
+.gc-st-bb-types li > span:first-child { display: grid; min-width: 0; }
+.gc-st-bb-types b { display: inline-flex; align-items: center; gap: 5px; font-size: 14px; font-weight: 600; }
+.gc-st-bb-types b svg { color: var(--gc-yellow); }
+.gc-st-bb-types small { font-size: 12px; color: var(--gc-mute); }
+.gc-st-qr { display: grid; justify-items: center; gap: 10px; text-align: center; }
+.gc-st-qr img { width: min(224px, 100%); height: auto; padding: 8px; border-radius: 16px; background: #fff; }
