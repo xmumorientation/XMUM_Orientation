@@ -139,9 +139,9 @@ function day2Checks({
 //              progress when it starts, Available when its result is submitted
 //              or it is cancelled. Admin and HOGM can still set it (Closed).
 //  Group     - tap the group at the station (fn_scoreboard: name, colour, tokens)
-//  Result    - Day 1: win or participation reward. Amounts are the admin's
-//              token rules (Token page); the server reads them, the GM cannot
-//              pick one. Undo shows what it would reverse (fn_undo_preview)
+//  Result    - Day 1: win or participation reward, confirmed in a sheet first.
+//              Amounts are the admin's token rules (Token page); the server
+//              reads them, the GM cannot pick one. Undo shows what it would reverse (fn_undo_preview)
 //              and asks first; Admin sets the window (Token page, default 10 min).
 //              Day 2: three steps, one group at a time. 1 Check: tokens, the
 //              Day 2 game running, no token freeze, a piece to win (the tier's
@@ -179,6 +179,8 @@ export default function GmPanelPage() {
   const [piecesFor, setPiecesFor] = useState<{ groupId: number; counts: Counts | null } | null>(null);
   const [days, setDays] = useState<DayStation[]>([]);
   const [undoAsk, setUndoAsk] = useState<UndoPreview | null>(null);
+  // Day 1 reward waiting for the GM's confirmation.
+  const [day1Ask, setDay1Ask] = useState<"win" | "lose" | null>(null);
 
   // a station runs either Day 1 or Day 2, not both
   const day = station?.day ?? pickedDay;
@@ -364,6 +366,7 @@ export default function GmPanelPage() {
     const label = outcome === "win" ? "Station win" : "Station participation";
     setBusy(true);
     result.setError(null);
+    setDay1Ask(null);
     const res = await submit(
       "fn_gm_day1_reward",
       {
@@ -681,21 +684,49 @@ export default function GmPanelPage() {
                     className="gc-st-award"
                     data-tone="win"
                     disabled={busy || !groupId}
-                    onClick={() => day1Reward("win")}
+                    onClick={() => setDay1Ask("win")}
                   >
-                    <b>+{day1.win}</b>
+                    <b>
+                      +{day1.win}
+                      <small> token{day1.win !== 1 ? "s" : ""}</small>
+                    </b>
                     <span>Win</span>
                   </button>
                   <button
                     type="button"
                     className="gc-st-award"
                     disabled={busy || !groupId}
-                    onClick={() => day1Reward("lose")}
+                    onClick={() => setDay1Ask("lose")}
                   >
-                    <b>+{day1.lose}</b>
+                    <b>
+                      +{day1.lose}
+                      <small> token{day1.lose !== 1 ? "s" : ""}</small>
+                    </b>
                     <span>Participation</span>
                   </button>
                 </div>
+                {(() => {
+                  const n = day1Ask === "lose" ? day1.lose : day1.win;
+                  const tokens = `+${n} token${n !== 1 ? "s" : ""}`;
+                  return (
+                    <ConfirmSheet
+                      open={day1Ask !== null}
+                      onClose={() => setDay1Ask(null)}
+                      onConfirm={() => day1Ask && day1Reward(day1Ask)}
+                      busy={busy}
+                      title={`Give ${group?.name ?? "this group"} ${tokens}?`}
+                      confirmLabel={`Give ${tokens}`}
+                      body={
+                        <>
+                          {day1Ask === "win" ? "Win" : "Participation"}
+                          {station ? ` at ${station.name}` : ""}.
+                          {group && ` ${group.name} goes from ${group.token_balance} to ${group.token_balance + n} tokens.`}{" "}
+                          You can undo it within {undoWindowMinutes(config["undo_window_minutes"])} minutes.
+                        </>
+                      }
+                    />
+                  );
+                })()}
                 <StatusLine error={result.error} notice={result.notice} />
                 <button type="button" className="gc-btn gc-st-undo" disabled={busy} onClick={askUndo}>
                   <Undo2 size={16} aria-hidden />

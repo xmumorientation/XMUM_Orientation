@@ -422,6 +422,7 @@
 }
 .gc-st-award b { font-family: var(--gc-slab); font-weight: 400; font-size: 42px; line-height: 1; font-variant-numeric: tabular-nums; }
 .gc-st-award span { font-size: 14px; font-weight: 700; }
+.gc-st-award b small { font-family: var(--font-nexus-body), Outfit, system-ui, sans-serif; font-size: 16px; font-weight: 700; }
 .gc .gc-st-award[data-tone="win"] { background: var(--gc-yellow); border-color: var(--gc-yellow); color: #111; }
 .gc .gc-st-award:active:not(:disabled) { transform: scale(0.97); }
 /* No group picked (or sending): quiet grey, not a faded yellow. */
