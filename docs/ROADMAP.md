@@ -242,6 +242,12 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 
 ## Done
 
+### Funfair zones carry their key's name on the 3D map, 2026-10-22
+- With Show names on, each zone has a sign over it with its key's glyph, colour and code name (Star, Wheel, Orbit), bright when the zone is on and grey when off (`ZoneSigns` in `markers.tsx`). The funfair's label is now just "Vortexa Funfair". The arrival toast uses the same names ("Star · Big Top — lit up!"). East, Central and West stay on Admin's and HOGM's cards only.
+- The names follow the default keys (one projector per zone). Admin's and HOGM's Funfair cards now say to change a zone's keys only in an emergency (`SIGN_NOTE`).
+- Items: the picture and place (0098) also show on a projector's detail after the group has lit it, not only on the key sheet before.
+- Checked in headless Chrome on `/map3d/preview` (desktop day, phone night in lite mode, phone card).
+
 ### A projector's picture and place are a group's reward, 2026-10-22
 Migration `0098_projector_clues.sql` (**needs running**, after 0097):
 - A group that holds all 5 pieces of a key taps the key on Items (`KeySheet`) and sees that projector's picture (Admin → Puzzles: where its NFC card is) and its place, under "Where the NFC card is". Before, that box was a sample Guardian photo that waited for the map unlock.

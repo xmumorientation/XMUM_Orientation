@@ -5,7 +5,7 @@ import { ExternalLink } from "lucide-react";
 import { Card } from "@/components/ui";
 import { useProjectorPlaces } from "@/components/useConfig";
 import { funfairPreviewHref, toggleKey, useFunfairZones } from "@/components/useFunfairZones";
-import type { FunfairZoneRow } from "@/lib/funfair";
+import { SIGN_NOTE, type FunfairZoneRow } from "@/lib/funfair";
 import { PROJECTOR_LOCATIONS } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -146,6 +146,9 @@ export function FunfairZones() {
       <p className="px-4 py-2 text-xs text-ink-faint">
         Auto: a zone is on when its keys are lit. A change shows on every map within about 10 s. Preview plays its
         power-up (or the concert&apos;s opening) on your screen only.
+      </p>
+      <p className="px-4 pb-3 text-xs text-ink-faint">
+        {SIGN_NOTE}
       </p>
     </Card>
   );

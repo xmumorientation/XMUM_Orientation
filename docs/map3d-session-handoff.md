@@ -121,7 +121,8 @@ Ben may continue this work in a new Claude conversation. This file says where ev
     - The gate gets the share of zones on.
   - Labels:
     - `funfair/labels.ts` has `RIDE_TAGS`, one per dorm with its ride ("LY3 · Vortexa Eye"). They are sprite tags shown when the camera is close, whether or not names are on (`RideTags` in `markers.tsx`).
-    - `FUNFAIR_LABEL` "Vortexa Funfair (game zone)" is shown with the place names.
+    - `FUNFAIR_LABEL` "Vortexa Funfair" is shown with the place names (Ben dropped "(game zone)", 2026-10-22).
+    - `ZoneSigns` (`markers.tsx`, 2026-10-22): one sign over each zone's middle (`ZONE_CENTERS`, 16 units up) with its key's glyph and colour (`KEY_COLORS`) and code name ("Star"; Ben: the longer "Star · Big Top" was too long on a phone), bright when the zone is on, grey when off. Only with Show names; shown from afar, fading out within about 45–75 units, where the ride tags take over. The names follow `DEFAULT_ZONE_KEYS` (one projector per zone by design); Admin's and HOGM's Funfair cards warn about that (`SIGN_NOTE`).
   - `/map3d` takes `?funfair=1,0,1` (west, central, east; default all on). To view a zone, use `/map3d?cam=…&funfair=…&mode=…`:
     - West: `cam=72,46,10,34,0,-30`.
     - Central: `cam=72,42,28,32,0,-11.5`.

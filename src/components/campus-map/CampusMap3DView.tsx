@@ -16,6 +16,7 @@ import {
   HitArea,
   Marker,
   RideTags,
+  ZoneSigns,
   clusterArt,
   isTap,
   pinArt,
@@ -40,7 +41,7 @@ import { stageView } from "@/components/map3d/lakefront/layout";
 import { prefersLite } from "@/components/map3d/webgl";
 import { stationDotColor } from "@/components/ui";
 import { ACTIVATION_JOURNEY_KEY, readActivationJourney } from "@/lib/activation-journey";
-import { FUNFAIR_ZONE_NAMES, type FunfairPower, type FunfairZone, isFunfairPreview, type FunfairPreview } from "@/lib/funfair";
+import { type FunfairPower, type FunfairZone, isFunfairPreview, type FunfairPreview, zoneTitle } from "@/lib/funfair";
 import { groupPinColor } from "@/lib/mapGeo";
 import type { Station } from "@/lib/types";
 
@@ -244,6 +245,7 @@ function SceneMarkers({
   badges,
   pins,
   tags,
+  funfair,
   showNames,
   accent,
   size,
@@ -253,6 +255,8 @@ function SceneMarkers({
   badges: BadgeMark[];
   pins: PinMark[];
   tags: TagMark[];
+  /** Which zones are on, for the zone signs. */
+  funfair: FunfairPower;
   showNames: boolean;
   accent: string;
   size: number;
@@ -261,6 +265,7 @@ function SceneMarkers({
   return (
     <>
       <RideTags />
+      {showNames && <ZoneSigns power={funfair} size={size} />}
       {tags.map((t) => (
         <Marker key={`tag-${t.key}`} position={t.at} art={tagArt(t.text)} dy={t.dot ? 24 : 16} order={9} size={size} />
       ))}
@@ -800,6 +805,7 @@ export function CampusMap3DView({
                     badges={badgeMarks}
                     pins={pinMarks}
                     tags={tags}
+                    funfair={funfair}
                     showNames={showNames}
                     accent={accent}
                     size={fullscreen ? 1 : CARD_MARKER_SIZE}
@@ -837,7 +843,7 @@ export function CampusMap3DView({
           >
             <div ref={fullSlot} className="absolute inset-0 cursor-grab active:cursor-grabbing" />
             {arrival && <div role="status" className="pointer-events-none absolute inset-x-4 bottom-24 z-30 mx-auto max-w-sm rounded-2xl bg-black/80 px-5 py-3 text-center text-sm text-white">
-              {!arrival.on ? "Your magic is reaching the funfair…" : arrival.zones.length ? `${arrival.zones.map(zone => FUNFAIR_ZONE_NAMES[zone].split(" · ")[1]).join(" & ")} — lit up!` : "Your projector is lit. Explore the funfair!"}
+              {!arrival.on ? "Your magic is reaching the funfair…" : arrival.zones.length ? `${arrival.zones.map(zoneTitle).join(" & ")} — lit up!` : "Your projector is lit. Explore the funfair!"}
             </div>}
 
             <div

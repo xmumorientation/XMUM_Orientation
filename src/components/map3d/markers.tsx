@@ -5,9 +5,13 @@ import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import type { MapControls as MapControlsImpl } from "three-stdlib";
 
+import { KEY_COLORS } from "@/components/freshie/items/KeyEmblem";
+import { DEFAULT_ZONE_KEYS, FUNFAIR_ZONES, type FunfairPower, type FunfairZone } from "@/lib/funfair";
+import { PROJECTOR_CODE_NAMES, type ProjectorLocation } from "@/lib/types";
+
 import type { Vec3 } from "./CampusScene";
 import { EXTENT, type Placed } from "./geo";
-import { RIDE_TAGS } from "./funfair/labels";
+import { RIDE_TAGS, ZONE_CENTERS } from "./funfair/labels";
 import { localToWorld } from "./places";
 import { plateauSurface } from "./plateau";
 
@@ -484,6 +488,138 @@ export function RideTags() {
         >
           <spriteMaterial
             map={t.art.tex}
+            sizeAttenuation={false}
+            depthTest={false}
+            depthWrite={false}
+            transparent
+            toneMapped={false}
+            fog={false}
+          />
+        </sprite>
+      ))}
+    </>
+  );
+}
+
+/** The glyph on each key's head, as on the Items page's KeyEmblem: Star (B1), Wheel (A3), Orbit (TF). */
+function keyGlyph(ctx: CanvasRenderingContext2D, loc: ProjectorLocation, x: number, y: number, r: number, on: boolean) {
+  const c = KEY_COLORS[loc];
+  const g = ctx.createRadialGradient(x, y - r * 0.3, r * 0.1, x, y, r);
+  g.addColorStop(0, on ? c.stops[0] : "#5b6478");
+  g.addColorStop(0.6, on ? c.stops[1] : "#3a4153");
+  g.addColorStop(1, on ? c.stops[2] : "#262b38");
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = on ? c.main : "rgba(255,255,255,0.35)";
+  ctx.stroke();
+  const ink = on ? c.light : "rgba(255,255,255,0.6)";
+  ctx.strokeStyle = ink;
+  ctx.fillStyle = ink;
+  if (loc === "B1") {
+    ctx.beginPath();
+    for (let k = 0; k < 10; k++) {
+      const a = (k * Math.PI) / 5 - Math.PI / 2;
+      const rr = k % 2 ? r * 0.3 : r * 0.68;
+      ctx[k ? "lineTo" : "moveTo"](x + rr * Math.cos(a), y + rr * Math.sin(a));
+    }
+    ctx.closePath();
+    ctx.fill();
+  } else if (loc === "A3") {
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.arc(x, y, r * 0.6, 0, Math.PI * 2);
+    for (let k = 0; k < 5; k++) {
+      const a = (k * 2 * Math.PI) / 5 - Math.PI / 2;
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + r * 0.6 * Math.cos(a), y + r * 0.6 * Math.sin(a));
+    }
+    ctx.stroke();
+  } else {
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.ellipse(x, y, r * 0.68, r * 0.3, -0.5, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(x, y, r * 0.22, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+/**
+ * A funfair zone's sign: its key's glyph and code name ("Star"), short enough for a phone. Bright in the key's
+ * colour when the zone is on, grey when off.
+ */
+export function zoneSignArt(zone: FunfairZone, on: boolean): MarkerArt {
+  const loc = DEFAULT_ZONE_KEYS[zone];
+  const title = PROJECTOR_CODE_NAMES[loc];
+  const h = 26;
+  const r = 9;
+  const font = `800 12px ${FONT}`;
+  const probe = document.createElement("canvas").getContext("2d")!;
+  probe.font = font;
+  const w = Math.ceil(probe.measureText(title).width) + r * 2 + 18;
+  const tex = cachedTexture(`zone|${zone}|${on}`, w, h, (ctx) => {
+    const c = KEY_COLORS[loc];
+    ctx.fillStyle = on ? "rgba(20,14,34,0.86)" : "rgba(20,18,30,0.7)";
+    ctx.strokeStyle = on ? c.main : "rgba(255,255,255,0.28)";
+    ctx.lineWidth = on ? 2 : 1;
+    ctx.beginPath();
+    ctx.roundRect(1, 1, w - 2, h - 2, (h - 2) / 2);
+    ctx.fill();
+    ctx.stroke();
+    keyGlyph(ctx, loc, 4 + r, h / 2, r, on);
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    ctx.font = font;
+    ctx.fillStyle = on ? "#ffffff" : "rgba(255,255,255,0.7)";
+    ctx.fillText(title, 4 + r * 2 + 6, h / 2 + 0.5);
+  });
+  return { tex, w, h, x: w / 2, y: h / 2, r: h / 2 };
+}
+
+/** Each zone's sign hangs this high over the zone's middle (world units), above the rides. */
+const ZONE_SIGN_Y = 16;
+
+/**
+ * The funfair zones' signs, so a player sees which key lights which zone: "Star" with the Star key's glyph
+ * (Items page). Shown with Show names, from afar; they fade out close up, where the rides' own tags take over.
+ */
+export function ZoneSigns({ power, size = 1 }: { power: FunfairPower; size?: number }) {
+  const k = usePxScale();
+  const signs = useMemo(
+    () =>
+      FUNFAIR_ZONES.map((zone) => ({
+        zone,
+        art: zoneSignArt(zone, power[zone] > 0),
+        at: new THREE.Vector3(ZONE_CENTERS[zone][0], ZONE_SIGN_Y, ZONE_CENTERS[zone][1]),
+      })),
+    [power],
+  );
+  const refs = useRef<(THREE.Sprite | null)[]>([]);
+  useFrame(({ camera }) => {
+    signs.forEach((s, i) => {
+      const sprite = refs.current[i];
+      if (!sprite) return;
+      const opacity = THREE.MathUtils.clamp((camera.position.distanceTo(s.at) - 45) / 30, 0, 1);
+      sprite.visible = opacity > 0.02;
+      (sprite.material as THREE.SpriteMaterial).opacity = opacity;
+    });
+  });
+  return (
+    <>
+      {signs.map((s, i) => (
+        <sprite
+          key={s.zone}
+          ref={(sp) => void (refs.current[i] = sp)}
+          position={s.at}
+          scale={[s.art.w * k * size, s.art.h * k * size, 1]}
+          renderOrder={6}
+        >
+          <spriteMaterial
+            map={s.art.tex}
             sizeAttenuation={false}
             depthTest={false}
             depthWrite={false}
