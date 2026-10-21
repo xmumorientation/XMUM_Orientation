@@ -40,6 +40,14 @@ Ben may continue this work in a new Claude conversation. This file says where ev
   - OSM's lake walk ends at `B1_WALK_END`, and one walk (`B1_NORTH_WALK`) sweeps from there to the west road; the walk along the lake is whole. Two stub walks are dropped (`DROPPED_WALKS`). Walks are generated data (`campusData.ts`), so they are trimmed and dropped in `geo.ts`.
 - **Later:** check the north and east sides against photos (none yet); railings between the brick pillars; the stairs' south end is straight (the imagery shows a curved wall).
 
+### Grey paving in front of the A-row (2026-10-21, branch `map3d-b1`)
+
+- Ben: not everything is lawn. The forecourts and steps of A1–A5, the terrace along the arc, the walk past the forecourts, A3's axis to the statue and the statue's plaza are light grey stone from Esri imagery (`A_FRONT` in `geo.ts`, painted by `drawAFront` in `ground.tsx`). Details: the roadmap's "Done".
+- The imagery sits about 4 m south of OSM here, so the traces move 4 m north (`A_FRONT_DN`). Forecourts are rectangles square to their block (`A_FORECOURTS_M`) that start under the block, so they meet it wherever OSM put it.
+- A3's axis is laid out from the map's statue (`A_AXIS_M`), not from the imagery's: the statue stands at the team's GPS point, about 10 m north of the imagery's.
+- To trace more paving: curl Esri tiles into the scratchpad and classify the pixels (grey stone, red-brown walk, lawn) along lines of constant east or north, in a headless Chrome page with `--allow-file-access-from-files`. Eyeballing the tiles was several metres off.
+- **Later:** the blocks' north (back) entrances; the red-brown walks in the imagery are still the 2D art's orange.
+
 ### Lawn and walkways (2026-10-17, branch `map3d-footpaths`)
 
 - Inside the outer road, the ground is lawn and only the walkways are paved, in the 2D art's colours (an orange walk with a darker outline). The walkways are OSM's, plus walks traced by hand round A3, A4 and A5 (`TRACED_PATHS_M` in `geo.ts`). Details: the roadmap's "Done".

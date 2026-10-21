@@ -332,6 +332,16 @@ One migration, `0093` (already applied on the live database, under its first nam
   - One summary RPC for GM piece counts instead of 30 `fn_puzzle_status` calls.
   - Blind boxes: Admin's station assign modes (Ben) and `bb_holder_role` (item 8).
 
+### Map: grey paving in front of the A-row, 2026-10-21 (Ben, branch `map3d-b1`)
+No migration. Ben: not everything is lawn. Traced from Esri imagery (`A_FRONT` in `geo.ts`; painted by `drawAFront` in `ground.tsx`), in light grey stone with a darker kerb and joints:
+- **Forecourts and steps** in front of A1, A2, A4 and A5, from under each block down to the walk, square to the block. A5 has a second one on its east side, by its door.
+- **A3 and the statue on one axis:** A3's wide steps down to the walk, paving on across the terrace (under the flagpole), two walks down the lawn either side of the statue, and a plaza from the statue south to the road. They are laid out from the statue (it stands at the team's GPS point, about 10 m north of where the imagery shows it). The old square plaza round the statue is gone.
+- **The terrace:** the wide promenade (11 m) along the arc, from west of A1 to east of A5. It replaces OSM's orange walk along the arc. A grey walk carries on from its east end to the brick sidewalk.
+- **The walk** (5.5 m) north of the flower row, past every forecourt, and four short links across the lawn to the terrace.
+- The terrace and the walk are arcs round one centre (the imagery fits them to within a metre). The imagery sits about 4 m south of OSM here, so the traces move 4 m north (`A_FRONT_DN`).
+- OSM's two orange walks to the statue are gone (`PAVED_WALKS`). Trees, bushes and lamps keep off the paving (`inKeepOut`).
+- **Not done:** the north (back) entrances of the blocks, which are also paved in the imagery, and the red-brown walks, which keep the 2D art's orange.
+
 ### Map: the roads round B1, 2026-10-21 (Ben, branch `map3d-b1`)
 No migration. From Esri imagery and OSM (`B1_ROADS_M` in `geo.ts`; painted by `drawB1Grounds` in `b1.tsx`).
 - **North road** (replaces the art's dark grey block north of B1). From B1 outwards:
