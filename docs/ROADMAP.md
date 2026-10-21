@@ -234,6 +234,9 @@ Numbered after main's `0093`-`0096`. Run both **before** deploying the frontend:
 - `0098_blindbox_spot_no_stations.sql`: the Spot box, no station boxes, Restore only. Deletes unsold station boxes and switches sold ones off. Safe to run again.
 - Env: `/api/group-join` signs group QRs with `NFC_TOKEN_SECRET` (already set for blind boxes and NFC). Changing that secret changes every group QR.
 
+### Funfair card moved to Admin → Game, 2026-10-22 (Jiamin)
+- The Funfair (3D map) card (zone keys, overrides, the finale) is off Live control and on its own tab, Admin → Game → **Funfair (3D map)** (`/admin/funfair`). Same component (`FunfairZones`); HOGM's Game control → Funfair is unchanged.
+
 ### Big screen removed, scoreboards in group order, 2026-10-22 (Jiamin)
 - `/bigscreen` is deleted, with every link to it (nav, Staff Home, Ops header, staff dashboard), `Countdown`'s `override` prop and `AccountMenu`'s `links` prop. `/activate` and the `projectors` table stay.
 - Every scoreboard (Admin → Token, Scores for GM / Guardian / Committee / HOF / HOGM, the Scores stops on Staff and Freshie Home) lists Group 1 → 10. No rank, medals, Leader chip or sort switch; the group badge leads each row. `fn_scoreboard` still orders by tokens in SQL; the pages sort by id.

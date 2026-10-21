@@ -7,7 +7,7 @@ import { PROJECTOR_LABELS, PROJECTOR_LOCATIONS } from "@/lib/types";
 
 import { StatusLine } from "./parts";
 
-// Admin → Live control's Funfair card for HOGM (FunfairZones): which
+// Admin → Game → Funfair (3D map)'s card for HOGM (FunfairZones): which
 // lightbulbs (keys) power each funfair zone on the 3D map, any or all of them,
 // and an override that forces a zone on or off. Same calls as Admin
 // (fn_set_funfair_zone, is_game_lead(), migration 0088).

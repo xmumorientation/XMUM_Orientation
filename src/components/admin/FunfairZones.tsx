@@ -8,7 +8,7 @@ import type { FunfairZoneRow } from "@/lib/funfair";
 import { PROJECTOR_LABELS, PROJECTOR_LOCATIONS } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-// Live control → Funfair: which lightbulbs (keys) power each zone of the 3D
+// Admin → Game → Funfair (3D map): which lightbulbs (keys) power each zone of the 3D
 // map's Vortexa Funfair, any or all of them, and an override that forces a
 // zone on or off (fn_set_funfair_zone, migration 0088). HOGM has the same
 // card in Game control (FunfairSection); both are game leads (is_game_lead()).

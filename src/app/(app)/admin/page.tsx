@@ -8,7 +8,6 @@ import {
   PageTitle,
   SuccessBanner,
 } from "@/components/ui";
-import { FunfairZones } from "@/components/admin/FunfairZones";
 import { GameToggles } from "@/components/admin/GameToggles";
 import { usePhaseTimer } from "@/components/PhaseTimerProvider";
 import { NowOnWelcome } from "@/components/admin/NowOnWelcome";
@@ -31,8 +30,8 @@ interface LiveOps {
 }
 
 // FR-11.5 kill-switches + FR-11.6 live ops + FR-10.1 games (GameToggles,
-// started and ended by hand), filtered by the Day selector (All / Day 1 / Day 2),
-// and the funfair's keys (FunfairZones).
+// started and ended by hand), filtered by the Day selector (All / Day 1 / Day 2).
+// The funfair's keys are on Game → Funfair (3D map).
 export default function AdminControlRoomPage() {
   const supabase = useMemo(() => supabaseBrowser(), []);
   const [ops, setOps] = useState<LiveOps | null>(null);
@@ -194,10 +193,6 @@ export default function AdminControlRoomPage() {
               );
             })}
           </Card>
-        </section>
-        <section>
-          <h2 className="mb-2 font-semibold">Funfair (3D map)</h2>
-          <FunfairZones />
         </section>
       </div>
     </div>
