@@ -341,14 +341,13 @@ No migration. From Esri imagery and OSM (`B1_ROADS_M` in `geo.ts`; painted by `d
   - a row of parking bays with parked cars.
 
   It meets the east road in a T.
-- **West road** (the paved road with bays in front of the stairs): runs from the north road down to a junction with the service road south of B1. Its kerb has a round corner where it leaves the north road. It does not go on north.
-  - Like the stairs, it runs about 10° off B1's west face (imagery; Ben's second round). The stairs keep one depth, and the podium behind them is a wedge (`b1StairsFoot` in `geo.ts`).
-- **Service road south of B1:** red brick, as in the imagery. It runs from the west road's junction to the east road.
-- **Walks** (Ben: the routes carry on from each other; no walk runs along the west road):
-  - north road → west road → the walk to the south: one line, as Ben drew it;
-  - OSM's walk down the lake's east shore ends on the north road's west end (`B1_WALK_END` in `geo.ts`). Its stretch down the west road is gone, as the road is the route there;
-  - the walk along the lake (Ben's blue line) is whole;
-  - the walk from the lake park comes into the junction.
+- **Ben's route colours** (third round): asphalt (the north road's colour) for the north road and for the road to the dorms; grey paving with beige bays for the west road. Ben chose a neat T over the imagery's exact lines.
+  - **Road to the dorms:** asphalt, from the T up to where the walks to the dorms begin (`B1_DORM_ROAD`, `B1_WALK_END` in `geo.ts`). It carries on the west road's line, then bends round. OSM's walk ends there, so no walk runs down the west road.
+  - **West road** (in front of the stairs): from the T south, across the service road, to the walk to the south, which carries on from it (`drawB1Crossing`, drawn over the service road). It does not go on north of the T.
+  - Like the stairs, the west road runs about 10° off B1's west face (`b1StairsFoot` in `geo.ts`). The stairs keep one depth, and the podium behind them is a wedge.
+  - The north road starts at the T.
+- **Service road south of B1:** red brick, as in the imagery, from under the west road to the east road.
+- **Walks:** the walk along the lake (Ben's blue line) is whole. The walk from the lake park meets the west road at the service road.
 - Trees, bushes and lamps keep off the new roads (`inB1Grounds`).
 
 ### Map: B1 modelled on the real building, 2026-10-21 (Ben, branch `map3d-b1`)

@@ -33,11 +33,11 @@ Ben may continue this work in a new Claude conversation. This file says where ev
 - **Its footprint is from the imagery** (`B1_PLACE`): OSM's outline is about 8 m too far west. `B1_CENTRE_M` (OSM's centre) still pins `UNITS_PER_M`: leave it.
 - Heights are real metres times `LIFT` (1.5). Ben: it is 3–4 storeys, so keep it at least that tall.
 - Views: from the west (like Ben's photo) `/map3d?cam=-1,7.4,3.6,-1,2,21`; from the funfair side `cam=28,26,33,-2,0,28`.
-- **Roads round B1** (`B1_ROADS_M` in `geo.ts`, painted by `drawB1Grounds`):
-  - the north road (drive, palm strip, road, parking bays) and the west road;
-  - the service road south of B1 (`CARPARK.road`, red brick) runs from the west road's junction to the east road.
+- **Roads round B1** (`B1_ROADS_M` in `geo.ts`; painted by `drawB1Grounds`, and `drawB1Crossing` after the service road):
+  - Ben's route colours rule here, not the imagery: asphalt for the north road and the road to the dorms (`B1_DORM_ROAD`), grey paving with bays for the west road.
+  - The west road and the road to the dorms are one line, and the north road meets them in a T. The west road runs on across the red brick service road (`CARPARK.road`) to the walk to the south.
   - The west road and the stairs run about 10° off B1's west face (`b1StairsFoot`); the stairs keep one depth.
-  - Ben's rules: the routes carry on from each other (north road → west road → the walk to the south); no walk runs along the west road; the west road stops at the north road; the lake walk stays whole.
+  - OSM's lake walk ends where the road to the dorms ends (`B1_WALK_END`); the walk along the lake is whole.
 - **Later:** check the north and east sides against photos (none yet); railings between the brick pillars; the stairs' south end is straight (the imagery shows a curved wall).
 
 ### Lawn and walkways (2026-10-17, branch `map3d-footpaths`)
