@@ -322,9 +322,18 @@ export const B1_PALMS: World[] = (() => {
 export const DOME_PLACE = place(BUILDINGS_M["LakeFront Cafe"]);
 export const DOME: World = DOME_PLACE.pos;
 
-/** Tan Kah Kee statue: the team's GPS point at its base (src/lib/mapGeo.ts). */
-const STATUE_GPS = LANDMARKS.find((l) => l.name === "Tan Kah Kee statue")!;
-export const STATUE: World = gpsToWorld(STATUE_GPS.lat, STATUE_GPS.lng);
+/**
+ * Along the A-row's front, Esri imagery (zoom 19) sits about 4 m south of OSM (the walk along the arc, A4's and A5's
+ * fronts), so what is traced from it there moves this many metres north to stand with the OSM blocks.
+ */
+const A_FRONT_DN = 4;
+
+/**
+ * Tan Kah Kee statue: the middle of its round flower bed in Esri imagery (Ben circled it on a photo, 2026-10-21), moved
+ * A_FRONT_DN north like the paving round it. The team's GPS point at its base (src/lib/mapGeo.ts) is about 8 m further
+ * north-east; the ?gps=1 layer and the 2D map still use that.
+ */
+export const STATUE: World = fromReal(-318.5, -64 + A_FRONT_DN);
 
 /**
  * The statue and its flags are modelled at real size (metres) and drawn this
@@ -428,13 +437,8 @@ export const FOOTPATH_W = 5 * UNITS_PER_M;
 // ── Paving in front of the A-row ─────────────────────────────────────────
 /**
  * The A-row's front was all lawn on the map. Esri imagery (zoom 19) shows light grey stone there (Ben, 2026-10-21:
- * not everything is lawn). Traced in metres east / north, like campusData.ts. Along this front the imagery sits about
- * 4 m south of OSM (the walk along the arc, A4's and A5's fronts), so the traces move that far north to stand with
- * the OSM blocks.
- */
-const A_FRONT_DN = 4;
-
-/**
+ * not everything is lawn). Traced in metres east / north, like campusData.ts, and moved A_FRONT_DN north.
+ *
  * - `terrace`: the wide promenade along the arc, and `walk`, the walk north of the hedge row past the blocks'
  *   forecourts. They are arcs round one `centre` (imagery fits them to within a metre), `r` metres out, from `e[0]`
  *   to `e[1]` east. The terrace replaces OSM's walk along it.
@@ -470,14 +474,15 @@ const A_FORECOURTS_M: { block: string; side: number; across: [number, number]; o
 
 /**
  * A3 and the statue share one axis (imagery): A3's `steps` down to the walk, the paving on from there across the
- * terrace (`crossing`), two `walks` down the lawn either side of the statue, and the `plaza` from the statue south to
- * the road. Laid out from the statue, which stands at the team's GPS point (about 10 m north of where the imagery
- * shows it): `u` is metres across (east +), `v` metres from the statue toward A3.
+ * terrace (`crossing`), two `walks` down the lawn either side of the statue, and the `plaza` round the statue's bed and
+ * south to the road. Laid out from the statue: `u` is metres across (east +), `v` metres from the statue toward A3.
+ * Along the axis the pieces run between the statue, the terrace's foot, the walk and A3, wherever the axis meets
+ * them.
  */
 const A_AXIS_M = {
-  steps: { u: [-20.5, 20.5], v: [72, 152] },
-  crossing: { u: [-10.5, 10.5], v: [41, 74] },
-  walks: { u: [-10, 10], width: 4.5, v: [6, 45] },
+  steps: { u: [-20.5, 20.5] },
+  crossing: { u: [-10.5, 10.5] },
+  walks: { u: [-10, 10], width: 4.5, from: 6 },
   plaza: { u: [-12.25, 12.25], v: [-200, 9] },
 } as const;
 
@@ -517,18 +522,28 @@ export const A_FRONT: { courts: World[][]; strips: { width: number; line: World[
   const v: World = [(a3[0] - STATUE[0]) / len, (a3[1] - STATUE[1]) / len];
   const u: World = [-v[1], v[0]];
   const axis = (s: readonly number[], t: readonly number[]) => rect(STATUE, u, v, s, t);
+  /** Metres up the axis from the statue to where it meets the arc `r` metres round A_FRONT_M.centre. */
+  const upTo = (r: number) => {
+    const c = at(ce, cn);
+    const [ox, oz] = [STATUE[0] - c[0], STATUE[1] - c[1]];
+    const b = ox * v[0] + oz * v[1];
+    return (-b + Math.sqrt(b * b - (ox * ox + oz * oz - (r * UNITS_PER_M) ** 2))) / UNITS_PER_M;
+  };
+  const { terrace, walk } = A_FRONT_M;
+  const foot = upTo(terrace.r - terrace.width / 2);
+  const mid = upTo(walk.r);
   const { steps, crossing, walks, plaza } = A_AXIS_M;
-  courts.push(axis(steps.u, steps.v), axis(plaza.u, plaza.v));
+  courts.push(axis(steps.u, [mid - 1, len / UNITS_PER_M]), axis(plaza.u, plaza.v));
   const strips = [
-    arc(A_FRONT_M.terrace),
-    arc(A_FRONT_M.walk),
+    arc(terrace),
+    arc(walk),
     ...A_FRONT_M.links.map((l) => ({ width: l.width * UNITS_PER_M, line: l.line.map(([e, n]) => at(e, n)) })),
     ...walks.u.map((w) => {
-      const [p, , q] = axis([w, w], walks.v);
+      const [p, , q] = axis([w, w], [walks.from, foot + 0.5]);
       return { width: walks.width * UNITS_PER_M, line: [p, q] };
     }),
   ];
-  return { courts, strips, crossing: axis(crossing.u, crossing.v) };
+  return { courts, strips, crossing: axis(crossing.u, [foot - 1, mid]) };
 })();
 
 /**

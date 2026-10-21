@@ -19,7 +19,6 @@ import {
   PITCH_M,
   type Placed,
   STATUE,
-  STATUE_ROT_Y,
   TRACK,
   TRACK_M,
   toWorld,
@@ -29,6 +28,7 @@ import {
 } from "./geo";
 import { campusTrees, plantation, thinForLite } from "./plants";
 import { drawCarPark, drawCourts } from "./sports";
+import { BED } from "./statue";
 import { makeSoil } from "./textures";
 
 // DRAFT: the flat parts of the map (roads, paths, lawns, lakebeds, track)
@@ -221,9 +221,10 @@ function makeGroundTexture(lite: boolean): THREE.CanvasTexture {
   };
   for (const b of BLOCKS) foot(b, b.flat ? 0.1 : -0.3);
   foot(B1_PLACE, 0.1);
-  // the statue's 3.3 m stone platform
-  const plat = 1.65 * UNITS_PER_M * LANDMARK_SCALE;
-  foot({ pos: STATUE, hx: plat, hz: plat, rotY: STATUE_ROT_Y }, 0);
+  // the statue's round flower bed
+  ctx.beginPath();
+  ctx.arc(STATUE[0], STATUE[1], BED.r * UNITS_PER_M * LANDMARK_SCALE, 0, Math.PI * 2);
+  ctx.fill();
   ctx.restore();
 
   const tex = new THREE.CanvasTexture(canvas);
