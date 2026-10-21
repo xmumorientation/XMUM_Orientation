@@ -332,6 +332,18 @@ One migration, `0093` (already applied on the live database, under its first nam
   - One summary RPC for GM piece counts instead of 30 `fn_puzzle_status` calls.
   - Blind boxes: Admin's station assign modes (Ben) and `bb_holder_role` (item 8).
 
+### Map: the A-row on raised ground, the statue's bed and the planting, 2026-10-21 (Ben, branch `map3d-b1`)
+No migration. From Ben's photos and Esri imagery; Ben answered the questions first (height as suggested, steps down on the north too, gentle slopes at the ends, true height, statue where the imagery shows it).
+- **Raised ground** (`PLATEAU` and `groundY()` in `geo.ts`, `plateau.tsx`): the five blocks stand about 4 m above the statue's lawn, at true height (no LIFT).
+  - The terrace along the arc is real steps: seat-like tiers, with A3's grand stair (on the statue's axis) and a narrow stair at each walk across the lawn cut through them, walled in pale stone.
+  - Behind A1, A2, A4 and A5, steps go down to a paved landing on the walks behind them, with a grass bank between. A3's back stands on the lower ground on a stone base, and its north door opens on the walk behind it.
+  - Past A1's west end and A5's east end the ground slopes gently down (Ben).
+  - The raised ground is a mesh that wears the ground's canvas, so the paving and walks lie on it. Blocks, labels, station tap areas, trees, bushes, lamps, group pins and ground marks stand on it. The accuracy check's tap finds it (`groundHit`).
+  - Cost: desktop +3 draw calls and +56k triangles, lite +3 and +18k.
+- **Statue:** its pedestal stands in a round bed of red-flowered shrubs with a stone kerb (Ben's photo), not on two steps. It stands where the imagery shows the bed, about 8 m south-west of the team's GPS point (the 2D map and the `?gps=1` layer still use that).
+- **Planting:** palms between the forecourts, small round shrubs and low lamps along the walk's south side, palms along the road south of the lawn. The lawn round the statue is open: the art's palm rows across it, the big trees up its west side, the round trees between the forecourts and the flower row along the fronts are gone.
+- **Later:** the south gate's guard houses and the fence (Ben); the blocks' walls (cream with tall columns in the photos, A3's portico); palms in planters rather than one row; up-lights on the terrace at night; check the steps behind the blocks and the end slopes on a phone.
+
 ### Map: grey paving in front of the A-row, 2026-10-21 (Ben, branch `map3d-b1`)
 No migration. Ben: not everything is lawn. Traced from Esri imagery (`A_FRONT` in `geo.ts`; painted by `drawAFront` in `ground.tsx`), in light grey stone with a darker kerb and joints:
 - **Forecourts and steps** in front of A1, A2, A4 and A5, from under each block down to the walk, square to the block. A5 has a second one on its east side, by its door.
@@ -340,7 +352,7 @@ No migration. Ben: not everything is lawn. Traced from Esri imagery (`A_FRONT` i
 - **The walk** (5.5 m) north of the flower row, past every forecourt, and four short links across the lawn to the terrace.
 - The terrace and the walk are arcs round one centre (the imagery fits them to within a metre). The imagery sits about 4 m south of OSM here, so the traces move 4 m north (`A_FRONT_DN`).
 - OSM's two orange walks to the statue are gone (`PAVED_WALKS`). Trees, bushes and lamps keep off the paving (`inKeepOut`).
-- **Not done:** the north (back) entrances of the blocks, which are also paved in the imagery, and the red-brown walks, which keep the 2D art's orange.
+- **Not done:** the red-brown walks keep the 2D art's orange. (The back entrances came with the raised ground, above.)
 
 ### Map: the roads round B1, 2026-10-21 (Ben, branch `map3d-b1`)
 No migration. From Esri imagery and OSM (`B1_ROADS_M` in `geo.ts`; painted by `drawB1Grounds` in `b1.tsx`).
