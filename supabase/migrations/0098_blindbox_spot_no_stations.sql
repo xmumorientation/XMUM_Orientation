@@ -172,6 +172,24 @@ as $$
   end;
 $$;
 
+-- Logged-out visitors see who the code belongs to; 'spot' lets the page say
+-- "You found a hidden blind box!" instead.
+create or replace function public.fn_bb_seller_public(p_seller_id integer, p_version integer)
+returns jsonb
+language plpgsql stable security definer set search_path = public
+as $$
+declare
+  v_s public.blind_box_sellers;
+begin
+  select * into v_s from public.blind_box_sellers where id = p_seller_id;
+  if not found or v_s.qr_version is distinct from p_version then
+    raise exception 'BOX_UNKNOWN';
+  end if;
+  return jsonb_build_object('seller_name', public.bb_seller_name(v_s.profile_id, v_s.station_id),
+                            'spot', v_s.is_spot);
+end;
+$$;
+
 -- Create or change the Spot. The QR (the Spot seller's qr_version) is never
 -- touched here. New min / max apply to boxes claimed from now on; the pool
 -- cannot go below what is already claimed.

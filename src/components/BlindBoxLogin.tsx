@@ -23,13 +23,17 @@ type FreshieGroup = { id: number; name: string };
  */
 export function BlindBoxLogin({
   sellerName,
+  spot = false,
   notFreshie = false,
   noGroup = false,
 }: {
   sellerName: string;
+  /** The hidden Spot box (free, claimed instead of bought). */
+  spot?: boolean;
   notFreshie?: boolean;
   noGroup?: boolean;
 }) {
+  const what = spot ? "You found a hidden blind box!" : `${sellerName} is selling blind boxes.`;
   const supabase = useMemo(() => supabaseBrowser(), []);
   const router = useRouter();
   const [switching, setSwitching] = useState(false);
@@ -87,8 +91,8 @@ export function BlindBoxLogin({
         role="Blind box"
         lead={
           noGroup
-            ? `${sellerName} is selling blind boxes. Your account is not in a group yet, so it cannot buy. Log in with your group's 4-digit password instead.`
-            : `${sellerName} is selling blind boxes. Only Freshie groups can buy them, and you are signed in with a staff or Facilitator account.`
+            ? `${what} Your account is not in a group yet, so it cannot buy. Log in with your group's 4-digit password instead.`
+            : `${what} Only Freshie groups can get one, and you are signed in with a staff or Facilitator account.`
         }
         backHref="/dashboard"
         backLabel="Back to home"
@@ -108,7 +112,7 @@ export function BlindBoxLogin({
       lead={
         <>
           <Package size={18} aria-hidden style={{ display: "inline", verticalAlign: "-3px", marginRight: 6 }} />
-          {sellerName} is selling blind boxes. Pick your group and enter its 4-digit password to buy one.
+          {what} Pick your group and enter its 4-digit password to {spot ? "claim it" : "buy one"}.
         </>
       }
     >

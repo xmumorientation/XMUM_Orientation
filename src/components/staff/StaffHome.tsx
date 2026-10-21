@@ -16,7 +16,7 @@ import {
 import { FreshieSky, type SkyCabin } from "@/components/freshie/FreshieSky";
 import { groupSwatch, VORTEXA_THEME } from "@/components/freshie/groupTheme";
 import { nexusBody, vxDisplay, vxSlab } from "@/components/home/fonts";
-import { useMyBlindBoxes } from "@/components/BlindBoxCard";
+import { priceText, useMyBlindBoxes } from "@/components/BlindBoxCard";
 import { GroupBadge } from "@/components/GroupBadge";
 import { usePhaseTimer } from "@/components/PhaseTimerProvider";
 import { useProfile } from "@/components/ProfileProvider";
@@ -148,45 +148,41 @@ function BlindBoxStop() {
         <ul className="sh-bb-list">
           {sellers.map((s) => (
             <li key={s.id} className="sh-bb">
-              <div className="sh-bb-info">
-                <span className="sh-bb-who fh-mono">{s.station ? `Station ${s.station.name} · shared` : "Your own boxes"}</span>
-                <ul className="sh-bb-types">
-                  {s.rows.map((r) => (
-                    <li key={r.id}>
-                      <b>
-                        {r.type?.name ?? "Box"}
-                        {r.type?.is_special && <Sparkles size={14} aria-label="special" />}
-                      </b>
-                      <span className="fh-slab">
-                        {Math.max(r.quantity - r.opened, 0)}
-                        <small>/{r.quantity}</small>
-                      </span>
-                      <small>{r.type ? (r.type.price > 0 ? `${r.type.price} token${r.type.price !== 1 ? "s" : ""}` : "Free") : ""}</small>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div className="sh-bb-code">
-                {!s.live ? (
-                  <p className="sh-bb-state" data-tone="off">Switched off by Admin. This code doesn&apos;t work right now.</p>
-                ) : paused && s.left > 0 ? (
-                  <p className="sh-bb-state" data-tone="off">{paused}</p>
-                ) : s.left <= 0 ? (
-                  <p className="sh-bb-state">All boxes sold.</p>
-                ) : s.qr ? (
-                  <>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={s.qr.qr} alt="Blind box QR code" className="sh-bb-qr" />
-                    <small className="sh-bb-note">A Freshie scans this after your mini-game. Each group can buy one box.</small>
-                    <button type="button" className="fh-btn fh-btn-ghost sh-bb-copy" onClick={() => copy(s.id, s.qr!.url)}>
-                      {copied === s.id ? <Check size={16} aria-hidden /> : <Copy size={16} aria-hidden />}
-                      {copied === s.id ? "Copied" : "Copy link"}
-                    </button>
-                  </>
-                ) : (
-                  <p className="sh-bb-note">Loading QR…</p>
-                )}
-              </div>
+              <span className="sh-bb-who fh-mono">Your own boxes</span>
+              {!s.live ? (
+                <p className="sh-bb-state" data-tone="off">Switched off by Admin. This code doesn&apos;t work right now.</p>
+              ) : paused && s.left > 0 ? (
+                <p className="sh-bb-state" data-tone="off">{paused}</p>
+              ) : s.left <= 0 ? (
+                <p className="sh-bb-state">All boxes sold.</p>
+              ) : s.qr ? (
+                <>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={s.qr.qr} alt="Blind box QR code" className="sh-bb-qr" />
+                  <small className="sh-bb-note">A Freshie scans this after your mini-game. Each group can buy one box.</small>
+                  <button type="button" className="fh-btn fh-btn-ghost sh-bb-copy" onClick={() => copy(s.id, s.qr!.url)}>
+                    {copied === s.id ? <Check size={16} aria-hidden /> : <Copy size={16} aria-hidden />}
+                    {copied === s.id ? "Copied" : "Copy link"}
+                  </button>
+                </>
+              ) : (
+                <span className="sh-bb-qr sh-bb-qr-wait" aria-label="Loading QR" />
+              )}
+              <ul className="sh-bb-types">
+                {s.rows.map((r) => (
+                  <li key={r.id}>
+                    <b>
+                      {r.type?.name ?? "Box"}
+                      {r.type?.is_special && <Sparkles size={14} aria-label="special" />}
+                    </b>
+                    <span className="fh-slab">
+                      {Math.max(r.quantity - r.opened, 0)}
+                      <small>/{r.quantity}</small>
+                    </span>
+                    <small>{priceText(r.type)}</small>
+                  </li>
+                ))}
+              </ul>
             </li>
           ))}
         </ul>

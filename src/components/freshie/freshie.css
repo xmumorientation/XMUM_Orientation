@@ -1130,3 +1130,70 @@ html.fh-snap { overflow-x: hidden; }
 .fh-edit-at { position: relative; display: block; }
 .fh-edit-at i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-style: normal; color: var(--fh-mute); }
 .fh-edit-at .fh-input { padding-left: 28px; }
+
+/* ── Blind box buy page (/blindbox) ─────────────────────────────────────────
+   One left-aligned column on the night background, lit by the group's colour.
+   The box is the Items page's 3D box; .bb-flow gives it its colours. */
+.bbuy {
+  min-height: 100dvh;
+  background:
+    radial-gradient(70% 45% at 50% 18%, color-mix(in srgb, var(--fh-glow) 32%, transparent), transparent 70%),
+    radial-gradient(60% 40% at 90% 100%, color-mix(in srgb, var(--fh-pink) 12%, transparent), transparent 70%),
+    var(--fh-ink);
+}
+.bbuy-col {
+  width: min(440px, 100%); margin: 0 auto; padding: calc(16px + env(safe-area-inset-top, 0px)) 16px calc(28px + env(safe-area-inset-bottom, 0px));
+  display: flex; flex-direction: column;
+}
+.bbuy-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; }
+.bbuy-back { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; font-size: 14px; font-weight: 600; color: var(--fh-text-2); text-decoration: none; }
+.bbuy-back:hover { color: var(--fh-accent); }
+.bbuy-who { display: inline-flex; align-items: center; gap: 8px; max-width: 70%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-color: var(--fh-accent); color: var(--fh-text); }
+.bbuy-who i { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--fh-accent); }
+.bbuy-eyebrow { margin: 28px 0 4px; font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--fh-accent); }
+.bbuy-title { margin: 0; font-size: clamp(34px, 10vw, 46px); line-height: 1.02; overflow-wrap: anywhere; }
+
+.bbuy-art { align-self: center; margin: 8px 0 4px; }
+.bbuy-scene { position: relative; display: grid; place-items: center; width: 240px; height: 270px; perspective: 900px; }
+.bbuy-scene .bb-cube { transform: scale(0.82) rotateX(-14deg) rotateY(-30deg); }
+.bbuy-light {
+  position: absolute; inset: 20% 15%; border-radius: 50%; z-index: -1;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--bb-a) 40%, transparent), transparent);
+}
+
+.bbuy-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+.bbuy-head h2 { margin: 0; font-size: 18px; font-weight: 700; }
+.bbuy-cap { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: var(--fh-mute); }
+.bbuy-cap i { width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid var(--fh-line-2); }
+.bbuy-cap i[data-on] { border-color: var(--fh-accent); background: var(--fh-accent); }
+.bbuy-cap i:last-of-type { margin-right: 4px; }
+
+.bbuy-list { list-style: none; margin: 0; padding: 0; border: 1px solid var(--fh-line); border-radius: 20px; background: color-mix(in srgb, var(--fh-ink-2) 88%, transparent); }
+.bbuy-list li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 12px; padding: 14px 14px 14px 16px; }
+.bbuy-list li + li { border-top: 1px solid var(--fh-line); }
+.bbuy-list li[data-off] .bbuy-opt b, .bbuy-list li[data-off] .bbuy-price { opacity: 0.5; }
+.bbuy-opt { display: grid; gap: 2px; min-width: 0; }
+.bbuy-opt b { display: inline-flex; align-items: center; gap: 6px; font-size: 16px; font-weight: 700; }
+.bbuy-opt b svg { color: var(--fh-yellow); flex: none; }
+.bbuy-opt small { font-size: 12.5px; color: var(--fh-mute); }
+.bbuy-list li[data-off] .bbuy-opt small { color: var(--fh-orange); }
+.bbuy-price { font-size: 13px; color: var(--fh-text-2); white-space: nowrap; }
+.bbuy-btn { min-height: 44px; min-width: 84px; padding: 0 16px; }
+.bbuy-error { margin: 0 0 10px; padding: 10px 14px; border-radius: 14px; border: 1px solid rgba(255, 77, 94, 0.5); background: rgba(255, 77, 94, 0.14); color: #ffc2c8; font-size: 13px; }
+
+.bbuy-state { display: flex; gap: 12px; align-items: flex-start; padding: 16px; border-radius: 20px; border: 1px dashed var(--fh-line-2); background: color-mix(in srgb, var(--fh-ink-2) 80%, transparent); }
+.bbuy-state svg { flex: none; margin-top: 2px; color: var(--fh-accent); }
+.bbuy-state b { font-size: 17px; }
+.bbuy-state p { margin: 4px 0 0; font-size: 14px; line-height: 1.45; color: var(--fh-text-2); }
+
+.bbuy-done .bbuy-lead { margin: 0 0 18px; font-size: 15px; line-height: 1.5; color: var(--fh-text-2); }
+.bbuy-actions { display: grid; gap: 10px; }
+.bbuy-items { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; min-height: 44px; margin-top: 16px; font-size: 14px; font-weight: 600; color: var(--fh-accent); text-decoration: none; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .bbuy-scene[data-stage="sealed"] .bb-cube { animation: bb-drop 0.6s cubic-bezier(0.2, 1.3, 0.4, 1) both, bbuy-float 3.2s 0.6s ease-in-out infinite; }
+  .bbuy-scene[data-stage="sealed"] .bb-shadow { animation: bb-shadow 3.2s 0.6s ease-in-out infinite; }
+  .bbuy-list li, .bbuy-state, .bbuy-done { animation: bbuy-in 0.45s cubic-bezier(0.16, 1, 0.3, 1) both; animation-delay: calc(var(--i, 0) * 70ms + 150ms); }
+}
+@keyframes bbuy-float { 0%, 100% { transform: scale(0.82) translateY(0) rotateX(-14deg) rotateY(-30deg); } 50% { transform: scale(0.82) translateY(-12px) rotateX(-10deg) rotateY(-22deg); } }
+@keyframes bbuy-in { from { opacity: 0; transform: translateY(10px); } }

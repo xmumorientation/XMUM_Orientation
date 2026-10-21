@@ -10,10 +10,7 @@ import { useConfig } from "@/components/useConfig";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import type { BlindBoxAssignment, BlindBoxType } from "@/lib/types";
 
-export type BlindBoxRow = BlindBoxAssignment & {
-  type: BlindBoxType | null;
-  station: { name: string; code: string } | null;
-};
+export type BlindBoxRow = BlindBoxAssignment & { type: BlindBoxType | null };
 
 type Row = BlindBoxRow;
 
@@ -22,11 +19,10 @@ interface Shown {
   qr: string;
 }
 
-/** One seller (an account or a station) and the box types it holds, with its QR once loaded. */
+/** The account as a seller: the box types it holds, with its one QR once loaded. */
 export interface MyBlindBoxSeller {
   id: number;
   rows: BlindBoxRow[];
-  station: { name: string; code: string } | null;
   /** At least one active, unarchived box type: false means Admin switched it off. */
   live: boolean;
   left: number;
@@ -36,8 +32,8 @@ export interface MyBlindBoxSeller {
 // game_config values are jsonb: true or "true".
 const isOn = (v: unknown) => v === true || v === "true";
 
-// The signed-in account's blind boxes (personal + its station's shared pool),
-// grouped by seller, with each seller's QR. Used by BlindBoxCard and by Staff
+// The signed-in account's own blind boxes, with its one QR (stations no longer
+// hold boxes, since 0098). Used by BlindBoxCard and by Staff
 // Home's "My Blind Box" stop. Links are recomputed by the server on demand, so
 // showing a QR never invalidates one that is already out there; only Admin's
 // Regenerate does.
@@ -65,21 +61,13 @@ export function useMyBlindBoxes() {
   const load = useCallback(async () => {
     const seq = ++loadSeq.current;
     const stale = () => seq !== loadSeq.current;
-    // Everyone else's RLS already limits rows to their own account and their
-    // CURRENT station (a GM's station changes by day on the server, so the
-    // station_id this page loaded with can be stale). Admin's RLS reads every
-    // assignment, so Admin filters to their own boxes explicitly.
-    let query = supabase
+    // Admin's RLS reads every assignment (the Spot's too), so filter to this
+    // account's own; everyone else's RLS already does.
+    const { data, error: err } = await supabase
       .from("blind_box_assignments")
-      .select("*, type:blind_box_types(*), station:stations(name, code)");
-    if (profile.role === "admin") {
-      query = query.or(
-        profile.station_id
-          ? `profile_id.eq.${profile.id},station_id.eq.${profile.station_id}`
-          : `profile_id.eq.${profile.id}`
-      );
-    }
-    const { data, error: err } = await query.order("id");
+      .select("*, type:blind_box_types(*)")
+      .eq("profile_id", profile.id)
+      .order("id");
     if (stale()) return;
     setLoaded(true);
     if (err) {
@@ -122,7 +110,7 @@ export function useMyBlindBoxes() {
     } catch (e) {
       if (!stale()) setError(String(e));
     }
-  }, [supabase, profile.id, profile.role, profile.station_id]);
+  }, [supabase, profile.id]);
 
   useEffect(() => {
     load();
@@ -130,16 +118,13 @@ export function useMyBlindBoxes() {
     //   assignments: stock sold or changed
     //   types:       Admin changed a price or name
     //   sellers:     Admin regenerated this seller's QR
-    //   phases:      a day starting or ending moves a GM to that day's station
     const channel = supabase
       .channel(`bb-card-${crypto.randomUUID()}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "blind_box_assignments" }, load)
       .on("postgres_changes", { event: "*", schema: "public", table: "blind_box_types" }, load)
       .on("postgres_changes", { event: "*", schema: "public", table: "blind_box_sellers" }, load)
-      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "phases" }, load)
       .subscribe();
-    // Admin moving a GM to another station sends no event: catch up whenever
-    // the phone comes back to this page.
+    // A phone in another app can miss events: catch up when it comes back.
     const onVisible = () => {
       if (document.visibilityState === "visible") load();
     };
@@ -160,14 +145,11 @@ export function useMyBlindBoxes() {
     }
   }
 
-  // A personal account has one seller; so does its station, and a GM can have
-  // both (own boxes + the station's shared pool).
   const bySeller = new Map<number, Row[]>();
   for (const r of rows) bySeller.set(r.seller_id, [...(bySeller.get(r.seller_id) ?? []), r]);
   const sellers: MyBlindBoxSeller[] = [...bySeller.entries()].map(([id, list]) => ({
     id,
     rows: list,
-    station: list[0].station,
     live: list.some((r) => r.active && !r.type?.archived),
     left: list.reduce((n, r) => n + (r.active && !r.type?.archived ? Math.max(r.quantity - r.opened, 0) : 0), 0),
     qr: shown[list[0].id],
@@ -176,9 +158,9 @@ export function useMyBlindBoxes() {
   return { loaded, error, sellers, copy, copied, paused };
 }
 
-// "My blind box QR": ONE card with ONE QR for the signed-in account (or its
-// station: a station's GMs share one pool and one code), listing every box type
-// it holds. The same QR works until all the boxes are sold.
+// "My blind box QR" (GM page, Admin): the same layout as Staff Home's "My
+// Blind Box", centred: the QR first, then what is left of each box type. One QR
+// for every type; it works until all the boxes are sold.
 export function BlindBoxCard() {
   const { error, sellers, copy, copied, paused } = useMyBlindBoxes();
 
@@ -191,87 +173,56 @@ export function BlindBoxCard() {
           {error}
         </p>
       )}
-      {sellers.map(({ id: sellerId, rows: list, station, live, left: totalLeft, qr: s }) => {
-        return (
-          <Card key={sellerId} className="text-center">
+      {sellers.map(({ id: sellerId, rows: list, live, left: totalLeft, qr: s }) => (
+        <Card key={sellerId} className="flex flex-col items-center gap-3 text-center">
+          <div>
             <h2 className="font-semibold">My blind box QR</h2>
-            <p className="text-sm text-ink-faint">
-              {station
-                ? `Station ${station.name} — shared with this station's other GMs`
-                : "Your own boxes"}
-            </p>
-            <ul className="mx-auto mt-2 max-w-sm space-y-1 text-sm text-ink-faint">
-              {list.map((r) => {
-                const left = Math.max(r.quantity - r.opened, 0);
-                return (
-                  <li key={r.id} className="flex flex-wrap items-center justify-center gap-x-2">
-                    <span className="font-semibold text-ink">{r.type?.name ?? "Box"}</span>
-                    {r.type?.is_special && (
-                      <span className="chip bg-amber-400/40 text-amber-500">
-                        <Sparkles size={12} strokeWidth={1.75} /> special
-                      </span>
-                    )}
-                    <span>
-                      {left} of {r.quantity} left
-                      {r.type ? ` · ${r.type.price > 0 ? `${r.type.price} token${r.type.price !== 1 ? "s" : ""}` : "free"}` : ""}
-                    </span>
-                  </li>
-                );
-              })}
-            </ul>
-            <p className="mt-1 text-xs text-ink-faint">
-              One QR for all of these. Each group can buy one box from you; the code keeps working until they are all sold.
-            </p>
+            <p className="text-sm text-ink-faint">{totalLeft} left · each group can buy one box from you</p>
+          </div>
 
-            {!live ? (
-              <p className="mt-3 text-sm font-semibold text-red-600">
-                Switched off by Admin — this code doesn&apos;t work right now.
-              </p>
-            ) : paused && totalLeft > 0 ? (
-              <p className="mt-3 text-sm font-semibold text-amber-600">{paused}</p>
-            ) : totalLeft <= 0 ? (
-              <p className="mt-3 text-sm font-semibold text-ink-faint">
-                All boxes sold.
-              </p>
-            ) : s ? (
-              <>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={s.qr}
-                  alt="Blind box QR code"
-                  className="mx-auto mt-3 w-56 max-w-full rounded-xl border border-paper-200"
-                />
-                <p className="mt-2 text-xs text-ink-faint">
-                  Let a Freshie scan this after your mini-game. Any phone camera works.
+          {!live ? (
+            <p className="text-sm font-semibold text-red-600">Switched off by Admin. This code doesn&apos;t work right now.</p>
+          ) : paused && totalLeft > 0 ? (
+            <p className="text-sm font-semibold text-amber-600">{paused}</p>
+          ) : totalLeft <= 0 ? (
+            <p className="text-sm font-semibold text-ink-faint">All boxes sold.</p>
+          ) : s ? (
+            <>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={s.qr} alt="Blind box QR code" className="w-56 max-w-full rounded-xl border border-paper-200" />
+              <p className="text-xs text-ink-faint">Let a Freshie scan this after your mini-game. Any phone camera works.</p>
+              <button type="button" onClick={() => copy(sellerId, s.url)} className="btn-secondary min-h-[40px] px-4 text-sm">
+                {copied === sellerId ? <Check size={14} strokeWidth={2} /> : <Copy size={14} strokeWidth={1.75} />}
+                {copied === sellerId ? "Copied" : "Copy link"}
+              </button>
+            </>
+          ) : (
+            <div className="h-56 w-56 animate-pulse rounded-xl bg-paper-200" aria-label="Loading QR" />
+          )}
+
+          <ul className="flex flex-wrap justify-center gap-2">
+            {list.map((r) => (
+              <li key={r.id} className="min-w-[9rem] rounded-xl bg-paper-100 px-3 py-2 text-sm">
+                <p className="flex items-center justify-center gap-1 font-semibold">
+                  {r.type?.name ?? "Box"}
+                  {r.type?.is_special && <Sparkles size={14} strokeWidth={1.75} className="text-amber-500" aria-label="special" />}
                 </p>
-                <div className="mx-auto mt-2 flex max-w-sm items-center gap-2">
-                  <input
-                    readOnly
-                    value={s.url}
-                    aria-label="Blind box link"
-                    onFocus={(e) => e.currentTarget.select()}
-                    className="input min-w-0 flex-1 text-xs"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => copy(sellerId, s.url)}
-                    className="btn-secondary min-h-[40px] shrink-0 px-3 text-xs"
-                  >
-                    {copied === sellerId ? (
-                      <Check size={14} strokeWidth={2} />
-                    ) : (
-                      <Copy size={14} strokeWidth={1.75} />
-                    )}
-                    {copied === sellerId ? "Copied" : "Copy"}
-                  </button>
-                </div>
-              </>
-            ) : (
-              <p className="mt-3 text-sm text-ink-faint">Loading QR…</p>
-            )}
-          </Card>
-        );
-      })}
+                <p className="font-mono text-lg font-bold tabular-nums">
+                  {Math.max(r.quantity - r.opened, 0)}
+                  <span className="text-sm font-normal text-ink-faint">/{r.quantity}</span>
+                </p>
+                <p className="text-xs text-ink-faint">{priceText(r.type)}</p>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      ))}
     </div>
   );
+}
+
+/** "Free", "1 token", "3 tokens". */
+export function priceText(type: BlindBoxType | null): string {
+  if (!type) return "";
+  return type.price > 0 ? `${type.price} token${type.price !== 1 ? "s" : ""}` : "Free";
 }
