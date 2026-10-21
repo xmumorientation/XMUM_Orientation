@@ -242,29 +242,37 @@ export function b1Point(x: number, z: number): World {
 }
 
 /**
- * B1's front faces west, to the lake (Ben's photos): in B1's frame, the podium runs from the walls out to `top`,
- * and the grand stairs (the same depth all along, Ben) go down from there to their `foot`, on the west road
- * (B1_ROADS_M). A landing with planters stands north of the stairs.
+ * B1's front faces west, to the lake (Ben's photos). In B1's frame: the grand stairs, one depth all along (Ben), go
+ * down from the podium to their foot on the west road. Like the road, they run about 10° off B1's west face (Esri
+ * imagery; Ben, 2026-10-21): the foot is at x = foot + slope * z (b1StairsFoot). A landing with planters stands
+ * north of them.
  */
 export const B1_FRONT_M = {
-  top: -65.3,
-  foot: -81.8,
+  foot: -80.4,
+  slope: 0.174,
+  depth: 13.5,
   stairsN: -21,
   stairsS: 28,
   landing: { x: [-76.8, -65.3], z: [-28, -21] },
 } as const;
 
+/** The stairs' foot, which is also the west road's east edge, at z in B1's frame. */
+export const b1StairsFoot = (z: number) => B1_FRONT_M.foot + B1_FRONT_M.slope * z;
+
 /**
  * The roads round B1 (Esri imagery and OSM, 2026-10-21), in B1's frame (metres; z north is negative). They replace
- * the art's grey block north of B1. Ben: the roads join each other, footpaths meet them in T-junctions, and no
- * footpath runs along the west road.
- * - `west`: the road with parking bays in front of the stairs, from the north road down to the service road south
- *   of B1 (CARPARK, which runs on west to meet it); x from its west edge to the stairs' foot.
+ * the art's grey block north of B1. Ben: the roads join up, footpaths carry on from them, and no footpath runs
+ * along the west road.
+ * - `west`: the road with parking bays in front of the stairs, `width` wide west of their foot, from the north road
+ *   down to a junction with the service road south of B1 (CARPARK). The junction reaches east to `junction.east`,
+ *   where the service road begins, and west to `junction.west` for the walk from the lake park; the walk from the
+ *   south carries on from the west road there.
  * - `north`, from B1 outwards: a drive along B1, a strip of palms (with one gap), the road and a row of parking
- *   bays. It runs from `west` (its west end a little further out, where the lake walk comes in) to the east road.
+ *   bays. It runs from the west road (its end at `north.west`, where the lake walk comes in) to the east road.
  */
 export const B1_ROADS_M = {
-  west: [-95.8, B1_FRONT_M.foot],
+  west: { width: 11.4 },
+  junction: { east: -73.9, west: -99 },
   north: {
     west: -104.8,
     drive: [-32, -27.5],
@@ -285,11 +293,14 @@ export function eastRoadZ(x: number): number {
 /** How far B1's north road reaches east in B1's frame: into the east road, so they meet in a T. */
 export const B1_NORTH_EAST_X = (eastRoadZ(B1_PLACE.pos[0]) - B1_PLACE.pos[1]) / UNITS_PER_M + 2;
 
+/** Where the palm strip and the bays on B1's north road begin in the west: just east of the west road. */
+export const B1_NORTH_START_X = b1StairsFoot(B1_ROADS_M.north.palms[0]) + 2;
+
 /** Parking bays (2.5 m) along the north side of B1's north road: their middles in the world. */
 export const B1_NORTH_BAYS: World[] = (() => {
   const [z0, z1] = B1_ROADS_M.north.bays;
   const out: World[] = [];
-  for (let x = B1_ROADS_M.west[1] + 4; x < B1_NORTH_EAST_X - 18; x += 2.5) out.push(b1Point(x + 1.25, (z0 + z1) / 2));
+  for (let x = B1_NORTH_START_X + 2; x < B1_NORTH_EAST_X - 18; x += 2.5) out.push(b1Point(x + 1.25, (z0 + z1) / 2));
   return out;
 })();
 
@@ -298,7 +309,7 @@ export const B1_PALMS: World[] = (() => {
   const [z0, z1] = B1_ROADS_M.north.palms;
   const [g0, g1] = B1_ROADS_M.north.palmGap;
   const out: World[] = [];
-  for (let x = B1_ROADS_M.west[1] + 4; x < B1_NORTH_EAST_X - 16; x += 8.5) {
+  for (let x = B1_NORTH_START_X + 2; x < B1_NORTH_EAST_X - 16; x += 8.5) {
     if (x > g0 - 2 && x < g1 + 2) continue;
     out.push(b1Point(x, (z0 + z1) / 2));
   }
@@ -362,69 +373,18 @@ const TRACED_PATHS_M: EN[][] = [
 export const LAKE: World[] = realPts(LAKE_M);
 export const PARK: World[] = realPts(PARK_M);
 export const GRASS: World[][] = GRASS_M.map(realPts);
-/** The parts of a polyline outside a footprint, as separate pieces. */
-function outside(pts: World[], p: Placed): World[][] {
-  const c = Math.cos(p.rotY);
-  const s = Math.sin(p.rotY);
-  const local = ([x, z]: World) => {
-    const dx = x - p.pos[0];
-    const dz = z - p.pos[1];
-    return [dx * c - dz * s, dx * s + dz * c];
-  };
-  // the share of segment a-b inside the footprint, [t0, t1], or null (Liang-Barsky)
-  const inside = (a: World, b: World): [number, number] | null => {
-    const [ax, az] = local(a);
-    const [bx, bz] = local(b);
-    let t0 = 0;
-    let t1 = 1;
-    const sides: [number, number][] = [
-      [ax - bx, ax + p.hx],
-      [bx - ax, p.hx - ax],
-      [az - bz, az + p.hz],
-      [bz - az, p.hz - az],
-    ];
-    for (const [d, q] of sides) {
-      if (d === 0) {
-        if (q < 0) return null;
-        continue;
-      }
-      const t = q / d;
-      if (d < 0) t0 = Math.max(t0, t);
-      else t1 = Math.min(t1, t);
-    }
-    return t0 < t1 ? [t0, t1] : null;
-  };
-  const at = (a: World, b: World, t: number): World => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
-  const pieces: World[][] = [];
-  let piece: World[] = inPlaced(p, pts[0][0], pts[0][1], 0) ? [] : [pts[0]];
-  for (let i = 0; i < pts.length - 1; i++) {
-    const [a, b] = [pts[i], pts[i + 1]];
-    const cut = inside(a, b);
-    if (!cut) {
-      piece.push(b);
-      continue;
-    }
-    if (cut[0] > 0) piece.push(at(a, b, cut[0]));
-    if (piece.length > 1) pieces.push(piece);
-    piece = cut[1] < 1 ? [at(a, b, cut[1]), b] : [];
-  }
-  if (piece.length > 1) pieces.push(piece);
-  return pieces;
-}
-
 /**
- * OSM's walk down the lake's east shore carries on along B1's west road to its south-west corner. Ben
- * (2026-10-21): no walk runs along that road. Walks are cut out of this box, so the lake walk now ends on the
- * north road's west end, and what is left of it in the south lies under the service road.
+ * OSM's walk down the lake's east shore turns at this point down B1's west road, to the road's south-west corner.
+ * Ben (2026-10-21): the west road is the route there, so the walk ends at this point, on the north road's west end
+ * (B1_ROADS_M). The walks from the lake park and from the south meet the west road's junction in the south.
  */
-const B1_NO_WALK = b1Rect(
-  [B1_ROADS_M.north.west, B1_ROADS_M.west[1] + 7],
-  [B1_ROADS_M.north.bays[0], B1_FRONT_M.stairsS],
-);
+const B1_WALK_END: EN = [-87.8, 268.8];
+const trimAtB1 = (p: EN[]) => {
+  const i = p.findIndex(([e, n]) => e === B1_WALK_END[0] && n === B1_WALK_END[1]);
+  return i < 0 ? p : p.slice(0, i + 1);
+};
 
-export const FOOTPATHS: World[][] = [...FOOTPATHS_M, ...TRACED_PATHS_M]
-  .map(realPts)
-  .flatMap((p) => outside(p, B1_NO_WALK));
+export const FOOTPATHS: World[][] = [...FOOTPATHS_M.map(trimAtB1), ...TRACED_PATHS_M].map(realPts);
 export const FOOTPATH_W = 5 * UNITS_PER_M;
 
 /**
@@ -495,8 +455,8 @@ export const B1_SIZE = { x: 2 * B1_PLACE.hz, z: 2 * B1_PLACE.hx };
 
 /**
  * The service road between the north row of courts and B1 (real gap 18 m),
- * with a row of parking bays along B1 (`z`). The road itself (`road`) runs
- * on west to B1's west road and east to the east road.
+ * with a row of parking bays along B1 (`z`). The road itself (`road`), red
+ * brick in the imagery, runs from B1's west road's junction to the east road.
  */
 export const CARPARK = (() => {
   const [bx, bz] = B1_PLACE.pos;
@@ -505,7 +465,7 @@ export const CARPARK = (() => {
   return {
     x,
     z: [bz - B1_SIZE.z / 2, bz + B1_SIZE.z / 2] as [number, number],
-    road: [b1Point(B1_ROADS_M.west[0], 0)[1], eastRoadZ((x[0] + x[1]) / 2) + 0.3] as [number, number],
+    road: [b1Point(B1_ROADS_M.junction.east, 0)[1], eastRoadZ((x[0] + x[1]) / 2) + 0.3] as [number, number],
   };
 })();
 
@@ -609,28 +569,32 @@ const A5_ENTRANCE: Placed[] = BLOCKS.filter((b) => b.name === "A5").map((b) => {
   return { pos: [b.pos[0] + lz * Math.sin(b.rotY), b.pos[1] + lz * Math.cos(b.rotY)], hx: 1.7, hz: 1.4, rotY: b.rotY };
 });
 
-/** A rectangle in B1's frame (metres) as a world footprint. */
-function b1Rect([x0, x1]: readonly number[], [z0, z1]: readonly number[]): Placed {
-  return {
-    pos: b1Point((x0 + x1) / 2, (z0 + z1) / 2),
-    hx: ((x1 - x0) / 2) * UNITS_PER_M,
-    hz: ((z1 - z0) / 2) * UNITS_PER_M,
-    rotY: B1_PLACE.rotY,
-  };
+/**
+ * Whether a world point is on B1's grounds (B1_ROADS_M), grown by `margin` units: north of it, the drive, the palm
+ * strip, the road and its bays; west of it, the slanting west road with its junction, the stairs and the podium.
+ */
+function inB1Grounds(x: number, z: number, margin: number): boolean {
+  const { pos, rotY, hx } = B1_PLACE;
+  const dx = x - pos[0];
+  const dz = z - pos[1];
+  const lx = (dx * Math.cos(rotY) - dz * Math.sin(rotY)) / UNITS_PER_M;
+  const lz = (dx * Math.sin(rotY) + dz * Math.cos(rotY)) / UNITS_PER_M;
+  const m = margin / UNITS_PER_M;
+  const { north, west, junction } = B1_ROADS_M;
+  if (lz > north.bays[0] - m && lz < north.drive[1] + m && lx > north.west - m && lx < B1_NORTH_EAST_X + m) return true;
+  const south = (pos[0] - CARPARK.x[0]) / UNITS_PER_M;
+  if (lz < north.road[1] - m || lz > south + m) return false;
+  const westEdge = lz > B1_FRONT_M.stairsS ? junction.west : b1StairsFoot(lz) - west.width;
+  return lx > westEdge - m && lx < -hx / UNITS_PER_M + m;
 }
-
-/** West of B1: its west road, stairs and podium; north of it: the drive, the palm strip, the road and its bays. */
-const B1_GROUNDS: Placed[] = [
-  b1Rect([B1_ROADS_M.west[0], -B1_PLACE.hx / UNITS_PER_M], [B1_ROADS_M.north.bays[0], B1_FRONT_M.stairsS]),
-  b1Rect([B1_ROADS_M.north.west, B1_NORTH_EAST_X], [B1_ROADS_M.north.bays[0], B1_ROADS_M.north.drive[1]]),
-];
 
 export function inKeepOut(x: number, z: number, margin: number): boolean {
   const inRect = (rx: [number, number], rz: [number, number]) =>
     x > rx[0] - margin && x < rx[1] + margin && z > rz[0] - margin && z < rz[1] + margin;
   if (SPORTS.some((b) => inRect(b.x, b.z))) return true;
   if (inRect(CARPARK.x, CARPARK.road)) return true;
-  const placed = [...BLOCKS, ...A5_ENTRANCE, B1_PLACE, ...B1_GROUNDS, DOME_PLACE];
+  if (inB1Grounds(x, z, margin + 0.2)) return true;
+  const placed = [...BLOCKS, ...A5_ENTRANCE, B1_PLACE, DOME_PLACE];
   if (placed.some((p) => inPlaced(p, x, z, margin + 0.4))) return true;
   if (Math.hypot(x - STATUE[0], z - STATUE[1]) < 2.6 + margin) return true;
   if (inPolygon(LAKE, x, z) || nearLine(LAKE, x, z, 0.6 + margin, true)) return true;

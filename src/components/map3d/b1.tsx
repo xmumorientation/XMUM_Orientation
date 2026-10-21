@@ -7,9 +7,11 @@ import { Bake, G, segMat, type V3 } from "./funfair/central/kit";
 import {
   B1_FRONT_M,
   B1_NORTH_EAST_X,
+  B1_NORTH_START_X,
   B1_PLACE,
   B1_ROADS_M,
   b1Point,
+  b1StairsFoot,
   CARPARK,
   COLORS,
   UNITS_PER_M,
@@ -218,6 +220,14 @@ function flatShape(pts: P2[], y: number) {
   return g;
 }
 
+/** A prism from y0 up to y1 over a shape in the ground plane (points [x, z]). */
+function prism(pts: P2[], y0: number, y1: number) {
+  const shape = new THREE.Shape(pts.map(([x, z]) => new THREE.Vector2(x, -z)));
+  return new THREE.ExtrudeGeometry(shape, { depth: y1 - y0, bevelEnabled: false })
+    .rotateX(-Math.PI / 2)
+    .translate(0, y0, 0);
+}
+
 /** A prism standing on the ground with a side profile (points [x, y]), `t` thick from z0 southwards. */
 function profile(pts: P2[], z0: number, t: number) {
   const shape = new THREE.Shape(pts.map(([x, y]) => new THREE.Vector2(x, y)));
@@ -242,9 +252,12 @@ function rng(seed: number) {
   };
 }
 
-/** The grand stairs: three flights of six steps with two landings, from the plaza up to the podium. */
+/**
+ * The grand stairs: three flights of six steps with two landings, from the west road up to the podium. They slant
+ * with the road (b1StairsFoot), one depth all along.
+ */
 function stairs(k: Bake) {
-  const { top, foot, stairsN: zN, stairsS: zS } = B1_FRONT_M;
+  const { depth, stairsN: zN, stairsS: zS } = B1_FRONT_M;
   // [from, to] as shares of the run from the foot, and the height of that tread
   const treads: [number, number, number, string][] = [];
   const flight = 0.22;
@@ -259,26 +272,36 @@ function stairs(k: Bake) {
     treads.push([start + flight, f < 2 ? start + 0.37 : 1, (Y.podium * (f + 1)) / 3, PAINT.landing]);
   }
   for (const [f0, f1, h, c] of treads) {
-    const p = (f: number, z: number, y: number): V3 => [foot + (top - foot) * f, y, z];
+    const p = (f: number, z: number, y: number): V3 => [b1StairsFoot(z) + depth * f, y, z];
     face(k, c, p(f0, zN, h), p(f1, zN, h), p(f1, zS, h), p(f0, zS, h), [0, 1, 0]);
     face(k, c, p(f0, zN, 0), p(f0, zS, 0), p(f0, zS, h), p(f0, zN, h), [-1, 0, 0]);
     face(k, c, p(f0, zN, 0), p(f1, zN, 0), p(f1, zN, h), p(f0, zN, h), [0, 0, -1]);
     face(k, c, p(f0, zS, 0), p(f1, zS, 0), p(f1, zS, h), p(f0, zS, h), [0, 0, 1]);
   }
-  // white walls at the stairs' ends, the landing with bonsai to the north, and the podium
+  // white walls at the stairs' ends
+  const [footN, footS] = [b1StairsFoot(zN), b1StairsFoot(zS)];
   const [lx0, lx1] = B1_FRONT_M.landing.x;
   const [lz0, lz1] = B1_FRONT_M.landing.z;
   const none = new THREE.Matrix4();
-  k.add(profile([[foot, 0], [top, 0], [top, Y.podium + 0.6], [foot, 0.5]], zS, 0.6), none, PAINT.white);
-  k.add(profile([[foot, 0], [lx0, 0], [lx0, 2], [foot, 0.5]], zN - 0.6, 0.6), none, PAINT.white);
-  k.box(PAINT.white, [(lx0 + lx1) / 2, Y.podium / 2, (lz0 + lz1) / 2], [lx1 - lx0, Y.podium, lz1 - lz0]);
+  k.add(profile([[footS, 0], [footS + depth, 0], [footS + depth, Y.podium + 0.6], [footS, 0.5]], zS, 0.6), none, PAINT.white);
+  k.add(profile([[footN, 0], [lx0, 0], [lx0, 2], [footN, 0.5]], zN - 0.6, 0.6), none, PAINT.white);
+  // the podium, from the stairs' top to the walls (a wedge, as the stairs slant), with the landing north of the
+  // stairs and its bonsai
+  const wall = -HX + BAND.out;
+  const podium: P2[] = [
+    [lx0, lz0],
+    [wall, lz0],
+    [wall, zS],
+    [footS + depth, zS],
+    [footN + depth, zN],
+    [lx0, zN],
+  ];
+  k.add(prism(podium, 0, Y.podium), none, PAINT.stone);
   for (const [bx, bz] of [[lx0 + 2, lz0 + 1.5], [lx0 + 6, lz0 + 1.5], [lx1 - 2, lz1 - 2]] as P2[]) {
     k.cyl(PAINT.pot, [bx, Y.podium + 0.3, bz], 0.5, 0.6, G.cyl8);
     k.cyl(PAINT.trunk, [bx, Y.podium + 1.1, bz], 0.12, 1.2, G.cyl6);
     k.ball(PAINT.greenDark, [bx, Y.podium + 1.9, bz], [1.1, 0.55, 1.1]);
   }
-  const wall = -HX + BAND.out;
-  k.box(PAINT.stone, [(top + wall) / 2, Y.podium / 2, (-HZ + zS) / 2], [wall - top, Y.podium, zS + HZ]);
 }
 
 /** The floor bands with their planting, the brick columns under the lower band, and the light troughs under both. */
@@ -478,21 +501,28 @@ export function B1Building({ glow }: { glow: number }) {
 }
 
 /**
- * B1's roads on the ground canvas (ground.tsx; B1_ROADS_M), drawn over the walks: the north road with its drive, palm
- * strip and parking bays, and the west road in front of the stairs, grey paving with beige lines (photos). The
- * service road south of B1 is drawCarPark's (sports.tsx); the west road runs down to it.
+ * B1's roads on the ground canvas (ground.tsx; B1_ROADS_M), drawn over the walks: the north road with its drive,
+ * palm strip and parking bays, and the west road in front of the stairs, grey paving with beige lines (photos),
+ * slanting with the stairs from the north road down to its junction with the service road. The service road itself
+ * is drawCarPark's (sports.tsx).
  */
 export function drawB1Grounds(ctx: CanvasRenderingContext2D) {
-  const { stairsN, stairsS, landing } = B1_FRONT_M;
-  const [w0, w1] = B1_ROADS_M.west;
-  const { west, drive, palms, palmGap, road, bays } = B1_ROADS_M.north;
+  const { stairsN, stairsS } = B1_FRONT_M;
+  const { west: road0, junction, north } = B1_ROADS_M;
+  const { drive, palms, palmGap, road, bays } = north;
   const east = B1_NORTH_EAST_X;
-  // the service road's north edge, in B1's frame
-  const south = (B1_PLACE.pos[0] - CARPARK.x[1]) / UNITS_PER_M;
+  const start = B1_NORTH_START_X;
+  const foot = b1StairsFoot;
+  const westEdge = (z: number) => foot(z) - road0.width;
+  // the service road's north and south edges, in B1's frame
+  const south0 = (B1_PLACE.pos[0] - CARPARK.x[1]) / UNITS_PER_M;
+  const south1 = (B1_PLACE.pos[0] - CARPARK.x[0]) / UNITS_PER_M;
+  const r = 4 * UNITS_PER_M;
+  const to = ([x, z]: P2) => b1Point(x, z);
   const trace = (pts: P2[]) => {
     ctx.beginPath();
-    pts.forEach(([x, z], i) => {
-      const [wx, wz] = b1Point(x, z);
+    pts.forEach((p, i) => {
+      const [wx, wz] = to(p);
       if (i) ctx.lineTo(wx, wz);
       else ctx.moveTo(wx, wz);
     });
@@ -509,47 +539,61 @@ export function drawB1Grounds(ctx: CanvasRenderingContext2D) {
     ctx.strokeStyle = color;
     ctx.stroke();
   };
+  /** A round corner at `corner`, coming from `from` and going on to `next` (canvas arcTo). */
+  const arcTo = (corner: P2, next: P2) => {
+    const [cx, cz] = to(corner);
+    const [nx, nz] = to(next);
+    ctx.arcTo(cx, cz, nx, nz, r);
+  };
   const kerb = "#c9c4ba";
+  const paving = "#9a968f";
+  const bay = "rgba(236,218,170,0.85)";
 
-  // asphalt: the road, the bays behind it, the drive along B1, and where they meet the west road
-  rect([west, east], road, COLORS.road);
-  rect([w1 + 2, east - 16], bays, COLORS.road);
-  rect([w1, east], drive, COLORS.road);
-  rect([w0, w1], [road[1], drive[1]], COLORS.road);
+  // asphalt: the road, the bays behind it, the drive along B1 and the link through the palm strip's gap
+  rect([north.west, east], road, COLORS.road);
+  rect([start, east - 16], bays, COLORS.road);
+  rect([foot(drive[0]), east], drive, COLORS.road);
   rect(palmGap, palms, COLORS.road);
-  // the kerb's round corner where the west road leaves the north road: from the corner to a point on each kerb,
-  // back round an arc about `centre`
+  // the palm strip, in two parts round its gap
+  for (const xs of [[start, palmGap[0]], [palmGap[1], east - 14]]) rect(xs, palms, "#86964a");
+  for (const z of palms) line([[start, z], [east - 14, z]], 0.05, kerb);
+  // road markings: a dashed middle line, the kerb, and the bays' lines
+  ctx.setLineDash([0.5, 0.4]);
+  line([[north.west + 2, (road[0] + road[1]) / 2], [east - 2, (road[0] + road[1]) / 2]], 0.05, "rgba(255,255,255,0.6)");
+  ctx.setLineDash([]);
+  line([[north.west, road[0]], [east - 2, road[0]]], 0.05, kerb);
+  for (let x = start + 2; x < east - 18 + 1e-6; x += 2.5) line([[x, bays[0] + 0.3], [x, bays[1]]], 0.05, "rgba(255,255,255,0.75)");
+
+  // the west road, from the north road down to its junction: west of the stairs' foot, then out east to the service
+  // road and west, with round corners, to where the walk from the lake park comes in
+  const nw: P2 = [westEdge(road[1]), road[1]];
+  const sw: P2 = [westEdge(south0), south0];
+  trace([nw, [foot(road[1]), road[1]], [foot(south0), south0], [junction.east, south0], [junction.east, south1]]);
+  arcTo([junction.west, south1], [junction.west, south0 + 6]);
+  arcTo([junction.west, south0 + 6], sw);
+  const [sx, sz] = to(sw);
+  ctx.lineTo(sx, sz);
+  ctx.closePath();
+  ctx.fillStyle = paving;
+  ctx.fill();
+  // the kerb's round corner where the west road leaves the north road
   {
-    const r = 4;
-    const [px, pz] = b1Point(w0, road[1]);
-    const [ax, az] = b1Point(w0 - r, road[1]);
-    const [bx, bz] = b1Point(w0, road[1] + r);
-    const [cx, cz] = b1Point(w0 - r, road[1] + r);
-    const a0 = Math.atan2(az - cz, ax - cx);
-    const a1 = Math.atan2(bz - cz, bx - cx);
-    const turn = Math.atan2(Math.sin(a1 - a0), Math.cos(a1 - a0));
+    const [ax, az] = to([nw[0] - 8, road[1]]);
+    const [px, pz] = to(nw);
     ctx.beginPath();
-    ctx.moveTo(px, pz);
-    ctx.lineTo(ax, az);
-    ctx.arc(cx, cz, r * UNITS_PER_M, a0, a1, turn < 0);
+    ctx.moveTo(ax, az);
+    arcTo(nw, [westEdge(road[1] + 8), road[1] + 8]);
+    ctx.lineTo(px, pz);
     ctx.closePath();
-    ctx.fillStyle = COLORS.road;
     ctx.fill();
   }
-  // the palm strip, in two parts round its gap
-  for (const xs of [[w1 + 2, palmGap[0]], [palmGap[1], east - 14]]) rect(xs, palms, "#86964a");
-  for (const z of palms) line([[w1 + 2, z], [east - 14, z]], 0.05, kerb);
-  // road markings: a dashed middle line, kerbs, and the bays' lines
-  ctx.setLineDash([0.5, 0.4]);
-  line([[west + 2, (road[0] + road[1]) / 2], [east - 2, (road[0] + road[1]) / 2]], 0.05, "rgba(255,255,255,0.6)");
-  ctx.setLineDash([]);
-  line([[west, road[0]], [east - 2, road[0]]], 0.05, kerb);
-  for (let x = w1 + 4; x < east - 18 + 1e-6; x += 2.5) line([[x, bays[0] + 0.3], [x, bays[1]]], 0.05, "rgba(255,255,255,0.75)");
-
-  // the west road: paving with bays from the drive down to the service road, and on to the landing by the stairs
-  rect([w0, w1], [drive[1], south], "#9a968f");
-  rect([w1, landing.x[0]], [drive[1], stairsN], "#9a968f");
-  for (let z = drive[1] + 3; z < south - 1; z += 6) line([[w0 + 0.8, z], [w1 - 1.5, z]], 0.06, "rgba(236,218,170,0.85)");
-  line([[w1 - 1.5, stairsN], [w1 - 1.5, stairsS]], 0.06, "rgba(236,218,170,0.85)");
-  line([[w0, road[1] + 4], [w0, south]], 0.12, kerb);
+  // bays across the road, square to it, and the line along the stairs' foot; the kerb on its west side
+  const across = 1 / Math.hypot(1, B1_FRONT_M.slope);
+  const len = road0.width - 2.3;
+  for (let z = drive[1] + 3; z < south0 - 1; z += 6) {
+    const x = westEdge(z) + 0.8;
+    line([[x, z], [x + len * across, z - len * across * B1_FRONT_M.slope]], 0.06, bay);
+  }
+  line([[foot(stairsN) - 1.5, stairsN], [foot(stairsS) - 1.5, stairsS]], 0.06, bay);
+  line([[westEdge(road[1] + 6), road[1] + 6], sw], 0.12, kerb);
 }

@@ -508,11 +508,21 @@ export function drawCarPark(ctx: CanvasRenderingContext2D) {
   const [z0, z1] = CARPARK.z;
   const [r0, r1] = CARPARK.road;
   if (x1 - x0 < BAY.d * 1.6) return;
-  // the road, from B1's west road (a round corner on its outer side) to the east road
-  ctx.fillStyle = "#7f725f";
+  // red brick paving (imagery), from B1's west road to the east road, in courses about 1.7 m apart
+  ctx.fillStyle = "#a85d45";
+  ctx.fillRect(x0, r0, x1 - x0, r1 - r0);
+  ctx.strokeStyle = "rgba(70,25,15,0.16)";
+  ctx.lineWidth = 0.025;
   ctx.beginPath();
-  ctx.roundRect(x0, r0, x1 - x0, r1 - r0, [1.2, 0, 0, 0]);
-  ctx.fill();
+  for (let x = x0 + 0.25; x < x1; x += 0.25) {
+    ctx.moveTo(x, r0);
+    ctx.lineTo(x, r1);
+  }
+  for (let z = r0 + 0.25; z < r1; z += 0.25) {
+    ctx.moveTo(x0, z);
+    ctx.lineTo(x1, z);
+  }
+  ctx.stroke();
   ctx.strokeStyle = "rgba(255,255,255,0.75)";
   ctx.lineWidth = 0.05;
   for (let z = z0; z <= z1 + 1e-6; z += BAY.w) {
@@ -521,15 +531,6 @@ export function drawCarPark(ctx: CanvasRenderingContext2D) {
     ctx.lineTo(x1, z);
     ctx.stroke();
   }
-  // centre line of the service road
-  const road = (x0 + x1 - BAY.d) / 2;
-  ctx.setLineDash([0.5, 0.4]);
-  ctx.strokeStyle = "rgba(255,255,255,0.6)";
-  ctx.beginPath();
-  ctx.moveTo(road, r0 + 1.2);
-  ctx.lineTo(road, r1 - 0.3);
-  ctx.stroke();
-  ctx.setLineDash([]);
 }
 
 const CAR_COLORS = ["#e9e9e9", "#1f2328", "#9aa3ad", "#b3262a", "#2d4e7e", "#d8d2c4", "#5a5f66"];
