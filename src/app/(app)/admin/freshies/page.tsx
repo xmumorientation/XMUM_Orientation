@@ -7,7 +7,6 @@ import { HeadcountTable } from "@/components/admin/HeadcountTable";
 import { groupColor, themeFromColor } from "@/components/freshie/groupTheme";
 import { Card, ErrorBanner, PageTitle, SuccessBanner } from "@/components/ui";
 import { Dialog, DialogContent } from "@/components/ui/Dialog";
-import { groupJoinPath } from "@/lib/group-login";
 import { groupQrPng, saveGroupQr } from "@/lib/group-qr";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import type { Group } from "@/lib/types";
@@ -78,11 +77,14 @@ export default function FreshieControlPage() {
     const ready = groups.filter((group) => codes[group.id]);
     if (ready.length === 0) return;
     (async () => {
+      const res = await fetch("/api/group-join");
+      const urls: Record<number, string> = res.ok ? (await res.json()).urls ?? {} : {};
       const next: Record<number, string> = {};
       for (const group of ready) {
+        if (!urls[group.id]) continue;
         next[group.id] = await groupQrPng(
-          group.id,
-          codes[group.id],
+          `GROUP ${group.id}`,
+          urls[group.id],
           drafts[group.id] ?? groupColor(group.color),
         );
       }
@@ -92,6 +94,25 @@ export default function FreshieControlPage() {
       cancel = true;
     };
   }, [groups, codes, drafts]);
+
+  async function newPasswords() {
+    if (!window.confirm("Give every group a new password? Every Freshie phone is signed out and has to scan its group QR again (the QRs stay the same).")) return;
+    setBusy(true);
+    setError(null);
+    const res = await fetch("/api/admin/group-logins", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refresh: "all" }),
+    });
+    setBusy(false);
+    if (!res.ok) {
+      setError((await res.json().catch(() => ({}))).error ?? "Could not change the passwords");
+      await load();
+      return;
+    }
+    await load();
+    flash("Every group has a new password");
+  }
 
   function flash(msg: string) {
     setNotice(msg);
@@ -245,6 +266,14 @@ export default function FreshieControlPage() {
 
       {groups.length > 0 && (
         <Card className="overflow-x-auto p-0">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-paper-200 px-4 py-3">
+            <p className="text-sm text-ink-faint">
+              Group QRs never change. New passwords sign out every Freshie phone; they scan their QR again.
+            </p>
+            <button type="button" className="btn-secondary px-4" disabled={busy} onClick={newPasswords}>
+              New passwords for all groups
+            </button>
+          </div>
           <table className="av-groups w-full min-w-[860px] text-left text-sm">
             <thead>
               <tr className="border-b border-paper-200 text-xs font-bold uppercase tracking-wide text-ink-faint">
@@ -451,7 +480,7 @@ export default function FreshieControlPage() {
       >
         <DialogContent className="av-dialog"
           title="Delete all groups?"
-          description="This deletes all groups with their tokens, puzzles, headcounts, passwords and QR codes. Facilitators and Freshies lose their group. This cannot be undone."
+          description="This deletes all groups with their tokens, puzzles, headcounts and passwords. Printed group QRs work again once the groups are set up again. Facilitators and Freshies lose their group. This cannot be undone."
         >
           <form
             className="space-y-3"
@@ -490,8 +519,8 @@ export default function FreshieControlPage() {
               alt={`${preview.name} login QR`}
               className="mx-auto w-full max-w-xs"
             />
-            <p className="mt-3 break-all text-center font-mono text-xs text-ink-faint">
-              {groupJoinPath(preview.id, codes[preview.id])}
+            <p className="mt-3 text-center text-xs text-ink-faint">
+              This QR never changes. A new password does not affect it.
             </p>
             <button
               type="button"

@@ -9,6 +9,8 @@ import {
 const PUBLIC_PATHS = [
   "/login",
   "/join",
+  // The group QR signs in here (POST); GET checks the role itself.
+  "/api/group-join",
   "/forgot-password",
   "/reset-password",
   "/auth/callback",

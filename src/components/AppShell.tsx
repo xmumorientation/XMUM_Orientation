@@ -99,12 +99,6 @@ const NAV: NavItem[] = [
     code: "OP",
     roles: ["hof", "hogm", "committee"],
   },
-  {
-    href: "/bigscreen",
-    label: "Big screen",
-    code: "BS",
-    roles: ["hof", "hogm", "committee", "admin"],
-  },
   { href: "/code", label: "Code", code: "CD", roles: ["faci"] },
   { href: "/admin", label: "Admin", code: "AD", roles: ["admin"] },
 ];

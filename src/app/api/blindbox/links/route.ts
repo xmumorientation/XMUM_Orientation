@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 // recomputed here on demand and never stored. A seller has ONE link, so every
 // assignment of that seller returns the same URL. Reading is a plain RLS select
 // with the caller's own session: an Admin gets any assignment, everyone else
-// only their own account's and their own station's. Nothing is rotated or
+// only their own account's. Nothing is rotated or
 // changed by asking for a link.
 //
 // Body: { ids?: number[] }. Omit ids for every assignment the caller can see.

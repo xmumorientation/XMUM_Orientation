@@ -248,6 +248,24 @@ const SPARKS = Array.from({ length: 10 }, (_, i) => {
   return { dx: Math.round(Math.cos(a) * r), dy: Math.round(Math.sin(a) * r), delay: (i % 4) * 0.05 };
 });
 
+/** The prize art with its halo and a burst of sparks (Items sheet and the real-box reveal). */
+export function RewardArt({ type, children }: { type: BoxReward["type"]; children: React.ReactNode }) {
+  return (
+    <div className="bb-art" data-reward={type}>
+      <span className="bb-halo" aria-hidden />
+      {children}
+      {SPARKS.map((s, i) => (
+        <span
+          key={i}
+          className="bb-spark"
+          aria-hidden
+          style={{ "--dx": `${s.dx}px`, "--dy": `${s.dy}px`, animationDelay: `${0.15 + s.delay}s` } as React.CSSProperties}
+        />
+      ))}
+    </div>
+  );
+}
+
 function Reveal({
   group,
   reward,
@@ -301,18 +319,7 @@ function Reveal({
   return (
     <div className="bb-reveal">
       <span className="bb-rays" aria-hidden />
-      <div className="bb-art" data-reward={reward.type}>
-        <span className="bb-halo" aria-hidden />
-        {art}
-        {SPARKS.map((s, i) => (
-          <span
-            key={i}
-            className="bb-spark"
-            aria-hidden
-            style={{ "--dx": `${s.dx}px`, "--dy": `${s.dy}px`, animationDelay: `${0.15 + s.delay}s` } as React.CSSProperties}
-          />
-        ))}
-      </div>
+      <RewardArt type={reward.type}>{art}</RewardArt>
       <span className="bb-rtag fh-mono">{tag}</span>
       <span className="bb-no fh-mono">
         {group.label} · No. {pad(stock.opened.length)} / {pad(total)}

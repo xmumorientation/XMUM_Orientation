@@ -15,17 +15,12 @@ import "./staff-home.css";
 
 // HOGM's, HOF's and GM's header on Ops (GM: Station), Map, Scores and Schedule
 // (phones and portrait tablets): the same logo, role chip and account menu as their Home
-// (StaffHome), in normal flow above the scroller. The logo goes Home; Big
-// screen and Log Out are in the account menu. The running game shows under it.
+// (StaffHome), in normal flow above the scroller. The logo goes Home; Log
+// Out is in the account menu. The running game shows under it.
 // Landscape tablets and desktops use TopNav instead.
 
 /** Short role name for the header chip. */
 export const OPS_CHIP: Partial<Record<UserRole, string>> = { hof: "HOF", hogm: "HOGM", committee: "Committee", gm: "GM" };
-
-/** Extra links in the account menu. GMs have no Big screen. */
-export function opsAccountLinks(role: UserRole) {
-  return role === "gm" ? [] : [{ href: "/bigscreen", label: "Big screen" }];
-}
 
 export function OpsHeader() {
   const profile = useProfile();
@@ -55,7 +50,6 @@ export function OpsHeader() {
             groupName={null}
             roleLabel={ROLE_LABELS[profile.role]}
             logoutHref="/login"
-            links={opsAccountLinks(profile.role)}
           />
         </div>
       </div>

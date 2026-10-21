@@ -56,7 +56,7 @@ import { cn } from "@/lib/utils";
 import "./token-control.css";
 
 // Admin Token page (/admin/token) shows everything. Other staff (/token)
-// get scoreboardOnly: the live leaderboard, without the rules and the log.
+// get scoreboardOnly: the live scoreboard (Group 1 → 10), without the rules and the log.
 export default function TokenControl({ scoreboardOnly = false }: { scoreboardOnly?: boolean }) {
   const profile = useProfile();
   const isAdmin = profile.role === "admin";
@@ -98,7 +98,6 @@ export default function TokenControl({ scoreboardOnly = false }: { scoreboardOnl
 
   // ── Scoreboard Controls ───────────────────────────────────────────────────
   const [scoreSearch, setScoreSearch] = useState("");
-  const [scoreSortBy, setScoreSortBy] = useState<"tokens" | "puzzles" | "id">("tokens");
 
   // ── Audit Log Filters ─────────────────────────────────────────────────────
   const [auditGroupFilter, setAuditGroupFilter] = useState<string>("all");
@@ -188,26 +187,16 @@ export default function TokenControl({ scoreboardOnly = false }: { scoreboardOnl
   // Computed Leaderboard stats
   const totalTokens = useMemo(() => groups.reduce((sum, g) => sum + g.current_tokens, 0), [groups]);
   const totalPuzzles = useMemo(() => groups.reduce((sum, g) => sum + (g.puzzles_count || 0), 0), [groups]);
-  const leadingGroup = useMemo(() => {
-    return [...groups].sort((a, b) => b.current_tokens - a.current_tokens)[0] || groups[0];
-  }, [groups]);
 
-  // Filtered & Sorted Groups for Scoreboard
+  // Scoreboard: every group in Group 1 → 10 order, filtered by the search
   const sortedGroups = useMemo(() => {
     let list = [...groups];
     if (scoreSearch.trim()) {
       const q = scoreSearch.toLowerCase();
       list = list.filter((g) => g.group_name.toLowerCase().includes(q) || String(g.group_id).includes(q));
     }
-    if (scoreSortBy === "tokens") {
-      list.sort((a, b) => b.current_tokens - a.current_tokens || (b.puzzles_count || 0) - (a.puzzles_count || 0));
-    } else if (scoreSortBy === "puzzles") {
-      list.sort((a, b) => (b.puzzles_count || 0) - (a.puzzles_count || 0) || b.current_tokens - a.current_tokens);
-    } else {
-      list.sort((a, b) => a.group_id - b.group_id);
-    }
-    return list;
-  }, [groups, scoreSearch, scoreSortBy]);
+    return list.sort((a, b) => a.group_id - b.group_id);
+  }, [groups, scoreSearch]);
 
   // Filtered Logs for Audit Stream
   const filteredLogs = useMemo(() => {
@@ -572,20 +561,14 @@ export default function TokenControl({ scoreboardOnly = false }: { scoreboardOnl
       <div className="space-y-4">
         {/* Scoreboard Metrics & Section Title */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-2">
-            <Trophy size={22} className="text-amber-500" />
-            <h2 className="text-xl font-black text-slate-900 tracking-tight">
-              Live Group Leaderboard & Blueprint Matrix
-            </h2>
-          </div>
+          <h2 className="text-xl font-black text-slate-900 tracking-tight">
+            Live Group Scoreboard & Blueprint Matrix
+          </h2>
 
           {/* Quick Metrics Chips */}
           <div className="flex items-center gap-2">
             <span className="chip bg-white border border-slate-200 text-slate-700 text-xs font-bold shadow-sm">
               Total Tokens: <strong className="text-amber-600 ml-1 font-black">{totalTokens}</strong>
-            </span>
-            <span className="chip bg-white border border-slate-200 text-slate-700 text-xs font-bold shadow-sm">
-              Leader: <strong className="text-slate-900 ml-1 font-black">{leadingGroup?.group_name}</strong>
             </span>
           </div>
         </div>
@@ -602,64 +585,16 @@ export default function TokenControl({ scoreboardOnly = false }: { scoreboardOnl
               className="w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-3.5 py-2 text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:border-cyan-500 focus:bg-white focus:outline-none"
             />
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-slate-500">Sort by:</span>
-            <div className="flex rounded-xl bg-slate-100 p-1 border border-slate-200">
-              {[
-                { id: "tokens", label: "Tokens" },
-                { id: "puzzles", label: "Puzzles" },
-                { id: "id", label: "Group #" },
-              ].map((s) => (
-                <button
-                  key={s.id}
-                  type="button"
-                  aria-pressed={scoreSortBy === s.id}
-                  onClick={() => setScoreSortBy(s.id as any)}
-                  className={cn(
-                    "px-3 py-1 text-xs font-bold rounded-lg transition-all",
-                    scoreSortBy === s.id
-                      ? "bg-white text-slate-900 shadow-sm font-black"
-                      : "text-slate-600 hover:text-slate-900"
-                  )}
-                >
-                  {s.label}
-                </button>
-              ))}
-            </div>
-          </div>
         </div>
 
         <div className="flex flex-col gap-2">
-          {sortedGroups.map((grp, index) => {
-            const isTop1 = index === 0 && scoreSortBy === "tokens";
-            const isTop2 = index === 1 && scoreSortBy === "tokens";
-            const isTop3 = index === 2 && scoreSortBy === "tokens";
-
+          {sortedGroups.map((grp) => {
             return (
               <div
                 key={grp.group_id}
-                className={cn(
-                  "flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl border bg-white px-3 py-3 shadow-sm",
-                  isTop1
-                    ? "border-amber-300"
-                    : "border-slate-200"
-                )}
+                className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl border border-slate-200 bg-white px-3 py-3 shadow-sm"
               >
                 <div className="flex min-w-0 flex-1 items-center gap-2">
-                  <span
-                    className={cn(
-                      "flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-black",
-                      isTop1
-                        ? "bg-amber-400 text-slate-950"
-                        : isTop2
-                        ? "bg-slate-200 text-slate-800"
-                        : isTop3
-                        ? "border border-amber-300 bg-amber-100 text-amber-900"
-                        : "bg-slate-100 text-slate-700"
-                    )}
-                  >
-                    {index + 1}
-                  </span>
                   <GroupBadge id={grp.group_id} color={grp.color} />
                   <span className="truncate font-black text-slate-900" title={grp.display_name?.trim() || grp.group_name}>
                     {grp.display_name?.trim() || grp.group_name}
@@ -672,7 +607,7 @@ export default function TokenControl({ scoreboardOnly = false }: { scoreboardOnl
                 </div>
                 {/* Phones: puzzles and pieces drop to a second line (indented under
                     the name) so the group name keeps the first line's width. */}
-                <div className="flex basis-full items-center gap-x-4 gap-y-2 pl-9 sm:basis-auto sm:pl-0">
+                <div className="flex basis-full items-center gap-x-4 gap-y-2 pl-10 sm:basis-auto sm:pl-0">
                 <div className="flex items-center gap-1 text-sm font-black tabular-nums text-indigo-600">
                   <Layers size={14} />
                   {grp.puzzles_count || 0}/15

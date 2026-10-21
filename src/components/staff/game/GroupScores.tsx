@@ -4,6 +4,7 @@ import { ChevronDown, Lightbulb } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { groupSwatch } from "@/components/freshie/groupTheme";
+import { GroupBadge } from "@/components/GroupBadge";
 import { KEY_NAMES, KeyEmblem } from "@/components/freshie/items/KeyEmblem";
 import { vxDisplay, vxSlab } from "@/components/home/fonts";
 import { useProjectorPlaces } from "@/components/useConfig";
@@ -108,7 +109,6 @@ export function GroupScores({ countsOnly = false }: { countsOnly?: boolean }) {
   const owned = (id: number, loc: ProjectorLocation) =>
     countsOnly ? (counts[id]?.[loc] ?? 0) : (pieces[id]?.[loc].length ?? 0);
   const count = (id: number) => PROJECTOR_LOCATIONS.reduce((n, loc) => n + owned(id, loc), 0);
-  const rows = [...groups].sort((a, b) => b.token_balance - a.token_balance || count(b.id) - count(a.id) || a.id - b.id);
 
   return (
     <div className={cn("gc", vxDisplay.variable, vxSlab.variable)}>
@@ -128,7 +128,7 @@ export function GroupScores({ countsOnly = false }: { countsOnly?: boolean }) {
         <span>Puzzles</span>
       </div>
       <ol className="gc-list gc-scores">
-        {rows.map((g, i) => {
+        {groups.map((g) => {
           const open = openId === g.id;
           const own = pieces[g.id] ?? emptyPieces();
           return (
@@ -139,8 +139,7 @@ export function GroupScores({ countsOnly = false }: { countsOnly?: boolean }) {
                 aria-expanded={open}
                 onClick={() => setOpenId(open ? null : g.id)}
               >
-                <span className="gc-rank">{String(i + 1).padStart(2, "0")}</span>
-                <i className="gc-swatch" style={{ background: groupSwatch(g.id, g.color) }} aria-hidden />
+                <GroupBadge id={g.id} color={groupSwatch(g.id, g.color)} />
                 <span className="gc-fold-name">{g.name}</span>
                 <b className="gc-num">{g.token_balance}</b>
                 <b className="gc-num gc-num-sub">
@@ -190,7 +189,7 @@ export function GroupScores({ countsOnly = false }: { countsOnly?: boolean }) {
             </li>
           );
         })}
-        {rows.length === 0 && <li className="gc-empty">No groups yet.</li>}
+        {groups.length === 0 && <li className="gc-empty">No groups yet.</li>}
       </ol>
     </div>
   );

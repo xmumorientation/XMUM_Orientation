@@ -9,9 +9,9 @@ import { cn, friendlyError } from "@/lib/utils";
 
 import type { TabProps } from "./TypesTab";
 
-// Group-wide blind box settings, plus the test reset. The cap is the most
-// boxes any one group can buy in total (across every seller); "one per
-// seller" is fixed.
+// Group-wide blind box rules, plus the rehearsal reset. The cap is the most
+// boxes any one group can buy in total (across every seller; the Spot box does
+// not count); "one per seller" is fixed. The only reset is Restore boxes.
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 
 export function SettingsTab({ data, onError, onNotice }: TabProps) {
@@ -46,27 +46,22 @@ export function SettingsTab({ data, onError, onNotice }: TabProps) {
   const preview = useMemo(() => {
     const net = new Map<number, number>();
     for (const c of data.claims) {
-      net.set(c.group_id, (net.get(c.group_id) ?? 0) + (c.tokens - c.price));
+      net.set(c.group_id, (net.get(c.group_id) ?? 0) + ((c.tokens ?? 0) - c.price));
     }
-    return {
-      claims: data.claims.length,
-      groups: net.size,
-      assignments: data.assignments.length,
-      types: data.types.length,
-    };
-  }, [data.claims, data.assignments, data.types]);
+    return { claims: data.claims.length, groups: net.size };
+  }, [data.claims]);
 
   const unlocked = data.rehearsal;
   const confirmed = confirm === "RESET";
 
-  async function reset(scope: "openings" | "all") {
+  async function reset() {
     if (!unlocked || !confirmed) return;
     setBusy(true);
     onError(null);
     // p_refund_tokens is only sent when unchecked, so the default (checked)
     // call is the same as before migration 0057.
     const { data: res, error } = await supabase.rpc("fn_bb_reset", {
-      p_scope: scope,
+      p_scope: "openings",
       p_confirm: confirm,
       ...(putBack ? {} : { p_refund_tokens: false }),
     });
@@ -77,11 +72,7 @@ export function SettingsTab({ data, onError, onNotice }: TabProps) {
       r.tokens_put_back === false
         ? "tokens left as they are"
         : `tokens put back for ${plural(r.groups, "group", "groups")}${r.clamped ? ` (${r.clamped} could only be partly put back: they had spent the tokens)` : ""}`;
-    onNotice(
-      scope === "all"
-        ? `Everything reset: openings, assignments and box types are cleared; ${tokens}.`
-        : `Restored: ${plural(r.claims, "bought box", "bought boxes")} cleared and back in the sellers' stock; ${tokens}.`
-    );
+    onNotice(`Restored: ${plural(r.claims, "bought box", "bought boxes")} cleared and back with the sellers and the Spot; ${tokens}.`);
     setConfirm("");
     data.reload();
   }
@@ -107,7 +98,7 @@ export function SettingsTab({ data, onError, onNotice }: TabProps) {
             />
           </div>
           <p className="text-xs text-ink-faint">
-            Counts every box type and every seller. Right now{" "}
+            Counts every box type and every seller, but not the Spot box. Right now{" "}
             <b>{data.overview.groupsAtCap}</b> group
             {data.overview.groupsAtCap === 1 ? " has" : "s have"} reached the cap.
             Raising it lets those groups buy more straight away. Boxes count when they are bought, opened or not.
@@ -118,9 +109,9 @@ export function SettingsTab({ data, onError, onNotice }: TabProps) {
         </form>
         <hr className="border-paper-200" />
         <p className="text-sm text-ink-faint">
-          Also fixed: a group can buy <b>one</b> box per seller, and a station
-          counts as one seller however many GMs share it. To pause every blind
-          box at once, use the &quot;Disable blind box&quot; kill-switch in{" "}
+          Also fixed: a group can buy <b>one</b> box per seller, and one Spot box
+          in total. To pause all blind box buying at once, use the &quot;Blind
+          box buying paused&quot; switch in{" "}
           <Link href="/admin" className="underline">
             Live control
           </Link>
@@ -129,7 +120,7 @@ export function SettingsTab({ data, onError, onNotice }: TabProps) {
       </Card>
 
       <Card className="max-w-xl space-y-3 border-red-200">
-        <h2 className="font-semibold text-red-700">Reset for testing</h2>
+        <h2 className="font-semibold text-red-700">Reset after a rehearsal</h2>
         {!unlocked ? (
           <p className="rounded-md bg-paper-200 px-3 py-2 text-sm">
             Locked. The reset only works while <b>Rehearsal mode</b> is on, so
@@ -146,21 +137,12 @@ export function SettingsTab({ data, onError, onNotice }: TabProps) {
           </p>
         )}
 
-        <ul className="space-y-2 text-sm text-ink-faint">
-          <li>
-            <b className="text-ink">Restore boxes</b>: {plural(preview.claims, "bought box goes", "bought boxes go")}{" "}
-            back to the sellers (opened or not), so every seller has their full
-            assigned number again. The groups&apos; purchases are cleared, so
-            they can buy again.
-            Box types, assignments and QR codes stay.
-          </li>
-          <li>
-            <b className="text-ink">Reset everything</b>: does that, then also
-            deletes {plural(preview.assignments, "assignment", "assignments")} and{" "}
-            {plural(preview.types, "box type", "box types")}. QR codes stop
-            working for good.
-          </li>
-        </ul>
+        <p className="text-sm text-ink-faint">
+          <b className="text-ink">Restore boxes</b>: {plural(preview.claims, "bought box goes", "bought boxes go")}{" "}
+          back (opened or not), so every seller and the Spot have their full
+          number again, and groups can buy again. Box types, who holds what, the
+          Spot&apos;s settings and every QR code stay.
+        </p>
 
         <label className="flex items-start gap-2 text-sm">
           <input
@@ -185,7 +167,7 @@ export function SettingsTab({ data, onError, onNotice }: TabProps) {
             className="mb-1 block text-xs font-semibold text-ink-faint"
             htmlFor="bb-reset-confirm"
           >
-            Type RESET to enable the buttons
+            Type RESET to enable the button
           </label>
           <input
             id="bb-reset-confirm"
@@ -200,24 +182,13 @@ export function SettingsTab({ data, onError, onNotice }: TabProps) {
           <button
             type="button"
             disabled={busy || !unlocked || !confirmed}
-            onClick={() => reset("openings")}
+            onClick={reset}
             className={cn(
               "btn border border-red-300 bg-white text-red-700",
               (!unlocked || !confirmed) && "opacity-50"
             )}
           >
             Restore boxes
-          </button>
-          <button
-            type="button"
-            disabled={busy || !unlocked || !confirmed}
-            onClick={() => reset("all")}
-            className={cn(
-              "btn bg-red-600 text-white",
-              (!unlocked || !confirmed) && "opacity-50"
-            )}
-          >
-            Reset everything
           </button>
         </div>
       </Card>

@@ -36,9 +36,13 @@ export default function GroupCodePage() {
   useEffect(() => {
     if (!code || !group) return;
     let active = true;
-    groupQrPng(group.id, code, groupColor(group.color)).then((file) => {
+    (async () => {
+      const res = await fetch("/api/group-join");
+      const url = res.ok ? ((await res.json()).urls?.[group.id] as string | undefined) : undefined;
+      if (!url) return;
+      const file = await groupQrPng(`GROUP ${group.id}`, url, groupColor(group.color));
       if (active) setPng(file);
-    });
+    })();
     return () => {
       active = false;
     };
@@ -48,13 +52,17 @@ export default function GroupCodePage() {
 
   return (
     <div className="mx-auto flex max-w-md flex-col items-center gap-4">
-      <PageTitle title="Group code" subtitle="The password, link, and QR for your group" />
+      <PageTitle title="Group code" subtitle="Your group's password and QR. The QR never changes; the password can." />
       {!ready || groupLoading ? (
         <Spinner />
       ) : !code || !group ? (
         <p className="text-sm text-ink-faint">This group does not have a login code yet.</p>
       ) : (
         <>
+          <p className="text-center">
+            <span className="block text-xs font-semibold uppercase tracking-wide text-ink-faint">Password</span>
+            <span className="font-mono text-4xl font-bold tracking-[0.2em] text-ink">{code}</span>
+          </p>
           {png && (
             // The card is a generated image, same file Freshie control downloads.
             // eslint-disable-next-line @next/next/no-img-element

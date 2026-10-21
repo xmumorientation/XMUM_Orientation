@@ -8,7 +8,6 @@ import {
   PageTitle,
   SuccessBanner,
 } from "@/components/ui";
-import { FunfairZones } from "@/components/admin/FunfairZones";
 import { GameToggles } from "@/components/admin/GameToggles";
 import { usePhaseTimer } from "@/components/PhaseTimerProvider";
 import { NowOnWelcome } from "@/components/admin/NowOnWelcome";
@@ -32,8 +31,8 @@ interface LiveOps {
 }
 
 // FR-11.5 kill-switches + FR-11.6 live ops + FR-10.1 games (GameToggles,
-// started and ended by hand), filtered by the Day selector (All / Day 1 / Day 2),
-// and the funfair's keys (FunfairZones).
+// started and ended by hand), filtered by the Day selector (All / Day 1 / Day 2).
+// The funfair's keys are on Game → Funfair (3D map).
 export default function AdminControlRoomPage() {
   const supabase = useMemo(() => supabaseBrowser(), []);
   const [ops, setOps] = useState<LiveOps | null>(null);
@@ -94,7 +93,7 @@ export default function AdminControlRoomPage() {
 
   const SWITCHES: { key: string; label: string; danger: string }[] = [
     { key: "tokens_frozen", label: "Freeze token mutations", danger: "All GM ± operations rejected" },
-    { key: "blindbox_disabled", label: "Disable blind box", danger: "All blind box opens rejected" },
+    { key: "blindbox_disabled", label: "Pause blind box buying", danger: "Blind box buying paused" },
     { key: "nfc_disabled", label: "Disable NFC activation", danger: "Sticker taps rejected" },
     { key: "rehearsal_mode", label: "Rehearsal mode", danger: "Bypasses ALL phase gating. Testing only" },
     { key: "day2_map_layer", label: "Day 2 map layer", danger: "Reveals projectors on everyone's map" },
@@ -146,7 +145,7 @@ export default function AdminControlRoomPage() {
           {[
             ["Tokens in circulation", ops.tokens_in_circulation],
             ["Transactions", ops.transactions_count],
-            ["Blind boxes opened", ops.blindbox_claims],
+            ["Blind boxes sold", ops.blindbox_claims],
             ["Box tokens paid in", ops.blindbox_tokens_in],
             ["Pieces granted", ops.pieces_granted],
             ["Sets redeemed", ops.sets_redeemed],
@@ -221,10 +220,6 @@ export default function AdminControlRoomPage() {
               </button>
             </div>
           </Card>
-        </section>
-        <section>
-          <h2 className="mb-2 font-semibold">Funfair (3D map)</h2>
-          <FunfairZones />
         </section>
       </div>
     </div>

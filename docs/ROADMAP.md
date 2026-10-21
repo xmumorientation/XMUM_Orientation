@@ -5,7 +5,7 @@ Read it before starting a new round of development. When a decision changes, upd
 
 > **From Ben:** when you finish your work, write down what you completed in the "Done" section at the end of this file, so the next teammate can see it. Do this for partly finished items too: say which parts are done and which are left.
 
-Last updated: 2026-10-20
+Last updated: 2026-10-22
 
 ## Status key
 
@@ -242,6 +242,36 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 
 ## Done
 
+### Migrations to run on Supabase for the 2026-10-22 work (Jiamin)
+Numbered after main's `0093`-`0098` (renamed from 0097 / 0098 when merging main, whose projector migrations took those numbers). Run both **before** deploying the frontend: Admin → Blind boxes calls the new `fn_bb_assign` (no station arguments) and `fn_bb_spot_save`.
+- `0099_group_password_refresh.sql`: `fn_end_user_sessions` (service role only).
+- `0100_blindbox_spot_no_stations.sql`: the Spot box, no station boxes, Restore only. Deletes unsold station boxes and switches sold ones off. Safe to run again.
+- Env: `/api/group-join` signs group QRs with `NFC_TOKEN_SECRET` (already set for blind boxes and NFC). Changing that secret changes every group QR.
+
+### Funfair card moved to Admin → Game, 2026-10-22 (Jiamin)
+- The Funfair (3D map) card (zone keys, overrides, the finale) is off Live control and on its own tab, Admin → Game → **Funfair (3D map)** (`/admin/funfair`). Same component (`FunfairZones`); HOGM's Game control → Funfair is unchanged.
+
+### Big screen removed, scoreboards in group order, 2026-10-22 (Jiamin)
+- `/bigscreen` is deleted, with every link to it (nav, Staff Home, Ops header, staff dashboard), `Countdown`'s `override` prop and `AccountMenu`'s `links` prop. `/activate` and the `projectors` table stay.
+- Every scoreboard (Admin → Token, Scores for GM / Guardian / Committee / HOF / HOGM, the Scores stops on Staff and Freshie Home) lists Group 1 → 10. No rank, medals, Leader chip or sort switch; the group badge leads each row. `fn_scoreboard` still orders by tokens in SQL; the pages sort by id.
+
+### Group QR never changes; Admin can give a group a new password, 2026-10-22 (Jiamin)
+Migration `0099`.
+- The group QR is `/join?g=<HMAC of the group number>` (`/api/group-join`). The server looks up the group's current password and signs the phone in, so the QR holds no password and stays the same, even after Admin resets the groups. QRs in the old format (`?group3=1234`) work until that group's password changes.
+- Admin → Freshies: one "New passwords for all groups" button (above the groups table; no per-group button) gives every group a new 4-digit code, none equal to an old one, and signs out every Freshie phone; they scan their unchanged QR again. The printed card shows GROUP N instead of the password; the Faci's `/code` page shows the current password above it.
+- `/join` now signs out only this phone before signing in (it used a global sign-out, which ended every phone of the group).
+- Tests: `tests/group-join-route.test.ts`, `tests/group-logins-refresh.test.ts`.
+
+### Blind box: Spot box, no station boxes, Admin page as steps, new buy page, 2026-10-22 (Jiamin)
+Migration `0100`. Planned and agreed with Jiamin first (design rounds in the session).
+- **Spot box:** one extra seller with one QR that never changes; print it and hide copies. Admin sets min / max tokens, the pool and on/off (`fn_bb_spot_save`). Free, one per group, outside the group cap. Inside it is a hidden box type (`is_spot`) with one assignment, so buying, opening and Restore work as for any box. Claims carry `spot`.
+- **No station boxes:** `fn_bb_assign` takes a role or accounts only; a new station assignment is refused (in the seller trigger, not a check constraint, because the reset updates the kept rows). Sold station boxes stay, switched off, for history. `fn_admin_station_gms` stays (Admin → Stations and HOGM use it), and so does the station-delete "has sales" message, since those kept rows can still block a delete.
+- **Reset:** only Restore boxes; "Reset everything" is gone. Restore also refills the Spot and keeps every QR.
+- **Admin → Blind boxes:** steps 1 Box types → 2 Assign → 3 Codes & stock → 4 Spot box, with Rules & reset apart. A strip of four numbers. Assign is one form (type, who, how many). Codes & stock has one row per seller with their one QR. The Admin's own QR card is gone from the page. Live control says "Blind box buying paused" and "Blind boxes sold".
+- **Buy page (`/blindbox`):** the Freshie night look in the group's colour, the Items page's 3D box, a pill with the group and tokens, the cap as dots, Buy rows, and "You found a hidden blind box" with Claim it for the Spot. Sign-in and error screens use the Welcome look.
+- **My Blind Box** (Staff Home) and the GM page card: one centred column: QR, Copy link, then each box type.
+- Tests: `tests/blindbox/db.test.ts` applies `0100` after the older tests and checks the station clean-up, people-only assign, Restore only, and the Spot (free, once per group, outside the cap, pool, settings without a new QR, refilled by Restore). `npm test`: 155 pass; `tsc` and `next lint` are clean.
+- Checked in the browser: the buy page (normal, Spot, blocked) and the centred My Blind Box, through a temporary route (removed). Not checked in the browser: Admin → Blind boxes, the group QR sign-in and the password change (they need a sign-in and the migrations on a database).
 ### Funfair zones carry their key's name on the 3D map, 2026-10-22
 - With Show names on, each zone has a sign over it with its key's glyph, colour and code name (Star, Wheel, Orbit), bright when the zone is on and grey when off (`ZoneSigns` in `markers.tsx`). The funfair's label is now just "Vortexa Funfair". The arrival toast uses the same names ("Star · Big Top — lit up!"). East, Central and West stay on Admin's and HOGM's cards only.
 - The names follow the default keys (one projector per zone). Admin's and HOGM's Funfair cards now say to change a zone's keys only in an emergency (`SIGN_NOTE`).
