@@ -9,7 +9,8 @@ import type { MapControls as MapControlsImpl } from "three-stdlib";
 import { allZonesOn, anyZoneOn, FUNFAIR_OFF, type FunfairPower } from "@/lib/funfair";
 
 import { Atmosphere, Effects, MODES, type Mode } from "./atmosphere";
-import { B1Building, Blocks, Bridge, Flag, Grandstand, Statue } from "./buildings";
+import { B1Building } from "./b1";
+import { Blocks, Bridge, Flag, Grandstand, Statue } from "./buildings";
 import { Funfair } from "./funfair/Funfair";
 import { FUNFAIR_LABEL } from "./funfair/labels";
 import { LABELS } from "./geo";

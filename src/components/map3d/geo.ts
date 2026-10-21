@@ -120,7 +120,8 @@ export const B1: Img = [720, 694];
 /**
  * Real positions from OpenStreetMap, in metres east (e) and north (n) of the
  * Track & Field GPS point in src/lib/mapGeo.ts: the football pitch inside the
- * track, and B1's footprint.
+ * track, and B1's footprint. B1_CENTRE_M only pins the scale: B1 itself is
+ * drawn where the imagery shows it (B1_PLACE).
  */
 const PITCH_CENTRE_M = { e: -3.1, n: -0.3 };
 const B1_CENTRE_M = { e: 7.0, n: 229.0 };
@@ -230,8 +231,37 @@ export const BLOCKS: ({ name: string; flat?: boolean } & Placed)[] = ["A5", "A4"
   ...place(BUILDINGS_M[name]),
 }));
 
-/** B1: OSM footprint, 120 m east-west by 55 m north-south. */
-export const B1_PLACE = place(BUILDINGS_M.B1);
+/**
+ * B1 (the Student Activity Centre) as Esri imagery shows it (zoom 19, checked 2026-10-21): 117.6 m east-west by
+ * 55 m, out to the edges of its planted floor bands. OSM's outline (BUILDINGS_M.B1) sits about 8 m further west
+ * and stops short of the sports hall's east wall, while the courts next to it match the imagery.
+ */
+const B1_M: RectM = { e: 14.8, n: 231.0, length: 117.6, width: 55.0, bearing: 90 };
+export const B1_PLACE = place(B1_M);
+
+/** A point in B1's own frame (metres from its centre; x east, z south: b1.tsx) → world [x, z]. */
+export function b1Point(x: number, z: number): World {
+  const { pos, rotY } = B1_PLACE;
+  const c = Math.cos(rotY);
+  const s = Math.sin(rotY);
+  return [pos[0] + (x * c + z * s) * UNITS_PER_M, pos[1] + (z * c - x * s) * UNITS_PER_M];
+}
+
+/**
+ * B1's front faces west, to the lake (Ben's photos): in B1's frame, the podium runs from the walls out to `top`,
+ * the grand stairs (the same depth all along, Ben) go down from there to their `foot`, and a paved plaza runs on
+ * to `plazaW`. A landing with planters stands north of the stairs.
+ */
+export const B1_FRONT_M = {
+  top: -65.3,
+  foot: -81.8,
+  stairsN: -21,
+  stairsS: 28,
+  landing: { x: [-76.8, -65.3], z: [-28, -21] },
+  plazaW: -95.8,
+  plazaN: -36,
+  plazaS: 36,
+} as const;
 
 /** LakeFront Café: the dome on the lake's west shore (OSM outline moved onto the dome seen in imagery). */
 export const DOME_PLACE = place(BUILDINGS_M["LakeFront Cafe"]);
@@ -409,7 +439,7 @@ export const TRACK_NORTH = {
  */
 export const LABELS: { name: string; pos: World; y: number; minor?: boolean; stage?: boolean }[] = [
   ...BLOCKS.map((b) => ({ name: b.name, pos: b.pos, y: b.flat ? 12.2 : 9.6 })),
-  { name: "B1", pos: B1_PLACE.pos, y: 11 },
+  { name: "B1", pos: B1_PLACE.pos, y: 6 },
   { name: "Track & Field", pos: toWorld(TRACK.center), y: 3 },
   ...SPORTS.filter((b) => b.label).map((b) => ({
     name: b.label!,
@@ -472,12 +502,25 @@ const A5_ENTRANCE: Placed[] = BLOCKS.filter((b) => b.name === "A5").map((b) => {
   return { pos: [b.pos[0] + lz * Math.sin(b.rotY), b.pos[1] + lz * Math.cos(b.rotY)], hx: 1.7, hz: 1.4, rotY: b.rotY };
 });
 
+/** B1's podium, grand stairs and plaza (B1_FRONT_M), west of its footprint. */
+const B1_FRONT: Placed = (() => {
+  const { plazaW, plazaN, plazaS } = B1_FRONT_M;
+  const wall = -B1_PLACE.hx / UNITS_PER_M;
+  return {
+    pos: b1Point((plazaW + wall) / 2, (plazaN + plazaS) / 2),
+    hx: ((wall - plazaW) / 2) * UNITS_PER_M,
+    hz: ((plazaS - plazaN) / 2) * UNITS_PER_M,
+    rotY: B1_PLACE.rotY,
+  };
+})();
+
 export function inKeepOut(x: number, z: number, margin: number): boolean {
   const inRect = (rx: [number, number], rz: [number, number]) =>
     x > rx[0] - margin && x < rx[1] + margin && z > rz[0] - margin && z < rz[1] + margin;
   if (SPORTS.some((b) => inRect(b.x, b.z))) return true;
   if (inRect(CARPARK.x, CARPARK.z)) return true;
-  if ([...BLOCKS, ...A5_ENTRANCE, B1_PLACE, DOME_PLACE].some((p) => inPlaced(p, x, z, margin + 0.4))) return true;
+  const placed = [...BLOCKS, ...A5_ENTRANCE, B1_PLACE, B1_FRONT, DOME_PLACE];
+  if (placed.some((p) => inPlaced(p, x, z, margin + 0.4))) return true;
   if (Math.hypot(x - STATUE[0], z - STATUE[1]) < 2.6 + margin) return true;
   if (inPolygon(LAKE, x, z) || nearLine(LAKE, x, z, 0.6 + margin, true)) return true;
   if (nearLine(BRIDGE, x, z, 0.8 + margin)) return true;
