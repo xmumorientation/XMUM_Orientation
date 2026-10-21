@@ -439,11 +439,12 @@ export const FOOTPATH_W = 5 * UNITS_PER_M;
  * The A-row's front was all lawn on the map. Esri imagery (zoom 19) shows light grey stone there (Ben, 2026-10-21:
  * not everything is lawn). Traced in metres east / north, like campusData.ts, and moved A_FRONT_DN north.
  *
- * - `terrace`: the wide promenade along the arc, and `walk`, the walk north of the hedge row past the blocks'
- *   forecourts. They are arcs round one `centre` (imagery fits them to within a metre), `r` metres out, from `e[0]`
- *   to `e[1]` east. The terrace replaces OSM's walk along it.
- * - `links`: walks across the lawn from the walk to the terrace, and one from the terrace's east end to the brick
- *   sidewalk (TRACED_PATHS_M).
+ * - `terrace`: the wide flight of steps along the arc, from the raised ground (PLATEAU) down to the lawn, and
+ *   `walk`, the walk north of the hedge row past the blocks' forecourts. They are arcs round one `centre` (imagery
+ *   fits them to within a metre), `r` metres out, from `e[0]` to `e[1]` east. The terrace replaces OSM's walk along
+ *   it.
+ * - `links`: walks across the lawn from the walk to the terrace, each to a narrow stair through it (TERRACE).
+ * - `eastLink`: the walk from the terrace's east end to the brick sidewalk (TRACED_PATHS_M).
  */
 const A_FRONT_M = {
   centre: [-274.2, -424.2] as EN,
@@ -454,9 +455,38 @@ const A_FRONT_M = {
     { width: 3, line: [[-399.5, 3], [-399, -22]] as EN[] },
     { width: 3, line: [[-250, 17], [-250, -3]] as EN[] },
     { width: 3, line: [[-189.5, 11], [-189, -10]] as EN[] },
-    { width: 4, line: [[-170, -18], [-158, -8], [-145, -4], [-130, 0]] as EN[] },
   ],
+  eastLink: { width: 4, line: [[-170, -18], [-158, -8], [-145, -4], [-130, 0]] as EN[] },
 };
+
+/** Each block's front, the side toward the lawn, in degrees from its long side's bearing (as `side` below). */
+const A_FRONT_SIDE: Record<string, number> = { A1: 90, A2: 0, A3: 90, A4: 180, A5: 180 };
+
+/** A block's half sizes in metres: out through its `side`, and along that side. */
+function blockHalf(name: string, side: number): [number, number] {
+  const { length, width } = BUILDINGS_M[name];
+  return side % 180 === 0 ? [length / 2, width / 2] : [width / 2, length / 2];
+}
+
+/**
+ * A point by a block, in metres east / north: `out` metres from its centre through its `side` (degrees from its long
+ * side's bearing, so it follows the footprint), and `across` metres along that side (+ to the right, facing the block).
+ */
+function blockPoint(name: string, side: number, across: number, out: number): EN {
+  const b = BUILDINGS_M[name];
+  const f = ((b.bearing + side) * Math.PI) / 180;
+  return [b.e + out * Math.sin(f) - across * Math.cos(f), b.n + out * Math.cos(f) + across * Math.sin(f)];
+}
+
+/** A rectangle by a block (as blockPoint) in the world, corners in order round it, the first edge along its side. */
+function blockRect(name: string, side: number, [a0, a1]: readonly number[], [o0, o1]: readonly number[]): World[] {
+  return [
+    [a0, o0],
+    [a1, o0],
+    [a1, o1],
+    [a0, o1],
+  ].map(([a, o]) => fromReal(...blockPoint(name, side, a, o)));
+}
 
 /**
  * Each block's forecourt with its steps, down to the walk: a rectangle on one side of the block. `side` turns from
@@ -473,6 +503,13 @@ const A_FORECOURTS_M: { block: string; side: number; across: [number, number]; o
 ];
 
 /**
+ * Steps down behind A1, A2, A4 and A5, from the raised ground to the lower ground on the north (Ben's photos):
+ * `width` metres wide on each block's back axis, `run` metres down the bank behind the blocks (PLATEAU), then a paved
+ * landing `landing` metres deep. A3 has none: its back stands on the lower ground.
+ */
+const NORTH_STAIRS_M = { blocks: ["A1", "A2", "A4", "A5"], width: 18, run: 8, landing: 8 };
+
+/**
  * A3 and the statue share one axis (imagery): A3's `steps` down to the walk, the paving on from there across the
  * terrace (`crossing`), two `walks` down the lawn either side of the statue, and the `plaza` round the statue's bed and
  * south to the road. Laid out from the statue: `u` is metres across (east +), `v` metres from the statue toward A3.
@@ -486,9 +523,27 @@ const A_AXIS_M = {
   plaza: { u: [-12.25, 12.25], v: [-200, 9] },
 } as const;
 
+/** A3's axis: the unit world direction from the statue toward A3's centre, and that distance in metres. */
+const A3_AXIS = (() => {
+  const a3 = BLOCKS.find((b) => b.name === "A3")!.pos;
+  const len = Math.hypot(a3[0] - STATUE[0], a3[1] - STATUE[1]);
+  return { v: [(a3[0] - STATUE[0]) / len, (a3[1] - STATUE[1]) / len] as World, len: len / UNITS_PER_M };
+})();
+
+/** Metres up A3's axis from the statue to where it meets the arc `r` metres round A_FRONT_M.centre. */
+function upAxisTo(r: number): number {
+  const [ce, cn] = A_FRONT_M.centre;
+  const c = fromReal(ce, cn + A_FRONT_DN);
+  const { v } = A3_AXIS;
+  const [ox, oz] = [STATUE[0] - c[0], STATUE[1] - c[1]];
+  const b = ox * v[0] + oz * v[1];
+  return (-b + Math.sqrt(b * b - (ox * ox + oz * oz - (r * UNITS_PER_M) ** 2))) / UNITS_PER_M;
+}
+
 /**
- * The paving in the world. `courts` (forecourts, A3's steps, the statue's plaza) are rectangles, first corner to
- * second along the side they stand on; `strips` are walks of a width along a line; `crossing` lies over the terrace.
+ * The paving in the world. `courts` (forecourts, A3's steps, the statue's plaza, the steps behind the blocks and their
+ * landings) are rectangles, first corner to second along the side they stand on; `strips` are walks of a width along a
+ * line; `crossing` lies over the terrace.
  */
 export const A_FRONT: { courts: World[][]; strips: { width: number; line: World[] }[]; crossing: World[] } = (() => {
   const [ce, cn] = A_FRONT_M.centre;
@@ -501,43 +556,38 @@ export const A_FRONT: { courts: World[][]; strips: { width: number; line: World[
     }
     return { width: width * UNITS_PER_M, line };
   };
-  /** A rectangle: `o` its origin's world point; `a`, `b` unit world directions; spans in metres along them. */
-  const rect = (o: World, a: World, b: World, [a0, a1]: readonly number[], [b0, b1]: readonly number[]) =>
-    [
-      [a0, b0],
-      [a1, b0],
-      [a1, b1],
-      [a0, b1],
-    ].map(([s, t]) => [o[0] + (a[0] * s + b[0] * t) * UNITS_PER_M, o[1] + (a[1] * s + b[1] * t) * UNITS_PER_M] as World);
-  /** Unit world direction of a bearing (degrees clockwise from north): world +X is north, +Z east. */
-  const dir = (deg: number): World => [Math.cos((deg * Math.PI) / 180), Math.sin((deg * Math.PI) / 180)];
+  const walkOf = (l: { width: number; line: EN[] }) => ({ width: l.width * UNITS_PER_M, line: l.line.map(([e, n]) => at(e, n)) });
 
-  const courts = A_FORECOURTS_M.map(({ block, side, across, out }) => {
-    const b = BUILDINGS_M[block];
-    const front = b.bearing + side;
-    return rect(fromReal(b.e, b.n), dir(front - 90), dir(front), across, [0, out]);
-  });
-  const a3 = BLOCKS.find((b) => b.name === "A3")!.pos;
-  const len = Math.hypot(a3[0] - STATUE[0], a3[1] - STATUE[1]);
-  const v: World = [(a3[0] - STATUE[0]) / len, (a3[1] - STATUE[1]) / len];
+  const courts = A_FORECOURTS_M.map(({ block, side, across, out }) => blockRect(block, side, across, [0, out]));
+  const { blocks, width, run, landing } = NORTH_STAIRS_M;
+  for (const name of blocks) {
+    const back = A_FRONT_SIDE[name] + 180;
+    const [depth] = blockHalf(name, back);
+    courts.push(blockRect(name, back, [-width / 2 - 2, width / 2 + 2], [depth + 2, depth + 2 + run + landing]));
+  }
+  const { v, len } = A3_AXIS;
   const u: World = [-v[1], v[0]];
-  const axis = (s: readonly number[], t: readonly number[]) => rect(STATUE, u, v, s, t);
-  /** Metres up the axis from the statue to where it meets the arc `r` metres round A_FRONT_M.centre. */
-  const upTo = (r: number) => {
-    const c = at(ce, cn);
-    const [ox, oz] = [STATUE[0] - c[0], STATUE[1] - c[1]];
-    const b = ox * v[0] + oz * v[1];
-    return (-b + Math.sqrt(b * b - (ox * ox + oz * oz - (r * UNITS_PER_M) ** 2))) / UNITS_PER_M;
-  };
+  /** A rectangle on A3's axis: `s` metres across it (east +), `t` metres up it from the statue. */
+  const axis = ([s0, s1]: readonly number[], [t0, t1]: readonly number[]) =>
+    [
+      [s0, t0],
+      [s1, t0],
+      [s1, t1],
+      [s0, t1],
+    ].map(
+      ([s, t]) =>
+        [STATUE[0] + (u[0] * s + v[0] * t) * UNITS_PER_M, STATUE[1] + (u[1] * s + v[1] * t) * UNITS_PER_M] as World,
+    );
   const { terrace, walk } = A_FRONT_M;
-  const foot = upTo(terrace.r - terrace.width / 2);
-  const mid = upTo(walk.r);
+  const foot = upAxisTo(terrace.r - terrace.width / 2);
+  const mid = upAxisTo(walk.r);
   const { steps, crossing, walks, plaza } = A_AXIS_M;
-  courts.push(axis(steps.u, [mid - 1, len / UNITS_PER_M]), axis(plaza.u, plaza.v));
+  courts.push(axis(steps.u, [mid - 1, len]), axis(plaza.u, plaza.v));
   const strips = [
     arc(terrace),
     arc(walk),
-    ...A_FRONT_M.links.map((l) => ({ width: l.width * UNITS_PER_M, line: l.line.map(([e, n]) => at(e, n)) })),
+    ...A_FRONT_M.links.map(walkOf),
+    walkOf(A_FRONT_M.eastLink),
     ...walks.u.map((w) => {
       const [p, , q] = axis([w, w], [walks.from, foot + 0.5]);
       return { width: walks.width * UNITS_PER_M, line: [p, q] };
@@ -545,6 +595,161 @@ export const A_FRONT: { courts: World[][]; strips: { width: number; line: World[
   ];
   return { courts, strips, crossing: axis(crossing.u, [foot - 1, mid]) };
 })();
+
+// ── The raised ground under the A-row ────────────────────────────────────
+/**
+ * The A-row stands on raised ground, about 4 m above the lawn round the statue (Ben's photos, 2026-10-21; true height,
+ * no LIFT). The terrace's steps go down from it on the south, steps go down behind the blocks on the north with a
+ * grass bank between them, and past A1's west end and A5's east end it slopes gently down (Ben).
+ */
+export const PLATEAU_H = 4 * UNITS_PER_M;
+
+/**
+ * The raised ground's flat top: its outline in the world, and at each corner how far (world units) the ground takes to
+ * come down past it: the terrace's width along the south, the bank behind the blocks (as deep as the steps down it),
+ * and 20 m on the gentle slopes past the row's ends. From the terrace's top edge west to east, round A5's east
+ * forecourt, back west 2 m behind the blocks, and round A1's west end. The line behind A3 runs through it: A3's back
+ * stands on the lower ground, and its north door opens on the walk behind it (TRACED_PATHS_M).
+ */
+export const PLATEAU: { outline: World[]; slope: number[] } = (() => {
+  const [ce, cn] = A_FRONT_M.centre;
+  const { terrace } = A_FRONT_M;
+  const top = terrace.r + terrace.width / 2;
+  const ends = 20;
+  const bank = NORTH_STAIRS_M.run;
+  const pts: [EN, number][] = [];
+  for (let e = terrace.e[0]; e < terrace.e[1] + 2.5; e += 5) {
+    const ee = Math.min(e, terrace.e[1]);
+    pts.push([[ee, cn + A_FRONT_DN + Math.sqrt(top * top - (ee - ce) ** 2)], terrace.width]);
+  }
+  const east = A_FORECOURTS_M.find((f) => f.block === "A5" && f.side === 90)!;
+  for (const a of [east.across[0] - 2, east.across[1] + 2]) pts.push([blockPoint("A5", 90, a, east.out + 2), ends]);
+  for (const name of ["A5", "A4", "A3", "A2", "A1"]) {
+    const back = A_FRONT_SIDE[name] + 180;
+    const [depth, half] = blockHalf(name, back);
+    const out = name === "A3" ? depth - 10 : depth + 2;
+    // seen from behind, a block's east end is on the left
+    pts.push([blockPoint(name, back, -half - 2, out), name === "A5" ? (bank + ends) / 2 : bank]);
+    pts.push([blockPoint(name, back, half + 2, out), name === "A1" ? (bank + ends) / 2 : bank]);
+  }
+  const [depth, half] = blockHalf("A1", A_FRONT_SIDE.A1);
+  pts.push([blockPoint("A1", A_FRONT_SIDE.A1, -half - 2, depth + 2), ends]);
+  return { outline: pts.map(([p]) => fromReal(...p)), slope: pts.map(([, w]) => w * UNITS_PER_M) };
+})();
+
+/** Where the raised ground and its slopes can be: the outline's bounds, grown by the widest slope. */
+const PLATEAU_BOX = (() => {
+  const { outline, slope } = PLATEAU;
+  const m = Math.max(...slope);
+  const xs = outline.map((p) => p[0]);
+  const zs = outline.map((p) => p[1]);
+  return [Math.min(...xs) - m, Math.min(...zs) - m, Math.max(...xs) + m, Math.max(...zs) + m] as const;
+})();
+
+/**
+ * The ground's height at a world point: PLATEAU_H on the raised ground's top, coming down over each edge's slope. The
+ * slope eases out at its foot (a square), so a mesh of the ground stays under the steps laid over it.
+ */
+export function groundY(x: number, z: number): number {
+  const [x0, z0, x1, z1] = PLATEAU_BOX;
+  if (x < x0 || x > x1 || z < z0 || z > z1) return 0;
+  const { outline, slope } = PLATEAU;
+  if (inPolygon(outline, x, z)) return PLATEAU_H;
+  let best = Infinity;
+  let w = 0;
+  for (let i = 0; i < outline.length; i++) {
+    const j = (i + 1) % outline.length;
+    const [ax, az] = outline[i];
+    const dx = outline[j][0] - ax;
+    const dz = outline[j][1] - az;
+    const t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz || 1)));
+    const d = Math.hypot(x - ax - dx * t, z - az - dz * t);
+    if (d < best) {
+      best = d;
+      w = slope[i] + (slope[j] - slope[i]) * t;
+    }
+  }
+  const k = Math.max(0, 1 - best / w);
+  return PLATEAU_H * k * k;
+}
+
+type XYZ = { x: number; y: number; z: number };
+
+/** Where a ray from `o` along `d` (world) first meets the ground, raised ground included: for taps on the map. */
+export function groundHit(o: XYZ, d: XYZ): World {
+  if (d.y > -1e-6) return [o.x, o.z];
+  const below = (t: number) => o.y + d.y * t <= groundY(o.x + d.x * t, o.z + d.z * t);
+  const end = o.y / -d.y;
+  let a = Math.max(0, (o.y - PLATEAU_H) / -d.y);
+  let hit = end;
+  const step = (end - a) / 48;
+  for (let t = a + step; t < end; t += step) {
+    if (below(t)) {
+      hit = t;
+      break;
+    }
+    a = t;
+  }
+  // close in on the edge between the last point above the ground and the first one on it
+  for (let k = 0; k < 12 && hit < end; k++) {
+    const m = (a + hit) / 2;
+    if (below(m)) hit = m;
+    else a = m;
+  }
+  return [o.x + d.x * hit, o.z + d.z * hit];
+}
+
+/**
+ * The terrace's steps in the world: round `centre` from radius `r0` (foot) to `r1` (top), and from angle `from` to `to`
+ * (atan2(z, x) round the centre). `flights` are stairs cut through it, finer than its seat-like tiers and walled at
+ * the sides: A3's grand stair on the statue's axis (Ben's photo) and one where each walk across the lawn meets it, each
+ * at its middle angle, with half its width as an angle.
+ */
+export const TERRACE = (() => {
+  const [ce, cn] = A_FRONT_M.centre;
+  const { terrace, links } = A_FRONT_M;
+  const centre = fromReal(ce, cn + A_FRONT_DN);
+  const angle = ([x, z]: World) => Math.atan2(z - centre[1], x - centre[0]);
+  const onArc = (e: number) => fromReal(e, cn + A_FRONT_DN + Math.sqrt(terrace.r ** 2 - (e - ce) ** 2));
+  const up = upAxisTo(terrace.r) * UNITS_PER_M;
+  const grand: World = [STATUE[0] + A3_AXIS.v[0] * up, STATUE[1] + A3_AXIS.v[1] * up];
+  const flights = [
+    { at: angle(grand), half: A_AXIS_M.crossing.u[1] / terrace.r, grand: true },
+    ...links.map(({ width, line }) => {
+      const [e, n] = line[line.length - 1];
+      return { at: angle(fromReal(e, n + A_FRONT_DN)), half: (width / 2 + 0.3) / terrace.r, grand: false };
+    }),
+  ].sort((a, b) => a.at - b.at);
+  return {
+    centre,
+    r0: (terrace.r - terrace.width / 2) * UNITS_PER_M,
+    r1: (terrace.r + terrace.width / 2) * UNITS_PER_M,
+    from: angle(onArc(terrace.e[0])),
+    to: angle(onArc(terrace.e[1])),
+    flights,
+  };
+})();
+
+/**
+ * The steps behind the blocks in the world (NORTH_STAIRS_M): the middle of their top edge, unit directions down them
+ * and across them, half their width and their run.
+ */
+export const NORTH_STAIRS = NORTH_STAIRS_M.blocks.map((name) => {
+  const back = A_FRONT_SIDE[name] + 180;
+  const [depth] = blockHalf(name, back);
+  const top = fromReal(...blockPoint(name, back, 0, depth + 2));
+  const unit = (p: EN): World => {
+    const [x, z] = fromReal(...p);
+    return [(x - top[0]) / UNITS_PER_M, (z - top[1]) / UNITS_PER_M];
+  };
+  return {
+    top,
+    down: unit(blockPoint(name, back, 0, depth + 3)),
+    across: unit(blockPoint(name, back, 1, depth + 2)),
+    half: (NORTH_STAIRS_M.width / 2) * UNITS_PER_M,
+    run: NORTH_STAIRS_M.run * UNITS_PER_M,
+  };
+});
 
 /**
  * The dorm land north of the lake park, where the Vortexa Funfair stands (docs/map3d-funfair-design.md). Lawn like
@@ -667,7 +872,7 @@ export const TRACK_NORTH = {
  * gets a "● LIVE" tag while the concert plays.
  */
 export const LABELS: { name: string; pos: World; y: number; minor?: boolean; stage?: boolean }[] = [
-  ...BLOCKS.map((b) => ({ name: b.name, pos: b.pos, y: b.flat ? 12.2 : 9.6 })),
+  ...BLOCKS.map((b) => ({ name: b.name, pos: b.pos, y: (b.flat ? 12.2 : 9.6) + PLATEAU_H })),
   { name: "B1", pos: B1_PLACE.pos, y: 6 },
   { name: "Track & Field", pos: toWorld(TRACK.center), y: 3 },
   ...SPORTS.filter((b) => b.label).map((b) => ({

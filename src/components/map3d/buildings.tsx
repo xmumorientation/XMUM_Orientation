@@ -12,6 +12,7 @@ import {
   FLAG,
   grandstandRect,
   LANDMARK_SCALE,
+  PLATEAU_H,
   STATUE,
   STATUE_ROT_Y,
   UNITS_PER_M,
@@ -515,11 +516,19 @@ export function Blocks({ glow }: { glow: number }) {
     <>
       {BLOCKS.map((b, i) =>
         b.flat ? (
-          <FlatBlock key={b.name} position={at(b.pos)} rotY={b.rotY} hx={b.hx} hz={b.hz} seed={i + 1} glow={glow} />
+          <FlatBlock
+            key={b.name}
+            position={[b.pos[0], PLATEAU_H, b.pos[1]]}
+            rotY={b.rotY}
+            hx={b.hx}
+            hz={b.hz}
+            seed={i + 1}
+            glow={glow}
+          />
         ) : b.name === "A5" ? (
           <A5Block
             key={b.name}
-            position={at(b.pos)}
+            position={[b.pos[0], PLATEAU_H, b.pos[1]]}
             rotY={b.rotY}
             s={(b.hx + b.hz) / 2 - 0.7}
             seed={i + 1}
@@ -528,7 +537,7 @@ export function Blocks({ glow }: { glow: number }) {
         ) : (
           <JiagengBlock
             key={b.name}
-            position={at(b.pos)}
+            position={[b.pos[0], PLATEAU_H, b.pos[1]]}
             rotY={b.rotY}
             s={(b.hx + b.hz) / 2 - 0.7}
             seed={i + 1}

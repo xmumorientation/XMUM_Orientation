@@ -26,6 +26,7 @@ import {
   type Img,
   type World,
 } from "./geo";
+import { plateauSurface } from "./plateau";
 import { campusTrees, plantation, thinForLite } from "./plants";
 import { drawCarPark, drawCourts } from "./sports";
 import { BED } from "./statue";
@@ -378,12 +379,20 @@ function drawTrack(ctx: CanvasRenderingContext2D) {
 
 export function Ground({ lite = false }: { lite?: boolean }) {
   const tex = useMemo(() => makeGroundTexture(lite), [lite]);
+  const raised = useMemo(() => plateauSurface(lite), [lite]);
   useEffect(() => () => tex.dispose(), [tex]);
   return (
-    <mesh rotation-x={-Math.PI / 2} receiveShadow>
-      <planeGeometry args={[EXTENT.x * 2, EXTENT.z * 2]} />
-      <meshStandardMaterial map={tex} roughness={1} />
-    </mesh>
+    <>
+      <mesh rotation-x={-Math.PI / 2} receiveShadow>
+        <planeGeometry args={[EXTENT.x * 2, EXTENT.z * 2]} />
+        <meshStandardMaterial map={tex} roughness={1} />
+      </mesh>
+      {/* the raised ground under the A-row wears the same canvas, and wins where its slopes meet the flat ground (its
+       steps cast the shadows) */}
+      <mesh geometry={raised} receiveShadow>
+        <meshStandardMaterial map={tex} roughness={1} polygonOffset polygonOffsetFactor={-1} polygonOffsetUnits={-1} />
+      </mesh>
+    </>
   );
 }
 

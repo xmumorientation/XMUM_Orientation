@@ -9,7 +9,7 @@ import type { MapControls as MapControlsImpl } from "three-stdlib";
 
 import { MODES, type Mode } from "@/components/map3d/atmosphere";
 import CampusScene, { type CameraView, type Vec3 } from "@/components/map3d/CampusScene";
-import { EXTENT, UNITS_PER_M, gpsToWorld } from "@/components/map3d/geo";
+import { EXTENT, UNITS_PER_M, gpsToWorld, groundHit, groundY } from "@/components/map3d/geo";
 import {
   CameraRig,
   GroundMarks,
@@ -182,7 +182,8 @@ function GroundTap({ taps }: { taps: Taps }) {
         if (!isTap(e)) return;
         e.stopPropagation();
         taps.used(e);
-        taps.ground(e.point.x, e.point.z);
+        // the spot on the ground the ray meets, the A-row's raised ground included
+        taps.ground(...groundHit(e.ray.origin, e.ray.direction));
       }}
     >
       <planeGeometry args={[EXTENT.x * 2, EXTENT.z * 2]} />
@@ -600,17 +601,17 @@ export function CampusMap3DView({
     for (const o of check.others) {
       if (check.live && o.user_id === myId) continue;
       const [x, z] = clampToSlab(gpsToWorld(o.lat, o.lng));
-      tags.push({ key: `admin-${o.user_id}`, text: o.full_name ?? "Admin", at: [x, 0.4, z] });
+      tags.push({ key: `admin-${o.user_id}`, text: o.full_name ?? "Admin", at: [x, 0.4 + groundY(x, z), z] });
       circles.push({ x, z, r: 0.5, color: "#334155", dashed: false });
     }
     if (check.live) {
       const [x, z] = clampToSlab(gpsToWorld(check.live.lat, check.live.lng));
-      tags.push({ key: "you", text: "You", at: [x, 0.4, z], dot: true });
+      tags.push({ key: "you", text: "You", at: [x, 0.4 + groundY(x, z), z], dot: true });
       circles.push({ x, z, r: Math.max(0.5, check.live.acc * UNITS_PER_M), color: "#0284c7", dashed: false });
     }
     if (checkTap) {
       const [x, z] = checkTap;
-      tags.push({ key: "tap", text: "Tapped", at: [x, 0.4, z] });
+      tags.push({ key: "tap", text: "Tapped", at: [x, 0.4 + groundY(x, z), z] });
       circles.push({ x, z, r: 0.6, color: accent, dashed: false });
     }
   }
@@ -635,7 +636,7 @@ export function CampusMap3DView({
       };
       if (pin.source === "gps" && g.gps_lat != null && g.gps_lng != null) {
         const [x, z] = clampToSlab(gpsToWorld(g.gps_lat, g.gps_lng));
-        const mark = { ...base, at: [x, 0, z] as Vec3, dx: 0, dy: 0 };
+        const mark = { ...base, at: [x, groundY(x, z), z] as Vec3, dx: 0, dy: 0 };
         const key = `${Math.round(x)}:${Math.round(z)}`;
         atSpot.set(key, [...(atSpot.get(key) ?? []), mark]);
         pinMarks.push(mark);

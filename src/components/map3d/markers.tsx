@@ -9,6 +9,7 @@ import type { Vec3 } from "./CampusScene";
 import { EXTENT, type Placed } from "./geo";
 import { RIDE_TAGS } from "./funfair/labels";
 import { localToWorld } from "./places";
+import { plateauSurface } from "./plateau";
 
 // DRAFT (map-3d-draft branch): map markers for the 3D campus. Markers are
 // sprites drawn from small canvases, a fixed size on screen like the 2D
@@ -435,11 +436,18 @@ export function GroundMarks({ circles, outlines, lite }: { circles: GroundCircle
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key, canvas, tex, pxPerUnit, invalidate]);
 
+  // over the raised ground under the A-row, the same canvas lies on its surface
+  const raised = useMemo(() => plateauSurface(lite, 0.12), [lite]);
   return (
-    <mesh rotation-x={-Math.PI / 2} position-y={0.14} renderOrder={1}>
-      <planeGeometry args={[EXTENT.x * 2, EXTENT.z * 2]} />
-      <meshBasicMaterial map={tex} transparent depthWrite={false} toneMapped={false} />
-    </mesh>
+    <>
+      <mesh rotation-x={-Math.PI / 2} position-y={0.14} renderOrder={1}>
+        <planeGeometry args={[EXTENT.x * 2, EXTENT.z * 2]} />
+        <meshBasicMaterial map={tex} transparent depthWrite={false} toneMapped={false} />
+      </mesh>
+      <mesh geometry={raised} position-y={0.14} renderOrder={1} visible={circles.length + outlines.length > 0}>
+        <meshBasicMaterial map={tex} transparent depthWrite={false} toneMapped={false} />
+      </mesh>
+    </>
   );
 }
 
