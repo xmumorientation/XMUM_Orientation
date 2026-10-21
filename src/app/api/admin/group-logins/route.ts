@@ -29,11 +29,14 @@ function randomCode(used: Set<string>): string {
 
 // Creates a shared Freshie account for every group that does not have one yet.
 // Groups that already have a code keep it. Accounts for deleted groups are removed.
-export async function POST() {
+// With { refresh: groupId }: gives that group a new password instead.
+export async function POST(request: Request) {
   const admin = await requireAdmin();
   if (!admin) return NextResponse.json({ error: "Admin only" }, { status: 403 });
 
   const service = supabaseAdmin();
+  const { refresh } = (await request.json().catch(() => ({}))) as { refresh?: unknown };
+  if (refresh !== undefined) return refreshPassword(service, refresh);
   const { data: groups, error: groupError } = await service.from("groups").select("id, name").order("id");
   if (groupError) return NextResponse.json({ error: explain(groupError, "Could not read groups") }, { status: 500 });
 
@@ -82,6 +85,28 @@ export async function POST() {
   await deleteOrphanGroupUsers(service, live);
 
   return NextResponse.json({ ok: true });
+}
+
+// New 4-digit password for one group, then every phone signed in to the group
+// is signed out (the reason to change it is that the old one leaked). The QR
+// (/api/group-join) does not hold the password, so it keeps working.
+async function refreshPassword(service: ReturnType<typeof supabaseAdmin>, groupId: unknown) {
+  if (!Number.isInteger(groupId)) return NextResponse.json({ error: "Bad group" }, { status: 400 });
+  const { data: rows, error } = await service.from("group_login_codes").select("group_id, code, auth_user_id");
+  if (error) return NextResponse.json({ error: explain(error, "Could not read login codes") }, { status: 500 });
+  const row = (rows as CodeRow[]).find((r) => r.group_id === groupId);
+  if (!row) return NextResponse.json({ error: "This group has no login yet" }, { status: 404 });
+
+  const code = randomCode(new Set((rows as CodeRow[]).map((r) => r.code)));
+  const { error: pwError } = await service.auth.admin.updateUserById(row.auth_user_id, {
+    password: groupLoginPassword(code),
+  });
+  if (pwError) return NextResponse.json({ error: explain(pwError, "Could not change the password") }, { status: 500 });
+  const { error: saveError } = await service.from("group_login_codes").update({ code }).eq("group_id", groupId);
+  if (saveError) return NextResponse.json({ error: explain(saveError, "Could not save the new password") }, { status: 500 });
+  const { error: outError } = await service.rpc("fn_end_user_sessions", { p_user_id: row.auth_user_id });
+  if (outError) return NextResponse.json({ error: explain(outError, "Password changed, but phones were not signed out") }, { status: 500 });
+  return NextResponse.json({ ok: true, code });
 }
 
 const GROUP_EMAIL = /^group-(\d+)@freshie\.xmu\.edu\.my$/i;

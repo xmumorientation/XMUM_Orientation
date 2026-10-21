@@ -12,11 +12,7 @@ export function groupLoginPassword(code: string): string {
   return `${PASSWORD_PREFIX}${code}`;
 }
 
-export function groupJoinPath(groupId: number, code: string): string {
-  return `/join?group${groupId}=${code}`;
-}
-
-/** First `group{id}={4 digits}` query pair, e.g. ?group1=1234. */
+/** Old QR format, `group{id}={4 digits}` (e.g. ?group1=1234); still accepted by /join. */
 export function parseGroupJoin(params: URLSearchParams): { groupId: number; code: string } | null {
   for (const [key, value] of params.entries()) {
     const match = /^group(\d+)$/.exec(key);

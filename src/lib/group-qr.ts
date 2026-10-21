@@ -1,7 +1,6 @@
 import QRCode from "qrcode";
 
 import { themeFromColor } from "@/components/freshie/groupTheme";
-import { groupJoinPath } from "@/lib/group-login";
 
 function roundRect(
   ctx: CanvasRenderingContext2D,
@@ -20,29 +19,12 @@ function roundRect(
   ctx.closePath();
 }
 
-function urlLines(ctx: CanvasRenderingContext2D, url: string, maxWidth: number) {
-  let size = 26;
-  const font = (n: number) => `600 ${n}px ui-monospace, "JetBrains Mono", monospace`;
-  while (size > 16) {
-    ctx.font = font(size);
-    if (ctx.measureText(url).width <= maxWidth) return { lines: [url], size };
-    size -= 1;
-  }
-  ctx.font = font(16);
-  const cut = url.indexOf("?");
-  if (cut > 0) {
-    const head = url.slice(0, cut);
-    const tail = url.slice(cut);
-    if (ctx.measureText(head).width <= maxWidth && ctx.measureText(tail).width <= maxWidth) {
-      return { lines: [head, tail], size: 16 };
-    }
-  }
-  return { lines: [url], size: 16 };
-}
-
-/** Same card Freshie control downloads: password, join link, QR, group colour. */
-export async function groupQrPng(groupId: number, code: string, color: string): Promise<string> {
-  const url = `${window.location.origin}${groupJoinPath(groupId, code)}`;
+/**
+ * The group's printable card: group name, QR, group colour. No password on it:
+ * the QR never changes, but Admin can give the group a new password.
+ * `url` comes from GET /api/group-join.
+ */
+export async function groupQrPng(label: string, url: string, color: string): Promise<string> {
   const theme = themeFromColor(color);
   const qrUrl = await QRCode.toDataURL(url, { width: 640, margin: 1, errorCorrectionLevel: "M" });
   const img = new Image();
@@ -61,12 +43,9 @@ export async function groupQrPng(groupId: number, code: string, color: string): 
   const ctx = canvas.getContext("2d");
   if (!ctx) return qrUrl;
 
-  const fitted = urlLines(ctx, url, innerW);
-  const passSize = 84;
+  const labelSize = 72;
   const top = 36;
-  const urlGap = 16;
-  const urlLineH = fitted.size + 10;
-  const header = top + passSize + urlGap + fitted.lines.length * urlLineH + 28;
+  const header = top + labelSize + 36;
   canvas.width = width;
   canvas.height = header + img.height + qrPad * 2 + outer;
 
@@ -77,13 +56,8 @@ export async function groupQrPng(groupId: number, code: string, color: string): 
   ctx.fillStyle = theme.onAccent;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.font = `700 ${passSize}px ui-monospace, "JetBrains Mono", monospace`;
-  ctx.fillText(code, canvas.width / 2, top + passSize / 2);
-  ctx.font = `600 ${fitted.size}px ui-monospace, "JetBrains Mono", monospace`;
-  fitted.lines.forEach((line, i) => {
-    const y = top + passSize + urlGap + urlLineH * i + urlLineH / 2;
-    ctx.fillText(line, canvas.width / 2, y);
-  });
+  ctx.font = `700 ${labelSize}px ui-monospace, "JetBrains Mono", monospace`;
+  ctx.fillText(label, canvas.width / 2, top + labelSize / 2, innerW);
 
   const boxX = outer;
   const boxY = header;

@@ -7,7 +7,6 @@ import { HeadcountTable } from "@/components/admin/HeadcountTable";
 import { groupColor, themeFromColor } from "@/components/freshie/groupTheme";
 import { Card, ErrorBanner, PageTitle, SuccessBanner } from "@/components/ui";
 import { Dialog, DialogContent } from "@/components/ui/Dialog";
-import { groupJoinPath } from "@/lib/group-login";
 import { groupQrPng, saveGroupQr } from "@/lib/group-qr";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import type { Group } from "@/lib/types";
@@ -78,11 +77,14 @@ export default function FreshieControlPage() {
     const ready = groups.filter((group) => codes[group.id]);
     if (ready.length === 0) return;
     (async () => {
+      const res = await fetch("/api/group-join");
+      const urls: Record<number, string> = res.ok ? (await res.json()).urls ?? {} : {};
       const next: Record<number, string> = {};
       for (const group of ready) {
+        if (!urls[group.id]) continue;
         next[group.id] = await groupQrPng(
-          group.id,
-          codes[group.id],
+          `GROUP ${group.id}`,
+          urls[group.id],
           drafts[group.id] ?? groupColor(group.color),
         );
       }
@@ -92,6 +94,24 @@ export default function FreshieControlPage() {
       cancel = true;
     };
   }, [groups, codes, drafts]);
+
+  async function newPassword(group: Group) {
+    if (!window.confirm(`Give ${group.name} a new password? Every phone signed in to ${group.name} is signed out. Its QR stays the same.`)) return;
+    setBusy(true);
+    setError(null);
+    const res = await fetch("/api/admin/group-logins", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refresh: group.id }),
+    });
+    setBusy(false);
+    if (!res.ok) {
+      setError((await res.json().catch(() => ({}))).error ?? "Could not change the password");
+      return;
+    }
+    await load();
+    flash(`${group.name} has a new password`);
+  }
 
   function flash(msg: string) {
     setNotice(msg);
@@ -303,9 +323,19 @@ export default function FreshieControlPage() {
                     </td>
                     <td data-label="Password" className="px-4 py-3">
                       {codes[group.id] ? (
-                        <span className="rounded-lg bg-paper-100 px-2.5 py-1 font-mono text-lg font-bold tracking-[0.2em] text-ink">
-                          {codes[group.id]}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="rounded-lg bg-paper-100 px-2.5 py-1 font-mono text-lg font-bold tracking-[0.2em] text-ink">
+                            {codes[group.id]}
+                          </span>
+                          <button
+                            type="button"
+                            className="btn-secondary px-3"
+                            disabled={busy}
+                            onClick={() => newPassword(group)}
+                          >
+                            New
+                          </button>
+                        </div>
                       ) : (
                         <span className="text-xs italic text-ink-faint">None</span>
                       )}
@@ -451,7 +481,7 @@ export default function FreshieControlPage() {
       >
         <DialogContent className="av-dialog"
           title="Delete all groups?"
-          description="This deletes all groups with their tokens, puzzles, headcounts, passwords and QR codes. Facilitators and Freshies lose their group. This cannot be undone."
+          description="This deletes all groups with their tokens, puzzles, headcounts and passwords. Printed group QRs work again once the groups are set up again. Facilitators and Freshies lose their group. This cannot be undone."
         >
           <form
             className="space-y-3"
@@ -490,8 +520,8 @@ export default function FreshieControlPage() {
               alt={`${preview.name} login QR`}
               className="mx-auto w-full max-w-xs"
             />
-            <p className="mt-3 break-all text-center font-mono text-xs text-ink-faint">
-              {groupJoinPath(preview.id, codes[preview.id])}
+            <p className="mt-3 text-center text-xs text-ink-faint">
+              This QR never changes. A new password does not affect it.
             </p>
             <button
               type="button"
