@@ -3,7 +3,7 @@
 import { useEffect, useMemo } from "react";
 import * as THREE from "three";
 
-import { drawB1Grounds } from "./b1";
+import { drawB1Crossing, drawB1Grounds } from "./b1";
 import {
   B1_PLACE,
   BLOCKS,
@@ -198,6 +198,7 @@ function makeGroundTexture(lite: boolean): THREE.CanvasTexture {
 
   drawTrack(ctx);
   drawCarPark(ctx);
+  drawB1Crossing(ctx);
   drawCourts(ctx);
 
   // soft shade under trees and buildings (cheap ambient occlusion)

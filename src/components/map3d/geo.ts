@@ -260,21 +260,19 @@ export const B1_FRONT_M = {
 export const b1StairsFoot = (z: number) => B1_FRONT_M.foot + B1_FRONT_M.slope * z;
 
 /**
- * The roads round B1 (Esri imagery and OSM, 2026-10-21), in B1's frame (metres; z north is negative). They replace
- * the art's grey block north of B1. Ben: the roads join up, footpaths carry on from them, and no footpath runs
- * along the west road.
+ * The roads round B1 (2026-10-21), in B1's frame (metres; z north is negative). They replace the art's grey block
+ * north of B1, and follow Ben's drawing (route colours) rather than the imagery:
  * - `west`: the road with parking bays in front of the stairs, `width` wide west of their foot, from the north road
- *   down to a junction with the service road south of B1 (CARPARK). The junction reaches east to `junction.east`,
- *   where the service road begins, and west to `junction.west` for the walk from the lake park; the walk from the
- *   south carries on from the west road there.
+ *   all the way south across the service road (CARPARK) to the walk to the south, which carries on from it.
+ * - `dorm`: the road to the dorms, from the same corner north to where the walks to the dorms begin (B1_WALK_END).
+ *   It carries the west road's line on, so the west road, the north road and this road meet in a neat T.
  * - `north`, from B1 outwards: a drive along B1, a strip of palms (with one gap), the road and a row of parking
- *   bays. It runs from the west road (its end at `north.west`, where the lake walk comes in) to the east road.
+ *   bays, from the T to the east road.
  */
 export const B1_ROADS_M = {
   west: { width: 11.4 },
-  junction: { east: -73.9, west: -99 },
+  dorm: { width: 10 },
   north: {
-    west: -104.8,
     drive: [-32, -27.5],
     palms: [-36, -32],
     palmGap: [-2, 12],
@@ -282,6 +280,9 @@ export const B1_ROADS_M = {
     bays: [-51, -46],
   },
 } as const;
+
+/** The middle of B1's west road at z (it slants with the stairs' foot). */
+export const b1WestRoadMid = (z: number) => b1StairsFoot(z) - B1_ROADS_M.west.width / 2;
 
 /** The z of the outer road's inner edge on the campus's east side, at world x (GROUND.base's east edge). */
 export function eastRoadZ(x: number): number {
@@ -374,15 +375,31 @@ export const LAKE: World[] = realPts(LAKE_M);
 export const PARK: World[] = realPts(PARK_M);
 export const GRASS: World[][] = GRASS_M.map(realPts);
 /**
- * OSM's walk down the lake's east shore turns at this point down B1's west road, to the road's south-west corner.
- * Ben (2026-10-21): the west road is the route there, so the walk ends at this point, on the north road's west end
- * (B1_ROADS_M). The walks from the lake park and from the south meet the west road's junction in the south.
+ * OSM's walk down the lake's east shore carries on from this point down B1's west road. Ben (2026-10-21): from here
+ * south the route is a road, the road to the dorms and then the west road (B1_ROADS_M), so the walk ends here. The
+ * walk east to the dorms begins here too.
  */
-const B1_WALK_END: EN = [-87.8, 268.8];
+const B1_WALK_END: EN = [-104.6, 297.7];
 const trimAtB1 = (p: EN[]) => {
   const i = p.findIndex(([e, n]) => e === B1_WALK_END[0] && n === B1_WALK_END[1]);
   return i < 0 ? p : p.slice(0, i + 1);
 };
+
+/**
+ * The middle of the road to the dorms, in B1's frame: from the north road's south kerb it carries on the west road's
+ * line, then bends round to the walks' end (a quadratic curve, about 14 m of straight first).
+ */
+export const B1_DORM_ROAD: [number, number][] = (() => {
+  const z0 = B1_ROADS_M.north.road[1];
+  const a: [number, number] = [b1WestRoadMid(z0), z0];
+  const c: [number, number] = [b1WestRoadMid(z0 - 19), z0 - 19];
+  const e: [number, number] = [B1_WALK_END[0] - B1_M.e, B1_M.n - B1_WALK_END[1]];
+  return Array.from({ length: 13 }, (_, i) => {
+    const t = i / 12;
+    const [u, v, w] = [(1 - t) * (1 - t), 2 * (1 - t) * t, t * t];
+    return [u * a[0] + v * c[0] + w * e[0], u * a[1] + v * c[1] + w * e[1]];
+  });
+})();
 
 export const FOOTPATHS: World[][] = [...FOOTPATHS_M.map(trimAtB1), ...TRACED_PATHS_M].map(realPts);
 export const FOOTPATH_W = 5 * UNITS_PER_M;
@@ -456,7 +473,7 @@ export const B1_SIZE = { x: 2 * B1_PLACE.hz, z: 2 * B1_PLACE.hx };
 /**
  * The service road between the north row of courts and B1 (real gap 18 m),
  * with a row of parking bays along B1 (`z`). The road itself (`road`), red
- * brick in the imagery, runs from B1's west road's junction to the east road.
+ * brick in the imagery, runs from under B1's west road to the east road.
  */
 export const CARPARK = (() => {
   const [bx, bz] = B1_PLACE.pos;
@@ -465,7 +482,10 @@ export const CARPARK = (() => {
   return {
     x,
     z: [bz - B1_SIZE.z / 2, bz + B1_SIZE.z / 2] as [number, number],
-    road: [b1Point(B1_ROADS_M.junction.east, 0)[1], eastRoadZ((x[0] + x[1]) / 2) + 0.3] as [number, number],
+    road: [b1Point(b1StairsFoot((bx - x[1]) / UNITS_PER_M) - 1, 0)[1], eastRoadZ((x[0] + x[1]) / 2) + 0.3] as [
+      number,
+      number,
+    ],
   };
 })();
 
@@ -571,7 +591,8 @@ const A5_ENTRANCE: Placed[] = BLOCKS.filter((b) => b.name === "A5").map((b) => {
 
 /**
  * Whether a world point is on B1's grounds (B1_ROADS_M), grown by `margin` units: north of it, the drive, the palm
- * strip, the road and its bays; west of it, the slanting west road with its junction, the stairs and the podium.
+ * strip, the road and its bays; west of it, the slanting west road, the stairs and the podium; and the road to the
+ * dorms.
  */
 function inB1Grounds(x: number, z: number, margin: number): boolean {
   const { pos, rotY, hx } = B1_PLACE;
@@ -580,11 +601,12 @@ function inB1Grounds(x: number, z: number, margin: number): boolean {
   const lx = (dx * Math.cos(rotY) - dz * Math.sin(rotY)) / UNITS_PER_M;
   const lz = (dx * Math.sin(rotY) + dz * Math.cos(rotY)) / UNITS_PER_M;
   const m = margin / UNITS_PER_M;
-  const { north, west, junction } = B1_ROADS_M;
-  if (lz > north.bays[0] - m && lz < north.drive[1] + m && lx > north.west - m && lx < B1_NORTH_EAST_X + m) return true;
+  const { north, west, dorm } = B1_ROADS_M;
+  const westEdge = b1WestRoadMid(lz) - west.width / 2;
+  if (lz > north.bays[0] - m && lz < north.drive[1] + m && lx > westEdge - m && lx < B1_NORTH_EAST_X + m) return true;
+  if (nearLine(B1_DORM_ROAD, lx, lz, dorm.width / 2 + m)) return true;
   const south = (pos[0] - CARPARK.x[0]) / UNITS_PER_M;
   if (lz < north.road[1] - m || lz > south + m) return false;
-  const westEdge = lz > B1_FRONT_M.stairsS ? junction.west : b1StairsFoot(lz) - west.width;
   return lx > westEdge - m && lx < -hx / UNITS_PER_M + m;
 }
 
