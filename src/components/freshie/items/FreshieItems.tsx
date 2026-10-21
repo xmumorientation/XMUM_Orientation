@@ -17,7 +17,7 @@ import { themeFromColor } from "../groupTheme";
 import { BlindBox } from "./BlindBox";
 import { CODE_NAMES, cardState, keyLocations, zoneNames } from "./derive";
 import { KEY_NAMES, KeyEmblem } from "./KeyEmblem";
-import { ActivityList, BlueprintDetail, ItemShelf, KeyBanner, ProjectorKeys, TokenDetail, type ShelfItem } from "./sections";
+import { ActivityList, BlueprintDetail, ItemShelf, KeyBanner, NfcSpot, ProjectorKeys, TokenDetail, type ShelfItem } from "./sections";
 import type { BoxKind, BoxReward, ItemsData } from "./types";
 import { useNewPieces } from "./useNewPieces";
 
@@ -245,9 +245,7 @@ function KeySheet({ data, loc }: { data: ItemsData; loc: ProjectorLocation }) {
   const demo = useNfcDemo(loc);
   const endgame = data.phase === "endgame";
   const name = zoneNames(data)[loc];
-  // The place and picture come once all 5 pieces are in (0098); the sheet opens only then.
   const place = data.places[loc];
-  const image = data.images[loc];
   return (
     <div className="fi-key">
       <span className="fi-eb fh-mono">{name.long}</span>
@@ -269,21 +267,7 @@ function KeySheet({ data, loc }: { data: ItemsData; loc: ProjectorLocation }) {
         </span>
       </div>
 
-      <figure className="fi-spot">
-        {image ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={image} alt={`Where the ${CODE_NAMES[loc]} NFC card is${place ? `: ${place.name}` : ""}`} />
-        ) : (
-          <div className="fi-spot-ph" aria-hidden>
-            {place ? <MapPin size={28} /> : <Lock size={26} />}
-            <span className="fh-mono">{place ? "Picture coming soon" : "Hidden for now"}</span>
-          </div>
-        )}
-        <figcaption>
-          <span className="fi-eb fh-mono">Where the NFC card is</span>
-          {place ? <b>{place.name}</b> : <span>The place appears here once all 5 pieces are in.</span>}
-        </figcaption>
-      </figure>
+      <NfcSpot data={data} loc={loc} />
 
       {!endgame && (
         <p className="fi-warn">

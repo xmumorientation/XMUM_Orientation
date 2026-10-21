@@ -6,6 +6,7 @@ import {
   Gift,
   KeyRound,
   Lightbulb,
+  Lock,
   MapPin,
   Puzzle,
   Wrench,
@@ -243,6 +244,32 @@ const CARD_STATUS: Record<CardState, string> = {
   done: "Idle",
 };
 
+/**
+ * Where a projector's NFC card is: Admin's picture (Admin → Puzzles) and the place, once the group has earned
+ * them (all 5 pieces, or lit it; 0098). On the key sheet and, after the key is used, on the projector's detail.
+ */
+export function NfcSpot({ data, loc }: { data: ItemsData; loc: ProjectorLocation }) {
+  const place = data.places[loc];
+  const image = data.images[loc];
+  return (
+    <figure className="fi-spot">
+      {image ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={image} alt={`Where the ${CODE_NAMES[loc]} NFC card is${place ? `: ${place.name}` : ""}`} />
+      ) : (
+        <div className="fi-spot-ph" aria-hidden>
+          {place ? <MapPin size={28} /> : <Lock size={26} />}
+          <span className="fh-mono">{place ? "Picture coming soon" : "Hidden for now"}</span>
+        </div>
+      )}
+      <figcaption>
+        <span className="fi-eb fh-mono">Where the NFC card is</span>
+        {place ? <b>{place.name}</b> : <span>The place appears here once all 5 pieces are in.</span>}
+      </figcaption>
+    </figure>
+  );
+}
+
 export function BlueprintDetail({ data, loc }: { data: ItemsData; loc: ProjectorLocation }) {
   const state = cardState(data, loc);
   const owned = data.pieces[loc];
@@ -287,6 +314,8 @@ export function BlueprintDetail({ data, loc }: { data: ItemsData; loc: Projector
         )}
         {state === "done" && ours && `Your group already lit ${names[ours].short}. These pieces are idle.`}
       </p>
+
+      {data.places[loc] && <NfcSpot data={data} loc={loc} />}
 
       {data.mapUnlocked && (
         <Link href={`/map?focus=${loc}`} className="fh-btn fh-btn-ghost fh-btn-block">
