@@ -33,6 +33,10 @@ Ben may continue this work in a new Claude conversation. This file says where ev
 - **Its footprint is from the imagery** (`B1_PLACE`): OSM's outline is about 8 m too far west. `B1_CENTRE_M` (OSM's centre) still pins `UNITS_PER_M`: leave it.
 - Heights are real metres times `LIFT` (1.5). Ben: it is 3–4 storeys, so keep it at least that tall.
 - Views: from the west (like Ben's photo) `/map3d?cam=-1,7.4,3.6,-1,2,21`; from the funfair side `cam=28,26,33,-2,0,28`.
+- **Roads round B1** (`B1_ROADS_M` in `geo.ts`, painted by `drawB1Grounds`):
+  - the north road (drive, palm strip, road, parking bays) and the west road;
+  - the service road south of B1 (`CARPARK.road`) now reaches the west road and the east road.
+  - Ben's rules: roads join each other; walks meet roads in T-junctions; no walk runs along the west road; the west road stops at the north road.
 - **Later:** check the north and east sides against photos (none yet); railings between the brick pillars; the stairs' south end is straight (the imagery shows a curved wall).
 
 ### Lawn and walkways (2026-10-17, branch `map3d-footpaths`)

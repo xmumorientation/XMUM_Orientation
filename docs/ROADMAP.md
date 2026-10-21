@@ -332,6 +332,23 @@ One migration, `0093` (already applied on the live database, under its first nam
   - One summary RPC for GM piece counts instead of 30 `fn_puzzle_status` calls.
   - Blind boxes: Admin's station assign modes (Ben) and `bb_holder_role` (item 8).
 
+### Map: the roads round B1, 2026-10-21 (Ben, branch `map3d-b1`)
+No migration. From Esri imagery and OSM (`B1_ROADS_M` in `geo.ts`; painted by `drawB1Grounds` in `b1.tsx`).
+- **North road** (replaces the art's dark grey block north of B1). From B1 outwards:
+  - a drive along B1;
+  - a strip of palms (about 10 m tall, with one gap);
+  - a two-way road with a dashed middle line;
+  - a row of parking bays with parked cars.
+
+  It meets the east road in a T.
+- **West road** (the paved road with bays in front of the stairs): runs from the north road down to the service road south of B1. Its kerb has a round corner where it leaves the north road. It does not go on north.
+- **Service road south of B1:** now runs west to meet the west road (round outer corner) and east to the east road.
+- **Walks** (Ben: no walk runs along the west road; walks meet the roads in T-junctions):
+  - the lake's east-shore walk ends on the north road's west end, and its stretch down the west road is cut (`B1_NO_WALK` in `geo.ts`);
+  - the walk from the lake park meets the service road's west end;
+  - the walk from the south meets the service road.
+- Trees, bushes and lamps keep off the new roads.
+
 ### Map: B1 modelled on the real building, 2026-10-21 (Ben, branch `map3d-b1`)
 No migration.
 - B1, the Student Activity Centre, is rebuilt from Ben's photos and Esri imagery (`map3d/b1.tsx`). The old white box in `buildings.tsx` is gone.
@@ -351,7 +368,7 @@ No migration.
   - B1 now stands where the imagery shows it (`B1_PLACE` in `geo.ts`, 117.6 × 55 m). OSM's outline was about 8 m too far west.
   - `B1_CENTRE_M`, `UNITS_PER_M` and the GPS conversion are unchanged, so group pins do not move.
   - B1's station markers, its tap area and the parking south of it follow the new footprint. The label and the tap area are lower (6 and 4.8; they were 11 and 9.6).
-- Trees, bushes and lamps keep off the stairs and the plaza (`B1_FRONT` in `inKeepOut`).
+- Trees, bushes and lamps keep off the stairs and the plaza (`B1_GROUNDS` in `inKeepOut`).
 - Four meshes: paint, two textured walls, and glass that lights at night. The old B1 had about 20. Phones draw the same model.
 - Not checked against photos: the north and east sides (drawn from imagery). Not seen on a real phone yet.
 
