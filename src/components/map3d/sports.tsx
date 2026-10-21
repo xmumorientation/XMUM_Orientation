@@ -4,6 +4,7 @@ import { useLayoutEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 
 import {
+  B1_NORTH_BAYS,
   CARPARK,
   PITCH_M,
   SPORTS,
@@ -490,20 +491,38 @@ function OutdoorGym() {
 
 const BAY = { w: 2.5 * UNITS_PER_M, d: 5 * UNITS_PER_M };
 
-/** One row of bays along B1's south face; the rest of the strip is the service road. */
+/**
+ * One row of bays along B1's south face (the rest of the strip is the service road), and the row along the north
+ * side of B1's north road (B1_NORTH_BAYS; b1.tsx paints them).
+ */
 function bays() {
   const [, x1] = CARPARK.x;
   const [z0, z1] = CARPARK.z;
   const n = Math.floor((z1 - z0) / BAY.w);
-  return Array.from({ length: n }, (_, i) => ({ x: x1 - BAY.d / 2, z: z0 + (i + 0.5) * BAY.w }));
+  const south = Array.from({ length: n }, (_, i) => ({ x: x1 - BAY.d / 2, z: z0 + (i + 0.5) * BAY.w }));
+  return [...south, ...B1_NORTH_BAYS.map(([x, z]) => ({ x, z }))];
 }
 
 export function drawCarPark(ctx: CanvasRenderingContext2D) {
   const [x0, x1] = CARPARK.x;
   const [z0, z1] = CARPARK.z;
+  const [r0, r1] = CARPARK.road;
   if (x1 - x0 < BAY.d * 1.6) return;
-  ctx.fillStyle = "#7f725f";
-  ctx.fillRect(x0, z0 - 1, x1 - x0, z1 - z0 + 2);
+  // red brick paving (imagery), from B1's west road to the east road, in courses about 1.7 m apart
+  ctx.fillStyle = "#a85d45";
+  ctx.fillRect(x0, r0, x1 - x0, r1 - r0);
+  ctx.strokeStyle = "rgba(70,25,15,0.16)";
+  ctx.lineWidth = 0.025;
+  ctx.beginPath();
+  for (let x = x0 + 0.25; x < x1; x += 0.25) {
+    ctx.moveTo(x, r0);
+    ctx.lineTo(x, r1);
+  }
+  for (let z = r0 + 0.25; z < r1; z += 0.25) {
+    ctx.moveTo(x0, z);
+    ctx.lineTo(x1, z);
+  }
+  ctx.stroke();
   ctx.strokeStyle = "rgba(255,255,255,0.75)";
   ctx.lineWidth = 0.05;
   for (let z = z0; z <= z1 + 1e-6; z += BAY.w) {
@@ -512,15 +531,6 @@ export function drawCarPark(ctx: CanvasRenderingContext2D) {
     ctx.lineTo(x1, z);
     ctx.stroke();
   }
-  // centre line of the service road
-  const road = (x0 + x1 - BAY.d) / 2;
-  ctx.setLineDash([0.5, 0.4]);
-  ctx.strokeStyle = "rgba(255,255,255,0.6)";
-  ctx.beginPath();
-  ctx.moveTo(road, z0 - 1);
-  ctx.lineTo(road, z1 + 1);
-  ctx.stroke();
-  ctx.setLineDash([]);
 }
 
 const CAR_COLORS = ["#e9e9e9", "#1f2328", "#9aa3ad", "#b3262a", "#2d4e7e", "#d8d2c4", "#5a5f66"];

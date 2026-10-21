@@ -344,6 +344,70 @@ One migration, `0093` (already applied on the live database, under its first nam
   - One summary RPC for GM piece counts instead of 30 `fn_puzzle_status` calls.
   - Blind boxes: Admin's station assign modes (Ben) and `bb_holder_role` (item 8).
 
+### Map: the A-row on raised ground, the statue's bed and the planting, 2026-10-21 (Ben, branch `map3d-b1`)
+No migration. From Ben's photos and Esri imagery; Ben answered the questions first (height as suggested, steps down on the north too, gentle slopes at the ends, true height, statue where the imagery shows it).
+- **Raised ground** (`PLATEAU` and `groundY()` in `geo.ts`, `plateau.tsx`): the five blocks stand about 4 m above the statue's lawn, at true height (no LIFT).
+  - The terrace along the arc is real steps: seat-like tiers, with A3's grand stair (on the statue's axis) and a narrow stair at each walk across the lawn cut through them, walled in pale stone.
+  - Behind every block, steps come out of the block (from the top of its plinth) down to a paved landing on the walk behind it, with a grass bank between.
+  - A3 is moved 15 m toward the statue (`A3_M` in `geo.ts`; Ben). OSM's outline put its back on the walk behind it, with no room for steps. Esri imagery shows its front about 16 m south of OSM's.
+  - Past A1's west end and A5's east end the ground slopes gently down (Ben).
+  - The raised ground is a mesh that wears the ground's canvas, so the paving and walks lie on it. Blocks, labels, station tap areas, trees, bushes, lamps, group pins and ground marks stand on it. The accuracy check's tap finds it (`groundHit`).
+  - Cost: desktop +3 draw calls and +56k triangles, lite +3 and +18k.
+- **Statue:** its pedestal stands in a round bed of red-flowered shrubs with a stone kerb (Ben's photo), not on two steps. It stands where the imagery shows the bed, about 8 m south-west of the team's GPS point (the 2D map and the `?gps=1` layer still use that).
+- **Planting:** palms between the forecourts, small round shrubs and low lamps along the walk's south side, palms along the road south of the lawn. The lawn round the statue is open: the art's palm rows across it, the big trees up its west side, the round trees between the forecourts and the flower row along the fronts are gone.
+- **Later:** the south gate's guard houses and the fence (Ben); the blocks' walls (cream with tall columns in the photos, A3's portico); palms in planters rather than one row; up-lights on the terrace at night; check the steps behind the blocks and the end slopes on a phone.
+
+### Map: grey paving in front of the A-row, 2026-10-21 (Ben, branch `map3d-b1`)
+No migration. Ben: not everything is lawn. Traced from Esri imagery (`A_FRONT` in `geo.ts`; painted by `drawAFront` in `ground.tsx`), in light grey stone with a darker kerb and joints:
+- **Forecourts and steps** in front of A1, A2, A4 and A5, from under each block down to the walk, square to the block. A5 has a second one on its east side, by its door.
+- **A3 and the statue on one axis:** A3's wide steps down to the walk, paving on across the terrace (under the flagpole), two walks down the lawn either side of the statue, and a plaza from the statue south to the road. They are laid out from the statue (it stands at the team's GPS point, about 10 m north of where the imagery shows it). The old square plaza round the statue is gone.
+- **The terrace:** the wide promenade (11 m) along the arc, from west of A1 to east of A5. It replaces OSM's orange walk along the arc. A grey walk carries on from its east end to the brick sidewalk.
+- **The walk** (5.5 m) north of the flower row, past every forecourt, and four short links across the lawn to the terrace.
+- The terrace and the walk are arcs round one centre (the imagery fits them to within a metre). The imagery sits about 4 m south of OSM here, so the traces move 4 m north (`A_FRONT_DN`).
+- OSM's two orange walks to the statue are gone (`PAVED_WALKS`). Trees, bushes and lamps keep off the paving (`inKeepOut`).
+- **Not done:** the red-brown walks keep the 2D art's orange. (The back entrances came with the raised ground, above.)
+
+### Map: the roads round B1, 2026-10-21 (Ben, branch `map3d-b1`)
+No migration. From Esri imagery and OSM (`B1_ROADS_M` in `geo.ts`; painted by `drawB1Grounds` in `b1.tsx`).
+- **North road** (replaces the art's dark grey block north of B1). From B1 outwards:
+  - a drive along B1;
+  - a strip of palms (about 10 m tall, with one gap);
+  - a two-way road with a dashed middle line;
+  - a row of parking bays with parked cars.
+
+  It meets the east road in a T.
+- **Ben's route colours** (third and fourth rounds): asphalt for the north road; grey paving with beige bays for the west road; the orange walk north of it.
+  - **West road** (in front of the stairs): crosses the north road, just covering it, and runs south across the service road to the walk to the south, which carries on from it (`drawB1Crossing`, drawn over the service road).
+  - **Walk to the dorms:** from where the west road crosses the north road, one orange walk sweeps round to the lake's north-east walk, where the walks across it meet it (`B1_NORTH_WALK`, a cubic curve; `B1_WALK_END` in `geo.ts`). The north road does not go on to the dorms (Ben). OSM's lake walk ends there, so no walk runs down the west road.
+  - Two short OSM walks that led nowhere, by the pirate ship and by the coaster, are gone: lawn there (`DROPPED_WALKS`; Ben).
+  - Like the stairs, the west road runs about 10° off B1's west face (`b1StairsFoot` in `geo.ts`). The stairs keep one depth, and the podium behind them is a wedge.
+- **Service road south of B1:** red brick, as in the imagery, from under the west road to the east road.
+- **Walks:** the walk along the lake (Ben's blue line) is whole. The walk from the lake park meets the west road at the service road.
+- Trees, bushes and lamps keep off the new roads (`inB1Grounds`).
+
+### Map: B1 modelled on the real building, 2026-10-21 (Ben, branch `map3d-b1`)
+No migration.
+- B1, the Student Activity Centre, is rebuilt from Ben's photos and Esri imagery (`map3d/b1.tsx`). The old white box in `buildings.tsx` is gone.
+- Its front faces west, to the lake:
+  - a grey plaza with beige lines;
+  - grand stairs, the same depth all along (Ben), in three flights with two landings, up to a podium;
+  - a landing with bonsai north of the stairs.
+- The activity centre:
+  - two white floor bands with planting, round glass and brick walls;
+  - a rounded north-west corner under a glass rotunda;
+  - a big canopy (dark steel frame, light panels) rising to the south-west over a glass pavilion;
+  - three tall brick pillars holding a planted roof slab at the south-west corner;
+  - an outside stair up to the first floor.
+- The sports hall at the east end has a low gable roof, with air-conditioning units beside it.
+- Height, about 3–4 storeys (Ben): a 3 m podium, two floors behind the bands and a third under the canopy, about 18 m in all. It is drawn 1.5 times taller, like the A-blocks (`LIFT` in `b1.tsx`).
+- Position:
+  - B1 now stands where the imagery shows it (`B1_PLACE` in `geo.ts`, 117.6 × 55 m). OSM's outline was about 8 m too far west.
+  - `B1_CENTRE_M`, `UNITS_PER_M` and the GPS conversion are unchanged, so group pins do not move.
+  - B1's station markers, its tap area and the parking south of it follow the new footprint. The label and the tap area are lower (6 and 4.8; they were 11 and 9.6).
+- Trees, bushes and lamps keep off the stairs and the plaza (`inB1Grounds` in `geo.ts`).
+- Four meshes: paint, two textured walls, and glass that lights at night. The old B1 had about 20. Phones draw the same model.
+- Not checked against photos: the north and east sides (drawn from imagery). Not seen on a real phone yet.
+
 ### Map: the lake stage stays dark until the finale, 2026-10-19 (Ben, branch `lakefront-dark`)
 No migration. The LakeFront Café no longer lights up at sunset and night on its own: the ribs, the wash, the uplights, the small lights, the light pools, the beams and the phone halos stay off until all three funfair zones are on. Then the concert's opening starts from the dark stage (follow spot, ribs one by one, bang, show). When a zone goes off the show winds down and the stage is dark again.
 - `LakefrontStage.tsx` holds `dim` at 1; putting back `smooth(p / 0.18)` brings the evening light back. `kit.ts`: the small lights now go fully dark with `dim` (they kept 30%). The halos follow the concert's power.

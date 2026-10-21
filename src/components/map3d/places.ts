@@ -5,7 +5,19 @@
 
 import type { EN } from "./campusData";
 import type { Vec3 } from "./CampusScene";
-import { B1_PLACE, BLOCKS, EXTENT, SPORTS, TRACK, fromReal, toWorld, type Placed, type Sport, type World } from "./geo";
+import {
+  B1_PLACE,
+  BLOCKS,
+  EXTENT,
+  PLATEAU_H,
+  SPORTS,
+  TRACK,
+  fromReal,
+  toWorld,
+  type Placed,
+  type Sport,
+  type World,
+} from "./geo";
 
 /**
  * A station area: its footprint, the height of its map label (markers float
@@ -16,7 +28,9 @@ export type AreaPlace = Placed & { area: string; labelY: number; height: number 
 function blockPlace(name: string): AreaPlace {
   const b = BLOCKS.find((item) => item.name === name)!;
   const { pos, hx, hz, rotY } = b;
-  return { area: name, pos, hx, hz, rotY, labelY: b.flat ? 10.4 : 9.6, height: b.flat ? 9.4 : 7.6 };
+  // the blocks stand on the raised ground; the tap area reaches down to the lawn
+  const labelY = (b.flat ? 10.4 : 9.6) + PLATEAU_H;
+  return { area: name, pos, hx, hz, rotY, labelY, height: (b.flat ? 9.4 : 7.6) + PLATEAU_H };
 }
 
 function courtPlace(area: string, sport: Sport): AreaPlace {
@@ -35,7 +49,7 @@ function courtPlace(area: string, sport: Sport): AreaPlace {
 /** Every area a station can have (the stations_area_building check) except TBD, which has no place yet. */
 export const AREA_PLACES: AreaPlace[] = [
   ...["A1", "A2", "A3", "A4", "A5"].map(blockPlace),
-  { area: "B1", pos: B1_PLACE.pos, hx: B1_PLACE.hx, hz: B1_PLACE.hz, rotY: B1_PLACE.rotY, labelY: 11, height: 9.6 },
+  { area: "B1", pos: B1_PLACE.pos, hx: B1_PLACE.hx, hz: B1_PLACE.hz, rotY: B1_PLACE.rotY, labelY: 6, height: 4.8 },
   {
     area: "Track & Field",
     pos: toWorld(TRACK.center),

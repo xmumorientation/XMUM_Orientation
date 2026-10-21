@@ -1,4 +1,16 @@
-import { BUSH_ROWS, EXTENT, GROUND, TREE_ROWS, TREE_SPOTS, inKeepOut, toWorld, type Img, type World } from "./geo";
+import {
+  A_FRONT_PLANTS,
+  B1_PALMS,
+  BUSH_ROWS,
+  EXTENT,
+  GROUND,
+  TREE_ROWS,
+  TREE_SPOTS,
+  inKeepOut,
+  toWorld,
+  type Img,
+  type World,
+} from "./geo";
 
 // DRAFT: where every tree, palm, bush and lamp stands. Computed once and
 // shared by the 3D meshes and the ground texture (soft shade under trees).
@@ -50,6 +62,13 @@ export function campusTrees(): Plant[] {
   for (const p of TREE_SPOTS) push(...toWorld(p), "broad");
   // nothing on the courts, the car park, the track or the grandstand
   campusCache = out.filter((t) => !inKeepOut(t.x, t.z, 0.7));
+  // palms between the A-row's forecourts, about 15 m tall: taller than B1's, so they read next to the blocks
+  for (const [x, z] of A_FRONT_PLANTS.palms) {
+    if (!inKeepOut(x, z, 0.3)) campusCache.push({ x, z, s: 0.5 + r() * 0.15, rot: r() * Math.PI * 2, kind: "palm" });
+  }
+  // then the palms on the strip along B1's north road, which the keep-out covers with the road: about 10 m tall, as
+  // in the imagery (the art's palms are over three times that)
+  for (const [x, z] of B1_PALMS) campusCache.push({ x, z, s: 0.3 + r() * 0.05, rot: r() * Math.PI * 2, kind: "palm" });
   return campusCache;
 }
 
@@ -124,12 +143,17 @@ export function bushes(): Bush[] {
     }
   }
   bushCache = out.filter((b) => !inKeepOut(b.x, b.z, 0.4));
+  // small round shrubs along the south side of the A-row's walk
+  for (const [x, z] of A_FRONT_PLANTS.shrubs) {
+    if (!inKeepOut(x, z, 0.05)) bushCache.push({ x, z, s: 0.35 + r() * 0.1, color: HEDGE[Math.floor(r() * HEDGE.length)] });
+  }
   return bushCache;
 }
 
-export type Lamp = { x: number; z: number };
+/** `s`: size, 1 for the street lamps. */
+export type Lamp = { x: number; z: number; s: number };
 let lampCache: Lamp[] | null = null;
-/** Street lamps just inside the outer road (lamps along paths come back in phase 2). */
+/** Street lamps just inside the outer road, and low lamps along the A-row's walk (other paths come back in phase 2). */
 export function lamps(): Lamp[] {
   if (lampCache) return lampCache;
   const out: Lamp[] = [];
@@ -144,7 +168,7 @@ export function lamps(): Lamp[] {
       const nx = -(bz - az) / len;
       const nz = (bx - ax) / len;
       const s = i % 2 ? side : -side;
-      out.push({ x: x + nx * s, z: z + nz * s });
+      out.push({ x: x + nx * s, z: z + nz * s, s: 1 });
     });
   };
   // along the inner edge of the outer road ring
@@ -152,8 +176,9 @@ export function lamps(): Lamp[] {
     (p, i) => [p[0] + (GROUND.base[i][0] - p[0]) * 0.82, p[1] + (GROUND.base[i][1] - p[1]) * 0.82] as const,
   );
   for (let i = 0; i < ring.length; i++) {
-    for (const [x, z] of along([ring[i], ring[(i + 1) % ring.length]], 9)) out.push({ x, z });
+    for (const [x, z] of along([ring[i], ring[(i + 1) % ring.length]], 9)) out.push({ x, z, s: 1 });
   }
   lampCache = out.filter((l) => !inKeepOut(l.x, l.z, 0.3));
+  for (const [x, z] of A_FRONT_PLANTS.lamps) if (!inKeepOut(x, z, 0.05)) lampCache.push({ x, z, s: 0.35 });
   return lampCache;
 }
