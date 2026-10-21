@@ -4,7 +4,19 @@ import { useEffect, useMemo } from "react";
 import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 
-import { BLOCKS, EXTENT, NORTH_STAIRS, PLATEAU, PLATEAU_H, TERRACE, UNITS_PER_M, groundY, type World } from "./geo";
+import {
+  BLOCK_PLINTH,
+  BLOCKS,
+  EXTENT,
+  NORTH_STAIRS,
+  PLATEAU,
+  PLATEAU_H,
+  TERRACE,
+  UNITS_PER_M,
+  courtyardWall,
+  groundY,
+  type World,
+} from "./geo";
 
 // The raised ground under the A-row (geo.ts PLATEAU): a mesh of its top and slopes that wears the ground's canvas like
 // the flat ground does, and the stone on it: the terrace's steps down to the lawn with stairs cut through them, the
@@ -15,7 +27,9 @@ type V3 = [number, number, number];
 /** The terrace's seat-like tiers, the steps of the stairs cut through it, and the steps behind the blocks. */
 const TIERS = 14;
 const STEPS = 28;
-const BACK_STEPS = 20;
+const BACK_STEPS = 28;
+/** The steps behind the blocks start at the top of the block's plinth. */
+const BACK_TOP = PLATEAU_H + BLOCK_PLINTH.h;
 /** Walls beside the steps: how far they stand above them, and how thick they are (world units). */
 const PARAPET = 0.6 * UNITS_PER_M;
 const WALL = 0.6 * UNITS_PER_M;
@@ -121,6 +135,7 @@ function stepsGeometry() {
     }
   }
 
+  // from the top of the block's plinth, right at it, down to the lower ground
   for (const { top, down, across, half, run } of NORTH_STAIRS) {
     const pt = (s: number, a: number, y: number): V3 => [
       top[0] + down[0] * s + across[0] * a,
@@ -130,7 +145,7 @@ function stepsGeometry() {
     const facing: V3 = [down[0], 0, down[1]];
     for (let k = 0; k < BACK_STEPS; k++) {
       const [s0, s1] = [(run * k) / BACK_STEPS, (run * (k + 1)) / BACK_STEPS];
-      const [y, below] = [PLATEAU_H * (1 - k / BACK_STEPS), PLATEAU_H * (1 - (k + 1) / BACK_STEPS)];
+      const [y, below] = [BACK_TOP * (1 - k / BACK_STEPS), BACK_TOP * (1 - (k + 1) / BACK_STEPS)];
       quad(pt(s0, -half, y), pt(s0, half, y), pt(s1, half, y), pt(s1, -half, y), up);
       quad(pt(s1, -half, below), pt(s1, half, below), pt(s1, half, y), pt(s1, -half, y), facing);
     }
@@ -171,12 +186,15 @@ function stoneGeometry() {
     for (const side of [-1, 1]) {
       const a = side * (half + WALL / 2);
       const pt = (s: number): World => [top[0] + down[0] * s + across[0] * a, top[1] + down[1] * s + across[1] * a];
-      parts.push(wall(pt(-0.4 * UNITS_PER_M), pt(run + 0.4 * UNITS_PER_M), WALL, PLATEAU_H + PARAPET, PARAPET));
+      parts.push(wall(pt(0), pt(run + 0.4 * UNITS_PER_M), WALL, BACK_TOP + PARAPET, PARAPET));
     }
   }
 
+  // under each block's plinth, as drawn: the courtyard blocks are smaller than their OSM footprint, A3 fills its own
   for (const b of BLOCKS) {
-    const base = new THREE.BoxGeometry(2 * b.hx + 0.3, PLATEAU_H, 2 * b.hz + 0.3);
+    const square = courtyardWall(b) + BLOCK_PLINTH.out;
+    const [hx, hz] = b.flat ? [b.hx + 0.25, b.hz + 0.25] : [square, square];
+    const base = new THREE.BoxGeometry(2 * hx, PLATEAU_H, 2 * hz);
     parts.push(base.translate(0, PLATEAU_H / 2, 0).rotateY(b.rotY).translate(b.pos[0], 0, b.pos[1]));
   }
   return mergeGeometries(parts)!;

@@ -6,6 +6,7 @@ import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 
 import {
+  BLOCK_PLINTH,
   BLOCKS,
   BRIDGE,
   COLORS,
@@ -16,6 +17,7 @@ import {
   STATUE,
   STATUE_ROT_Y,
   UNITS_PER_M,
+  courtyardWall,
   type World,
 } from "./geo";
 import { TanKahKeeStatue } from "./statue";
@@ -190,7 +192,11 @@ function Courtyard({ s, outer, court, lift, glow }: { s: number; outer: Facade; 
   ];
   return (
     <>
-      <Box size={[2 * s + 0.4, 0.3, 2 * s + 0.4]} pos={[0, 0.15, 0]} color="#d3cab9" />
+      <Box
+        size={[2 * (s + BLOCK_PLINTH.out), BLOCK_PLINTH.h, 2 * (s + BLOCK_PLINTH.out)]}
+        pos={[0, BLOCK_PLINTH.h / 2, 0]}
+        color="#d3cab9"
+      />
       {facades.map(([x, z, ry, w], i) => (
         <mesh key={i} position={[x, H / 2 + 0.3, z]} rotation-y={ry} castShadow receiveShadow>
           <planeGeometry args={[w, H]} />
@@ -291,7 +297,7 @@ function dutchGable(w: number) {
 }
 
 const A5_WALL = { wall: "#f4f1ea", glass: "#4f6072", repeat: [1, 1] as [number, number] };
-const PLINTH = 0.3;
+const PLINTH = BLOCK_PLINTH.h;
 /** Corner towers: half width, height (they rise past the eaves) and inset of their centres from the walls. */
 const A5_TOWER = { half: 0.65, h: H_BLOCK + 1.4, inset: 0.5 };
 /** Entrance: the bay stands `out` past the wall, beyond the eaves (0.7); porch, steps and ramps in front. */
@@ -530,7 +536,7 @@ export function Blocks({ glow }: { glow: number }) {
             key={b.name}
             position={[b.pos[0], PLATEAU_H, b.pos[1]]}
             rotY={b.rotY}
-            s={(b.hx + b.hz) / 2 - 0.7}
+            s={courtyardWall(b)}
             seed={i + 1}
             glow={glow}
           />
@@ -539,7 +545,7 @@ export function Blocks({ glow }: { glow: number }) {
             key={b.name}
             position={[b.pos[0], PLATEAU_H, b.pos[1]]}
             rotY={b.rotY}
-            s={(b.hx + b.hz) / 2 - 0.7}
+            s={courtyardWall(b)}
             seed={i + 1}
             glow={glow}
           />
