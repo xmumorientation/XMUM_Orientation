@@ -37,8 +37,8 @@ const TASKS: Record<Tab, { title: string; desc: string }> = {
 //          (Token page); the server reads them, the GM cannot pick one.
 //  Day 2 - pick group + result (+ tier locations); the system deducts the
 //          tier's entry fee and auto-grants a random non-duplicate piece
-//  Blind boxes - the QR card at the bottom shows this GM's own boxes and the
-//          station's shared pool; Freshies scan it and open the box themselves.
+//  Blind boxes - the QR card at the bottom shows this GM's own boxes;
+//          Freshies scan it and open the box themselves.
 // All submissions carry idempotency keys and queue offline (NFR-6).
 export default function GmPanelPage() {
   const profile = useProfile();
