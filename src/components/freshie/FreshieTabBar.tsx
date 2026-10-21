@@ -12,8 +12,8 @@ import "./freshie.css";
 type Tab = { href: string; label: string; Icon: LucideIcon };
 
 // Phone tab bar for Freshies, facilitators and the ops crew (HOF, HOGM,
-// Committee). Freshies get Scan in the center. Facilitators get Code, and Map
-// opens location check-in. The ops crew gets Ops (/committee) in the center,
+// Committee). Freshies get Scan in the center. Facilitators get Code.
+// The ops crew gets Ops (/committee) in the center,
 // in yellow (data-variant="ops"), with Scores in place of Items. A GM gets the
 // same tabs and colours, with Station (/gm) as the yellow center button.
 const TABS: Tab[] = [
@@ -36,10 +36,9 @@ export function FreshieTabBar() {
   const isFaci = profile.role === "faci";
   const isOps = OPS_ROLES.includes(profile.role);
   const isGm = profile.role === "gm";
-  const mapHref = isFaci ? "/checkin" : "/map";
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
 
-  const tabs = isOps || isGm ? OPS_TABS : TABS.map((tab) => (tab.href === "/map" ? { ...tab, href: mapHref } : tab));
+  const tabs = isOps || isGm ? OPS_TABS : TABS;
   const center = isOps
     ? { href: "/committee", label: "Ops", aria: "Operations", Icon: Activity }
     : isGm

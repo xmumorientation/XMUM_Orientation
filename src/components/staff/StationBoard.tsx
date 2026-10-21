@@ -27,9 +27,11 @@ const STATUS: { value: StationStatus; label: string; tone: string }[] = [
 export function StationBoard({
   myStationId = null,
   showCheckIns = true,
+  onCheckin = null,
 }: {
   myStationId?: number | null;
   showCheckIns?: boolean;
+  onCheckin?: ((station: Station) => void) | null;
 }) {
   const supabase = useMemo(() => supabaseBrowser(), []);
   const [stations, setStations] = useState<Station[]>([]);
@@ -123,6 +125,17 @@ export function StationBoard({
                     <p className="gc-muted">
                       {here.length ? `Checked in: ${here.map((c) => c.group_name).join(", ")}` : "No group checked in."}
                     </p>
+                  )}
+                  {onCheckin && (
+                    <div style={{ marginTop: "0.75rem" }}>
+                      <button
+                        type="button"
+                        className="gc-btn gc-btn-primary"
+                        onClick={() => onCheckin(s)}
+                      >
+                        Station Check-in
+                      </button>
+                    </div>
                   )}
                 </div>
               )}

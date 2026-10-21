@@ -26,7 +26,7 @@ This reflects only the migration files in the repo. Any manual changes made to t
 | Reset a lightbulb | — | — | — | — | — | — | — | ✓ | DB |
 | Funfair zones on the 3D map, on or off (`fn_funfair_state`, 0088; before 0088 the default keys in code) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | DB |
 | Funfair setup: each zone's keys, any/all rule, manual override (`funfair_zones`, `fn_set_funfair_zone`, 0088). Only game leads can read it, because the keys would show where the unlit bulbs are. | — | — | — | — | — | — | ✓ ‡ | ✓ | DB |
-| Group locations on the map (`fn_group_positions`; Freshie and Faci all groups from 0089) | View All | View All | — | — | View All | View All | View All | View All | DB |
+| Group locations on the map (`fn_group_positions`; Freshie and Faci own group only, 0094 reverses 0089) | Own Group | Own Group | — | — | View All | View All | View All | View All | DB |
 | Phase Timer (view) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | DB |
 | Schedule (view) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | DB |
 | FAQ (view; sidebar entry for Freshie only) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | DB |
@@ -62,8 +62,7 @@ This reflects only the migration files in the repo. Any manual changes made to t
 | **Attendance / Location** | | | | | | | | | |
 | Mark attendance (Attendance Roster) | — | Own Group | — | — | — | All † | All † | Manage All | DB |
 | Headcount fallback entry | — | Own Group | — | — | — | † | — | Manage | DB |
-| Attendance completion overview | — | Own Group | — | — | View All | View All | View All | Manage All | DB |
-| Manual Location Check-in (station check-in) | — | ✓ | — | — | — | — | — | † | DB |
+| Manual Location Check-in (station check-in; `fn_manual_checkin`, `fn_uncheckin`; 0095) | — | — | Own Station | Own Station | — | All | — | All | DB |
 | Manual Location Update: a text-only note of where a GROUP is, sent by any Facilitator in it (status Heading to / Arrived / Other + typed text, a building and an optional comment; no GPS, not linked to the map; `fn_faci_log_location`, table `faci_location_updates`; the group shares the latest update) | — | Own group (add, read) | — | — | Read all | Read all | Read all | Read all + edit a group's latest entry (`fn_admin_edit_faci_location`, marked and audited) | DB |
 | Manage the location options Facilitators choose from (add, rename, reorder, delete; `fn_admin_location_option_save` / `_delete` / `_move`, table `faci_location_options`; everyone signed in can read them) | — | Read | Read | Read | Read | Read | Read | Manage | DB |
 | GPS auto-report | — | ✓ | — | — | — | — | — | — | DB |

@@ -150,7 +150,7 @@ The design branches are merged. These remote branches are still not in `main` (c
 **Scope:**
 - Build the map to match the Figma design.
 - Game station status on the map (for example open, busy, closed).
-- Group locations on the map: Freshie, Faci and Committee and above see all groups (0089; before it, Faci and Freshie see only their own).
+- Group locations on the map: Committee and above see all groups; Faci and Freshie see only their own (0094 reverses 0089, which had opened every group to them).
 - Anything else on the map page.
 
 **Figma:** [XMUM campus map](https://www.figma.com/design/3dcEv45KenmKcoTcbaZmQ0/Untitled?node-id=24-2) (frame `XMUM Block Cube_XMUM Map 1`).
@@ -241,6 +241,18 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 ---
 
 ## Done
+
+### Station check-in: Game Master only, removed from Faci, 2026-10-21
+Migration `0095_gm_station_checkin.sql` (**needs running**):
+- `fn_manual_checkin` and `fn_uncheckin` refuse `faci` callers (`PERMISSION_DENIED`). Only Game Masters (`gm`, `guardian_gm`) and game leads (`admin`, `hogm`) can check groups in or out.
+- Game Masters can check in groups only at their assigned station (`NOT_YOUR_STATION` if called on another station); Admins and HOGM can check in groups at any station.
+- Added `p_group_id` parameter to `fn_manual_checkin` and `fn_uncheckin`, plus `fn_station_occupants(p_station_id)` RPC to list groups currently checked in at a station.
+- Frontend: Faci's navigation (mobile tab bar `FreshieTabBar`, side drawer `AppShell`, dashboard `StaffDashboard`) routes to `/map` instead of `/checkin`. Faci views the night-theme campus map with group pins and without check-in controls.
+- Game Masters on `/map` can tap their assigned station (or click "Station Check-in" in the dedicated top card) to view occupants and check in / check out arriving groups. Admins and HOGM can tap any station on `/map` to manage check-ins.
+- `/checkin` cleanly redirects all users to `/map`.
+
+### Faci and Freshie see only their own group on the map, 2026-10-19
+Migration `0094_group_positions_own_group.sql` (**needs running**) reverses `0089`: `fn_group_positions()` returns every group only to Committee tier; a Faci or Freshie gets just the group on their profile, so the "Not seen for 10+ min" and "Groups on the map" lists show one group. No frontend change beyond a comment. The 2026-10-19 note under the Freshie/Faci map section saying every group is public is superseded.
 
 ### David, 2026-10-19 (NFC success → 3D funfair)
 - Connected ordinary activation and Guardian verification to the live v2 handover contract; preserved explicit Admin test stickers and missing-function-only legacy fallback. Guardian now reads and refreshes persisted state.
@@ -341,7 +353,7 @@ Migration `0089` (applied). Freshie's and Faci's `/map` dropped the white page a
 - CampusMap's markup is unchanged; `.fh-map` in `freshie.css` recolours its cards, lists, chips, the inline map buttons and the 2D Stations / Lightbulbs tabs. The full-screen map keeps its own look, as on the ops crew's map.
 - AppShell treats `/map` as a night page for Freshie and Faci, so the light mobile header is hidden there.
 - Admin's `/map` and Faci's `/checkin` keep the light design.
-- Freshies and Facis see every group's location on the map (Ben: the group pins are public to them). Migration `0089_freshie_group_positions.sql` (applied on the project; Ben, 2026-10-19) lets `fn_group_positions()` return every group to a Freshie or Faci. This also applies to Faci's `/checkin` map.
+- (Superseded by 0094: Faci and Freshie see only their own group.) Freshies and Facis see every group's location on the map (Ben: the group pins are public to them). Migration `0089_freshie_group_positions.sql` (applied on the project; Ben, 2026-10-19) lets `fn_group_positions()` return every group to a Freshie or Faci. This also applies to Faci's `/checkin` map.
 
 ### Map: East funfair rides on their dorms' real middles, and the midway, 2026-10-17 (Ben, branch `funfair-east-layout`)
 No migration. Built on `map3d-footpaths` (the lawn round the funfair's land), so merge that first.

@@ -114,13 +114,13 @@ function Preview({ opts }: { opts: Opts }) {
   const { role } = opts;
   const showGroupPins = role !== "freshie";
   const canManageStations = role === "admin";
-  const hasSelection = role === "faci" ? pending !== null : role === "staff" ? true : undefined;
+  const hasSelection = role === "admin" ? pending !== null : role === "staff" ? true : undefined;
   const viewProps = {
     data,
     showGroupPins,
     canManageStations,
     highlightStationId: data.stations.find((s) => s.code === opts.highlight)?.id ?? null,
-    onStationTap: role === "faci" ? setPending : undefined,
+    onStationTap: role === "admin" ? setPending : undefined,
     fullscreen,
     onFullscreenChange: setFullscreen,
     legend: <MapLegend layer={data.layer} showGroupPins={showGroupPins} />,
@@ -171,29 +171,16 @@ function Preview({ opts }: { opts: Opts }) {
   }
 
   if (role === "faci") {
-    // Faci's map is /checkin: the dark staff shell in the group's colour; tapping a station offers a check-in.
+    // Faci's map: the dark staff shell in the group's colour; group pins visible, no check-in.
     return (
       <div
         className={cn("staff-dashboard-shell min-h-dvh", nexusBody.variable, vxDisplay.variable)}
         style={themeVars(themeFromColor(opts.color), true)}
       >
         <main className={cn(main, "max-w-6xl")}>
-          <h1 className="mb-1 text-2xl font-bold">Check in</h1>
-          <p className="mb-4 text-sm opacity-75">Group {FACI_GROUP}. Tap a station on the map to check your group in.</p>
+          <h1 className="mb-1 text-2xl font-bold">Campus map</h1>
+          <p className="mb-4 text-sm opacity-75">Group {FACI_GROUP}. Day 2 stations and group locations.</p>
           {map}
-          {pending && (
-            <div className="fixed inset-x-0 bottom-20 z-[90] px-4">
-              <div className="card mx-auto flex max-w-lg items-center justify-between gap-3 p-4 shadow-glow">
-                <div>
-                  <p className="font-semibold">Check in at {pending.name}?</p>
-                  <p className="text-xs text-ink-faint">{pending.area}</p>
-                </div>
-                <button type="button" className="btn-secondary shrink-0" onClick={() => setPending(null)}>
-                  Cancel
-                </button>
-              </div>
-            </div>
-          )}
         </main>
       </div>
     );

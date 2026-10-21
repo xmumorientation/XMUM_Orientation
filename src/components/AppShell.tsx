@@ -133,9 +133,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const isStaffSubpage = isStaffArea && !isStaffDashboard;
   // Roles whose subpages use Home's header (OpsHeader) instead of the staff phone header.
   const hasOpsHeader = profile.role === "hogm" || profile.role === "hof" || isGm;
-  const items = NAV.filter((n) => n.roles.includes(profile.role)).map((item) =>
-    isFaci && item.href === "/map" ? { ...item, href: "/checkin" } : item
-  );
+  const items = NAV.filter((n) => n.roles.includes(profile.role));
   // Freshie and facilitator phones share the night tab bar. Freshie Scan is
   // the raised center button; a facilitator gets Code there instead.
   // Home, Schedule, Items and Map hide the light mobile header for both roles.
