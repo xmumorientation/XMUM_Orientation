@@ -95,22 +95,23 @@ export default function FreshieControlPage() {
     };
   }, [groups, codes, drafts]);
 
-  async function newPassword(group: Group) {
-    if (!window.confirm(`Give ${group.name} a new password? Every phone signed in to ${group.name} is signed out. Its QR stays the same.`)) return;
+  async function newPasswords() {
+    if (!window.confirm("Give every group a new password? Every Freshie phone is signed out and has to scan its group QR again (the QRs stay the same).")) return;
     setBusy(true);
     setError(null);
     const res = await fetch("/api/admin/group-logins", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ refresh: group.id }),
+      body: JSON.stringify({ refresh: "all" }),
     });
     setBusy(false);
     if (!res.ok) {
-      setError((await res.json().catch(() => ({}))).error ?? "Could not change the password");
+      setError((await res.json().catch(() => ({}))).error ?? "Could not change the passwords");
+      await load();
       return;
     }
     await load();
-    flash(`${group.name} has a new password`);
+    flash("Every group has a new password");
   }
 
   function flash(msg: string) {
@@ -265,6 +266,14 @@ export default function FreshieControlPage() {
 
       {groups.length > 0 && (
         <Card className="overflow-x-auto p-0">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-paper-200 px-4 py-3">
+            <p className="text-sm text-ink-faint">
+              Group QRs never change. New passwords sign out every Freshie phone; they scan their QR again.
+            </p>
+            <button type="button" className="btn-secondary px-4" disabled={busy} onClick={newPasswords}>
+              New passwords for all groups
+            </button>
+          </div>
           <table className="av-groups w-full min-w-[860px] text-left text-sm">
             <thead>
               <tr className="border-b border-paper-200 text-xs font-bold uppercase tracking-wide text-ink-faint">
@@ -323,19 +332,9 @@ export default function FreshieControlPage() {
                     </td>
                     <td data-label="Password" className="px-4 py-3">
                       {codes[group.id] ? (
-                        <div className="flex items-center gap-2">
-                          <span className="rounded-lg bg-paper-100 px-2.5 py-1 font-mono text-lg font-bold tracking-[0.2em] text-ink">
-                            {codes[group.id]}
-                          </span>
-                          <button
-                            type="button"
-                            className="btn-secondary px-3"
-                            disabled={busy}
-                            onClick={() => newPassword(group)}
-                          >
-                            New
-                          </button>
-                        </div>
+                        <span className="rounded-lg bg-paper-100 px-2.5 py-1 font-mono text-lg font-bold tracking-[0.2em] text-ink">
+                          {codes[group.id]}
+                        </span>
                       ) : (
                         <span className="text-xs italic text-ink-faint">None</span>
                       )}

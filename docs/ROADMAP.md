@@ -241,9 +241,9 @@ Numbered after main's `0093`-`0096`. Run both **before** deploying the frontend:
 ### Group QR never changes; Admin can give a group a new password, 2026-10-22 (Jiamin)
 Migration `0097`.
 - The group QR is `/join?g=<HMAC of the group number>` (`/api/group-join`). The server looks up the group's current password and signs the phone in, so the QR holds no password and stays the same, even after Admin resets the groups. QRs in the old format (`?group3=1234`) work until that group's password changes.
-- Admin → Freshies: "New" next to a password picks a new unused 4-digit code and signs out every phone of that group. The printed card shows GROUP N instead of the password; the Faci's `/code` page shows the current password above it.
+- Admin → Freshies: one "New passwords for all groups" button (above the groups table; no per-group button) gives every group a new 4-digit code, none equal to an old one, and signs out every Freshie phone; they scan their unchanged QR again. The printed card shows GROUP N instead of the password; the Faci's `/code` page shows the current password above it.
 - `/join` now signs out only this phone before signing in (it used a global sign-out, which ended every phone of the group).
-- Tests: `tests/group-join-route.test.ts`.
+- Tests: `tests/group-join-route.test.ts`, `tests/group-logins-refresh.test.ts`.
 
 ### Blind box: Spot box, no station boxes, Admin page as steps, new buy page, 2026-10-22 (Jiamin)
 Migration `0098`. Planned and agreed with Jiamin first (design rounds in the session).
@@ -253,7 +253,7 @@ Migration `0098`. Planned and agreed with Jiamin first (design rounds in the ses
 - **Admin → Blind boxes:** steps 1 Box types → 2 Assign → 3 Codes & stock → 4 Spot box, with Rules & reset apart. A strip of four numbers. Assign is one form (type, who, how many). Codes & stock has one row per seller with their one QR. The Admin's own QR card is gone from the page. Live control says "Blind box buying paused" and "Blind boxes sold".
 - **Buy page (`/blindbox`):** the Freshie night look in the group's colour, the Items page's 3D box, a pill with the group and tokens, the cap as dots, Buy rows, and "You found a hidden blind box" with Claim it for the Spot. Sign-in and error screens use the Welcome look.
 - **My Blind Box** (Staff Home) and the GM page card: one centred column: QR, Copy link, then each box type.
-- Tests: `tests/blindbox/db.test.ts` applies `0098` after the older tests and checks the station clean-up, people-only assign, Restore only, and the Spot (free, once per group, outside the cap, pool, settings without a new QR, refilled by Restore). `npm test`: 153 pass; `tsc` and `next lint` are clean.
+- Tests: `tests/blindbox/db.test.ts` applies `0098` after the older tests and checks the station clean-up, people-only assign, Restore only, and the Spot (free, once per group, outside the cap, pool, settings without a new QR, refilled by Restore). `npm test`: 155 pass; `tsc` and `next lint` are clean.
 - Checked in the browser: the buy page (normal, Spot, blocked) and the centred My Blind Box, through a temporary route (removed). Not checked in the browser: Admin → Blind boxes, the group QR sign-in and the password change (they need a sign-in and the migrations on a database).
 
 ### Migrations to run on Supabase for the 2026-10-19 work

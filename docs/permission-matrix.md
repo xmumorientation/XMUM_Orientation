@@ -84,7 +84,7 @@ This reflects only the migration files in the repo. Any manual changes made to t
 | Read the groups' 4-digit login passwords (`group_login_codes`, Ops → Freshies; migration 0092) | — | — | — | — | ✓ | ✓ | — | ✓ | DB |
 | Group QR links (`GET /api/group-join`: signed with the group number, never change; the Faci's own group on /code) | — | Own Group | — | — | — | — | — | ✓ | API |
 | Sign in by scanning a group QR (`POST /api/group-join`: the server signs in with the group's current password) | anyone with the QR | anyone | anyone | anyone | anyone | anyone | anyone | anyone | API (valid signed token only) |
-| New group password (Admin → Freshies "New": `/api/admin/group-logins` with `refresh`; signs out every phone of that group via `fn_end_user_sessions`, 0097, service role only) | — | — | — | — | — | — | — | ✓ | API |
+| New passwords for all groups (Admin → Freshies: `/api/admin/group-logins` with `refresh: "all"`; signs out every Freshie phone via `fn_end_user_sessions`, 0097, service role only) | — | — | — | — | — | — | — | ✓ | API |
 | Freshie group assignment (Committee → Register tab) | — | — | — | — | ✓ | — | — | ✓ | DB |
 | Facilitator group assignment (`fn_admin_set_group_facis`; HOF on Ops → Facilitators, Admin on Ops → Facilitators and Admin → Freshies; `is_faci_lead()`, migration 0080) | — | — | — | — | — | ✓ | — | ✓ | DB |
 | Ops → Facilitators: each group's Facilitators and its Faci-related audit entries (Recent changes) | — | — | — | — | — | ✓ | — | ✓ | DB (Committee-tier reads) |
