@@ -647,3 +647,96 @@ describe("review fixes (0091)", () => {
   });
 });
 
+
+// Runs last: applies 0098 on top of everything above.
+describe("0098: the Spot box, no station boxes, Restore only", () => {
+  let spot: { sellerId: number; version: number };
+  let spotAssignment: number;
+  let type: number;
+
+  beforeAll(async () => {
+    // Before 0098: station 1 holds 2 unsold boxes, station 2 sold 1 of 1.
+    type = Number((await rpc(ADMIN, "fn_bb_type_save", [null, "Plain", 1, 1, 0, 20, false])).id);
+    await rpc(ADMIN, "fn_bb_assign", [type, 2, null, null, [1], false]);
+    await rpc(ADMIN, "fn_bb_assign", [type, 1, null, null, [2], false]);
+    await buy(freshie(1), await sellerOf(undefined, 2), await assignmentOf(type, undefined, 2), "pre-0098");
+
+    await admin.query(sql("supabase/migrations/0098_blindbox_spot_no_stations.sql"));
+    await admin.query(sql("supabase/migrations/0098_blindbox_spot_no_stations.sql")); // safe to run again
+  }, 60_000);
+
+  it("deletes unsold station boxes and switches sold ones off", async () => {
+    expect(await q("select 1 from blind_box_assignments where station_id = 1")).toHaveLength(0);
+    const kept = await q("select active, opened from blind_box_assignments where station_id = 2");
+    expect(kept).toEqual([{ active: false, opened: 1 }]);
+  });
+
+  it("assigns to people only; a station row is refused", async () => {
+    await rpc(ADMIN, "fn_bb_assign", [type, 1, null, [GM]]);
+    expect(await fails(rpc(ADMIN, "fn_bb_assign", [type, 1, null, null]))).toMatch(/BB_TARGET_INVALID/);
+    expect(await fails(q("insert into blind_box_assignments (type_id, station_id, quantity) values ($1, 3, 1)", [type]))).toMatch(
+      /BB_TARGET_INVALID/
+    );
+  });
+
+  it("only Restore boxes is left", async () => {
+    await setConfig("rehearsal_mode", true);
+    expect(await fails(rpc(ADMIN, "fn_bb_reset", ["all", "RESET", false]))).toMatch(/BB_RESET_SCOPE/);
+    await setConfig("rehearsal_mode", false);
+  });
+
+  it("only Admin sets up the Spot", async () => {
+    expect(await fails(rpc(GM, "fn_bb_spot_save", [1, 2, 2, true]))).toMatch(/PERMISSION_DENIED/);
+    expect(await fails(rpc(ADMIN, "fn_bb_spot_save", [3, 2, 2, true]))).toMatch(/BB_RANGE_INVALID/);
+    await rpc(ADMIN, "fn_bb_spot_save", [2, 3, 2, true]);
+    const r = await q("select id, qr_version from blind_box_sellers where is_spot");
+    spot = { sellerId: Number(r[0].id), version: Number(r[0].qr_version) };
+    spotAssignment = Number((await q("select id from blind_box_assignments where seller_id = $1", [spot.sellerId]))[0].id);
+  });
+
+  it("a Spot box is free, one per group, and does not count toward the cap", async () => {
+    await setConfig("blindbox_group_cap", 0);
+    const p = await preview(freshie(4), spot);
+    expect(p.spot).toBe(true);
+    expect(p.status).toBe("ok");
+    expect(p.seller_name).toBe("Hidden blind box");
+    expect((p.options as Row[]).map((o) => o.price)).toEqual([0]);
+
+    const before = await balance(4);
+    const got = await buy(freshie(4), spot, spotAssignment, "spot-4");
+    expect(await balance(4)).toBe(before);
+    expect((await q("select spot from blind_box_claims where id = $1", [got.claim_id]))[0].spot).toBe(true);
+    expect((await preview(freshie(4), spot)).status).toBe("already_from_seller");
+    expect(await fails(buy(freshie(4), spot, spotAssignment, "spot-4b"))).toMatch(/BB_ALREADY_FROM_SELLER/);
+
+    // the cap still stops boxes from people
+    expect((await preview(freshie(4), await sellerOf(GM))).status).toBe("cap_reached");
+
+    const opened = await open(freshie(4), Number(got.claim_id));
+    expect(Number(opened.tokens)).toBeGreaterThanOrEqual(2);
+    expect(Number(opened.tokens)).toBeLessThanOrEqual(3);
+    await setConfig("blindbox_group_cap", 4);
+  });
+
+  it("the pool runs out; settings change without changing the QR", async () => {
+    await buy(freshie(5), spot, spotAssignment, "spot-5");
+    expect((await preview(freshie(6), spot)).status).toBe("sold_out");
+    expect(await fails(rpc(ADMIN, "fn_bb_spot_save", [2, 3, 1, true]))).toMatch(/BB_QTY_BELOW_OPENED/);
+    await rpc(ADMIN, "fn_bb_spot_save", [5, 9, 3, true]);
+    expect((await q("select qr_version from blind_box_sellers where is_spot"))[0].qr_version).toBe(spot.version);
+    expect((await preview(freshie(6), spot)).status).toBe("ok");
+    await rpc(ADMIN, "fn_bb_spot_save", [5, 9, 3, false]);
+    expect(await fails(preview(freshie(6), spot))).toMatch(/BOX_UNKNOWN/);
+    await rpc(ADMIN, "fn_bb_spot_save", [5, 9, 3, true]);
+  });
+
+  it("Restore boxes refills the Spot and keeps its QR and settings", async () => {
+    await setConfig("rehearsal_mode", true);
+    await rpc(ADMIN, "fn_bb_reset", ["openings", "RESET", false]);
+    await setConfig("rehearsal_mode", false);
+    const a = await q("select a.quantity, a.opened, t.min_tokens, t.max_tokens from blind_box_assignments a join blind_box_types t on t.id = a.type_id where a.id = $1", [spotAssignment]);
+    expect(a).toEqual([{ quantity: 3, opened: 0, min_tokens: 5, max_tokens: 9 }]);
+    expect((await q("select qr_version from blind_box_sellers where is_spot"))[0].qr_version).toBe(spot.version);
+    expect((await preview(freshie(4), spot)).status).toBe("ok");
+  });
+});
