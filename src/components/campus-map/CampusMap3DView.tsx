@@ -837,7 +837,7 @@ export function CampusMap3DView({
           >
             <div ref={fullSlot} className="absolute inset-0 cursor-grab active:cursor-grabbing" />
             {arrival && <div role="status" className="pointer-events-none absolute inset-x-4 bottom-24 z-30 mx-auto max-w-sm rounded-2xl bg-black/80 px-5 py-3 text-center text-sm text-white">
-              {!arrival.on ? "Your magic is reaching the funfair…" : arrival.zones.length ? `${arrival.zones.map(zone => FUNFAIR_ZONE_NAMES[zone].split(" · ")[1]).join(" & ")} — lit up!` : "Your projector is revived. Explore the funfair!"}
+              {!arrival.on ? "Your magic is reaching the funfair…" : arrival.zones.length ? `${arrival.zones.map(zone => FUNFAIR_ZONE_NAMES[zone].split(" · ")[1]).join(" & ")} — lit up!` : "Your projector is lit. Explore the funfair!"}
             </div>}
 
             <div

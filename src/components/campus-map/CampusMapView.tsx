@@ -71,7 +71,7 @@ function ActivationFallback({ setLayer }: { setLayer: CampusMapViewProps["data"]
     setArrival(arrived);
     if (arrived) setLayer("bulbs");
   }, [setLayer]);
-  return arrival ? <p role="status" className="card mb-3 text-sm">Your projector is revived. This device is showing the 2D map; the Lightbulbs view shows the live activation and group.</p> : null;
+  return arrival ? <p role="status" className="card mb-3 text-sm">Your projector is lit. This device is showing the 2D map; the Projectors view shows it lit.</p> : null;
 }
 
 export function CampusMapView({

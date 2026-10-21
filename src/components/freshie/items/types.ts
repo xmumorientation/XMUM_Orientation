@@ -6,10 +6,8 @@ import type { ProjectorLocation } from "@/lib/types";
 
 export type GamePhase = "day1" | "day2" | "endgame" | "done";
 
+/** A lit projector. Which other group lit it is Committee only (0096). */
 export type LitBy = {
-  groupId: number;
-  name: string;
-  color: string;
   /** True when the viewer's own group lit it. */
   isUs: boolean;
 };

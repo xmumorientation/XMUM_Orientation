@@ -9,11 +9,13 @@ export function bulbTitle(b: MapLightbulb) {
   return `${PROJECTOR_CODE_NAMES[b.location]} · ${PROJECTOR_LABELS[b.location]}`;
 }
 
+// fn_map_lightbulbs (0096) gives the group only to Committee tier and to the
+// group that lit the bulb; everyone else sees "Lit at".
 export function bulbStatus(b: MapLightbulb, nowMs: number) {
   if (!b.activated_at) return "Not lit yet";
   const at = new Date(b.activated_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-  const by = b.group_name ?? (b.activated_by_group != null ? `Group ${b.activated_by_group}` : "a group");
-  return `Lit by ${by} at ${at} (${timeAgo(b.activated_at, nowMs)})${b.activated_manually ? " · set by Admin" : ""}`;
+  const by = b.group_name ?? (b.activated_by_group != null ? `Group ${b.activated_by_group}` : null);
+  return `${by ? `Lit by ${by}` : "Lit"} at ${at} (${timeAgo(b.activated_at, nowMs)})${b.activated_manually ? " · set by Admin" : ""}`;
 }
 
 /** The lightbulbs the viewer may see: under the 2D map in Lightbulbs mode, always under the 3D map. */
@@ -45,7 +47,7 @@ export function LightbulbList({
   return (
     <section className="card mt-3 overflow-hidden p-0">
       <h2 className="border-b border-paper-200 px-3 py-2 text-sm font-semibold">
-        Lightbulbs · {lit} lit
+        Projectors · {lit} lit
       </h2>
       <ul className="divide-y divide-paper-200">
         {bulbs.map((b) => (
@@ -96,13 +98,13 @@ export function LightbulbList({
         ))}
         {bulbs.length === 0 && (
           <li className="px-3 py-4 text-sm text-ink-faint">
-            No lightbulb is lit yet. The other places stay secret until the map unlocks.
+            No projector is lit yet. The other places stay secret until the map unlocks.
           </li>
         )}
       </ul>
       {bulbs.length > 0 && bulbs.length < 3 && (
         <p className="border-t border-paper-200 px-3 py-2 text-xs text-ink-faint">
-          Unlit lightbulbs stay secret until the map unlocks.
+          Unlit projectors stay secret until the map unlocks.
         </p>
       )}
     </section>

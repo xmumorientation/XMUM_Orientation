@@ -22,6 +22,7 @@ This reflects only the migration files in the repo. Any manual changes made to t
 | Dashboard / Home | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | UI |
 | Campus Map / station status | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | DB |
 | Lightbulbs on the map (`fn_map_lightbulbs`) | Lit; unlit after unlock | Lit; unlit after unlock | Lit; unlit after unlock | Lit; unlit after unlock | All | All | All | All, can move | DB |
+| Which group lit a lightbulb (map, Items, Guardian; `fn_map_lightbulbs`, `fn_projector_states`; the `projectors` table is Committee tier only, 0096) | Own Group | Own Group | — | — | View All | View All | View All | View All | DB |
 | Demo NFC scan (only while NFC demo mode is on) | Own Group | Own Group | — | — | — | — | — | — | DB |
 | Reset a lightbulb | — | — | — | — | — | — | — | ✓ | DB |
 | Funfair zones on the 3D map, on or off (`fn_funfair_state`, 0088; before 0088 the default keys in code) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | DB |

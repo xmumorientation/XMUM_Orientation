@@ -242,6 +242,17 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 
 ## Done
 
+### Interface wording: "projector" and "lit", 2026-10-22
+On every page, the three B1, A3 and TF things are called **projectors**, never lightbulbs or bulbs, and their state is **lit** / **not lit yet**, never revived, activated or dormant. This covers the map's Projectors tab and list, Freshie Items, `/activate`, the victory screen, Guardian, the big screen, Admin and the error messages in `utils.ts`. The NFC card's code is the "NFC code". Code names (`MapLightbulb`, `fn_map_lightbulbs`, `layer=bulbs`) are unchanged. Admin → NFC (a test tool) still says "activation".
+
+### Which group lit a lightbulb: Committee tier only, 2026-10-22
+Migration `0096_lightbulb_group_committee_only.sql` (**needs running**):
+- Freshie, Faci, GM and Guardian GM see only that a lightbulb is lit, not which group lit it. A Freshie or Faci still sees it when their own group lit it. HOF, HOGM, Committee and Admin see every group, as before.
+- `fn_map_lightbulbs` returns `activated_by_group` and `group_name` only to Committee tier or the bulb's own group (`can_see_lit_group()`). New `fn_projector_states()` gives all three projectors with the same rule, without the map spot.
+- The `projectors` table is Committee tier only (the old "all read projectors" policy is dropped), so the group can no longer be read from the table. A trigger writes game_config `lightbulbs_changed_at` on every projector change, so the map and the Items page still update live for those who get no `projectors` events.
+- Frontend: the map list says "Lit at …" without a group. Freshie Items shows another group's projector as "Lit" / "Already lit" in one fixed colour (`--fi-other`), not that group's colour. Guardian shows "Revived". GM's Scores tab no longer reads `projectors`. Items and Guardian read `fn_projector_states` through [projectorStates.ts](../src/lib/projectorStates.ts), which falls back to the table until 0096 runs.
+- Not changed: the big screen (`/bigscreen`) still shows which group lit each projector. It reads `groups` and `inventory` directly, so it needs a Committee-tier account and keeps working.
+
 ### Station check-in: Game Master only, removed from Faci, 2026-10-21
 Migration `0095_gm_station_checkin.sql` (**needs running**):
 - `fn_manual_checkin` and `fn_uncheckin` refuse `faci` callers (`PERMISSION_DENIED`). Only Game Masters (`gm`, `guardian_gm`) and game leads (`admin`, `hogm`) can check groups in or out.
@@ -517,7 +528,7 @@ Needs migration `0084_nfc_demo_scan.sql`.
 Needs migration `0083_map_lightbulbs.sql`.
 - A Stations / Lightbulbs switch above the map (and in full screen) on every page that shows the campus map (`/map`, `/checkin`, `/committee`). The choice is remembered on the device. Group pins show in both modes.
 - **Stations** is the map as before, without the projector marks drawn on top.
-- **Lightbulbs** shows the three lightbulbs (projectors Star/B1, Wheel/A3, Orbit/TF): lit ones glow with the group that lit them and the time; unlit ones are grey with a "?". Read through `fn_map_lightbulbs()`: lit bulbs go to everyone; unlit bulbs only to Committee tier, or to everyone once Admin turns on "Day 2 map layer" (the map unlock). The `projectors` table itself is still readable by any logged-in user (item 3).
+- **Lightbulbs** shows the three lightbulbs (projectors Star/B1, Wheel/A3, Orbit/TF): lit ones glow with the time, and the group that lit them for Committee tier and that group only (0096); unlit ones are grey with a "?". Read through `fn_map_lightbulbs()`: lit bulbs go to everyone; unlit bulbs only to Committee tier, or to everyone once Admin turns on "Day 2 map layer" (the map unlock). The `projectors` table is Committee tier only since 0096.
 - The Lightbulbs tab shows "N lit", and pulses when a bulb is lit while you are in Stations mode, until you open Lightbulbs.
 - **Admin moves a bulb** to where its NFC card really is: Lightbulbs → Move, then tap the map (full screen for precision). Saved to `projectors.map_x / map_y`. `PROJECTOR_SPOTS` is removed; the spots come from the table.
 - Star/Wheel/Orbit code names now live in `PROJECTOR_CODE_NAMES` (`src/lib/types.ts`), shared with the Items page.
@@ -648,7 +659,7 @@ Branch `jiamin-blind-box-integration`. Migration `0070_blindbox_buy_flow.sql` (t
 - Checked live on the project after `0070` was run (localhost, rehearsal data, since restored): a logged-out scan of the seller link, group login on the page and BUY; re-scan while logged in ("Already bought"); the box on the Items shelf and opening it (+tokens, balance updated); the in-app route (client-side navigation to the link as Group 3 went straight to the buy screen and BUY worked); 6 groups buying one last box at once (exactly 1 succeeded, the rest "sold out"). Not done: the phone camera scan itself (camera scanning needs HTTPS or a phone), the Admin pages after the wording change, and the two-phones-at-once check on real devices. Merged with `main` (live Items data, Faci profiles `0069`); `tsc`, `next lint` and the tests pass after the merge, but the merged result was not re-run in the browser.
 
 ### Items page on live data: tokens and puzzle pieces, 2026-10-13
-- `/inventory` (Freshie and Faci) now shows the group's real data through `useItemsData()` ([useItemsData.ts](../src/components/freshie/items/useItemsData.ts)): tokens (`groups.token_balance`, same as Admin), puzzle pieces per key and piece number (`inventory` + `items`, written by a Day 2 station win), projectors lit and by whom (`projectors` + `fn_scoreboard`), phase and time left (Live control's `phases`), Day 2 entry costs (`stations`), and history (the group's `token_transactions`, pieces and lit projector). Live updates on all of them. Each group reads only its own rows (RLS); Admin, HOF, HOGM and Committee read all.
+- `/inventory` (Freshie and Faci) now shows the group's real data through `useItemsData()` ([useItemsData.ts](../src/components/freshie/items/useItemsData.ts)): tokens (`groups.token_balance`, same as Admin), puzzle pieces per key and piece number (`inventory` + `items`, written by a Day 2 station win), projectors lit, and whether our group lit one (`fn_projector_states`, 0096), phase and time left (Live control's `phases`), Day 2 entry costs (`stations`), and history (the group's `token_transactions`, pieces and lit projector). Live updates on all of them. Each group reads only its own rows (RLS); Admin, HOF, HOGM and Committee read all.
 - Freshie Home's Puzzle Pieces card reads the same hook, so Home and Items always match. The "Sample" labels are gone.
 - The map unlocks (real location names instead of Star / Wheel / Orbit) in the endgame.
 - **Replay demo is always on the live Items page**: it shows the sample for about 7 seconds (marked "Sample data"), the T&F key going from 4 to 5 pieces, then returns to the group's live data. The other samples stay at `?demo=day1|day2|ready|taken|won|complete`.

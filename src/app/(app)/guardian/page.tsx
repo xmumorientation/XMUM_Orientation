@@ -9,11 +9,11 @@ import {
   PageTitle,
   SuccessBanner,
 } from "@/components/ui";
+import { loadProjectorStates, type ProjectorState } from "@/lib/projectorStates";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import {
   PROJECTOR_LABELS,
   PROJECTOR_LOCATIONS,
-  type Projector,
   type ProjectorLocation,
 } from "@/lib/types";
 import { guardianStatus, type PuzzleStatus as NfcPuzzleStatus } from "@/lib/nfc-flow";
@@ -30,7 +30,7 @@ export default function GuardianPage() {
   const [groupId, setGroupId] = useState<number | null>(null);
   const [location, setLocation] = useState<ProjectorLocation>("B1");
   const [status, setStatus] = useState<PuzzleStatus | null>(null);
-  const [projectors, setProjectors] = useState<Projector[]>([]);
+  const [projectors, setProjectors] = useState<ProjectorState[]>([]);
   const [nfcNote, setNfcNote] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -57,13 +57,13 @@ export default function GuardianPage() {
   useEffect(() => {
     let active = true;
     async function load() {
-      const [{ data: gs }, { data: ps }] = await Promise.all([
+      const [{ data: gs }, ps] = await Promise.all([
         supabase.rpc("fn_list_groups"),
-        supabase.from("projectors").select("*"),
+        loadProjectorStates(supabase),
       ]);
       if (!active) return;
       setGroups(gs ?? []);
-      setProjectors((ps as Projector[]) ?? []);
+      if (ps) setProjectors(ps);
     }
     void load();
     const poll = window.setInterval(load, 5000);
@@ -123,7 +123,7 @@ export default function GuardianPage() {
     if (!groupId) return;
     if (
       !window.confirm(
-        `Manually activate ${PROJECTOR_LABELS[location]} for group ${groupId}? This is logged as a manual override.`
+        `Manually light ${PROJECTOR_LABELS[location]} for group ${groupId}? This is logged as a manual override.`
       )
     )
       return;
@@ -140,7 +140,7 @@ export default function GuardianPage() {
     setRevision(value => value + 1);
     setBusy(false);
     if (error) setError(friendlyError(error));
-    else setNotice(`${PROJECTOR_LABELS[location]} activated (manual override).`);
+    else setNotice(`${PROJECTOR_LABELS[location]} lit (manual override).`);
   }
 
   return (
@@ -214,11 +214,11 @@ export default function GuardianPage() {
 
           {status.projector_activated ? (
             <p className="text-sm font-semibold text-amber-500">
-              This projector has already been revived.
+              This projector is already lit.
             </p>
           ) : status.verified ? (
             <p className="text-sm font-semibold text-green-700">
-              Verified — the group’s assigned Facilitator can tap the NFC sticker when activation is open.
+              Verified — the group’s assigned Facilitator can tap the NFC sticker to light it during the Endgame.
             </p>
           ) : status.complete ? (
             <>
@@ -257,7 +257,7 @@ export default function GuardianPage() {
               className="btn-danger w-full"
             >
               <TriangleAlert size={20} strokeWidth={1.75} />
-              Manual activation (sticker damaged)
+              Light manually (sticker damaged)
             </button>
           )}
         </Card>
@@ -274,9 +274,10 @@ export default function GuardianPage() {
                   p.activated_at ? "font-semibold text-amber-500" : "text-ink-faint"
                 }
               >
+                {/* Which group: Admin and HOGM only (0096). */}
                 {p.activated_at
-                  ? `Revived by group ${p.activated_by_group}`
-                  : "Dormant"}
+                  ? p.activated_by_group != null ? `Lit by group ${p.activated_by_group}` : "Lit"
+                  : "Not lit yet"}
               </span>
             </li>
           ))}

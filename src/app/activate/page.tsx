@@ -43,8 +43,8 @@ const ERROR_SCREENS: Record<string, { title: string; message: string }> = {
     message: "This NFC test has ended. Ask an Admin to prepare a new test sticker.",
   },
   ALREADY_ACTIVATED: {
-    title: "Already revived!",
-    message: "This projector has already been revived by another group.",
+    title: "Already lit!",
+    message: "This projector has already been lit by another group.",
   },
   SET_NOT_REDEEMED: {
     title: "Not verified yet",
@@ -57,7 +57,7 @@ const ERROR_SCREENS: Record<string, { title: string; message: string }> = {
   },
   GROUP_ALREADY_ACTIVATED_ONE: {
     title: "One projector per group",
-    message: "Your group has already revived a projector. Amazing work!",
+    message: "Your group has already lit a projector. Amazing work!",
   },
   NFC_DISABLED: {
     title: "Activation paused",
@@ -85,7 +85,7 @@ export default async function ActivatePage({
     return (
       <ErrorScreen
         title="Invalid activation link"
-        message="This link is missing its activation code."
+        message="This link is missing its NFC code."
       />
     );
   }
@@ -94,7 +94,7 @@ export default async function ActivatePage({
   if (!verified.valid) {
     return (
       <ErrorScreen
-        title="Invalid activation code"
+        title="Invalid NFC code"
         message="This code isn't recognised. Copied or forwarded links don't work — tap the real sticker!"
       />
     );
@@ -142,7 +142,7 @@ export default async function ActivatePage({
       ? ERROR_SCREENS[code]
       : {
           title: "Activation failed",
-          message: `Something went wrong reviving ${PROJECTOR_LABELS[location]}. Find a committee member.`,
+          message: `Something went wrong lighting ${PROJECTOR_LABELS[location]}. Find a committee member.`,
         };
     return <ErrorScreen title={screen.title} message={screen.message} />;
   }

@@ -75,7 +75,7 @@ export function LayerSwitch({
       }`}
     >
       {tab("stations", "Stations", MapPin)}
-      {tab("bulbs", "Lightbulbs", Lightbulb)}
+      {tab("bulbs", "Projectors", Lightbulb)}
     </div>
   );
 }
@@ -270,7 +270,7 @@ export function MapInfoCard({
           </div>
           <button
             type="button"
-            aria-label="Close lightbulb details"
+            aria-label="Close projector details"
             className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full"
             onClick={() => data.setSelectedBulb(null)}
           >
@@ -382,7 +382,7 @@ export function CampusMapPanels({
     <>
       {bulbError && (
         <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">
-          Lightbulb not changed: {bulbError}
+          Projector not changed: {bulbError}
         </p>
       )}
       <LightbulbList

@@ -243,7 +243,7 @@ export default function BigScreenPage() {
         <span>Leaderboard</span>
         <span className="h-px flex-1 bg-white/10" />
         <span>
-          Projectors {activatedCount}/{PROJECTOR_LOCATIONS.length} activated
+          Projectors {activatedCount}/{PROJECTOR_LOCATIONS.length} lit
         </span>
       </div>
 
@@ -279,7 +279,7 @@ export default function BigScreenPage() {
               </span>
               {s.activated && (
                 <span className="mt-0.5 inline-block rounded-full bg-amber-400 px-2 py-0.5 text-[10px] font-black uppercase tracking-widest text-amber-950 lg:text-xs">
-                  {PROJECTOR_LABELS[s.activated]} activated
+                  {PROJECTOR_LABELS[s.activated]} lit
                 </span>
               )}
             </span>

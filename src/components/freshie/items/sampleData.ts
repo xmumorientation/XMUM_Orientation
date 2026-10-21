@@ -104,7 +104,7 @@ export function sampleItems(scenario: SampleScenario = "day2"): ItemsData {
     case "taken":
       return {
         ...data,
-        projectors: { B1: null, A3: { groupId: 4, name: "Group 4", color: "#fc9e3d", isUs: false }, TF: null },
+        projectors: { B1: null, A3: { isUs: false }, TF: null },
       };
     case "won":
       return {
@@ -115,8 +115,8 @@ export function sampleItems(scenario: SampleScenario = "day2"): ItemsData {
         tokens: { balance: 8 },
         pieces: { B1: [1, 2, 3, 4, 5], A3: [3], TF: [2] },
         projectors: {
-          B1: { groupId: 7, name: "Group 7", color: "#0dfcfd", isUs: true },
-          A3: { groupId: 4, name: "Group 4", color: "#fc9e3d", isUs: false },
+          B1: { isUs: true },
+          A3: { isUs: false },
           TF: null,
         },
         history: [

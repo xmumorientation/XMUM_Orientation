@@ -20,6 +20,7 @@ import "./game-control.css";
 // (0002 RLS), so tokens come from fn_scoreboard() and each key's piece count
 // from fn_puzzle_status() (one call per group and key), refreshed every 30 s.
 // It is a count, not which pieces, so the open row shows numbers, not key art.
+// Nor which group lit a projector: that is Committee only (0096).
 
 type GroupRow = { id: number; name: string; color: string | null; token_balance: number };
 type PieceRow = { group_id: number; items: { puzzle_location: ProjectorLocation | null; puzzle_index: number | null } | null };
@@ -41,14 +42,10 @@ export function GroupScores({ countsOnly = false }: { countsOnly?: boolean }) {
   useEffect(() => {
     let active = true;
     async function loadCounts() {
-      const [sb, pj] = await Promise.all([
-        supabase.rpc("fn_scoreboard"),
-        supabase.from("projectors").select("location, activated_by_group"),
-      ]);
+      const sb = await supabase.rpc("fn_scoreboard");
       if (!active || !sb.data) return;
       const gs = (sb.data as GroupRow[]).map((g) => ({ ...g, token_balance: g.token_balance ?? 0 }));
       setGroups(gs);
-      setLit((pj.data ?? []) as ProjectorRow[]);
       const found = await Promise.all(
         gs.flatMap((g) =>
           PROJECTOR_LOCATIONS.map(async (loc) => {

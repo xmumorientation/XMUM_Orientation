@@ -643,10 +643,11 @@ html.fh-snap { overflow-x: hidden; }
    Projectors over their puzzle keys → key banner → item shelf (tokens, boxes).
    A location's puzzle, the key, item details and Activity open in sheets.
    Group colour comes in through --fh-accent / --fh-glow, set on .fi. Lit
-   projectors use gold for "the light is back" and the lighting group's own
-   colour for "who lit it". */
+   projectors use gold for "our group lit it" and --fi-other for "another
+   group lit it" (which group is Committee only, 0096). */
 .fi, .fi-sheet, .bb, .fh-prog-keys, .fh-prog-tokens {
   --fi-gold: #ffd66b;
+  --fi-other: #c9c3dc;
   --fi-up: #3ddc97;
   --fi-down: #ff5c7a;
 }
@@ -838,7 +839,7 @@ html.fh-snap { overflow-x: hidden; }
 .fi-detail-key[data-complete="true"]:not([data-mode="idle"]), .fi-key-big { filter: drop-shadow(0 0 10px var(--fi-key)); }
 .fi-detail[data-state="idle"] .fi-count, .fi-detail[data-state="done"] .fi-count { text-decoration: line-through; color: var(--fh-mute); }
 .fi-detail-note { margin: 12px 2px 14px; font-size: 13.5px; color: var(--fh-text-2); }
-.fi-tag { display: inline-flex; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 8px; color: var(--fi-tag); background: color-mix(in srgb, var(--fi-tag) 20%, transparent); }
+.fi-tag { display: inline-flex; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 8px; color: var(--fi-other); background: color-mix(in srgb, var(--fi-other) 20%, transparent); }
 
 /* Activity sheet */
 .fi-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }

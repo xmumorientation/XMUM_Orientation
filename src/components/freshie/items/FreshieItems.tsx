@@ -336,7 +336,7 @@ function KeySheet({ data, loc }: { data: ItemsData; loc: ProjectorLocation }) {
         </p>
       )}
       {demo.enabled && !demo.result && (
-        <p className="fi-key-foot">Demo mode: lights this bulb without the card, for testing the map.</p>
+        <p className="fi-key-foot">Demo mode: lights this projector without the card, for testing the map.</p>
       )}
       <p className="fi-key-foot">
         {endgame

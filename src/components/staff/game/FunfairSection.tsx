@@ -50,7 +50,7 @@ export function FunfairSection() {
                 </span>
               </header>
               <div className="gc-field">
-                <span>Keys (lightbulbs)</span>
+                <span>Keys (projectors)</span>
                 <div className="gc-seg" role="group" aria-label={`${row.name} keys`}>
                   {PROJECTOR_LOCATIONS.map((loc) => (
                     <button

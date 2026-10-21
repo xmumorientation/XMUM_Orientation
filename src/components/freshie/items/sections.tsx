@@ -42,7 +42,7 @@ const RING_LABEL: Record<CardState, (data: ItemsData, loc: ProjectorLocation) =>
   collecting: (data, loc) => `${data.pieces[loc].length}/${PIECES_PER_SET}`,
   key: () => "Key ready",
   lit: () => "Lit by you",
-  idle: (data, loc) => `Lit · ${data.projectors[loc]!.name}`,
+  idle: () => "Lit",
   done: () => "Idle",
 };
 
@@ -67,7 +67,6 @@ export function ProjectorKeys({
           const lamp = lampState(data, loc);
           const card = cardState(data, loc);
           const owned = data.pieces[loc];
-          const other = lamp === "other" ? data.projectors[loc]!.color : undefined;
           const label = RING_LABEL[card](data, loc);
           const arrival = arrivals[loc];
           return (
@@ -78,7 +77,6 @@ export function ProjectorKeys({
               data-state={lamp}
               data-card={card}
               data-celebrate={arrival?.completed || undefined}
-              style={other ? ({ "--fi-other": other } as React.CSSProperties) : undefined}
               onClick={() => onSelect(loc)}
               aria-label={`${name.long}: ${owned.length} of ${PIECES_PER_SET} pieces, ${label}. Show details.`}
             >
@@ -283,9 +281,7 @@ export function BlueprintDetail({ data, loc }: { data: ItemsData; loc: Projector
         {state === "lit" && "Your group lit this projector. Mission complete."}
         {state === "idle" && lit && (
           <>
-            <span className="fi-tag" style={{ "--fi-tag": lit.color } as React.CSSProperties}>
-              Lit by {lit.name}
-            </span>{" "}
+            <span className="fi-tag">Already lit</span>{" "}
             {owned.length ? `Your ${owned.length} piece${owned.length === 1 ? " is" : "s are"} now idle.` : "This projector is closed."}
           </>
         )}

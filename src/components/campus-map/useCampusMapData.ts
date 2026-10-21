@@ -463,6 +463,8 @@ export function useCampusMapData({
         { event: "*", schema: "public", table: "projectors" },
         loadBulbs,
       )
+      // Only Committee tier gets projectors events (0096); for everyone else a
+      // projector change arrives as game_config 'lightbulbs_changed_at'.
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "game_config" },
