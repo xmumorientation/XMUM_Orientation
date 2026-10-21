@@ -1,12 +1,12 @@
 "use client";
 
 import { ArrowLeft, ArrowRight, Ban, Check, Pause, Sparkles } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
 import { themeFromColor } from "@/components/freshie/groupTheme";
-import { Box3D } from "@/components/freshie/items/BlindBox";
 import { vxDisplay, vxSlab } from "@/components/home/fonts";
 import "@/components/freshie/freshie.css";
 import { supabaseBrowser } from "@/lib/supabase/client";
@@ -52,7 +52,9 @@ function optionNote(o: BlindBoxOption, balance: number): string {
   return `${o.left} left`;
 }
 
-// Scan page for a signed-in Freshie group, in the group's own colour. It shows
+// Scan page for a signed-in Freshie group, in the group's own colour. The box
+// is the blind box poster art (public/blind-box-poster.jpg), its dark edges
+// faded into the page. It shows
 // which group is buying and what the seller has; the price is charged and a
 // box taken only when BUY is tapped. The box then waits in the group's Items,
 // where it is opened. A Spot (hidden) box is free and is claimed the same way.
@@ -136,7 +138,15 @@ export function BlindBoxBuy({
         <div className="bb-flow bbuy-art" data-kind={(bought?.special ?? special) ? "gold" : "standard"}>
           <div className="bbuy-scene" data-stage="sealed" key={bought ? "bought" : "shown"}>
             <span className="bbuy-light" aria-hidden />
-            <Box3D group={{ key: "standard", name: "Blind box", label: spot ? "Hidden" : "Vortexa", special, unopened: 0, opened: [] }} />
+            <Image
+              src="/blind-box-poster.jpg"
+              alt=""
+              width={640}
+              height={640}
+              sizes="(max-width: 480px) 76vw, 340px"
+              priority
+              className="bbuy-box"
+            />
             <span className="bb-shadow" aria-hidden />
           </div>
         </div>

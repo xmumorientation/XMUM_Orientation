@@ -197,7 +197,7 @@ function BoxFlow({
 
 // ── The 3D box ─────────────────────────────────────────────────────────────
 
-export function Box3D({ group }: { group: BoxGroup }) {
+function Box3D({ group }: { group: BoxGroup }) {
   const info = group;
   const piece = group.mayGivePiece === true;
   return (

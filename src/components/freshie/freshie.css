@@ -1133,7 +1133,8 @@ html.fh-snap { overflow-x: hidden; }
 
 /* ── Blind box buy page (/blindbox) ─────────────────────────────────────────
    One left-aligned column on the night background, lit by the group's colour.
-   The box is the Items page's 3D box; .bb-flow gives it its colours. */
+   The box is the poster art, its dark edges masked into the page; .bb-flow
+   gives the glow behind it its colour (gold for a special box). */
 .bbuy {
   min-height: 100dvh;
   background:
@@ -1153,12 +1154,17 @@ html.fh-snap { overflow-x: hidden; }
 .bbuy-eyebrow { margin: 28px 0 4px; font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--fh-accent); }
 .bbuy-title { margin: 0; font-size: clamp(34px, 10vw, 46px); line-height: 1.02; overflow-wrap: anywhere; }
 
-.bbuy-art { align-self: center; margin: 8px 0 4px; }
-.bbuy-scene { position: relative; display: grid; place-items: center; width: 240px; height: 270px; perspective: 900px; }
-.bbuy-scene .bb-cube { transform: scale(0.82) rotateX(-14deg) rotateY(-30deg); }
+.bbuy-art { align-self: center; margin: 4px 0 0; }
+.bbuy-scene { position: relative; display: grid; place-items: center; width: min(340px, 76vw); aspect-ratio: 1; perspective: 900px; }
+.bbuy-box {
+  width: 100%; height: auto; transform-origin: 50% 60%;
+  -webkit-mask-image: radial-gradient(circle at 50% 52%, #000 52%, transparent 71%);
+  mask-image: radial-gradient(circle at 50% 52%, #000 52%, transparent 71%);
+}
+.bbuy-scene .bb-shadow { bottom: 6%; }
 .bbuy-light {
-  position: absolute; inset: 20% 15%; border-radius: 50%; z-index: -1;
-  background: radial-gradient(closest-side, color-mix(in srgb, var(--bb-a) 40%, transparent), transparent);
+  position: absolute; inset: 18%; border-radius: 50%; z-index: -1;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--bb-a) 45%, transparent), transparent);
 }
 
 .bbuy-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
@@ -1191,9 +1197,10 @@ html.fh-snap { overflow-x: hidden; }
 .bbuy-items { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; min-height: 44px; margin-top: 16px; font-size: 14px; font-weight: 600; color: var(--fh-accent); text-decoration: none; }
 
 @media (prefers-reduced-motion: no-preference) {
-  .bbuy-scene[data-stage="sealed"] .bb-cube { animation: bb-drop 0.6s cubic-bezier(0.2, 1.3, 0.4, 1) both, bbuy-float 3.2s 0.6s ease-in-out infinite; }
+  .bbuy-scene[data-stage="sealed"] .bbuy-box { animation: bbuy-drop 0.6s cubic-bezier(0.2, 1.3, 0.4, 1) both, bbuy-float 4s 0.6s ease-in-out infinite; }
   .bbuy-scene[data-stage="sealed"] .bb-shadow { animation: bb-shadow 3.2s 0.6s ease-in-out infinite; }
   .bbuy-list li, .bbuy-state, .bbuy-done { animation: bbuy-in 0.45s cubic-bezier(0.16, 1, 0.3, 1) both; animation-delay: calc(var(--i, 0) * 70ms + 150ms); }
 }
-@keyframes bbuy-float { 0%, 100% { transform: scale(0.82) translateY(0) rotateX(-14deg) rotateY(-30deg); } 50% { transform: scale(0.82) translateY(-12px) rotateX(-10deg) rotateY(-22deg); } }
+@keyframes bbuy-drop { from { opacity: 0; transform: translateY(-48px) scale(0.9) rotateY(-18deg); } }
+@keyframes bbuy-float { 0%, 100% { transform: translateY(0) rotateY(-7deg) rotateX(3deg); } 50% { transform: translateY(-12px) rotateY(7deg) rotateX(-2deg); } }
 @keyframes bbuy-in { from { opacity: 0; transform: translateY(10px); } }
