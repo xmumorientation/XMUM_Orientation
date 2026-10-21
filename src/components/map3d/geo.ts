@@ -373,32 +373,47 @@ export const LAKE: World[] = realPts(LAKE_M);
 export const PARK: World[] = realPts(PARK_M);
 export const GRASS: World[][] = GRASS_M.map(realPts);
 /**
- * OSM's walk down the lake's east shore carries on from this point down B1's west road. Ben (2026-10-21): the walk
- * ends here (the walk east to the dorms begins here too), and B1_NORTH_WALK takes it on to the west road.
+ * OSM's walk along the lake's north-east shore carries on from this point (where a walk crosses it) down B1's west
+ * road. Ben (2026-10-21): it ends here, and B1_NORTH_WALK takes it on to the west road in one sweep.
  */
-const B1_WALK_END: EN = [-104.6, 297.7];
-const trimAtB1 = (p: EN[]) => {
-  const i = p.findIndex(([e, n]) => e === B1_WALK_END[0] && n === B1_WALK_END[1]);
+const B1_WALK_END: EN = [-118.1, 311.8];
+/** Two short OSM walks that lead nowhere on the map, by the pirate ship and by the coaster: lawn there (Ben). */
+const DROPPED_WALKS: EN[] = [
+  [-97.6, 300.5],
+  [-109.7, 338.1],
+];
+const isAt = ([e, n]: EN, [pe, pn]: EN) => e === pe && n === pn;
+const OSM_WALKS: EN[][] = FOOTPATHS_M.filter((p) => !DROPPED_WALKS.some((d) => isAt(p[0], d))).map((p) => {
+  const i = p.findIndex((q) => isAt(q, B1_WALK_END));
   return i < 0 ? p : p.slice(0, i + 1);
-};
+});
 
 /**
- * The walk from B1's west road, where it crosses the north road, to the walks to the dorms (Ben's drawing): it
- * carries on the west road's line, then bends round to B1_WALK_END (a quadratic curve).
+ * The walk from the lake walk's end (B1_WALK_END) to B1's west road, where it crosses the north road (Ben's
+ * drawing): one sweep, a cubic curve that leaves the lake walk in its own direction and meets the road on its line.
  */
 const B1_NORTH_WALK: World[] = (() => {
+  const unit = ([e, n]: EN): EN => [e / Math.hypot(e, n), n / Math.hypot(e, n)];
+  const lake = OSM_WALKS.find((p) => isAt(p[p.length - 1], B1_WALK_END));
+  const p0 = B1_WALK_END;
+  const before = lake ? lake[lake.length - 2] : p0;
   const z0 = B1_ROADS_M.north.road[0];
-  const a: [number, number] = [b1WestRoadMid(z0), z0];
-  const c: [number, number] = [b1WestRoadMid(z0 - 12), z0 - 12];
-  const e: [number, number] = [B1_WALK_END[0] - B1_M.e, B1_M.n - B1_WALK_END[1]];
-  return Array.from({ length: 13 }, (_, i) => {
-    const t = i / 12;
-    const [u, v, w] = [(1 - t) * (1 - t), 2 * (1 - t) * t, t * t];
-    return b1Point(u * a[0] + v * c[0] + w * e[0], u * a[1] + v * c[1] + w * e[1]);
+  const p3: EN = [b1WestRoadMid(z0) + B1_M.e, B1_M.n - z0];
+  const reach = Math.hypot(p3[0] - p0[0], p3[1] - p0[1]) / 3;
+  const d0 = lake ? unit([p0[0] - before[0], p0[1] - before[1]]) : unit([p3[0] - p0[0], p3[1] - p0[1]]);
+  const d3 = unit([B1_FRONT_M.slope, -1]);
+  const p1: EN = [p0[0] + d0[0] * reach, p0[1] + d0[1] * reach];
+  const p2: EN = [p3[0] - d3[0] * reach, p3[1] - d3[1] * reach];
+  return Array.from({ length: 17 }, (_, i) => {
+    const t = i / 16;
+    const u = 1 - t;
+    const w = [u * u * u, 3 * u * u * t, 3 * u * t * t, t * t * t];
+    const at = (k: 0 | 1) => w[0] * p0[k] + w[1] * p1[k] + w[2] * p2[k] + w[3] * p3[k];
+    return fromReal(at(0), at(1));
   });
 })();
 
-export const FOOTPATHS: World[][] = [...[...FOOTPATHS_M.map(trimAtB1), ...TRACED_PATHS_M].map(realPts), B1_NORTH_WALK];
+export const FOOTPATHS: World[][] = [...[...OSM_WALKS, ...TRACED_PATHS_M].map(realPts), B1_NORTH_WALK];
 export const FOOTPATH_W = 5 * UNITS_PER_M;
 
 /**

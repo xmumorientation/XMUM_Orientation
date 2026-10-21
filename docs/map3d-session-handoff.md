@@ -37,7 +37,7 @@ Ben may continue this work in a new Claude conversation. This file says where ev
   - Ben's route colours rule here, not the imagery: asphalt for the north road, grey paving with bays for the west road, the orange walk north of it (`B1_NORTH_WALK`).
   - The west road crosses the north road (just covering it) and runs on across the red brick service road (`CARPARK.road`) to the walk to the south. North of the north road the walk carries its line on; the north road does not go on to the dorms.
   - The west road and the stairs run about 10° off B1's west face (`b1StairsFoot`); the stairs keep one depth.
-  - OSM's lake walk ends where the walk north of the west road ends (`B1_WALK_END`); the walk along the lake is whole.
+  - OSM's lake walk ends at `B1_WALK_END`, and one walk (`B1_NORTH_WALK`) sweeps from there to the west road; the walk along the lake is whole. Two stub walks are dropped (`DROPPED_WALKS`). Walks are generated data (`campusData.ts`), so they are trimmed and dropped in `geo.ts`.
 - **Later:** check the north and east sides against photos (none yet); railings between the brick pillars; the stairs' south end is straight (the imagery shows a curved wall).
 
 ### Lawn and walkways (2026-10-17, branch `map3d-footpaths`)
