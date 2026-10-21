@@ -55,10 +55,10 @@ This reflects only the migration files in the repo. Any manual changes made to t
 | OPEN a bought box (`fn_bb_open`, from the Items page: rolls the prize and adds the tokens; still allowed when blind boxes are off or tokens are frozen) | ✓ own group | — | — | — | — | — | — | — | DB |
 | See the group's bought boxes on the Items page (own claim rows; the prize range is never readable) | Own Group | Own Group (view only) | — | — | View All | View All | View All | View All | DB |
 | See own blind box QR + link (ONE QR per seller covering all its box types; Home's "My Blind Box" stop and the /gm card; boxes assigned to the account only, since 0098 stations hold none) | — | — | Own | Own | Own | Own | Own | Own | DB |
-| Box types, assigning boxes (to accounts: picked or by role; no stations since 0098), quantities, regenerate / switch off a QR, group cap (Admin → Blind boxes) | — | — | — | — | — | — | — | Manage | DB |
-| Spot box (`fn_bb_spot_save`, 0098: one hidden QR that never changes; min / max tokens, pool, on/off). Freshie groups claim it free, once per group, outside the cap | Claim | — | — | — | — | — | — | Manage | DB |
+| Box types, assigning boxes (to accounts: picked or by role; no stations since 0100), quantities, regenerate / switch off a QR, group cap (Admin → Blind boxes) | — | — | — | — | — | — | — | Manage | DB |
+| Spot box (`fn_bb_spot_save`, 0100: one hidden QR that never changes; min / max tokens, pool, on/off). Freshie groups claim it free, once per group, outside the cap | Claim | — | — | — | — | — | — | Manage | DB |
 | Token page Reset State (clears token logs and puzzle inventory, zeroes group tokens; only while Rehearsal mode is on) | — | — | — | — | — | — | — | ✓ | DB |
-| Blind box Restore boxes (`fn_bb_reset`, scope 'openings' only since 0098; only while Rehearsal mode is on; typed confirmation) | — | — | — | — | — | — | — | ✓ | DB |
+| Blind box Restore boxes (`fn_bb_reset`, scope 'openings' only since 0100; only while Rehearsal mode is on; typed confirmation) | — | — | — | — | — | — | — | ✓ | DB |
 | Read box types (range, price, stock) | — | — | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | DB |
 | Read every assignment and claim | — | — | — | — | Claims only | Claims only | Claims only | ✓ | DB |
 | **Attendance / Location** | | | | | | | | | |
@@ -84,7 +84,7 @@ This reflects only the migration files in the repo. Any manual changes made to t
 | Read the groups' 4-digit login passwords (`group_login_codes`, Ops → Freshies; migration 0092) | — | — | — | — | ✓ | ✓ | — | ✓ | DB |
 | Group QR links (`GET /api/group-join`: signed with the group number, never change; the Faci's own group on /code) | — | Own Group | — | — | — | — | — | ✓ | API |
 | Sign in by scanning a group QR (`POST /api/group-join`: the server signs in with the group's current password) | anyone with the QR | anyone | anyone | anyone | anyone | anyone | anyone | anyone | API (valid signed token only) |
-| New passwords for all groups (Admin → Freshies: `/api/admin/group-logins` with `refresh: "all"`; signs out every Freshie phone via `fn_end_user_sessions`, 0097, service role only) | — | — | — | — | — | — | — | ✓ | API |
+| New passwords for all groups (Admin → Freshies: `/api/admin/group-logins` with `refresh: "all"`; signs out every Freshie phone via `fn_end_user_sessions`, 0099, service role only) | — | — | — | — | — | — | — | ✓ | API |
 | Freshie group assignment (Committee → Register tab) | — | — | — | — | ✓ | — | — | ✓ | DB |
 | Facilitator group assignment (`fn_admin_set_group_facis`; HOF on Ops → Facilitators, Admin on Ops → Facilitators and Admin → Freshies; `is_faci_lead()`, migration 0080) | — | — | — | — | — | ✓ | — | ✓ | DB |
 | Ops → Facilitators: each group's Facilitators and its Faci-related audit entries (Recent changes) | — | — | — | — | — | ✓ | — | ✓ | DB (Committee-tier reads) |

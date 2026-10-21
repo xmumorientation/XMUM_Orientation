@@ -88,7 +88,7 @@ const DEFAULT_CAP = 4;
 // Everything the Admin blind-box page reads, kept live. Writes go through the
 // fn_bb_* RPCs from the steps; this hook only reads and recomputes the numbers.
 // The Spot's hidden type and assignment are kept apart from the rest, and old
-// station rows (history since 0098) are left out.
+// station rows (history since 0100) are left out.
 export function useBlindBoxAdmin(onError: (m: string | null) => void): BlindBoxAdminData {
   const supabase = useMemo(() => supabaseBrowser(), []);
   const [loaded, setLoaded] = useState(false);

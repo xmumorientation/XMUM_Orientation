@@ -155,7 +155,7 @@ export interface BlindBoxType {
   stock: number;
   is_special: boolean;
   archived: boolean;
-  /** The Spot's hidden type (migration 0098). Not shown with the other types. */
+  /** The Spot's hidden type (migration 0100). Not shown with the other types. */
   is_spot?: boolean;
 }
 
@@ -217,7 +217,7 @@ export interface BlindBoxOption {
 
 export interface BlindBoxPreview {
   status: BlindBoxPageStatus;
-  /** The hidden Spot box (migration 0098): free, one per group. */
+  /** The hidden Spot box (migration 0100): free, one per group. */
   spot?: boolean;
   seller_name: string;
   group_name: string;

@@ -648,21 +648,21 @@ describe("review fixes (0091)", () => {
 });
 
 
-// Runs last: applies 0098 on top of everything above.
-describe("0098: the Spot box, no station boxes, Restore only", () => {
+// Runs last: applies 0100 on top of everything above.
+describe("0100: the Spot box, no station boxes, Restore only", () => {
   let spot: { sellerId: number; version: number };
   let spotAssignment: number;
   let type: number;
 
   beforeAll(async () => {
-    // Before 0098: station 1 holds 2 unsold boxes, station 2 sold 1 of 1.
+    // Before 0100: station 1 holds 2 unsold boxes, station 2 sold 1 of 1.
     type = Number((await rpc(ADMIN, "fn_bb_type_save", [null, "Plain", 1, 1, 0, 20, false])).id);
     await rpc(ADMIN, "fn_bb_assign", [type, 2, null, null, [1], false]);
     await rpc(ADMIN, "fn_bb_assign", [type, 1, null, null, [2], false]);
-    await buy(freshie(1), await sellerOf(undefined, 2), await assignmentOf(type, undefined, 2), "pre-0098");
+    await buy(freshie(1), await sellerOf(undefined, 2), await assignmentOf(type, undefined, 2), "pre-0100");
 
-    await admin.query(sql("supabase/migrations/0098_blindbox_spot_no_stations.sql"));
-    await admin.query(sql("supabase/migrations/0098_blindbox_spot_no_stations.sql")); // safe to run again
+    await admin.query(sql("supabase/migrations/0100_blindbox_spot_no_stations.sql"));
+    await admin.query(sql("supabase/migrations/0100_blindbox_spot_no_stations.sql")); // safe to run again
   }, 60_000);
 
   it("deletes unsold station boxes and switches sold ones off", async () => {

@@ -33,7 +33,7 @@ export interface MyBlindBoxSeller {
 const isOn = (v: unknown) => v === true || v === "true";
 
 // The signed-in account's own blind boxes, with its one QR (stations no longer
-// hold boxes, since 0098). Used by BlindBoxCard and by Staff
+// hold boxes, since 0100). Used by BlindBoxCard and by Staff
 // Home's "My Blind Box" stop. Links are recomputed by the server on demand, so
 // showing a QR never invalidates one that is already out there; only Admin's
 // Regenerate does.
@@ -156,69 +156,6 @@ export function useMyBlindBoxes() {
   }));
 
   return { loaded, error, sellers, copy, copied, paused };
-}
-
-// "My blind box QR" (GM page, Admin): the same layout as Staff Home's "My
-// Blind Box", centred: the QR first, then what is left of each box type. One QR
-// for every type; it works until all the boxes are sold.
-export function BlindBoxCard() {
-  const { error, sellers, copy, copied, paused } = useMyBlindBoxes();
-
-  if (sellers.length === 0 && !error) return null;
-
-  return (
-    <div className="space-y-3">
-      {error && (
-        <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-          {error}
-        </p>
-      )}
-      {sellers.map(({ id: sellerId, rows: list, live, left: totalLeft, qr: s }) => (
-        <Card key={sellerId} className="flex flex-col items-center gap-3 text-center">
-          <div>
-            <h2 className="font-semibold">My blind box QR</h2>
-            <p className="text-sm text-ink-faint">{totalLeft} left · each group can buy one box from you</p>
-          </div>
-
-          {!live ? (
-            <p className="text-sm font-semibold text-red-600">Switched off by Admin. This code doesn&apos;t work right now.</p>
-          ) : paused && totalLeft > 0 ? (
-            <p className="text-sm font-semibold text-amber-600">{paused}</p>
-          ) : totalLeft <= 0 ? (
-            <p className="text-sm font-semibold text-ink-faint">All boxes sold.</p>
-          ) : s ? (
-            <>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={s.qr} alt="Blind box QR code" className="w-56 max-w-full rounded-xl border border-paper-200" />
-              <p className="text-xs text-ink-faint">Let a Freshie scan this after your mini-game. Any phone camera works.</p>
-              <button type="button" onClick={() => copy(sellerId, s.url)} className="btn-secondary min-h-[40px] px-4 text-sm">
-                {copied === sellerId ? <Check size={14} strokeWidth={2} /> : <Copy size={14} strokeWidth={1.75} />}
-                {copied === sellerId ? "Copied" : "Copy link"}
-              </button>
-            </>
-          ) : (
-            <div className="h-56 w-56 animate-pulse rounded-xl bg-paper-200" aria-label="Loading QR" />
-          )}
-
-          <ul className="flex flex-wrap justify-center gap-2">
-            {list.map((r) => (
-              <li key={r.id} className="min-w-[9rem] rounded-xl bg-paper-100 px-3 py-2 text-sm">
-                <p className="flex items-center justify-center gap-1 font-semibold">
-                  {r.type?.name ?? "Box"}
-                  {r.type?.is_special && <Sparkles size={14} strokeWidth={1.75} className="text-amber-500" aria-label="special" />}
-                </p>
-                <p className="font-mono text-lg font-bold tabular-nums">
-                  {Math.max(r.quantity - r.opened, 0)}
-                  <span className="text-sm font-normal text-ink-faint">/{r.quantity}</span>
-                </p>
-                <p className="text-xs text-ink-faint">{priceText(r.type)}</p>
-              </li>
-            ))}
-          </ul>
-        </Card>
-      ))}
-    </div>
-  );
 }
 
 /** "Free", "1 token", "3 tokens". */
