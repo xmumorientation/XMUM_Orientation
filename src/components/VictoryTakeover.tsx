@@ -4,12 +4,12 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { ACTIVATION_JOURNEY_KEY } from "@/lib/activation-journey";
 import type { FunfairZone } from "@/lib/funfair";
-import { PROJECTOR_LABELS, type ProjectorLocation } from "@/lib/types";
 import "./victory-takeover.css";
 
 const colors = ["#0dfcfd", "#fe06ab", "#e0b4fc", "#fc9e3d", "#f2ff0b"];
-export function VictoryTakeover({location, groupName, replayZones = [], mapHref = "/map"}: {
-  location: ProjectorLocation; groupName: string | null; replayZones?: FunfairZone[]; mapHref?: string;
+export function VictoryTakeover({place, groupName, replayZones = [], mapHref = "/map"}: {
+  /** Where the projector stands (Admin → Puzzles, 0097). */
+  place: string; groupName: string | null; replayZones?: FunfairZone[]; mapHref?: string;
 }) {
   const router = useRouter();
   const navigating = useRef(false);
@@ -54,7 +54,7 @@ export function VictoryTakeover({location, groupName, replayZones = [], mapHref 
       {Array.from({length:45},(_,i)=>{const angle=i*137.508*Math.PI/180;const distance=110+i%7*32;return <i className="vt-spark" key={i} style={{"--x":(Math.cos(angle)*distance).toFixed(3)+"px","--y":(Math.sin(angle)*distance).toFixed(3)+"px","--color":colors[i%5],"--delay":i%5*.055+"s","--spin":i*43+"deg"} as CSSProperties}/>;})}
     </div>
     <div className="vt-charging" aria-hidden={lit}>Gathering the magic<span/></div>
-    <section className="vt-result" aria-live="polite" aria-atomic="true">{lit&&<><h1>PROJECTOR<span>LIT!</span></h1><p className="vt-location">{PROJECTOR_LABELS[location]}</p>{groupName&&<p className="vt-group">Lit by <strong>{groupName}</strong></p>}<p className="vt-note" onAnimationEnd={() => setCelebrated(true)}>The magic is back.</p><button type="button" className="vt-map-button" onClick={openMap} disabled={opening}>{opening ? "Opening the 3D map…" : "See the funfair light up →"}</button><p className="vt-next" role="status">Taking you to the funfair…</p></>}</section>
+    <section className="vt-result" aria-live="polite" aria-atomic="true">{lit&&<><h1>PROJECTOR<span>LIT!</span></h1><p className="vt-location">{place}</p>{groupName&&<p className="vt-group">Lit by <strong>{groupName}</strong></p>}<p className="vt-note" onAnimationEnd={() => setCelebrated(true)}>The magic is back.</p><button type="button" className="vt-map-button" onClick={openMap} disabled={opening}>{opening ? "Opening the 3D map…" : "See the funfair light up →"}</button><p className="vt-next" role="status">Taking you to the funfair…</p></>}</section>
     <svg className="vt-park" viewBox="0 0 600 230" fill="none" aria-hidden="true">
       <defs><linearGradient id="vt-park-color"><stop stopColor="#0dfcfd"/><stop offset=".5" stopColor="#e0b4fc"/><stop offset="1" stopColor="#fe06ab"/></linearGradient></defs>
       <g stroke="url(#vt-park-color)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

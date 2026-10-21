@@ -16,7 +16,6 @@ import { useOfflineQueue } from "@/components/useOfflineQueue";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import {
   PIECES_PER_SET,
-  PROJECTOR_LABELS,
   PROJECTOR_LOCATIONS,
   RISK_TIER_META,
   type Day2Result,
@@ -24,6 +23,7 @@ import {
   type Station,
   type StationStatus,
 } from "@/lib/types";
+import { projectorPlaces, type ProjectorPlace } from "@/lib/projectorPlaces";
 import { cn, friendlyError, idemKey } from "@/lib/utils";
 
 type GroupRow = { id: number; name: string; color: string | null; token_balance: number };
@@ -57,7 +57,8 @@ const STATUS: Record<StationStatus, { label: string; tone: "ok" | "warn" | "off"
 };
 
 const TOTAL_PIECES = PIECES_PER_SET * PROJECTOR_LOCATIONS.length;
-const labels = (locs: ProjectorLocation[], join: string) => locs.map((l) => PROJECTOR_LABELS[l]).join(join);
+type Places = Record<ProjectorLocation, ProjectorPlace>;
+const labels = (places: Places, locs: ProjectorLocation[], join: string) => locs.map((l) => places[l].name).join(join);
 const flag = (v: unknown) => v === true || v === "true";
 const minutesAgo = (iso: string) => {
   const m = Math.max(0, Math.round((Date.now() - Date.parse(iso)) / 60000));
@@ -79,6 +80,7 @@ function day2Checks({
   locations,
   phaseOn,
   frozen,
+  places,
 }: {
   station: Station | null;
   balance: number | null;
@@ -86,6 +88,7 @@ function day2Checks({
   locations: ProjectorLocation[];
   phaseOn: boolean;
   frozen: boolean;
+  places: Places;
 }): Day2Check[] {
   if (!station) return [{ label: "Station", text: "No station assigned to your account. Ask Admin.", state: "bad" }];
   const checks: Day2Check[] = [];
@@ -127,9 +130,9 @@ function day2Checks({
   } else {
     const open = locations.filter((l) => counts[l] < PIECES_PER_SET);
     const full = locations.filter((l) => counts[l] >= PIECES_PER_SET);
-    if (open.length === 0) checks.push({ label: piece, text: `${labels(full, " and ")} ${full.length > 1 ? "are" : "is"} full. A win gives nothing.`, state: "bad" });
-    else if (full.length > 0) checks.push({ label: piece, text: `${labels(full, " and ")} is full, so a win gives a ${labels(open, " or ")} piece.`, state: "warn" });
-    else checks.push({ label: piece, text: `A win gives a piece from ${labels(open, " or ")}.`, state: "ok" });
+    if (open.length === 0) checks.push({ label: piece, text: `${labels(places, full, " and ")} ${full.length > 1 ? "are" : "is"} full. A win gives nothing.`, state: "bad" });
+    else if (full.length > 0) checks.push({ label: piece, text: `${labels(places, full, " and ")} is full, so a win gives a ${labels(places, open, " or ")} piece.`, state: "warn" });
+    else checks.push({ label: piece, text: `A win gives a piece from ${labels(places, open, " or ")}.`, state: "ok" });
   }
   return checks;
 }
@@ -166,6 +169,7 @@ export default function GmPanelPage() {
   const { queue, failed, dismissFailed, submit } = useOfflineQueue();
   const { phases, offsetMs } = usePhaseTimer();
   const { config } = useConfig();
+  const places = projectorPlaces(config);
   const result = useStatus();
   const statusMsg = useStatus();
 
@@ -486,7 +490,7 @@ export default function GmPanelPage() {
   const group = groups.find((g) => g.id === groupId) ?? null;
   const counts = piecesFor && piecesFor.groupId === groupId ? piecesFor.counts : undefined;
   const checks = group
-    ? day2Checks({ station, balance: group.token_balance, counts, locations, phaseOn, frozen })
+    ? day2Checks({ station, balance: group.token_balance, counts, locations, phaseOn, frozen, places })
     : [];
   const canStart = !!group && checks.every((c) => c.state === "ok" || c.state === "warn");
   const step = game ? (confirmWin !== null ? 2 : 1) : 0;
@@ -501,7 +505,7 @@ export default function GmPanelPage() {
     setBusy(false);
     setPiecesFor({ groupId, counts: fresh });
     const balance = rows?.find((g) => g.id === groupId)?.token_balance ?? group?.token_balance ?? null;
-    const blocked = day2Checks({ station, balance, counts: fresh, locations, phaseOn, frozen }).find(
+    const blocked = day2Checks({ station, balance, counts: fresh, locations, phaseOn, frozen, places }).find(
       (c) => c.state === "bad" || c.state === "wait"
     );
     if (blocked) return result.setError(`${blocked.label}: ${blocked.text}`);
@@ -842,7 +846,7 @@ export default function GmPanelPage() {
                               >
                                 {picked && <Check size={16} className="gc-st-loc-tick" aria-hidden />}
                                 <span className="gc-st-loc-key">{KEY_NAMES[loc]}</span>
-                                <b>{PROJECTOR_LABELS[loc]}</b>
+                                <b>{places[loc].name}</b>
                                 <span className="gc-st-loc-dots" aria-hidden>
                                   {Array.from({ length: PIECES_PER_SET }, (_, i) => (
                                     <i key={i} data-on={n !== undefined && i < n ? "" : undefined} />
@@ -907,7 +911,7 @@ export default function GmPanelPage() {
                         </div>
                         <div>
                           <dt>Locations</dt>
-                          <dd>{game.locations.length ? labels(game.locations, " + ") : "Any"}</dd>
+                          <dd>{game.locations.length ? labels(places, game.locations, " + ") : "Any"}</dd>
                         </div>
                         <div>
                           <dt>Entry</dt>
@@ -960,7 +964,7 @@ export default function GmPanelPage() {
                     <>
                       Charge <b>{fee}</b> token{fee !== 1 ? "s" : ""}
                       {confirmWin
-                        ? ` and grant a random piece from ${game?.locations.length ? labels(game.locations, " or ") : "any location"} that the group doesn't have yet.`
+                        ? ` and grant a random piece from ${game?.locations.length ? labels(places, game.locations, " or ") : "any location"} that the group doesn't have yet.`
                         : ". No piece."}
                       {gameGroup && ` Tokens: ${gameGroup.token_balance} → ${gameGroup.token_balance - fee}.`}
                     </>

@@ -6,7 +6,8 @@ import { activateNfc } from "@/lib/nfc-flow";
 import { newlyPowered } from "@/lib/activation-journey";
 import { funfairFromState, funfairFromBulbs, funfairMissing, type FunfairPower } from "@/lib/funfair";
 import { supabaseAdmin, supabaseServer } from "@/lib/supabase/server";
-import { PROJECTOR_LABELS, type ProjectorLocation } from "@/lib/types";
+import { loadProjectorClues, placeKey, projectorPlaces } from "@/lib/projectorPlaces";
+import { PROJECTOR_CODE_NAMES, type ProjectorLocation } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -84,7 +85,7 @@ export default async function ActivatePage({
   if (!t) {
     return (
       <ErrorScreen
-        title="Invalid activation link"
+        title="Invalid NFC link"
         message="This link is missing its NFC code."
       />
     );
@@ -115,12 +116,21 @@ export default async function ActivatePage({
     .single();
 
   const location: ProjectorLocation = verified.location;
+  // Where this projector stands, if the caller's group has earned it (all 5 pieces or lit it,
+  // 0098); else its code name. Before 0098 the config is read directly (0097).
+  async function placeName(): Promise<string> {
+    const clues = await loadProjectorClues(supabase);
+    if (clues && clues !== "missing") return clues[location]?.place.name ?? PROJECTOR_CODE_NAMES[location];
+    const { data: placeRow } = await supabase
+      .from("game_config").select("value").eq("key", placeKey(location)).maybeSingle();
+    return projectorPlaces({ [placeKey(location)]: placeRow?.value })[location].name;
+  }
   const tokenHash = hashToken(t);
   // Metadata lookup only. Redemption always runs with the caller's session,
   // so the service client cannot bypass role, group or inventory checks.
   const { data: card, error: cardError } = await supabaseAdmin()
     .from("nfc_tokens").select("test_run_id, location").eq("token_hash", tokenHash).maybeSingle();
-  if (cardError || !card || card.location !== location) return <ErrorScreen title="Activation unavailable" message="Ask the Guardian to check this sticker, then try again." />;
+  if (cardError || !card || card.location !== location) return <ErrorScreen title="Can't light this projector" message="Ask the Guardian to check this sticker, then try again." />;
 
   async function parkPower(): Promise<FunfairPower | null> {
     const result = await supabase.rpc("fn_funfair_state");
@@ -141,13 +151,14 @@ export default async function ActivatePage({
     const screen = code
       ? ERROR_SCREENS[code]
       : {
-          title: "Activation failed",
-          message: `Something went wrong lighting ${PROJECTOR_LABELS[location]}. Find a committee member.`,
+          title: "Lighting failed",
+          message: `Something went wrong lighting ${await placeName()}. Find a committee member.`,
         };
     return <ErrorScreen title={screen.title} message={screen.message} />;
   }
 
   const after = await parkPower();
+  const place = await placeName();
   const replayZones = before && after && !activation?.duplicate ? newlyPowered(before, after) : [];
   const groupId = typeof activation?.group_id === "number" ? activation.group_id : profile?.group_id;
   let groupName: string | null = null;
@@ -160,5 +171,5 @@ export default async function ActivatePage({
     groupName = g?.name ?? null;
   }
 
-  return <VictoryTakeover location={location} groupName={groupName} replayZones={replayZones} />;
+  return <VictoryTakeover place={place} groupName={groupName} replayZones={replayZones} />;
 }

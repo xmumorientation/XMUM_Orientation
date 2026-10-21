@@ -1,3 +1,4 @@
+import type { ProjectorPlace } from "@/lib/projectorPlaces";
 import type { ProjectorLocation } from "@/lib/types";
 
 // What the Items page needs to draw. The page only reads this shape, so the
@@ -75,6 +76,10 @@ export type ItemsData = {
   group: { id: number; name: string };
   /** False until the full map unlocks: locations show as code names and the Guardian spot stays hidden. */
   mapUnlocked: boolean;
+  /** Where each projector stands, once the group has earned it (all 5 pieces or lit it, 0098); else null: code name. */
+  places: Record<ProjectorLocation, ProjectorPlace | null>;
+  /** The picture of where each earned projector's NFC card is (Admin → Puzzles); null when not earned or not set. */
+  images: Record<ProjectorLocation, string | null>;
   tokens: { balance: number };
   /** Day 2 entry costs by risk tier. */
   costs: { low: number; medium: number; high: number };

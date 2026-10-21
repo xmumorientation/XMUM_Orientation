@@ -3,21 +3,24 @@
 import { ImageUp } from "lucide-react";
 import { useMemo, useState } from "react";
 
-import { PuzzleBoard } from "@/components/PuzzleBoard";
+import { ProjectorPlaceForm } from "@/components/ProjectorPlaceForm";
 import { puzzleImageUrl, useConfig } from "@/components/useConfig";
+import { projectorPlaces } from "@/lib/projectorPlaces";
 import { supabaseBrowser } from "@/lib/supabase/client";
-import { PROJECTOR_LABELS, PROJECTOR_LOCATIONS, type ProjectorLocation } from "@/lib/types";
+import { PROJECTOR_CODE_NAMES, PROJECTOR_LOCATIONS, type ProjectorLocation } from "@/lib/types";
 import { friendlyError } from "@/lib/utils";
 
 import { StatusLine, useStatus } from "./parts";
 
-// Admin → Puzzles for HOGM: one picture per location, sliced into 5 pieces
-// on Freshie screens. Same upload as Admin (storage puzzle-images, then the
-// puzzle_image_<location> config key).
+// Admin → Puzzles for HOGM: each projector's place (0097), and one picture
+// per projector of where its NFC card is. A group sees both once it holds
+// all 5 pieces of that key (0098). Same upload as Admin (storage
+// puzzle-images, then the puzzle_image_<location> config key).
 
 export function PuzzlesSection() {
   const supabase = useMemo(() => supabaseBrowser(), []);
   const { config } = useConfig();
+  const places = projectorPlaces(config);
   const { error, setError, notice, flash } = useStatus();
   const [busyLoc, setBusyLoc] = useState<ProjectorLocation | null>(null);
 
@@ -38,7 +41,7 @@ export function PuzzlesSection() {
     });
     setBusyLoc(null);
     if (cfgErr) setError(friendlyError(cfgErr));
-    else flash(`${PROJECTOR_LABELS[loc]} updated`);
+    else flash(`${places[loc].name} picture updated`);
   }
 
   return (
@@ -50,11 +53,13 @@ export function PuzzlesSection() {
           return (
             <article key={loc} className="gc-card gc-puzzle">
               <header className="gc-game-head">
-                <h3 className="gc-h4">{PROJECTOR_LABELS[loc]}</h3>
+                <h3 className="gc-h4">{PROJECTOR_CODE_NAMES[loc]} · {places[loc].name}</h3>
                 <span className="gc-chip" data-tone={url ? "ok" : "off"}>{url ? "SET" : "EMPTY"}</span>
               </header>
+              <ProjectorPlaceForm loc={loc} place={places[loc]} dark onSaved={flash} onError={setError} />
               {url ? (
-                <PuzzleBoard ownedIndices={[0, 1, 2, 3, 4]} imageUrl={url} complete={false} />
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={url} alt={`Where the ${PROJECTOR_CODE_NAMES[loc]} NFC card is`} className="gc-puzzle-img" />
               ) : (
                 <div className="gc-puzzle-empty">Landscape, about 5:3</div>
               )}

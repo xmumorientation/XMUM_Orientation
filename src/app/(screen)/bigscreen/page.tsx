@@ -9,9 +9,9 @@ import { VORTEXA_THEME } from "@/components/freshie/groupTheme";
 import { nexusBody, vxSlab } from "@/components/home/fonts";
 import { usePhaseTimer } from "@/components/PhaseTimerProvider";
 import { useConfig } from "@/components/useConfig";
+import { projectorPlaces } from "@/lib/projectorPlaces";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import {
-  PROJECTOR_LABELS,
   PROJECTOR_LOCATIONS,
   type ProjectorLocation,
 } from "@/lib/types";
@@ -95,7 +95,8 @@ function PieceDots({ have }: { have: number }) {
 
 export default function BigScreenPage() {
   const supabase = useMemo(() => supabaseBrowser(), []);
-  const { brand } = useConfig();
+  const { brand, config } = useConfig();
+  const places = projectorPlaces(config);
   const [groups, setGroups] = useState<GroupRow[]>([]);
   const [pieceRows, setPieceRows] = useState<
     { group_id: number; location: ProjectorLocation }[]
@@ -279,7 +280,7 @@ export default function BigScreenPage() {
               </span>
               {s.activated && (
                 <span className="mt-0.5 inline-block rounded-full bg-amber-400 px-2 py-0.5 text-[10px] font-black uppercase tracking-widest text-amber-950 lg:text-xs">
-                  {PROJECTOR_LABELS[s.activated]} lit
+                  {places[s.activated].name} lit
                 </span>
               )}
             </span>

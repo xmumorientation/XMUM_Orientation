@@ -2,25 +2,34 @@
 
 import { Lightbulb, Move, RotateCcw } from "lucide-react";
 
-import { PROJECTOR_CODE_NAMES, PROJECTOR_LABELS, type MapLightbulb, type ProjectorLocation } from "@/lib/types";
+import type { MapPlaces } from "@/lib/projectorPlaces";
+import { PROJECTOR_CODE_NAMES, type MapLightbulb, type ProjectorLocation } from "@/lib/types";
 import { timeAgo } from "@/lib/utils";
 
-export function bulbTitle(b: MapLightbulb) {
-  return `${PROJECTOR_CODE_NAMES[b.location]} · ${PROJECTOR_LABELS[b.location]}`;
+/** Code name, and the place when the viewer may know it (a Freshie or Faci: once their group earned it, 0098). */
+export function bulbTitle(b: MapLightbulb, places: MapPlaces) {
+  const place = places[b.location];
+  return place ? `${PROJECTOR_CODE_NAMES[b.location]} · ${place.name}` : PROJECTOR_CODE_NAMES[b.location];
 }
 
 // fn_map_lightbulbs (0096) gives the group only to Committee tier and to the
-// group that lit the bulb; everyone else sees "Lit at".
-export function bulbStatus(b: MapLightbulb, nowMs: number) {
+// group that lit the bulb; everyone else sees "Lit at". The viewer's own
+// group reads "Lit by your group".
+export function bulbStatus(b: MapLightbulb, nowMs: number, myGroupId: number | null = null) {
   if (!b.activated_at) return "Not lit yet";
   const at = new Date(b.activated_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-  const by = b.group_name ?? (b.activated_by_group != null ? `Group ${b.activated_by_group}` : null);
+  const ours = myGroupId != null && b.activated_by_group === myGroupId;
+  const by = ours
+    ? "your group"
+    : (b.group_name ?? (b.activated_by_group != null ? `Group ${b.activated_by_group}` : null));
   return `${by ? `Lit by ${by}` : "Lit"} at ${at} (${timeAgo(b.activated_at, nowMs)})${b.activated_manually ? " · set by Admin" : ""}`;
 }
 
 /** The lightbulbs the viewer may see: under the 2D map in Lightbulbs mode, always under the 3D map. */
 export function LightbulbList({
   bulbs,
+  places,
+  myGroupId = null,
   nowMs,
   selected,
   onSelect,
@@ -31,6 +40,9 @@ export function LightbulbList({
   onReset,
 }: {
   bulbs: MapLightbulb[];
+  places: MapPlaces;
+  /** The viewer's group: its own bulb reads "Lit by your group". */
+  myGroupId?: number | null;
   nowMs: number;
   selected: ProjectorLocation | null;
   onSelect: (location: ProjectorLocation) => void;
@@ -68,8 +80,8 @@ export function LightbulbList({
                 <Lightbulb className="h-4 w-4" />
               </span>
               <span className="min-w-0">
-                <span className="block truncate text-sm font-semibold">{bulbTitle(b)}</span>
-                <span className="block truncate text-xs text-ink-faint">{bulbStatus(b, nowMs)}</span>
+                <span className="block truncate text-sm font-semibold">{bulbTitle(b, places)}</span>
+                <span className="block truncate text-xs text-ink-faint">{bulbStatus(b, nowMs, myGroupId)}</span>
               </span>
             </button>
             {canManage && b.activated_at && (

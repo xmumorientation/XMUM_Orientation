@@ -9,10 +9,10 @@ import {
   PageTitle,
   SuccessBanner,
 } from "@/components/ui";
+import { useProjectorPlaces } from "@/components/useConfig";
 import { loadProjectorStates, type ProjectorState } from "@/lib/projectorStates";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import {
-  PROJECTOR_LABELS,
   PROJECTOR_LOCATIONS,
   type ProjectorLocation,
 } from "@/lib/types";
@@ -25,6 +25,7 @@ type PuzzleStatus = NfcPuzzleStatus & { verified: boolean };
 // mark redeemed, log the physical NFC card handover.
 // FR-9.5: manual activation fallback for damaged stickers.
 export default function GuardianPage() {
+  const places = useProjectorPlaces();
   const supabase = useMemo(() => supabaseBrowser(), []);
   const [groups, setGroups] = useState<{ id: number; name: string }[]>([]);
   const [groupId, setGroupId] = useState<number | null>(null);
@@ -113,7 +114,7 @@ export default function GuardianPage() {
       setError(friendlyError(error));
     } else {
       setNotice(
-        `Set verified for ${PROJECTOR_LABELS[location]}. Hand over the NFC card now.`
+        `Set verified for ${places[location].name}. Hand over the NFC card now.`
       );
       setRevision(value => value + 1);
     }
@@ -123,7 +124,7 @@ export default function GuardianPage() {
     if (!groupId) return;
     if (
       !window.confirm(
-        `Manually light ${PROJECTOR_LABELS[location]} for group ${groupId}? This is logged as a manual override.`
+        `Manually light ${places[location].name} for group ${groupId}? This is logged as a manual override.`
       )
     )
       return;
@@ -140,7 +141,7 @@ export default function GuardianPage() {
     setRevision(value => value + 1);
     setBusy(false);
     if (error) setError(friendlyError(error));
-    else setNotice(`${PROJECTOR_LABELS[location]} lit (manual override).`);
+    else setNotice(`${places[location].name} lit (manual override).`);
   }
 
   return (
@@ -198,7 +199,7 @@ export default function GuardianPage() {
         <Card className="space-y-3">
           <div className="flex items-center justify-between">
             <span className="font-semibold">
-              {PROJECTOR_LABELS[location]} set
+              {places[location].name} set
             </span>
             <span
               className={cn(

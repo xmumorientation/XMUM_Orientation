@@ -238,6 +238,7 @@
 
 /* ── Puzzles ─────────────────────────────────────────────────────────────── */
 .gc-puzzle { display: grid; gap: 12px; padding: 16px; align-content: start; }
+.gc-puzzle-img { display: block; width: 100%; border-radius: 14px; border: 1px solid var(--gc-line); }
 .gc-puzzle-empty {
   display: grid; place-items: center; aspect-ratio: 5 / 3; max-width: 100%; border-radius: 14px;
   border: 1px dashed var(--gc-line-2); color: var(--gc-mute); font-size: 13px;

@@ -242,6 +242,24 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 
 ## Done
 
+### A projector's picture and place are a group's reward, 2026-10-22
+Migration `0098_projector_clues.sql` (**needs running**, after 0097):
+- A group that holds all 5 pieces of a key taps the key on Items (`KeySheet`) and sees that projector's picture (Admin → Puzzles: where its NFC card is) and its place, under "Where the NFC card is". Before, that box was a sample Guardian photo that waited for the map unlock.
+- For a Freshie or Faci a place shows only for keys their group completed or projectors it lit; everything else stays Star, Wheel and Orbit, even after the map unlocks (Items, the map's Projectors list, `/activate`). Key titles always use the code name ("Orbit key unlocked"). Staff see every place.
+- Server side: Freshie and Faci can no longer read the `puzzle_image_*` and `projector_place_*` config keys ("all read config" policy). `fn_my_projector_clues()` returns the picture and place of each projector the caller's group has earned; staff get all three. Clients: `loadProjectorClues()` in [projectorPlaces.ts](../src/lib/projectorPlaces.ts); before 0098 they fall back to the config with the same rule.
+- Map list: the viewer's own group reads "Lit by your group"; another group's bulb reads "Lit at …" (0096).
+- The picture is shown whole, no longer cut into 5 strips on the Freshie side. Admin and HOGM see it as groups will. Staff's old `/inventory` view (`GroupInventory`, `PuzzleBoard`) still cuts it.
+- Not covered: the pictures are in the public `puzzle-images` bucket, so a picture's own link opens for anyone who has it (the file names carry the upload time, so they are hard to guess). Making the bucket private needs signed links from the server.
+- Tests: `tests/projector-clues/db.test.ts`.
+
+### Projector places are set by Admin and HOGM, 2026-10-22
+Migration `0097_projector_places.sql` (**needs running**). Where the three projectors stand is not decided yet, so the place is no longer fixed in code:
+- `B1`, `A3` and `TF` stay the projectors' ids (`projector_location`) and are never shown as places. Players see the code names Star, Wheel and Orbit until the map unlocks, then the place.
+- The place is game_config `projector_place_<B1|A3|TF>`, `{"name", "short"}` (short is for small cards, at most 8 characters). Admin sets it on Admin → Puzzles (now "Projectors and puzzle pictures"), HOGM on Game control → Puzzles (`ProjectorPlaceForm`). 0097 lets HOGM set those keys through `fn_set_config`, like the puzzle pictures (0071) and game lengths (0072).
+- Pages read it through `projectorPlaces()` ([projectorPlaces.ts](../src/lib/projectorPlaces.ts); server pages such as `/activate`) or `useProjectorPlaces()` (client pages, live through `useConfig`). A missing value falls back to `PROJECTOR_LABELS` / `PROJECTOR_SHORT_LABELS` in `types.ts`, so nothing changes until a place is saved.
+- Since 0098, Freshie and Faci no longer read these keys (see above). Moving a projector's spot on the map is still Admin → Map → Projectors → Move.
+- Still to decide (team): the three places and by when; then the NFC card, the Guardian GM and the map spot follow.
+
 ### Interface wording: "projector" and "lit", 2026-10-22
 On every page, the three B1, A3 and TF things are called **projectors**, never lightbulbs or bulbs, and their state is **lit** / **not lit yet**, never revived, activated or dormant. This covers the map's Projectors tab and list, Freshie Items, `/activate`, the victory screen, Guardian, the big screen, Admin and the error messages in `utils.ts`. The NFC card's code is the "NFC code". Code names (`MapLightbulb`, `fn_map_lightbulbs`, `layer=bulbs`) are unchanged. Admin → NFC (a test tool) still says "activation".
 

@@ -15,6 +15,7 @@ import { ACTIVATION_JOURNEY_KEY, readActivationJourney } from "@/lib/activation-
 import { DEFAULT_ZONE_KEYS, funfairFromBulbs } from "@/lib/funfair";
 import { MAP_BUILDINGS } from "@/lib/mapBuildings";
 import { GPS_POINTS, LANDMARKS } from "@/lib/mapGeo";
+import { DEFAULT_PLACES } from "@/lib/projectorPlaces";
 import type { GroupPosition, MapLightbulb, ProjectorLocation, Station, StationStatus } from "@/lib/types";
 
 // DRAFT (map-3d-draft branch): mock map data for /map3d/preview. Builds the
@@ -225,6 +226,8 @@ export function useMockMapData(opts: MockOptions): CampusMapData {
 
   return {
     myId: "preview",
+    myGroupId: 9,
+    places: DEFAULT_PLACES,
     nowMs,
     stations,
     mapStations,

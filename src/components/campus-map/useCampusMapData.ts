@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { readingText, useAccuracyCheck, useCheckLog } from "@/components/AccuracyCheck";
 import { bulbTitle } from "@/components/LightbulbList";
 import { useProfile } from "@/components/ProfileProvider";
+import { useProjectorPlaces } from "@/components/useConfig";
 import { funfairFromBulbs, funfairFromState, funfairMissing, type FunfairPower } from "@/lib/funfair";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import type {
@@ -16,6 +17,7 @@ import type {
 } from "@/lib/types";
 import { MAP_BUILDINGS, stationPosition } from "@/lib/mapBuildings";
 import { resolveGroupPin, type GroupPin } from "@/lib/groupPosition";
+import { loadProjectorClues, NO_CLUES, type MapPlaces, type ProjectorClues } from "@/lib/projectorPlaces";
 import { friendlyError } from "@/lib/utils";
 import { gpsToMapPercent, setExtraAnchors } from "@/lib/mapGeo";
 
@@ -159,11 +161,21 @@ export function useCampusMapData({
   loadFunfair?: boolean;
 }) {
   const supabase = useMemo(() => supabaseBrowser(), []);
-  const myId = useProfile().id;
+  const profile = useProfile();
+  const myId = profile.id;
+  const myGroupId = profile.group_id;
   const [stations, setStations] = useState<Station[]>([]);
   const [layerState, setLayerState] = useState<MapLayer>("stations");
   const layer: MapLayer = bulbLayer ? layerState : "stations";
   const [bulbs, setBulbs] = useState<MapLightbulb[]>([]);
+  // Where each projector stands. Staff read the config; a Freshie or Faci gets only the places their group
+  // has earned (fn_my_projector_clues, 0098), and the rest stay code names (null).
+  const player = profile.role === "freshie" || profile.role === "faci";
+  const staffPlaces = useProjectorPlaces();
+  const [clues, setClues] = useState<ProjectorClues>(NO_CLUES);
+  const places: MapPlaces = player
+    ? { B1: clues.B1?.place ?? null, A3: clues.A3?.place ?? null, TF: clues.TF?.place ?? null }
+    : staffPlaces;
   const [selectedBulb, setSelectedBulb] = useState<ProjectorLocation | null>(null);
   const [movingBulb, setMovingBulb] = useState<ProjectorLocation | null>(null);
   // Admin anchors (map_anchors), added to the built-in ones in mapGeo.
@@ -376,7 +388,7 @@ export function useCampusMapData({
 
   async function resetBulb(loc: ProjectorLocation) {
     const b = bulbs.find((item) => item.location === loc);
-    if (!b || !window.confirm(`Turn off ${bulbTitle(b)}? The group that lit it loses it.`)) {
+    if (!b || !window.confirm(`Turn off ${bulbTitle(b, places)}? The group that lit it loses it.`)) {
       return;
     }
     setResetting(loc);
@@ -417,8 +429,14 @@ export function useCampusMapData({
     // Unlit bulbs come back only after the map unlocks (or for Committee);
     // fn_map_lightbulbs decides, so a bulb's place is never sent early.
     async function loadBulbs() {
-      const { data } = await supabase.rpc("fn_map_lightbulbs");
-      if (active && data) setBulbs(data as MapLightbulb[]);
+      const [{ data }, earned] = await Promise.all([
+        supabase.rpc("fn_map_lightbulbs"),
+        player ? loadProjectorClues(supabase) : null,
+      ]);
+      if (!active) return;
+      if (data) setBulbs(data as MapLightbulb[]);
+      // Before 0098 ("missing") a player sees code names only.
+      if (earned) setClues(earned === "missing" ? NO_CLUES : earned);
     }
     async function loadPositions() {
       if (!showGroupPins) return;
@@ -512,7 +530,7 @@ export function useCampusMapData({
       document.removeEventListener("visibilitychange", onVisible);
       supabase.removeChannel(channel);
     };
-  }, [supabase, showGroupPins]);
+  }, [supabase, showGroupPins, player]);
 
   // The map shows Day 2 stations only (Day 1 stations are managed on Admin → Stations).
   const mapStations = useMemo(() => stations.filter((s) => s.day === 2), [stations]);
@@ -545,6 +563,7 @@ export function useCampusMapData({
 
   return {
     myId,
+    myGroupId,
     nowMs,
     // Stations
     stations,
@@ -567,7 +586,8 @@ export function useCampusMapData({
     // Layer
     layer,
     setLayer,
-    // Lightbulbs
+    // Projectors (lightbulbs) and where each stands (Admin → Puzzles, 0097)
+    places,
     bulbs,
     litCount,
     // The funfair's zones (3D map)

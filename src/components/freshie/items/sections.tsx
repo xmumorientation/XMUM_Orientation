@@ -19,7 +19,7 @@ import {
   type ProjectorLocation,
 } from "@/lib/types";
 
-import { cardState, fillZones, lampState, ourLitLocation, zoneNames, type CardState, type ZoneName } from "./derive";
+import { CODE_NAMES, cardState, fillZones, lampState, ourLitLocation, zoneNames, type CardState, type ZoneName } from "./derive";
 import { KEY_NAMES, KeyEmblem, type KeyMode } from "./KeyEmblem";
 import type { Arrivals } from "./useNewPieces";
 import type { BoxKind, HistoryEntry, ItemsData } from "./types";
@@ -123,7 +123,7 @@ export function KeyBanner({
         <KeyRound size={20} strokeWidth={2} />
       </span>
       <span className="fi-keyban-text">
-        <b>{zoneNames(data)[loc].short} key unlocked</b>
+        <b>{CODE_NAMES[loc]} key unlocked</b>
         <span>
           {data.phase === "endgame"
             ? "Go to the Guardian and scan the part card."
@@ -258,7 +258,7 @@ export function BlueprintDetail({ data, loc }: { data: ItemsData; loc: Projector
           <span className="fi-eb fh-mono">{CARD_STATUS[state]}</span>
           <h2>{names[loc].long}</h2>
           <span className="fi-detail-key-name">
-            {data.mapUnlocked ? KEY_NAMES[loc] : "Location revealed when the map unlocks"}
+            {data.places[loc] ? KEY_NAMES[loc] : "Place revealed when all 5 pieces are in"}
           </span>
         </div>
         <span className="fi-count fh-mono">

@@ -9,13 +9,13 @@ import { createPortal } from "react-dom";
 import { BOX_REVEAL_VIDEO, BoxReveal } from "@/components/BoxReveal";
 import { vxSlab, vxDisplay, nexusBody } from "@/components/home/fonts";
 import { supabaseBrowser } from "@/lib/supabase/client";
-import { PROJECTOR_LABELS, type ProjectorLocation } from "@/lib/types";
+import type { ProjectorLocation } from "@/lib/types";
 import { friendlyError } from "@/lib/utils";
 
 import "../freshie.css";
 import { themeFromColor } from "../groupTheme";
 import { BlindBox } from "./BlindBox";
-import { cardState, keyLocations, zoneNames } from "./derive";
+import { CODE_NAMES, cardState, keyLocations, zoneNames } from "./derive";
 import { KEY_NAMES, KeyEmblem } from "./KeyEmblem";
 import { ActivityList, BlueprintDetail, ItemShelf, KeyBanner, ProjectorKeys, TokenDetail, type ShelfItem } from "./sections";
 import type { BoxKind, BoxReward, ItemsData } from "./types";
@@ -116,7 +116,7 @@ export function FreshieItems({
 
       <ItemShelf data={data} onSelect={selectShelf} />
 
-      <Sheet open={keyFor !== null} onClose={() => setKeyFor(null)} themeVars={themeVars} title={keyFor ? `${names[keyFor].short} key unlocked` : ""}>
+      <Sheet open={keyFor !== null} onClose={() => setKeyFor(null)} themeVars={themeVars} title={keyFor ? `${CODE_NAMES[keyFor]} key unlocked` : ""}>
         {keyFor && <KeySheet data={data} loc={keyFor} />}
       </Sheet>
 
@@ -243,14 +243,15 @@ function useNfcDemo(loc: ProjectorLocation) {
 
 function KeySheet({ data, loc }: { data: ItemsData; loc: ProjectorLocation }) {
   const demo = useNfcDemo(loc);
-  const spot = data.guardian[loc];
   const endgame = data.phase === "endgame";
   const name = zoneNames(data)[loc];
-  const unlocked = data.mapUnlocked;
+  // The place and picture come once all 5 pieces are in (0098); the sheet opens only then.
+  const place = data.places[loc];
+  const image = data.images[loc];
   return (
     <div className="fi-key">
       <span className="fi-eb fh-mono">{name.long}</span>
-      <h2 className="fi-key-title">{name.short} key unlocked</h2>
+      <h2 className="fi-key-title">{CODE_NAMES[loc]} key unlocked</h2>
       <p className="fi-key-sub">All 5 pieces are in. Your {KEY_NAMES[loc]} is ready.</p>
 
       <KeyEmblem className="fi-key-big" loc={loc} owned={data.pieces[loc]} blade />
@@ -260,7 +261,7 @@ function KeySheet({ data, loc }: { data: ItemsData; loc: ProjectorLocation }) {
         <span>
           <b>
             {KEY_NAMES[loc]}
-            {unlocked ? ` · ${PROJECTOR_LABELS[loc]}` : ""}
+            {place ? ` · ${place.name}` : ""}
           </b>
           <small className="fh-mono">
             {data.group.name.toUpperCase()} · ONE USE
@@ -269,25 +270,18 @@ function KeySheet({ data, loc }: { data: ItemsData; loc: ProjectorLocation }) {
       </div>
 
       <figure className="fi-spot">
-        {unlocked && spot.photoUrl ? (
+        {image ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={spot.photoUrl} alt={`Where the Guardian stands: ${spot.place}`} />
+          <img src={image} alt={`Where the ${CODE_NAMES[loc]} NFC card is${place ? `: ${place.name}` : ""}`} />
         ) : (
           <div className="fi-spot-ph" aria-hidden>
-            {unlocked ? <MapPin size={28} /> : <Lock size={26} />}
-            <span className="fh-mono">{unlocked ? "Photo coming soon" : "Hidden until the map unlocks"}</span>
+            {place ? <MapPin size={28} /> : <Lock size={26} />}
+            <span className="fh-mono">{place ? "Picture coming soon" : "Hidden for now"}</span>
           </div>
         )}
         <figcaption>
-          <span className="fi-eb fh-mono">Where the Guardian stands</span>
-          {unlocked ? (
-            <>
-              <b>{spot.place}</b>
-              <span>{spot.hint}</span>
-            </>
-          ) : (
-            <span>The place appears here when the full map unlocks.</span>
-          )}
+          <span className="fi-eb fh-mono">Where the NFC card is</span>
+          {place ? <b>{place.name}</b> : <span>The place appears here once all 5 pieces are in.</span>}
         </figcaption>
       </figure>
 
@@ -302,7 +296,7 @@ function KeySheet({ data, loc }: { data: ItemsData; loc: ProjectorLocation }) {
       )}
 
       <div className="fi-key-actions">
-        {unlocked && (
+        {data.mapUnlocked && (
           <Link href={`/map?focus=${loc}`} className="fh-btn fh-btn-ghost">
             <MapPin size={16} aria-hidden /> Show on map
           </Link>

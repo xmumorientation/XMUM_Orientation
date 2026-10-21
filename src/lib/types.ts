@@ -355,11 +355,17 @@ export interface AuditEntry {
 
 export const PROJECTOR_LOCATIONS: ProjectorLocation[] = ["B1", "A3", "TF"];
 
+/**
+ * Default places. A page shows game_config projector_place_<location> (0097),
+ * set by Admin and HOGM: read it with projectorPlaces() / useProjectorPlaces().
+ */
 export const PROJECTOR_LABELS: Record<ProjectorLocation, string> = {
   B1: "B1 Basement",
   A3: "A3 Building",
   TF: "Track & Field",
 };
+
+export const PROJECTOR_SHORT_LABELS: Record<ProjectorLocation, string> = { B1: "B1", A3: "A3", TF: "T&F" };
 
 /** Code names used until the full map unlocks, so a page never gives a location away. */
 export const PROJECTOR_CODE_NAMES: Record<ProjectorLocation, string> = {

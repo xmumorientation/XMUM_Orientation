@@ -3,9 +3,10 @@
 import { ExternalLink } from "lucide-react";
 
 import { Card } from "@/components/ui";
+import { useProjectorPlaces } from "@/components/useConfig";
 import { funfairPreviewHref, toggleKey, useFunfairZones } from "@/components/useFunfairZones";
 import type { FunfairZoneRow } from "@/lib/funfair";
-import { PROJECTOR_LABELS, PROJECTOR_LOCATIONS } from "@/lib/types";
+import { PROJECTOR_LOCATIONS } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 // Live control → Funfair: which lightbulbs (keys) power each zone of the 3D
@@ -34,6 +35,7 @@ function Choice({ on, disabled, onClick, children }: { on: boolean; disabled: bo
 }
 
 function ZoneRow({ row, on, busy, save }: { row: FunfairZoneRow; on: boolean; busy: boolean; save: (r: FunfairZoneRow) => void }) {
+  const places = useProjectorPlaces();
   return (
     <div className="space-y-2 px-4 py-3">
       <div className="flex items-center gap-3">
@@ -59,7 +61,7 @@ function ZoneRow({ row, on, busy, save }: { row: FunfairZoneRow; on: boolean; bu
         <span className="w-16 text-xs text-ink-faint">Keys</span>
         {PROJECTOR_LOCATIONS.map((loc) => (
           <Choice key={loc} on={row.required.includes(loc)} disabled={busy} onClick={() => save(toggleKey(row, loc))}>
-            {PROJECTOR_LABELS[loc]}
+            {places[loc].name}
           </Choice>
         ))}
       </div>

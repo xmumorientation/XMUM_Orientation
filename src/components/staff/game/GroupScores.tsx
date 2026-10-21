@@ -6,8 +6,9 @@ import { useEffect, useMemo, useState } from "react";
 import { groupSwatch } from "@/components/freshie/groupTheme";
 import { KEY_NAMES, KeyEmblem } from "@/components/freshie/items/KeyEmblem";
 import { vxDisplay, vxSlab } from "@/components/home/fonts";
+import { useProjectorPlaces } from "@/components/useConfig";
 import { supabaseBrowser } from "@/lib/supabase/client";
-import { PIECES_PER_SET, PROJECTOR_LABELS, PROJECTOR_LOCATIONS, type ProjectorLocation } from "@/lib/types";
+import { PIECES_PER_SET, PROJECTOR_LOCATIONS, type ProjectorLocation } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 import "./game-control.css";
@@ -32,6 +33,7 @@ const TOTAL = PIECES_PER_SET * PROJECTOR_LOCATIONS.length;
 const emptyPieces = (): Pieces => ({ B1: [], A3: [], TF: [] });
 
 export function GroupScores({ countsOnly = false }: { countsOnly?: boolean }) {
+  const places = useProjectorPlaces();
   const supabase = useMemo(() => supabaseBrowser(), []);
   const [groups, setGroups] = useState<GroupRow[]>([]);
   const [pieces, setPieces] = useState<Record<number, Pieces>>({});
@@ -165,7 +167,7 @@ export function GroupScores({ countsOnly = false }: { countsOnly?: boolean }) {
                             <KeyEmblem className="gc-key-art" loc={loc} owned={own[loc]} mode={ours ? "lit" : "normal"} />
                           )}
                           <b>{KEY_NAMES[loc]}</b>
-                          <small>{PROJECTOR_LABELS[loc]}</small>
+                          <small>{places[loc].name}</small>
                           {(!countsOnly || ours || full) && (
                             <span className="gc-chip" data-tone={ours ? "live" : full ? "ok" : "off"}>
                               {ours ? (

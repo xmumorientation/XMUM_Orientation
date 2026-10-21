@@ -101,6 +101,8 @@ This reflects only the migration files in the repo. Any manual changes made to t
 | Users (CSV import; edit role / group / station) | — | — | — | — | — | — | — | ✓ | DB + API |
 | Stations config (add / edit / delete, Game Masters) | — | — | — | — | — | — | ✓ ‡ | ✓ | DB |
 | Puzzle pictures | — | — | — | — | — | — | ✓ ‡ | ✓ | DB |
+| Each projector's place (game_config `projector_place_*`, 0097) | — | — | — | — | — | — | ✓ ‡ | ✓ | DB |
+| See a projector's picture and place (`fn_my_projector_clues`, 0098; Freshie and Faci cannot read those config keys) | Own Group: completed key or lit | Own Group: completed key or lit | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | DB |
 | Attendance Sessions open / close | — | — | — | — | — | — | — | ✓ | DB |
 | Schedule / FAQ management | — | — | — | — | — | — | — | ✓ | DB |
 | Brand config | — | — | — | — | — | — | — | ✓ | DB |

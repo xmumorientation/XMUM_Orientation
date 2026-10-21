@@ -18,11 +18,11 @@ import { Card, EmptyState, PageTitle, Spinner } from "@/components/ui";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import {
   PIECES_PER_SET,
-  PROJECTOR_LABELS,
   PROJECTOR_LOCATIONS,
   type InventoryEntry,
   type ProjectorLocation,
 } from "@/lib/types";
+import { projectorPlaces } from "@/lib/projectorPlaces";
 import { cn } from "@/lib/utils";
 
 export default function InventoryPage() {
@@ -193,6 +193,7 @@ function GroupInventory() {
   const profile = useProfile();
   const { group } = useGroup();
   const { config } = useConfig();
+  const places = projectorPlaces(config);
   const supabase = useMemo(() => supabaseBrowser(), []);
   const [entries, setEntries] = useState<InventoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -276,7 +277,7 @@ function GroupInventory() {
           <Card key={loc}>
             <div className="mb-2 flex items-center justify-between">
               <h2 className="font-semibold">
-                {PROJECTOR_LABELS[loc]} Blueprint
+                {places[loc].name} Blueprint
               </h2>
               <span
                 className={cn(
@@ -299,7 +300,7 @@ function GroupInventory() {
               <p className="mt-2 flex items-center justify-center gap-1.5 text-center text-sm font-semibold text-amber-500">
                 <Sparkles size={16} strokeWidth={1.75} className="shrink-0" />
                 Set complete! Bring your group to the Guardian at{" "}
-                {PROJECTOR_LABELS[loc]} to verify.
+                {places[loc].name} to verify.
               </p>
             )}
           </Card>

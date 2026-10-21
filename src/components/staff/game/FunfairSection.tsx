@@ -2,8 +2,9 @@
 
 import { ExternalLink } from "lucide-react";
 
+import { useProjectorPlaces } from "@/components/useConfig";
 import { funfairPreviewHref, toggleKey, useFunfairZones } from "@/components/useFunfairZones";
-import { PROJECTOR_LABELS, PROJECTOR_LOCATIONS } from "@/lib/types";
+import { PROJECTOR_LOCATIONS } from "@/lib/types";
 
 import { StatusLine } from "./parts";
 
@@ -19,6 +20,7 @@ const OVERRIDES = [
 ] as const;
 
 export function FunfairSection() {
+  const places = useProjectorPlaces();
   const { rows, missing, error, busy, save, isOn } = useFunfairZones();
   // The finale (the lake stage's concert) plays while all three zones are on.
   const finale = rows?.length ? rows.every(isOn) : null;
@@ -60,7 +62,7 @@ export function FunfairSection() {
                       disabled={busy}
                       onClick={() => save(toggleKey(row, loc))}
                     >
-                      {PROJECTOR_LABELS[loc]}
+                      {places[loc].name}
                     </button>
                   ))}
                 </div>
