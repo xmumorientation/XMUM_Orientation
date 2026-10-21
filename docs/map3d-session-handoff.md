@@ -1,4 +1,4 @@
-# 3D map: handoff for a new conversation (updated 2026-10-17)
+# 3D map: handoff for a new conversation (updated 2026-10-21)
 
 Ben may continue this work in a new Claude conversation. This file says where everything stands. Read it before doing anything, then read what you need:
 
@@ -14,6 +14,7 @@ Ben may continue this work in a new Claude conversation. This file says where ev
   - `map-3d-draft` (PR #39), `map3d-batch4` (#40), `map3d-batch5` (#41) and `funfair-central` (#44, #45) are merged.
   - The lake stage is on `funfair-central` too (Ben, 2026-10-16: no more new branches).
   - The lawn and the walkways are on `map3d-footpaths` (Ben asked for a new branch for them, 2026-10-17).
+  - B1 is on `map3d-b1` (Ben, 2026-10-21).
   - Before a push, merge the latest `origin/main` into it and check that `git merge-tree --write-tree origin/main HEAD` is clean, so its PR merges without conflicts.
 - Work in **batches**: finish one, show Ben the results (screenshots, in Chinese), and wait for his go before the next one.
 - **Usage limit:** he watches it closely, so keep agents few. If he says the 5-hour limit is above about 85%:
@@ -24,6 +25,15 @@ Ben may continue this work in a new Claude conversation. This file says where ev
 - Talk to Ben in Chinese, short and direct.
 
 ## Where things stand
+
+### B1, the Student Activity Centre (2026-10-21, branch `map3d-b1`)
+
+- B1 is modelled on the real building from Ben's photos and Esri imagery (`map3d/b1.tsx`). What it has is in the roadmap's "Done".
+- **Its front faces west, to the lake.** The stairs and the plaza stand west of the footprint (`B1_FRONT_M` in `geo.ts`, in metres in B1's own frame: x east, z south). `b1Point()` turns that frame into world units.
+- **Its footprint is from the imagery** (`B1_PLACE`): OSM's outline is about 8 m too far west. `B1_CENTRE_M` (OSM's centre) still pins `UNITS_PER_M`: leave it.
+- Heights are real metres times `LIFT` (1.5). Ben: it is 3–4 storeys, so keep it at least that tall.
+- Views: from the west (like Ben's photo) `/map3d?cam=-1,7.4,3.6,-1,2,21`; from the funfair side `cam=28,26,33,-2,0,28`.
+- **Later:** check the north and east sides against photos (none yet); railings between the brick pillars; the stairs' south end is straight (the imagery shows a curved wall).
 
 ### Lawn and walkways (2026-10-17, branch `map3d-footpaths`)
 
@@ -135,8 +145,8 @@ Ben may continue this work in a new Claude conversation. This file says where ev
 
 | What changes | Files | Safe? | Rule |
 |---|---|---|---|
-| How a building or landmark looks (roofs, colours, windows, the statue, B1, courts, water, trees) | `map3d/buildings.tsx`, `statue.tsx`, `sports.tsx`, `water.tsx`, `vegetation.tsx`, `textures.ts`, `atmosphere.tsx` | Yes | Keep the exported component names and props, and keep the lite-mode branches (phones). |
-| Where a building stands or how big it is | `map3d/geo.ts` (`BLOCKS`, `B1_PLACE`, `DOME_PLACE`, `STATUE`), `campusData.ts`, `scripts/map3d/*` | Careful | Station markers and hit areas follow `map3d/places.ts`, which reads these positions. After a move, check `/map3d/preview` (markers on the right buildings) and `inKeepOut` (no trees inside). Don't change `UNITS_PER_M`, the world axes or `gpsToWorld`: group GPS pins depend on them. |
+| How a building or landmark looks (roofs, colours, windows, the statue, B1, courts, water, trees) | `map3d/buildings.tsx`, `b1.tsx`, `statue.tsx`, `sports.tsx`, `water.tsx`, `vegetation.tsx`, `textures.ts`, `atmosphere.tsx` | Yes | Keep the exported component names and props, and keep the lite-mode branches (phones). |
+| Where a building stands or how big it is | `map3d/geo.ts` (`BLOCKS`, `B1_PLACE`, `B1_FRONT_M`, `DOME_PLACE`, `STATUE`), `campusData.ts`, `scripts/map3d/*` | Careful | Station markers and hit areas follow `map3d/places.ts`, which reads these positions. After a move, check `/map3d/preview` (markers on the right buildings) and `inKeepOut` (no trees inside). Don't change `UNITS_PER_M`, the world axes or `gpsToWorld`: group GPS pins depend on them. |
 | The funfair and the lake stage | `map3d/funfair/`, `map3d/lakefront/` | Yes | Self-contained. They meet the rest of the map only in `CampusScene.tsx`, and in `geo.ts` (`FUNFAIR_LAND`, `DOME_PLACE`). |
 | The map pages and data | `components/CampusMap.tsx`, `components/campus-map/*`, the pages | Careful | Shared by the 3D view and the 2D fallback. Check both (`?map=2d`) on `/map3d/preview` for each role. |
 

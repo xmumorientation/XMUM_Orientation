@@ -332,6 +332,29 @@ One migration, `0093` (already applied on the live database, under its first nam
   - One summary RPC for GM piece counts instead of 30 `fn_puzzle_status` calls.
   - Blind boxes: Admin's station assign modes (Ben) and `bb_holder_role` (item 8).
 
+### Map: B1 modelled on the real building, 2026-10-21 (Ben, branch `map3d-b1`)
+No migration.
+- B1, the Student Activity Centre, is rebuilt from Ben's photos and Esri imagery (`map3d/b1.tsx`). The old white box in `buildings.tsx` is gone.
+- Its front faces west, to the lake:
+  - a grey plaza with beige lines;
+  - grand stairs, the same depth all along (Ben), in three flights with two landings, up to a podium;
+  - a landing with bonsai north of the stairs.
+- The activity centre:
+  - two white floor bands with planting, round glass and brick walls;
+  - a rounded north-west corner under a glass rotunda;
+  - a big canopy (dark steel frame, light panels) rising to the south-west over a glass pavilion;
+  - three tall brick pillars holding a planted roof slab at the south-west corner;
+  - an outside stair up to the first floor.
+- The sports hall at the east end has a low gable roof, with air-conditioning units beside it.
+- Height, about 3–4 storeys (Ben): a 3 m podium, two floors behind the bands and a third under the canopy, about 18 m in all. It is drawn 1.5 times taller, like the A-blocks (`LIFT` in `b1.tsx`).
+- Position:
+  - B1 now stands where the imagery shows it (`B1_PLACE` in `geo.ts`, 117.6 × 55 m). OSM's outline was about 8 m too far west.
+  - `B1_CENTRE_M`, `UNITS_PER_M` and the GPS conversion are unchanged, so group pins do not move.
+  - B1's station markers, its tap area and the parking south of it follow the new footprint. The label and the tap area are lower (6 and 4.8; they were 11 and 9.6).
+- Trees, bushes and lamps keep off the stairs and the plaza (`B1_FRONT` in `inKeepOut`).
+- Four meshes: paint, two textured walls, and glass that lights at night. The old B1 had about 20. Phones draw the same model.
+- Not checked against photos: the north and east sides (drawn from imagery). Not seen on a real phone yet.
+
 ### Map: the lake stage stays dark until the finale, 2026-10-19 (Ben, branch `lakefront-dark`)
 No migration. The LakeFront Café no longer lights up at sunset and night on its own: the ribs, the wash, the uplights, the small lights, the light pools, the beams and the phone halos stay off until all three funfair zones are on. Then the concert's opening starts from the dark stage (follow spot, ribs one by one, bang, show). When a zone goes off the show winds down and the stage is dark again.
 - `LakefrontStage.tsx` holds `dim` at 1; putting back `smooth(p / 0.18)` brings the evening light back. `kit.ts`: the small lights now go fully dark with `dim` (they kept 30%). The halos follow the concert's power.
