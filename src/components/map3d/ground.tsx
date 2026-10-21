@@ -3,7 +3,7 @@
 import { useEffect, useMemo } from "react";
 import * as THREE from "three";
 
-import { drawB1Plaza } from "./b1";
+import { drawB1Grounds } from "./b1";
 import {
   B1_PLACE,
   BLOCKS,
@@ -170,8 +170,7 @@ function makeGroundTexture(lite: boolean): THREE.CanvasTexture {
     speckle(Math.round((x1 - x0) * (z1 - z0) * 2.4), x0, z0, x1, z1, "rgba(200,210,120,0.14)", "rgba(70,90,30,0.13)");
   }
   ctx.restore();
-  poly(img(GROUND.roadSpur), COLORS.road);
-  drawB1Plaza(ctx);
+  drawB1Grounds(ctx);
 
   // dashed centre line around the outer road
   const ring = img(GROUND.road.map((p, i) => [(p[0] + GROUND.base[i][0]) / 2, (p[1] + GROUND.base[i][1]) / 2] as const));

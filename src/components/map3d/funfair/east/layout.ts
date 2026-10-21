@@ -46,8 +46,8 @@ export function dormCentre(name: string): [number, number] {
 
 /**
  * The lawn's box. The south-west corner (x < -60, z < -12) is the lake park: see onLawn. The south edge reaches past
- * the funfair's land to x = -124, for the pirate ship and the arcade on the real middles of D3 and D1; that keeps
- * at least 5 m off B1's grey service road (about x = -130 south of D1).
+ * the funfair's land to x = -124, for the pirate ship and the arcade on the real middles of D3 and D1; B1's north
+ * road and its parking bays end about 27 m further south (x = -151; B1_ROADS_M in geo.ts, since 2026-10-21).
  */
 export const BOUNDS = { x: [-124, 114] as [number, number], z: [-121, 117] as [number, number] };
 
@@ -110,8 +110,8 @@ export const HH_PLAZA_R = 8;
 export const HAUNTED_RY = Math.atan2(HH_PLAZA[0] - HAUNTED[0], HH_PLAZA[1] - HAUNTED[1]);
 
 /**
- * D1: the arcade on D1's middle (about (-120, 86)); its front faces north (+x). Its back wall (x = -125) stays
- * 6-7 m off B1's grey service road.
+ * D1: the arcade on D1's middle (about (-120, 86)); its front faces north (+x). Its back wall (x = -125) stays well
+ * off B1's north road (Ben asked that D1 not touch the road).
  */
 export const ARCADE = dormCentre("D1");
 export const ARCADE_RY = Math.PI / 2;

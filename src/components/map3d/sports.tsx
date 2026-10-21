@@ -4,6 +4,7 @@ import { useLayoutEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 
 import {
+  B1_NORTH_BAYS,
   CARPARK,
   PITCH_M,
   SPORTS,
@@ -490,20 +491,28 @@ function OutdoorGym() {
 
 const BAY = { w: 2.5 * UNITS_PER_M, d: 5 * UNITS_PER_M };
 
-/** One row of bays along B1's south face; the rest of the strip is the service road. */
+/**
+ * One row of bays along B1's south face (the rest of the strip is the service road), and the row along the north
+ * side of B1's north road (B1_NORTH_BAYS; b1.tsx paints them).
+ */
 function bays() {
   const [, x1] = CARPARK.x;
   const [z0, z1] = CARPARK.z;
   const n = Math.floor((z1 - z0) / BAY.w);
-  return Array.from({ length: n }, (_, i) => ({ x: x1 - BAY.d / 2, z: z0 + (i + 0.5) * BAY.w }));
+  const south = Array.from({ length: n }, (_, i) => ({ x: x1 - BAY.d / 2, z: z0 + (i + 0.5) * BAY.w }));
+  return [...south, ...B1_NORTH_BAYS.map(([x, z]) => ({ x, z }))];
 }
 
 export function drawCarPark(ctx: CanvasRenderingContext2D) {
   const [x0, x1] = CARPARK.x;
   const [z0, z1] = CARPARK.z;
+  const [r0, r1] = CARPARK.road;
   if (x1 - x0 < BAY.d * 1.6) return;
+  // the road, from B1's west road (a round corner on its outer side) to the east road
   ctx.fillStyle = "#7f725f";
-  ctx.fillRect(x0, z0 - 1, x1 - x0, z1 - z0 + 2);
+  ctx.beginPath();
+  ctx.roundRect(x0, r0, x1 - x0, r1 - r0, [1.2, 0, 0, 0]);
+  ctx.fill();
   ctx.strokeStyle = "rgba(255,255,255,0.75)";
   ctx.lineWidth = 0.05;
   for (let z = z0; z <= z1 + 1e-6; z += BAY.w) {
@@ -517,8 +526,8 @@ export function drawCarPark(ctx: CanvasRenderingContext2D) {
   ctx.setLineDash([0.5, 0.4]);
   ctx.strokeStyle = "rgba(255,255,255,0.6)";
   ctx.beginPath();
-  ctx.moveTo(road, z0 - 1);
-  ctx.lineTo(road, z1 + 1);
+  ctx.moveTo(road, r0 + 1.2);
+  ctx.lineTo(road, r1 - 0.3);
   ctx.stroke();
   ctx.setLineDash([]);
 }

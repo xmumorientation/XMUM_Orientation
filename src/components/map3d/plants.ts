@@ -1,4 +1,4 @@
-import { BUSH_ROWS, EXTENT, GROUND, TREE_ROWS, TREE_SPOTS, inKeepOut, toWorld, type Img, type World } from "./geo";
+import { B1_PALMS, BUSH_ROWS, EXTENT, GROUND, TREE_ROWS, TREE_SPOTS, inKeepOut, toWorld, type Img, type World } from "./geo";
 
 // DRAFT: where every tree, palm, bush and lamp stands. Computed once and
 // shared by the 3D meshes and the ground texture (soft shade under trees).
@@ -50,6 +50,9 @@ export function campusTrees(): Plant[] {
   for (const p of TREE_SPOTS) push(...toWorld(p), "broad");
   // nothing on the courts, the car park, the track or the grandstand
   campusCache = out.filter((t) => !inKeepOut(t.x, t.z, 0.7));
+  // then the palms on the strip along B1's north road, which the keep-out covers with the road: about 10 m tall, as
+  // in the imagery (the art's palms are over three times that)
+  for (const [x, z] of B1_PALMS) campusCache.push({ x, z, s: 0.3 + r() * 0.05, rot: r() * Math.PI * 2, kind: "palm" });
   return campusCache;
 }
 
