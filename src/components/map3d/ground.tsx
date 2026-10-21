@@ -5,6 +5,7 @@ import * as THREE from "three";
 
 import { drawB1Crossing, drawB1Grounds } from "./b1";
 import {
+  A_FRONT,
   B1_PLACE,
   BLOCKS,
   COLORS,
@@ -39,6 +40,8 @@ const PX_LITE = 10;
 
 /** The darker outline on each side of a walkway (world units, about 1.1 m). */
 const PATH_EDGE = 0.16;
+/** The kerb round the grey paving (world units, about 0.6 m). */
+const KERB = 0.09;
 
 function rng(seed: number) {
   return () => {
@@ -150,14 +153,7 @@ function makeGroundTexture(lite: boolean): THREE.CanvasTexture {
   // The walkways (OSM): every outline first, then every fill, so walks that meet join into one, as in the art.
   for (const p of FOOTPATHS) stroke(p, FOOTPATH_W + 2 * PATH_EDGE, COLORS.pathEdge);
   for (const p of FOOTPATHS) stroke(p, FOOTPATH_W, COLORS.path);
-  // paved plaza round the statue, over the two walks that cross it
-  {
-    const plaza: World[] = [-1, 1].flatMap((sx) =>
-      [-1, 1].map((sz) => [STATUE[0] + sx * 3.2, STATUE[1] + sx * sz * 3.2] as World),
-    );
-    poly(plaza, COLORS.plaza);
-    drawPaving(ctx, plaza, 0.8);
-  }
+  drawAFront(ctx);
   ctx.restore();
 
   // the funfair's land: lawn, like the lake park
@@ -236,28 +232,72 @@ function makeGroundTexture(lite: boolean): THREE.CanvasTexture {
   return tex;
 }
 
-function drawPaving(ctx: CanvasRenderingContext2D, w: readonly World[], step: number) {
-  ctx.save();
+/** Joints every `step` world units across a paved rectangle, square to its sides (corners in order round it). */
+function drawPaving(ctx: CanvasRenderingContext2D, [o, a, , b]: readonly World[], step: number) {
+  const along = (p: World): [World, number] => {
+    const len = Math.hypot(p[0] - o[0], p[1] - o[1]);
+    return [[(p[0] - o[0]) / len, (p[1] - o[1]) / len], len];
+  };
+  const [ua, la] = along(a);
+  const [ub, lb] = along(b);
   ctx.beginPath();
-  w.forEach(([x, z], i) => (i ? ctx.lineTo(x, z) : ctx.moveTo(x, z)));
-  ctx.closePath();
-  ctx.clip();
-  ctx.strokeStyle = "rgba(120,110,100,0.25)";
+  for (let s = step; s < la; s += step) {
+    ctx.moveTo(o[0] + ua[0] * s, o[1] + ua[1] * s);
+    ctx.lineTo(b[0] + ua[0] * s, b[1] + ua[1] * s);
+  }
+  for (let t = step; t < lb; t += step) {
+    ctx.moveTo(o[0] + ub[0] * t, o[1] + ub[1] * t);
+    ctx.lineTo(a[0] + ub[0] * t, a[1] + ub[1] * t);
+  }
+  ctx.strokeStyle = "rgba(90,80,70,0.18)";
   ctx.lineWidth = 0.05;
-  const xs = w.map((p) => p[0]);
-  const zs = w.map((p) => p[1]);
-  for (let x = Math.floor(Math.min(...xs)); x < Math.max(...xs); x += step) {
+  ctx.stroke();
+}
+
+/**
+ * The paving in front of the A-row (geo.ts A_FRONT): every kerb first, so pieces that meet join into one, then the
+ * forecourts and the statue's plaza, the terrace and walks, and the crossing over the terrace on A3's axis.
+ */
+function drawAFront(ctx: CanvasRenderingContext2D) {
+  const { courts, strips, crossing } = A_FRONT;
+  const trace = (pts: readonly World[], close: boolean) => {
     ctx.beginPath();
-    ctx.moveTo(x, Math.min(...zs));
-    ctx.lineTo(x, Math.max(...zs));
+    pts.forEach(([x, z], i) => (i ? ctx.lineTo(x, z) : ctx.moveTo(x, z)));
+    if (close) ctx.closePath();
+  };
+  const court = (c: readonly World[]) => {
+    trace(c, true);
+    ctx.fillStyle = COLORS.plaza;
+    ctx.fill();
+    drawPaving(ctx, c, 0.6);
+  };
+  ctx.save();
+  ctx.lineJoin = "round";
+  ctx.lineCap = "butt";
+  ctx.strokeStyle = COLORS.kerb;
+  ctx.lineWidth = 2 * KERB;
+  for (const c of [...courts, crossing]) {
+    trace(c, true);
     ctx.stroke();
   }
-  for (let z = Math.floor(Math.min(...zs)); z < Math.max(...zs); z += step) {
-    ctx.beginPath();
-    ctx.moveTo(Math.min(...xs), z);
-    ctx.lineTo(Math.max(...xs), z);
+  for (const s of strips) {
+    trace(s.line, false);
+    ctx.lineWidth = s.width + 2 * KERB;
     ctx.stroke();
   }
+  for (const c of courts) court(c);
+  for (const s of strips) {
+    trace(s.line, false);
+    ctx.lineWidth = s.width;
+    ctx.strokeStyle = COLORS.paving;
+    ctx.stroke();
+    // joints across the walk, about every 3.7 m
+    ctx.setLineDash([0.04, 0.55]);
+    ctx.strokeStyle = "rgba(90,80,70,0.18)";
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+  court(crossing);
   ctx.restore();
 }
 

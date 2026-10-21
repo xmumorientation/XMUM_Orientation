@@ -45,10 +45,13 @@ export const COLORS = {
   // walkways and their outline: the colours of the 2D art (Ben's reference, 2026-10-17)
   path: "#e28662",
   pathEdge: "#c66c46",
+  // grey stone paving in front of the A-row and its kerb (Esri imagery, 2026-10-21)
+  paving: "#b0aa9f",
+  kerb: "#8f887c",
   lawn: "#9a9e52",
   plantation: "#41672f",
   beige: "#efe1cd",
-  plaza: "#cfcac2",
+  plaza: "#bab4a9",
   lakeDeep: "#1f5f8f",
   lakeShallow: "#6cc0e0",
   shore: "#e3d3ad",
@@ -382,8 +385,14 @@ const DROPPED_WALKS: EN[] = [
   [-97.6, 300.5],
   [-109.7, 338.1],
 ];
+/** OSM's walk along the arc in front of the A-row and its two walks to the statue: grey paving now (A_FRONT). */
+const PAVED_WALKS: EN[] = [
+  [-476.6, -55.5],
+  [-332.2, 35.1],
+  [-317.1, 36.3],
+];
 const isAt = ([e, n]: EN, [pe, pn]: EN) => e === pe && n === pn;
-const OSM_WALKS: EN[][] = FOOTPATHS_M.filter((p) => !DROPPED_WALKS.some((d) => isAt(p[0], d))).map((p) => {
+const OSM_WALKS: EN[][] = FOOTPATHS_M.filter((p) => ![...DROPPED_WALKS, ...PAVED_WALKS].some((d) => isAt(p[0], d))).map((p) => {
   const i = p.findIndex((q) => isAt(q, B1_WALK_END));
   return i < 0 ? p : p.slice(0, i + 1);
 });
@@ -415,6 +424,112 @@ const B1_NORTH_WALK: World[] = (() => {
 
 export const FOOTPATHS: World[][] = [...[...OSM_WALKS, ...TRACED_PATHS_M].map(realPts), B1_NORTH_WALK];
 export const FOOTPATH_W = 5 * UNITS_PER_M;
+
+// ── Paving in front of the A-row ─────────────────────────────────────────
+/**
+ * The A-row's front was all lawn on the map. Esri imagery (zoom 19) shows light grey stone there (Ben, 2026-10-21:
+ * not everything is lawn). Traced in metres east / north, like campusData.ts. Along this front the imagery sits about
+ * 4 m south of OSM (the walk along the arc, A4's and A5's fronts), so the traces move that far north to stand with
+ * the OSM blocks.
+ */
+const A_FRONT_DN = 4;
+
+/**
+ * - `terrace`: the wide promenade along the arc, and `walk`, the walk north of the hedge row past the blocks'
+ *   forecourts. They are arcs round one `centre` (imagery fits them to within a metre), `r` metres out, from `e[0]`
+ *   to `e[1]` east. The terrace replaces OSM's walk along it.
+ * - `links`: walks across the lawn from the walk to the terrace, and one from the terrace's east end to the brick
+ *   sidewalk (TRACED_PATHS_M).
+ */
+const A_FRONT_M = {
+  centre: [-274.2, -424.2] as EN,
+  terrace: { r: 419, width: 11, e: [-482, -166] },
+  walk: { r: 443.8, width: 5.5, e: [-458, -152] },
+  links: [
+    { width: 3.5, line: [[-460, -22], [-457, -42]] as EN[] },
+    { width: 3, line: [[-399.5, 3], [-399, -22]] as EN[] },
+    { width: 3, line: [[-250, 17], [-250, -3]] as EN[] },
+    { width: 3, line: [[-189.5, 11], [-189, -10]] as EN[] },
+    { width: 4, line: [[-170, -18], [-158, -8], [-145, -4], [-130, 0]] as EN[] },
+  ],
+};
+
+/**
+ * Each block's forecourt with its steps, down to the walk: a rectangle on one side of the block. `side` turns from
+ * the block's long side (its OSM bearing) to that side, so it follows the footprint. `across` is metres along that
+ * side from the block's middle (+ to the right, facing the block); it runs from the block's centre `out` metres. A5's
+ * door is on its east side (A5Block), with a forecourt of its own.
+ */
+const A_FORECOURTS_M: { block: string; side: number; across: [number, number]; out: number }[] = [
+  { block: "A1", side: 90, across: [-16.5, 5], out: 66.5 },
+  { block: "A2", side: 0, across: [-18.25, 3.75], out: 70.5 },
+  { block: "A4", side: 180, across: [-12.25, 9.75], out: 69.7 },
+  { block: "A5", side: 180, across: [-11.25, 11.25], out: 67.2 },
+  { block: "A5", side: 90, across: [-14, 3], out: 50 },
+];
+
+/**
+ * A3 and the statue share one axis (imagery): A3's `steps` down to the walk, the paving on from there across the
+ * terrace (`crossing`), two `walks` down the lawn either side of the statue, and the `plaza` from the statue south to
+ * the road. Laid out from the statue, which stands at the team's GPS point (about 10 m north of where the imagery
+ * shows it): `u` is metres across (east +), `v` metres from the statue toward A3.
+ */
+const A_AXIS_M = {
+  steps: { u: [-20.5, 20.5], v: [72, 152] },
+  crossing: { u: [-10.5, 10.5], v: [41, 74] },
+  walks: { u: [-10, 10], width: 4.5, v: [6, 45] },
+  plaza: { u: [-12.25, 12.25], v: [-200, 9] },
+} as const;
+
+/**
+ * The paving in the world. `courts` (forecourts, A3's steps, the statue's plaza) are rectangles, first corner to
+ * second along the side they stand on; `strips` are walks of a width along a line; `crossing` lies over the terrace.
+ */
+export const A_FRONT: { courts: World[][]; strips: { width: number; line: World[] }[]; crossing: World[] } = (() => {
+  const [ce, cn] = A_FRONT_M.centre;
+  const at = (e: number, n: number) => fromReal(e, n + A_FRONT_DN);
+  const arc = ({ r, width, e: [e0, e1] }: { r: number; width: number; e: number[] }) => {
+    const line: World[] = [];
+    for (let e = e0; e < e1 + 2.5; e += 5) {
+      const ee = Math.min(e, e1);
+      line.push(at(ee, cn + Math.sqrt(r * r - (ee - ce) ** 2)));
+    }
+    return { width: width * UNITS_PER_M, line };
+  };
+  /** A rectangle: `o` its origin's world point; `a`, `b` unit world directions; spans in metres along them. */
+  const rect = (o: World, a: World, b: World, [a0, a1]: readonly number[], [b0, b1]: readonly number[]) =>
+    [
+      [a0, b0],
+      [a1, b0],
+      [a1, b1],
+      [a0, b1],
+    ].map(([s, t]) => [o[0] + (a[0] * s + b[0] * t) * UNITS_PER_M, o[1] + (a[1] * s + b[1] * t) * UNITS_PER_M] as World);
+  /** Unit world direction of a bearing (degrees clockwise from north): world +X is north, +Z east. */
+  const dir = (deg: number): World => [Math.cos((deg * Math.PI) / 180), Math.sin((deg * Math.PI) / 180)];
+
+  const courts = A_FORECOURTS_M.map(({ block, side, across, out }) => {
+    const b = BUILDINGS_M[block];
+    const front = b.bearing + side;
+    return rect(fromReal(b.e, b.n), dir(front - 90), dir(front), across, [0, out]);
+  });
+  const a3 = BLOCKS.find((b) => b.name === "A3")!.pos;
+  const len = Math.hypot(a3[0] - STATUE[0], a3[1] - STATUE[1]);
+  const v: World = [(a3[0] - STATUE[0]) / len, (a3[1] - STATUE[1]) / len];
+  const u: World = [-v[1], v[0]];
+  const axis = (s: readonly number[], t: readonly number[]) => rect(STATUE, u, v, s, t);
+  const { steps, crossing, walks, plaza } = A_AXIS_M;
+  courts.push(axis(steps.u, steps.v), axis(plaza.u, plaza.v));
+  const strips = [
+    arc(A_FRONT_M.terrace),
+    arc(A_FRONT_M.walk),
+    ...A_FRONT_M.links.map((l) => ({ width: l.width * UNITS_PER_M, line: l.line.map(([e, n]) => at(e, n)) })),
+    ...walks.u.map((w) => {
+      const [p, , q] = axis([w, w], walks.v);
+      return { width: walks.width * UNITS_PER_M, line: [p, q] };
+    }),
+  ];
+  return { courts, strips, crossing: axis(crossing.u, crossing.v) };
+})();
 
 /**
  * The dorm land north of the lake park, where the Vortexa Funfair stands (docs/map3d-funfair-design.md). Lawn like
@@ -632,6 +747,9 @@ export function inKeepOut(x: number, z: number, margin: number): boolean {
   if (inPolygon(LAKE, x, z) || nearLine(LAKE, x, z, 0.6 + margin, true)) return true;
   if (nearLine(BRIDGE, x, z, 0.8 + margin)) return true;
   if (FOOTPATHS.some((p) => nearLine(p, x, z, FOOTPATH_W / 2 + margin))) return true;
+  const { courts, strips, crossing } = A_FRONT;
+  if ([...courts, crossing].some((c) => inPolygon(c, x, z) || nearLine(c, x, z, margin, true))) return true;
+  if (strips.some((s) => nearLine(s.line, x, z, s.width / 2 + margin))) return true;
   const [tx, tz] = toWorld(TRACK.center);
   const half = (TRACK_M.straight / 2) * UNITS_PER_M;
   const dx = Math.max(0, Math.abs(x - tx) - half);
