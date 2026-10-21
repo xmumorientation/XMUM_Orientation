@@ -45,10 +45,13 @@ export const COLORS = {
   // walkways and their outline: the colours of the 2D art (Ben's reference, 2026-10-17)
   path: "#e28662",
   pathEdge: "#c66c46",
+  // grey stone paving in front of the A-row and its kerb (Esri imagery, 2026-10-21)
+  paving: "#b0aa9f",
+  kerb: "#8f887c",
   lawn: "#9a9e52",
   plantation: "#41672f",
   beige: "#efe1cd",
-  plaza: "#cfcac2",
+  plaza: "#bab4a9",
   lakeDeep: "#1f5f8f",
   lakeShallow: "#6cc0e0",
   shore: "#e3d3ad",
@@ -88,12 +91,6 @@ export const GROUND = {
     [522, 420],
     [498, 430],
   ] as Img[],
-  roadSpur: [
-    [648, 772],
-    [875, 645],
-    [920, 676],
-    [718, 810],
-  ] as Img[],
   lawns: [
     // track lawn
     [
@@ -120,7 +117,8 @@ export const B1: Img = [720, 694];
 /**
  * Real positions from OpenStreetMap, in metres east (e) and north (n) of the
  * Track & Field GPS point in src/lib/mapGeo.ts: the football pitch inside the
- * track, and B1's footprint.
+ * track, and B1's footprint. B1_CENTRE_M only pins the scale: B1 itself is
+ * drawn where the imagery shows it (B1_PLACE).
  */
 const PITCH_CENTRE_M = { e: -3.1, n: -0.3 };
 const B1_CENTRE_M = { e: 7.0, n: 229.0 };
@@ -220,26 +218,144 @@ export const GRANDSTAND = {
 };
 
 /**
- * The red-roof row at true scale (OSM footprints). It bends along an arc, so
+ * A3 15 m out through its front, toward the statue (Ben, 2026-10-21). OSM's outline put its back on the walk behind
+ * it, with no room for steps; Esri imagery shows its front about 16 m south of OSM's.
+ */
+const A3_M: RectM = (() => {
+  const r = BUILDINGS_M.A3;
+  const front = ((r.bearing + 90) * Math.PI) / 180;
+  return { ...r, e: r.e + 15 * Math.sin(front), n: r.n + 15 * Math.cos(front) };
+})();
+
+/** An A-block's footprint in metres: OSM's, but A3's moved (A3_M). */
+const blockM = (name: string): RectM => (name === "A3" ? A3_M : BUILDINGS_M[name]);
+
+/**
+ * The red-roof row at true scale (OSM footprints, A3 moved). It bends along an arc, so
  * each block is turned to its own footprint: A1 at the far west end, A5 the
  * end nearest the track. A3 is the big flat-roofed block (9 levels).
  */
 export const BLOCKS: ({ name: string; flat?: boolean } & Placed)[] = ["A5", "A4", "A3", "A2", "A1"].map((name) => ({
   name,
   flat: name === "A3",
-  ...place(BUILDINGS_M[name]),
+  ...place(blockM(name)),
 }));
 
-/** B1: OSM footprint, 120 m east-west by 55 m north-south. */
-export const B1_PLACE = place(BUILDINGS_M.B1);
+/**
+ * The courtyard blocks (all but A3) are drawn square, a little inside their OSM footprint (buildings.tsx Courtyard):
+ * the half width of their walls, in world units. A3 fills its footprint.
+ */
+export const courtyardWall = (b: Placed) => (b.hx + b.hz) / 2 - 0.7;
+
+/** The stone plinth every A-block stands on (buildings.tsx): its height, and how far it reaches past the walls. */
+export const BLOCK_PLINTH = { h: 0.3, out: 0.2 };
+
+/**
+ * B1 (the Student Activity Centre) as Esri imagery shows it (zoom 19, checked 2026-10-21): 117.6 m east-west by
+ * 55 m, out to the edges of its planted floor bands. OSM's outline (BUILDINGS_M.B1) sits about 8 m further west
+ * and stops short of the sports hall's east wall, while the courts next to it match the imagery.
+ */
+const B1_M: RectM = { e: 14.8, n: 231.0, length: 117.6, width: 55.0, bearing: 90 };
+export const B1_PLACE = place(B1_M);
+
+/** A point in B1's own frame (metres from its centre; x east, z south: b1.tsx) → world [x, z]. */
+export function b1Point(x: number, z: number): World {
+  const { pos, rotY } = B1_PLACE;
+  const c = Math.cos(rotY);
+  const s = Math.sin(rotY);
+  return [pos[0] + (x * c + z * s) * UNITS_PER_M, pos[1] + (z * c - x * s) * UNITS_PER_M];
+}
+
+/**
+ * B1's front faces west, to the lake (Ben's photos). In B1's frame: the grand stairs, one depth all along (Ben), go
+ * down from the podium to their foot on the west road. Like the road, they run about 10° off B1's west face (Esri
+ * imagery; Ben, 2026-10-21): the foot is at x = foot + slope * z (b1StairsFoot). A landing with planters stands
+ * north of them.
+ */
+export const B1_FRONT_M = {
+  foot: -80.4,
+  slope: 0.174,
+  depth: 13.5,
+  stairsN: -21,
+  stairsS: 28,
+  landing: { x: [-76.8, -65.3], z: [-28, -21] },
+} as const;
+
+/** The stairs' foot, which is also the west road's east edge, at z in B1's frame. */
+export const b1StairsFoot = (z: number) => B1_FRONT_M.foot + B1_FRONT_M.slope * z;
+
+/**
+ * The roads round B1 (2026-10-21), in B1's frame (metres; z north is negative). They replace the art's grey block
+ * north of B1, and follow Ben's drawing (route colours) rather than the imagery:
+ * - `west`: the road with parking bays in front of the stairs, `width` wide west of their foot. It crosses the north
+ *   road (just covering it), and runs south across the service road (CARPARK) to the walk to the south. North of
+ *   the north road a walk carries its line on to the walks to the dorms (B1_NORTH_WALK).
+ * - `north`, from B1 outwards: a drive along B1, a strip of palms (with one gap), the road and a row of parking
+ *   bays, from the west road to the east road.
+ */
+export const B1_ROADS_M = {
+  west: { width: 11.4 },
+  north: {
+    drive: [-32, -27.5],
+    palms: [-36, -32],
+    palmGap: [-2, 12],
+    road: [-46, -36],
+    bays: [-51, -46],
+  },
+} as const;
+
+/** The middle of B1's west road at z (it slants with the stairs' foot). */
+export const b1WestRoadMid = (z: number) => b1StairsFoot(z) - B1_ROADS_M.west.width / 2;
+
+/** The z of the outer road's inner edge on the campus's east side, at world x (GROUND.base's east edge). */
+export function eastRoadZ(x: number): number {
+  const [ax, az] = toWorld(GROUND.base[0]);
+  const [bx, bz] = toWorld(GROUND.base[3]);
+  return az + ((bz - az) * (x - ax)) / (bx - ax);
+}
+
+/** How far B1's north road reaches east in B1's frame: into the east road, so they meet in a T. */
+export const B1_NORTH_EAST_X = (eastRoadZ(B1_PLACE.pos[0]) - B1_PLACE.pos[1]) / UNITS_PER_M + 2;
+
+/** Where the palm strip and the bays on B1's north road begin in the west: just east of the west road. */
+export const B1_NORTH_START_X = b1StairsFoot(B1_ROADS_M.north.palms[0]) + 2;
+
+/** Parking bays (2.5 m) along the north side of B1's north road: their middles in the world. */
+export const B1_NORTH_BAYS: World[] = (() => {
+  const [z0, z1] = B1_ROADS_M.north.bays;
+  const out: World[] = [];
+  for (let x = B1_NORTH_START_X + 2; x < B1_NORTH_EAST_X - 18; x += 2.5) out.push(b1Point(x + 1.25, (z0 + z1) / 2));
+  return out;
+})();
+
+/** Palms down the strip between B1's drive and its north road (imagery), about 8.5 m apart. */
+export const B1_PALMS: World[] = (() => {
+  const [z0, z1] = B1_ROADS_M.north.palms;
+  const [g0, g1] = B1_ROADS_M.north.palmGap;
+  const out: World[] = [];
+  for (let x = B1_NORTH_START_X + 2; x < B1_NORTH_EAST_X - 16; x += 8.5) {
+    if (x > g0 - 2 && x < g1 + 2) continue;
+    out.push(b1Point(x, (z0 + z1) / 2));
+  }
+  return out;
+})();
 
 /** LakeFront Café: the dome on the lake's west shore (OSM outline moved onto the dome seen in imagery). */
 export const DOME_PLACE = place(BUILDINGS_M["LakeFront Cafe"]);
 export const DOME: World = DOME_PLACE.pos;
 
-/** Tan Kah Kee statue: the team's GPS point at its base (src/lib/mapGeo.ts). */
-const STATUE_GPS = LANDMARKS.find((l) => l.name === "Tan Kah Kee statue")!;
-export const STATUE: World = gpsToWorld(STATUE_GPS.lat, STATUE_GPS.lng);
+/**
+ * Along the A-row's front, Esri imagery (zoom 19) sits about 4 m south of OSM (the walk along the arc, A4's and A5's
+ * fronts), so what is traced from it there moves this many metres north to stand with the OSM blocks.
+ */
+const A_FRONT_DN = 4;
+
+/**
+ * Tan Kah Kee statue: the middle of its round flower bed in Esri imagery (Ben circled it on a photo, 2026-10-21), moved
+ * A_FRONT_DN north like the paving round it. The team's GPS point at its base (src/lib/mapGeo.ts) is about 8 m further
+ * north-east; the ?gps=1 layer and the 2D map still use that.
+ */
+export const STATUE: World = fromReal(-318.5, -64 + A_FRONT_DN);
 
 /**
  * The statue and its flags are modelled at real size (metres) and drawn this
@@ -290,8 +406,416 @@ const TRACED_PATHS_M: EN[][] = [
 export const LAKE: World[] = realPts(LAKE_M);
 export const PARK: World[] = realPts(PARK_M);
 export const GRASS: World[][] = GRASS_M.map(realPts);
-export const FOOTPATHS: World[][] = [...FOOTPATHS_M, ...TRACED_PATHS_M].map(realPts);
+/**
+ * OSM's walk along the lake's north-east shore carries on from this point (where a walk crosses it) down B1's west
+ * road. Ben (2026-10-21): it ends here, and B1_NORTH_WALK takes it on to the west road in one sweep.
+ */
+const B1_WALK_END: EN = [-118.1, 311.8];
+/** Two short OSM walks that lead nowhere on the map, by the pirate ship and by the coaster: lawn there (Ben). */
+const DROPPED_WALKS: EN[] = [
+  [-97.6, 300.5],
+  [-109.7, 338.1],
+];
+/** OSM's walk along the arc in front of the A-row and its two walks to the statue: grey paving now (A_FRONT). */
+const PAVED_WALKS: EN[] = [
+  [-476.6, -55.5],
+  [-332.2, 35.1],
+  [-317.1, 36.3],
+];
+const isAt = ([e, n]: EN, [pe, pn]: EN) => e === pe && n === pn;
+const OSM_WALKS: EN[][] = FOOTPATHS_M.filter((p) => ![...DROPPED_WALKS, ...PAVED_WALKS].some((d) => isAt(p[0], d))).map((p) => {
+  const i = p.findIndex((q) => isAt(q, B1_WALK_END));
+  return i < 0 ? p : p.slice(0, i + 1);
+});
+
+/**
+ * The walk from the lake walk's end (B1_WALK_END) to B1's west road, where it crosses the north road (Ben's
+ * drawing): one sweep, a cubic curve that leaves the lake walk in its own direction and meets the road on its line.
+ */
+const B1_NORTH_WALK: World[] = (() => {
+  const unit = ([e, n]: EN): EN => [e / Math.hypot(e, n), n / Math.hypot(e, n)];
+  const lake = OSM_WALKS.find((p) => isAt(p[p.length - 1], B1_WALK_END));
+  const p0 = B1_WALK_END;
+  const before = lake ? lake[lake.length - 2] : p0;
+  const z0 = B1_ROADS_M.north.road[0];
+  const p3: EN = [b1WestRoadMid(z0) + B1_M.e, B1_M.n - z0];
+  const reach = Math.hypot(p3[0] - p0[0], p3[1] - p0[1]) / 3;
+  const d0 = lake ? unit([p0[0] - before[0], p0[1] - before[1]]) : unit([p3[0] - p0[0], p3[1] - p0[1]]);
+  const d3 = unit([B1_FRONT_M.slope, -1]);
+  const p1: EN = [p0[0] + d0[0] * reach, p0[1] + d0[1] * reach];
+  const p2: EN = [p3[0] - d3[0] * reach, p3[1] - d3[1] * reach];
+  return Array.from({ length: 17 }, (_, i) => {
+    const t = i / 16;
+    const u = 1 - t;
+    const w = [u * u * u, 3 * u * u * t, 3 * u * t * t, t * t * t];
+    const at = (k: 0 | 1) => w[0] * p0[k] + w[1] * p1[k] + w[2] * p2[k] + w[3] * p3[k];
+    return fromReal(at(0), at(1));
+  });
+})();
+
+export const FOOTPATHS: World[][] = [...[...OSM_WALKS, ...TRACED_PATHS_M].map(realPts), B1_NORTH_WALK];
 export const FOOTPATH_W = 5 * UNITS_PER_M;
+
+// ── Paving in front of the A-row ─────────────────────────────────────────
+/**
+ * The A-row's front was all lawn on the map. Esri imagery (zoom 19) shows light grey stone there (Ben, 2026-10-21:
+ * not everything is lawn). Traced in metres east / north, like campusData.ts, and moved A_FRONT_DN north.
+ *
+ * - `terrace`: the wide flight of steps along the arc, from the raised ground (PLATEAU) down to the lawn, and
+ *   `walk`, the walk north of the hedge row past the blocks' forecourts. They are arcs round one `centre` (imagery
+ *   fits them to within a metre), `r` metres out, from `e[0]` to `e[1]` east. The terrace replaces OSM's walk along
+ *   it.
+ * - `links`: walks across the lawn from the walk to the terrace, each to a narrow stair through it (TERRACE).
+ * - `eastLink`: the walk from the terrace's east end to the brick sidewalk (TRACED_PATHS_M).
+ */
+const A_FRONT_M = {
+  centre: [-274.2, -424.2] as EN,
+  terrace: { r: 419, width: 11, e: [-482, -166] },
+  walk: { r: 443.8, width: 5.5, e: [-458, -152] },
+  links: [
+    { width: 3.5, line: [[-460, -22], [-457, -42]] as EN[] },
+    { width: 3, line: [[-399.5, 3], [-399, -22]] as EN[] },
+    { width: 3, line: [[-250, 17], [-250, -3]] as EN[] },
+    { width: 3, line: [[-189.5, 11], [-189, -10]] as EN[] },
+  ],
+  eastLink: { width: 4, line: [[-170, -18], [-158, -8], [-145, -4], [-130, 0]] as EN[] },
+};
+
+/** Each block's front, the side toward the lawn, in degrees from its long side's bearing (as `side` below). */
+const A_FRONT_SIDE: Record<string, number> = { A1: 90, A2: 0, A3: 90, A4: 180, A5: 180 };
+
+/** A block's half sizes in metres: out through its `side`, and along that side. */
+function blockHalf(name: string, side: number): [number, number] {
+  const { length, width } = blockM(name);
+  return side % 180 === 0 ? [length / 2, width / 2] : [width / 2, length / 2];
+}
+
+/**
+ * A point by a block, in metres east / north: `out` metres from its centre through its `side` (degrees from its long
+ * side's bearing, so it follows the footprint), and `across` metres along that side (+ to the right, facing the block).
+ */
+function blockPoint(name: string, side: number, across: number, out: number): EN {
+  const b = blockM(name);
+  const f = ((b.bearing + side) * Math.PI) / 180;
+  return [b.e + out * Math.sin(f) - across * Math.cos(f), b.n + out * Math.cos(f) + across * Math.sin(f)];
+}
+
+/** A rectangle by a block (as blockPoint) in the world, corners in order round it, the first edge along its side. */
+function blockRect(name: string, side: number, [a0, a1]: readonly number[], [o0, o1]: readonly number[]): World[] {
+  return [
+    [a0, o0],
+    [a1, o0],
+    [a1, o1],
+    [a0, o1],
+  ].map(([a, o]) => fromReal(...blockPoint(name, side, a, o)));
+}
+
+/**
+ * Each block's forecourt with its steps, down to the walk: a rectangle on one side of the block. `side` turns from
+ * the block's long side (its OSM bearing) to that side, so it follows the footprint. `across` is metres along that
+ * side from the block's middle (+ to the right, facing the block); it runs from the block's centre `out` metres. A5's
+ * door is on its east side (A5Block), with a forecourt of its own.
+ */
+const A_FORECOURTS_M: { block: string; side: number; across: [number, number]; out: number }[] = [
+  { block: "A1", side: 90, across: [-16.5, 5], out: 66.5 },
+  { block: "A2", side: 0, across: [-18.25, 3.75], out: 70.5 },
+  { block: "A4", side: 180, across: [-12.25, 9.75], out: 69.7 },
+  { block: "A5", side: 180, across: [-11.25, 11.25], out: 67.2 },
+  { block: "A5", side: 90, across: [-14, 3], out: 50 },
+];
+
+/**
+ * Steps behind every block (Ben's photos): out of the block's back, from the top of its plinth down over the bank
+ * (PLATEAU) to the lower ground on the north, `width` metres wide on its back axis and `run` metres long, then a paved
+ * landing on to the walk behind it.
+ */
+const NORTH_STAIRS_M = { blocks: ["A1", "A2", "A3", "A4", "A5"], width: 18, run: 10 };
+
+/**
+ * A block's half sizes as drawn (buildings.tsx), out to its plinth's edge, in metres: through its back, and along it.
+ * The courtyard blocks are square, inside their footprint; A3 fills its own.
+ */
+function drawnHalf(name: string): [number, number] {
+  const b = BLOCKS.find((p) => p.name === name)!;
+  const plinth = BLOCK_PLINTH.out / UNITS_PER_M;
+  if (!b.flat) return [courtyardWall(b) / UNITS_PER_M + plinth, courtyardWall(b) / UNITS_PER_M + plinth];
+  const [depth, half] = blockHalf(name, A_FRONT_SIDE[name] + 180);
+  return [depth + plinth, half + plinth];
+}
+
+/** Where a block's back steps start, in metres out from its centre: its plinth's edge. */
+const backEdge = (name: string) => drawnHalf(name)[0];
+
+/** How deep (metres) the landing at the foot of a block's back steps is: on to the walk behind it, or 8 m. */
+function landingTo(name: string): number {
+  const back = A_FRONT_SIDE[name] + 180;
+  const foot = backEdge(name) + NORTH_STAIRS_M.run;
+  for (let d = 0; d <= 20; d += 0.5) {
+    const [x, z] = fromReal(...blockPoint(name, back, 0, foot + d));
+    if (FOOTPATHS.some((p) => nearLine(p, x, z, FOOTPATH_W / 2))) return d + 0.5;
+  }
+  return 8;
+}
+
+/**
+ * A3 and the statue share one axis (imagery): A3's `steps` down to the walk, the paving on from there across the
+ * terrace (`crossing`), two `walks` down the lawn either side of the statue, and the `plaza` round the statue's bed and
+ * south to the road. Laid out from the statue: `u` is metres across (east +), `v` metres from the statue toward A3.
+ * Along the axis the pieces run between the statue, the terrace's foot, the walk and A3, wherever the axis meets
+ * them.
+ */
+const A_AXIS_M = {
+  steps: { u: [-20.5, 20.5] },
+  crossing: { u: [-10.5, 10.5] },
+  walks: { u: [-10, 10], width: 4.5, from: 6 },
+  plaza: { u: [-12.25, 12.25], v: [-200, 9] },
+} as const;
+
+/** A3's axis: the unit world direction from the statue toward A3's centre, and that distance in metres. */
+const A3_AXIS = (() => {
+  const a3 = BLOCKS.find((b) => b.name === "A3")!.pos;
+  const len = Math.hypot(a3[0] - STATUE[0], a3[1] - STATUE[1]);
+  return { v: [(a3[0] - STATUE[0]) / len, (a3[1] - STATUE[1]) / len] as World, len: len / UNITS_PER_M };
+})();
+
+/** Metres up A3's axis from the statue to where it meets the arc `r` metres round A_FRONT_M.centre. */
+function upAxisTo(r: number): number {
+  const [ce, cn] = A_FRONT_M.centre;
+  const c = fromReal(ce, cn + A_FRONT_DN);
+  const { v } = A3_AXIS;
+  const [ox, oz] = [STATUE[0] - c[0], STATUE[1] - c[1]];
+  const b = ox * v[0] + oz * v[1];
+  return (-b + Math.sqrt(b * b - (ox * ox + oz * oz - (r * UNITS_PER_M) ** 2))) / UNITS_PER_M;
+}
+
+/**
+ * The paving in the world. `courts` (forecourts, A3's steps, the statue's plaza, the steps behind the blocks and their
+ * landings) are rectangles, first corner to second along the side they stand on; `strips` are walks of a width along a
+ * line; `crossing` lies over the terrace.
+ */
+export const A_FRONT: { courts: World[][]; strips: { width: number; line: World[] }[]; crossing: World[] } = (() => {
+  const [ce, cn] = A_FRONT_M.centre;
+  const at = (e: number, n: number) => fromReal(e, n + A_FRONT_DN);
+  const arc = ({ r, width, e: [e0, e1] }: { r: number; width: number; e: number[] }) => {
+    const line: World[] = [];
+    for (let e = e0; e < e1 + 2.5; e += 5) {
+      const ee = Math.min(e, e1);
+      line.push(at(ee, cn + Math.sqrt(r * r - (ee - ce) ** 2)));
+    }
+    return { width: width * UNITS_PER_M, line };
+  };
+  const walkOf = (l: { width: number; line: EN[] }) => ({ width: l.width * UNITS_PER_M, line: l.line.map(([e, n]) => at(e, n)) });
+
+  const courts = A_FORECOURTS_M.map(({ block, side, across, out }) => blockRect(block, side, across, [0, out]));
+  const { blocks, width, run } = NORTH_STAIRS_M;
+  for (const name of blocks) {
+    const top = backEdge(name);
+    const span = [-width / 2 - 2, width / 2 + 2];
+    courts.push(blockRect(name, A_FRONT_SIDE[name] + 180, span, [top, top + run + landingTo(name)]));
+  }
+  const { v, len } = A3_AXIS;
+  const u: World = [-v[1], v[0]];
+  /** A rectangle on A3's axis: `s` metres across it (east +), `t` metres up it from the statue. */
+  const axis = ([s0, s1]: readonly number[], [t0, t1]: readonly number[]) =>
+    [
+      [s0, t0],
+      [s1, t0],
+      [s1, t1],
+      [s0, t1],
+    ].map(
+      ([s, t]) =>
+        [STATUE[0] + (u[0] * s + v[0] * t) * UNITS_PER_M, STATUE[1] + (u[1] * s + v[1] * t) * UNITS_PER_M] as World,
+    );
+  const { terrace, walk } = A_FRONT_M;
+  const foot = upAxisTo(terrace.r - terrace.width / 2);
+  const mid = upAxisTo(walk.r);
+  const { steps, crossing, walks, plaza } = A_AXIS_M;
+  courts.push(axis(steps.u, [mid - 1, len]), axis(plaza.u, plaza.v));
+  const strips = [
+    arc(terrace),
+    arc(walk),
+    ...A_FRONT_M.links.map(walkOf),
+    walkOf(A_FRONT_M.eastLink),
+    ...walks.u.map((w) => {
+      const [p, , q] = axis([w, w], [walks.from, foot + 0.5]);
+      return { width: walks.width * UNITS_PER_M, line: [p, q] };
+    }),
+  ];
+  return { courts, strips, crossing: axis(crossing.u, [foot - 1, mid]) };
+})();
+
+/**
+ * Planting along the A-row's walk (Ben's photos and imagery): palms north of it between the forecourts, round shrubs
+ * and low lamps along its south side. World points along arcs round A_FRONT_M.centre; plants.ts leaves out the ones
+ * that fall on paving.
+ */
+export const A_FRONT_PLANTS = (() => {
+  const [ce, cn] = A_FRONT_M.centre;
+  const { walk } = A_FRONT_M;
+  const arc = (r: number, gap: number) => {
+    const out: World[] = [];
+    for (let e = walk.e[0]; e <= walk.e[1]; e += gap) {
+      out.push(fromReal(e, cn + A_FRONT_DN + Math.sqrt(r * r - (e - ce) ** 2)));
+    }
+    return out;
+  };
+  return { palms: arc(walk.r + 8, 6.5), shrubs: arc(walk.r - 5.5, 2.6), lamps: arc(walk.r - 3.8, 15) };
+})();
+
+// ── The raised ground under the A-row ────────────────────────────────────
+/**
+ * The A-row stands on raised ground, about 4 m above the lawn round the statue (Ben's photos, 2026-10-21; true height,
+ * no LIFT). The terrace's steps go down from it on the south, steps go down behind the blocks on the north with a
+ * grass bank between them, and past A1's west end and A5's east end it slopes gently down (Ben).
+ */
+export const PLATEAU_H = 4 * UNITS_PER_M;
+
+/**
+ * The raised ground's flat top: its outline in the world, and at each corner how far (world units) the ground takes to
+ * come down past it: the terrace's width along the south, an 8 m bank behind the blocks, and 20 m on the gentle slopes
+ * past the row's ends. From the terrace's top edge west to east, round A5's east forecourt, back west along the backs
+ * of the blocks as drawn (their back steps start there), and round A1's west end.
+ */
+export const PLATEAU: { outline: World[]; slope: number[] } = (() => {
+  const [ce, cn] = A_FRONT_M.centre;
+  const { terrace } = A_FRONT_M;
+  const top = terrace.r + terrace.width / 2;
+  const ends = 20;
+  const bank = 8;
+  const pts: [EN, number][] = [];
+  for (let e = terrace.e[0]; e < terrace.e[1] + 2.5; e += 5) {
+    const ee = Math.min(e, terrace.e[1]);
+    pts.push([[ee, cn + A_FRONT_DN + Math.sqrt(top * top - (ee - ce) ** 2)], terrace.width]);
+  }
+  const east = A_FORECOURTS_M.find((f) => f.block === "A5" && f.side === 90)!;
+  for (const a of [east.across[0] - 2, east.across[1] + 2]) pts.push([blockPoint("A5", 90, a, east.out + 2), ends]);
+  for (const name of ["A5", "A4", "A3", "A2", "A1"]) {
+    const back = A_FRONT_SIDE[name] + 180;
+    const [depth, half] = drawnHalf(name);
+    // the bank starts 1.5 m past the plinth, so the ground's mesh meets the stone base in a straight line
+    const out = depth + 1.5;
+    // seen from behind, a block's east end is on the left
+    pts.push([blockPoint(name, back, -half - 2, out), name === "A5" ? (bank + ends) / 2 : bank]);
+    pts.push([blockPoint(name, back, half + 2, out), name === "A1" ? (bank + ends) / 2 : bank]);
+  }
+  const a1 = backEdge("A1") + 2;
+  pts.push([blockPoint("A1", A_FRONT_SIDE.A1, -a1, a1), ends]);
+  return { outline: pts.map(([p]) => fromReal(...p)), slope: pts.map(([, w]) => w * UNITS_PER_M) };
+})();
+
+/** Where the raised ground and its slopes can be: the outline's bounds, grown by the widest slope. */
+const PLATEAU_BOX = (() => {
+  const { outline, slope } = PLATEAU;
+  const m = Math.max(...slope);
+  const xs = outline.map((p) => p[0]);
+  const zs = outline.map((p) => p[1]);
+  return [Math.min(...xs) - m, Math.min(...zs) - m, Math.max(...xs) + m, Math.max(...zs) + m] as const;
+})();
+
+/**
+ * The ground's height at a world point: PLATEAU_H on the raised ground's top, coming down over each edge's slope. The
+ * slope eases out at its foot (a square), so a mesh of the ground stays under the steps laid over it.
+ */
+export function groundY(x: number, z: number): number {
+  const [x0, z0, x1, z1] = PLATEAU_BOX;
+  if (x < x0 || x > x1 || z < z0 || z > z1) return 0;
+  const { outline, slope } = PLATEAU;
+  if (inPolygon(outline, x, z)) return PLATEAU_H;
+  let best = Infinity;
+  let w = 0;
+  for (let i = 0; i < outline.length; i++) {
+    const j = (i + 1) % outline.length;
+    const [ax, az] = outline[i];
+    const dx = outline[j][0] - ax;
+    const dz = outline[j][1] - az;
+    const t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz || 1)));
+    const d = Math.hypot(x - ax - dx * t, z - az - dz * t);
+    if (d < best) {
+      best = d;
+      w = slope[i] + (slope[j] - slope[i]) * t;
+    }
+  }
+  const k = Math.max(0, 1 - best / w);
+  return PLATEAU_H * k * k;
+}
+
+type XYZ = { x: number; y: number; z: number };
+
+/** Where a ray from `o` along `d` (world) first meets the ground, raised ground included: for taps on the map. */
+export function groundHit(o: XYZ, d: XYZ): World {
+  if (d.y > -1e-6) return [o.x, o.z];
+  const below = (t: number) => o.y + d.y * t <= groundY(o.x + d.x * t, o.z + d.z * t);
+  const end = o.y / -d.y;
+  let a = Math.max(0, (o.y - PLATEAU_H) / -d.y);
+  let hit = end;
+  const step = (end - a) / 48;
+  for (let t = a + step; t < end; t += step) {
+    if (below(t)) {
+      hit = t;
+      break;
+    }
+    a = t;
+  }
+  // close in on the edge between the last point above the ground and the first one on it
+  for (let k = 0; k < 12 && hit < end; k++) {
+    const m = (a + hit) / 2;
+    if (below(m)) hit = m;
+    else a = m;
+  }
+  return [o.x + d.x * hit, o.z + d.z * hit];
+}
+
+/**
+ * The terrace's steps in the world: round `centre` from radius `r0` (foot) to `r1` (top), and from angle `from` to `to`
+ * (atan2(z, x) round the centre). `flights` are stairs cut through it, finer than its seat-like tiers and walled at
+ * the sides: A3's grand stair on the statue's axis (Ben's photo) and one where each walk across the lawn meets it, each
+ * at its middle angle, with half its width as an angle.
+ */
+export const TERRACE = (() => {
+  const [ce, cn] = A_FRONT_M.centre;
+  const { terrace, links } = A_FRONT_M;
+  const centre = fromReal(ce, cn + A_FRONT_DN);
+  const angle = ([x, z]: World) => Math.atan2(z - centre[1], x - centre[0]);
+  const onArc = (e: number) => fromReal(e, cn + A_FRONT_DN + Math.sqrt(terrace.r ** 2 - (e - ce) ** 2));
+  const up = upAxisTo(terrace.r) * UNITS_PER_M;
+  const grand: World = [STATUE[0] + A3_AXIS.v[0] * up, STATUE[1] + A3_AXIS.v[1] * up];
+  const flights = [
+    { at: angle(grand), half: A_AXIS_M.crossing.u[1] / terrace.r, grand: true },
+    ...links.map(({ width, line }) => {
+      const [e, n] = line[line.length - 1];
+      return { at: angle(fromReal(e, n + A_FRONT_DN)), half: (width / 2 + 0.3) / terrace.r, grand: false };
+    }),
+  ].sort((a, b) => a.at - b.at);
+  return {
+    centre,
+    r0: (terrace.r - terrace.width / 2) * UNITS_PER_M,
+    r1: (terrace.r + terrace.width / 2) * UNITS_PER_M,
+    from: angle(onArc(terrace.e[0])),
+    to: angle(onArc(terrace.e[1])),
+    flights,
+  };
+})();
+
+/**
+ * The steps behind the blocks in the world (NORTH_STAIRS_M): the middle of their top edge (at the block's plinth), unit
+ * directions down them and across them, half their width and their run.
+ */
+export const NORTH_STAIRS = NORTH_STAIRS_M.blocks.map((name) => {
+  const back = A_FRONT_SIDE[name] + 180;
+  const edge = backEdge(name);
+  const top = fromReal(...blockPoint(name, back, 0, edge));
+  const unit = (p: EN): World => {
+    const [x, z] = fromReal(...p);
+    return [(x - top[0]) / UNITS_PER_M, (z - top[1]) / UNITS_PER_M];
+  };
+  return {
+    top,
+    down: unit(blockPoint(name, back, 0, edge + 1)),
+    across: unit(blockPoint(name, back, 1, edge)),
+    half: (NORTH_STAIRS_M.width / 2) * UNITS_PER_M,
+    run: NORTH_STAIRS_M.run * UNITS_PER_M,
+  };
+});
 
 /**
  * The dorm land north of the lake park, where the Vortexa Funfair stands (docs/map3d-funfair-design.md). Lawn like
@@ -361,14 +885,20 @@ export const B1_SIZE = { x: 2 * B1_PLACE.hz, z: 2 * B1_PLACE.hx };
 
 /**
  * The service road between the north row of courts and B1 (real gap 18 m),
- * with a row of parking bays along B1.
+ * with a row of parking bays along B1 (`z`). The road itself (`road`), red
+ * brick in the imagery, runs from under B1's west road to the east road.
  */
 export const CARPARK = (() => {
   const [bx, bz] = B1_PLACE.pos;
   const north = Math.max(...SPORTS.map((b) => b.x[1]));
+  const x: [number, number] = [north + 0.4, bx - B1_SIZE.x / 2 - 0.3];
   return {
-    x: [north + 0.4, bx - B1_SIZE.x / 2 - 0.3] as [number, number],
+    x,
     z: [bz - B1_SIZE.z / 2, bz + B1_SIZE.z / 2] as [number, number],
+    road: [b1Point(b1StairsFoot((bx - x[1]) / UNITS_PER_M) - 1, 0)[1], eastRoadZ((x[0] + x[1]) / 2) + 0.3] as [
+      number,
+      number,
+    ],
   };
 })();
 
@@ -408,8 +938,8 @@ export const TRACK_NORTH = {
  * gets a "● LIVE" tag while the concert plays.
  */
 export const LABELS: { name: string; pos: World; y: number; minor?: boolean; stage?: boolean }[] = [
-  ...BLOCKS.map((b) => ({ name: b.name, pos: b.pos, y: b.flat ? 12.2 : 9.6 })),
-  { name: "B1", pos: B1_PLACE.pos, y: 11 },
+  ...BLOCKS.map((b) => ({ name: b.name, pos: b.pos, y: (b.flat ? 12.2 : 9.6) + PLATEAU_H })),
+  { name: "B1", pos: B1_PLACE.pos, y: 6 },
   { name: "Track & Field", pos: toWorld(TRACK.center), y: 3 },
   ...SPORTS.filter((b) => b.label).map((b) => ({
     name: b.label!,
@@ -472,16 +1002,40 @@ const A5_ENTRANCE: Placed[] = BLOCKS.filter((b) => b.name === "A5").map((b) => {
   return { pos: [b.pos[0] + lz * Math.sin(b.rotY), b.pos[1] + lz * Math.cos(b.rotY)], hx: 1.7, hz: 1.4, rotY: b.rotY };
 });
 
+/**
+ * Whether a world point is on B1's grounds (B1_ROADS_M), grown by `margin` units: north of it, the drive, the palm
+ * strip, the road and its bays; west of it, the slanting west road, the stairs and the podium.
+ */
+function inB1Grounds(x: number, z: number, margin: number): boolean {
+  const { pos, rotY, hx } = B1_PLACE;
+  const dx = x - pos[0];
+  const dz = z - pos[1];
+  const lx = (dx * Math.cos(rotY) - dz * Math.sin(rotY)) / UNITS_PER_M;
+  const lz = (dx * Math.sin(rotY) + dz * Math.cos(rotY)) / UNITS_PER_M;
+  const m = margin / UNITS_PER_M;
+  const { north, west } = B1_ROADS_M;
+  const westEdge = b1WestRoadMid(lz) - west.width / 2;
+  if (lz > north.bays[0] - m && lz < north.drive[1] + m && lx > westEdge - m && lx < B1_NORTH_EAST_X + m) return true;
+  const south = (pos[0] - CARPARK.x[0]) / UNITS_PER_M;
+  if (lz < north.road[0] - m || lz > south + m) return false;
+  return lx > westEdge - m && lx < -hx / UNITS_PER_M + m;
+}
+
 export function inKeepOut(x: number, z: number, margin: number): boolean {
   const inRect = (rx: [number, number], rz: [number, number]) =>
     x > rx[0] - margin && x < rx[1] + margin && z > rz[0] - margin && z < rz[1] + margin;
   if (SPORTS.some((b) => inRect(b.x, b.z))) return true;
-  if (inRect(CARPARK.x, CARPARK.z)) return true;
-  if ([...BLOCKS, ...A5_ENTRANCE, B1_PLACE, DOME_PLACE].some((p) => inPlaced(p, x, z, margin + 0.4))) return true;
+  if (inRect(CARPARK.x, CARPARK.road)) return true;
+  if (inB1Grounds(x, z, margin + 0.2)) return true;
+  const placed = [...BLOCKS, ...A5_ENTRANCE, B1_PLACE, DOME_PLACE];
+  if (placed.some((p) => inPlaced(p, x, z, margin + 0.4))) return true;
   if (Math.hypot(x - STATUE[0], z - STATUE[1]) < 2.6 + margin) return true;
   if (inPolygon(LAKE, x, z) || nearLine(LAKE, x, z, 0.6 + margin, true)) return true;
   if (nearLine(BRIDGE, x, z, 0.8 + margin)) return true;
   if (FOOTPATHS.some((p) => nearLine(p, x, z, FOOTPATH_W / 2 + margin))) return true;
+  const { courts, strips, crossing } = A_FRONT;
+  if ([...courts, crossing].some((c) => inPolygon(c, x, z) || nearLine(c, x, z, margin, true))) return true;
+  if (strips.some((s) => nearLine(s.line, x, z, s.width / 2 + margin))) return true;
   const [tx, tz] = toWorld(TRACK.center);
   const half = (TRACK_M.straight / 2) * UNITS_PER_M;
   const dx = Math.max(0, Math.abs(x - tx) - half);
@@ -500,12 +1054,13 @@ export type TreeKind = "broad" | "palm" | "mix";
 
 /** Tree rows: polylines in image px, a tree every `gap` world units. */
 export const TREE_ROWS: { gap: number; kind?: TreeKind; pts: Img[] }[] = [
+  // palms along the road south of the statue's lawn (Ben's photos); the lawn's west side is open
   {
-    gap: 1.9,
+    gap: 2.6,
+    kind: "palm",
     pts: [
       [420, 336],
       [878, 70],
-      [962, 116],
     ],
   },
   {
@@ -604,23 +1159,6 @@ export const TREE_ROWS: { gap: number; kind?: TreeKind; pts: Img[] }[] = [
       [790, 545],
     ],
   },
-  // royal palms lining the promenade (gap left for the statue plaza)
-  {
-    gap: 3.0,
-    kind: "palm",
-    pts: [
-      [505, 413],
-      [735, 282],
-    ],
-  },
-  {
-    gap: 3.0,
-    kind: "palm",
-    pts: [
-      [825, 228],
-      [1000, 128],
-    ],
-  },
   // belt between the track's north curve and the futsal courts (aerial photo)
   {
     gap: 1.7,
@@ -631,13 +1169,9 @@ export const TREE_ROWS: { gap: number; kind?: TreeKind; pts: Img[] }[] = [
   },
 ];
 
-/** Single trees (clusters between buildings and in the park). */
+/** Single trees (clusters between buildings and in the park). Between the A-row's forecourts are palms (A_FRONT_PLANTS). */
 export const TREE_SPOTS: Img[] = [
   [640, 378],
-  [770, 372],
-  [850, 322],
-  [1005, 236],
-  [1078, 196],
   [945, 315],
   [975, 300],
   [1000, 330],
@@ -653,15 +1187,8 @@ export const TREE_SPOTS: Img[] = [
   [1260, 470],
 ];
 
-/** Bougainvillea and hedges along paths and fronts. */
+/** Bougainvillea and hedges along paths and fronts. The A-row's walk has its own planting (A_FRONT_PLANTS). */
 export const BUSH_ROWS: { gap: number; pts: Img[] }[] = [
-  {
-    gap: 1.1,
-    pts: [
-      [640, 430],
-      [1085, 190],
-    ],
-  },
   {
     gap: 1.0,
     pts: [

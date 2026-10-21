@@ -6,6 +6,7 @@ import {
   Gift,
   KeyRound,
   Lightbulb,
+  Lock,
   MapPin,
   Puzzle,
   Wrench,
@@ -19,7 +20,7 @@ import {
   type ProjectorLocation,
 } from "@/lib/types";
 
-import { cardState, fillZones, lampState, ourLitLocation, zoneNames, type CardState, type ZoneName } from "./derive";
+import { CODE_NAMES, cardState, fillZones, lampState, ourLitLocation, zoneNames, type CardState, type ZoneName } from "./derive";
 import { KEY_NAMES, KeyEmblem, type KeyMode } from "./KeyEmblem";
 import type { Arrivals } from "./useNewPieces";
 import type { BoxKind, HistoryEntry, ItemsData } from "./types";
@@ -42,7 +43,7 @@ const RING_LABEL: Record<CardState, (data: ItemsData, loc: ProjectorLocation) =>
   collecting: (data, loc) => `${data.pieces[loc].length}/${PIECES_PER_SET}`,
   key: () => "Key ready",
   lit: () => "Lit by you",
-  idle: (data, loc) => `Lit · ${data.projectors[loc]!.name}`,
+  idle: () => "Lit",
   done: () => "Idle",
 };
 
@@ -67,7 +68,6 @@ export function ProjectorKeys({
           const lamp = lampState(data, loc);
           const card = cardState(data, loc);
           const owned = data.pieces[loc];
-          const other = lamp === "other" ? data.projectors[loc]!.color : undefined;
           const label = RING_LABEL[card](data, loc);
           const arrival = arrivals[loc];
           return (
@@ -78,7 +78,6 @@ export function ProjectorKeys({
               data-state={lamp}
               data-card={card}
               data-celebrate={arrival?.completed || undefined}
-              style={other ? ({ "--fi-other": other } as React.CSSProperties) : undefined}
               onClick={() => onSelect(loc)}
               aria-label={`${name.long}: ${owned.length} of ${PIECES_PER_SET} pieces, ${label}. Show details.`}
             >
@@ -125,7 +124,7 @@ export function KeyBanner({
         <KeyRound size={20} strokeWidth={2} />
       </span>
       <span className="fi-keyban-text">
-        <b>{zoneNames(data)[loc].short} key unlocked</b>
+        <b>{CODE_NAMES[loc]} key unlocked</b>
         <span>
           {data.phase === "endgame"
             ? "Go to the Guardian and scan the part card."
@@ -245,6 +244,32 @@ const CARD_STATUS: Record<CardState, string> = {
   done: "Idle",
 };
 
+/**
+ * Where a projector's NFC card is: Admin's picture (Admin → Puzzles) and the place, once the group has earned
+ * them (all 5 pieces, or lit it; 0098). On the key sheet and, after the key is used, on the projector's detail.
+ */
+export function NfcSpot({ data, loc }: { data: ItemsData; loc: ProjectorLocation }) {
+  const place = data.places[loc];
+  const image = data.images[loc];
+  return (
+    <figure className="fi-spot">
+      {image ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={image} alt={`Where the ${CODE_NAMES[loc]} NFC card is${place ? `: ${place.name}` : ""}`} />
+      ) : (
+        <div className="fi-spot-ph" aria-hidden>
+          {place ? <MapPin size={28} /> : <Lock size={26} />}
+          <span className="fh-mono">{place ? "Picture coming soon" : "Hidden for now"}</span>
+        </div>
+      )}
+      <figcaption>
+        <span className="fi-eb fh-mono">Where the NFC card is</span>
+        {place ? <b>{place.name}</b> : <span>The place appears here once all 5 pieces are in.</span>}
+      </figcaption>
+    </figure>
+  );
+}
+
 export function BlueprintDetail({ data, loc }: { data: ItemsData; loc: ProjectorLocation }) {
   const state = cardState(data, loc);
   const owned = data.pieces[loc];
@@ -260,7 +285,7 @@ export function BlueprintDetail({ data, loc }: { data: ItemsData; loc: Projector
           <span className="fi-eb fh-mono">{CARD_STATUS[state]}</span>
           <h2>{names[loc].long}</h2>
           <span className="fi-detail-key-name">
-            {data.mapUnlocked ? KEY_NAMES[loc] : "Location revealed when the map unlocks"}
+            {data.places[loc] ? KEY_NAMES[loc] : "Place revealed when all 5 pieces are in"}
           </span>
         </div>
         <span className="fi-count fh-mono">
@@ -283,14 +308,14 @@ export function BlueprintDetail({ data, loc }: { data: ItemsData; loc: Projector
         {state === "lit" && "Your group lit this projector. Mission complete."}
         {state === "idle" && lit && (
           <>
-            <span className="fi-tag" style={{ "--fi-tag": lit.color } as React.CSSProperties}>
-              Lit by {lit.name}
-            </span>{" "}
+            <span className="fi-tag">Already lit</span>{" "}
             {owned.length ? `Your ${owned.length} piece${owned.length === 1 ? " is" : "s are"} now idle.` : "This projector is closed."}
           </>
         )}
         {state === "done" && ours && `Your group already lit ${names[ours].short}. These pieces are idle.`}
       </p>
+
+      {data.places[loc] && <NfcSpot data={data} loc={loc} />}
 
       {data.mapUnlocked && (
         <Link href={`/map?focus=${loc}`} className="fh-btn fh-btn-ghost fh-btn-block">

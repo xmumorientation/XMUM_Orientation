@@ -4,6 +4,7 @@ import { useLayoutEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 
+import { groundY } from "./geo";
 import { bushes, campusTrees, lamps, plantation, thinForLite, type Plant } from "./plants";
 import { makeGlow } from "./textures";
 
@@ -127,7 +128,7 @@ function PlantInstances({
     items.forEach((t, i) => {
       e.set(0, t.rot, 0);
       q.setFromEuler(e);
-      m.compose(new THREE.Vector3(t.x, 0, t.z), q, new THREE.Vector3(t.s, t.s, t.s));
+      m.compose(new THREE.Vector3(t.x, groundY(t.x, t.z), t.z), q, new THREE.Vector3(t.s, t.s, t.s));
       ref.current!.setMatrixAt(i, m);
       const v = 0.85 + ((i * 37) % 11) / 30;
       c.setRGB(v * 0.97, v, v * 0.92);
@@ -174,7 +175,7 @@ function Bushes() {
     const m = new THREE.Matrix4();
     const c = new THREE.Color();
     items.forEach((b, i) => {
-      m.makeScale(b.s, b.s, b.s).setPosition(b.x, 0, b.z);
+      m.makeScale(b.s, b.s, b.s).setPosition(b.x, groundY(b.x, b.z), b.z);
       ref.current!.setMatrixAt(i, m);
       ref.current!.setColorAt(i, c.set(b.color));
     });
@@ -206,7 +207,7 @@ export function Lamps({ glow }: { glow: number }) {
   useLayoutEffect(() => {
     const m = new THREE.Matrix4();
     items.forEach((l, i) => {
-      m.makeTranslation(l.x, 0, l.z);
+      m.makeScale(l.s, l.s, l.s).setPosition(l.x, groundY(l.x, l.z), l.z);
       poles.current!.setMatrixAt(i, m);
       heads.current!.setMatrixAt(i, m);
       pools.current!.setMatrixAt(i, m);

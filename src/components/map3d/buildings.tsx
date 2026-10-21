@@ -6,16 +6,18 @@ import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 
 import {
-  B1_PLACE,
+  BLOCK_PLINTH,
   BLOCKS,
   BRIDGE,
   COLORS,
   FLAG,
   grandstandRect,
   LANDMARK_SCALE,
+  PLATEAU_H,
   STATUE,
   STATUE_ROT_Y,
   UNITS_PER_M,
+  courtyardWall,
   type World,
 } from "./geo";
 import { TanKahKeeStatue } from "./statue";
@@ -190,7 +192,11 @@ function Courtyard({ s, outer, court, lift, glow }: { s: number; outer: Facade; 
   ];
   return (
     <>
-      <Box size={[2 * s + 0.4, 0.3, 2 * s + 0.4]} pos={[0, 0.15, 0]} color="#d3cab9" />
+      <Box
+        size={[2 * (s + BLOCK_PLINTH.out), BLOCK_PLINTH.h, 2 * (s + BLOCK_PLINTH.out)]}
+        pos={[0, BLOCK_PLINTH.h / 2, 0]}
+        color="#d3cab9"
+      />
       {facades.map(([x, z, ry, w], i) => (
         <mesh key={i} position={[x, H / 2 + 0.3, z]} rotation-y={ry} castShadow receiveShadow>
           <planeGeometry args={[w, H]} />
@@ -291,7 +297,7 @@ function dutchGable(w: number) {
 }
 
 const A5_WALL = { wall: "#f4f1ea", glass: "#4f6072", repeat: [1, 1] as [number, number] };
-const PLINTH = 0.3;
+const PLINTH = BLOCK_PLINTH.h;
 /** Corner towers: half width, height (they rise past the eaves) and inset of their centres from the walls. */
 const A5_TOWER = { half: 0.65, h: H_BLOCK + 1.4, inset: 0.5 };
 /** Entrance: the bay stands `out` past the wall, beyond the eaves (0.7); porch, steps and ramps in front. */
@@ -488,7 +494,11 @@ function FlatBlock({ position, rotY, hx, hz, seed, glow }: BlockProps & { hx: nu
   const cols = [-1.2, -0.4, 0.4, 1.2];
   return (
     <group position={position} rotation-y={rotY}>
-      <Box size={[2 * hx + 0.5, 0.3, 2 * hz + 0.5]} pos={[0, 0.15, 0]} color="#d3cab9" />
+      <Box
+        size={[2 * (hx + BLOCK_PLINTH.out), BLOCK_PLINTH.h, 2 * (hz + BLOCK_PLINTH.out)]}
+        pos={[0, BLOCK_PLINTH.h / 2, 0]}
+        color="#d3cab9"
+      />
       <mesh position={[0, H / 2 + 0.3, 0]} material={wall} castShadow receiveShadow>
         <boxGeometry args={[2 * hx, H, 2 * hz]} />
       </mesh>
@@ -516,60 +526,36 @@ export function Blocks({ glow }: { glow: number }) {
     <>
       {BLOCKS.map((b, i) =>
         b.flat ? (
-          <FlatBlock key={b.name} position={at(b.pos)} rotY={b.rotY} hx={b.hx} hz={b.hz} seed={i + 1} glow={glow} />
+          <FlatBlock
+            key={b.name}
+            position={[b.pos[0], PLATEAU_H, b.pos[1]]}
+            rotY={b.rotY}
+            hx={b.hx}
+            hz={b.hz}
+            seed={i + 1}
+            glow={glow}
+          />
         ) : b.name === "A5" ? (
           <A5Block
             key={b.name}
-            position={at(b.pos)}
+            position={[b.pos[0], PLATEAU_H, b.pos[1]]}
             rotY={b.rotY}
-            s={(b.hx + b.hz) / 2 - 0.7}
+            s={courtyardWall(b)}
             seed={i + 1}
             glow={glow}
           />
         ) : (
           <JiagengBlock
             key={b.name}
-            position={at(b.pos)}
+            position={[b.pos[0], PLATEAU_H, b.pos[1]]}
             rotY={b.rotY}
-            s={(b.hx + b.hz) / 2 - 0.7}
+            s={courtyardWall(b)}
             seed={i + 1}
             glow={glow}
           />
         ),
       )}
     </>
-  );
-}
-
-// ── B1: white and red building by the courts ─────────────────────────────
-/** Modelled 7.6 x 14.5 (long side along local Z), then stretched to the OSM footprint. */
-export function B1Building({ glow }: { glow: number }) {
-  const fins = [-3, -1.5, 0, 1.5, 3];
-  const glass = { color: "#ffcf86", intensity: glow * 0.9 };
-  const b = B1_PLACE;
-  return (
-    <group position={at(b.pos)} rotation-y={b.rotY + Math.PI / 2} scale={[(2 * b.hz) / 7.6, 1, (2 * b.hx) / 14.5]}>
-      <Box size={[7.6, 6.5, 14.5]} pos={[0, 3.25, 0]} color={COLORS.white} />
-      {fins.map((x) => (
-        <Box key={x} size={[0.55, 6.5, 0.5]} pos={[x, 3.25, 7.45]} color={COLORS.red} />
-      ))}
-      {[1.4, 3.1, 4.8].map((y) => (
-        <Box key={y} size={[0.08, 0.75, 13]} pos={[3.84, y, 0]} color="#4f5d6c" emissive={glass} />
-      ))}
-      {[1.4, 3.1, 4.8].map((y) => (
-        <Box key={`b${y}`} size={[0.08, 0.75, 13]} pos={[-3.84, y, 0]} color="#4f5d6c" emissive={glass} />
-      ))}
-      <Box size={[9.2, 0.3, 6.5]} pos={[0.6, 5.3, -6.2]} color={COLORS.white} />
-      <Box size={[5.2, 1.8, 8]} pos={[-0.4, 7.4, -1.8]} color="#e6e6e6" />
-      <Box size={[5.3, 0.6, 0.08]} pos={[-0.4, 7.4, 2.25]} color="#4f5d6c" emissive={glass} />
-      <Box size={[1.5, 1.5, 1.5]} pos={[-0.8, 9.05, 1.2]} color={COLORS.red} />
-      <Box size={[1.3, 1.3, 1.3]} pos={[1.2, 8.95, 2.8]} color={COLORS.red} />
-      {/* entrance canopy */}
-      <Box size={[2.2, 0.2, 3.4]} pos={[4.6, 2.6, 2]} color={COLORS.white} />
-      {[-0.5, 4.5].map((z) => (
-        <Box key={z} size={[0.15, 2.5, 0.15]} pos={[5.5, 1.3, z - 1]} color={COLORS.red} />
-      ))}
-    </group>
   );
 }
 

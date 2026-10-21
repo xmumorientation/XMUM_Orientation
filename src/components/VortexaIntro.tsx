@@ -1,26 +1,47 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 
 import "./vortexa-intro.css";
 
+const INTRO_SEEN_KEY = "vortexa_logo_intro_seen";
+let seenInPage = false;
+
 /**
- * Vortexa logo reveal when the site is first opened or right after login, on
- * any page. Mounted once in the root layout, so it plays on a full page load
- * only (opening the site, a refresh, and every login flow, which all end in a
- * full load) and not on in-app navigation. Same idea as the interview site's
- * HomeIntro. The whole animation, including the fade-out, runs in CSS, so it
- * shows straight from the server HTML and still clears if scripts are slow.
- * A tap ends it early; there is no visible "skip" hint.
+ * Show the logo once per tab session, including across refreshes and login.
+ * Wait for the client storage check so returning visits never flash a cover.
  */
 export function VortexaIntro() {
+  const [show, setShow] = useState(false);
   const [done, setDone] = useState(false);
   const pathname = usePathname();
+  const excluded = pathname === "/activate" || pathname === "/activate/preview";
+
+  useEffect(() => {
+    if (excluded) {
+      // The activation has its own entrance. Keep the next map route clear
+      // too, including a first visit from a physical sticker.
+      seenInPage = true;
+      setShow(false);
+      try { window.sessionStorage.setItem(INTRO_SEEN_KEY, "1"); } catch { /* In-page flag still applies. */ }
+      return;
+    }
+
+    let seen = seenInPage;
+    try {
+      seen ||= window.sessionStorage.getItem(INTRO_SEEN_KEY) === "1";
+      window.sessionStorage.setItem(INTRO_SEEN_KEY, "1");
+    } catch {
+      // Keep in-page navigation quiet even when browser storage is disabled.
+    }
+    seenInPage = true;
+    if (!seen) setShow(true);
+  }, [excluded]);
 
   // Let the activation sequence show its own entrance without a logo cover.
-  if (pathname === "/activate" || pathname === "/activate/preview") return null;
+  if (excluded || !show) return null;
 
   return (
     <div className={`vx-intro${done ? " vx-intro-done" : ""}`} onClick={() => setDone(true)} aria-hidden="true">

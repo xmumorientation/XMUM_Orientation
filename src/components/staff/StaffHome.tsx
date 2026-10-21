@@ -1,6 +1,6 @@
 "use client";
 
-import { Activity, ArrowRight, CalendarDays, Check, Coins, Copy, Gift, Map, Sparkles } from "lucide-react";
+import { Activity, ArrowRight, CalendarDays, Check, Coins, Copy, Flag, Gift, Map, Sparkles } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
@@ -27,13 +27,14 @@ import { ROLE_LABELS, type UserRole } from "@/lib/types";
 import "@/components/freshie/freshie.css";
 import "./staff-home.css";
 
-// Home (/dashboard) for HOF, HOGM and Committee (OPS_ROLES). Same layout as
+// Home (/dashboard) for HOF, HOGM, Committee and GM (VORTEXA_ROLES). Same layout as
 // Freshie Home: one-screen stops that snap, starting with the Welcome stop
 // (Vortexa lockup, countdown, live game, two buttons, credits), in the public
 // Welcome page's colours instead of a group colour (VORTEXA_THEME, .fh-vx in
 // staff-home.css). Then the account's own blind boxes and QR, the scoreboard
-// and the event tools. Navigation is the tab bar (phones and portrait tablets)
-// or TopNav (landscape tablets and desktops).
+// and the event tools. A GM's main button and first tool are its Station panel
+// (/gm) instead of Ops, and it has no blind box stop. Navigation is the tab bar
+// (phones and portrait tablets) or TopNav (landscape tablets and desktops).
 
 const STOPS = [
   { id: "sh-welcome", label: "Welcome" },
@@ -42,9 +43,13 @@ const STOPS = [
   { id: "sh-tools", label: "Tools" },
 ] as const;
 
+const GM_STOPS = STOPS.filter((s) => s.id !== "sh-bb");
+
 type HomeGroup = { id: number; name: string; color: string | null; token_balance: number };
 
-/** Groups and their tokens, live: the scoreboard and the sky's cabins. */
+/** Groups and their tokens, live: the scoreboard and the sky's cabins. Reads
+ *  fn_scoreboard() because a GM may not select the groups table (0002 RLS); the
+ *  30-second refresh covers the realtime events RLS does not send to a GM. */
 function useGroups() {
   const supabase = useMemo(() => supabaseBrowser(), []);
   const [groups, setGroups] = useState<HomeGroup[] | null>(null);
@@ -52,17 +57,26 @@ function useGroups() {
   useEffect(() => {
     let active = true;
     async function load() {
-      const { data: gs } = await supabase.from("groups").select("id, name, color, token_balance").order("id");
-      if (!active) return;
-      setGroups(((gs as HomeGroup[]) ?? []).map((g) => ({ ...g, token_balance: g.token_balance ?? 0 })));
+      const { data: gs } = await supabase.rpc("fn_scoreboard");
+      if (!active || !gs) return;
+      setGroups(
+        (gs as HomeGroup[])
+          .map((g) => ({ ...g, token_balance: g.token_balance ?? 0 }))
+          .sort((a, b) => a.id - b.id)
+      );
     }
     load();
+    const refreshVisible = () => { if (document.visibilityState === "visible") void load(); };
+    const timer = window.setInterval(refreshVisible, 30000);
+    document.addEventListener("visibilitychange", refreshVisible);
     const channel = supabase
       .channel(`sh-groups-${crypto.randomUUID()}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "groups" }, load)
       .subscribe();
     return () => {
       active = false;
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", refreshVisible);
       supabase.removeChannel(channel);
     };
   }, [supabase]);
@@ -108,11 +122,18 @@ function WelcomeStop({ name, role }: { name: string; role: UserRole }) {
         </>
       )}
       <div className="fh-actions">
-        <Link href="/committee" className="fh-btn fh-btn-primary">
-          <Activity size={18} aria-hidden />
-          Ops
-        </Link>
-        <button type="button" className="fh-btn fh-btn-ghost" onClick={() => goTo("sh-bb")}>
+        {role === "gm" ? (
+          <Link href="/gm" className="fh-btn fh-btn-primary">
+            <Flag size={18} aria-hidden />
+            Station
+          </Link>
+        ) : (
+          <Link href="/committee" className="fh-btn fh-btn-primary">
+            <Activity size={18} aria-hidden />
+            Ops
+          </Link>
+        )}
+        <button type="button" className="fh-btn fh-btn-ghost" onClick={() => goTo(role === "gm" ? "sh-scores" : "sh-bb")}>
           More Info ↓
         </button>
       </div>
@@ -219,14 +240,21 @@ const TOOLS = [
   { href: "/token", Icon: Coins, title: "Scoreboard", text: "Live tokens and puzzle pieces" },
 ];
 
-function ToolsStop() {
+const GM_TOOLS = [
+  { href: "/gm", Icon: Flag, title: "Station panel", text: "Results, rewards and station status" },
+  { href: "/map", Icon: Map, title: "Campus map", text: "Every station and its status" },
+  { href: "/schedule", Icon: CalendarDays, title: "Schedule", text: "The two-day programme" },
+  { href: "/token", Icon: Coins, title: "Scoreboard", text: "Live tokens and puzzle counts" },
+];
+
+function ToolsStop({ role }: { role: UserRole }) {
   return (
     <section id="sh-tools" className="fh-stop" aria-labelledby="sh-tools-title">
       <div className="fh-stop-head">
         <h2 id="sh-tools-title" className="fh-h2 fh-slab">Event Tools</h2>
       </div>
       <ul className="sh-tools">
-        {TOOLS.map(({ href, Icon, title, text }) => (
+        {(role === "gm" ? GM_TOOLS : TOOLS).map(({ href, Icon, title, text }) => (
           <li key={href}>
             <Link href={href} className="sh-tool">
               <span className="sh-tool-ic" aria-hidden>
@@ -248,6 +276,7 @@ function ToolsStop() {
 export function StaffHome() {
   const profile = useProfile();
   const groups = useGroups();
+  const isGm = profile.role === "gm";
 
   // Section-by-section snapping, this page only (same as Freshie Home).
   useEffect(() => {
@@ -293,13 +322,13 @@ export function StaffHome() {
             />
           </div>
         </div>
-        <StopBar stops={STOPS} />
+        <StopBar stops={isGm ? GM_STOPS : STOPS} />
       </header>
 
       <WelcomeStop name={profile.full_name ?? ""} role={profile.role} />
-      <BlindBoxStop />
+      {!isGm && <BlindBoxStop />}
       <ScoresStop groups={groups} />
-      <ToolsStop />
+      <ToolsStop role={profile.role} />
     </div>
   );
 }

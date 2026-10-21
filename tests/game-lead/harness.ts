@@ -1,4 +1,4 @@
-// Shared setup for the game-lead database tests (migrations 0071 / 0072).
+// Shared setup for the game-lead database tests (migrations 0071 / 0072 / 0097).
 // A real Postgres runs in a temp folder (embedded-postgres) on the blind-box
 // stub schema, plus the few tables these functions touch.
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
@@ -84,7 +84,7 @@ const SCHEMA = `
 `;
 
 /**
- * Starts a database with 0071 and 0072 applied. `phaseControl` replaces the
+ * Starts a database with 0071, 0072 and 0097 applied. `phaseControl` replaces the
  * repo's fn_phase_control (e.g. the live database's bonding-session one).
  */
 export async function startDb(port: number, phaseControl?: string) {
@@ -127,6 +127,7 @@ export async function startDb(port: number, phaseControl?: string) {
   }
   await db.query(sql("supabase/migrations/0071_hogm_game_control.sql"));
   await db.query(sql("supabase/migrations/0072_hogm_game_length.sql"));
+  await db.query(sql("supabase/migrations/0097_projector_places.sql"));
 
   for (const [id, role] of [
     [ADMIN, "admin"],

@@ -30,3 +30,22 @@ export async function saveGameLength(supabase: SupabaseClient, phase: Phase, min
 export function otherGameRunning(phases: Phase[], phase: Phase): Phase | undefined {
   return phases.find((p) => p.key !== phase.key && (p.state === "active" || p.state === "paused"));
 }
+
+/** Phases a reset puts back to Not started. */
+export const RESET_PHASES = ["day1", "day2", "endgame"] as const;
+
+/**
+ * Rehearsal only: every game back to Not started, so a new run can start from
+ * Day 1. Uses the live fn_phase_control's "reset" action (bonding-session
+ * 0036: state pending, timers cleared); the repo's 0003 version has no reset
+ * and answers UNKNOWN_ACTION. The phases trigger (0065) then moves every GM
+ * back to their Day 1 station. Returns an error message, or null when done.
+ */
+export async function resetGames(supabase: SupabaseClient, phases: Phase[]): Promise<string | null> {
+  for (const p of phases) {
+    if (!(RESET_PHASES as readonly string[]).includes(p.key) || p.state === "pending") continue;
+    const { error } = await supabase.rpc("fn_phase_control", { p_phase_key: p.key, p_action: "reset", p_extend_minutes: 0 });
+    if (error) return `${p.name}: ${friendlyError(error)}`;
+  }
+  return null;
+}

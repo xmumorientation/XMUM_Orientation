@@ -86,6 +86,7 @@ beforeAll(async () => {
 
   await admin.query(read("supabase/migrations/0062_station_capacity.sql"));
   await admin.query(read("supabase/migrations/0064_building_geofence.sql"));
+  await admin.query(read("supabase/migrations/0095_gm_station_checkin.sql"));
 
   await q("insert into groups (id, name) values (1, 'Group 1'), (2, 'Group 2'), (3, 'Group 3')");
   await q("insert into phases (key, state) values ('day1', 'pending'), ('day2', 'pending'), ('endgame', 'pending')");
@@ -189,30 +190,41 @@ describe("after 0078", () => {
     await q("update profiles set station_id = $1 where id = $2", [A, GM_A]);
   });
 
+  it("Faci is refused check-in and uncheck; only Game Master and leads can check in", async () => {
+    await rpc(ADMIN, "fn_set_station_status", [A, "available"]);
+    expect(await fails(rpc(FACI, "fn_manual_checkin", [A, null, null, null, 1]))).toMatch(/PERMISSION_DENIED/);
+    expect(await fails(rpc(FACI, "fn_uncheckin", [1]))).toMatch(/PERMISSION_DENIED/);
+  });
+
   it("a Closed station refuses check-in; Available and In Progress accept it", async () => {
     await rpc(ADMIN, "fn_set_station_status", [A, "closed"]);
-    await q("update profiles set group_id = 1 where id = $1", [ADMIN]);
-    expect(await fails(rpc(FACI, "fn_manual_checkin", [A]))).toMatch(/STATION_CLOSED/);
+    expect(await fails(rpc(GM_A, "fn_manual_checkin", [A, null, null, null, 1]))).toMatch(/STATION_CLOSED/);
     await rpc(ADMIN, "fn_set_station_status", [A, "in_progress"]);
-    expect((await rpc(FACI, "fn_manual_checkin", [A])).ok).toBe(true);
-    await rpc(FACI, "fn_uncheckin");
+    expect((await rpc(GM_A, "fn_manual_checkin", [A, null, null, null, 1])).ok).toBe(true);
+    await rpc(GM_A, "fn_uncheckin", [1]);
     await rpc(ADMIN, "fn_set_station_status", [A, "available"]);
-    expect((await rpc(FACI, "fn_manual_checkin", [A])).ok).toBe(true);
-    await rpc(FACI, "fn_uncheckin");
+    expect((await rpc(GM_A, "fn_manual_checkin", [A, null, null, null, 1])).ok).toBe(true);
+    await rpc(GM_A, "fn_uncheckin", [1]);
+  });
+
+  it("GM cannot check in at another station; Admin can check in at any station", async () => {
+    await rpc(ADMIN, "fn_set_station_status", [B, "available"]);
+    expect(await fails(rpc(GM_A, "fn_manual_checkin", [B, null, null, null, 1]))).toMatch(/NOT_YOUR_STATION/);
+    expect((await rpc(ADMIN, "fn_manual_checkin", [B, null, null, null, 1])).ok).toBe(true);
+    await rpc(ADMIN, "fn_uncheckin", [1]);
   });
 
   it("check-in, check-out, clearing and a full station never change the status", async () => {
     // A holds at most 2 groups
-    await q("insert into profiles (id, role, full_name, group_id) values ($1, 'faci', 'Faci 2', 2), ($2, 'faci', 'Faci 3', 3)", [uid(8), uid(9)]);
     for (const wanted of ["available", "in_progress"]) {
       await rpc(ADMIN, "fn_set_station_status", [A, wanted]);
-      await rpc(FACI, "fn_manual_checkin", [A]);
+      await rpc(GM_A, "fn_manual_checkin", [A, null, null, null, 1]);
       expect(await status(A)).toBe(wanted);
-      await rpc(uid(8), "fn_manual_checkin", [A]);
+      await rpc(GM_A, "fn_manual_checkin", [A, null, null, null, 2]);
       expect(await status(A)).toBe(wanted); // now full: still not flipped
-      expect(await fails(rpc(uid(9), "fn_manual_checkin", [A]))).toMatch(/STATION_FULL/); // the limit still works
+      expect(await fails(rpc(GM_A, "fn_manual_checkin", [A, null, null, null, 3]))).toMatch(/STATION_FULL/); // the limit still works
       expect(await status(A)).toBe(wanted);
-      await rpc(uid(8), "fn_uncheckin");
+      await rpc(GM_A, "fn_uncheckin", [2]);
       expect(await status(A)).toBe(wanted);
       await rpc(GM_A, "fn_clear_station", [A]);
       expect(await status(A)).toBe(wanted);

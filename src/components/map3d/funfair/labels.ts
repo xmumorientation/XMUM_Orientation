@@ -38,5 +38,5 @@ export const ZONE_CENTERS: Record<"west" | "central" | "east", World> = {
   east: [E.ORIGIN[0], E.ORIGIN[1]],
 };
 
-/** The funfair's own name, over the middle of its land: it is a game zone, not a real fair. */
-export const FUNFAIR_LABEL = { name: "Vortexa Funfair (game zone)", pos: [32, -11.5] as World, y: 9 };
+/** The funfair's own name, over the middle of its land (Ben, 2026-10-22: no "(game zone)"). */
+export const FUNFAIR_LABEL = { name: "Vortexa Funfair", pos: [32, -11.5] as World, y: 9 };

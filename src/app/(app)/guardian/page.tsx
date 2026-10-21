@@ -9,93 +9,114 @@ import {
   PageTitle,
   SuccessBanner,
 } from "@/components/ui";
+import { useProjectorPlaces } from "@/components/useConfig";
+import { loadProjectorStates, type ProjectorState } from "@/lib/projectorStates";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import {
-  PROJECTOR_LABELS,
   PROJECTOR_LOCATIONS,
-  type Projector,
   type ProjectorLocation,
 } from "@/lib/types";
+import { guardianStatus, type PuzzleStatus as NfcPuzzleStatus } from "@/lib/nfc-flow";
 import { cn, friendlyError } from "@/lib/utils";
 
-interface PuzzleStatus {
-  pieces: number;
-  total: number;
-  complete: boolean;
-  redeemed: boolean;
-  projector_activated: boolean;
-}
+type PuzzleStatus = NfcPuzzleStatus & { verified: boolean };
 
 // FR-8.2: Guardian GM verification flow — check group's pieces, confirm,
 // mark redeemed, log the physical NFC card handover.
 // FR-9.5: manual activation fallback for damaged stickers.
 export default function GuardianPage() {
+  const places = useProjectorPlaces();
   const supabase = useMemo(() => supabaseBrowser(), []);
   const [groups, setGroups] = useState<{ id: number; name: string }[]>([]);
   const [groupId, setGroupId] = useState<number | null>(null);
   const [location, setLocation] = useState<ProjectorLocation>("B1");
   const [status, setStatus] = useState<PuzzleStatus | null>(null);
-  const [projectors, setProjectors] = useState<Projector[]>([]);
+  const [projectors, setProjectors] = useState<ProjectorState[]>([]);
   const [nfcNote, setNfcNote] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [canManual, setCanManual] = useState(false);
+  const [revision, setRevision] = useState(0);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     let active = true;
+    async function loadPermissions() {
+      const { data, error } = await supabase.rpc("fn_nfc_v2_context");
+      if (!active) return;
+      if (error?.code === "PGRST202") {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+        if (active) setCanManual(["guardian_gm", "hogm", "admin"].includes(profile?.role ?? ""));
+      } else setCanManual(!error && data?.can_manual === true);
+    }
+    void loadPermissions();
+    return () => { active = false; };
+  }, [supabase]);
+
+  useEffect(() => {
+    let active = true;
     async function load() {
-      const [{ data: gs }, { data: ps }] = await Promise.all([
+      const [{ data: gs }, ps] = await Promise.all([
         supabase.rpc("fn_list_groups"),
-        supabase.from("projectors").select("*"),
+        loadProjectorStates(supabase),
       ]);
       if (!active) return;
       setGroups(gs ?? []);
-      setProjectors((ps as Projector[]) ?? []);
+      if (ps) setProjectors(ps);
     }
-    load();
-    return () => {
-      active = false;
-    };
-  }, [supabase]);
+    void load();
+    const poll = window.setInterval(load, 5000);
+    return () => { active = false; window.clearInterval(poll); };
+  }, [supabase, revision]);
 
   useEffect(() => {
     if (!groupId) {
       setStatus(null);
       return;
     }
+    setStatus(null);
     let active = true;
+    let request = 0;
     async function check() {
-      const { data, error } = await supabase.rpc("fn_puzzle_status", {
+      const current = ++request;
+      const args = {
         p_group_id: groupId,
         p_location: location,
-      });
-      if (!active) return;
-      if (error) setError(friendlyError(error));
-      else setStatus(data as PuzzleStatus);
+      };
+      let result = await supabase.rpc("fn_nfc_v2_puzzle_status", args);
+      if (result.error?.code === "PGRST202") result = await supabase.rpc("fn_puzzle_status", args);
+      if (!active || current !== request) return;
+      if (result.error) { setStatus(null); setError(friendlyError(result.error)); }
+      else { setError(null); setStatus(guardianStatus(result.data as NfcPuzzleStatus)); }
     }
-    check();
-    return () => {
-      active = false;
-    };
-  }, [supabase, groupId, location]);
+    void check();
+    const poll = window.setInterval(check, 5000);
+    return () => { active = false; window.clearInterval(poll); };
+  }, [supabase, groupId, location, revision]);
+
+  useEffect(() => { setNotice(null); }, [groupId, location]);
 
   async function redeem() {
     if (!groupId) return;
     setBusy(true);
     setError(null);
-    const { error } = await supabase.rpc("fn_redeem_puzzle_set", {
-      p_group_id: groupId,
-      p_location: location,
-      p_nfc_note: nfcNote,
+    let result = await supabase.rpc("fn_nfc_v2_verify_nfc_handover", {
+      p_group_id: groupId, p_location: location, p_card_note: nfcNote,
     });
+    if (result.error?.code === "PGRST202") result = await supabase.rpc("fn_redeem_puzzle_set", {
+      p_group_id: groupId, p_location: location, p_nfc_note: nfcNote,
+    });
+    const { error } = result;
     setBusy(false);
     if (error) {
       setError(friendlyError(error));
     } else {
       setNotice(
-        `Set redeemed for ${PROJECTOR_LABELS[location]}. Hand over the NFC card now.`
+        `Set verified for ${places[location].name}. Hand over the NFC card now.`
       );
-      setStatus((s) => (s ? { ...s, redeemed: true } : s));
+      setRevision(value => value + 1);
     }
   }
 
@@ -103,19 +124,24 @@ export default function GuardianPage() {
     if (!groupId) return;
     if (
       !window.confirm(
-        `Manually activate ${PROJECTOR_LABELS[location]} for group ${groupId}? This is logged as a manual override.`
+        `Manually light ${places[location].name} for group ${groupId}? This is logged as a manual override.`
       )
     )
       return;
     setBusy(true);
     setError(null);
-    const { error } = await supabase.rpc("fn_activate_projector_manual", {
+    let result = await supabase.rpc("fn_nfc_v2_activate_projector_manual", {
       p_location: location,
       p_group_id: groupId,
     });
+    if (result.error?.code === "PGRST202") result = await supabase.rpc("fn_activate_projector_manual", {
+      p_location: location, p_group_id: groupId,
+    });
+    const { error } = result;
+    setRevision(value => value + 1);
     setBusy(false);
     if (error) setError(friendlyError(error));
-    else setNotice(`${PROJECTOR_LABELS[location]} activated (manual override).`);
+    else setNotice(`${places[location].name} lit (manual override).`);
   }
 
   return (
@@ -134,6 +160,7 @@ export default function GuardianPage() {
             {PROJECTOR_LOCATIONS.map((loc) => (
               <button
                 key={loc}
+                disabled={busy}
                 onClick={() => setLocation(loc)}
                 className={cn(
                   "btn text-sm",
@@ -153,6 +180,7 @@ export default function GuardianPage() {
           </label>
           <select
             id="group"
+            disabled={busy}
             className="input"
             value={groupId ?? ""}
             onChange={(e) => setGroupId(Number(e.target.value) || null)}
@@ -171,7 +199,7 @@ export default function GuardianPage() {
         <Card className="space-y-3">
           <div className="flex items-center justify-between">
             <span className="font-semibold">
-              {PROJECTOR_LABELS[location]} set
+              {places[location].name} set
             </span>
             <span
               className={cn(
@@ -187,12 +215,11 @@ export default function GuardianPage() {
 
           {status.projector_activated ? (
             <p className="text-sm font-semibold text-amber-500">
-              This projector has already been revived.
+              This projector is already lit.
             </p>
-          ) : status.redeemed ? (
+          ) : status.verified ? (
             <p className="text-sm font-semibold text-green-700">
-              Already redeemed - the group should tap the NFC sticker during
-              Endgame.
+              Verified — the group’s assigned Facilitator can tap the NFC sticker to light it during the Endgame.
             </p>
           ) : status.complete ? (
             <>
@@ -213,7 +240,7 @@ export default function GuardianPage() {
                 onClick={redeem}
                 className="btn-primary w-full"
               >
-                Confirm set and mark redeemed
+                Confirm set and verify card handover
               </button>
             </>
           ) : (
@@ -224,14 +251,14 @@ export default function GuardianPage() {
             </p>
           )}
 
-          {status.redeemed && !status.projector_activated && (
+          {canManual && status.verified && !status.projector_activated && (
             <button
               disabled={busy}
               onClick={manualActivate}
               className="btn-danger w-full"
             >
               <TriangleAlert size={20} strokeWidth={1.75} />
-              Manual activation (sticker damaged)
+              Light manually (sticker damaged)
             </button>
           )}
         </Card>
@@ -248,9 +275,10 @@ export default function GuardianPage() {
                   p.activated_at ? "font-semibold text-amber-500" : "text-ink-faint"
                 }
               >
+                {/* Which group: Admin and HOGM only (0096). */}
                 {p.activated_at
-                  ? `Revived by group ${p.activated_by_group}`
-                  : "Dormant"}
+                  ? p.activated_by_group != null ? `Lit by group ${p.activated_by_group}` : "Lit"
+                  : "Not lit yet"}
               </span>
             </li>
           ))}

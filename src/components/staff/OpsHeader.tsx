@@ -13,14 +13,14 @@ import { ROLE_LABELS, type UserRole } from "@/lib/types";
 import "@/components/freshie/freshie.css";
 import "./staff-home.css";
 
-// HOGM's and HOF's header on Ops, Map, Scores and Schedule (phones and portrait
-// tablets): the same logo, role chip and account menu as their Home
+// HOGM's, HOF's and GM's header on Ops (GM: Station), Map, Scores and Schedule
+// (phones and portrait tablets): the same logo, role chip and account menu as their Home
 // (StaffHome), in normal flow above the scroller. The logo goes Home; Log
 // Out is in the account menu. The running game shows under it.
 // Landscape tablets and desktops use TopNav instead.
 
 /** Short role name for the header chip. */
-export const OPS_CHIP: Partial<Record<UserRole, string>> = { hof: "HOF", hogm: "HOGM", committee: "Committee" };
+export const OPS_CHIP: Partial<Record<UserRole, string>> = { hof: "HOF", hogm: "HOGM", committee: "Committee", gm: "GM" };
 
 export function OpsHeader() {
   const profile = useProfile();

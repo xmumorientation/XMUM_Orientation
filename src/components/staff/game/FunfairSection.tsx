@@ -2,8 +2,10 @@
 
 import { ExternalLink } from "lucide-react";
 
+import { useProjectorPlaces } from "@/components/useConfig";
 import { funfairPreviewHref, toggleKey, useFunfairZones } from "@/components/useFunfairZones";
-import { PROJECTOR_LABELS, PROJECTOR_LOCATIONS } from "@/lib/types";
+import { SIGN_NOTE } from "@/lib/funfair";
+import { PROJECTOR_LOCATIONS } from "@/lib/types";
 
 import { StatusLine } from "./parts";
 
@@ -19,6 +21,7 @@ const OVERRIDES = [
 ] as const;
 
 export function FunfairSection() {
+  const places = useProjectorPlaces();
   const { rows, missing, error, busy, save, isOn } = useFunfairZones();
   // The finale (the lake stage's concert) plays while all three zones are on.
   const finale = rows?.length ? rows.every(isOn) : null;
@@ -50,7 +53,7 @@ export function FunfairSection() {
                 </span>
               </header>
               <div className="gc-field">
-                <span>Keys (lightbulbs)</span>
+                <span>Keys (projectors)</span>
                 <div className="gc-seg" role="group" aria-label={`${row.name} keys`}>
                   {PROJECTOR_LOCATIONS.map((loc) => (
                     <button
@@ -60,7 +63,7 @@ export function FunfairSection() {
                       disabled={busy}
                       onClick={() => save(toggleKey(row, loc))}
                     >
-                      {PROJECTOR_LABELS[loc]}
+                      {places[loc].name}
                     </button>
                   ))}
                 </div>
@@ -128,6 +131,7 @@ export function FunfairSection() {
         Auto: the zone is on when its keys are lit. A change shows on every map within about 10 s. Preview plays the
         zone&apos;s power-up (or the concert&apos;s opening) on your screen only.
       </p>
+      <p className="gc-muted">{SIGN_NOTE}</p>
     </div>
   );
 }

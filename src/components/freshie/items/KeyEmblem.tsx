@@ -20,7 +20,7 @@ export const KEY_NAMES: Record<ProjectorLocation, string> = {
   TF: "Orbit Key",
 };
 
-const KEY_COLORS: Record<ProjectorLocation, { main: string; light: string; stops: [string, string, string] }> = {
+export const KEY_COLORS: Record<ProjectorLocation, { main: string; light: string; stops: [string, string, string] }> = {
   B1: { main: "#ff4fc3", light: "#fff0fb", stops: ["#ff7fd6", "#b02fbf", "#4a1580"] },
   A3: { main: "#ffd66b", light: "#fff7d6", stops: ["#2f7fd0", "#0b3f7a", "#06224a"] },
   TF: { main: "#fc9e3d", light: "#fff1e2", stops: ["#ff9a5c", "#a0326e", "#4a1660"] },

@@ -86,7 +86,7 @@ The gate lights up fully, and the lake stage plays its concert, with fireworks o
 The dorms are real. Freshies need to find LY3 or D4.
 
 - Labels keep the dorm name with the ride, for example "LY3 · Vortexa Eye".
-- The funfair has a clear "Vortexa Funfair (game zone)" label, so nobody thinks it is a real fair.
+- The funfair has a clear "Vortexa Funfair" label (Ben dropped "(game zone)" on 2026-10-22).
 
 ## How the game reaches the funfair (Ben, 2026-10-15)
 

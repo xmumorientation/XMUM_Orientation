@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { supabaseBrowser } from "@/lib/supabase/client";
+import { projectorPlaces } from "@/lib/projectorPlaces";
 
 export interface BrandConfig {
   eventName: string;
@@ -60,6 +61,12 @@ export function useConfig() {
   };
 
   return { config, brand, loaded };
+}
+
+/** Each projector's place (src/lib/projectorPlaces.ts), live. */
+export function useProjectorPlaces() {
+  const { config } = useConfig();
+  return useMemo(() => projectorPlaces(config), [config]);
 }
 
 export function puzzleImageUrl(

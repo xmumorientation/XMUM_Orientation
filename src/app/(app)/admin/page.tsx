@@ -17,6 +17,7 @@ import {
   saveAdminDayFilter,
 } from "@/lib/adminDayFilter";
 import { supabaseBrowser } from "@/lib/supabase/client";
+import { resetGames } from "@/lib/gameLength";
 import { cn, friendlyError } from "@/lib/utils";
 
 interface LiveOps {
@@ -96,7 +97,7 @@ export default function AdminControlRoomPage() {
     { key: "nfc_disabled", label: "Disable NFC activation", danger: "Sticker taps rejected" },
     { key: "rehearsal_mode", label: "Rehearsal mode", danger: "Bypasses ALL phase gating. Testing only" },
     { key: "day2_map_layer", label: "Day 2 map layer", danger: "Reveals projectors on everyone's map" },
-    { key: "nfc_demo_mode", label: "NFC demo mode", danger: "Freshies and Facis can light a lightbulb without the card. Testing only" },
+    { key: "nfc_demo_mode", label: "NFC demo mode", danger: "Freshies and Facis can light a projector without the card. Testing only" },
   ];
 
   const onSwitches = SWITCHES.filter((s) => boolOf(s.key));
@@ -148,7 +149,7 @@ export default function AdminControlRoomPage() {
             ["Box tokens paid in", ops.blindbox_tokens_in],
             ["Pieces granted", ops.pieces_granted],
             ["Sets redeemed", ops.sets_redeemed],
-            ["Projectors revived", `${ops.projectors_activated}/3`],
+            ["Projectors lit", `${ops.projectors_activated}/3`],
           ].map(([label, value]) => (
             <Card key={String(label)} className="p-3 text-center">
               <p className="text-xl font-bold tabular-nums">{String(value)}</p>
@@ -192,6 +193,32 @@ export default function AdminControlRoomPage() {
                 </div>
               );
             })}
+            {/* Rehearsal only: every game back to Not started (lib/gameLength resetGames). */}
+            <div className="flex items-center gap-3 px-4 py-3">
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold">Reset games</p>
+                <p className="text-xs text-ink-faint">
+                  {boolOf("rehearsal_mode")
+                    ? "Day 1, Day 2 and the endgame back to Not started. Every GM moves back to their Day 1 station."
+                    : "Locked until Rehearsal mode is on."}
+                </p>
+              </div>
+              <button
+                type="button"
+                disabled={busy || !boolOf("rehearsal_mode") || phases.every((p) => p.state === "pending")}
+                onClick={async () => {
+                  if (!window.confirm("Reset every game to Not started? Timers clear and every GM moves back to their Day 1 station. Tokens and pieces are not changed.")) return;
+                  setBusy(true);
+                  const err = await resetGames(supabase, phases);
+                  setBusy(false);
+                  if (err) setError(err);
+                  else flashNotice("Games reset. Every GM is back on their Day 1 station.");
+                }}
+                className="btn-secondary min-h-[40px] shrink-0 border-red-300 px-3 text-xs font-semibold text-red-700 disabled:opacity-50"
+              >
+                Reset
+              </button>
+            </div>
           </Card>
         </section>
       </div>

@@ -27,3 +27,6 @@
 @media(prefers-reduced-motion:reduce){.vt-scene *{animation:none!important;transition:none!important}.vt-trail,.vt-wave,.vt-spark,.vt-charging{display:none}.vt-wash{opacity:.7}.vt-outline{stroke-dashoffset:0}.vt-core{opacity:1}}
 
 .vt-scene:not(.vt-ready) *{animation-play-state:paused!important}
+
+.vt-map-button{display:block;min-height:44px;margin:18px auto 0;padding:10px 20px;border:1px solid #fff2b260;border-radius:999px;background:#fff2b2;color:#171126;font-weight:700;cursor:pointer}.vt-map-button:focus-visible{outline:3px solid #0dfcfd;outline-offset:4px}.vt-map-button:disabled{opacity:.7}.vt-next{margin:8px 0 0;color:#ddd6f3;font-size:12px}
+@media(max-height:650px){.vt-map-button{margin-top:10px}.vt-next{margin-top:5px}}

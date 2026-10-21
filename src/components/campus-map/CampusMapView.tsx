@@ -64,6 +64,16 @@ class Fallback extends Component<{ onError: () => void; children: ReactNode }, {
 /** Scene options for the 3D view only (the dev preview sets them). */
 export type SceneOptions = Pick<CampusMap3DViewProps, "mode" | "lite" | "intro" | "camera">;
 
+function ActivationFallback({ setLayer }: { setLayer: CampusMapViewProps["data"]["setLayer"] }) {
+  const [arrival, setArrival] = useState(false);
+  useEffect(() => {
+    const arrived = new URLSearchParams(window.location.search).get("arrival") === "activation";
+    setArrival(arrived);
+    if (arrived) setLayer("bulbs");
+  }, [setLayer]);
+  return arrival ? <p role="status" className="card mb-3 text-sm">Your projector is lit. This device is showing the 2D map; the Projectors view shows it lit.</p> : null;
+}
+
 export function CampusMapView({
   view,
   onFail,
@@ -71,7 +81,7 @@ export function CampusMapView({
   ...props
 }: CampusMapViewProps & { view: MapView | null; onFail: () => void; scene?: SceneOptions }) {
   if (view === null) return <MapLoading />;
-  if (view === "2d") return <CampusMap2DView {...props} />;
+  if (view === "2d") return <><ActivationFallback setLayer={props.data.setLayer} /><CampusMap2DView {...props} /></>;
   return (
     <Fallback onError={onFail}>
       <CampusMap3DView {...props} {...scene} onFail={onFail} />

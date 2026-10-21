@@ -1,6 +1,6 @@
 "use client";
 
-import { Activity, CalendarDays, Coins, Home, KeyRound, Map, Package, ScanLine, type LucideIcon } from "lucide-react";
+import { Activity, CalendarDays, Coins, Flag, Home, KeyRound, Map, Package, ScanLine, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -12,9 +12,10 @@ import "./freshie.css";
 type Tab = { href: string; label: string; Icon: LucideIcon };
 
 // Phone tab bar for Freshies, facilitators and the ops crew (HOF, HOGM,
-// Committee). Freshies get Scan in the center. Facilitators get Code, and Map
-// opens location check-in. The ops crew gets Ops (/committee) in the center,
-// in yellow (data-variant="ops"), with Scores in place of Items.
+// Committee). Freshies get Scan in the center. Facilitators get Code.
+// The ops crew gets Ops (/committee) in the center,
+// in yellow (data-variant="ops"), with Scores in place of Items. A GM gets the
+// same tabs and colours, with Station (/gm) as the yellow center button.
 const TABS: Tab[] = [
   { href: "/dashboard", label: "Home", Icon: Home },
   { href: "/inventory", label: "Items", Icon: Package },
@@ -34,15 +35,17 @@ export function FreshieTabBar() {
   const profile = useProfile();
   const isFaci = profile.role === "faci";
   const isOps = OPS_ROLES.includes(profile.role);
-  const mapHref = isFaci ? "/checkin" : "/map";
+  const isGm = profile.role === "gm";
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
 
-  const tabs = isOps ? OPS_TABS : TABS.map((tab) => (tab.href === "/map" ? { ...tab, href: mapHref } : tab));
+  const tabs = isOps || isGm ? OPS_TABS : TABS;
   const center = isOps
     ? { href: "/committee", label: "Ops", aria: "Operations", Icon: Activity }
-    : isFaci
-      ? { href: "/code", label: "Code", aria: "Group code", Icon: KeyRound }
-      : { href: "/scan", label: "Scan", aria: "Scan a QR code", Icon: ScanLine };
+    : isGm
+      ? { href: "/gm", label: "Station", aria: "Station panel", Icon: Flag }
+      : isFaci
+        ? { href: "/code", label: "Code", aria: "Group code", Icon: KeyRound }
+        : { href: "/scan", label: "Scan", aria: "Scan a QR code", Icon: ScanLine };
 
   const tab = ({ href, label, Icon }: Tab) => (
     <Link key={href} href={href} className="fh-tab" aria-current={isActive(href) ? "page" : undefined}>
@@ -54,8 +57,8 @@ export function FreshieTabBar() {
   return (
     <nav
       className="fh-tabbar"
-      data-variant={isOps ? "ops" : undefined}
-      aria-label={isOps ? "Operations navigation" : isFaci ? "Facilitator navigation" : "Freshie navigation"}
+      data-variant={isOps || isGm ? "ops" : undefined}
+      aria-label={isOps ? "Operations navigation" : isGm ? "Game Master navigation" : isFaci ? "Facilitator navigation" : "Freshie navigation"}
     >
       {tabs.slice(0, 2).map(tab)}
       <Link

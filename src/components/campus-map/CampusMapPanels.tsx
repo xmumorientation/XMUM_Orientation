@@ -75,7 +75,7 @@ export function LayerSwitch({
       }`}
     >
       {tab("stations", "Stations", MapPin)}
-      {tab("bulbs", "Lightbulbs", Lightbulb)}
+      {tab("bulbs", "Projectors", Lightbulb)}
     </div>
   );
 }
@@ -123,7 +123,7 @@ export function MapToolbar({
       {movingTitle && (
         <div className="mb-2 flex items-center justify-between gap-3 rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-950 ring-1 ring-amber-200">
           <span>
-            Tap the map where the {bulbTitle(movingTitle)} NFC card is. Use full screen for a precise spot.
+            Tap the map where the {bulbTitle(movingTitle, data.places)} NFC card is. Use full screen for a precise spot.
           </span>
           <button
             type="button"
@@ -246,7 +246,7 @@ export function MapInfoCard({
   ) : layer === "bulbs" && movingTitle ? (
     <div className="pointer-events-auto flex items-center justify-between gap-3 rounded-2xl bg-amber-50 px-3 py-2.5 text-sm text-amber-950 shadow-lg">
       <span className="min-w-0">
-        Tap where the {bulbTitle(movingTitle)} NFC card is.
+        Tap where the {bulbTitle(movingTitle, data.places)} NFC card is.
       </span>
       <button
         type="button"
@@ -263,14 +263,14 @@ export function MapInfoCard({
       return (
         <div className="pointer-events-auto flex items-center justify-between gap-3 rounded-2xl bg-white px-3 py-2.5 text-sm shadow-lg">
           <div className="min-w-0">
-            <div className="truncate font-semibold">{bulbTitle(b)}</div>
+            <div className="truncate font-semibold">{bulbTitle(b, data.places)}</div>
             <div className="truncate text-xs text-ink-faint">
-              {bulbStatus(b, nowMs)}
+              {bulbStatus(b, nowMs, data.myGroupId)}
             </div>
           </div>
           <button
             type="button"
-            aria-label="Close lightbulb details"
+            aria-label="Close projector details"
             className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full"
             onClick={() => data.setSelectedBulb(null)}
           >
@@ -382,11 +382,13 @@ export function CampusMapPanels({
     <>
       {bulbError && (
         <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">
-          Lightbulb not changed: {bulbError}
+          Projector not changed: {bulbError}
         </p>
       )}
       <LightbulbList
         bulbs={bulbs}
+        places={data.places}
+        myGroupId={data.myGroupId}
         nowMs={nowMs}
         selected={data.selectedBulb}
         onSelect={(loc) => data.setSelectedBulb((cur) => (cur === loc ? null : loc))}

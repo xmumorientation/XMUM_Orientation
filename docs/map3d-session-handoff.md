@@ -1,4 +1,4 @@
-# 3D map: handoff for a new conversation (updated 2026-10-17)
+# 3D map: handoff for a new conversation (updated 2026-10-21)
 
 Ben may continue this work in a new Claude conversation. This file says where everything stands. Read it before doing anything, then read what you need:
 
@@ -14,6 +14,7 @@ Ben may continue this work in a new Claude conversation. This file says where ev
   - `map-3d-draft` (PR #39), `map3d-batch4` (#40), `map3d-batch5` (#41) and `funfair-central` (#44, #45) are merged.
   - The lake stage is on `funfair-central` too (Ben, 2026-10-16: no more new branches).
   - The lawn and the walkways are on `map3d-footpaths` (Ben asked for a new branch for them, 2026-10-17).
+  - B1 is on `map3d-b1` (Ben, 2026-10-21).
   - Before a push, merge the latest `origin/main` into it and check that `git merge-tree --write-tree origin/main HEAD` is clean, so its PR merges without conflicts.
 - Work in **batches**: finish one, show Ben the results (screenshots, in Chinese), and wait for his go before the next one.
 - **Usage limit:** he watches it closely, so keep agents few. If he says the 5-hour limit is above about 85%:
@@ -24,6 +25,42 @@ Ben may continue this work in a new Claude conversation. This file says where ev
 - Talk to Ben in Chinese, short and direct.
 
 ## Where things stand
+
+### B1, the Student Activity Centre (2026-10-21, branch `map3d-b1`)
+
+- B1 is modelled on the real building from Ben's photos and Esri imagery (`map3d/b1.tsx`). What it has is in the roadmap's "Done".
+- **Its front faces west, to the lake.** The stairs and the plaza stand west of the footprint (`B1_FRONT_M` in `geo.ts`, in metres in B1's own frame: x east, z south). `b1Point()` turns that frame into world units.
+- **Its footprint is from the imagery** (`B1_PLACE`): OSM's outline is about 8 m too far west. `B1_CENTRE_M` (OSM's centre) still pins `UNITS_PER_M`: leave it.
+- Heights are real metres times `LIFT` (1.5). Ben: it is 3–4 storeys, so keep it at least that tall.
+- Views: from the west (like Ben's photo) `/map3d?cam=-1,7.4,3.6,-1,2,21`; from the funfair side `cam=28,26,33,-2,0,28`.
+- **Roads round B1** (`B1_ROADS_M` in `geo.ts`; painted by `drawB1Grounds`, and `drawB1Crossing` after the service road):
+  - Ben's route colours rule here, not the imagery: asphalt for the north road, grey paving with bays for the west road, the orange walk north of it (`B1_NORTH_WALK`).
+  - The west road crosses the north road (just covering it) and runs on across the red brick service road (`CARPARK.road`) to the walk to the south. North of the north road the walk carries its line on; the north road does not go on to the dorms.
+  - The west road and the stairs run about 10° off B1's west face (`b1StairsFoot`); the stairs keep one depth.
+  - OSM's lake walk ends at `B1_WALK_END`, and one walk (`B1_NORTH_WALK`) sweeps from there to the west road; the walk along the lake is whole. Two stub walks are dropped (`DROPPED_WALKS`). Walks are generated data (`campusData.ts`), so they are trimmed and dropped in `geo.ts`.
+- **Later:** check the north and east sides against photos (none yet); railings between the brick pillars; the stairs' south end is straight (the imagery shows a curved wall).
+
+### The A-row on raised ground (2026-10-21, branch `map3d-b1`)
+
+- The five blocks stand on raised ground, 4 m above the statue's lawn (Ben: true height). Its flat top is `PLATEAU` in `geo.ts`, and `groundY(x, z)` gives the ground's height anywhere (0 off the A-row). **Anything placed on the A-row must take its height from `groundY`** (vegetation, pins and tags already do). The blocks, their labels and tap areas add `PLATEAU_H`.
+- `plateau.tsx` draws it:
+  - `plateauSurface()` is a grid mesh of the top and slopes with the flat ground's UVs, so the ground's canvas and `GroundMarks` lie on it.
+  - `Plateau` draws the steps: the terrace (`TERRACE`, seat-like tiers with stairs cut through them) and the steps behind the blocks (`NORTH_STAIRS`). It also draws the pale stone walls and a stone base under each block.
+- The slopes ease out at their foot (a square in `groundY`), so the mesh stays under the steps laid over it. Keep that if you change the slopes, or the grass pokes through the lowest steps.
+- A1, A2, A4 and A5 are drawn square and 4–6 m smaller than their OSM footprint (`courtyardWall` in `geo.ts`, used by `buildings.tsx`), on a plinth (`BLOCK_PLINTH`). Attach anything to the block as drawn, not to the OSM footprint: the back steps first stood 6–8 m off the wall (Ben). They now start at the plinth's edge and climb to its top.
+- **A3 is not at OSM's position:** it is moved 15 m toward the statue (`A3_M`, Ben), so its back steps fit before the walk behind it. `BLOCKS` and the block helpers in `geo.ts` read it through `blockM()`. Don't read `BUILDINGS_M.A3` directly.
+- Views: like Ben's aerial `/map3d?cam=-72,26,-48,-34,1,-18`; from the statue `cam=-50,3.2,-21.4,-36,2.2,-21.6`; behind A4 `cam=0,9,-2,-20,1,-12`.
+- The statue stands where the imagery shows its round bed (`STATUE`), not at the team's GPS point.
+- Planting along the walk is `A_FRONT_PLANTS` (palms, shrubs, low lamps); plants.ts drops what falls on paving.
+- **Later:** the south gate's guard houses and fence (Ben); the blocks' walls as in the photos; palms in planters; up-lights on the terrace.
+
+### Grey paving in front of the A-row (2026-10-21, branch `map3d-b1`)
+
+- Ben: not everything is lawn. The forecourts and steps of A1–A5, the terrace along the arc, the walk past the forecourts, A3's axis to the statue and the statue's plaza are light grey stone from Esri imagery (`A_FRONT` in `geo.ts`, painted by `drawAFront` in `ground.tsx`). Details: the roadmap's "Done".
+- The imagery sits about 4 m south of OSM here, so the traces move 4 m north (`A_FRONT_DN`). Forecourts are rectangles square to their block (`A_FORECOURTS_M`) that start under the block, so they meet it wherever OSM put it.
+- A3's axis is laid out from the statue (`A_AXIS_M`): its pieces run to wherever the axis meets the terrace's foot, the walk and A3.
+- To trace more paving: curl Esri tiles into the scratchpad and classify the pixels (grey stone, red-brown walk, lawn) along lines of constant east or north, in a headless Chrome page with `--allow-file-access-from-files`. Eyeballing the tiles was several metres off.
+- **Later:** the red-brown walks in the imagery are still the 2D art's orange.
 
 ### Lawn and walkways (2026-10-17, branch `map3d-footpaths`)
 
@@ -84,7 +121,8 @@ Ben may continue this work in a new Claude conversation. This file says where ev
     - The gate gets the share of zones on.
   - Labels:
     - `funfair/labels.ts` has `RIDE_TAGS`, one per dorm with its ride ("LY3 · Vortexa Eye"). They are sprite tags shown when the camera is close, whether or not names are on (`RideTags` in `markers.tsx`).
-    - `FUNFAIR_LABEL` "Vortexa Funfair (game zone)" is shown with the place names.
+    - `FUNFAIR_LABEL` "Vortexa Funfair" is shown with the place names (Ben dropped "(game zone)", 2026-10-22).
+    - `ZoneSigns` (`markers.tsx`, 2026-10-22): one sign over each zone's middle (`ZONE_CENTERS`, 16 units up) with its key's glyph and colour (`KEY_COLORS`) and code name ("Star"; Ben: the longer "Star · Big Top" was too long on a phone), bright when the zone is on, grey when off. Only with Show names; shown from afar, fading out within about 45–75 units, where the ride tags take over. The names follow `DEFAULT_ZONE_KEYS` (one projector per zone by design); Admin's and HOGM's Funfair cards warn about that (`SIGN_NOTE`).
   - `/map3d` takes `?funfair=1,0,1` (west, central, east; default all on). To view a zone, use `/map3d?cam=…&funfair=…&mode=…`:
     - West: `cam=72,46,10,34,0,-30`.
     - Central: `cam=72,42,28,32,0,-11.5`.
@@ -135,8 +173,8 @@ Ben may continue this work in a new Claude conversation. This file says where ev
 
 | What changes | Files | Safe? | Rule |
 |---|---|---|---|
-| How a building or landmark looks (roofs, colours, windows, the statue, B1, courts, water, trees) | `map3d/buildings.tsx`, `statue.tsx`, `sports.tsx`, `water.tsx`, `vegetation.tsx`, `textures.ts`, `atmosphere.tsx` | Yes | Keep the exported component names and props, and keep the lite-mode branches (phones). |
-| Where a building stands or how big it is | `map3d/geo.ts` (`BLOCKS`, `B1_PLACE`, `DOME_PLACE`, `STATUE`), `campusData.ts`, `scripts/map3d/*` | Careful | Station markers and hit areas follow `map3d/places.ts`, which reads these positions. After a move, check `/map3d/preview` (markers on the right buildings) and `inKeepOut` (no trees inside). Don't change `UNITS_PER_M`, the world axes or `gpsToWorld`: group GPS pins depend on them. |
+| How a building or landmark looks (roofs, colours, windows, the statue, B1, courts, water, trees) | `map3d/buildings.tsx`, `b1.tsx`, `statue.tsx`, `sports.tsx`, `water.tsx`, `vegetation.tsx`, `textures.ts`, `atmosphere.tsx` | Yes | Keep the exported component names and props, and keep the lite-mode branches (phones). |
+| Where a building stands or how big it is | `map3d/geo.ts` (`BLOCKS`, `B1_PLACE`, `B1_FRONT_M`, `DOME_PLACE`, `STATUE`), `campusData.ts`, `scripts/map3d/*` | Careful | Station markers and hit areas follow `map3d/places.ts`, which reads these positions. After a move, check `/map3d/preview` (markers on the right buildings) and `inKeepOut` (no trees inside). Don't change `UNITS_PER_M`, the world axes or `gpsToWorld`: group GPS pins depend on them. |
 | The funfair and the lake stage | `map3d/funfair/`, `map3d/lakefront/` | Yes | Self-contained. They meet the rest of the map only in `CampusScene.tsx`, and in `geo.ts` (`FUNFAIR_LAND`, `DOME_PLACE`). |
 | The map pages and data | `components/CampusMap.tsx`, `components/campus-map/*`, the pages | Careful | Shared by the 3D view and the 2D fallback. Check both (`?map=2d`) on `/map3d/preview` for each role. |
 

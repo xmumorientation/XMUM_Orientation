@@ -1,4 +1,4 @@
-// Database tests for migrations 0071 / 0072: HOGM gets Admin's game
+// Database tests for migrations 0071 / 0072 / 0097: HOGM gets Admin's game
 // controls, and nothing more. Setup: harness.ts (repo versions of the
 // patched functions).
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -96,6 +96,19 @@ describe("game lead (HOGM + Admin)", () => {
     }
     // Admin keeps every key.
     await as(ADMIN, "select public.fn_set_config('tokens_frozen', 'false'::jsonb)");
+  });
+
+  it("config: HOGM sets each projector's place (0097), HOF does not", async () => {
+    const place = `'{"name": "Library", "short": "Lib"}'::jsonb`;
+    await as(HOGM, `select public.fn_set_config('projector_place_A3', ${place})`);
+    expect((await q("select value ->> 'name' as v from game_config where key = 'projector_place_A3'"))[0].v).toBe("Library");
+    expect(await fails(as(HOF, `select public.fn_set_config('projector_place_A3', ${place})`))).toMatch(/PERMISSION_DENIED/);
+    expect(await fails(as(HOGM, "select public.fn_set_config('projector_placeX', 'true'::jsonb)"))).toMatch(/PERMISSION_DENIED/);
+    // Running 0097 again changes nothing; the 0072 keys still work.
+    await env.db.query(sql("supabase/migrations/0097_projector_places.sql"));
+    const def = (await q("select pg_get_functiondef('public.fn_set_config(text,jsonb)'::regprocedure) as d"))[0].d as string;
+    expect(def.split("projector\\_place\\_").length).toBe(2);
+    await as(HOGM, "select public.fn_set_config('bonding_session_duration_day1', '60'::jsonb)");
   });
 
   it("stations: HOGM adds, edits and deletes; Committee cannot", async () => {

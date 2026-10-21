@@ -7,7 +7,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { verifyBlindBoxToken } from "../../src/lib/blindbox";
 
 const state = vi.hoisted(() => ({
-  role: "gm" as string | null,
+  role: "admin" as string | null,
   rows: [] as unknown[],
   error: null as { message: string } | null,
   inIds: null as number[] | null,
@@ -42,22 +42,22 @@ const call = (body: unknown) =>
 beforeEach(() => {
   process.env.NFC_TOKEN_SECRET = "test-secret-at-least-16-chars";
   process.env.NEXT_PUBLIC_SITE_URL = "xmum-orientation.vercel.app";
-  state.role = "gm";
+  state.role = "admin";
   state.rows = [];
   state.error = null;
   state.inIds = null;
 });
 
 describe("/api/blindbox/links", () => {
-  it("refuses Freshies, Facis and signed-out callers", async () => {
-    for (const role of ["freshie", "faci", null]) {
+  it("refuses Freshies, Facis, GMs and signed-out callers", async () => {
+    for (const role of ["freshie", "faci", "gm", "guardian_gm", null]) {
       state.role = role;
       expect((await call({})).status).toBe(403);
     }
   });
 
   it("lets every seller role ask", async () => {
-    for (const role of ["gm", "guardian_gm", "committee", "hof", "hogm", "admin"]) {
+    for (const role of ["committee", "hof", "hogm", "admin"]) {
       state.role = role;
       expect((await call({})).status).toBe(200);
     }

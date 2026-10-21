@@ -5,9 +5,9 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { Dialog, DialogContent } from "@/components/ui/Dialog";
 import { Card, ErrorBanner, PageTitle } from "@/components/ui";
+import { useProjectorPlaces } from "@/components/useConfig";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import {
-  PROJECTOR_LABELS,
   PROJECTOR_LOCATIONS,
   type ProjectorLocation,
 } from "@/lib/types";
@@ -35,6 +35,7 @@ interface NfcTestRun {
 // FR-9.1: mint signed one-time URLs for physical stickers. Write them with
 // the "NFC Tools" Android app as NDEF URL records (SRS A-2).
 export default function AdminNfcPage() {
+  const places = useProjectorPlaces();
   const supabase = useMemo(() => supabaseBrowser(), []);
   const [location, setLocation] = useState<ProjectorLocation>("B1");
   const [count, setCount] = useState(3);
@@ -188,7 +189,7 @@ export default function AdminNfcPage() {
           </label>
           <label className="label mb-0">Projector
             <select className="input mt-1" value={location} onChange={(e) => setLocation(e.target.value as ProjectorLocation)}>
-              {PROJECTOR_LOCATIONS.map((loc) => <option key={loc} value={loc}>{PROJECTOR_LABELS[loc]}</option>)}
+              {PROJECTOR_LOCATIONS.map((loc) => <option key={loc} value={loc}>{places[loc].name}</option>)}
             </select>
           </label>
           <button disabled={busy || groups.length === 0} onClick={startTestRun} className="btn-primary self-end">Prepare test</button>
@@ -199,7 +200,7 @@ export default function AdminNfcPage() {
             <thead><tr className="border-b border-paper-200 text-xs font-bold uppercase tracking-wide text-ink-faint"><th className="py-2">Test run</th><th>State</th><th className="text-right">Actions</th></tr></thead>
             <tbody className="divide-y divide-paper-200">
               {testRuns.map((run) => <tr key={run.id}>
-                <td className="py-2">Group {run.group_id} · {PROJECTOR_LABELS[run.location]}<span className="block text-xs text-ink-faint">{new Date(run.created_at).toLocaleString()}</span></td>
+                <td className="py-2">Group {run.group_id} · {places[run.location].name}<span className="block text-xs text-ink-faint">{new Date(run.created_at).toLocaleString()}</span></td>
                 <td>{run.closed_at ? `Finished · ${new Date(run.closed_at).toLocaleString()}` : run.reset_at ? `Active · reset ${new Date(run.reset_at).toLocaleString()}` : "Active"}</td>
                 <td className="space-x-2 text-right">
                   {!run.closed_at && <>
@@ -250,7 +251,7 @@ export default function AdminNfcPage() {
                     : "border border-paper-300 bg-white"
                 )}
               >
-                {PROJECTOR_LABELS[loc]}
+                {places[loc].name}
               </button>
             ))}
           </div>
