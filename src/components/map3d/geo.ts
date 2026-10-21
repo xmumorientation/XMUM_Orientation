@@ -218,14 +218,27 @@ export const GRANDSTAND = {
 };
 
 /**
- * The red-roof row at true scale (OSM footprints). It bends along an arc, so
+ * A3 15 m out through its front, toward the statue (Ben, 2026-10-21). OSM's outline put its back on the walk behind
+ * it, with no room for steps; Esri imagery shows its front about 16 m south of OSM's.
+ */
+const A3_M: RectM = (() => {
+  const r = BUILDINGS_M.A3;
+  const front = ((r.bearing + 90) * Math.PI) / 180;
+  return { ...r, e: r.e + 15 * Math.sin(front), n: r.n + 15 * Math.cos(front) };
+})();
+
+/** An A-block's footprint in metres: OSM's, but A3's moved (A3_M). */
+const blockM = (name: string): RectM => (name === "A3" ? A3_M : BUILDINGS_M[name]);
+
+/**
+ * The red-roof row at true scale (OSM footprints, A3 moved). It bends along an arc, so
  * each block is turned to its own footprint: A1 at the far west end, A5 the
  * end nearest the track. A3 is the big flat-roofed block (9 levels).
  */
 export const BLOCKS: ({ name: string; flat?: boolean } & Placed)[] = ["A5", "A4", "A3", "A2", "A1"].map((name) => ({
   name,
   flat: name === "A3",
-  ...place(BUILDINGS_M[name]),
+  ...place(blockM(name)),
 }));
 
 /**
@@ -473,7 +486,7 @@ const A_FRONT_SIDE: Record<string, number> = { A1: 90, A2: 0, A3: 90, A4: 180, A
 
 /** A block's half sizes in metres: out through its `side`, and along that side. */
 function blockHalf(name: string, side: number): [number, number] {
-  const { length, width } = BUILDINGS_M[name];
+  const { length, width } = blockM(name);
   return side % 180 === 0 ? [length / 2, width / 2] : [width / 2, length / 2];
 }
 
@@ -482,7 +495,7 @@ function blockHalf(name: string, side: number): [number, number] {
  * side's bearing, so it follows the footprint), and `across` metres along that side (+ to the right, facing the block).
  */
 function blockPoint(name: string, side: number, across: number, out: number): EN {
-  const b = BUILDINGS_M[name];
+  const b = blockM(name);
   const f = ((b.bearing + side) * Math.PI) / 180;
   return [b.e + out * Math.sin(f) - across * Math.cos(f), b.n + out * Math.cos(f) + across * Math.sin(f)];
 }
@@ -512,17 +525,26 @@ const A_FORECOURTS_M: { block: string; side: number; across: [number, number]; o
 ];
 
 /**
- * Steps behind A1, A2, A4 and A5 (Ben's photos): out of the block's back, from the top of its plinth down over the bank
+ * Steps behind every block (Ben's photos): out of the block's back, from the top of its plinth down over the bank
  * (PLATEAU) to the lower ground on the north, `width` metres wide on its back axis and `run` metres long, then a paved
- * landing on to the walk behind it. A3 has none: its back stands on the lower ground.
+ * landing on to the walk behind it.
  */
-const NORTH_STAIRS_M = { blocks: ["A1", "A2", "A4", "A5"], width: 18, run: 10 };
+const NORTH_STAIRS_M = { blocks: ["A1", "A2", "A3", "A4", "A5"], width: 18, run: 10 };
 
-/** Where a courtyard block's back steps start, in metres out from its centre: its plinth's edge, as drawn. */
-function backEdge(name: string): number {
+/**
+ * A block's half sizes as drawn (buildings.tsx), out to its plinth's edge, in metres: through its back, and along it.
+ * The courtyard blocks are square, inside their footprint; A3 fills its own.
+ */
+function drawnHalf(name: string): [number, number] {
   const b = BLOCKS.find((p) => p.name === name)!;
-  return (courtyardWall(b) + BLOCK_PLINTH.out) / UNITS_PER_M;
+  const plinth = BLOCK_PLINTH.out / UNITS_PER_M;
+  if (!b.flat) return [courtyardWall(b) / UNITS_PER_M + plinth, courtyardWall(b) / UNITS_PER_M + plinth];
+  const [depth, half] = blockHalf(name, A_FRONT_SIDE[name] + 180);
+  return [depth + plinth, half + plinth];
 }
+
+/** Where a block's back steps start, in metres out from its centre: its plinth's edge. */
+const backEdge = (name: string) => drawnHalf(name)[0];
 
 /** How deep (metres) the landing at the foot of a block's back steps is: on to the walk behind it, or 8 m. */
 function landingTo(name: string): number {
@@ -652,8 +674,7 @@ export const PLATEAU_H = 4 * UNITS_PER_M;
  * The raised ground's flat top: its outline in the world, and at each corner how far (world units) the ground takes to
  * come down past it: the terrace's width along the south, an 8 m bank behind the blocks, and 20 m on the gentle slopes
  * past the row's ends. From the terrace's top edge west to east, round A5's east forecourt, back west along the backs
- * of the blocks as drawn (their back steps start there), and round A1's west end. The line behind A3 runs through it:
- * A3's back stands on the lower ground, and its north door opens on the walk behind it (TRACED_PATHS_M).
+ * of the blocks as drawn (their back steps start there), and round A1's west end.
  */
 export const PLATEAU: { outline: World[]; slope: number[] } = (() => {
   const [ce, cn] = A_FRONT_M.centre;
@@ -670,9 +691,9 @@ export const PLATEAU: { outline: World[]; slope: number[] } = (() => {
   for (const a of [east.across[0] - 2, east.across[1] + 2]) pts.push([blockPoint("A5", 90, a, east.out + 2), ends]);
   for (const name of ["A5", "A4", "A3", "A2", "A1"]) {
     const back = A_FRONT_SIDE[name] + 180;
-    const [depth, half] = name === "A3" ? blockHalf(name, back) : [backEdge(name), backEdge(name)];
+    const [depth, half] = drawnHalf(name);
     // the bank starts 1.5 m past the plinth, so the ground's mesh meets the stone base in a straight line
-    const out = name === "A3" ? depth - 10 : depth + 1.5;
+    const out = depth + 1.5;
     // seen from behind, a block's east end is on the left
     pts.push([blockPoint(name, back, -half - 2, out), name === "A5" ? (bank + ends) / 2 : bank]);
     pts.push([blockPoint(name, back, half + 2, out), name === "A1" ? (bank + ends) / 2 : bank]);

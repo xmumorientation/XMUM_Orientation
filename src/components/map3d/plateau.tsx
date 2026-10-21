@@ -168,8 +168,8 @@ function wall(a: World, b: World, thick: number, ya: number, yb: number) {
 
 /**
  * Pale stone: walls beside the stairs cut through the terrace (A3's grand stair thicker, as in Ben's photo) and at its
- * two ends, walls beside the steps behind the blocks, and a base under each block down to the lawn (it shows behind
- * A3, whose back stands on the lower ground).
+ * two ends, walls beside the steps behind the blocks, and a base under each block down to the lawn (it shows where the
+ * ground falls away beside a block).
  */
 function stoneGeometry() {
   const parts: THREE.BufferGeometry[] = [];
@@ -190,10 +190,10 @@ function stoneGeometry() {
     }
   }
 
-  // under each block's plinth, as drawn: the courtyard blocks are smaller than their OSM footprint, A3 fills its own
+  // under each block's plinth, as drawn: the courtyard blocks are smaller than their footprint, A3 fills its own
   for (const b of BLOCKS) {
     const square = courtyardWall(b) + BLOCK_PLINTH.out;
-    const [hx, hz] = b.flat ? [b.hx + 0.25, b.hz + 0.25] : [square, square];
+    const [hx, hz] = b.flat ? [b.hx + BLOCK_PLINTH.out, b.hz + BLOCK_PLINTH.out] : [square, square];
     const base = new THREE.BoxGeometry(2 * hx, PLATEAU_H, 2 * hz);
     parts.push(base.translate(0, PLATEAU_H / 2, 0).rotateY(b.rotY).translate(b.pos[0], 0, b.pos[1]));
   }

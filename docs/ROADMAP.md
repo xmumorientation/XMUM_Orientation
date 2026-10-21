@@ -336,7 +336,8 @@ One migration, `0093` (already applied on the live database, under its first nam
 No migration. From Ben's photos and Esri imagery; Ben answered the questions first (height as suggested, steps down on the north too, gentle slopes at the ends, true height, statue where the imagery shows it).
 - **Raised ground** (`PLATEAU` and `groundY()` in `geo.ts`, `plateau.tsx`): the five blocks stand about 4 m above the statue's lawn, at true height (no LIFT).
   - The terrace along the arc is real steps: seat-like tiers, with A3's grand stair (on the statue's axis) and a narrow stair at each walk across the lawn cut through them, walled in pale stone.
-  - Behind A1, A2, A4 and A5, steps come out of the block (from the top of its plinth) down to a paved landing on the walk behind it, with a grass bank between. A3's back stands on the lower ground on a stone base, and its north door opens on the walk behind it.
+  - Behind every block, steps come out of the block (from the top of its plinth) down to a paved landing on the walk behind it, with a grass bank between.
+  - A3 is moved 15 m toward the statue (`A3_M` in `geo.ts`; Ben). OSM's outline put its back on the walk behind it, with no room for steps. Esri imagery shows its front about 16 m south of OSM's.
   - Past A1's west end and A5's east end the ground slopes gently down (Ben).
   - The raised ground is a mesh that wears the ground's canvas, so the paving and walks lie on it. Blocks, labels, station tap areas, trees, bushes, lamps, group pins and ground marks stand on it. The accuracy check's tap finds it (`groundHit`).
   - Cost: desktop +3 draw calls and +56k triangles, lite +3 and +18k.

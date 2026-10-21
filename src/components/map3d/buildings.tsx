@@ -494,7 +494,11 @@ function FlatBlock({ position, rotY, hx, hz, seed, glow }: BlockProps & { hx: nu
   const cols = [-1.2, -0.4, 0.4, 1.2];
   return (
     <group position={position} rotation-y={rotY}>
-      <Box size={[2 * hx + 0.5, 0.3, 2 * hz + 0.5]} pos={[0, 0.15, 0]} color="#d3cab9" />
+      <Box
+        size={[2 * (hx + BLOCK_PLINTH.out), BLOCK_PLINTH.h, 2 * (hz + BLOCK_PLINTH.out)]}
+        pos={[0, BLOCK_PLINTH.h / 2, 0]}
+        color="#d3cab9"
+      />
       <mesh position={[0, H / 2 + 0.3, 0]} material={wall} castShadow receiveShadow>
         <boxGeometry args={[2 * hx, H, 2 * hz]} />
       </mesh>
