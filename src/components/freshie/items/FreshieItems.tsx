@@ -146,6 +146,7 @@ export function FreshieItems({
             special={revealed.real.special}
             memberName={revealed.real.seller}
             balance={revealed.real.balance}
+            color={groupColor}
             onContinue={() => setRevealed(null)}
           />,
           document.body
