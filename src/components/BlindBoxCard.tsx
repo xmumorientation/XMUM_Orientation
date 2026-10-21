@@ -1,11 +1,9 @@
 "use client";
 
-import { Check, Copy, Sparkles } from "lucide-react";
 import QRCode from "qrcode";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { useProfile } from "@/components/ProfileProvider";
-import { Card } from "@/components/ui";
 import { useConfig } from "@/components/useConfig";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import type { BlindBoxAssignment, BlindBoxType } from "@/lib/types";
