@@ -93,7 +93,7 @@ export default function AdminControlRoomPage() {
 
   const SWITCHES: { key: string; label: string; danger: string }[] = [
     { key: "tokens_frozen", label: "Freeze token mutations", danger: "All GM ± operations rejected" },
-    { key: "blindbox_disabled", label: "Disable blind box", danger: "All blind box opens rejected" },
+    { key: "blindbox_disabled", label: "Pause blind box buying", danger: "Blind box buying paused" },
     { key: "nfc_disabled", label: "Disable NFC activation", danger: "Sticker taps rejected" },
     { key: "rehearsal_mode", label: "Rehearsal mode", danger: "Bypasses ALL phase gating. Testing only" },
     { key: "day2_map_layer", label: "Day 2 map layer", danger: "Reveals projectors on everyone's map" },
@@ -145,7 +145,7 @@ export default function AdminControlRoomPage() {
           {[
             ["Tokens in circulation", ops.tokens_in_circulation],
             ["Transactions", ops.transactions_count],
-            ["Blind boxes opened", ops.blindbox_claims],
+            ["Blind boxes sold", ops.blindbox_claims],
             ["Box tokens paid in", ops.blindbox_tokens_in],
             ["Pieces granted", ops.pieces_granted],
             ["Sets redeemed", ops.sets_redeemed],

@@ -155,9 +155,11 @@ export interface BlindBoxType {
   stock: number;
   is_special: boolean;
   archived: boolean;
+  /** The Spot's hidden type (migration 0098). Not shown with the other types. */
+  is_spot?: boolean;
 }
 
-/** A box type handed to one seller: an account OR a station (shared pool). */
+/** A box type handed to one seller: an account, or the Spot (station rows are history only). */
 export interface BlindBoxAssignment {
   id: number;
   type_id: number;
@@ -215,6 +217,8 @@ export interface BlindBoxOption {
 
 export interface BlindBoxPreview {
   status: BlindBoxPageStatus;
+  /** The hidden Spot box (migration 0098): free, one per group. */
+  spot?: boolean;
   seller_name: string;
   group_name: string;
   balance: number;
