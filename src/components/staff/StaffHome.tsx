@@ -1,6 +1,6 @@
 "use client";
 
-import { Activity, ArrowRight, CalendarDays, Check, Coins, Copy, Gift, Map, Monitor, Sparkles } from "lucide-react";
+import { Activity, ArrowRight, CalendarDays, Check, Coins, Copy, Gift, Map, Sparkles } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
@@ -17,6 +17,7 @@ import { FreshieSky, type SkyCabin } from "@/components/freshie/FreshieSky";
 import { groupSwatch, VORTEXA_THEME } from "@/components/freshie/groupTheme";
 import { nexusBody, vxDisplay, vxSlab } from "@/components/home/fonts";
 import { useMyBlindBoxes } from "@/components/BlindBoxCard";
+import { GroupBadge } from "@/components/GroupBadge";
 import { usePhaseTimer } from "@/components/PhaseTimerProvider";
 import { useProfile } from "@/components/ProfileProvider";
 import { OPS_CHIP } from "@/components/staff/OpsHeader";
@@ -53,11 +54,7 @@ function useGroups() {
     async function load() {
       const { data: gs } = await supabase.from("groups").select("id, name, color, token_balance").order("id");
       if (!active) return;
-      setGroups(
-        ((gs as HomeGroup[]) ?? [])
-          .map((g) => ({ ...g, token_balance: g.token_balance ?? 0 }))
-          .sort((a, b) => b.token_balance - a.token_balance || a.id - b.id)
-      );
+      setGroups(((gs as HomeGroup[]) ?? []).map((g) => ({ ...g, token_balance: g.token_balance ?? 0 })));
     }
     load();
     const channel = supabase
@@ -208,10 +205,9 @@ function ScoresStop({ groups }: { groups: HomeGroup[] | null }) {
         </Link>
       </div>
       <ol className="fh-board">
-        {(groups ?? []).map((row, i) => (
+        {(groups ?? []).map((row) => (
           <li key={row.id} className="fh-team">
-            <span className="fh-team-rk fh-mono">{String(i + 1).padStart(2, "0")}</span>
-            <i className="fh-team-sw" style={{ background: groupSwatch(row.id, row.color) }} aria-hidden />
+            <GroupBadge id={row.id} color={groupSwatch(row.id, row.color)} />
             <b>{row.name}</b>
             <span className="fh-team-sc fh-slab">{row.token_balance}</span>
           </li>
@@ -222,7 +218,6 @@ function ScoresStop({ groups }: { groups: HomeGroup[] | null }) {
 }
 
 const TOOLS = [
-  { href: "/bigscreen", Icon: Monitor, title: "Big screen", text: "Open the event display" },
   { href: "/map", Icon: Map, title: "Campus map", text: "Stations and group locations" },
   { href: "/schedule", Icon: CalendarDays, title: "Schedule", text: "The two-day programme" },
   { href: "/token", Icon: Coins, title: "Scoreboard", text: "Live tokens and puzzle pieces" },
@@ -299,7 +294,6 @@ export function StaffHome() {
               groupName={null}
               roleLabel={ROLE_LABELS[profile.role]}
               logoutHref="/login"
-              links={[{ href: "/bigscreen", label: "Big screen" }]}
             />
           </div>
         </div>

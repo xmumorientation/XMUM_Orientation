@@ -84,7 +84,6 @@ This reflects only the migration files in the repo. Any manual changes made to t
 | Freshie group assignment (Committee → Register tab) | — | — | — | — | ✓ | — | — | ✓ | DB |
 | Facilitator group assignment (`fn_admin_set_group_facis`; HOF on Ops → Facilitators, Admin on Ops → Facilitators and Admin → Freshies; `is_faci_lead()`, migration 0080) | — | — | — | — | — | ✓ | — | ✓ | DB |
 | Ops → Facilitators: each group's Facilitators and its Faci-related audit entries (Recent changes) | — | — | — | — | — | ✓ | — | ✓ | DB (Committee-tier reads) |
-| Big Screen | — | — | — | — | ✓ | ✓ | ✓ | ✓ | UI + DB |
 | Live Ops stats | — | — | — | — | — | † | † | ✓ | DB |
 | Audit Log | — | — | — | — | — | † | † | ✓ | DB |
 | Freshie control (/admin/freshies: groups, sessions, headcount) | — | — | — | — | — | — | — | ✓ | ⚠ UI |

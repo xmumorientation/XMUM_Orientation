@@ -212,12 +212,6 @@ html.fh-snap { overflow-x: hidden; }
 .fh-menu .fh-menu-edit { display: flex; align-items: center; justify-content: center; gap: 8px; }
 .fh-menu .fh-menu-edit:hover { border-color: var(--fh-accent); color: var(--fh-accent); }
 .fh-menu .fh-menu-edit + button { margin-top: 8px; }
-.fh-menu .fh-menu-link {
-  display: flex; align-items: center; justify-content: center; margin-top: 12px; min-height: 44px; border-radius: 12px;
-  border: 1px solid var(--fh-line-2); color: var(--fh-text); font-weight: 700; font-size: 14px; text-decoration: none;
-}
-.fh-menu .fh-menu-link:hover { border-color: var(--fh-accent); color: var(--fh-accent); }
-.fh-menu .fh-menu-link + button { margin-top: 8px; }
 /* Faci: the header button is their FaciAvatar (same photo or initials as their card). */
 .fh-avatar.fh-avatar-me { width: auto; height: auto; padding: 0; background: none; box-shadow: none; border-radius: 50%; }
 .fh-avatar.fh-avatar-me:focus-visible { outline-offset: 2px; }
@@ -289,10 +283,6 @@ html.fh-snap { overflow-x: hidden; }
 .fh-cell:first-child { border-color: var(--fh-blue); background: #08254f; }
 .fh-cell b { display: block; font-size: clamp(28px, 8vw, 40px); line-height: 1; font-variant-numeric: tabular-nums; }
 .fh-cell span { font-size: 9.5px; letter-spacing: 0.2em; color: var(--fh-mute); }
-/* Endgame (big screen's live phase): red, like .fh-phasecard[data-endgame]. */
-.fh-countwrap[data-endgame] .fh-clabel { color: #ff3b4f; }
-.fh-countwrap[data-endgame] .fh-cell b { color: #ff3b4f; }
-.fh-countwrap[data-endgame] .fh-cell:first-child { border-color: #bc071d; background: rgba(188, 7, 29, 0.16); }
 
 .fh-phasecard {
   width: 100%; max-width: 440px; text-align: left; padding: 18px; border-radius: 22px;
@@ -531,8 +521,6 @@ html.fh-snap { overflow-x: hidden; }
   background: var(--fh-ink-2); border: 1px solid var(--fh-line);
 }
 .fh-team[data-me] { border-color: var(--fh-accent); background: color-mix(in srgb, var(--fh-accent) 14%, var(--fh-ink-2)); }
-.fh-team-rk { font-size: 11px; color: var(--fh-mute); width: 20px; }
-.fh-team-sw { width: 12px; height: 12px; border-radius: 50%; flex: none; }
 .fh-team b { flex: 1; font-weight: 600; font-size: 15px; display: flex; align-items: center; gap: 8px; }
 .fh-you { font-size: 9.5px; letter-spacing: 0.14em; padding: 3px 7px; border-radius: 999px; background: var(--fh-accent); color: var(--fh-on-blue); font-weight: 700; }
 .fh-team-sc { font-size: 18px; color: var(--fh-mute); font-variant-numeric: tabular-nums; }

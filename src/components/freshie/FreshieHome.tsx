@@ -26,6 +26,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { GAME_PHASES, SPONSORS, SPONSORS_ARE_EXAMPLES } from "@/components/home/data";
 import { vxDisplay, vxSlab } from "@/components/home/fonts";
+import { GroupBadge } from "@/components/GroupBadge";
 import { usePhaseTimer } from "@/components/PhaseTimerProvider";
 import { useProfile } from "@/components/ProfileProvider";
 import { useOpenShellMenu } from "@/components/ShellMenu";
@@ -96,16 +97,9 @@ export function goTo(id: string) {
 
 // ── 01 Welcome ───────────────────────────────────────────────────────────────
 
-export function Countdown({
-  override,
-}: {
-  /** Counts this instead of the event, e.g. the big screen's live game phase. */
-  override?: { label: string; seconds: number; endgame?: boolean } | null;
-} = {}) {
+export function Countdown() {
   // D-day, then Day 2 and the phases between live games (see useEventCountdown).
-  const event = useEventCountdown();
-  const { label, seconds } = override ?? event;
-  const endgame = !!override?.endgame;
+  const { label, seconds } = useEventCountdown();
   const t = countdownParts(seconds);
 
   const pad = (n: number | undefined) => (n === undefined ? "--" : String(n).padStart(2, "0"));
@@ -117,12 +111,12 @@ export function Countdown({
   ];
 
   return (
-    <div className="fh-countwrap" data-endgame={endgame || undefined}>
+    <div className="fh-countwrap">
       <div className="fh-clabel fh-mono">{label}</div>
       <div className="fh-count" role="timer" aria-label={label.toLowerCase()}>
         {units.map((u, i) => (
           <div key={u.label} className="fh-cell">
-            <b className="fh-slab" style={i === 0 && !endgame ? { color: "var(--fh-blue-light)" } : undefined}>
+            <b className="fh-slab" style={i === 0 ? { color: "var(--fh-blue-light)" } : undefined}>
               {pad(u.val)}
             </b>
             <span className="fh-mono">{u.label}</span>
@@ -923,7 +917,7 @@ function ScoresStop({ groupId, onRows }: { groupId: number | null; onRows?: (row
           color: row.color,
           token_balance: row.token_balance ?? 0,
         }))
-        .sort((a, b) => b.token_balance - a.token_balance || a.id - b.id);
+        .sort((a, b) => a.id - b.id);
       setRows(next);
       onRows?.(next);
     }
@@ -950,12 +944,11 @@ function ScoresStop({ groupId, onRows }: { groupId: number | null; onRows?: (row
         <span className="fh-pill fh-mono">● LIVE FROM 28 NOV</span>
       </div>
       <ol className="fh-board">
-        {rows.map((row, i) => {
+        {rows.map((row) => {
           const me = row.id === groupId;
           return (
             <li key={row.id} className="fh-team" data-me={me || undefined}>
-              <span className="fh-team-rk fh-mono">{String(i + 1).padStart(2, "0")}</span>
-              <i className="fh-team-sw" style={{ background: groupSwatch(row.id, row.color) }} aria-hidden />
+              <GroupBadge id={row.id} color={groupSwatch(row.id, row.color)} />
               <b>
                 {row.name}
                 {me && <span className="fh-you fh-mono">YOU</span>}
@@ -1022,7 +1015,6 @@ export function AccountMenu({
   logoutHref,
   avatarUrl,
   onEditProfile,
-  links,
 }: {
   name: string;
   groupName: string | null;
@@ -1032,8 +1024,6 @@ export function AccountMenu({
   avatarUrl?: string | null;
   /** Faci only: shows "Edit Profile" in the menu. */
   onEditProfile?: () => void;
-  /** Extra pages above Log Out (staff home: Big screen). */
-  links?: { href: string; label: string }[];
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -1094,11 +1084,6 @@ export function AccountMenu({
               <Pencil size={15} aria-hidden /> Edit Profile
             </button>
           )}
-          {links?.map((l) => (
-            <Link key={l.href} href={l.href} role="menuitem" className="fh-menu-link" onClick={() => setOpen(false)}>
-              {l.label}
-            </Link>
-          ))}
           <button type="button" role="menuitem" onClick={signOut}>
             Log Out
           </button>
