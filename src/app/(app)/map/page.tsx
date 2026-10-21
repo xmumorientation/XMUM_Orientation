@@ -8,7 +8,6 @@ import { vxDisplay, vxSlab } from "@/components/home/fonts";
 import { useProfile } from "@/components/ProfileProvider";
 import "@/components/staff/game/game-control.css";
 import { GmStationCheckinModal } from "@/components/staff/game/GmStationCheckinModal";
-import { StationBoard } from "@/components/staff/StationBoard";
 import { Card, PageTitle, StationStatusChip } from "@/components/ui";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { COMMITTEE_TIER, VORTEXA_ROLES, type Station } from "@/lib/types";
@@ -53,9 +52,8 @@ export default function MapPage() {
   }, [supabase, profile.station_id]);
 
   // HOF, HOGM, Committee and GM: the same night, eyebrow and title as their
-  // other tabs (Ops or Station, Scores). Under the map, every station read only
-  // (StationBoard) in place of the map's own "Available stations" list. A GM's
-  // own station is marked; GMs and HOGM can check in groups.
+  // other tabs (Ops or Station, Scores). No station list under the map: Ops
+  // already has one. GMs and HOGM check in groups by tapping a station.
   if (VORTEXA_ROLES.includes(profile.role)) {
     return (
       <div className={cn("gc gc-map", vxDisplay.variable, vxSlab.variable)}>
@@ -78,11 +76,6 @@ export default function MapPage() {
           showGroupPins={showPins}
           hasSelection={checkinStation !== null}
           onStationTap={canCheckin ? setCheckinStation : undefined}
-        />
-        <StationBoard
-          myStationId={profile.role === "gm" ? profile.station_id : null}
-          showCheckIns={showPins}
-          onCheckin={canCheckin ? setCheckinStation : undefined}
         />
         {canCheckin && (
           <GmStationCheckinModal
