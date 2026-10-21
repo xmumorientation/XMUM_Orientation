@@ -35,8 +35,9 @@ Ben may continue this work in a new Claude conversation. This file says where ev
 - Views: from the west (like Ben's photo) `/map3d?cam=-1,7.4,3.6,-1,2,21`; from the funfair side `cam=28,26,33,-2,0,28`.
 - **Roads round B1** (`B1_ROADS_M` in `geo.ts`, painted by `drawB1Grounds`):
   - the north road (drive, palm strip, road, parking bays) and the west road;
-  - the service road south of B1 (`CARPARK.road`) now reaches the west road and the east road.
-  - Ben's rules: roads join each other; walks meet roads in T-junctions; no walk runs along the west road; the west road stops at the north road.
+  - the service road south of B1 (`CARPARK.road`, red brick) runs from the west road's junction to the east road.
+  - The west road and the stairs run about 10° off B1's west face (`b1StairsFoot`); the stairs keep one depth.
+  - Ben's rules: the routes carry on from each other (north road → west road → the walk to the south); no walk runs along the west road; the west road stops at the north road; the lake walk stays whole.
 - **Later:** check the north and east sides against photos (none yet); railings between the brick pillars; the stairs' south end is straight (the imagery shows a curved wall).
 
 ### Lawn and walkways (2026-10-17, branch `map3d-footpaths`)

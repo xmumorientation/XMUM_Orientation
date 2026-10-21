@@ -341,13 +341,15 @@ No migration. From Esri imagery and OSM (`B1_ROADS_M` in `geo.ts`; painted by `d
   - a row of parking bays with parked cars.
 
   It meets the east road in a T.
-- **West road** (the paved road with bays in front of the stairs): runs from the north road down to the service road south of B1. Its kerb has a round corner where it leaves the north road. It does not go on north.
-- **Service road south of B1:** now runs west to meet the west road (round outer corner) and east to the east road.
-- **Walks** (Ben: no walk runs along the west road; walks meet the roads in T-junctions):
-  - the lake's east-shore walk ends on the north road's west end, and its stretch down the west road is cut (`B1_NO_WALK` in `geo.ts`);
-  - the walk from the lake park meets the service road's west end;
-  - the walk from the south meets the service road.
-- Trees, bushes and lamps keep off the new roads.
+- **West road** (the paved road with bays in front of the stairs): runs from the north road down to a junction with the service road south of B1. Its kerb has a round corner where it leaves the north road. It does not go on north.
+  - Like the stairs, it runs about 10° off B1's west face (imagery; Ben's second round). The stairs keep one depth, and the podium behind them is a wedge (`b1StairsFoot` in `geo.ts`).
+- **Service road south of B1:** red brick, as in the imagery. It runs from the west road's junction to the east road.
+- **Walks** (Ben: the routes carry on from each other; no walk runs along the west road):
+  - north road → west road → the walk to the south: one line, as Ben drew it;
+  - OSM's walk down the lake's east shore ends on the north road's west end (`B1_WALK_END` in `geo.ts`). Its stretch down the west road is gone, as the road is the route there;
+  - the walk along the lake (Ben's blue line) is whole;
+  - the walk from the lake park comes into the junction.
+- Trees, bushes and lamps keep off the new roads (`inB1Grounds`).
 
 ### Map: B1 modelled on the real building, 2026-10-21 (Ben, branch `map3d-b1`)
 No migration.
@@ -368,7 +370,7 @@ No migration.
   - B1 now stands where the imagery shows it (`B1_PLACE` in `geo.ts`, 117.6 × 55 m). OSM's outline was about 8 m too far west.
   - `B1_CENTRE_M`, `UNITS_PER_M` and the GPS conversion are unchanged, so group pins do not move.
   - B1's station markers, its tap area and the parking south of it follow the new footprint. The label and the tap area are lower (6 and 4.8; they were 11 and 9.6).
-- Trees, bushes and lamps keep off the stairs and the plaza (`B1_GROUNDS` in `inKeepOut`).
+- Trees, bushes and lamps keep off the stairs and the plaza (`inB1Grounds` in `geo.ts`).
 - Four meshes: paint, two textured walls, and glass that lights at night. The old B1 had about 20. Phones draw the same model.
 - Not checked against photos: the north and east sides (drawn from imagery). Not seen on a real phone yet.
 
