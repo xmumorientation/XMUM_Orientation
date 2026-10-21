@@ -207,7 +207,7 @@ export function Lamps({ glow }: { glow: number }) {
   useLayoutEffect(() => {
     const m = new THREE.Matrix4();
     items.forEach((l, i) => {
-      m.makeTranslation(l.x, groundY(l.x, l.z), l.z);
+      m.makeScale(l.s, l.s, l.s).setPosition(l.x, groundY(l.x, l.z), l.z);
       poles.current!.setMatrixAt(i, m);
       heads.current!.setMatrixAt(i, m);
       pools.current!.setMatrixAt(i, m);

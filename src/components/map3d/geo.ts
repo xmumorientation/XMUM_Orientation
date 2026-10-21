@@ -596,6 +596,24 @@ export const A_FRONT: { courts: World[][]; strips: { width: number; line: World[
   return { courts, strips, crossing: axis(crossing.u, [foot - 1, mid]) };
 })();
 
+/**
+ * Planting along the A-row's walk (Ben's photos and imagery): palms north of it between the forecourts, round shrubs
+ * and low lamps along its south side. World points along arcs round A_FRONT_M.centre; plants.ts leaves out the ones
+ * that fall on paving.
+ */
+export const A_FRONT_PLANTS = (() => {
+  const [ce, cn] = A_FRONT_M.centre;
+  const { walk } = A_FRONT_M;
+  const arc = (r: number, gap: number) => {
+    const out: World[] = [];
+    for (let e = walk.e[0]; e <= walk.e[1]; e += gap) {
+      out.push(fromReal(e, cn + A_FRONT_DN + Math.sqrt(r * r - (e - ce) ** 2)));
+    }
+    return out;
+  };
+  return { palms: arc(walk.r + 8, 6.5), shrubs: arc(walk.r - 5.5, 2.6), lamps: arc(walk.r - 3.8, 15) };
+})();
+
 // ── The raised ground under the A-row ────────────────────────────────────
 /**
  * The A-row stands on raised ground, about 4 m above the lawn round the statue (Ben's photos, 2026-10-21; true height,
@@ -988,12 +1006,13 @@ export type TreeKind = "broad" | "palm" | "mix";
 
 /** Tree rows: polylines in image px, a tree every `gap` world units. */
 export const TREE_ROWS: { gap: number; kind?: TreeKind; pts: Img[] }[] = [
+  // palms along the road south of the statue's lawn (Ben's photos); the lawn's west side is open
   {
-    gap: 1.9,
+    gap: 2.6,
+    kind: "palm",
     pts: [
       [420, 336],
       [878, 70],
-      [962, 116],
     ],
   },
   {
@@ -1092,23 +1111,6 @@ export const TREE_ROWS: { gap: number; kind?: TreeKind; pts: Img[] }[] = [
       [790, 545],
     ],
   },
-  // royal palms lining the promenade (gap left for the statue plaza)
-  {
-    gap: 3.0,
-    kind: "palm",
-    pts: [
-      [505, 413],
-      [735, 282],
-    ],
-  },
-  {
-    gap: 3.0,
-    kind: "palm",
-    pts: [
-      [825, 228],
-      [1000, 128],
-    ],
-  },
   // belt between the track's north curve and the futsal courts (aerial photo)
   {
     gap: 1.7,
@@ -1119,13 +1121,9 @@ export const TREE_ROWS: { gap: number; kind?: TreeKind; pts: Img[] }[] = [
   },
 ];
 
-/** Single trees (clusters between buildings and in the park). */
+/** Single trees (clusters between buildings and in the park). Between the A-row's forecourts are palms (A_FRONT_PLANTS). */
 export const TREE_SPOTS: Img[] = [
   [640, 378],
-  [770, 372],
-  [850, 322],
-  [1005, 236],
-  [1078, 196],
   [945, 315],
   [975, 300],
   [1000, 330],
@@ -1141,15 +1139,8 @@ export const TREE_SPOTS: Img[] = [
   [1260, 470],
 ];
 
-/** Bougainvillea and hedges along paths and fronts. */
+/** Bougainvillea and hedges along paths and fronts. The A-row's walk has its own planting (A_FRONT_PLANTS). */
 export const BUSH_ROWS: { gap: number; pts: Img[] }[] = [
-  {
-    gap: 1.1,
-    pts: [
-      [640, 430],
-      [1085, 190],
-    ],
-  },
   {
     gap: 1.0,
     pts: [
