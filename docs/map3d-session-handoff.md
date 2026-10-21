@@ -34,10 +34,10 @@ Ben may continue this work in a new Claude conversation. This file says where ev
 - Heights are real metres times `LIFT` (1.5). Ben: it is 3–4 storeys, so keep it at least that tall.
 - Views: from the west (like Ben's photo) `/map3d?cam=-1,7.4,3.6,-1,2,21`; from the funfair side `cam=28,26,33,-2,0,28`.
 - **Roads round B1** (`B1_ROADS_M` in `geo.ts`; painted by `drawB1Grounds`, and `drawB1Crossing` after the service road):
-  - Ben's route colours rule here, not the imagery: asphalt for the north road and the road to the dorms (`B1_DORM_ROAD`), grey paving with bays for the west road.
-  - The west road and the road to the dorms are one line, and the north road meets them in a T. The west road runs on across the red brick service road (`CARPARK.road`) to the walk to the south.
+  - Ben's route colours rule here, not the imagery: asphalt for the north road, grey paving with bays for the west road, the orange walk north of it (`B1_NORTH_WALK`).
+  - The west road crosses the north road (just covering it) and runs on across the red brick service road (`CARPARK.road`) to the walk to the south. North of the north road the walk carries its line on; the north road does not go on to the dorms.
   - The west road and the stairs run about 10° off B1's west face (`b1StairsFoot`); the stairs keep one depth.
-  - OSM's lake walk ends where the road to the dorms ends (`B1_WALK_END`); the walk along the lake is whole.
+  - OSM's lake walk ends where the walk north of the west road ends (`B1_WALK_END`); the walk along the lake is whole.
 - **Later:** check the north and east sides against photos (none yet); railings between the brick pillars; the stairs' south end is straight (the imagery shows a curved wall).
 
 ### Lawn and walkways (2026-10-17, branch `map3d-footpaths`)

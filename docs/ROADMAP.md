@@ -341,11 +341,10 @@ No migration. From Esri imagery and OSM (`B1_ROADS_M` in `geo.ts`; painted by `d
   - a row of parking bays with parked cars.
 
   It meets the east road in a T.
-- **Ben's route colours** (third round): asphalt (the north road's colour) for the north road and for the road to the dorms; grey paving with beige bays for the west road. Ben chose a neat T over the imagery's exact lines.
-  - **Road to the dorms:** asphalt, from the T up to where the walks to the dorms begin (`B1_DORM_ROAD`, `B1_WALK_END` in `geo.ts`). It carries on the west road's line, then bends round. OSM's walk ends there, so no walk runs down the west road.
-  - **West road** (in front of the stairs): from the T south, across the service road, to the walk to the south, which carries on from it (`drawB1Crossing`, drawn over the service road). It does not go on north of the T.
+- **Ben's route colours** (third and fourth rounds): asphalt for the north road; grey paving with beige bays for the west road; the orange walk north of it.
+  - **West road** (in front of the stairs): crosses the north road, just covering it, and runs south across the service road to the walk to the south, which carries on from it (`drawB1Crossing`, drawn over the service road).
+  - **Walk to the dorms:** from where the west road crosses the north road, an orange walk carries the road's line on and bends round to the walks to the dorms (`B1_NORTH_WALK`, `B1_WALK_END` in `geo.ts`). The north road does not go on to the dorms (Ben). OSM's lake walk ends there, so no walk runs down the west road.
   - Like the stairs, the west road runs about 10° off B1's west face (`b1StairsFoot` in `geo.ts`). The stairs keep one depth, and the podium behind them is a wedge.
-  - The north road starts at the T.
 - **Service road south of B1:** red brick, as in the imagery, from under the west road to the east road.
 - **Walks:** the walk along the lake (Ben's blue line) is whole. The walk from the lake park meets the west road at the service road.
 - Trees, bushes and lamps keep off the new roads (`inB1Grounds`).

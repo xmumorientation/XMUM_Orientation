@@ -9,7 +9,6 @@ import {
   B1_NORTH_EAST_X,
   B1_NORTH_START_X,
   B1_PLACE,
-  B1_DORM_ROAD,
   B1_ROADS_M,
   b1Point,
   b1StairsFoot,
@@ -557,14 +556,14 @@ function drawWestRoad(ctx: Ctx, z0: number, z1: number) {
 
 /**
  * B1's roads on the ground canvas (ground.tsx; B1_ROADS_M), over the walks, in the colours of Ben's route drawing
- * (2026-10-21): asphalt for the north road (with its drive, palm strip and parking bays) and for the road to the
- * dorms, which carries on the west road's line; grey paving with beige bays for the west road, slanting with the
- * stairs. The west road's stretch across the service road is drawB1Crossing's, drawn after the service road.
+ * (2026-10-21): asphalt for the north road with its drive, palm strip and parking bays; grey paving with beige bays
+ * for the west road, slanting with the stairs and crossing the north road (the walk north carries on from it). Its
+ * stretch across the service road is drawB1Crossing's, drawn after the service road.
  */
 export function drawB1Grounds(ctx: Ctx) {
-  const { to, trace, rect, line } = b1Canvas(ctx);
+  const { rect, line } = b1Canvas(ctx);
   const { stairsN, stairsS } = B1_FRONT_M;
-  const { west, dorm, north } = B1_ROADS_M;
+  const { west, north } = B1_ROADS_M;
   const { drive, palms, palmGap, road, bays } = north;
   const east = B1_NORTH_EAST_X;
   const start = B1_NORTH_START_X;
@@ -572,45 +571,23 @@ export function drawB1Grounds(ctx: Ctx) {
   const mid = (road[0] + road[1]) / 2;
   const south = (B1_PLACE.pos[0] - CARPARK.x[1]) / UNITS_PER_M;
 
-  // the road to the dorms
-  trace(B1_DORM_ROAD);
-  ctx.lineWidth = dorm.width * UNITS_PER_M;
-  ctx.lineJoin = "round";
-  ctx.lineCap = "round";
-  ctx.strokeStyle = COLORS.road;
-  ctx.stroke();
-  // the north road from the T, the bays behind it, the drive along B1 and the link through the palm strip's gap
+  // the north road (the west road crosses it), its bays, the drive along B1 and the link through the palm strip
   rect([b1WestRoadMid(road[1]) - west.width / 2, east], road, COLORS.road);
   rect([start, east - 16], bays, COLORS.road);
   rect([foot(drive[0]), east], drive, COLORS.road);
   rect(palmGap, palms, COLORS.road);
-  // a round kerb where the north road's north side meets the road to the dorms
-  {
-    const kx = b1WestRoadMid(road[0]) + dorm.width / 2;
-    const [ax, az] = to([kx + 6, road[0]]);
-    const [kxw, kzw] = to([kx, road[0]]);
-    const [bx, bz] = to([b1WestRoadMid(road[0] - 6) + dorm.width / 2, road[0] - 6]);
-    ctx.beginPath();
-    ctx.moveTo(ax, az);
-    ctx.arcTo(kxw, kzw, bx, bz, 4 * UNITS_PER_M);
-    ctx.lineTo(kxw, kzw);
-    ctx.closePath();
-    ctx.fillStyle = COLORS.road;
-    ctx.fill();
-  }
   // the palm strip, in two parts round its gap
   for (const xs of [[start, palmGap[0]], [palmGap[1], east - 14]]) rect(xs, palms, "#86964a");
   for (const z of palms) line([[start, z], [east - 14, z]], 0.05, KERB);
-  // dashed middle lines on both roads, the north road's north kerb, and the bays' lines
+  // the dashed middle line, the north kerb, and the bays' lines
   ctx.setLineDash([0.5, 0.4]);
   line([[foot(mid), mid], [east - 2, mid]], 0.05, MIDDLE);
-  line(B1_DORM_ROAD.slice(1), 0.05, MIDDLE);
   ctx.setLineDash([]);
-  line([[b1WestRoadMid(road[0]) + dorm.width / 2 + 4, road[0]], [east - 2, road[0]]], 0.05, KERB);
+  line([[foot(road[0]), road[0]], [east - 2, road[0]]], 0.05, KERB);
   for (let x = start + 2; x < east - 18 + 1e-6; x += 2.5) line([[x, bays[0] + 0.3], [x, bays[1]]], 0.05, "rgba(255,255,255,0.75)");
 
-  // the west road, from the north road to the service road, and the line along the stairs' foot
-  drawWestRoad(ctx, road[1], south);
+  // the west road, from the north road's far side to the service road, and the line along the stairs' foot
+  drawWestRoad(ctx, road[0], south);
   line([[foot(stairsN) - 1.5, stairsN], [foot(stairsS) - 1.5, stairsS]], 0.06, BAY_LINE);
 }
 
