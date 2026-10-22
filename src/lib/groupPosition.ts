@@ -7,7 +7,6 @@
 
 import type { GroupPosition } from "@/lib/types";
 import {
-  GPS_FADED_MS,
   buildingAt,
   MAX_DRAW_ACCURACY_M,
   PRECISE_ACCURACY_M,
@@ -85,9 +84,4 @@ export function resolveGroupPin(
   return checkinNewer || (checkinRecent && gpsPin.imprecise)
     ? checkinPin
     : gpsPin;
-}
-
-/** A group nobody can place: no pin, or its pin is older than GPS_FADED_MS. */
-export function isNotSeen(pin: GroupPin | null, nowMs: number) {
-  return !pin || nowMs - ms(pin.at) > GPS_FADED_MS;
 }

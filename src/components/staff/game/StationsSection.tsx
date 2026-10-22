@@ -3,6 +3,7 @@
 import { Check, ChevronDown, Pencil, Plus, Trash2, Users } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { useStationOccupants, type Occupant } from "@/components/staff/useStationOccupants";
 import { MAP_BUILDINGS, stationPosition } from "@/lib/mapBuildings";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { RISK_TIER_META, type RiskTier, type Station, type StationStatus } from "@/lib/types";
@@ -13,7 +14,9 @@ import { ConfirmSheet, Sheet, StatusLine, useStatus } from "./parts";
 // Admin → Stations for HOGM, as folding cards: closed shows the name and
 // status; open shows the details, status, Game Masters, edit and delete.
 // Same writes as the Admin page (stations table, fn_admin_set_station_gms);
-// status goes through fn_set_station_status like Live control's override.
+// status goes through fn_set_station_status like Live control's override. A
+// station shows the group playing there (a GM's Day 2 Start checks it in);
+// Clear checks out a group a GM's phone could not (useStationOccupants).
 
 const OTHER_BLOCK = "__other__";
 const DEFAULT_BLOCKS = [...MAP_BUILDINGS.map((b) => b.area), "Courts"];
@@ -47,6 +50,8 @@ const floorOf = (s: Station) => (s.code.startsWith(`${s.area}-`) ? s.code.slice(
 export function StationsSection() {
   const supabase = useMemo(() => supabaseBrowser(), []);
   const { error, setError, notice, flash } = useStatus();
+  const occupants = useStationOccupants();
+  const [clearing, setClearing] = useState<{ station: Station; occupant: Occupant } | null>(null);
   const [stations, setStations] = useState<Station[]>([]);
   const [gmUsers, setGmUsers] = useState<GmUser[]>([]);
   const [assignments, setAssignments] = useState<GmAssignment[]>([]);
@@ -97,6 +102,17 @@ export function StationsSection() {
     const at = assignments.find((a) => a.user_id === userId && a.day === s.day && a.station_id !== s.id);
     return at ? (stations.find((x) => x.id === at.station_id)?.name ?? "another station") : null;
   };
+
+  async function confirmClear() {
+    if (!clearing) return;
+    const { station: s, occupant: o } = clearing;
+    setBusy(true);
+    const message = await occupants.clear(o.groupId);
+    setBusy(false);
+    setClearing(null);
+    if (message) setError(message);
+    else flash(`${o.name} cleared from ${s.name}`);
+  }
 
   async function setStatus(s: Station, status: StationStatus) {
     const { error } = await supabase.rpc("fn_set_station_status", { p_station_id: s.id, p_status: status });
@@ -222,6 +238,7 @@ export function StationsSection() {
         {visible.map((s) => {
           const open = openId === s.id;
           const gms = gmsOf(s.id);
+          const here = occupants.byStation[s.id] ?? [];
           return (
             <li key={s.id} className="gc-card gc-fold" data-open={open || undefined}>
               <button
@@ -233,6 +250,7 @@ export function StationsSection() {
                 <span className="gc-fold-name">
                   {s.name}
                   {dayFilter === "all" && <small>Day {s.day}</small>}
+                  {here.length > 0 && <small className="gc-fold-here">{here.map((o) => o.name).join(", ")} here</small>}
                 </span>
                 <span className="gc-chip" data-tone={STATUS_TONE[s.status]}>
                   {STATUS.find((x) => x.value === s.status)?.label}
@@ -262,6 +280,16 @@ export function StationsSection() {
                       </button>
                     ))}
                   </div>
+                  {here.map((o) => (
+                    <div key={o.groupId} className="gc-here">
+                      <span>
+                        <b>{o.name}</b> is here
+                      </span>
+                      <button type="button" className="gc-btn gc-btn-danger" onClick={() => setClearing({ station: s, occupant: o })}>
+                        Clear
+                      </button>
+                    </div>
+                  ))}
                   <button type="button" className="gc-gms" onClick={() => openGms(s)}>
                     <Users size={16} aria-hidden />
                     <span>{gms.length ? gms.map((g) => g.name).join(", ") : "No Game Master yet"}</span>
@@ -398,6 +426,21 @@ export function StationsSection() {
           </div>
         )}
       </Sheet>
+
+      <ConfirmSheet
+        open={clearing !== null}
+        onClose={() => setClearing(null)}
+        onConfirm={confirmClear}
+        busy={busy}
+        danger
+        title={clearing ? `Clear ${clearing.occupant.name}?` : "Clear group?"}
+        confirmLabel="Clear"
+        body={
+          clearing
+            ? `${clearing.occupant.name} leaves ${clearing.station.name} on every map. Use this when a game has ended but the Game Master's phone could not clear it (no battery, no network). If the station still says In progress, set its status above.`
+            : ""
+        }
+      />
 
       <ConfirmSheet
         open={deleting !== null}

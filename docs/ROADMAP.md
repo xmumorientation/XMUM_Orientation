@@ -248,8 +248,17 @@ Numbered after main's `0093`-`0098` (renamed from 0097 / 0098 when merging main,
 - `0100_blindbox_spot_no_stations.sql`: the Spot box, no station boxes, Restore only. Deletes unsold station boxes and switches sold ones off. Safe to run again.
 - Env: `/api/group-join` signs group QRs with `NFC_TOKEN_SECRET` (already set for blind boxes and NFC). Changing that secret changes every group QR.
 
+### No check-in on the map; HOGM and Admin clear a group left behind, 2026-10-22
+No migration. With the GM's Day 2 Start checking the group in, the map's check-in popup (`GmStationCheckinModal`, white, Admin and HOGM) only added a second, conflicting source of who is where (Ben agreed to remove it).
+- The popup is deleted. On `/map` a tap on a station shows the same card for every role: its status and who is there.
+- [useStationOccupants.ts](../src/components/staff/useStationOccupants.ts): which group is at each station (`station_occupancy` + group names, realtime and every 10 s) and `clear` (`fn_uncheckin`). HOGM's Ops → Stations shows "Group 3 here" on the card and, inside it, the group with **Clear** (a confirm sheet); Admin → Stations shows it under the status with a Clear link (`window.confirm`, like Delete). For a GM's phone that could not end the game (no battery, no network): clear the group, and set the status back if it still says In progress.
+- Checked in headless Chrome: HOGM's map tap opens no popup and shows the station card; HOGM's Ops → Stations and Admin → Stations load all 39 stations, no console errors. Not checked: Clear itself (nobody was checked in; it would change live data).
+
+### One "Group locations" list under the map, 2026-10-22
+- `GroupStatusList` is one list, Group 1 to 10 in order, each with where it was last seen ("Last seen at A1 · 13 min ago", "No location yet", "· rough" for a rough GPS fix) and its Facis button. It replaces "Not seen for 10+ min" (red, listed first) and "Groups on the map" (Ben). `isNotSeen()` went with it.
+
 ### Everyone sees every group on the map (0101), 2026-10-22
-Migration `0101_group_positions_everyone.sql` (**needs running; run it instead of 0094, and never run 0094 after it**). Ben: the group locations are open to everyone in the app, GMs included.
+Migration `0101_group_positions_everyone.sql` (**applied** on the live database 2026-10-22: `gm.test`, `freshie.test`, `faci.test`, `hof.test` and `hogm.test` each get all 10 groups; do not run 0094 after it). Ben: the group locations are open to everyone in the app, GMs included.
 - `fn_group_positions()` returns every group to every signed-in account (Freshie, Faci, GM, Guardian GM, Committee tier). `fn_group_faci_status()` the same: a group's Facis' names and last report; phone numbers stay Committee tier only. This is 0089's rule plus GMs, and replaces 0094 (own group only for Freshie and Faci, nothing for GMs).
 - `/map` asks for group pins for GMs too (`showPins`), so every role gets the pins, "Not seen for 10+ min" and "Groups on the map".
 - The station lists still name the groups only for Committee tier; Freshie, Faci and GM see "1 group here" (`whoIsHere`).
@@ -261,7 +270,7 @@ No migration. Ben's flow: the GM picks the group and the funfair places, starts 
 - GM Station page (`gm/page.tsx`): Start game also checks the group in at the station (`fn_manual_checkin` with `p_group_id`; a GM may at their own station, 0095); Submit or Cancel also checks it out (`fn_uncheckin`). Only the maps read it, so a failure shows a note and the game goes on. Before, the playing group lived only in the GM's browser until Submit.
 - Map, every role: two lists under the map (Ben), **In progress** first (short) and then **Available stations**; Closed stations are in neither (a building's own list, from its badge, still shows all of its stations). Each row says who is there: Committee tier (HOF, HOGM, Committee, Admin; `staffView` in `useCampusMapData`) gets the groups by name (from `fn_group_positions`' `checkin_station_id`); Freshie, Faci and GM get "1 group here" or "Your group is here" on an In progress station and the count on an Available one. A tapped station shows its status and the same line.
 - Day 1 is untouched: the map shows Day 2 stations only and a Day 1 station has no game to start.
-- Checked live: Ben started a Day 2 game as `gm.test` (A1-2, Group 1, 11:54); the audit log has the status change and the check-in, and in headless Chrome (read only) the In progress list shows "A1-2 · Group 1" to `hof.test` and "A1-2 · 1 group here" to `gm.test` and `freshie.test`, with 20 Available stations below. Not yet seen: the check-out on Submit or Cancel. `tsc` (src) and `next lint` are clean.
+- Checked live: Ben started a Day 2 game as `gm.test` (A1-2, Group 1, 11:54); the audit log has the status change and the check-in, and in headless Chrome (read only) the In progress list shows "A1-2 · Group 1" to `hof.test` and "A1-2 · 1 group here" to `gm.test` and `freshie.test`, with 20 Available stations below. The end is checked too: at 12:09:27 the game ended, A1-2 went back to Available and Group 1 was checked out (audit log). `tsc` (src) and `next lint` are clean.
 - Not covered: `fn_station_occupants` is open to every signed-in account, so a Freshie could call it directly and see group names (the map itself shows them only a count).
 
 ### One Ops look for HOF, Committee, Admin and HOGM, 2026-10-22

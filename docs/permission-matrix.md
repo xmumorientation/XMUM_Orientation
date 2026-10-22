@@ -64,7 +64,7 @@ This reflects only the migration files in the repo. Any manual changes made to t
 | **Attendance / Location** | | | | | | | | | |
 | Mark attendance (Attendance Roster) | — | Own Group | — | — | — | All † | All † | Manage All | DB |
 | Headcount fallback entry | — | Own Group | — | — | — | † | — | Manage | DB |
-| Manual Location Check-in (station check-in; `fn_manual_checkin`, `fn_uncheckin`; 0095) | — | — | Own Station | Own Station | — | All | — | All | DB |
+| Station check-in (`fn_manual_checkin`, `fn_uncheckin`; 0095). No check-in on the map any more: a GM's Day 2 Start checks the group in at their own station and the end checks it out; HOGM and Admin can only clear a group left behind (Ops → Stations, Admin → Stations). The server still lets HOGM and Admin check in at any station (no UI) | — | — | Own Station (Day 2 Start) | Own Station † | — | — | Clear | Clear | DB |
 | Manual Location Update: a text-only note of where a GROUP is, sent by any Facilitator in it (status Heading to / Arrived / Other + typed text, a building and an optional comment; no GPS, not linked to the map; `fn_faci_log_location`, table `faci_location_updates`; the group shares the latest update) | — | Own group (add, read) | — | — | Read all | Read all | Read all | Read all + edit a group's latest entry (`fn_admin_edit_faci_location`, marked and audited) | DB |
 | Manage the location options Facilitators choose from (add, rename, reorder, delete; `fn_admin_location_option_save` / `_delete` / `_move`, table `faci_location_options`; everyone signed in can read them) | — | Read | Read | Read | Read | Read | Read | Manage | DB |
 | GPS auto-report | — | ✓ | — | — | — | — | — | — | DB |

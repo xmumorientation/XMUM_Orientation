@@ -5,7 +5,7 @@ import { ChevronDown, MessageCircle, Phone } from "lucide-react";
 
 import { supabaseBrowser } from "@/lib/supabase/client";
 import type { FaciStatus, GroupPosition } from "@/lib/types";
-import { isNotSeen, type GroupPin } from "@/lib/groupPosition";
+import type { GroupPin } from "@/lib/groupPosition";
 import { MAX_DRAW_ACCURACY_M, groupPinColor } from "@/lib/mapGeo";
 import { friendlyError, timeAgo } from "@/lib/utils";
 
@@ -41,9 +41,10 @@ export function reportingSummary(g: GroupPosition) {
 }
 
 /**
- * Every visible group with where its pin comes from. Groups nobody can place
- * (no fix in the last 10 minutes) are listed first, with their Facis'
- * contacts. Phone numbers only come back for Committee tier.
+ * One list of every visible group, Group 1 to 10, each with where it was last
+ * seen (Ben: one list, not "Not seen" and "On the map"). Tapping a placed group
+ * selects its pin; Facis opens its Facilitators and when each phone last
+ * shared. Phone numbers only come back for Committee tier.
  */
 export function GroupStatusList({
   positions,
@@ -56,71 +57,19 @@ export function GroupStatusList({
   nowMs: number;
   onSelect: (groupId: number) => void;
 }) {
-  const [notSeen, seen] = useMemo(() => {
-    const a: GroupPosition[] = [];
-    const b: GroupPosition[] = [];
-    for (const g of positions) {
-      (isNotSeen(pins.get(g.group_id) ?? null, nowMs) ? a : b).push(g);
-    }
-    return [a, b];
-  }, [positions, pins, nowMs]);
+  const groups = useMemo(() => [...positions].sort((a, b) => a.group_id - b.group_id), [positions]);
 
-  if (positions.length === 0) return null;
+  if (groups.length === 0) return null;
 
   return (
-    <div className="mt-3 space-y-3">
-      {notSeen.length > 0 && (
-        <section className="card overflow-hidden border-red-200 p-0">
-          <h2 className="border-b border-red-100 bg-red-50 px-3 py-2 text-sm font-semibold text-red-800">
-            Not seen for 10+ min ({notSeen.length})
-          </h2>
-          <ul className="divide-y divide-paper-200">
-            {notSeen.map((g) => (
-              <NotSeenRow
-                key={g.group_id}
-                g={g}
-                pin={pins.get(g.group_id) ?? null}
-                nowMs={nowMs}
-                onSelect={onSelect}
-              />
-            ))}
-          </ul>
-        </section>
-      )}
-      {seen.length > 0 && (
-        <section className="card overflow-hidden p-0">
-          <h2 className="border-b border-paper-200 px-3 py-2 text-sm font-semibold">
-            Groups on the map
-          </h2>
-          <ul className="divide-y divide-paper-200">
-            {seen.map((g) => {
-              const pin = pins.get(g.group_id) ?? null;
-              return (
-                <li key={g.group_id}>
-                  <button
-                    type="button"
-                    onClick={() => onSelect(g.group_id)}
-                    className="flex w-full items-center gap-3 px-3 py-2 text-left hover:bg-paper-100"
-                  >
-                    <GroupDot groupId={g.group_id} />
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-medium">{g.group_name}</span>
-                      <span className="block truncate text-xs text-ink-faint">
-                        {pinSummary(g, pin, nowMs)}
-                        {pin?.imprecise && pin.source === "gps" ? " · rough" : ""}
-                      </span>
-                    </span>
-                    <span className="shrink-0 text-xs text-ink-faint">
-                      {g.facis_reporting}/{g.facis_total}
-                    </span>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-      )}
-    </div>
+    <section className="card mt-3 overflow-hidden p-0">
+      <h2 className="border-b border-paper-200 px-3 py-2 text-sm font-semibold">Group locations</h2>
+      <ul className="divide-y divide-paper-200">
+        {groups.map((g) => (
+          <GroupRow key={g.group_id} g={g} pin={pins.get(g.group_id) ?? null} nowMs={nowMs} onSelect={onSelect} />
+        ))}
+      </ul>
+    </section>
   );
 }
 
@@ -135,7 +84,7 @@ function GroupDot({ groupId }: { groupId: number }) {
   );
 }
 
-function NotSeenRow({
+function GroupRow({
   g,
   pin,
   nowMs,
@@ -174,7 +123,8 @@ function NotSeenRow({
         >
           <span className="block truncate text-sm font-medium">{g.group_name}</span>
           <span className="block truncate text-xs text-ink-faint">
-            {pin && !pin.area ? `Last seen: ${pinSummary(g, pin, nowMs)}` : pinSummary(g, pin, nowMs)}
+            {pinSummary(g, pin, nowMs)}
+            {pin?.imprecise && pin.source === "gps" ? " · rough" : ""}
           </span>
         </button>
         <button
