@@ -140,14 +140,14 @@ export function stationArt(status: string, color: string, big: boolean, ringColo
   return { tex, w, h, x, y, r };
 }
 
-/** A building's badge: open stations as a number, else the busiest status. A second disc says "several here". */
-export function clusterArt(status: string, color: string, open: number, big: boolean, ringColor: string | null): MarkerArt {
+/** A building's badge: its number of stations, in the busiest status's colour. A second disc says "several here". */
+export function clusterArt(status: string, color: string, count: number, big: boolean, ringColor: string | null): MarkerArt {
   const w = 64;
   const h = 64;
   const x = 30;
   const y = 36;
   const r = big ? 18 : 15;
-  const tex = cachedTexture(`cluster|${status}|${color}|${open}|${big}|${ringColor}`, w, h, (ctx) => {
+  const tex = cachedTexture(`cluster|${status}|${color}|${count}|${big}|${ringColor}`, w, h, (ctx) => {
     ctx.globalAlpha = 0.55;
     ctx.beginPath();
     ctx.arc(x + 6, y - 5, r * 0.8, 0, Math.PI * 2);
@@ -165,12 +165,12 @@ export function clusterArt(status: string, color: string, open: number, big: boo
     ctx.lineWidth = 3;
     ctx.strokeStyle = "#ffffff";
     ctx.stroke();
-    if (open > 0) {
+    if (count > 0) {
       ctx.font = `800 ${big ? 17 : 15}px ${FONT}`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.fillStyle = "#ffffff";
-      ctx.fillText(String(open), x, y + 1);
+      ctx.fillText(String(count), x, y + 1);
     } else {
       statusMark(ctx, status, x, y, r);
     }

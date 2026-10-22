@@ -46,8 +46,7 @@ export function GmStationCheckinModal({
   const [notice, setNotice] = useState<string | null>(null);
 
   const isLead = profile.role === "admin" || profile.role === "hogm";
-  const isAssigned = station !== null && profile.station_id === station.id;
-  const canCheckin = isLead || isAssigned;
+  const canCheckin = isLead;
 
   const stationId = station?.id;
 
@@ -287,7 +286,7 @@ export function GmStationCheckinModal({
             )}
           </div>
 
-          {/* Check-in Section (Only for GM of this station, or Admin/Lead) */}
+          {/* Check-in Section (Only for Admin/Lead) */}
           {canCheckin ? (
             <div className="space-y-2 border-t border-paper-200 pt-3">
               <h3 className="text-xs font-bold uppercase tracking-wider text-ink-faint">
@@ -337,7 +336,7 @@ export function GmStationCheckinModal({
             </div>
           ) : (
             <div className="rounded-xl bg-paper-100 p-3 text-xs text-ink-faint">
-              Only the assigned Game Master for this station or Game Leads can check in groups here.
+              Only Game Leads can check in groups here.
             </div>
           )}
         </div>

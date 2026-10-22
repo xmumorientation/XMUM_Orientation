@@ -117,8 +117,9 @@ export function buildGroupPins(
     if (!st) return null;
     return stationSpots.get(id) ?? { x: Number(st.map_x), y: Number(st.map_y) };
   };
+  const areaOf = (id: number) => stations.find((s) => s.id === id)?.area ?? null;
   const pins = new Map<number, GroupPin | null>();
-  for (const g of positions) pins.set(g.group_id, resolveGroupPin(g, spotOf, nowMs));
+  for (const g of positions) pins.set(g.group_id, resolveGroupPin(g, spotOf, areaOf, nowMs));
   return pins;
 }
 
@@ -506,12 +507,15 @@ export function useCampusMapData({
     // Pins fade with age, so re-check the clock even when no new report
     // arrives. Reload too, in case a realtime event was missed: every 10 s,
     // so a pin is never more than 15 s behind (Ben).
-    const tick = showGroupPins
-      ? setInterval(() => {
-          setNowMs(Date.now());
-          loadPositions();
-        }, 10_000)
-      : null;
+    // The stations' group counts reload on the same beat: a missed occupancy event (a check-out from another
+    // phone, a dropped socket) would otherwise leave "1 groups" on the list after the station is empty.
+    const tick = setInterval(() => {
+      if (showGroupPins) {
+        setNowMs(Date.now());
+        loadPositions();
+      }
+      loadCounts();
+    }, 10_000);
 
     // A phone back from another app may have missed realtime events while it slept, so reload the bulbs (a newly
     // lit one then also asks the funfair again) and the group pins.
@@ -520,12 +524,13 @@ export function useCampusMapData({
       void loadBulbs();
       setNowMs(Date.now());
       void loadPositions();
+      void loadCounts();
     };
     document.addEventListener("visibilitychange", onVisible);
 
     return () => {
       active = false;
-      if (tick) clearInterval(tick);
+      clearInterval(tick);
       if (reloadTimer) clearTimeout(reloadTimer);
       document.removeEventListener("visibilitychange", onVisible);
       supabase.removeChannel(channel);

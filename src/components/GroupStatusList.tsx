@@ -27,8 +27,9 @@ export function pinSummary(g: GroupPosition, pin: GroupPin | null, nowMs: number
       ? `Only a rough location (±${Math.round(acc)} m), ${timeAgo(g.gps_at, nowMs)}`
       : `Outside the campus map, ${timeAgo(g.gps_at, nowMs)}`;
   }
+  if (pin.area) return `Last seen at ${pin.area} · ${timeAgo(pin.at, nowMs)}`;
   if (pin.source === "manual") {
-    return `Checked in at ${g.checkin_station_code ?? "a station"} · ${timeAgo(pin.at, nowMs)}`;
+    return `Last seen at ${g.checkin_station_code ?? "a station"} · ${timeAgo(pin.at, nowMs)}`;
   }
   const acc = pin.accuracyM != null ? `±${Math.round(pin.accuracyM)} m` : "accuracy unknown";
   return `GPS ${acc} · ${timeAgo(pin.at, nowMs)}`;
@@ -173,7 +174,7 @@ function NotSeenRow({
         >
           <span className="block truncate text-sm font-medium">{g.group_name}</span>
           <span className="block truncate text-xs text-ink-faint">
-            {pin ? `Last seen: ${pinSummary(g, pin, nowMs)}` : pinSummary(g, pin, nowMs)}
+            {pin && !pin.area ? `Last seen: ${pinSummary(g, pin, nowMs)}` : pinSummary(g, pin, nowMs)}
           </span>
         </button>
         <button

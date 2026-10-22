@@ -56,6 +56,23 @@ export function distanceM(aLat: number, aLng: number, bLat: number, bLng: number
   return 2 * 6371000 * Math.asin(Math.sqrt(h));
 }
 
+/** A GPS point inside a building's geofence counts as "at" it (same radius as building_geofence() in the database). */
+const BUILDING_RADIUS_M = 90;
+
+/** The building or court a GPS point is at (the nearest one within BUILDING_RADIUS_M), or null. */
+export function buildingAt(lat: number, lng: number): string | null {
+  let best: string | null = null;
+  let bestM = BUILDING_RADIUS_M;
+  for (const [area, p] of Object.entries(GPS_POINTS)) {
+    const d = distanceM(lat, lng, p.lat, p.lng);
+    if (d <= bestM) {
+      best = area;
+      bestM = d;
+    }
+  }
+  return best;
+}
+
 /** An Admin anchor this close to another anchor replaces it. */
 export const ANCHOR_REPLACE_M = 15;
 

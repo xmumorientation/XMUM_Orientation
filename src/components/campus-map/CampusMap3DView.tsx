@@ -34,7 +34,6 @@ import {
   areaPlace,
   clampToSlab,
   labelPoint,
-  ringPoint,
 } from "@/components/map3d/places";
 import { ZONE_CENTERS } from "@/components/map3d/funfair/labels";
 import { stageView } from "@/components/map3d/lakefront/layout";
@@ -81,8 +80,6 @@ const LABEL_GAP = 13;
 /** Dot and badge radii (CSS px) of an unselected station and building badge (markers.tsx). */
 const DOT_R = 11;
 const BADGE_R = 15;
-/** In full screen, a building's badge splits into its stations when the camera is this close (world units). */
-const SPLIT_DISTANCE = 120;
 /** How close a tap on a badge in full screen takes the camera. */
 const FOCUS_DISTANCE = 75;
 /** Markers in the card are smaller than in full screen (the card shows the whole campus). */
@@ -154,24 +151,6 @@ const LOOKS: { mode: Mode | null; label: string; Icon: typeof Sun }[] = [
   { mode: "night", label: "Night", Icon: Moon },
 ];
 
-/** Reports which areas the camera is close to (full screen only), as "A3|B1". */
-function SplitWatch({ enabled, onChange }: { enabled: boolean; onChange: (key: string) => void }) {
-  const last = useRef("");
-  const point = useMemo(() => new THREE.Vector3(), []);
-  useFrame(({ camera }) => {
-    const key = enabled
-      ? AREA_PLACES.filter((p) => camera.position.distanceTo(point.set(...labelPoint(p))) < SPLIT_DISTANCE)
-          .map((p) => p.area)
-          .join("|")
-      : "";
-    if (key !== last.current) {
-      last.current = key;
-      onChange(key);
-    }
-  });
-  return null;
-}
-
 /** Accuracy check: the open ground takes taps, so Admin can tap where they really are. */
 function GroundTap({ taps }: { taps: Taps }) {
   return (
@@ -199,8 +178,6 @@ function SceneMarks({
   outlines,
   lite,
   flight,
-  splitEnabled,
-  onSplit,
   checking,
   taps,
 }: {
@@ -208,8 +185,6 @@ function SceneMarks({
   outlines: GroundOutline[];
   lite: boolean;
   flight: Flight | null;
-  splitEnabled: boolean;
-  onSplit: (key: string) => void;
   /** Admin's accuracy check: taps go to the ground, not the buildings. */
   checking: boolean;
   taps: Taps;
@@ -234,7 +209,6 @@ function SceneMarks({
         />
       ))}
       <CameraRig flight={flight} />
-      <SplitWatch enabled={splitEnabled} onChange={onSplit} />
     </>
   );
 }
@@ -276,12 +250,11 @@ function SceneMarkers({
         ))}
       {badges.map((b) => {
         const status = clusterStatus(b.stations);
-        const open = b.stations.filter((s) => s.status === "available").length;
         return (
           <Marker
             key={`badge-${b.area}`}
             position={b.at}
-            art={clusterArt(status, stationDotColor(status), open, b.big, b.big ? accent : null)}
+            art={clusterArt(status, stationDotColor(status), b.stations.length, b.big, b.big ? accent : null)}
             dy={b.dy}
             order={b.order}
             size={size}
@@ -385,7 +358,6 @@ export function CampusMap3DView({
   const [accent, setAccent] = useState(DEFAULT_ACCENT);
   const [onAccent, setOnAccent] = useState("#ffffff");
   const [flight, setFlight] = useState<Flight | null>(null);
-  const [splitKey, setSplitKey] = useState("");
   // The light switch: null is Auto (by the time of day). It lasts until Auto is picked again or the page reloads.
   const [look, setLook] = useState<Mode | null>(null);
   // Accuracy check: where Admin last tapped (world x, z).
@@ -472,7 +444,6 @@ export function CampusMap3DView({
     [data.funfair, preview, arrival],
   );
   const concert = preview?.zone === "lakefront" ? preview.on : undefined;
-  const split = useMemo(() => new Set(fullscreen && splitKey ? splitKey.split("|") : []), [fullscreen, splitKey]);
 
   function fly(plan: FlightPlan) {
     setFlight({ ...plan, id: ++flights.current });
@@ -558,24 +529,18 @@ export function CampusMap3DView({
     return map;
   }, [mapStations]);
 
-  // Each station's marker spot: alone, or in a building's badge, it floats over the building's label; once the
-  // badge splits (full screen, close up) the stations stand round the building.
+  // Each station's marker spot: alone, or in a building's badge, it floats over the building's label. A building
+  // with several stations always shows one badge (its station count), never separate dots.
   const spots = useMemo(() => {
     const map = new Map<number, Spot>();
     for (const [area, list] of byArea) {
       const place = areaPlace(area)!;
-      const together = list.length >= 2 && !split.has(area);
-      list.forEach((s, i) => {
-        if (list.length >= 2 && !together) {
-          map.set(s.id, { at: ringPoint(place, i, list.length), dy: 0, r: DOT_R, key: `s${s.id}` });
-        } else {
-          const r = together ? BADGE_R : DOT_R;
-          map.set(s.id, { at: labelPoint(place), dy: LABEL_GAP + r, r, key: `a${area}` });
-        }
-      });
+      const together = list.length >= 2;
+      const r = together ? BADGE_R : DOT_R;
+      for (const s of list) map.set(s.id, { at: labelPoint(place), dy: LABEL_GAP + r, r, key: `a${area}` });
     }
     return map;
-  }, [byArea, split]);
+  }, [byArea]);
 
   const isSelected = (s: Station) => s.id === activeSelected?.id || s.id === highlightStationId;
 
@@ -584,7 +549,7 @@ export function CampusMap3DView({
   const badgeMarks: BadgeMark[] = [];
   if (!checking) {
     for (const [area, list] of byArea) {
-      if (list.length >= 2 && !split.has(area)) {
+      if (list.length >= 2) {
         const big = clusterArea === area || openBuilding === area || list.some(isSelected);
         const spot = spots.get(list[0].id)!;
         badgeMarks.push({ area, stations: list, at: spot.at, dx: 0, dy: spot.dy, order: big ? 5 : 0, opacity: 1, big });
@@ -698,8 +663,8 @@ export function CampusMap3DView({
       }
       const list = byArea.get(area) ?? [];
       if (list.length === 1) taps.station(list[0]);
-      else if (list.length >= 2 && !split.has(area)) taps.badge(area);
-      return list.length === 1 || (list.length >= 2 && !split.has(area));
+      else if (list.length >= 2) taps.badge(area);
+      return list.length >= 1;
     },
     group: (id) => data.setSelectedGroup((current) => (current === id ? null : id)),
     // The averaged GPS fix's offset from the tapped spot, in metres (true scale: no warp to undo; +X is north,
@@ -819,8 +784,6 @@ export function CampusMap3DView({
                   outlines={outlines}
                   lite={isLite}
                   flight={flight}
-                  splitEnabled={fullscreen}
-                  onSplit={setSplitKey}
                   checking={checking}
                   taps={taps}
                 />

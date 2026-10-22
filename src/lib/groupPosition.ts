@@ -8,6 +8,7 @@
 import type { GroupPosition } from "@/lib/types";
 import {
   GPS_FADED_MS,
+  buildingAt,
   MAX_DRAW_ACCURACY_M,
   PRECISE_ACCURACY_M,
   gpsPinState,
@@ -26,6 +27,8 @@ export interface GroupPin {
   accuracyM: number | null;
   /** True when the GPS fix is worse than PRECISE_ACCURACY_M. */
   imprecise: boolean;
+  /** The building or court the group was last seen at, when known ("A4"). */
+  area: string | null;
 }
 
 function ms(iso: string | null) {
@@ -35,6 +38,7 @@ function ms(iso: string | null) {
 export function resolveGroupPin(
   g: GroupPosition,
   stationSpot: (stationId: number) => { x: number; y: number } | null,
+  stationArea: (stationId: number) => string | null,
   nowMs: number
 ): GroupPin | null {
   const accuracy = g.gps_accuracy_m;
@@ -58,6 +62,7 @@ export function resolveGroupPin(
         state: gpsPinState(g.gps_at!, nowMs),
         accuracyM: accuracy,
         imprecise: accuracy == null || accuracy > PRECISE_ACCURACY_M,
+        area: g.gps_lat != null && g.gps_lng != null ? buildingAt(g.gps_lat, g.gps_lng) : null,
       }
     : null;
   const checkinPin: GroupPin | null = checkinPos
@@ -68,6 +73,7 @@ export function resolveGroupPin(
         state: gpsPinState(g.checkin_at!, nowMs),
         accuracyM: null,
         imprecise: false,
+        area: stationArea(g.checkin_station_id!),
       }
     : null;
 
