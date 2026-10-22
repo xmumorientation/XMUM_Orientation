@@ -248,6 +248,11 @@ Numbered after main's `0093`-`0098` (renamed from 0097 / 0098 when merging main,
 - `0100_blindbox_spot_no_stations.sql`: the Spot box, no station boxes, Restore only. Deletes unsold station boxes and switches sold ones off. Safe to run again.
 - Env: `/api/group-join` signs group QRs with `NFC_TOKEN_SECRET` (already set for blind boxes and NFC). Changing that secret changes every group QR.
 
+### Ops header: the running game in the bar; Stations by day, 2026-10-22
+- `OpsHeader` (HOF, HOGM, Committee and GM subpages on phones and portrait tablets): the NOW strip under the bar is gone; the running game is a pill in the middle of the bar (`PhaseTimer compact`), a night pill with a holo ring (the Welcome page's cyan → lilac → pink → orange, static; Ben chose the ring over a filled pill), mono cyan NOW and white text, the endgame still red. TopNav's pill (landscape tablets, desktops) has the same ring. `app-neon.css` forces its own timer colours with `!important`, so OpsHeader's rule needs `!important` too. A long phase name gives way with an ellipsis (it does at 360 px; at 390 px "NOW Day 2 Game 2:03:02" fits); the time always shows.
+- HOGM's Ops → Stations: Day 1 and Day 2 only, no All (Ben). It opens on the day whose game runs (Day 2 for the endgame), else Day 1; Add starts on the day shown.
+- Checked in headless Chrome as `hogm.test` at 360, 390 and 768 px: no sideways scroll, no console errors.
+
 ### No check-in on the map; HOGM and Admin clear a group left behind, 2026-10-22
 No migration. With the GM's Day 2 Start checking the group in, the map's check-in popup (`GmStationCheckinModal`, white, Admin and HOGM) only added a second, conflicting source of who is where (Ben agreed to remove it).
 - The popup is deleted. On `/map` a tap on a station shows the same card for every role: its status and who is there.

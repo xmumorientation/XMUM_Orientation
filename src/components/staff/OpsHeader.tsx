@@ -16,7 +16,8 @@ import "./staff-home.css";
 // HOGM's, HOF's and GM's header on Ops (GM: Station), Map, Scores and Schedule
 // (phones and portrait tablets): the same logo, role chip and account menu as their Home
 // (StaffHome), in normal flow above the scroller. The logo goes Home; Log
-// Out is in the account menu. The running game shows under it.
+// Out is in the account menu. The running game is a pill in the middle of
+// the bar (PhaseTimer compact), as on TopNav.
 // Landscape tablets and desktops use TopNav instead.
 
 /** Short role name for the header chip. */
@@ -43,6 +44,9 @@ export function OpsHeader() {
             <Image src="/vortexa-logo-sm.webp" alt="" width={320} height={184} priority style={{ width: "auto" }} />
           </Link>
         </div>
+        <div className="ops-head-now">
+          <PhaseTimer compact />
+        </div>
         <div className="fh-head-r">
           <span className="fh-chip fh-mono">{OPS_CHIP[profile.role] ?? ROLE_LABELS[profile.role]}</span>
           <AccountMenu
@@ -53,7 +57,6 @@ export function OpsHeader() {
           />
         </div>
       </div>
-      <PhaseTimer />
     </header>
   );
 }

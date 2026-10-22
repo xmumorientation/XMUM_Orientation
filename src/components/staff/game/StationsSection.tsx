@@ -3,6 +3,7 @@
 import { Check, ChevronDown, Pencil, Plus, Trash2, Users } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { usePhaseTimer } from "@/components/PhaseTimerProvider";
 import { useStationOccupants, type Occupant } from "@/components/staff/useStationOccupants";
 import { MAP_BUILDINGS, stationPosition } from "@/lib/mapBuildings";
 import { supabaseBrowser } from "@/lib/supabase/client";
@@ -27,7 +28,7 @@ const STATUS: { value: StationStatus; label: string }[] = [
 ];
 const STATUS_TONE: Record<StationStatus, string> = { available: "ok", in_progress: "warn", closed: "off" };
 
-type DayFilter = "all" | 1 | 2;
+type Day = 1 | 2;
 type GmUser = { id: string; full_name: string };
 type GmAssignment = { user_id: string; station_id: number; day: number };
 type Form = {
@@ -55,7 +56,11 @@ export function StationsSection() {
   const [stations, setStations] = useState<Station[]>([]);
   const [gmUsers, setGmUsers] = useState<GmUser[]>([]);
   const [assignments, setAssignments] = useState<GmAssignment[]>([]);
-  const [dayFilter, setDayFilter] = useState<DayFilter>("all");
+  // Day 1 or Day 2 (no "All", Ben). Until one is picked, the day whose game runs (Day 2 for the endgame too).
+  const { phases } = usePhaseTimer();
+  const [pickedDay, setPickedDay] = useState<Day | null>(null);
+  const live = phases.find((p) => p.state === "active" || p.state === "paused");
+  const dayFilter: Day = pickedDay ?? (live && (live.key === "day2" || live.is_endgame) ? 2 : 1);
   const [openId, setOpenId] = useState<number | null>(null);
   const [editing, setEditing] = useState<Station | "new" | null>(null);
   const [form, setForm] = useState<Form>(EMPTY);
@@ -92,7 +97,7 @@ export function StationsSection() {
     () => Array.from(new Set([...DEFAULT_BLOCKS, ...stations.map((s) => s.area)])).filter(Boolean),
     [stations]
   );
-  const visible = stations.filter((s) => dayFilter === "all" || s.day === dayFilter);
+  const visible = stations.filter((s) => s.day === dayFilter);
   const gmName = (id: string) => gmUsers.find((g) => g.id === id)?.full_name || "Unnamed";
   const gmsOf = (stationId: number) =>
     assignments
@@ -122,7 +127,7 @@ export function StationsSection() {
   }
 
   function openAdd() {
-    setForm({ ...EMPTY, day: dayFilter === 2 ? 2 : 1, block: blocks[0] ?? "A1" });
+    setForm({ ...EMPTY, day: dayFilter, block: blocks[0] ?? "A1" });
     setEditing("new");
   }
 
@@ -222,9 +227,9 @@ export function StationsSection() {
     <div className="gc-stack">
       <div className="gc-toolbar">
         <div className="gc-seg" role="tablist" aria-label="Day">
-          {(["all", 1, 2] as DayFilter[]).map((d) => (
-            <button key={d} type="button" role="tab" aria-selected={dayFilter === d} onClick={() => setDayFilter(d)}>
-              {d === "all" ? "All" : `Day ${d}`}
+          {([1, 2] as Day[]).map((d) => (
+            <button key={d} type="button" role="tab" aria-selected={dayFilter === d} onClick={() => setPickedDay(d)}>
+              Day {d}
             </button>
           ))}
         </div>
@@ -249,7 +254,6 @@ export function StationsSection() {
               >
                 <span className="gc-fold-name">
                   {s.name}
-                  {dayFilter === "all" && <small>Day {s.day}</small>}
                   {here.length > 0 && <small className="gc-fold-here">{here.map((o) => o.name).join(", ")} here</small>}
                 </span>
                 <span className="gc-chip" data-tone={STATUS_TONE[s.status]}>
