@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { vxDisplay, vxSlab } from "@/components/home/fonts";
 import { Dialog, DialogContent } from "@/components/ui/Dialog";
@@ -27,6 +27,42 @@ export function StatusLine({ error, notice }: { error: string | null; notice: st
   if (error) return <p className="gc-status gc-status-err" role="alert">{error}</p>;
   if (notice) return <p className="gc-status gc-status-ok" role="status">{notice}</p>;
   return null;
+}
+
+const FOLD_MS = 300;
+
+/**
+ * A folding card's body that opens and closes with a height animation
+ * (.gc-fold-wrap: grid rows 0fr to 1fr). On open it mounts closed, the closed
+ * state is flushed (a layout read), and only then does it get data-open, so the
+ * browser always has a start to animate from. It stays mounted while it closes;
+ * closed, it is inert. With reduced motion it opens and closes at once.
+ */
+export function FoldBody({ open, children }: { open: boolean; children: React.ReactNode }) {
+  const [mounted, setMounted] = useState(open);
+  const ref = useRef<HTMLDivElement>(null);
+  if (open && !mounted) setMounted(true);
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    if (open) {
+      void el.offsetHeight;
+      el.dataset.open = "";
+      return;
+    }
+    delete el.dataset.open;
+    const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const timer = window.setTimeout(() => setMounted(false), still ? 0 : FOLD_MS);
+    return () => window.clearTimeout(timer);
+  }, [open, mounted]);
+
+  if (!mounted) return null;
+  return (
+    <div ref={ref} className="gc-fold-wrap" inert={!open}>
+      <div className="gc-fold-inner">{children}</div>
+    </div>
+  );
 }
 
 /**

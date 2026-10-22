@@ -192,7 +192,8 @@
 /* The group at a station (a GM's Day 2 Start checks it in), with Clear. */
 .gc-here { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 8px 8px 14px; border: 1px solid var(--gc-line); border-radius: 14px; font-size: 14px; }
 .gc-here b { font-weight: 600; }
-.gc-fold-chev { flex: none; color: var(--gc-mute); transition: transform 0.2s ease; }
+.gc-fold-chev { flex: none; color: var(--gc-mute); transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
+/* The body's open and close animation (FoldBody) is in app/globals.css, for every page. */
 .gc-fold[data-open] .gc-fold-chev { transform: rotate(180deg); }
 .gc-fold-body { display: grid; gap: 12px; padding: 0 14px 14px; }
 .gc-facts { margin: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; padding: 12px 0; border-top: 1px solid var(--gc-line); }

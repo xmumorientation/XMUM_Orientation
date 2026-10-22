@@ -940,7 +940,7 @@ function ScoresStop({ groupId, onRows }: { groupId: number | null; onRows?: (row
   return (
     <section id="fh-scores" className="fh-stop" aria-labelledby="fh-scores-title">
       <div className="fh-stop-head fh-stop-head-row">
-        <h2 id="fh-scores-title" className="fh-h2 fh-slab">Scoreboard</h2>
+        <h2 id="fh-scores-title" className="fh-h2 fh-slab">Tokens</h2>
         <span className="fh-pill fh-mono">● LIVE FROM 28 NOV</span>
       </div>
       <ol className="fh-board">

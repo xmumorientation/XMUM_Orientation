@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { ChevronDown, MessageCircle, Phone } from "lucide-react";
 
+import { FoldBody } from "@/components/staff/game/parts";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import type { FaciStatus, GroupPosition } from "@/lib/types";
 import type { GroupPin } from "@/lib/groupPosition";
@@ -100,16 +101,22 @@ function GroupRow({
   const [facis, setFacis] = useState<FaciStatus[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  async function toggle() {
-    const next = !open;
-    setOpen(next);
-    if (!next) return;
+  // The first open loads the Facis before it opens, so the list grows once to
+  // its full height (FoldBody) instead of to "Loading…" and then jumping.
+  async function load() {
     setError(null);
     const { data, error: rpcError } = await supabase.rpc("fn_group_faci_status", {
       p_group_id: g.group_id,
     });
     if (rpcError) setError(friendlyError(rpcError));
     else setFacis((data as FaciStatus[]) ?? []);
+  }
+
+  async function toggle() {
+    if (open) return setOpen(false);
+    if (facis === null) await load();
+    else void load();
+    setOpen(true);
   }
 
   return (
@@ -137,7 +144,7 @@ function GroupRow({
           <ChevronDown className={`h-3.5 w-3.5 transition-transform ${open ? "rotate-180" : ""}`} />
         </button>
       </div>
-      {open && (
+      <FoldBody open={open}>
         <div className="bg-paper-50 px-3 pb-2.5 pt-1">
           {error && <p className="text-xs text-red-600">{error}</p>}
           {!error && !facis && <p className="text-xs text-ink-faint">Loading…</p>}
@@ -182,7 +189,7 @@ function GroupRow({
             })}
           </ul>
         </div>
-      )}
+      </FoldBody>
     </li>
   );
 }

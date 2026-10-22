@@ -10,7 +10,7 @@ import { supabaseBrowser } from "@/lib/supabase/client";
 import { RISK_TIER_META, type RiskTier, type Station, type StationStatus } from "@/lib/types";
 import { cn, friendlyError } from "@/lib/utils";
 
-import { ConfirmSheet, Sheet, StatusLine, useStatus } from "./parts";
+import { ConfirmSheet, FoldBody, Sheet, StatusLine, useStatus } from "./parts";
 
 // Admin → Stations for HOGM, as folding cards: closed shows the name and
 // status; open shows the details, status, Game Masters, edit and delete.
@@ -261,7 +261,7 @@ export function StationsSection() {
                 </span>
                 <ChevronDown size={18} aria-hidden className="gc-fold-chev" />
               </button>
-              {open && (
+              <FoldBody open={open}>
                 <div className="gc-fold-body">
                   <dl className="gc-facts">
                     <div><dt>Location</dt><dd>{s.code}</dd></div>
@@ -308,7 +308,7 @@ export function StationsSection() {
                     </button>
                   </div>
                 </div>
-              )}
+              </FoldBody>
             </li>
           );
         })}

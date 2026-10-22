@@ -216,7 +216,7 @@ function ScoresStop({ groups }: { groups: HomeGroup[] | null }) {
   return (
     <section id="sh-scores" className="fh-stop" aria-labelledby="sh-scores-title">
       <div className="fh-stop-head fh-stop-head-row">
-        <h2 id="sh-scores-title" className="fh-h2 fh-slab">Scoreboard</h2>
+        <h2 id="sh-scores-title" className="fh-h2 fh-slab">Tokens</h2>
         <Link href="/token" className="sh-more">
           Full scoreboard <ArrowRight size={15} aria-hidden />
         </Link>

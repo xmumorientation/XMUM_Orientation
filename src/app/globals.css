@@ -233,3 +233,16 @@ body:is(:has(.fh), :has(.staff-dashboard-shell)) {
     animation: none !important;
   }
 }
+
+/* A folding body opens and closes to its height (FoldBody in
+   components/staff/game/parts.tsx: grid rows 0fr to 1fr, with a fade). Here so
+   it works on any page, not only those that load game-control.css. */
+.gc-fold-wrap {
+  display: grid; grid-template-rows: 0fr; opacity: 0;
+  transition: grid-template-rows 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.25s ease;
+}
+.gc-fold-wrap[data-open] { grid-template-rows: 1fr; opacity: 1; }
+.gc-fold-inner { min-height: 0; overflow: hidden; }
+@media (prefers-reduced-motion: reduce) {
+  .gc-fold-wrap { transition: none; }
+}
