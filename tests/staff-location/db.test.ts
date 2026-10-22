@@ -27,7 +27,7 @@ beforeAll(async () => {
   db = new Client({ host: "localhost", port: 54339, user: "postgres", password: "pw", database: "staff" });
   await db.connect();
   await db.query(readFileSync(path.join(root, "tests/stations/stub-schema.sql"), "utf8"));
-  await db.query(readFileSync(path.join(root, "supabase/migrations/0102_staff_location_sharing.sql"), "utf8"));
+  await db.query(readFileSync(path.join(root, "supabase/migrations/0103_staff_location_sharing.sql"), "utf8"));
   for (const [n, role] of [[1,"hof"],[2,"hogm"],[3,"faci"],[4,"freshie"],[5,"admin"],[6,"gm"]]) {
     await db.query("insert into profiles(id, role, full_name) values ($1,$2::user_role,$3)", [uid(Number(n)), role, role]);
   }
