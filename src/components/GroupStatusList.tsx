@@ -28,12 +28,12 @@ export function pinSummary(g: GroupPosition, pin: GroupPin | null, nowMs: number
       ? `Only a rough location (±${Math.round(acc)} m), ${timeAgo(g.gps_at, nowMs)}`
       : `Outside the campus map, ${timeAgo(g.gps_at, nowMs)}`;
   }
-  if (pin.area) return `Last seen at ${pin.area} · ${timeAgo(pin.at, nowMs)}`;
+  if (pin.area) return `Last seen at ${pin.area} / ${timeAgo(pin.at, nowMs)}`;
   if (pin.source === "manual") {
-    return `Last seen at ${g.checkin_station_code ?? "a station"} · ${timeAgo(pin.at, nowMs)}`;
+    return `Last seen at ${g.checkin_station_code ?? "a station"} / ${timeAgo(pin.at, nowMs)}`;
   }
   const acc = pin.accuracyM != null ? `±${Math.round(pin.accuracyM)} m` : "accuracy unknown";
-  return `GPS ${acc} · ${timeAgo(pin.at, nowMs)}`;
+  return `GPS ${acc} / ${timeAgo(pin.at, nowMs)}`;
 }
 
 export function reportingSummary(g: GroupPosition) {
@@ -131,7 +131,7 @@ function GroupRow({
           <span className="block truncate text-sm font-medium">{g.group_name}</span>
           <span className="block truncate text-xs text-ink-faint">
             {pinSummary(g, pin, nowMs)}
-            {pin?.imprecise && pin.source === "gps" ? " · rough" : ""}
+            {pin?.imprecise && pin.source === "gps" ? " / rough" : ""}
           </span>
         </button>
         <button
@@ -145,7 +145,7 @@ function GroupRow({
         </button>
       </div>
       <FoldBody open={open}>
-        <div className="bg-paper-50 px-3 pb-2.5 pt-1">
+        <div className="group-faci-details px-3 pb-2.5 pt-1">
           {error && <p className="text-xs text-red-600">{error}</p>}
           {!error && !facis && <p className="text-xs text-ink-faint">Loading…</p>}
           {facis?.length === 0 && (

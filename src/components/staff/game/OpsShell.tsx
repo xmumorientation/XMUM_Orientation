@@ -44,7 +44,7 @@ export function OpsShell<K extends string>({
         <h1 className="gc-title">OPS</h1>
         <p className="gc-sub">
           <i aria-hidden />
-          {name} · <b>{now.label}</b>
+          {name} / <b>{now.label}</b>
         </p>
       </header>
 

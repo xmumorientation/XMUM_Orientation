@@ -52,8 +52,8 @@ export default function MapPage() {
         title="Campus map"
         subtitle={
           profile.role === "admin"
-            ? "Day 2 stations. Tap a station for details. Click a building to add or edit stations."
-            : "Day 2 stations. Tap the map for a full-screen view. Tap a station for details."
+            ? "Live game stations. Tap the map for a full-screen view. Click a building to add a station or change its game and status."
+            : "Live game stations. Tap the map for a full-screen view. Tap a station or a building's badge for details."
         }
       />
 

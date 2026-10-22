@@ -111,8 +111,18 @@ export async function middleware(request: NextRequest) {
   );
 
   const {
-    data: { user },
+    data: { user }, error: authError,
   } = await supabase.auth.getUser();
+
+  // A temporary Auth outage is not a logout. Let the user retry the request.
+  if (authError && (authError.name === "AuthRetryableFetchError" || (authError.status ?? 0) >= 500)) {
+    return new NextResponse("Sign-in is temporarily unavailable. Please try again.", { status: 503 });
+  }
+  function redirectWithSession(url: URL) {
+    const redirect = NextResponse.redirect(url);
+    for (const cookie of response.cookies.getAll()) redirect.cookies.set(cookie);
+    return redirect;
+  }
 
   const isPublic = PUBLIC_PATHS.some((p) => path.startsWith(p));
 
@@ -121,7 +131,7 @@ export async function middleware(request: NextRequest) {
     url.pathname = "/login";
     // /activate?t=... arrives from an NFC tap — preserve it through login
     url.searchParams.set("next", path + request.nextUrl.search);
-    return NextResponse.redirect(url);
+    return redirectWithSession(url);
   }
 
   if (user && !path.startsWith("/auth/callback")) {
@@ -136,11 +146,11 @@ export async function middleware(request: NextRequest) {
 
     if (!approved && path !== "/login/pending") {
       url.pathname = "/login/pending";
-      return NextResponse.redirect(url);
+      return redirectWithSession(url);
     }
     if (approved && (path === "/login" || path === "/login/pending")) {
       url.pathname = "/dashboard";
-      return NextResponse.redirect(url);
+      return redirectWithSession(url);
     }
   }
 

@@ -170,7 +170,7 @@ const PHASE_VERBS: Record<string, string> = { start: "Started", pause: "Paused",
 const num = (v: unknown) => (typeof v === "number" ? v : Number(v));
 const str = (v: unknown) => (v == null ? "" : String(v));
 const plural = (n: number, word: string) => `${n} ${word}${Math.abs(n) === 1 ? "" : "s"}`;
-const join = (...parts: unknown[]) => parts.filter((p) => typeof p === "string" && p).join(" · ");
+const join = (...parts: unknown[]) => parts.filter((p) => typeof p === "string" && p).join(" / ");
 
 const projectorName = (loc: unknown) => {
   const l = str(loc) as ProjectorLocation;

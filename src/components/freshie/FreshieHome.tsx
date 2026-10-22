@@ -1,5 +1,7 @@
 "use client";
 
+import { displayLabel } from "@/lib/displayLabel";
+
 import {
   ArrowRight,
   ChevronDown,
@@ -150,7 +152,7 @@ export function PhaseCard() {
     <div className="fh-phasecard" data-endgame={current.is_endgame}>
       <div className="fh-phasecard-top fh-mono">
         <i aria-hidden />
-        {current.state === "paused" ? "PAUSED" : current.is_endgame ? "ENDGAME" : "LIVE"} · PHASE {i + 1} OF{" "}
+        {current.state === "paused" ? "PAUSED" : current.is_endgame ? "ENDGAME" : "LIVE"} / PHASE {i + 1} OF{" "}
         {phases.length}
       </div>
       <b className="fh-slab">{current.name}</b>
@@ -194,7 +196,7 @@ function WelcomeStop({
           {group && (
             <>
               {" "}
-              · you&apos;re in <b>{group.name}</b>
+              / you&apos;re in <b>{group.name}</b>
             </>
           )}
         </p>
@@ -233,7 +235,7 @@ function countValue(v: string): number | null {
 function headcountSummary(h: Headcount | null) {
   if (!h) return "Not counted yet";
   if (h.local_count == null || h.international_count == null) return `${h.headcount} people`;
-  return `${h.headcount} people · ${h.local_count} Local · ${h.international_count} International`;
+  return `${h.headcount} people / ${h.local_count} Local / ${h.international_count} International`;
 }
 
 /** − / number / + for counting people at the gathering point; the number can also be typed. */
@@ -535,7 +537,7 @@ export function ChecklistStop({ group, groupId }: { group: Group | null; groupId
             <span className="fh-check-no fh-mono">04</span>
             <span className="fh-check-title">
               <b>Manual Location Update</b>
-              <small>{locLast ? `${describeLocation(locLast)} · ${clock(locLast.created_at)}` : "Not sent yet"}</small>
+              <small>{locLast ? `${describeLocation(locLast)} / ${clock(locLast.created_at)}` : "Not sent yet"}</small>
             </span>
             <ChevronDown size={20} aria-hidden className="fh-check-chev" />
           </button>
@@ -596,8 +598,8 @@ export function ChecklistStop({ group, groupId }: { group: Group | null; groupId
               {locNotice && <small className="fh-check-msg">{locNotice}</small>}
               {locLast && (
                 <small className="fh-check-msg">
-                  Last update: {describeLocation(locLast)} · {clock(locLast.created_at)}
-                  {locLast.details ? ` · "${locLast.details}"` : ""}
+                  Last update: {describeLocation(locLast)} / {clock(locLast.created_at)}
+                  {locLast.details ? ` / "${locLast.details}"` : ""}
                   {locLast.edited_at ? " (edited by Admin)" : ""}
                 </small>
               )}
@@ -751,7 +753,7 @@ function FaciStop({
                     )}
                     {f.programme && (
                       <small className="fh-faci-prog">
-                        <GraduationCap size={14} aria-hidden /> {f.programme}
+                        <GraduationCap size={14} aria-hidden /> {displayLabel(f.programme)}
                       </small>
                     )}
                     {f.intro && <p className="fh-faci-intro">“{f.intro}”</p>}
@@ -1041,7 +1043,7 @@ export function AccountMenu({
   }, [open]);
 
   async function signOut() {
-    await supabaseBrowser().auth.signOut();
+    await supabaseBrowser().auth.signOut({ scope: "local" });
     window.location.href = logoutHref;
   }
 

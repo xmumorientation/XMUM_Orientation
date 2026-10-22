@@ -103,7 +103,7 @@ function day2Checks({
   if (balance !== null) {
     checks.push(
       balance >= fee
-        ? { label: "Tokens", text: `Has ${balance} · entry ${fee} · ${balance - fee} left after`, state: "ok" }
+        ? { label: "Tokens", text: `Has ${balance} / entry ${fee} / ${balance - fee} left after`, state: "ok" }
         : { label: "Tokens", text: `Has ${balance}, needs ${fee}. Short by ${fee - balance}.`, state: "bad" }
     );
   }
@@ -418,7 +418,7 @@ export default function GmPanelPage() {
       const d = res.data as { delta?: number; balance?: number; duplicate?: boolean };
       if (d?.duplicate) return result.flash("Duplicate ignored (already recorded).");
       result.flash(
-        `${label}: +${d?.delta ?? "?"}${d?.balance !== undefined ? ` · balance ${d.balance}` : ""}`
+        `${label}: +${d?.delta ?? "?"}${d?.balance !== undefined ? ` / balance ${d.balance}` : ""}`
       );
       void loadGroups();
     } else if (res.status === "queued") {
@@ -565,8 +565,8 @@ export default function GmPanelPage() {
         d.duplicate
           ? "Duplicate ignored (already recorded)."
           : d.success && d.piece_name
-            ? `-${d.cost} tokens · granted ${d.piece_name} · balance ${d.balance}`
-            : `-${d.cost} tokens (challenge lost) · balance ${d.balance}`
+            ? `-${d.cost} tokens / granted ${d.piece_name} / balance ${d.balance}`
+            : `-${d.cost} tokens (challenge lost) / balance ${d.balance}`
       );
     } else if (res.status === "queued") {
       result.flash("Offline. Queued and will send automatically.");
@@ -597,12 +597,12 @@ export default function GmPanelPage() {
           {station ? (
             station.day === 2 ? (
               <>
-                {station.code} · {RISK_TIER_META[tier].label} · <b>Entry −{station.entry_cost}</b>
+                {station.code} / {RISK_TIER_META[tier].label} / <b>Entry −{station.entry_cost}</b>
               </>
             ) : (
               <>
                 {station.code}
-                {station.purpose && <> · <b>{station.purpose}</b></>}
+                {station.purpose && <> / <b>{station.purpose}</b></>}
               </>
             )
           ) : (
@@ -801,12 +801,12 @@ export default function GmPanelPage() {
                       "It reverses the last token change you made, if it is recent enough."
                     ) : (
                       <>
-                        <b>{undoAsk.group_name}</b>: {undoAsk.reason} ·{" "}
+                        <b>{undoAsk.group_name}</b>: {undoAsk.reason} /{" "}
                         <b>
                           {(undoAsk.delta ?? 0) > 0 ? "+" : ""}
                           {undoAsk.delta}
                         </b>{" "}
-                        · {undoAsk.created_at ? minutesAgo(undoAsk.created_at) : ""}.
+                        / {undoAsk.created_at ? minutesAgo(undoAsk.created_at) : ""}.
                         {(() => {
                           const g = groups.find((x) => x.id === undoAsk.group_id);
                           return g ? ` ${g.name} goes from ${g.token_balance} to ${g.token_balance - (undoAsk.delta ?? 0)} tokens.` : "";
@@ -843,7 +843,7 @@ export default function GmPanelPage() {
                     {group && needPicks > 0 && (
                       <div className="gc-field">
                         <span>
-                          {needPicks === 2 ? "Pick 2 locations" : "Pick the location"} ·{" "}
+                          {needPicks === 2 ? "Pick 2 locations" : "Pick the location"} /{" "}
                           {RISK_TIER_META[tier].label}
                         </span>
                         <div className="gc-st-locs" role="group" aria-label="Locations">
@@ -906,7 +906,7 @@ export default function GmPanelPage() {
                       disabled={busy || !canStart}
                       onClick={startGame}
                     >
-                      Start game · entry −{fee} on submit
+                      Start game / entry −{fee} on submit
                     </button>
                     <StatusLine error={result.error} notice={result.notice} />
                   </>
@@ -987,7 +987,7 @@ export default function GmPanelPage() {
                       {gameGroup && ` Tokens: ${gameGroup.token_balance} → ${gameGroup.token_balance - fee}.`}
                     </>
                   }
-                  confirmLabel={`Submit ${confirmWin ? "win" : "loss"} · −${fee}`}
+                  confirmLabel={`Submit ${confirmWin ? "win" : "loss"} / −${fee}`}
                   danger={confirmWin === false}
                   busy={busy}
                 />

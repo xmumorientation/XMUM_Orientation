@@ -522,8 +522,8 @@ export function CampusMap2DView({
                       fill="transparent"
                     />
                     <title>
-                      {s.code} · {s.name}
-                      {s.purpose ? ` · ${s.purpose}` : ""} · {statusLabel}
+                      {s.code} / {s.name}
+                      {s.purpose ? ` / ${s.purpose}` : ""} / {statusLabel}
                     </title>
                     <circle
                       cx={cx}
@@ -591,7 +591,7 @@ export function CampusMap2DView({
                       }
                     >
                       <title>
-                        {bulbTitle(b, data.places)} · {bulbStatus(b, nowMs, data.myGroupId)}
+                        {bulbTitle(b, data.places)} / {bulbStatus(b, nowMs, data.myGroupId)}
                       </title>
                       <circle cx={x} cy={y + 20} r="110" fill="transparent" />
                       {lit && (
@@ -693,7 +693,7 @@ export function CampusMap2DView({
                         paintOrder="stroke"
                       >
                         {PROJECTOR_CODE_NAMES[b.location]}
-                        {lit && b.activated_by_group != null ? ` · G${b.activated_by_group}` : ""}
+                        {lit && b.activated_by_group != null ? ` / G${b.activated_by_group}` : ""}
                       </text>
                     </g>
                   );
@@ -713,6 +713,16 @@ export function CampusMap2DView({
                 />
               )}
 
+              {data.staffPositions.map((person) => {
+                const p = gpsToMapPercent(person.lat, person.lng);
+                if (!p) return null;
+                const label = `${person.role.toUpperCase()} / ${person.full_name || "Staff"}`;
+                return <g key={person.user_id} transform={`translate(${mx(p.x)},${my(p.y)})`}>
+                  <title>{label}</title>
+                  <circle r={18} fill="#0891b2" stroke="white" strokeWidth={4} />
+                  <text y={-28} textAnchor="middle" fontSize={24} fontWeight="bold" fill="#0891b2" stroke="white" strokeWidth={5} paintOrder="stroke">{label}</text>
+                </g>;
+              })}
               {showGroupPins &&
                 drawnPins.map(({ g, pin, dx }) => {
                   const x = mx(pin.pos.x) + dx;
@@ -740,7 +750,7 @@ export function CampusMap2DView({
                       }
                     >
                       <title>
-                        {g.group_name} · {pinSummary(g, pin, nowMs)}
+                        {g.group_name} / {pinSummary(g, pin, nowMs)}
                       </title>
                       {halo && (
                         <circle
@@ -1028,7 +1038,7 @@ export function CampusMap2DView({
                   idle={
                     view.scale <= 1.05 ? (
                       <p className="inline-flex rounded-full bg-black/55 px-3 py-1.5 text-xs font-semibold text-white">
-                        Drag to move · Pinch to zoom
+                        Drag to move / Pinch to zoom
                       </p>
                     ) : (
                       <span />

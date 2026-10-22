@@ -124,13 +124,13 @@ export function FaciAssign() {
       <Sheet
         open={historyOf !== null}
         onClose={() => setHistoryOf(null)}
-        title={historyOf ? `Recent changes · ${historyOf.display_name?.trim() || historyOf.name}` : "Recent changes"}
+        title={historyOf ? `Recent changes / ${historyOf.display_name?.trim() || historyOf.name}` : "Recent changes"}
         wide
       >
         {historyOf && <GroupLog groupId={historyOf.id} />}
       </Sheet>
 
-      <Sheet open={editing !== null} onClose={() => setEditing(null)} title={editing ? `Facilitators · ${editing.name}` : "Facilitators"}>
+      <Sheet open={editing !== null} onClose={() => setEditing(null)} title={editing ? `Facilitators / ${editing.name}` : "Facilitators"}>
         {editing && (
           <div className="gc-form">
             <input
@@ -170,7 +170,7 @@ export function FaciAssign() {
               {facis.length === 0 && <li className="gc-empty">No Facilitators yet.</li>}
             </ul>
             <button type="button" className="gc-btn gc-btn-primary" disabled={busy} onClick={saveFacis}>
-              Save · {picked.length} selected
+              Save / {picked.length} selected
             </button>
           </div>
         )}

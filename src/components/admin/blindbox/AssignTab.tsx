@@ -86,7 +86,7 @@ export function AssignTab({ data, onError, onNotice, goTo }: TabProps) {
             <option value="">Select box type…</option>
             {liveTypes.map((t) => (
               <option key={t.id} value={t.id}>
-                {t.name} · {data.typeStats[t.id]?.unassigned ?? 0} unassigned
+                {t.name} / {data.typeStats[t.id]?.unassigned ?? 0} unassigned
               </option>
             ))}
           </select>
@@ -199,7 +199,7 @@ export function AssignTab({ data, onError, onNotice, goTo }: TabProps) {
           {type ? (
             <>
               <span>
-                {targets} × {qtyN} = <b className="font-mono">{need}</b> needed · {type.name} has{" "}
+                {targets} × {qtyN} = <b className="font-mono">{need}</b> needed / {type.name} has{" "}
                 <b className="font-mono">{left}</b> unassigned
                 {short > 0 && `: ${short} short`}
               </span>

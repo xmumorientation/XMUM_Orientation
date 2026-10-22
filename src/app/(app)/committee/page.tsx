@@ -160,8 +160,8 @@ function OpsOverview({ canAssignFacis }: { canAssignFacis: boolean }) {
                       </p>
                       {l.details && !room && <p className="gc-ops-sub">{l.details}</p>}
                       <p className="gc-ops-meta">
-                        {senders[l.user_id] ?? "Facilitator"} · {clock(l.created_at)}
-                        {l.edited_at ? " · edited by Admin" : ""}
+                        {senders[l.user_id] ?? "Facilitator"} / {clock(l.created_at)}
+                        {l.edited_at ? " / edited by Admin" : ""}
                       </p>
                     </>
                   ) : (

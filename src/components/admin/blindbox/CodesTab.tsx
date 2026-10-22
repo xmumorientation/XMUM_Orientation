@@ -246,7 +246,7 @@ export function CodesTab({ data, onError, onNotice, goTo }: TabProps) {
           <div className="card w-full max-w-sm bg-white p-5 text-center" onClick={(e) => e.stopPropagation()}>
             <p className="font-semibold">{big.name}</p>
             <p className="mb-3 text-sm text-ink-faint">
-              {big.rows.map((a) => data.types.find((t) => t.id === a.type_id)?.name ?? "Box").join(" · ")}
+              {big.rows.map((a) => data.types.find((t) => t.id === a.type_id)?.name ?? "Box").join(" / ")}
             </p>
             {/* eslint-disable-next-line @next/next/no-img-element -- local data URL */}
             <img src={qrs[big.id]} alt={`${big.name}'s blind box QR`} className="w-full" />

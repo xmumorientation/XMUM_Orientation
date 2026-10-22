@@ -77,7 +77,7 @@ export default function AdminBlindBoxPage() {
           ))}
         </dl>
         <p className="mt-2 text-xs text-ink-faint">
-          Tokens: <b className="font-mono text-ink">{o.tokensIn}</b> paid in for boxes ·{" "}
+          Tokens: <b className="font-mono text-ink">{o.tokensIn}</b> paid in for boxes /{" "}
           <b className="font-mono text-ink">{o.tokensOut}</b> won from opened boxes
         </p>
       </div>

@@ -391,7 +391,7 @@ export function QrScannerScreen({ onClose, closeHref = "/dashboard", preview = f
             You&apos;re inside WeChat, Instagram or another app. The camera may not work here.
           </p>
           <ol className="list-decimal space-y-1 pl-5 text-sm text-white/75">
-            <li>Tap the ··· menu in the top-right corner</li>
+            <li>Tap the three-dot menu in the top-right corner</li>
             <li>Choose &ldquo;Open in browser&rdquo; (Safari or Chrome)</li>
           </ol>
           <div className="mt-auto space-y-2">

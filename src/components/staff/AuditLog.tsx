@@ -182,7 +182,7 @@ export function AuditTable({ rows, names, groupId }: { rows: AuditEntry[]; names
       <tbody>
         {rows.map((r) => {
           const row = describeAudit(r, names);
-          const detail = !showObject && row.group !== groupId ? [row.object, row.detail].filter(Boolean).join(" · ") : row.detail;
+          const detail = !showObject && row.group !== groupId ? [row.object, row.detail].filter(Boolean).join(" / ") : row.detail;
           return (
             <tr key={r.id}>
               <td className="gc-log-time">

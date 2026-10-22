@@ -93,7 +93,7 @@ function GameIdle() {
       <i aria-hidden />
       <div>
         <b>No game running</b>
-        <span>{next ? `Next: ${next.name} · started from Live control` : "Games start from Live control"}</span>
+        <span>{next ? `Next: ${next.name} / started from Live control` : "Games start from Live control"}</span>
       </div>
     </div>
   );
@@ -110,7 +110,7 @@ function WelcomeStop({ name, role }: { name: string; role: UserRole }) {
         <span className="fh-mark">Vortexa</span>
       </h1>
       <p className="fh-hello">
-        Hi <b>{name || "there"}</b> · {ROLE_LABELS[role]}
+        Hi <b>{name || "there"}</b> / {ROLE_LABELS[role]}
       </p>
       {/* Same rule as Freshie Home: the running game, else the event countdown. */}
       {live ? (

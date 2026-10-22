@@ -1,5 +1,7 @@
 "use client";
 
+import { displayLabel } from "@/lib/displayLabel";
+
 import {
   createContext,
   useContext,
@@ -54,7 +56,7 @@ export function PhaseTimerProvider({ children }: { children: React.ReactNode }) 
         .from("phases")
         .select("*")
         .order("sort_order");
-      if (mounted.current && data) setPhases(data as Phase[]);
+      if (mounted.current && data) setPhases((data as Phase[]).map((phase) => ({ ...phase, name: displayLabel(phase.name) })));
     }
 
     syncClock();
@@ -71,12 +73,19 @@ export function PhaseTimerProvider({ children }: { children: React.ReactNode }) 
 
     const interval = setInterval(() => setTick((t) => t + 1), 1000);
     const resync = setInterval(syncClock, 5 * 60 * 1000);
+    const refresh = setInterval(loadPhases, 10_000);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") { void loadPhases(); void syncClock(); }
+    };
+    document.addEventListener("visibilitychange", onVisible);
 
     return () => {
       mounted.current = false;
       supabase.removeChannel(channel);
       clearInterval(interval);
       clearInterval(resync);
+      clearInterval(refresh);
+      document.removeEventListener("visibilitychange", onVisible);
     };
   }, [supabase]);
 

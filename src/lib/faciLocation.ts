@@ -37,7 +37,7 @@ export type FaciLocation = {
 export function describeLocation(l: Pick<FaciLocation, "status" | "other_text" | "building">): string {
   if (l.status === "heading_to") return `Heading to ${l.building}`;
   if (l.status === "arrived") return `Arrived at ${l.building}`;
-  return `${l.other_text ?? "Other"} · ${l.building}`;
+  return `${l.other_text ?? "Other"} / ${l.building}`;
 }
 
 /**

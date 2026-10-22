@@ -37,7 +37,7 @@ function whenLabel(item: ScheduleItem) {
   if (tbd(time) && tbd(venue)) return "TIME & VENUE TBD";
   if (tbd(venue)) return time;
   if (tbd(time)) return venue;
-  return `${time} · ${venue}`;
+  return `${time} / ${venue}`;
 }
 
 export function FreshieSchedule({ vortexa = false }: { vortexa?: boolean }) {
@@ -173,7 +173,7 @@ export function FreshieSchedule({ vortexa = false }: { vortexa?: boolean }) {
                     {item.id === nowId && <span className="fh-sched-now fh-mono">NOW</span>}
                     {item.title}
                   </b>
-                  <small className="fh-mono">{note ? `${when} · ${note}` : when}</small>
+                  <small className="fh-mono">{note ? `${when} / ${note}` : when}</small>
                   {tag && (
                     <span className="fh-sched-tag fh-mono" style={{ color: tag.color }}>
                       <tag.Icon size={12} aria-hidden />

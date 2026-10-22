@@ -135,8 +135,8 @@ export default function AdminControlRoomPage() {
 
       {onSwitches.length > 0 && (
         <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-800">
-          <strong>{onSwitches.length} kill-switch{onSwitches.length > 1 ? "es" : ""} ON:</strong>{" "}
-          {onSwitches.map((s) => s.label).join(" · ")}
+          <strong>{onSwitches.length} override{onSwitches.length > 1 ? "s" : ""} ON:</strong>{" "}
+          {onSwitches.map((s) => s.label).join(" & ")}
         </div>
       )}
 
@@ -161,7 +161,7 @@ export default function AdminControlRoomPage() {
 
       <div className="grid items-start gap-4">
         <section>
-          <h2 className="mb-2 font-semibold">Kill-switches</h2>
+          <h2 className="mb-2 font-semibold">Safety switches & testing overrides</h2>
           <Card className="divide-y divide-paper-200 p-0">
             {SWITCHES.map((s) => {
               const on = boolOf(s.key);

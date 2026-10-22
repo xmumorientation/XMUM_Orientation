@@ -413,7 +413,7 @@ Groups checked in here will lose that check-in.`)) return;
                       <p className="truncate font-semibold">{s.name}</p>
                       <p className="truncate text-xs text-ink-faint">
                         {s.code}
-                        {s.purpose ? ` · ${s.purpose}` : ""}
+                        {s.purpose ? ` / ${s.purpose}` : ""}
                         {s.max_groups != null ? ` (max ${s.max_groups})` : ""}
                       </p>
                     </td>
@@ -452,7 +452,7 @@ Groups checked in here will lose that check-in.`)) return;
                         aria-label={`Edit Game Masters for ${s.name}`}
                       >
                         {assigned.length === 0 ? (
-                          <span className="text-ink-faint">Unassigned · click to assign</span>
+                          <span className="text-ink-faint">Unassigned / click to assign</span>
                         ) : (
                           assigned.map((g) => (
                             <span key={g.id} className="rounded-full bg-[#25405e] px-2.5 py-0.5 text-xs font-semibold text-white">
@@ -499,7 +499,7 @@ Groups checked in here will lose that check-in.`)) return;
       </section>
 
       <Dialog open={gmStation !== null} onOpenChange={(open) => !open && setGmStation(null)}>
-        <DialogContent title={gmStation ? `Game Masters · ${gmStation.name} (Day ${gmStation.day})` : "Game Masters"}>
+        <DialogContent title={gmStation ? `Game Masters / ${gmStation.name} (Day ${gmStation.day})` : "Game Masters"}>
           {gmStation && (
             <div className="space-y-3">
               <input

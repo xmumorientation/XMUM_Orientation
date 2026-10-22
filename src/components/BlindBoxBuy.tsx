@@ -129,7 +129,7 @@ export function BlindBoxBuy({
           </Link>
           <span className="fh-pill fh-mono bbuy-who">
             <i aria-hidden />
-            {preview.group_name} · {tokens(balance)}
+            {preview.group_name} / {tokens(balance)}
           </span>
         </header>
 

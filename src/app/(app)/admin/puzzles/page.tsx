@@ -72,7 +72,7 @@ export default function AdminPuzzlesPage() {
         return (
           <Card key={loc} className="space-y-3">
             <div className="flex items-center justify-between">
-              <h2 className="font-semibold">{PROJECTOR_CODE_NAMES[loc]} · {places[loc].name}</h2>
+              <h2 className="font-semibold">{PROJECTOR_CODE_NAMES[loc]} / {places[loc].name}</h2>
               <label className="btn-secondary cursor-pointer text-sm">
                 {busyLoc === loc ? "Uploading…" : url ? "Replace image" : "Upload image"}
                 <input

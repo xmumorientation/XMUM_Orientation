@@ -1,5 +1,6 @@
 "use client";
 
+import { StaffLocationSwitch } from "@/components/StaffLocationSharing";
 import { useState } from "react";
 
 import {
@@ -44,12 +45,23 @@ export function CampusMap({
 
   return (
     <div>
+      <StaffLocationSwitch />
       {view === "2d" && (
         <div className="mb-2 flex justify-center" aria-hidden={fullscreen}>
           <LayerSwitch data={data} dark={false} />
         </div>
       )}
       <MapToolbar data={data} canManageStations={canManageStations} view={panelView} />
+      <nav aria-label={`Day ${data.day} map buildings`} className="mb-3 flex flex-wrap gap-2">
+        <span className="w-full text-sm font-semibold">Day {data.day} stations / Choose a building</span>
+        {[...new Set(data.mapStations.map((s) => s.area))].map((area) => (
+          <button key={area} type="button" aria-pressed={data.clusterArea === area}
+            className="btn-secondary min-h-[44px] min-w-[52px] px-3"
+            onClick={() => { data.setLayer("stations"); data.setOpenBuilding(null); data.setClusterArea(area); data.setSelected(null); }}>
+            {area}
+          </button>
+        ))}
+      </nav>
       <CampusMapView
         view={view}
         onFail={fallBack}

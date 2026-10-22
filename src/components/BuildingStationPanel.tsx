@@ -14,12 +14,14 @@ import { friendlyError } from "@/lib/utils";
 import type { Station, StationPurpose, StationStatus } from "@/lib/types";
 
 export function BuildingStationPanel({
+  day,
   area,
   stations,
   codes,
   onClose,
   onChanged,
 }: {
+  day: 1 | 2;
   area: string;
   stations: Station[];
   codes: string[];
@@ -71,8 +73,8 @@ export function BuildingStationPanel({
         .from("stations")
         .insert({
         code: nextCode,
-        // The campus map shows Day 2 stations only, so stations added here are Day 2.
-        day: 2,
+        // Use the same game day that the map is showing.
+        day,
         station_number: stationNumberFromCode(nextCode),
         name: name.trim(),
         area,

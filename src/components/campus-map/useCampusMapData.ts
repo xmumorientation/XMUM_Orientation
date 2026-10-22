@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { readingText, useAccuracyCheck, useCheckLog } from "@/components/AccuracyCheck";
+import { usePhaseTimer } from "@/components/PhaseTimerProvider";
+import { activeMapDay } from "@/lib/mapDay";
 import { bulbTitle } from "@/components/LightbulbList";
 import { useProfile } from "@/components/ProfileProvider";
 import { useProjectorPlaces } from "@/components/useConfig";
@@ -17,6 +19,7 @@ import type {
 } from "@/lib/types";
 import { MAP_BUILDINGS, stationPosition } from "@/lib/mapBuildings";
 import { resolveGroupPin, type GroupPin } from "@/lib/groupPosition";
+import { parseStaffPositions, type StaffPosition } from "@/lib/staffLocation";
 import { COMMITTEE_TIER } from "@/lib/types";
 import { loadProjectorClues, NO_CLUES, type MapPlaces, type ProjectorClues } from "@/lib/projectorPlaces";
 import { friendlyError } from "@/lib/utils";
@@ -165,6 +168,8 @@ export function useCampusMapData({
   const supabase = useMemo(() => supabaseBrowser(), []);
   const profile = useProfile();
   const myId = profile.id;
+  const canSeeStaff = profile.role !== "freshie";
+  const [staffPositions, setStaffPositions] = useState<StaffPosition[]>([]);
   const myGroupId = profile.group_id;
   // The station lists name the groups at a station for Committee tier; everyone else gets a count (Ben).
   const staffView = COMMITTEE_TIER.includes(profile.role);
@@ -210,6 +215,23 @@ export function useCampusMapData({
   const activeSelected = selected
     ? (stations.find((s) => s.id === selected.id) ?? selected)
     : null;
+
+  useEffect(() => {
+    if (!canSeeStaff) return;
+    let active = true;
+    let request = 0;
+    async function loadStaff() {
+      const revision = ++request;
+      const { data, error } = await supabase.rpc("fn_staff_positions");
+      if (active && revision === request) setStaffPositions(error ? [] : parseStaffPositions(data));
+    }
+    void loadStaff();
+    const timer = setInterval(loadStaff, 10_000);
+    const onVisible = () => { if (document.visibilityState === "visible") void loadStaff(); };
+    window.addEventListener("staff-location-change", loadStaff);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => { active = false; clearInterval(timer); window.removeEventListener("staff-location-change", loadStaff); document.removeEventListener("visibilitychange", onVisible); };
+  }, [supabase, canSeeStaff]);
 
   const loadStations = useCallback(async () => {
     const { data } = await supabase.from("stations").select("*").order("id");
@@ -540,8 +562,14 @@ export function useCampusMapData({
     };
   }, [supabase, showGroupPins, player]);
 
-  // The map shows Day 2 stations only (Day 1 stations are managed on Admin → Stations).
-  const mapStations = useMemo(() => stations.filter((s) => s.day === 2), [stations]);
+  const { phases } = usePhaseTimer();
+  const day = activeMapDay(phases);
+  const mapStations = useMemo(() => stations.filter((s) => s.day === day), [stations, day]);
+  useEffect(() => {
+    setSelected(null);
+    setOpenBuilding(null);
+    setClusterArea(null);
+  }, [day]);
 
   const clusters = useMemo(() => buildClusters(mapStations), [mapStations]);
   const clusteredIds = useMemo(
@@ -571,6 +599,8 @@ export function useCampusMapData({
 
   return {
     myId,
+    staffPositions,
+    day,
     myGroupId,
     nowMs,
     // Stations

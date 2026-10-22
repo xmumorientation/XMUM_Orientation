@@ -275,7 +275,7 @@ export function ProfileEditor({
               <span>Programme</span>
               <input
                 className="fh-input"
-                placeholder="e.g. Computer Science · Year 3"
+                placeholder="e.g. Computer Science / Year 3"
                 maxLength={PROGRAMME_MAX}
                 value={programme}
                 onChange={(e) => setProgramme(e.target.value)}

@@ -76,7 +76,7 @@ export default function TransactionsPage() {
     <div className="space-y-4">
       <PageTitle
         title="Token history"
-        subtitle={group ? `${group.name} · balance ${group.token_balance}` : undefined}
+        subtitle={group ? `${group.name} / balance ${group.token_balance}` : undefined}
       />
       {txs.length === 0 ? (
         <EmptyState message="No transactions yet. Win station games to earn tokens!" />
@@ -97,7 +97,7 @@ export default function TransactionsPage() {
                   {tx.reason || "Token adjustment"}
                 </p>
                 <p className="text-xs text-ink-faint">
-                  {timeAgo(tx.created_at)} ·{" "}
+                  {timeAgo(tx.created_at)} /{" "}
                   {new Date(tx.created_at).toLocaleTimeString()}
                 </p>
               </div>

@@ -221,7 +221,7 @@ export function TokenDetail({ data }: { data: ItemsData }) {
             <div key={tier.key} className="fi-tier" data-tier={tier.key} data-none={rounds === 0}>
               <span className="fh-mono">
                 <i aria-hidden />
-                {tier.name} · {tier.cost}
+                {tier.name} / {tier.cost}
               </span>
               <b>×{rounds}</b>
               <small>{rounds === 1 ? "round" : "rounds"}</small>
@@ -379,7 +379,7 @@ export function ActivityList({
               <span className="fi-hist-text">
                 <b>{fillZones(e.title, names)}</b>
                 <small>
-                  {fillZones(e.detail, names)} · {e.time}
+                  {fillZones(e.detail, names)} / {e.time}
                 </small>
               </span>
               <span className="fi-hist-amt fh-mono" data-sign={e.amount > 0 ? "up" : e.amount < 0 ? "down" : "zero"}>

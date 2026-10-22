@@ -254,7 +254,7 @@ export function MapInfoCard({
         {checkError ??
           checkNotice ??
           (check.live
-            ? `GPS ±${Math.round(check.live.acc)} m · ${check.goodFixes} good fixes`
+            ? `GPS ±${Math.round(check.live.acc)} m / ${check.goodFixes} good fixes`
             : "Finding your location…")}
       </div>
     </div>
@@ -321,16 +321,16 @@ export function MapInfoCard({
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
           <div className="truncate font-semibold">
-            {activeSelected.code} · {activeSelected.name}
+            {activeSelected.code} / {activeSelected.name}
           </div>
           <div className="truncate text-xs text-ink-faint">
             {activeSelected.area}
             {activeSelected.purpose
-              ? ` · ${activeSelected.purpose}`
+              ? ` / ${activeSelected.purpose}`
               : ""}
           </div>
           <div className="truncate text-xs font-semibold" style={{ color: stationDotColor(activeSelected.status) }}>
-            {stationStatusText(activeSelected.status)} · {whoIsHere(data, activeSelected)}
+            {stationStatusText(activeSelected.status)} / {whoIsHere(data, activeSelected)}
           </div>
         </div>
         <button
@@ -405,7 +405,7 @@ export function CampusMapPanels({
             <span className="block truncate font-semibold">{station.name}</span>
             <span className="block truncate text-xs text-ink-faint">
               {station.area}
-              {station.purpose ? ` · ${station.purpose}` : ""}
+              {station.purpose ? ` / ${station.purpose}` : ""}
             </span>
           </span>
         </div>
@@ -477,6 +477,13 @@ export function CampusMapPanels({
   );
   return (
     <>
+      {data.staffPositions.length > 0 && <section className="card mt-3 p-3" aria-label="Staff sharing location">
+        <h2 className="font-semibold">Staff on the map</h2>
+        <ul className="mt-2 space-y-2">{data.staffPositions.map((person) => <li key={person.user_id}>
+          <span className="text-sm font-semibold">{person.role.toUpperCase()} / {person.full_name || "Staff"}</span>
+          <span className="block text-xs text-ink-faint">Updated {new Date(person.updated_at).toLocaleTimeString()} / {person.accuracy_m == null ? "accuracy unknown" : `±${Math.round(person.accuracy_m)} m`}</span>
+        </li>)}</ul>
+      </section>}
       {canManageStations && (
         <StationEditDialog
           station={data.editing}
@@ -487,6 +494,7 @@ export function CampusMapPanels({
 
       {canManageStations && layer === "stations" && openBuilding && (
         <BuildingStationPanel
+          day={data.day}
           area={openBuilding}
           stations={mapStations.filter((station) => station.area === openBuilding)}
           codes={stations.map((station) => station.code)}
@@ -497,7 +505,7 @@ export function CampusMapPanels({
 
       {view === "2d" && layer === "bulbs" && bulbList}
 
-      {layer === "stations" && !(hasSelection ?? !!activeSelected) && !openBuilding &&
+      {layer === "stations" && (!(hasSelection ?? !!activeSelected) || (!!clusterArea && !activeSelected && !onStationTap)) && !openBuilding &&
         (clusterArea ? (
           <div className="card mt-3 overflow-hidden p-0">
             <div className="flex items-center justify-between gap-3 border-b border-paper-200 px-3 py-2">
@@ -579,7 +587,7 @@ export function CampusMapPanels({
               </div>
               <p className="truncate text-xs text-ink-faint">
                 {activeSelected.area}
-                {activeSelected.purpose ? ` · ${activeSelected.purpose}` : ""}
+                {activeSelected.purpose ? ` / ${activeSelected.purpose}` : ""}
               </p>
               <p className="truncate text-xs font-semibold text-ink-soft">{whoIsHere(data, activeSelected)}</p>
             </div>
@@ -607,7 +615,7 @@ export function CampusMapPanels({
               selectedPosition.checkin_station_code &&
               selectedPosition.checkin_at && (
                 <div className="text-xs text-ink-faint">
-                  Checked in at {selectedPosition.checkin_station_code} ·{" "}
+                  Checked in at {selectedPosition.checkin_station_code} /{" "}
                   {timeAgo(selectedPosition.checkin_at, nowMs)}
                 </div>
               )}
@@ -616,7 +624,7 @@ export function CampusMapPanels({
                 Last GPS{" "}
                 {selectedPosition.gps_accuracy_m != null &&
                   `±${Math.round(selectedPosition.gps_accuracy_m)} m `}
-                · {timeAgo(selectedPosition.gps_at, nowMs)}
+                / {timeAgo(selectedPosition.gps_at, nowMs)}
               </div>
             )}
             <div className="text-xs text-ink-faint">

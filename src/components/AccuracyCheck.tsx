@@ -149,7 +149,7 @@ function CheckLog({ log, nowMs, onClear }: { log: CheckReading[]; nowMs: number;
       <ul className="divide-y divide-paper-200">
         {log.slice(0, 5).map((r) => (
           <li key={r.t} className="py-1 text-xs text-ink-faint">
-            GPS {readingText(r)} of the tap · ±{Math.round(r.acc)} m · {r.fixes} fixes ·{" "}
+            GPS {readingText(r)} of the tap / ±{Math.round(r.acc)} m / {r.fixes} fixes /{" "}
             {timeAgo(new Date(r.t).toISOString(), nowMs)}
           </li>
         ))}
@@ -334,7 +334,7 @@ export function AccuracyCheckPanel({
           className={`inline-block h-2 w-2 shrink-0 rounded-full ${ready ? "bg-green-500" : "bg-amber-500"}`}
         />
         {live
-          ? `GPS ±${Math.round(live.acc)} m · ${goodFixes} good fix${goodFixes === 1 ? "" : "es"} (need ${MIN_FIXES} at ±${CHECK_MAX_ACCURACY_M} m or better)`
+          ? `GPS ±${Math.round(live.acc)} m / ${goodFixes} good fix${goodFixes === 1 ? "" : "es"} (need ${MIN_FIXES} at ±${CHECK_MAX_ACCURACY_M} m or better)`
           : "Finding your location…"}
       </p>
       {error && <p className="text-xs text-red-600">{error}</p>}
@@ -351,7 +351,7 @@ export function AccuracyCheckPanel({
                 <span className="min-w-0 flex-1 truncate">
                   {a.lat.toFixed(6)}, {a.lng.toFixed(6)} → ({Number(a.x).toFixed(1)}%,{" "}
                   {Number(a.y).toFixed(1)}%)
-                  {a.accuracy_m != null ? ` · ±${Math.round(a.accuracy_m)} m` : ""} ·{" "}
+                  {a.accuracy_m != null ? ` / ±${Math.round(a.accuracy_m)} m` : ""} /{" "}
                   {timeAgo(a.created_at, nowMs)}
                 </span>
                 <button
