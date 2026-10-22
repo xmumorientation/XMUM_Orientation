@@ -23,6 +23,7 @@ Last updated: 2026-10-22
 | Zichien | Everything on the map: Figma design, game station status, and so on | [5](#5-map-ready) |
 | _To assign_ | Backend for Faci profiles (the UI is built) | [7](#7-faci-profiles-backend-ready) |
 | _To assign_ | Take GM out of the database's blind box holders | [8](#8-gm-blind-boxes-bring-the-database-in-line-with-the-app-later) |
+| Ben | Tennis game on the 3D map's tennis courts | [9](#9-3d-map-a-tennis-game-on-the-tennis-courts-later) |
 
 Items 3, 7 and 8 have no owner yet.
 
@@ -236,11 +237,73 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 2. Decide what to do with station pools: reject the station modes in the assign function, or leave them if a station seller comes back later.
 3. Before applying, check the live database for boxes already held by GMs or stations (on 2026-10-20 there were none) and revoke them first.
 
+## 9. 3D map: a tennis game on the tennis courts (Later)
+
+**Owner:** Ben. T1a is built (2026-10-22, see "Done"); the rest is not. Ben is not sure his Claude usage covers it, so it is split into small batches that each fit one conversation.
+
+**Goal:** the 3D map is more fun. Two people play tennis against each other on the map's tennis courts, and everyone who opens the map sees the match being played.
+
+**Decisions (Ben, 2026-10-22):**
+- **No GPS.** Anyone who taps Play on the tennis court joins a queue and is paired with the next person to tap. Nobody has to be at the court.
+- **At most 3 matches at once, one per court.** Everyone else waits in the queue.
+- **Everyone with the map open sees the matches**: two players and the ball on the court.
+- **A mini game, just for fun.** No tokens or rewards.
+- **Everyone signed in can play.**
+- **Plain points, short matches:** the first to 5 points wins, with no tennis scoring (15–30–40) and no deuce. The winner's and loser's screens then ask "Rematch?"; if both say yes, a new match starts on the same court.
+- The Supabase project will move to **Pro**.
+
+**Design (proposed; change it here if Ben decides otherwise):**
+- **Where:** the three courts of the tennis block (`SPORTS` in [geo.ts](../src/components/map3d/geo.ts), laid out by [courts.ts](../src/components/map3d/courts.ts), drawn in [sports.tsx](../src/components/map3d/sports.tsx); the net is `Equipment`). The players are low-poly figures (`tennis/player.ts`) in the player's group colour.
+- **The view (Ben, 2026-10-22: like a TV broadcast, with clear court lines):** from behind the near baseline, as `courtView()` in `tennis/court.ts` works it out for the screen's shape. Wide screens get a low camera and a long lens (18°). An upright phone's camera is higher (45°), so its narrow screen holds the court's width. Up close the courts are drawn crisp (`tennis/surface.tsx`), and the fence side between the camera and the court is hidden (`useFenceCutaway` in `sports.tsx`).
+- **Controls:** drag left and right to move along the baseline; tap to swing. Swinging early hits cross-court and late hits down the line. Tap to serve.
+- **Who is who:** Freshies share one login per group, so a player is a random ID per phone, not the account. A player's tag shows their group's name. Read group names and colours with `fn_scoreboard()`, which every role may call (a GM cannot select `groups`).
+- **Sync, with no new tables:**
+  - Supabase Realtime **Presence** holds the queue and which courts are busy, with the score.
+  - One Realtime **Broadcast** channel per court carries the match:
+    - one message per shot (time, direction, speed); both phones work out the same ball path from it;
+    - each player's position, about 8 times a second.
+  - The phone receiving the ball judges hit or miss and broadcasts the result, so a player's own swing never lags.
+  - A player who drops out: the match pauses for 10 s, then the other player wins.
+- **Spectators:**
+  - With the camera far away, a busy court shows two figures playing a looping rally drawn on the phone, with the real names and score from Presence. This costs no traffic.
+  - With the camera close to the courts, the phone joins that court's channel and replays the real shots.
+  - The figures move only while the courts are on screen. The map draws on demand, so ask for frames the way `usePowerRamp` does.
+- **Phones:** check lite mode on a phone size. The map draws every frame during a match.
+- **Limits:** Realtime counts each message delivered to each phone, and the Supabase plan caps messages per second (Free about 100, Pro about 500; check the project's plan). The two-layer spectator view above keeps traffic low however many people have the map open.
+
+**Testing:** the Supabase project in `.env.local` is the live one. Batches T1 to T2a send no messages to it: the game talks over the browser's `BroadcastChannel` between two tabs on the one dev server (:3000). T2b sends Realtime messages to the live project. It writes nothing to the database, but it needs Ben's OK first.
+
+**Batches** (each in a new conversation; show Ben the results and wait for his go before the next):
+
+| Batch | Work | Size |
+|---|---|---|
+| T1a | **Done.** Players on the courts: the figures, the swing, a looping rally on all three courts, the broadcast view with crisp courts (`/map3d?tennis=demo`). No game yet. | Small |
+| T1b | The game on one phone against a bot: ball flight with bounce and net, hit or miss, scoring, touch controls. | Medium |
+| T2a | Two players over `BroadcastChannel` (two tabs): queue, pairing, the 3 courts, shot messages, score, drop-outs. Keep the transport behind one interface so T2b only swaps it. | Medium |
+| T2b | The Supabase Realtime transport (Presence and Broadcast). | Small |
+| T3a | Spectators: the looping rally from afar (`tennis/rally.ts`, built in T1a), the real shots up close. The players are too small to see from the map's usual distance, so a busy court also needs a tag over it (names and score, like the lake stage's "● LIVE"). | Medium |
+| T3b | In the real map pages: tap the tennis court, then Play; an Admin on/off switch; end-of-match card; phone check. | Small |
+
+**Later (polish):** the far fence fills the top of the broadcast view with big diamonds (its mesh is sized for map distances); a finer mesh up close, or a backdrop like a stadium wall, would look more like TV. Each player is 5 meshes, so draw only the busy courts' players (the demo draws all three courts: about 43 draw calls).
+
+
 ---
 
 ---
 
 ## Done
+
+### Tennis game T1a: players, the swing and the broadcast view, 2026-10-22 (Ben)
+Roadmap item 9, batch T1a. See it at `/map3d?tennis=demo` (desktop and a phone size). No game and no network yet.
+- `src/components/map3d/tennis/`:
+  - `player.ts`: the low-poly player (5 meshes, one vertex-coloured material; shirt in the group colour) with a racket. `posePlayer()` sets the joints; `swingPose()` gives the forehand and backhand keyframes; `racketAtContact()` works out where the racket meets the ball.
+  - `rally.ts`: a looping rally, a pure function of time and a seed, so later every phone can draw the same moment. The ball clears the net, bounces in and meets the racket at each contact (`tests/tennis/rally.test.ts`).
+  - `court.ts`: the three tennis courts, each court's own frame in metres (`courtFrame`), and `courtView()`, the broadcast view for the screen's shape.
+  - `surface.tsx`: the crisp courts (paving, courts and 7–10 cm lines) over the ground's painted ones; it fades out between 25 and 45 units from the camera, where the painted courts take over.
+  - `TennisDemo.tsx`: the demo (sample shirt colours, soft round shadows, the long lens while it shows).
+- `courts.ts` (new): the court sizes, their height `LIFT` and `courtCells()` moved out of `sports.tsx`, so tests can import them without JSX.
+- `sports.tsx`: a fence side between the camera and its target is hidden when the camera is within 15 units of it and lower than 12 units (`useFenceCutaway`).
+- `CampusMap3D.tsx`: `?tennis=demo` starts at the middle court's broadcast view with names off. With `?cam`, it keeps the map's own lens.
 
 ### Migrations to run on Supabase for the 2026-10-22 work (Jiamin)
 Numbered after main's `0093`-`0098` (renamed from 0097 / 0098 when merging main, whose projector migrations took those numbers). Run both **before** deploying the frontend: Admin → Blind boxes calls the new `fn_bb_assign` (no station arguments) and `fn_bb_spot_save`.
