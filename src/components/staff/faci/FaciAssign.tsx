@@ -7,29 +7,21 @@ import { groupSwatch } from "@/components/freshie/groupTheme";
 import { GroupBadge } from "@/components/GroupBadge";
 import "@/components/staff/game/game-control.css";
 import { Sheet, StatusLine, useStatus } from "@/components/staff/game/parts";
-import { Card } from "@/components/ui";
-import { clock } from "@/lib/faciLocation";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import type { Group } from "@/lib/types";
 import { cn, friendlyError } from "@/lib/utils";
 
-// Ops → Facilitators (HOF and Admin): which Facilitators belong to each group.
+import { GroupLog } from "./GroupLog";
+
+// Ops → Faci & Status (HOF and Admin): which Facilitators belong to each group.
 // One row per group with its Facilitators; Edit opens a picker (search, picked
 // first, a Faci already in another group says so and moves when saved), saved
 // with fn_admin_set_group_facis (HOF + Admin, `is_faci_lead()`, migration
-// 0080). The clock icon shows the group's recent Faci-related changes. The
-// group's headcount, location, name, slogan and password are the other Ops tabs.
+// 0080). The clock icon opens the group's Recent changes (GroupLog): every
+// logged change to the group or by its people, the game included. The group's
+// headcount, location, name, slogan and password are the other Ops tabs.
 
 type Faci = { id: string; full_name: string | null; group_id: number | null };
-type Change = { id: number; actor: string | null; action: string; detail: Record<string, unknown>; created_at: string };
-
-// Faci-related changes recorded against a group (target "group:<id>").
-const CHANGE_LABELS: Record<string, string> = {
-  "group.faci_set": "Facilitators changed",
-  "headcount.set": "Headcount saved",
-  "headcount.clear": "Headcount cleared",
-  "faci_location.edit": "Location corrected",
-};
 
 const faciName = (f: Faci | undefined) => f?.full_name || "Unnamed";
 
@@ -73,7 +65,6 @@ export function FaciAssign() {
     };
   }, [supabase, load]);
 
-  const byId = useMemo(() => Object.fromEntries(facis.map((f) => [f.id, f])), [facis]);
   const facisOf = (groupId: number) => facis.filter((f) => f.group_id === groupId);
   const groupLabel = (id: number | null) => groups.find((g) => g.id === id)?.name ?? `Group ${id}`;
   const assigned = facis.filter((f) => f.group_id != null).length;
@@ -97,48 +88,46 @@ export function FaciAssign() {
 
   return (
     <>
-      <p className="mb-2 text-sm text-ink-faint">
+      <p className="gc-muted">
         {assigned} of {facis.length} Facilitators are in a group.
       </p>
       <StatusLine error={error} notice={notice} />
-      <Card className="divide-y divide-paper-200 p-0">
+      <ul className="gc-card gc-ops-rows">
         {groups.map((g) => {
           const own = facisOf(g.id);
           return (
-            <div key={g.id} className="flex items-center gap-3 px-4 py-3">
+            <li key={g.id} className="gc-ops-row">
               <GroupBadge id={g.id} color={groupSwatch(g.id, g.color)} />
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium">{g.display_name?.trim() || g.name}</p>
-                <p className="text-sm text-ink-faint">
-                  {own.length ? own.map((f) => faciName(f)).join(", ") : "No Facilitator yet"}
-                </p>
+              <div className="gc-ops-body">
+                <p className="gc-ops-name">{g.display_name?.trim() || g.name}</p>
+                <p className="gc-ops-sub">{own.length ? own.map((f) => faciName(f)).join(", ") : "No Facilitator yet"}</p>
               </div>
               <button
                 type="button"
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-ink-faint hover:text-ink"
+                className="gc-icon"
                 aria-label={`${g.name} recent changes`}
                 title="Recent changes"
                 onClick={() => setHistoryOf(g)}
               >
                 <History size={17} aria-hidden />
               </button>
-              <button
-                type="button"
-                className="btn-secondary min-h-[40px] shrink-0 px-3 text-xs"
-                aria-label={`Edit ${g.name}'s Facilitators`}
-                onClick={() => openFacis(g)}
-              >
+              <button type="button" className="gc-btn gc-ops-edit" aria-label={`Edit ${g.name}'s Facilitators`} onClick={() => openFacis(g)}>
                 <Pencil size={14} aria-hidden />
-                Edit
+                <span>Edit</span>
               </button>
-            </div>
+            </li>
           );
         })}
-        {groups.length === 0 && <p className="px-4 py-3 text-sm text-ink-faint">No groups yet.</p>}
-      </Card>
+        {groups.length === 0 && <li className="gc-empty">No groups yet.</li>}
+      </ul>
 
-      <Sheet open={historyOf !== null} onClose={() => setHistoryOf(null)} title={historyOf ? `Recent changes · ${historyOf.name}` : "Recent changes"}>
-        {historyOf && <GroupChanges groupId={historyOf.id} names={byId} />}
+      <Sheet
+        open={historyOf !== null}
+        onClose={() => setHistoryOf(null)}
+        title={historyOf ? `Recent changes · ${historyOf.display_name?.trim() || historyOf.name}` : "Recent changes"}
+        wide
+      >
+        {historyOf && <GroupLog groupId={historyOf.id} />}
       </Sheet>
 
       <Sheet open={editing !== null} onClose={() => setEditing(null)} title={editing ? `Facilitators · ${editing.name}` : "Facilitators"}>
@@ -187,64 +176,5 @@ export function FaciAssign() {
         )}
       </Sheet>
     </>
-  );
-}
-
-/** The group's recent Faci-related changes from the audit log, loaded when the sheet opens. */
-function GroupChanges({ groupId, names }: { groupId: number; names: Record<string, Faci> }) {
-  const supabase = useMemo(() => supabaseBrowser(), []);
-  const [rows, setRows] = useState<Change[] | null>(null);
-  const [actors, setActors] = useState<Record<string, string>>({});
-
-  useEffect(() => {
-    let active = true;
-    (async () => {
-      const { data } = await supabase
-        .from("audit_log")
-        .select("id, actor, action, detail, created_at")
-        .eq("target", `group:${groupId}`)
-        .in("action", Object.keys(CHANGE_LABELS))
-        .order("created_at", { ascending: false })
-        .limit(8);
-      const list = (data as Change[]) ?? [];
-      const ids = [...new Set(list.map((r) => r.actor).filter((a): a is string => !!a))];
-      const { data: people } = ids.length
-        ? await supabase.from("profiles").select("id, full_name").in("id", ids)
-        : { data: [] };
-      if (!active) return;
-      setActors(Object.fromEntries(((people as { id: string; full_name: string | null }[]) ?? []).map((p) => [p.id, p.full_name || "Someone"])));
-      setRows(list);
-    })();
-    return () => {
-      active = false;
-    };
-  }, [supabase, groupId]);
-
-  const what = (r: Change) => {
-    if (r.action === "group.faci_set" && Array.isArray(r.detail.user_ids)) {
-      const ids = r.detail.user_ids as string[];
-      return ids.length ? ids.map((id) => faciName(names[id])).join(", ") : "none";
-    }
-    if (r.action === "headcount.set") {
-      const after = r.detail.after as { total?: number } | undefined;
-      return after?.total != null ? `${after.total} people` : "";
-    }
-    return "";
-  };
-
-  if (rows === null) return <p className="gc-muted">Loading…</p>;
-  if (rows.length === 0) return <p className="gc-muted">No changes yet.</p>;
-  return (
-    <ul className="gc-hist">
-      {rows.map((r) => (
-        <li key={r.id}>
-          <span>
-            {CHANGE_LABELS[r.action] ?? r.action}
-            {what(r) && <em> · {what(r)}</em>}
-          </span>
-          <small>{(r.actor && actors[r.actor]) || "System"} · {clock(r.created_at)}</small>
-        </li>
-      ))}
-    </ul>
   );
 }

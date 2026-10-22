@@ -29,16 +29,21 @@ export function StatusLine({ error, notice }: { error: string | null; notice: st
   return null;
 }
 
-/** Bottom sheet in the Game control colours (rendered in a portal, so it carries its own). */
+/**
+ * Bottom sheet in the Game control colours (rendered in a portal, so it
+ * carries its own). `wide`: most of the screen, centred from 1024px, for a table.
+ */
 export function Sheet({
   open,
   onClose,
   title,
+  wide = false,
   children,
 }: {
   open: boolean;
   onClose: () => void;
   title: string;
+  wide?: boolean;
   children: React.ReactNode;
 }) {
   return (
@@ -46,7 +51,7 @@ export function Sheet({
       <DialogContent
         layout="sheetBottom"
         title={title}
-        className={cn("gc-sheet", vxDisplay.variable, vxSlab.variable)}
+        className={cn("gc-sheet", wide && "gc-sheet-wide", vxDisplay.variable, vxSlab.variable)}
         overlayClassName="gc-scrim"
       >
         {children}

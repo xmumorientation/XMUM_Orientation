@@ -1,16 +1,16 @@
 "use client";
 
+import { IdCard, MapPin, UserCheck, Users } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { GroupBadge } from "@/components/GroupBadge";
 import { useProfile } from "@/components/ProfileProvider";
 import { FaciAssign } from "@/components/staff/faci/FaciAssign";
 import { GameControl } from "@/components/staff/game/GameControl";
-import { Card, PageTitle } from "@/components/ui";
-import { clock, describeLocation, type FaciLocation } from "@/lib/faciLocation";
+import { OpsShell, type OpsSection } from "@/components/staff/game/OpsShell";
+import { clock, describeLocation, roomOf, type FaciLocation } from "@/lib/faciLocation";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import type { Group } from "@/lib/types";
-import { cn } from "@/lib/utils";
 
 type OpsView = "headcount" | "location" | "freshies" | "facis";
 
@@ -30,9 +30,10 @@ export default function CommitteePage() {
 }
 
 // HOF, Committee and Admin: one row per group (its number on its colour) in
-// three read-only, live tabs; Admin edits them in Admin → Freshies. HOF and
-// Admin also get a fourth tab, Facilitators, to choose each group's
-// Facilitators (FaciAssign; fn_admin_set_group_facis allows only them).
+// three read-only, live sections, in the same frame as HOGM's Game control
+// (OpsShell); Admin edits them in Admin → Freshies. HOF and Admin also get a
+// fourth, Faci & Status, to choose each group's Facilitators and see its
+// Recent changes (FaciAssign; fn_admin_set_group_facis allows only them).
 //   Headcount  Local / International / Total, as Facilitators report it
 //   Location   the group's latest manual location update
 //   Freshies   the group's name, slogan and 4-digit password (migration 0092)
@@ -100,132 +101,98 @@ function OpsOverview({ canAssignFacis }: { canAssignFacis: boolean }) {
     };
   }, [supabase]);
 
-  const tabs: { key: OpsView; label: string; desc: string }[] = [
-    { key: "headcount", label: "Headcount", desc: "People per group" },
-    { key: "location", label: "Location", desc: "Where each group is" },
-    { key: "freshies", label: "Freshies", desc: "Name, slogan, password" },
-    ...(canAssignFacis ? [{ key: "facis" as const, label: "Facilitators", desc: "Who is in each group" }] : []),
+  const sections: OpsSection<OpsView>[] = [
+    { key: "headcount", label: "Headcount", Icon: Users },
+    { key: "location", label: "Location", Icon: MapPin },
+    { key: "freshies", label: "Freshies", Icon: IdCard },
+    ...(canAssignFacis ? [{ key: "facis" as const, label: "Faci & Status", Icon: UserCheck }] : []),
   ];
 
   const name = (g: Group) => g.display_name?.trim() || g.name;
+  const n = (v: number | null | undefined) => (v == null ? "—" : v);
 
   return (
-    <div className="space-y-4">
-      <PageTitle title="Operations" subtitle="Live situational awareness" />
-
-      <div
-        className={cn(
-          "grid gap-2 rounded-[1.5rem] bg-paper-200 p-1.5",
-          tabs.length === 4 ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-3"
-        )}
-      >
-        {tabs.map((tab) => (
-          <button
-            key={tab.key}
-            type="button"
-            aria-pressed={view === tab.key}
-            onClick={() => setView(tab.key)}
-            className={cn(
-              "min-h-[64px] rounded-[1.15rem] px-3 text-left transition",
-              view === tab.key ? "bg-white text-ink shadow-card" : "text-ink-faint hover:bg-white/50"
-            )}
-          >
-            <span className="block text-sm font-black">{tab.label}</span>
-            <span className="mt-1 block text-xs leading-4">{tab.desc}</span>
-          </button>
-        ))}
-      </div>
-
-
+    <OpsShell name="Overview" sections={sections} current={view} onPick={setView}>
       {view === "headcount" && (
-        <section>
-          <h2 className="mb-2 font-semibold">Headcount</h2>
-          <Card className="divide-y divide-paper-200 p-0">
-            <div className="grid grid-cols-[1fr_repeat(3,3.25rem)] items-center gap-2 px-4 py-2 text-[11px] font-bold uppercase tracking-wider text-ink-faint">
-              <span>Group</span>
-              <span className="text-right">Local</span>
-              <span className="text-right">Intl</span>
-              <span className="text-right">Total</span>
-            </div>
+        <div className="gc-card">
+          <div className="gc-ops-hc gc-ops-head">
+            <span>Group</span>
+            <span>Local</span>
+            <span>Intl</span>
+            <span>Total</span>
+          </div>
+          <ul className="gc-ops-rows">
             {groups.map((g) => {
               const h = headcounts[g.id];
-              const n = (v: number | null | undefined) => (v == null ? "—" : v);
               return (
-                <div key={g.id} className="grid grid-cols-[1fr_repeat(3,3.25rem)] items-center gap-2 px-4 py-3">
-                  <span className="flex min-w-0 items-center gap-3">
+                <li key={g.id} className="gc-ops-hc">
+                  <span className="gc-ops-group">
                     <GroupBadge id={g.id} color={g.color} />
-                    <span className="truncate text-sm font-medium" title={name(g)}>
+                    <span className="gc-ops-name" title={name(g)}>
                       {name(g)}
                     </span>
                   </span>
-                  <span className="text-right text-sm tabular-nums">{n(h?.local_count)}</span>
-                  <span className="text-right text-sm tabular-nums">{n(h?.international_count)}</span>
-                  <span className="text-right text-sm font-bold tabular-nums text-ink">{n(h?.headcount)}</span>
-                </div>
+                  <span className="gc-ops-num">{n(h?.local_count)}</span>
+                  <span className="gc-ops-num">{n(h?.international_count)}</span>
+                  <span className="gc-ops-num gc-ops-total">{n(h?.headcount)}</span>
+                </li>
               );
             })}
-          </Card>
-        </section>
+          </ul>
+        </div>
       )}
 
       {view === "location" && (
-        <section>
-          <h2 className="mb-2 font-semibold">Location</h2>
-          <Card className="divide-y divide-paper-200 p-0">
-            {groups.map((g) => {
-              const l = locations[g.id];
-              return (
-                <div key={g.id} className="flex items-start gap-3 px-4 py-3">
-                  <GroupBadge id={g.id} color={g.color} />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">{name(g)}</p>
-                    {l ? (
-                      <>
-                        <p className="text-sm font-bold text-ink">{describeLocation(l)}</p>
-                        {l.details && <p className="text-sm text-ink-faint">{l.details}</p>}
-                        <p className="mt-0.5 text-xs text-ink-faint">
-                          {senders[l.user_id] ?? "Facilitator"} · {clock(l.created_at)}
-                          {l.edited_at ? " · edited by Admin" : ""}
-                        </p>
-                      </>
-                    ) : (
-                      <p className="text-sm text-ink-faint">No update yet</p>
-                    )}
-                  </div>
+        <ul className="gc-card gc-ops-rows">
+          {groups.map((g) => {
+            const l = locations[g.id];
+            const room = l ? roomOf(l.details) : null;
+            return (
+              <li key={g.id} className="gc-ops-row gc-ops-top">
+                <GroupBadge id={g.id} color={g.color} />
+                <div className="gc-ops-body">
+                  <p className="gc-ops-name">{name(g)}</p>
+                  {l ? (
+                    <>
+                      <p className="gc-ops-main">
+                        {describeLocation(l)}
+                        {room && `-${room}`}
+                      </p>
+                      {l.details && !room && <p className="gc-ops-sub">{l.details}</p>}
+                      <p className="gc-ops-meta">
+                        {senders[l.user_id] ?? "Facilitator"} · {clock(l.created_at)}
+                        {l.edited_at ? " · edited by Admin" : ""}
+                      </p>
+                    </>
+                  ) : (
+                    <p className="gc-ops-sub">No update yet</p>
+                  )}
                 </div>
-              );
-            })}
-          </Card>
-        </section>
-      )}
-
-      {view === "facis" && canAssignFacis && (
-        <section>
-          <h2 className="mb-2 font-semibold">Facilitators</h2>
-          <FaciAssign />
-        </section>
+              </li>
+            );
+          })}
+        </ul>
       )}
 
       {view === "freshies" && (
-        <section>
-          <h2 className="mb-2 font-semibold">Freshies</h2>
-          <Card className="divide-y divide-paper-200 p-0">
-            {groups.map((g) => (
-              <div key={g.id} className="flex items-center gap-3 px-4 py-3">
-                <GroupBadge id={g.id} color={g.color} />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">{name(g)}</p>
-                  <p className="text-sm text-ink-faint">{g.slogan?.trim() || "No slogan yet"}</p>
-                </div>
-                <div className="shrink-0 text-right">
-                  <span className="block text-[11px] font-bold uppercase tracking-wider text-ink-faint">Password</span>
-                  <span className="font-mono text-base font-black tabular-nums text-ink">{codes[g.id] ?? "—"}</span>
-                </div>
+        <ul className="gc-card gc-ops-rows">
+          {groups.map((g) => (
+            <li key={g.id} className="gc-ops-row">
+              <GroupBadge id={g.id} color={g.color} />
+              <div className="gc-ops-body">
+                <p className="gc-ops-name">{name(g)}</p>
+                <p className="gc-ops-sub">{g.slogan?.trim() || "No slogan yet"}</p>
               </div>
-            ))}
-          </Card>
-        </section>
+              <div className="gc-ops-code">
+                <small>Password</small>
+                <b>{codes[g.id] ?? "—"}</b>
+              </div>
+            </li>
+          ))}
+        </ul>
       )}
-    </div>
+
+      {view === "facis" && canAssignFacis && <FaciAssign />}
+    </OpsShell>
   );
 }
