@@ -17,6 +17,7 @@ import type {
 } from "@/lib/types";
 import { MAP_BUILDINGS, stationPosition } from "@/lib/mapBuildings";
 import { resolveGroupPin, type GroupPin } from "@/lib/groupPosition";
+import { COMMITTEE_TIER } from "@/lib/types";
 import { loadProjectorClues, NO_CLUES, type MapPlaces, type ProjectorClues } from "@/lib/projectorPlaces";
 import { friendlyError } from "@/lib/utils";
 import { gpsToMapPercent, setExtraAnchors } from "@/lib/mapGeo";
@@ -165,6 +166,8 @@ export function useCampusMapData({
   const profile = useProfile();
   const myId = profile.id;
   const myGroupId = profile.group_id;
+  // The station lists name the groups at a station for Committee tier; everyone else gets a count (Ben).
+  const staffView = COMMITTEE_TIER.includes(profile.role);
   const [stations, setStations] = useState<Station[]>([]);
   const [layerState, setLayerState] = useState<MapLayer>("stations");
   const layer: MapLayer = bulbLayer ? layerState : "stations";
@@ -577,6 +580,7 @@ export function useCampusMapData({
     clusteredIds,
     stationSpots,
     counts,
+    staffView,
     activeSelected,
     setSelected,
     openBuilding,

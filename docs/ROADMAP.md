@@ -150,7 +150,7 @@ The design branches are merged. These remote branches are still not in `main` (c
 **Scope:**
 - Build the map to match the Figma design.
 - Game station status on the map (for example open, busy, closed).
-- Group locations on the map: Committee and above see all groups; Faci and Freshie see only their own (0094 reverses 0089, which had opened every group to them).
+- Group locations on the map: every role sees every group (0101, Ben, 2026-10-22; replaces 0094, which had limited Faci and Freshie to their own group).
 - Anything else on the map page.
 
 **Figma:** [XMUM campus map](https://www.figma.com/design/3dcEv45KenmKcoTcbaZmQ0/Untitled?node-id=24-2) (frame `XMUM Block Cube_XMUM Map 1`).
@@ -247,6 +247,22 @@ Numbered after main's `0093`-`0098` (renamed from 0097 / 0098 when merging main,
 - `0099_group_password_refresh.sql`: `fn_end_user_sessions` (service role only).
 - `0100_blindbox_spot_no_stations.sql`: the Spot box, no station boxes, Restore only. Deletes unsold station boxes and switches sold ones off. Safe to run again.
 - Env: `/api/group-join` signs group QRs with `NFC_TOKEN_SECRET` (already set for blind boxes and NFC). Changing that secret changes every group QR.
+
+### Everyone sees every group on the map (0101), 2026-10-22
+Migration `0101_group_positions_everyone.sql` (**needs running; run it instead of 0094, and never run 0094 after it**). Ben: the group locations are open to everyone in the app, GMs included.
+- `fn_group_positions()` returns every group to every signed-in account (Freshie, Faci, GM, Guardian GM, Committee tier). `fn_group_faci_status()` the same: a group's Facis' names and last report; phone numbers stay Committee tier only. This is 0089's rule plus GMs, and replaces 0094 (own group only for Freshie and Faci, nothing for GMs).
+- `/map` asks for group pins for GMs too (`showPins`), so every role gets the pins, "Not seen for 10+ min" and "Groups on the map".
+- The station lists still name the groups only for Committee tier; Freshie, Faci and GM see "1 group here" (`whoIsHere`).
+- **Live database, checked 2026-10-22 (read only):** 0094 has not run there; `freshie.test` and `faci.test` already get all 10 groups (0089), `gm.test` none. After 0101, GMs get all 10 too.
+- Not checked: 0101 against a database (no local Postgres here); its bodies are 0094's and 0082's with the visibility condition changed.
+
+### A Day 2 game shows on the maps: Busy and which group, 2026-10-22
+No migration. Ben's flow: the GM picks the group and the funfair places, starts the game, the station turns Busy; Freshies and Facis see it busy with a group there, Committee tier sees which group.
+- GM Station page (`gm/page.tsx`): Start game also checks the group in at the station (`fn_manual_checkin` with `p_group_id`; a GM may at their own station, 0095); Submit or Cancel also checks it out (`fn_uncheckin`). Only the maps read it, so a failure shows a note and the game goes on. Before, the playing group lived only in the GM's browser until Submit.
+- Map, every role: two lists under the map (Ben), **In progress** first (short) and then **Available stations**; Closed stations are in neither (a building's own list, from its badge, still shows all of its stations). Each row says who is there: Committee tier (HOF, HOGM, Committee, Admin; `staffView` in `useCampusMapData`) gets the groups by name (from `fn_group_positions`' `checkin_station_id`); Freshie, Faci and GM get "1 group here" or "Your group is here" on an In progress station and the count on an Available one. A tapped station shows its status and the same line.
+- Day 1 is untouched: the map shows Day 2 stations only and a Day 1 station has no game to start.
+- Checked live: Ben started a Day 2 game as `gm.test` (A1-2, Group 1, 11:54); the audit log has the status change and the check-in, and in headless Chrome (read only) the In progress list shows "A1-2 · Group 1" to `hof.test` and "A1-2 · 1 group here" to `gm.test` and `freshie.test`, with 20 Available stations below. Not yet seen: the check-out on Submit or Cancel. `tsc` (src) and `next lint` are clean.
+- Not covered: `fn_station_occupants` is open to every signed-in account, so a Freshie could call it directly and see group names (the map itself shows them only a count).
 
 ### One Ops look for HOF, Committee, Admin and HOGM, 2026-10-22
 Ben compared the two Ops pages and chose HOGM's (the Welcome page's night background, the OPS mark, mono "where you are" line, icon tabs).
@@ -346,7 +362,7 @@ Migration `0095_gm_station_checkin.sql` (**needs running**):
 - `/checkin` cleanly redirects all users to `/map`.
 
 ### Faci and Freshie see only their own group on the map, 2026-10-19
-Migration `0094_group_positions_own_group.sql` (**needs running**) reverses `0089`: `fn_group_positions()` returns every group only to Committee tier; a Faci or Freshie gets just the group on their profile, so the "Not seen for 10+ min" and "Groups on the map" lists show one group. No frontend change beyond a comment. The 2026-10-19 note under the Freshie/Faci map section saying every group is public is superseded.
+(Superseded by 0101: do not run 0094; everyone sees every group.) Migration `0094_group_positions_own_group.sql` reversed `0089`: `fn_group_positions()` returns every group only to Committee tier; a Faci or Freshie gets just the group on their profile, so the "Not seen for 10+ min" and "Groups on the map" lists show one group. No frontend change beyond a comment. The 2026-10-19 note under the Freshie/Faci map section saying every group is public is superseded.
 
 ### David, 2026-10-19 (NFC success → 3D funfair)
 - Connected ordinary activation and Guardian verification to the live v2 handover contract; preserved explicit Admin test stickers and missing-function-only legacy fallback. Guardian now reads and refreshes persisted state.
@@ -511,7 +527,7 @@ Migration `0089` (applied). Freshie's and Faci's `/map` dropped the white page a
 - CampusMap's markup is unchanged; `.fh-map` in `freshie.css` recolours its cards, lists, chips, the inline map buttons and the 2D Stations / Lightbulbs tabs. The full-screen map keeps its own look, as on the ops crew's map.
 - AppShell treats `/map` as a night page for Freshie and Faci, so the light mobile header is hidden there.
 - Admin's `/map` and Faci's `/checkin` keep the light design.
-- (Superseded by 0094: Faci and Freshie see only their own group.) Freshies and Facis see every group's location on the map (Ben: the group pins are public to them). Migration `0089_freshie_group_positions.sql` (applied on the project; Ben, 2026-10-19) lets `fn_group_positions()` return every group to a Freshie or Faci. This also applies to Faci's `/checkin` map.
+- (0094 limited this to their own group; 0101 opens it again, GMs included.) Freshies and Facis see every group's location on the map (Ben: the group pins are public to them). Migration `0089_freshie_group_positions.sql` (applied on the project; Ben, 2026-10-19) lets `fn_group_positions()` return every group to a Freshie or Faci. This also applies to Faci's `/checkin` map.
 
 ### Map: East funfair rides on their dorms' real middles, and the midway, 2026-10-17 (Ben, branch `funfair-east-layout`)
 No migration. Built on `map3d-footpaths` (the lawn round the funfair's land), so merge that first.

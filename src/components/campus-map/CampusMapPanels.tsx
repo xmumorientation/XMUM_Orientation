@@ -27,6 +27,21 @@ function stationStatusText(status: Station["status"]): string {
   return "Closed";
 }
 
+/**
+ * Who is at a station. Committee tier gets the groups' names (a GM's Day 2
+ * game checks its group in, so a busy station names the group playing);
+ * everyone else a count, and their own group by name.
+ */
+function whoIsHere(data: CampusMapData, station: Station): string {
+  const here = data.positions.filter((p) => p.checkin_station_id === station.id);
+  if (data.staffView && here.length) return here.map((p) => p.group_name).join(", ");
+  const n = data.counts[station.id] ?? 0;
+  const mine = data.myGroupId != null && here.some((p) => p.group_id === data.myGroupId);
+  if (mine) return n > 1 ? `Your group and ${n - 1} more` : "Your group is here";
+  if (n === 0) return "No group here";
+  return n === 1 ? "1 group here" : `${n} groups here`;
+}
+
 /** Stations / Lightbulbs tabs. `dark` is the full-screen look. */
 export function LayerSwitch({
   data,
@@ -314,6 +329,9 @@ export function MapInfoCard({
               ? ` · ${activeSelected.purpose}`
               : ""}
           </div>
+          <div className="truncate text-xs font-semibold" style={{ color: stationDotColor(activeSelected.status) }}>
+            {stationStatusText(activeSelected.status)} · {whoIsHere(data, activeSelected)}
+          </div>
         </div>
         <button
           type="button"
@@ -366,6 +384,63 @@ export function CampusMapPanels({
     positions,
     groupPins,
   } = data;
+  const busyStations = mapStations.filter((station) => station.status === "in_progress");
+  const openStations = mapStations.filter((station) => station.status === "available");
+
+  // One station in a list: code, name and place, who is here, status. Tapping it selects it (and opens the
+  // check-in for Admin and HOGM).
+  const stationRow = (station: Station) => (
+    <li key={station.id} className="flex items-center">
+      <button
+        type="button"
+        className="flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left transition-colors hover:bg-paper-100"
+        onClick={() => {
+          data.setSelected(station);
+          onStationTap?.(station);
+        }}
+      >
+        <div className="flex min-w-0 flex-1 items-center gap-3">
+          <span className="w-14 shrink-0 font-bold">{station.code}</span>
+          <span className="min-w-0 flex-1">
+            <span className="block truncate font-semibold">{station.name}</span>
+            <span className="block truncate text-xs text-ink-faint">
+              {station.area}
+              {station.purpose ? ` · ${station.purpose}` : ""}
+            </span>
+          </span>
+        </div>
+        <span className="shrink-0 text-xs font-semibold text-ink-soft">
+          {data.staffView || station.status === "in_progress" ? (
+            // Committee tier: the groups by name; everyone else a count, or "Your group is here".
+            whoIsHere(data, station)
+          ) : (
+            <>
+              {counts[station.id] ?? 0}
+              {station.max_groups != null ? ` / ${station.max_groups}` : ""} groups
+            </>
+          )}
+        </span>
+        <span
+          className="chip shrink-0"
+          style={{
+            backgroundColor: stationDotColor(station.status) + "22",
+            color: stationDotColor(station.status),
+          }}
+        >
+          {stationStatusText(station.status)}
+        </span>
+      </button>
+      {canManageStations && (
+        <button
+          type="button"
+          className="mr-3 shrink-0 rounded-lg border border-paper-200 px-3 py-1 text-xs font-semibold hover:bg-paper-100"
+          onClick={() => data.setEditing(station)}
+        >
+          Edit
+        </button>
+      )}
+    </li>
+  );
   const bulbsRef = useRef<HTMLDivElement>(null);
   const scrolledToBulbs = useRef(false);
   // /map?layer=bulbs (the Items page's "See it on the map") opens the 2D map on its Lightbulbs layer; under the
@@ -422,9 +497,9 @@ export function CampusMapPanels({
 
       {view === "2d" && layer === "bulbs" && bulbList}
 
-      {layer === "stations" && !(hasSelection ?? !!activeSelected) && !openBuilding && (
-        <div className="card mt-3 overflow-hidden p-0">
-          {clusterArea ? (
+      {layer === "stations" && !(hasSelection ?? !!activeSelected) && !openBuilding &&
+        (clusterArea ? (
+          <div className="card mt-3 overflow-hidden p-0">
             <div className="flex items-center justify-between gap-3 border-b border-paper-200 px-3 py-2">
               <h2 className="text-sm font-semibold">
                 {clusterArea} stations
@@ -435,94 +510,44 @@ export function CampusMapPanels({
                 className="inline-flex items-center gap-1 text-xs font-semibold text-ink-faint hover:text-ink-base"
               >
                 <ArrowLeft className="h-3.5 w-3.5" />
-                All available
+                All stations
               </button>
             </div>
-          ) : (
-            <h2 className="border-b border-paper-200 px-3 py-2 text-sm font-semibold">
-              Available stations
-            </h2>
-          )}
-          <ul className="divide-y divide-paper-200">
-            {mapStations
-              .filter((station) =>
-                clusterArea
-                  ? station.area === clusterArea
-                  : station.status === "available",
-              )
-              .map((station) => (
-                <li key={station.id} className="flex items-center">
-                  {(() => {
-                    const body = (
-                      <>
-                        <div className="flex min-w-0 flex-1 items-center gap-3">
-                          <span className="w-14 shrink-0 font-bold">
-                            {station.code}
-                          </span>
-                          <span className="min-w-0 flex-1">
-                            <span className="block truncate font-semibold">
-                              {station.name}
-                            </span>
-                            <span className="block truncate text-xs text-ink-faint">
-                              {station.area}
-                              {station.purpose ? ` · ${station.purpose}` : ""}
-                            </span>
-                          </span>
-                        </div>
-                        <span className="shrink-0 text-xs font-semibold text-ink-soft">
-                          {counts[station.id] ?? 0}
-                          {station.max_groups != null
-                            ? ` / ${station.max_groups}`
-                            : ""}{" "}
-                          groups
-                        </span>
-                        <span
-                          className="chip shrink-0"
-                          style={{
-                            backgroundColor:
-                              stationDotColor(station.status) + "22",
-                            color: stationDotColor(station.status),
-                          }}
-                        >
-                          {stationStatusText(station.status)}
-                        </span>
-                      </>
-                    );
-                    const cls =
-                      "flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left";
-                    return (
-                      <button
-                        type="button"
-                        className={`${cls} transition-colors hover:bg-paper-100`}
-                        onClick={() => {
-                          data.setSelected(station);
-                          onStationTap?.(station);
-                        }}
-                      >
-                        {body}
-                      </button>
-                    );
-                  })()}
-                  {canManageStations && (
-                    <button
-                      type="button"
-                      className="mr-3 shrink-0 rounded-lg border border-paper-200 px-3 py-1 text-xs font-semibold hover:bg-paper-100"
-                      onClick={() => data.setEditing(station)}
-                    >
-                      Edit
-                    </button>
-                  )}
-                </li>
-              ))}
-            {!clusterArea &&
-              mapStations.every((station) => station.status !== "available") && (
-              <li className="px-3 py-4 text-sm text-ink-faint">
-                No stations are available right now.
-              </li>
-            )}
-          </ul>
-        </div>
-      )}
+            <ul className="divide-y divide-paper-200">
+              {mapStations.filter((station) => station.area === clusterArea).map(stationRow)}
+            </ul>
+          </div>
+        ) : (
+          <>
+            {/* A Day 2 game in progress, and who plays it (the GM's Start checks the group in). Short, so first. */}
+            <div className="card mt-3 overflow-hidden p-0">
+              <h2 className="border-b border-paper-200 px-3 py-2 text-sm font-semibold">
+                In progress
+              </h2>
+              <ul className="divide-y divide-paper-200">
+                {busyStations.map(stationRow)}
+                {busyStations.length === 0 && (
+                  <li className="px-3 py-4 text-sm text-ink-faint">
+                    No game is running right now.
+                  </li>
+                )}
+              </ul>
+            </div>
+            <div className="card mt-3 overflow-hidden p-0">
+              <h2 className="border-b border-paper-200 px-3 py-2 text-sm font-semibold">
+                Available stations
+              </h2>
+              <ul className="divide-y divide-paper-200">
+                {openStations.map(stationRow)}
+                {openStations.length === 0 && (
+                  <li className="px-3 py-4 text-sm text-ink-faint">
+                    No stations are available right now.
+                  </li>
+                )}
+              </ul>
+            </div>
+          </>
+        ))}
 
       {layer === "stations" && activeSelected && !onStationTap && (
         <div className="card mt-3 p-3">
@@ -533,12 +558,12 @@ export function CampusMapPanels({
               className="inline-flex items-center gap-1.5 text-xs font-semibold text-ink-faint transition-colors hover:text-ink-base"
             >
               <ArrowLeft className="h-3.5 w-3.5" />
-              {clusterArea ? `Back to ${clusterArea} stations` : "Back to available stations"}
+              {clusterArea ? `Back to ${clusterArea} stations` : "Back to stations"}
             </button>
             <button
               type="button"
               onClick={() => data.setSelected(null)}
-              aria-label="Back to available stations"
+              aria-label="Back to stations"
               className="rounded-full p-1 text-ink-faint transition-colors hover:bg-paper-200 hover:text-ink-base"
             >
               <X className="h-4 w-4" />
@@ -556,6 +581,7 @@ export function CampusMapPanels({
                 {activeSelected.area}
                 {activeSelected.purpose ? ` · ${activeSelected.purpose}` : ""}
               </p>
+              <p className="truncate text-xs font-semibold text-ink-soft">{whoIsHere(data, activeSelected)}</p>
             </div>
             <span
               className="chip shrink-0"

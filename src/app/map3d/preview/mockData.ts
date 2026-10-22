@@ -235,6 +235,7 @@ export function useMockMapData(opts: MockOptions): CampusMapData {
     clusteredIds,
     stationSpots,
     counts,
+    staffView: false,
     activeSelected: selected,
     setSelected,
     openBuilding,

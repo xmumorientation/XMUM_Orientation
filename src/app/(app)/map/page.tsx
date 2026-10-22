@@ -20,11 +20,11 @@ export default function MapPage() {
   // Only Admin and HOGM check groups in; a GM can look at the map but not check groups in.
   const canCheckin = profile.role === "admin" || profile.role === "hogm";
 
-  // Committee tier sees every group's pin; Faci and Freshies see only their
-  // own group's (0094; the RPC enforces this server-side - the flag just
-  // requests pins).
+  // Every role sees every group's pin (0101; Ben: the group locations are
+  // open to everyone in the app). The flag just requests pins.
   const showPins =
-    COMMITTEE_TIER.includes(profile.role) || profile.role === "faci" || profile.role === "freshie";
+    COMMITTEE_TIER.includes(profile.role) ||
+    ["gm", "guardian_gm", "faci", "freshie"].includes(profile.role);
 
   // HOF, HOGM, Committee and GM: the same night, eyebrow and title as their
   // other tabs (Ops or Station, Scores). No station list under the map: Ops

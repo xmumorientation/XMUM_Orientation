@@ -511,13 +511,31 @@ export default function GmPanelPage() {
     if (blocked) return result.setError(`${blocked.label}: ${blocked.text}`);
     keepGame({ stationId: station.id, groupId, locations });
     if (station.status === "available") void autoStatus("in_progress");
+    void placeGroup(station.id, groupId);
   }
 
   // Back to Available after a game, unless Admin or HOGM closed the station meanwhile.
   function endGame() {
+    const playing = game?.groupId;
     keepGame(null);
     setConfirmWin(null);
     if (station?.status === "in_progress") void autoStatus("available");
+    if (playing != null) void releaseGroup(playing);
+  }
+
+  // The maps show which group plays here: Start checks it in at this station and the end checks it out
+  // (fn_manual_checkin / fn_uncheckin; a GM may at their own station, 0095). Only the maps read it, so a
+  // failure is a note, never a stop to the game.
+  async function placeGroup(stationId: number, playingId: number) {
+    const { error } = await supabase.rpc("fn_manual_checkin", { p_station_id: stationId, p_group_id: playingId });
+    if (error) statusMsg.setError(`The map could not show the group here: ${friendlyError(error)}`);
+  }
+  async function releaseGroup(playingId: number) {
+    const { error } = await supabase.rpc("fn_uncheckin", { p_group_id: playingId });
+    // Already checked out, or checked in elsewhere since: nothing of ours to clear.
+    if (error && !/NOT_CHECKED_IN|NOT_YOUR_STATION/.test(error.message)) {
+      statusMsg.setError(`The map could not clear the group: ${friendlyError(error)}`);
+    }
   }
 
   function cancelGame() {
