@@ -1129,3 +1129,9 @@ Branch `jiamin-blind-box-integration`. Migration `0070_blindbox_buy_flow.sql` (t
 - Final checks: **184 tests / 18 files**, production build, typecheck and lint. **Still pending:** live 0102 application, deployment, real-phone GPS and simultaneous device checks. Platform access is being resolved; no live NFC or event data was reset or deleted. See [release notes](testing/orientation-field-fixes-2026-10-22.md).
 
 - **Live follow-up:** 0102 was applied transactionally to `orientation-2612` and registered in migration history; RLS, direct-read denial, anonymous RPC denial and the three function definitions were verified. No location rows were created. Vercel preview for `c8ce19d` is Ready; production release and physical-phone checks remain pending.
+
+### David, 2026-10-23 (staff sharing migration number correction)
+- PR #56 merged as `f98c17e`; production deployment is in progress.
+- Found the initial branch-number check missed `fix/log-audit-gaps`'s `0102_admin_token_log_audit.sql`. Staff sharing moves to **0103**, with identical SQL; only its own migration-history version is repaired, without rerunning DDL or changing event/location rows. Do not reuse teammate's 0102.
+
+- **Confirmed:** live history now identifies staff sharing as 0103. Production release `f98c17e` reached Ready at [xmum-orientation.vercel.app](https://xmum-orientation.vercel.app); 184 tests passed again after the filename correction. Physical-phone GPS and multi-device checks remain outstanding.
