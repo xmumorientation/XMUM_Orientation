@@ -88,7 +88,7 @@ export function BlindBoxLogin({
   if (notFreshie && !switching) {
     return (
       <AuthShell
-        role="Blind box"
+        role="Blind Box"
         lead={
           noGroup
             ? `${what} Your account is not in a group yet, so it cannot buy. Log in with your group's 4-digit password instead.`
@@ -108,7 +108,7 @@ export function BlindBoxLogin({
 
   return (
     <AuthShell
-      role="Blind box"
+      role="Blind Box"
       lead={
         <>
           <Package size={18} aria-hidden style={{ display: "inline", verticalAlign: "-3px", marginRight: 6 }} />
@@ -153,7 +153,7 @@ export function BlindBoxLogin({
           </p>
         )}
         <button type="submit" className="vx-btn vx-btn-primary" disabled={busy || code.length !== 4 || !groupId}>
-          {busy ? "Checking…" : "Continue to the blind box"}
+          {busy ? "Checking…" : "Continue to the Blind Box"}
         </button>
       </form>
     </AuthShell>

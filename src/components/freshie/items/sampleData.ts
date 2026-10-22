@@ -47,8 +47,8 @@ const DAY2_HISTORY: HistoryEntry[] = [
 
 function sampleBoxes(goldLeft: number, goldOpened: number[], stdLeft: number, stdOpened: number[]): BoxGroup[] {
   return [
-    { key: "gold", name: "Gold box", label: "Gold", special: true, range: "4–6 tokens or a puzzle piece", mayGivePiece: true, unopened: goldLeft, opened: goldOpened },
-    { key: "standard", name: "Standard box", label: "Standard", special: false, range: "1–2 tokens each", unopened: stdLeft, opened: stdOpened },
+    { key: "gold", name: "Gold Box", label: "Gold", special: true, range: "4–6 tokens or a puzzle piece", mayGivePiece: true, unopened: goldLeft, opened: goldOpened },
+    { key: "standard", name: "Standard Box", label: "Standard", special: false, range: "1–2 tokens each", unopened: stdLeft, opened: stdOpened },
   ];
 }
 

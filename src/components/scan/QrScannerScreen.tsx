@@ -292,12 +292,12 @@ export function QrScannerScreen({ onClose, closeHref = "/dashboard", preview = f
           </span>
           <h1 className="mt-2 text-2xl font-black">
             {detected.route.kind === "app"
-              ? `${detected.route.label} QR detected!`
+              ? `${detected.route.label} QR Detected!`
               : detected.route.kind === "blocked"
-                ? "Can't open this here"
+                ? "Can't Open This Here"
                 : detected.route.kind === "link"
-                  ? "A link to another site"
-                  : "QR code scanned"}
+                  ? "A Link to Another Site"
+                  : "QR Code Scanned"}
           </h1>
           <p className="max-w-xs text-sm text-white/70">
             {detected.route.kind === "app"

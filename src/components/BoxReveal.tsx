@@ -134,13 +134,19 @@ export function BoxReveal({
                 <Coins size={56} strokeWidth={2} />
               </span>
             </RewardArt>
-            <span className="bb-rtag fh-mono">{special ? "Special box" : "Tokens"}</span>
+            <span className="bb-rtag fh-mono">{special ? "Special Box" : "Tokens"}</span>
             {memberName && <span className="bb-no fh-mono">From {memberName}</span>}
             <h2 className="bb-rtitle fh-slab">
-              +{tokens} token{tokens !== 1 ? "s" : ""}
+              +{tokens} Token{tokens !== 1 ? "s" : ""}
             </h2>
             <p className="bb-rdetail">
-              Added to your group&apos;s tokens.{balance !== null && <> You now have <b className="fh-mono">{balance}</b>.</>}
+              Added to your group&apos;s tokens.
+              {balance !== null && (
+                <>
+                  <br />
+                  You now have <b>{balance} tokens</b>.
+                </>
+              )}
             </p>
             <div className="bb-ractions">
               {onContinue ? (

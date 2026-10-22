@@ -26,9 +26,9 @@ const BLOCKED: { prefix: string; reason: string }[] = [
 ];
 
 const LABELS: { prefix: string; label: string }[] = [
-  { prefix: "/blindbox", label: "Blind box" },
-  { prefix: "/activate", label: "Projector card" },
-  { prefix: "/group", label: "Group pass" },
+  { prefix: "/blindbox", label: "Blind Box" },
+  { prefix: "/activate", label: "Projector Card" },
+  { prefix: "/group", label: "Group Pass" },
 ];
 
 const norm = (u: URL) => u.origin.toLowerCase();
@@ -84,6 +84,6 @@ export function classifyScan(raw: string, origins: string[]): ScanRoute {
       return { kind: "blocked", reason: b.reason };
     }
   }
-  const label = LABELS.find((l) => path === l.prefix || path.startsWith(l.prefix + "/"))?.label ?? "App link";
+  const label = LABELS.find((l) => path === l.prefix || path.startsWith(l.prefix + "/"))?.label ?? "App Link";
   return { kind: "app", path: path + url.search, label };
 }
