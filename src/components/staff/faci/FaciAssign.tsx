@@ -7,7 +7,6 @@ import { groupSwatch } from "@/components/freshie/groupTheme";
 import { GroupBadge } from "@/components/GroupBadge";
 import "@/components/staff/game/game-control.css";
 import { Sheet, StatusLine, useStatus } from "@/components/staff/game/parts";
-import { Card } from "@/components/ui";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import type { Group } from "@/lib/types";
 import { cn, friendlyError } from "@/lib/utils";
@@ -89,45 +88,38 @@ export function FaciAssign() {
 
   return (
     <>
-      <p className="mb-2 text-sm text-ink-faint">
+      <p className="gc-muted">
         {assigned} of {facis.length} Facilitators are in a group.
       </p>
       <StatusLine error={error} notice={notice} />
-      <Card className="divide-y divide-paper-200 p-0">
+      <ul className="gc-card gc-ops-rows">
         {groups.map((g) => {
           const own = facisOf(g.id);
           return (
-            <div key={g.id} className="flex items-center gap-3 px-4 py-3">
+            <li key={g.id} className="gc-ops-row">
               <GroupBadge id={g.id} color={groupSwatch(g.id, g.color)} />
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium">{g.display_name?.trim() || g.name}</p>
-                <p className="text-sm text-ink-faint">
-                  {own.length ? own.map((f) => faciName(f)).join(", ") : "No Facilitator yet"}
-                </p>
+              <div className="gc-ops-body">
+                <p className="gc-ops-name">{g.display_name?.trim() || g.name}</p>
+                <p className="gc-ops-sub">{own.length ? own.map((f) => faciName(f)).join(", ") : "No Facilitator yet"}</p>
               </div>
               <button
                 type="button"
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-ink-faint hover:text-ink"
+                className="gc-icon"
                 aria-label={`${g.name} recent changes`}
                 title="Recent changes"
                 onClick={() => setHistoryOf(g)}
               >
                 <History size={17} aria-hidden />
               </button>
-              <button
-                type="button"
-                className="btn-secondary min-h-[40px] shrink-0 px-3 text-xs"
-                aria-label={`Edit ${g.name}'s Facilitators`}
-                onClick={() => openFacis(g)}
-              >
+              <button type="button" className="gc-btn gc-ops-edit" aria-label={`Edit ${g.name}'s Facilitators`} onClick={() => openFacis(g)}>
                 <Pencil size={14} aria-hidden />
-                Edit
+                <span>Edit</span>
               </button>
-            </div>
+            </li>
           );
         })}
-        {groups.length === 0 && <p className="px-4 py-3 text-sm text-ink-faint">No groups yet.</p>}
-      </Card>
+        {groups.length === 0 && <li className="gc-empty">No groups yet.</li>}
+      </ul>
 
       <Sheet
         open={historyOf !== null}

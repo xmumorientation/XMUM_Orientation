@@ -248,6 +248,15 @@ Numbered after main's `0093`-`0098` (renamed from 0097 / 0098 when merging main,
 - `0100_blindbox_spot_no_stations.sql`: the Spot box, no station boxes, Restore only. Deletes unsold station boxes and switches sold ones off. Safe to run again.
 - Env: `/api/group-join` signs group QRs with `NFC_TOKEN_SECRET` (already set for blind boxes and NFC). Changing that secret changes every group QR.
 
+### One Ops look for HOF, Committee, Admin and HOGM, 2026-10-22
+Ben compared the two Ops pages and chose HOGM's (the Welcome page's night background, the OPS mark, mono "where you are" line, icon tabs).
+- [OpsShell.tsx](../src/components/staff/game/OpsShell.tsx) is that frame, taken out of `GameControl`. HOGM's Game control and the HOF / Committee / Admin overview ([committee/page.tsx](../src/app/(app)/committee/page.tsx)) both use it. The tab count sets the columns (`--gc-tabs`), so Committee's three tabs fill the row.
+- The overview's sections: Headcount (Users), Location (MapPin), Freshies (IdCard), Faci & Status (UserCheck; HOF and Admin). The mono line reads "Overview · Headcount". Gone: the "Operations" title, "Live situational awareness", the card tabs with their descriptions (so "Facis and recent changes" no longer shows) and the heading that repeated the tab name.
+- Lists in the Game control style (`.gc-ops-*`): Headcount keeps its columns (Group, Local, Intl, Total), Location and Freshies are rows, the password in mono. Faci & Status rows use `gc-icon` / `gc-btn`; under 480px Edit is an icon the size of the clock.
+- The OPS title is plain white, like the other subpages' titles (Ben); the holo mark and its shimmer stay on the Welcome page. The cyan mono line, the night background and the yellow Ops button in the tab bar still set Ops apart.
+- Deep links still work: Home's Live floor tiles open `/committee?view=headcount` (or location, freshies, facis); HOGM's `#stations` and the rest are unchanged.
+- Checked in headless Chrome at 390×844 and 1280×800 as `hof.test` (all four sections), `counter.test` (an Admin on the live project) and `hogm.test`: no tab label cut, no sideways scroll, no console errors. Not checked: a real Committee account (none among the test accounts). `tsc` (src) and `next lint` are clean.
+
 ### A group's Recent changes: every change, the game included, 2026-10-22
 No migration. Ben asked for the clock icon on Ops → Facilitators, now called **Faci & Status** (HOF and Admin), to open a bigger window with the group's recent changes, the game included.
 - A wide sheet ([GroupLog.tsx](../src/components/staff/faci/GroupLog.tsx)): most of the screen on phones, a centred window from 1024px (`Sheet wide` in `game/parts.tsx`). It replaces the old list of 8 Faci-related changes.
