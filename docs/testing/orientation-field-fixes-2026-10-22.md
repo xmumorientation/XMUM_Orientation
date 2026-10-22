@@ -1,6 +1,6 @@
 # Orientation field fixes — 22 October 2026
 
-These are source changes. They have **not** been deployed or applied to the live database.
+The staff-sharing migration is **applied to production**; the frontend has a verified Ready preview and production release is in progress.
 The release branch now incorporates `origin/main` at `3b4365d`; the initial field-fix snapshot is `18f8ef5`.
 HOF editing Faci assignments is excluded: David confirmed a teammate has fixed it.
 
@@ -22,7 +22,7 @@ HOF editing Faci assignments is excluded: David confirmed a teammate has fixed i
 - Next production build passed. Existing warnings: campus map `<img>` lint advisory and Supabase's Edge Runtime `process.version` advisory.
 - Browser harness: original All crash reproduced, fixed All rendered both days, sharing changed Off → Sharing → Off with the expected enable/report/disable calls, and expanded Faci details retained a dark surface. The harness used simulated identities and GPS; it did not call the live database.
 - New database tests cover HOF/HOGM opt-in, role denial, direct-table access denial, Freshie read denial, invalid coordinates, stale fixes, per-user stop, coordinate clearing, and a delayed report after Stop.
-- Vercel project inspection still returns a team-scope 403 through the connector; CLI inspection reports the specified scope does not exist. The browser Supabase account initially displayed no access to the target project. No live error-stack or deployed-behaviour claim is made.
+- Vercel project inspection still returns a team-scope 403 through the connector; CLI inspection reports the specified scope does not exist. The browser Supabase account initially displayed no access to the target project; switching to the XMUM Orientation account restored dashboard access. No live error-stack or deployed-behaviour claim is made.
 
 ## Release requirements
 
@@ -39,3 +39,10 @@ HOF editing Faci assignments is excluded: David confirmed a teammate has fixed i
 - Added a regression for zone titles: merging a separator change with main's new `zoneTitle()` must keep the area's name rather than display `undefined`.
 - Final source verification: 184 tests in 18 files, production build, typecheck and lint. The existing map `<img>` and Supabase Edge Runtime advisories remain.
 - **Do not deploy until 0102 is applied and verified.** Apply only this migration in a transaction after confirming the target project and live schema; do not bulk-push all historical migrations. Never run test stub schemas against production.
+
+## Live migration result
+
+- Applied **0102** to Supabase project `yshlczowotyoewzjtdcz` (`orientation-2612`, main/PRODUCTION), after David's confirmation. Wrapped the exact migration and its `supabase_migrations.schema_migrations` entry in one transaction.
+- Preflight: table and all three functions were absent; no 0102 or staff-location migration history entry existed. Published main remained `3b4365d`.
+- Postflight: table exists; RLS enabled; authenticated direct table read denied; anonymous position RPC denied; authenticated RPC granted; all three functions are security definer; one migration history entry. The table contained **0 rows** after application. No staff GPS was fabricated, and no NFC/event data was reset or deleted.
+- Preview deployment `dpl_6Asxk3hyajuVYqiRQVXj72GiKQRC`, source `c8ce19d`, reached **Ready** in 1m 30s.

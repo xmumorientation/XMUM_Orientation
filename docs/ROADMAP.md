@@ -1127,3 +1127,5 @@ Branch `jiamin-blind-box-integration`. Migration `0070_blindbox_buy_flow.sql` (t
 - Renamed staff sharing from 0089 to **0102** because main already owns 0089 and has migrations through 0101; database tests follow the new filename.
 - Adapted the QR cache to the static signed group-link API and restored Group locations' dark expanded surface with the animated fold. Fixed merged funfair zone title separators; regression added.
 - Final checks: **184 tests / 18 files**, production build, typecheck and lint. **Still pending:** live 0102 application, deployment, real-phone GPS and simultaneous device checks. Platform access is being resolved; no live NFC or event data was reset or deleted. See [release notes](testing/orientation-field-fixes-2026-10-22.md).
+
+- **Live follow-up:** 0102 was applied transactionally to `orientation-2612` and registered in migration history; RLS, direct-read denial, anonymous RPC denial and the three function definitions were verified. No location rows were created. Vercel preview for `c8ce19d` is Ready; production release and physical-phone checks remain pending.
