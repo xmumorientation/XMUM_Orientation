@@ -162,7 +162,7 @@ export default function GmPanelPage() {
       const d = res.data as { delta?: number; balance?: number; duplicate?: boolean };
       if (d?.duplicate) return flash("Duplicate ignored (already recorded).");
       flash(
-        `${label}: +${d?.delta ?? "?"}${d?.balance !== undefined ? ` · balance ${d.balance}` : ""}`
+        `${label}: +${d?.delta ?? "?"}${d?.balance !== undefined ? ` / balance ${d.balance}` : ""}`
       );
     } else if (res.status === "queued") {
       flash("Offline. Queued and will send automatically.");
@@ -219,8 +219,8 @@ export default function GmPanelPage() {
       if (d.duplicate) return flash("Duplicate ignored (already recorded).");
       flash(
         d.success && d.piece_name
-          ? `-${d.cost} tokens · granted ${d.piece_name} · balance ${d.balance}`
-          : `-${d.cost} tokens (challenge lost) · balance ${d.balance}`
+          ? `-${d.cost} tokens / granted ${d.piece_name} / balance ${d.balance}`
+          : `-${d.cost} tokens (challenge lost) / balance ${d.balance}`
       );
       setLocations([]);
     } else if (res.status === "queued") {
@@ -255,7 +255,7 @@ export default function GmPanelPage() {
         title="Station panel"
         subtitle={
           station
-            ? `${station.name} · ${RISK_TIER_META[tier].label} (entry ${station.entry_cost})`
+            ? `${station.name} / ${RISK_TIER_META[tier].label} (entry ${station.entry_cost})`
             : undefined
         }
       />

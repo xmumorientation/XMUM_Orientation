@@ -144,7 +144,7 @@ export function FaciControl() {
         <h1 className="gc-title gc-title-holo">OPS</h1>
         <p className="gc-sub">
           <i aria-hidden />
-          Faci control · <b>Groups</b>
+          Faci control / <b>Groups</b>
         </p>
       </header>
 
@@ -175,7 +175,7 @@ export function FaciControl() {
                   <span className="gc-fold-name">
                     {g.name}
                     <small>
-                      {g.display_name || "No name yet"} · {hc ? `${hc.headcount} people` : "no headcount"}
+                      {g.display_name || "No name yet"} / {hc ? `${hc.headcount} people` : "no headcount"}
                     </small>
                   </span>
                   <span className="gc-chip" data-tone={latest ? LOC_TONE[latest.status] : "off"}>
@@ -221,8 +221,8 @@ export function FaciControl() {
                           <b>{describeLocation(latest)}</b>
                           {latest.details && <p>{latest.details}</p>}
                           <small>
-                            {faciName(byId[latest.user_id])} · {ago(latest.created_at)}
-                            {latest.edited_at && " · edited by Admin"}
+                            {faciName(byId[latest.user_id])} / {ago(latest.created_at)}
+                            {latest.edited_at && " / edited by Admin"}
                           </small>
                         </div>
                       ) : (
@@ -235,7 +235,7 @@ export function FaciControl() {
                             {older.slice(0, 10).map((l) => (
                               <li key={l.id}>
                                 <span>{describeLocation(l)}</span>
-                                <small>{faciName(byId[l.user_id])} · {clock(l.created_at)}</small>
+                                <small>{faciName(byId[l.user_id])} / {clock(l.created_at)}</small>
                               </li>
                             ))}
                           </ul>
@@ -251,11 +251,11 @@ export function FaciControl() {
         </ul>
       </div>
 
-      <Sheet open={historyOf !== null} onClose={() => setHistoryOf(null)} title={historyOf ? `Recent changes · ${historyOf.name}` : "Recent changes"}>
+      <Sheet open={historyOf !== null} onClose={() => setHistoryOf(null)} title={historyOf ? `Recent changes / ${historyOf.name}` : "Recent changes"}>
         {historyOf && <GroupChanges groupId={historyOf.id} names={byId} />}
       </Sheet>
 
-      <Sheet open={editing !== null} onClose={() => setEditing(null)} title={editing ? `Facilitators · ${editing.name}` : "Facilitators"}>
+      <Sheet open={editing !== null} onClose={() => setEditing(null)} title={editing ? `Facilitators / ${editing.name}` : "Facilitators"}>
         {editing && (
           <div className="gc-form">
             <input
@@ -295,7 +295,7 @@ export function FaciControl() {
               {facis.length === 0 && <li className="gc-empty">No Facilitators yet.</li>}
             </ul>
             <button type="button" className="gc-btn gc-btn-primary" disabled={busy} onClick={saveFacis}>
-              Save · {picked.length} selected
+              Save ({picked.length} selected)
             </button>
           </div>
         )}
@@ -354,9 +354,9 @@ function GroupChanges({ groupId, names }: { groupId: number; names: Record<strin
         <li key={r.id}>
           <span>
             {CHANGE_LABELS[r.action] ?? r.action}
-            {what(r) && <em> · {what(r)}</em>}
+            {what(r) && <em> / {what(r)}</em>}
           </span>
-          <small>{(r.actor && actors[r.actor]) || "System"} · {clock(r.created_at)}</small>
+          <small>{(r.actor && actors[r.actor]) || "System"} / {clock(r.created_at)}</small>
         </li>
       ))}
     </ul>

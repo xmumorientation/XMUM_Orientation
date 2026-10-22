@@ -151,7 +151,7 @@ export function BlindBoxBuy({
                     </p>
                     <p className="text-sm text-white/70">
                       {o.price > 0 ? tokens(o.price) : "Free"}
-                      {o.status !== "sold_out" && ` · ${o.left} left`}
+                      {o.status !== "sold_out" && ` / ${o.left} left`}
                     </p>
                     {note && <p className="text-xs text-amber-300">{note}</p>}
                   </div>

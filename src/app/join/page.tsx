@@ -25,7 +25,7 @@ export default function JoinPage() {
 
     let cancelled = false;
     (async () => {
-      await supabase.auth.signOut();
+      await supabase.auth.signOut({ scope: "local" });
       const { error } = await supabase.auth.signInWithPassword({
         email: groupLoginEmail(parsed.groupId),
         password: groupLoginPassword(parsed.code),

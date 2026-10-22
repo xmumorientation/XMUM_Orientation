@@ -13,9 +13,9 @@ export type FunfairZone = "west" | "central" | "east";
 export const FUNFAIR_ZONES: FunfairZone[] = ["west", "central", "east"];
 
 export const FUNFAIR_ZONE_NAMES: Record<FunfairZone, string> = {
-  west: "West · Neon Pier",
-  central: "Central · Starlight Midway",
-  east: "East · Big Top",
+  west: "West / Neon Pier",
+  central: "Central / Starlight Midway",
+  east: "East / Big Top",
 };
 
 /** Each zone's power: 0 off, 1 on. */

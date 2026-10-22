@@ -318,6 +318,13 @@ export function Marker({
         ...hover,
         onClick: (e: ThreeEvent<MouseEvent>) => {
           if (!isTap(e)) return;
+          if (e.uv) {
+            const x = e.uv.x * art.w;
+            const y = (1 - e.uv.y) * art.h;
+            // Restrict the click to the visible head, with a finger-sized margin.
+            const cy = art.y > art.h * 0.8 ? 20 : art.y;
+            if (Math.hypot(x - art.x, y - cy) > Math.max(22, art.r + 5)) return;
+          }
           e.stopPropagation();
           onTap(e);
         },

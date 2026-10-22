@@ -1,5 +1,7 @@
 "use client";
 
+import { displayLabel } from "@/lib/displayLabel";
+
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { FUNFAIR_ZONES, funfairMissing, zoneIsOn, type FunfairPreview, type FunfairZoneRow } from "@/lib/funfair";
@@ -32,7 +34,7 @@ export function useFunfairZones() {
       return;
     }
     const list = (zones.data ?? []) as FunfairZoneRow[];
-    setRows(FUNFAIR_ZONES.flatMap((z) => list.filter((r) => r.zone === z)));
+    setRows(FUNFAIR_ZONES.flatMap((z) => list.filter((r) => r.zone === z).map((row) => ({ ...row, name: displayLabel(row.name) }))));
     if (bulbs.data) {
       setLit(new Set((bulbs.data as MapLightbulb[]).filter((b) => b.activated_at).map((b) => b.location)));
     }

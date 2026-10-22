@@ -189,7 +189,7 @@ export function AssignTab({ data, onError, onNotice }: TabProps) {
                 ))
               : data.stations.map((s) => (
                   <option key={s.id} value={s.id}>
-                    {s.code} · {s.name} ({gmCount(s.id)} GM{gmCount(s.id) === 1 ? "" : "s"})
+                    {s.code} / {s.name} ({gmCount(s.id)} GM{gmCount(s.id) === 1 ? "" : "s"})
                   </option>
                 ))}
           </select>
@@ -344,7 +344,7 @@ export function AssignTab({ data, onError, onNotice }: TabProps) {
                       }
                     />
                     <span className="truncate">
-                      {s.code} · {s.name}
+                      {s.code} / {s.name}
                     </span>
                   </label>
                 ))}
@@ -362,7 +362,7 @@ export function AssignTab({ data, onError, onNotice }: TabProps) {
               <>
                 <p>
                   {bTargets} seller{bTargets === 1 ? "" : "s"} × {bQtyN} = <b>{bNeed}</b>{" "}
-                  boxes needed · {bTypeObj.name} has <b>{bLeft}</b> unassigned
+                  boxes needed / {bTypeObj.name} has <b>{bLeft}</b> unassigned
                   {bShort && ` — short by ${bNeed - bLeft}.`}
                 </p>
                 {bShort && (

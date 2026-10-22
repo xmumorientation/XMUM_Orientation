@@ -18,7 +18,7 @@ export default function ProfilePage() {
   ];
 
   async function signOut() {
-    await supabaseBrowser().auth.signOut();
+    await supabaseBrowser().auth.signOut({ scope: "local" });
     window.location.href = "/login";
   }
 

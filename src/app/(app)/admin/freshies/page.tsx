@@ -291,7 +291,7 @@ export default function FreshieControlPage() {
                         aria-label={`Edit Facilitators for ${group.name}`}
                       >
                         {facisOf(group.id).length === 0 ? (
-                          <span className="text-ink-faint">Unassigned · click to assign</span>
+                          <span className="text-ink-faint">Unassigned / click to assign</span>
                         ) : (
                           facisOf(group.id).map((f) => (
                             <span key={f.id} className="rounded-full bg-[#25405e] px-2.5 py-0.5 text-xs font-semibold text-white">
@@ -355,7 +355,7 @@ export default function FreshieControlPage() {
       </section>
 
       <Dialog open={faciGroup !== null} onOpenChange={(open) => !open && setFaciGroup(null)}>
-        <DialogContent title={faciGroup ? `Facilitators · ${faciGroup.name}` : "Facilitators"}>
+        <DialogContent title={faciGroup ? `Facilitators / ${faciGroup.name}` : "Facilitators"}>
           {faciGroup && (
             <div className="space-y-3">
               <input

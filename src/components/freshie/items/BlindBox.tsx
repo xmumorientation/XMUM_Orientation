@@ -129,7 +129,7 @@ function BoxFlow({
           <div className="bb-mini" aria-hidden>
             <Box3D group={group} />
           </div>
-          <span className="fi-eb fh-mono">Blind box · {info.label}</span>
+          <span className="fi-eb fh-mono">Blind box / {info.label}</span>
           <h2 className="bb-ask-title">Unlock a {info.name.toLowerCase()}?</h2>
           <p className="bb-ask-sub">{info.range ?? HIDDEN_RANGE}</p>
           <dl className="fi-facts">
@@ -203,7 +203,7 @@ function Box3D({ group }: { group: BoxGroup }) {
   return (
     <span className="bb-cube" aria-hidden>
       <span className="bb-face bb-front">
-        <span className="bb-tag fh-mono">Blind box · {info.label}</span>
+        <span className="bb-tag fh-mono">Blind box / {info.label}</span>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img className="bb-logo" src="/vortexa-logo-sm.webp" alt="" />
         <span className="bb-q fh-slab">?</span>
@@ -226,7 +226,7 @@ function Box3D({ group }: { group: BoxGroup }) {
           </i>
           <i data-c="secret">?</i>
         </span>
-        <span className="bb-side-foot fh-mono">Vortexa · 2026</span>
+        <span className="bb-side-foot fh-mono">Vortexa / 2026</span>
       </span>
       <span className="bb-face bb-side bb-left">
         <span className="bb-side-title fh-slab">Vortexa</span>
@@ -315,7 +315,7 @@ function Reveal({
       </div>
       <span className="bb-rtag fh-mono">{tag}</span>
       <span className="bb-no fh-mono">
-        {group.label} · No. {pad(stock.opened.length)} / {pad(total)}
+        {group.label} / No. {pad(stock.opened.length)} / {pad(total)}
       </span>
       <h2 className="bb-rtitle fh-slab">{title}</h2>
       <p className="bb-rdetail">{detail}</p>

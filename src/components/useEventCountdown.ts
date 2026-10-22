@@ -1,5 +1,7 @@
 "use client";
 
+import { displayLabel } from "@/lib/displayLabel";
+
 import { useEffect, useMemo, useState } from "react";
 
 import { EVENT } from "@/components/home/data";
@@ -111,7 +113,7 @@ export function useEventCountdown(): EventCountdown {
     const t = (shared ? Date.now() : (now as number)) + offsetMs;
     const ms = (iso: string) => new Date(iso).getTime();
     const until = (iso: string) => Math.max(0, (ms(iso) - t) / 1000);
-    const upper = (s: string) => s.toUpperCase();
+    const upper = (s: string) => displayLabel(s).toUpperCase();
 
     const timed = items.filter((i) => i.starts_at);
     if (timed.length > 0) {

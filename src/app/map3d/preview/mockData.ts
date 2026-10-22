@@ -224,6 +224,8 @@ export function useMockMapData(opts: MockOptions): CampusMapData {
   const selectedPosition = positions.find((g) => g.group_id === selectedGroup) ?? null;
 
   return {
+    staffPositions: [],
+    day: 2,
     myId: "preview",
     nowMs,
     stations,

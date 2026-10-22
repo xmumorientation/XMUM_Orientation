@@ -112,7 +112,7 @@ export function ViewportDebug() {
         }}
       >
         {rows.map(([k, v]) => `${k.padEnd(18)} ${v}`).join("\n")}
-        {"\n"}lime = fixed bottom:0 · magenta = innerHeight
+        {"\n"}lime = fixed bottom:0 / magenta = innerHeight
       </div>
     </>
   );

@@ -86,12 +86,12 @@ function PreviewState({ data, pending, hasSelection }: { data: CampusMapData; pe
   const bulb = data.bulbs.find((b) => b.location === data.selectedBulb);
   const lines = [
     `Layer: ${data.layer}${data.newLit ? " (new lit bulb: the tab pulses)" : ""}`,
-    data.activeSelected && `Selected station: ${data.activeSelected.code} · ${data.activeSelected.name}`,
+    data.activeSelected && `Selected station: ${data.activeSelected.code} / ${data.activeSelected.name}`,
     pending && `Check-in sheet open for ${pending.code}`,
     data.clusterArea && `Station list under the map: ${data.clusterArea}`,
     data.openBuilding && `Admin building panel: ${data.openBuilding}`,
-    data.selectedPosition && `Selected group: ${data.selectedPosition.group_name} · ${pinSummary(data.selectedPosition, data.selectedPin, data.nowMs)}`,
-    bulb && `Selected lightbulb: ${PROJECTOR_CODE_NAMES[bulb.location]} · ${bulb.name}`,
+    data.selectedPosition && `Selected group: ${data.selectedPosition.group_name} / ${pinSummary(data.selectedPosition, data.selectedPin, data.nowMs)}`,
+    bulb && `Selected lightbulb: ${PROJECTOR_CODE_NAMES[bulb.location]} / ${bulb.name}`,
     hasSelection !== undefined && `hasSelection: ${hasSelection} (the available list ${hasSelection ? "is hidden" : "shows"})`,
   ].filter(Boolean);
   return (

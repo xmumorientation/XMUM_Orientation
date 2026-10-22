@@ -253,7 +253,7 @@ export default function AdminUsersPage() {
   }, [accounts]);
 
   const groupLabel = (g: Group) =>
-    g.display_name ? `${g.name} · ${g.display_name}` : g.name;
+    g.display_name ? `${g.name} / ${g.display_name}` : g.name;
 
   const q = filter.trim().toLowerCase();
   const visible = accounts.filter(
@@ -304,7 +304,7 @@ export default function AdminUsersPage() {
                   <p className="truncate font-semibold">{u.full_name || u.email}</p>
                   <p className="truncate text-xs text-ink-faint">
                     {u.email}
-                    {u.requested_role ? ` · ${ROLE_LABELS[u.requested_role]}` : " · No role chosen yet"}
+                    {u.requested_role ? ` / ${ROLE_LABELS[u.requested_role]}` : " / No role chosen yet"}
                   </p>
                 </div>
                 <button
@@ -381,7 +381,7 @@ export default function AdminUsersPage() {
                       </p>
                       <p className="truncate text-xs text-ink-faint">
                         {u.email}
-                        {u.student_id ? ` · ${u.student_id}` : ""}
+                        {u.student_id ? ` / ${u.student_id}` : ""}
                       </p>
                     </td>
                     <td className="px-4 py-2.5">
@@ -549,7 +549,7 @@ export default function AdminUsersPage() {
                   <option value="">No station yet</option>
                   {stations.map((s) => (
                     <option key={s.id} value={s.id}>
-                      {s.name} · Day {s.day} · {s.code}
+                      {s.name} / Day {s.day} / {s.code}
                     </option>
                   ))}
                 </select>

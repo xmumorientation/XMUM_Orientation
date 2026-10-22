@@ -89,8 +89,8 @@ export function StationBoard() {
                 <span className="gc-fold-name">
                   {s.name}
                   <small>
-                    Day {s.day} · {s.code}
-                    {n > 0 && ` · ${n} group${n !== 1 ? "s" : ""} here`}
+                    Day {s.day} / {s.code}
+                    {n > 0 && ` / ${n} group${n !== 1 ? "s" : ""} here`}
                   </small>
                 </span>
                 <span className="gc-chip" data-tone={meta(s.status).tone}>{meta(s.status).label}</span>
@@ -104,7 +104,7 @@ export function StationBoard() {
                     <div><dt>Game</dt><dd>{s.purpose || "—"}</dd></div>
                     <div><dt>Groups here</dt><dd>{n}{s.max_groups ? ` / ${s.max_groups}` : ""}</dd></div>
                     {s.day === 2 && (
-                      <div><dt>Risk · entry</dt><dd>{RISK_TIER_META[s.risk_tier].label} · −{s.entry_cost}</dd></div>
+                      <div><dt>Risk &amp; entry</dt><dd>{RISK_TIER_META[s.risk_tier].label} / −{s.entry_cost}</dd></div>
                     )}
                   </dl>
                   <p className="gc-muted">

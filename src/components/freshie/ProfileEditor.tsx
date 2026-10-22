@@ -155,7 +155,7 @@ export function ProfileEditor({
               </label>
               <label className="fh-edit-field">
                 <span>Programme</span>
-                <input className="fh-input" placeholder="e.g. Computer Science · Year 3" defaultValue={me.programme} />
+                <input className="fh-input" placeholder="e.g. Computer Science / Year 3" defaultValue={me.programme} />
               </label>
               <label className="fh-edit-field">
                 <span>Languages</span>

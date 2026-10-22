@@ -111,7 +111,7 @@ export default function CheckinPage() {
           <div className="min-w-0">
             <p className="text-xs text-ink-faint">Your group is at</p>
             <p className="truncate font-semibold">
-              {current.code} · {current.name}
+              {current.code} / {current.name}
             </p>
           </div>
           <button

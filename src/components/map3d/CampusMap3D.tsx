@@ -85,7 +85,7 @@ function GpsMarkers() {
                 whiteSpace: "nowrap",
               }}
             >
-              GPS · {name}
+              GPS / {name}
             </div>
           </Html>
         </group>
@@ -197,9 +197,9 @@ export default function CampusMap3D() {
         }}
       >
         <div style={{ minWidth: 0 }}>
-          <div style={{ fontWeight: 800, fontSize: 18 }}>XMUM campus · 3D draft</div>
+          <div style={{ fontWeight: 800, fontSize: 18 }}>XMUM campus / 3D draft</div>
           <div style={{ fontSize: 12, opacity: 0.75, marginTop: 4 }}>
-            {touch ? "1 finger: move · 2 fingers: rotate and zoom" : "Drag: move · Right-drag: rotate · Scroll: zoom"}
+            {touch ? "1 finger: move / 2 fingers: rotate and zoom" : "Drag: move / Right-drag: rotate / Scroll: zoom"}
           </div>
         </div>
         <button

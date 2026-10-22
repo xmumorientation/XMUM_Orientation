@@ -173,7 +173,7 @@ export function BlindBoxCard() {
                     )}
                     <span>
                       {left} of {r.quantity} left
-                      {r.type ? ` · ${r.type.price > 0 ? `${r.type.price} token${r.type.price !== 1 ? "s" : ""}` : "free"}` : ""}
+                      {r.type ? ` / ${r.type.price > 0 ? `${r.type.price} token${r.type.price !== 1 ? "s" : ""}` : "free"}` : ""}
                     </span>
                   </li>
                 );

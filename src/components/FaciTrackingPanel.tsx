@@ -60,8 +60,8 @@ export function FaciTrackingPanel() {
   const tone = status === "active" ? "bg-green-500" : status === "imprecise" ? "bg-amber-500" : "bg-red-500";
   let line: string;
   if (sharing && lastReportedAt) {
-    line = `Sharing${accuracy != null ? ` · ±${Math.round(accuracy)} m` : ""} · sent ${timeAgo(lastReportedAt.toISOString(), nowMs)}`;
-    if (status === "imprecise") line += " · rough location";
+    line = `Sharing${accuracy != null ? ` / ±${Math.round(accuracy)} m` : ""} / sent ${timeAgo(lastReportedAt.toISOString(), nowMs)}`;
+    if (status === "imprecise") line += " / rough location";
   } else if (status === "requesting") {
     line = error ?? "Finding your location…";
   } else if (status === "idle" || status === "prompt") {

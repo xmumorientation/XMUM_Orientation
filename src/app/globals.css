@@ -233,3 +233,6 @@ body:is(:has(.fh), :has(.staff-dashboard-shell)) {
     animation: none !important;
   }
 }
+
+/* Inherit the map card's surface in both the light and night themes. */
+.group-faci-details { background: transparent; color: inherit; border-top: 1px solid currentColor; border-top-color: color-mix(in srgb, currentColor 18%, transparent); }

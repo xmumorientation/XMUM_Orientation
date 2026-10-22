@@ -41,16 +41,30 @@ function urlLines(ctx: CanvasRenderingContext2D, url: string, maxWidth: number) 
 }
 
 /** Same card Freshie control downloads: password, join link, QR, group colour. */
-export async function groupQrPng(groupId: number, code: string, color: string): Promise<string> {
+const qrCards = new Map<string, Promise<string>>();
+
+export function groupQrPng(groupId: number, code: string, color: string): Promise<string> {
+  const key = JSON.stringify([window.location.origin, groupId, code, color]);
+  const cached = qrCards.get(key);
+  if (cached) return cached;
+  // In-memory only; a changed password or colour always uses a new card.
+  if (qrCards.size >= 12) {
+    const oldest = qrCards.keys().next().value;
+    if (oldest !== undefined) qrCards.delete(oldest);
+  }
+  const card = renderGroupQr(groupId, code, color).catch((error: unknown) => {
+    qrCards.delete(key);
+    throw error;
+  });
+  qrCards.set(key, card);
+  return card;
+}
+
+async function renderGroupQr(groupId: number, code: string, color: string): Promise<string> {
   const url = `${window.location.origin}${groupJoinPath(groupId, code)}`;
   const theme = themeFromColor(color);
-  const qrUrl = await QRCode.toDataURL(url, { width: 640, margin: 1, errorCorrectionLevel: "M" });
-  const img = new Image();
-  await new Promise<void>((resolve, reject) => {
-    img.onload = () => resolve();
-    img.onerror = () => reject(new Error("Could not draw the QR code"));
-    img.src = qrUrl;
-  });
+  const img = document.createElement("canvas");
+  await QRCode.toCanvas(img, url, { width: 640, margin: 1, errorCorrectionLevel: "M" });
 
   const outer = 48;
   const qrPad = 32;
@@ -59,7 +73,7 @@ export async function groupQrPng(groupId: number, code: string, color: string): 
   const width = innerW + outer * 2;
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
-  if (!ctx) return qrUrl;
+  if (!ctx) return img.toDataURL("image/png");
 
   const fitted = urlLines(ctx, url, innerW);
   const passSize = 84;

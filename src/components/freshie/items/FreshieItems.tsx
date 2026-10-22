@@ -98,7 +98,7 @@ export function FreshieItems({
         <div className="fi-game-status" data-phase={data.phase}>
           <span>
             {PHASE_LABEL[data.phase]}
-            {sample && <span className="fi-sample">· Sample data</span>}
+            {sample && <span className="fi-sample">Sample data</span>}
           </span>
           {data.timeLeft && <span className="fi-game-clock"><Clock3 size={15} aria-hidden /><strong>{data.timeLeft}</strong><span>left to play</span></span>}
         </div>
@@ -260,10 +260,10 @@ function KeySheet({ data, loc }: { data: ItemsData; loc: ProjectorLocation }) {
         <span>
           <b>
             {KEY_NAMES[loc]}
-            {unlocked ? ` · ${PROJECTOR_LABELS[loc]}` : ""}
+            {unlocked ? ` / ${PROJECTOR_LABELS[loc]}` : ""}
           </b>
           <small className="fh-mono">
-            {data.group.name.toUpperCase()} · ONE USE
+            {data.group.name.toUpperCase()} / ONE USE
           </small>
         </span>
       </div>

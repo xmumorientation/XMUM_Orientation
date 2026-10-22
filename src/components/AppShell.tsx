@@ -153,7 +153,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, [pathname]);
 
   async function signOut() {
-    await supabaseBrowser().auth.signOut();
+    await supabaseBrowser().auth.signOut({ scope: "local" });
     window.location.href = isFreshie ? "/" : "/login";
   }
 

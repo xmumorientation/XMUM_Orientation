@@ -135,7 +135,7 @@ export function NfcSection() {
             <li key={t.id}>
               <span>{t.label}</span>
               <span className="gc-chip" data-tone={t.used_at ? "off" : "ok"}>
-                {t.used_at ? `USED · G${t.used_by_group}` : "UNUSED"}
+                {t.used_at ? `USED / G${t.used_by_group}` : "UNUSED"}
               </span>
             </li>
           ))}

@@ -55,7 +55,7 @@ export function GameToggles({
   useEffect(() => {
     loadStations();
     const channel = supabase
-      .channel("live-control-stations")
+      .channel(`live-control-stations-${crypto.randomUUID()}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "stations" }, loadStations)
       .subscribe();
     return () => {
@@ -197,7 +197,7 @@ export function GameToggles({
       <div className="text-xs leading-5 text-ink-faint">
         <p className="font-semibold">
           {game.state === "active" ? "Running" : game.state === "paused" ? "Paused" : game.state === "ended" ? "Ended" : "Not started"}
-          {blocker && ` · end ${blocker.name} first`}
+          {blocker && ` / end ${blocker.name} first`}
         </p>
         <button
           type="button"

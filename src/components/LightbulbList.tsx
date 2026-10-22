@@ -6,14 +6,14 @@ import { PROJECTOR_CODE_NAMES, PROJECTOR_LABELS, type MapLightbulb, type Project
 import { timeAgo } from "@/lib/utils";
 
 export function bulbTitle(b: MapLightbulb) {
-  return `${PROJECTOR_CODE_NAMES[b.location]} · ${PROJECTOR_LABELS[b.location]}`;
+  return `${PROJECTOR_CODE_NAMES[b.location]} / ${PROJECTOR_LABELS[b.location]}`;
 }
 
 export function bulbStatus(b: MapLightbulb, nowMs: number) {
   if (!b.activated_at) return "Not lit yet";
   const at = new Date(b.activated_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   const by = b.group_name ?? (b.activated_by_group != null ? `Group ${b.activated_by_group}` : "a group");
-  return `Lit by ${by} at ${at} (${timeAgo(b.activated_at, nowMs)})${b.activated_manually ? " · set by Admin" : ""}`;
+  return `Lit by ${by} at ${at} (${timeAgo(b.activated_at, nowMs)})${b.activated_manually ? " / set by Admin" : ""}`;
 }
 
 /** The lightbulbs the viewer may see: under the 2D map in Lightbulbs mode, always under the 3D map. */
@@ -45,7 +45,7 @@ export function LightbulbList({
   return (
     <section className="card mt-3 overflow-hidden p-0">
       <h2 className="border-b border-paper-200 px-3 py-2 text-sm font-semibold">
-        Lightbulbs · {lit} lit
+        Lightbulbs / {lit} lit
       </h2>
       <ul className="divide-y divide-paper-200">
         {bulbs.map((b) => (

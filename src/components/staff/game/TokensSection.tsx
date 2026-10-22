@@ -78,7 +78,7 @@ export function TokensSection() {
         {([1, 2] as const).map((day) => (
           <section key={day} className="gc-card gc-rules" aria-labelledby={`gc-rules-${day}`}>
             <h3 id={`gc-rules-${day}`} className="gc-eyebrow">
-              {day === 1 ? "Day 1 · rewards" : "Day 2 · entry fee"}
+              {day === 1 ? "Day 1 / rewards" : "Day 2 / entry fee"}
             </h3>
             {TOKEN_RULES.filter((r) => r.day === day).map((r) => {
               const value = draft[r.key] ?? rules[r.key];

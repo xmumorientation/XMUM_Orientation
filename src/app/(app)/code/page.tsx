@@ -6,7 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useProfile } from "@/components/ProfileProvider";
 import { groupColor } from "@/components/freshie/groupTheme";
 import { useGroup } from "@/components/useGroup";
-import { PageTitle, Spinner } from "@/components/ui";
+import { ErrorBanner, PageTitle, Spinner } from "@/components/ui";
 import { groupQrPng, saveGroupQr } from "@/lib/group-qr";
 import { supabaseBrowser } from "@/lib/supabase/client";
 
@@ -17,6 +17,9 @@ export default function GroupCodePage() {
   const supabase = useMemo(() => supabaseBrowser(), []);
   const [code, setCode] = useState<string | null>(null);
   const [png, setPng] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const color = groupColor(group?.color);
+  const groupId = group?.id;
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -34,27 +37,31 @@ export default function GroupCodePage() {
   }, [supabase]);
 
   useEffect(() => {
-    if (!code || !group) return;
+    if (!code || groupId == null) return;
     let active = true;
-    groupQrPng(group.id, code, groupColor(group.color)).then((file) => {
+    setError(null);
+    setPng(null);
+    groupQrPng(groupId, code, color).then((file) => {
       if (active) setPng(file);
-    });
+    }).catch(() => { if (active) setError("Could not generate the QR code. Please reload to try again."); });
     return () => {
       active = false;
     };
-  }, [code, group]);
+  }, [code, groupId, color]);
 
   if (profile.role !== "faci") redirect("/dashboard");
 
   return (
     <div className="mx-auto flex max-w-md flex-col items-center gap-4">
       <PageTitle title="Group code" subtitle="The password, link, and QR for your group" />
+      <ErrorBanner message={error} />
       {!ready || groupLoading ? (
         <Spinner />
       ) : !code || !group ? (
         <p className="text-sm text-ink-faint">This group does not have a login code yet.</p>
       ) : (
         <>
+          {!png && !error && <Spinner />}
           {png && (
             // The card is a generated image, same file Freshie control downloads.
             // eslint-disable-next-line @next/next/no-img-element

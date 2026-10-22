@@ -109,7 +109,7 @@ export function FunfairSection() {
       </div>
       <article className="gc-card gc-form">
         <header className="gc-game-head">
-          <h3 className="gc-h4">Finale · Lake stage concert</h3>
+          <h3 className="gc-h4">Finale: Lake stage concert</h3>
           {finale !== null && (
             <span className="gc-chip" data-tone={finale ? "live" : "off"}>
               {finale ? "LIVE" : "OFF"}

@@ -67,7 +67,7 @@ function clock(iso: string) {
 /** "Day 2 entry: Station 6 (medium)" → "Station 6 · Medium risk". */
 function entryTitle(reason: string) {
   const m = /^Day 2 entry:\s*(.+?)\s*\((low|medium|high)\)\s*$/i.exec(reason);
-  return m ? `${m[1]} · ${TIER_LABEL[m[2].toLowerCase()]} risk` : reason;
+  return m ? `${m[1]} / ${TIER_LABEL[m[2].toLowerCase()]} risk` : reason;
 }
 
 export function useItemsData(): { data: ItemsData; loading: boolean } {

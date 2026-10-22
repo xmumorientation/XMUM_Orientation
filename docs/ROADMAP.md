@@ -231,6 +231,9 @@ The design branches are merged. These remote branches are still not in `main` (c
 - Success animation now automatically opens the 3D map, focuses the newly powered funfair zone(s), and plays the existing lighting ramp after the scene is ready. Custom keys/overrides count, duplicate scans do not invent an unlock, portrait/reduced-motion/2D fallback are handled. No new 3D bulb markers, scene redesign or migration.
 - Verified authenticated G10/TF activation, retry, rejected Freshie activation and public G2 visibility; also checked a real signed link through the local browser app. All temporary account, zone and activation changes were restored; temporary card removed. 135 tests, typecheck and production build passed. Frontend is not pushed/deployed; physical NFC remains untested. Details: [test report](testing/nfc-journey-2026-10-19.md).
 
+### David, 2026-10-19 (logo intro frequency)
+- The global Vortexa logo intro now plays once per browser tab session. Refreshes and login redirects in the same tab skip it, with no overlay flash while checking session storage. Activation and its preview keep their existing exemption. If storage is disabled, repeat full-page loads cannot retain the seen flag.
+
 ### Map: LakeFront Café as the lake stage, 2026-10-16 to 10-17 (Ben, branch `funfair-central`; partly done)
 No migration. Design and batches: [map3d-lakefront-design.md](map3d-lakefront-design.md).
 - **Done (L1):** the 3D map's red dome is now the real venue from Ben's photos: the red ribbed shell over a round stage, the moat, the walkway, the footbridge, a grass amphitheatre and willows (`src/components/map3d/lakefront/`). The XMUM hedge letters are removed (Ben). Positions, the label, GPS, markers and the 2D map are unchanged.
@@ -701,3 +704,15 @@ Branch `jiamin-blind-box-integration`. Migration `0070_blindbox_buy_flow.sql` (t
 - Admin redesign step A: Admin nav is now 4 sections (Live, Freshies, Game, Settings) with sub-tabs; Freshie control moved to `/admin/freshies` (old `/freshie-control` redirects); admin sidebar can collapse to icons. UI only. Step B done: Users (role chips, group filter, table, CSV import in a pop-up), Audit (action and role chips, table), Control room (phase rows, switches). Step C done: Stations (table, add in pop-up), Blind box (two tabs, table), NFC, Puzzles, FAQ (grouped, add in pop-up), Brand, Tokens (full width, layout only). Admin redesign complete.
 - Removed Interview Booking (`/booking`) and Practice Reservations (`/reservations`) for every role: pages, nav, dashboard cards. Migration `0039` drops any leftover booking tables, functions and types.
 - Facilitators set a group name and slogan on the home checklist. "Group 1" stays the number. HOF still cannot see the list.
+
+
+### David, 2026-10-22 — field fixes (source ready; not deployed)
+- Map follows the live Day 1/Day 2 phase, with foreground refresh and polling; added large building buttons for phones and restricted transparent 3D marker hit areas. Expanded group Faci details inherit the dark surface.
+- Live control All uses independent realtime subscriptions; original crash reproduced and fixed in the browser.
+- Current-device sign-out avoids invalidating other phones on shared group accounts. Auth redirects retain refreshed cookies and transient service errors do not redirect users as signed out.
+- Group QR cards draw directly to canvas, use a bounded in-memory cache, and no longer regenerate on unrelated group balance updates.
+- HOF/HOGM opt-in GPS sharing added (0102), including Stop, role-restricted visibility, no position history and two-minute expiry. HOF Faci-assignment edits were excluded because David confirmed a teammate has fixed them.
+- Validated: 142 tests across 13 suites, typecheck, production build, local browser regressions. Pending: apply 0102, deploy, and check real-phone GPS/multi-device sessions. See [field-fix test and release notes](testing/orientation-field-fixes-2026-10-22.md).
+
+### David, 2026-10-22 — website punctuation
+- Replaced visible middle-dot separators throughout the website with context-appropriate slashes, ampersands, colons or parentheses. Updated the funfair arrival title split to match the new separator; existing database zone/phase labels are formatted at display time. No database migration or live-data edit. Source changes only, not deployed.

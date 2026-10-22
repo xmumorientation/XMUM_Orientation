@@ -53,7 +53,7 @@ export function BlindBoxLogin({
 
   async function switchToFreshie() {
     setBusy(true);
-    await supabase.auth.signOut();
+    await supabase.auth.signOut({ scope: "local" });
     setBusy(false);
     setSwitching(true);
   }

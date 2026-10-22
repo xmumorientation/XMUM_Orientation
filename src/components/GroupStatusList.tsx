@@ -28,10 +28,10 @@ export function pinSummary(g: GroupPosition, pin: GroupPin | null, nowMs: number
       : `Outside the campus map, ${timeAgo(g.gps_at, nowMs)}`;
   }
   if (pin.source === "manual") {
-    return `Checked in at ${g.checkin_station_code ?? "a station"} · ${timeAgo(pin.at, nowMs)}`;
+    return `Checked in at ${g.checkin_station_code ?? "a station"} / ${timeAgo(pin.at, nowMs)}`;
   }
   const acc = pin.accuracyM != null ? `±${Math.round(pin.accuracyM)} m` : "accuracy unknown";
-  return `GPS ${acc} · ${timeAgo(pin.at, nowMs)}`;
+  return `GPS ${acc} / ${timeAgo(pin.at, nowMs)}`;
 }
 
 export function reportingSummary(g: GroupPosition) {
@@ -106,7 +106,7 @@ export function GroupStatusList({
                       <span className="block truncate text-sm font-medium">{g.group_name}</span>
                       <span className="block truncate text-xs text-ink-faint">
                         {pinSummary(g, pin, nowMs)}
-                        {pin?.imprecise && pin.source === "gps" ? " · rough" : ""}
+                        {pin?.imprecise && pin.source === "gps" ? " / rough" : ""}
                       </span>
                     </span>
                     <span className="shrink-0 text-xs text-ink-faint">
@@ -187,7 +187,7 @@ function NotSeenRow({
         </button>
       </div>
       {open && (
-        <div className="bg-paper-50 px-3 pb-2.5 pt-1">
+        <div className="group-faci-details px-3 pb-2.5 pt-1">
           {error && <p className="text-xs text-red-600">{error}</p>}
           {!error && !facis && <p className="text-xs text-ink-faint">Loading…</p>}
           {facis?.length === 0 && (

@@ -246,7 +246,7 @@ export function StationsSection() {
                     <div><dt>Game</dt><dd>{s.purpose || "—"}</dd></div>
                     <div><dt>Groups at once</dt><dd>{s.max_groups ?? "—"}</dd></div>
                     {s.day === 2 && (
-                      <div><dt>Risk · entry</dt><dd>{RISK_TIER_META[s.risk_tier].label} · −{s.entry_cost}</dd></div>
+                      <div><dt>Risk &amp; entry</dt><dd>{RISK_TIER_META[s.risk_tier].label} / −{s.entry_cost}</dd></div>
                     )}
                   </dl>
                   <div className="gc-seg gc-seg-status" role="group" aria-label={`${s.name} status`}>
@@ -354,7 +354,7 @@ export function StationsSection() {
         </form>
       </Sheet>
 
-      <Sheet open={gmStation !== null} onClose={() => setGmStation(null)} title={gmStation ? `Game Masters · ${gmStation.name}` : "Game Masters"}>
+      <Sheet open={gmStation !== null} onClose={() => setGmStation(null)} title={gmStation ? `Game Masters / ${gmStation.name}` : "Game Masters"}>
         {gmStation && (
           <div className="gc-form">
             <input
@@ -393,7 +393,7 @@ export function StationsSection() {
               {gmUsers.length === 0 && <li className="gc-empty">No Game Masters yet.</li>}
             </ul>
             <button type="button" className="gc-btn gc-btn-primary" disabled={busy} onClick={saveGms}>
-              Save · {picked.length} selected
+              Save ({picked.length} selected)
             </button>
           </div>
         )}

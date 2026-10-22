@@ -199,8 +199,8 @@ export default function AdminNfcPage() {
             <thead><tr className="border-b border-paper-200 text-xs font-bold uppercase tracking-wide text-ink-faint"><th className="py-2">Test run</th><th>State</th><th className="text-right">Actions</th></tr></thead>
             <tbody className="divide-y divide-paper-200">
               {testRuns.map((run) => <tr key={run.id}>
-                <td className="py-2">Group {run.group_id} · {PROJECTOR_LABELS[run.location]}<span className="block text-xs text-ink-faint">{new Date(run.created_at).toLocaleString()}</span></td>
-                <td>{run.closed_at ? `Finished · ${new Date(run.closed_at).toLocaleString()}` : run.reset_at ? `Active · reset ${new Date(run.reset_at).toLocaleString()}` : "Active"}</td>
+                <td className="py-2">Group {run.group_id} / {PROJECTOR_LABELS[run.location]}<span className="block text-xs text-ink-faint">{new Date(run.created_at).toLocaleString()}</span></td>
+                <td>{run.closed_at ? `Finished / ${new Date(run.closed_at).toLocaleString()}` : run.reset_at ? `Active / reset ${new Date(run.reset_at).toLocaleString()}` : "Active"}</td>
                 <td className="space-x-2 text-right">
                   {!run.closed_at && <>
                     <button disabled={busy} onClick={() => mint(run)} className="btn text-xs">Generate test sticker</button>
@@ -331,7 +331,7 @@ export default function AdminNfcPage() {
       </div>
       <Dialog open={pendingDelete !== null} onOpenChange={(open) => { if (!open && !busy) setPendingDelete(null); }}>
         <DialogContent title="Delete NFC card?" description="This permanently removes the card. Its NFC sticker and QR link will stop working. Existing logs will be kept." showClose={!busy}>
-          {pendingDelete && <p className="text-sm font-semibold">{pendingDelete.label || `Card #${pendingDelete.id}`} · {pendingDelete.location} · #{pendingDelete.id}</p>}
+          {pendingDelete && <p className="text-sm font-semibold">{pendingDelete.label || `Card #${pendingDelete.id}`} / {pendingDelete.location} / #{pendingDelete.id}</p>}
           {deleteError && <p role="alert" className="mt-3 text-sm text-red-700">{deleteError}</p>}
           <div className="mt-4 flex justify-end gap-2">
             <button className="btn" disabled={busy} onClick={() => setPendingDelete(null)}>Cancel</button>

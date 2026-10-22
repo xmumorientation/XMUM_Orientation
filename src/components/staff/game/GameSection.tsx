@@ -158,7 +158,7 @@ function GameCard({ game, day }: { game: Phase; day: 1 | 2 }) {
         busy={busy}
         danger={asking === "end"}
         title={asking === "end" ? `End ${game.name}?` : `Start ${game.name}?`}
-        confirmLabel={asking === "end" ? "End game" : `Start · ${minutes} min`}
+        confirmLabel={asking === "end" ? "End game" : `Start (${minutes} min)`}
         body={
           asking === "end"
             ? `Day ${day} stations close.`

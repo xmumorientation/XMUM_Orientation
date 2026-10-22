@@ -223,7 +223,7 @@ export function SellersTab({ data, onError, onNotice }: TabProps) {
                         onClick={() => data.reload()}
                         className="text-xs text-red-500 underline"
                       >
-                        couldn&apos;t load · retry
+                        couldn&apos;t load / retry
                       </button>
                     ) : (
                       <span className="text-xs text-ink-faint">loading…</span>

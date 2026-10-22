@@ -70,7 +70,7 @@ export function GameControl() {
         <h1 className="gc-title gc-title-holo">OPS</h1>
         <p className="gc-sub">
           <i aria-hidden />
-          Game control · <b>{current.label}</b>
+          Game control / <b>{current.label}</b>
         </p>
       </header>
 

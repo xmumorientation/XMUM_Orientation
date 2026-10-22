@@ -538,7 +538,7 @@ export function CampusMap3DView({
     if (fullscreen) closeFullscreen();
   }
 
-  // Day 2 stations by area, for the areas the 3D map places (TBD has no place yet).
+  // The current game day’s stations by area, for the areas the 3D map places (TBD has no place yet).
   const byArea = useMemo(() => {
     const map = new Map<string, Station[]>();
     for (const s of mapStations) {
@@ -652,6 +652,14 @@ export function CampusMap3DView({
     }
     for (const list of atSpot.values()) {
       list.forEach((mark, k) => (mark.dx = (k - (list.length - 1) / 2) * 26));
+    }
+  }
+
+  if (!checking) for (const person of data.staffPositions) {
+    const [x, z] = gpsToWorld(person.lat, person.lng);
+    // Do not clamp an off-campus fix to the edge and misrepresent its location.
+    if (Math.abs(x) <= EXTENT.x && Math.abs(z) <= EXTENT.z) {
+      tags.push({ key: `staff-${person.user_id}`, text: `${person.role.toUpperCase()} / ${person.full_name || "Staff"}`, at: [x, 0, z], dot: true });
     }
   }
 
@@ -832,7 +840,7 @@ export function CampusMap3DView({
           >
             <div ref={fullSlot} className="absolute inset-0 cursor-grab active:cursor-grabbing" />
             {arrival && <div role="status" className="pointer-events-none absolute inset-x-4 bottom-24 z-30 mx-auto max-w-sm rounded-2xl bg-black/80 px-5 py-3 text-center text-sm text-white">
-              {!arrival.on ? "Your magic is reaching the funfair…" : arrival.zones.length ? `${arrival.zones.map(zone => FUNFAIR_ZONE_NAMES[zone].split(" · ")[1]).join(" & ")} — lit up!` : "Your projector is revived. Explore the funfair!"}
+              {!arrival.on ? "Your magic is reaching the funfair…" : arrival.zones.length ? `${arrival.zones.map(zone => FUNFAIR_ZONE_NAMES[zone].split(" / ")[1]).join(" & ")} — lit up!` : "Your projector is revived. Explore the funfair!"}
             </div>}
 
             <div
@@ -900,7 +908,7 @@ export function CampusMap3DView({
                   onStationTap={onStationTap}
                   idle={
                     <p className="inline-flex rounded-full bg-black/55 px-3 py-1.5 text-xs font-semibold text-white">
-                      {env?.touch ? "Drag to move · Two fingers to zoom and turn" : "Drag to move · Right-drag to turn · Scroll to zoom"}
+                      {env?.touch ? "Drag to move / Two fingers to zoom and turn" : "Drag to move / Right-drag to turn / Scroll to zoom"}
                     </p>
                   }
                 />

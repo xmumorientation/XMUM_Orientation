@@ -231,7 +231,7 @@ export function useBlindBoxAdmin(onError: (m: string | null) => void): BlindBoxA
         return staff.find((s) => s.id === a.profile_id)?.full_name || a.profile_id.slice(0, 8);
       }
       const st = stations.find((s) => s.id === a.station_id);
-      return st ? `${st.code} · ${st.name}` : `Station ${a.station_id}`;
+      return st ? `${st.code} / ${st.name}` : `Station ${a.station_id}`;
     },
     [staff, stations]
   );

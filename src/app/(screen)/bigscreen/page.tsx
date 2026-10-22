@@ -79,7 +79,7 @@ function ScreenClock() {
         )}
       >
         {current.is_endgame ? "Endgame" : current.name}
-        {current.state === "paused" ? " · paused" : ""}
+        {current.state === "paused" ? " / paused" : ""}
       </p>
       <p
         className={cn(
