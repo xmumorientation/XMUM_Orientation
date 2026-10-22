@@ -3,9 +3,10 @@
 import { useMemo, useState } from "react";
 import { ChevronDown, MessageCircle, Phone } from "lucide-react";
 
+import { FoldBody } from "@/components/staff/game/parts";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import type { FaciStatus, GroupPosition } from "@/lib/types";
-import { isNotSeen, type GroupPin } from "@/lib/groupPosition";
+import type { GroupPin } from "@/lib/groupPosition";
 import { MAX_DRAW_ACCURACY_M, groupPinColor } from "@/lib/mapGeo";
 import { friendlyError, timeAgo } from "@/lib/utils";
 
@@ -27,8 +28,9 @@ export function pinSummary(g: GroupPosition, pin: GroupPin | null, nowMs: number
       ? `Only a rough location (±${Math.round(acc)} m), ${timeAgo(g.gps_at, nowMs)}`
       : `Outside the campus map, ${timeAgo(g.gps_at, nowMs)}`;
   }
+  if (pin.area) return `Last seen at ${pin.area} / ${timeAgo(pin.at, nowMs)}`;
   if (pin.source === "manual") {
-    return `Checked in at ${g.checkin_station_code ?? "a station"} / ${timeAgo(pin.at, nowMs)}`;
+    return `Last seen at ${g.checkin_station_code ?? "a station"} / ${timeAgo(pin.at, nowMs)}`;
   }
   const acc = pin.accuracyM != null ? `±${Math.round(pin.accuracyM)} m` : "accuracy unknown";
   return `GPS ${acc} / ${timeAgo(pin.at, nowMs)}`;
@@ -40,9 +42,10 @@ export function reportingSummary(g: GroupPosition) {
 }
 
 /**
- * Every visible group with where its pin comes from. Groups nobody can place
- * (no fix in the last 10 minutes) are listed first, with their Facis'
- * contacts. Phone numbers only come back for Committee tier.
+ * One list of every visible group, Group 1 to 10, each with where it was last
+ * seen (Ben: one list, not "Not seen" and "On the map"). Tapping a placed group
+ * selects its pin; Facis opens its Facilitators and when each phone last
+ * shared. Phone numbers only come back for Committee tier.
  */
 export function GroupStatusList({
   positions,
@@ -55,71 +58,19 @@ export function GroupStatusList({
   nowMs: number;
   onSelect: (groupId: number) => void;
 }) {
-  const [notSeen, seen] = useMemo(() => {
-    const a: GroupPosition[] = [];
-    const b: GroupPosition[] = [];
-    for (const g of positions) {
-      (isNotSeen(pins.get(g.group_id) ?? null, nowMs) ? a : b).push(g);
-    }
-    return [a, b];
-  }, [positions, pins, nowMs]);
+  const groups = useMemo(() => [...positions].sort((a, b) => a.group_id - b.group_id), [positions]);
 
-  if (positions.length === 0) return null;
+  if (groups.length === 0) return null;
 
   return (
-    <div className="mt-3 space-y-3">
-      {notSeen.length > 0 && (
-        <section className="card overflow-hidden border-red-200 p-0">
-          <h2 className="border-b border-red-100 bg-red-50 px-3 py-2 text-sm font-semibold text-red-800">
-            Not seen for 10+ min ({notSeen.length})
-          </h2>
-          <ul className="divide-y divide-paper-200">
-            {notSeen.map((g) => (
-              <NotSeenRow
-                key={g.group_id}
-                g={g}
-                pin={pins.get(g.group_id) ?? null}
-                nowMs={nowMs}
-                onSelect={onSelect}
-              />
-            ))}
-          </ul>
-        </section>
-      )}
-      {seen.length > 0 && (
-        <section className="card overflow-hidden p-0">
-          <h2 className="border-b border-paper-200 px-3 py-2 text-sm font-semibold">
-            Groups on the map
-          </h2>
-          <ul className="divide-y divide-paper-200">
-            {seen.map((g) => {
-              const pin = pins.get(g.group_id) ?? null;
-              return (
-                <li key={g.group_id}>
-                  <button
-                    type="button"
-                    onClick={() => onSelect(g.group_id)}
-                    className="flex w-full items-center gap-3 px-3 py-2 text-left hover:bg-paper-100"
-                  >
-                    <GroupDot groupId={g.group_id} />
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-medium">{g.group_name}</span>
-                      <span className="block truncate text-xs text-ink-faint">
-                        {pinSummary(g, pin, nowMs)}
-                        {pin?.imprecise && pin.source === "gps" ? " / rough" : ""}
-                      </span>
-                    </span>
-                    <span className="shrink-0 text-xs text-ink-faint">
-                      {g.facis_reporting}/{g.facis_total}
-                    </span>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-      )}
-    </div>
+    <section className="card mt-3 overflow-hidden p-0">
+      <h2 className="border-b border-paper-200 px-3 py-2 text-sm font-semibold">Group locations</h2>
+      <ul className="divide-y divide-paper-200">
+        {groups.map((g) => (
+          <GroupRow key={g.group_id} g={g} pin={pins.get(g.group_id) ?? null} nowMs={nowMs} onSelect={onSelect} />
+        ))}
+      </ul>
+    </section>
   );
 }
 
@@ -134,7 +85,7 @@ function GroupDot({ groupId }: { groupId: number }) {
   );
 }
 
-function NotSeenRow({
+function GroupRow({
   g,
   pin,
   nowMs,
@@ -150,16 +101,22 @@ function NotSeenRow({
   const [facis, setFacis] = useState<FaciStatus[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  async function toggle() {
-    const next = !open;
-    setOpen(next);
-    if (!next) return;
+  // The first open loads the Facis before it opens, so the list grows once to
+  // its full height (FoldBody) instead of to "Loading…" and then jumping.
+  async function load() {
     setError(null);
     const { data, error: rpcError } = await supabase.rpc("fn_group_faci_status", {
       p_group_id: g.group_id,
     });
     if (rpcError) setError(friendlyError(rpcError));
     else setFacis((data as FaciStatus[]) ?? []);
+  }
+
+  async function toggle() {
+    if (open) return setOpen(false);
+    if (facis === null) await load();
+    else void load();
+    setOpen(true);
   }
 
   return (
@@ -173,7 +130,8 @@ function NotSeenRow({
         >
           <span className="block truncate text-sm font-medium">{g.group_name}</span>
           <span className="block truncate text-xs text-ink-faint">
-            {pin ? `Last seen: ${pinSummary(g, pin, nowMs)}` : pinSummary(g, pin, nowMs)}
+            {pinSummary(g, pin, nowMs)}
+            {pin?.imprecise && pin.source === "gps" ? " / rough" : ""}
           </span>
         </button>
         <button
@@ -186,7 +144,7 @@ function NotSeenRow({
           <ChevronDown className={`h-3.5 w-3.5 transition-transform ${open ? "rotate-180" : ""}`} />
         </button>
       </div>
-      {open && (
+      <FoldBody open={open}>
         <div className="group-faci-details px-3 pb-2.5 pt-1">
           {error && <p className="text-xs text-red-600">{error}</p>}
           {!error && !facis && <p className="text-xs text-ink-faint">Loading…</p>}
@@ -231,7 +189,7 @@ function NotSeenRow({
             })}
           </ul>
         </div>
-      )}
+      </FoldBody>
     </li>
   );
 }

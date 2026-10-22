@@ -7,6 +7,7 @@ import { usePhaseTimer } from "@/components/PhaseTimerProvider";
 import { activeMapDay } from "@/lib/mapDay";
 import { bulbTitle } from "@/components/LightbulbList";
 import { useProfile } from "@/components/ProfileProvider";
+import { useProjectorPlaces } from "@/components/useConfig";
 import { funfairFromBulbs, funfairFromState, funfairMissing, type FunfairPower } from "@/lib/funfair";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import type {
@@ -19,6 +20,8 @@ import type {
 import { MAP_BUILDINGS, stationPosition } from "@/lib/mapBuildings";
 import { resolveGroupPin, type GroupPin } from "@/lib/groupPosition";
 import { parseStaffPositions, type StaffPosition } from "@/lib/staffLocation";
+import { COMMITTEE_TIER } from "@/lib/types";
+import { loadProjectorClues, NO_CLUES, type MapPlaces, type ProjectorClues } from "@/lib/projectorPlaces";
 import { friendlyError } from "@/lib/utils";
 import { gpsToMapPercent, setExtraAnchors } from "@/lib/mapGeo";
 
@@ -118,8 +121,9 @@ export function buildGroupPins(
     if (!st) return null;
     return stationSpots.get(id) ?? { x: Number(st.map_x), y: Number(st.map_y) };
   };
+  const areaOf = (id: number) => stations.find((s) => s.id === id)?.area ?? null;
   const pins = new Map<number, GroupPin | null>();
-  for (const g of positions) pins.set(g.group_id, resolveGroupPin(g, spotOf, nowMs));
+  for (const g of positions) pins.set(g.group_id, resolveGroupPin(g, spotOf, areaOf, nowMs));
   return pins;
 }
 
@@ -166,10 +170,21 @@ export function useCampusMapData({
   const myId = profile.id;
   const canSeeStaff = profile.role !== "freshie";
   const [staffPositions, setStaffPositions] = useState<StaffPosition[]>([]);
+  const myGroupId = profile.group_id;
+  // The station lists name the groups at a station for Committee tier; everyone else gets a count (Ben).
+  const staffView = COMMITTEE_TIER.includes(profile.role);
   const [stations, setStations] = useState<Station[]>([]);
   const [layerState, setLayerState] = useState<MapLayer>("stations");
   const layer: MapLayer = bulbLayer ? layerState : "stations";
   const [bulbs, setBulbs] = useState<MapLightbulb[]>([]);
+  // Where each projector stands. Staff read the config; a Freshie or Faci gets only the places their group
+  // has earned (fn_my_projector_clues, 0098), and the rest stay code names (null).
+  const player = profile.role === "freshie" || profile.role === "faci";
+  const staffPlaces = useProjectorPlaces();
+  const [clues, setClues] = useState<ProjectorClues>(NO_CLUES);
+  const places: MapPlaces = player
+    ? { B1: clues.B1?.place ?? null, A3: clues.A3?.place ?? null, TF: clues.TF?.place ?? null }
+    : staffPlaces;
   const [selectedBulb, setSelectedBulb] = useState<ProjectorLocation | null>(null);
   const [movingBulb, setMovingBulb] = useState<ProjectorLocation | null>(null);
   // Admin anchors (map_anchors), added to the built-in ones in mapGeo.
@@ -399,7 +414,7 @@ export function useCampusMapData({
 
   async function resetBulb(loc: ProjectorLocation) {
     const b = bulbs.find((item) => item.location === loc);
-    if (!b || !window.confirm(`Turn off ${bulbTitle(b)}? The group that lit it loses it.`)) {
+    if (!b || !window.confirm(`Turn off ${bulbTitle(b, places)}? The group that lit it loses it.`)) {
       return;
     }
     setResetting(loc);
@@ -440,8 +455,14 @@ export function useCampusMapData({
     // Unlit bulbs come back only after the map unlocks (or for Committee);
     // fn_map_lightbulbs decides, so a bulb's place is never sent early.
     async function loadBulbs() {
-      const { data } = await supabase.rpc("fn_map_lightbulbs");
-      if (active && data) setBulbs(data as MapLightbulb[]);
+      const [{ data }, earned] = await Promise.all([
+        supabase.rpc("fn_map_lightbulbs"),
+        player ? loadProjectorClues(supabase) : null,
+      ]);
+      if (!active) return;
+      if (data) setBulbs(data as MapLightbulb[]);
+      // Before 0098 ("missing") a player sees code names only.
+      if (earned) setClues(earned === "missing" ? NO_CLUES : earned);
     }
     async function loadPositions() {
       if (!showGroupPins) return;
@@ -486,6 +507,8 @@ export function useCampusMapData({
         { event: "*", schema: "public", table: "projectors" },
         loadBulbs,
       )
+      // Only Committee tier gets projectors events (0096); for everyone else a
+      // projector change arrives as game_config 'lightbulbs_changed_at'.
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "game_config" },
@@ -509,12 +532,15 @@ export function useCampusMapData({
     // Pins fade with age, so re-check the clock even when no new report
     // arrives. Reload too, in case a realtime event was missed: every 10 s,
     // so a pin is never more than 15 s behind (Ben).
-    const tick = showGroupPins
-      ? setInterval(() => {
-          setNowMs(Date.now());
-          loadPositions();
-        }, 10_000)
-      : null;
+    // The stations' group counts reload on the same beat: a missed occupancy event (a check-out from another
+    // phone, a dropped socket) would otherwise leave "1 groups" on the list after the station is empty.
+    const tick = setInterval(() => {
+      if (showGroupPins) {
+        setNowMs(Date.now());
+        loadPositions();
+      }
+      loadCounts();
+    }, 10_000);
 
     // A phone back from another app may have missed realtime events while it slept, so reload the bulbs (a newly
     // lit one then also asks the funfair again) and the group pins.
@@ -523,17 +549,18 @@ export function useCampusMapData({
       void loadBulbs();
       setNowMs(Date.now());
       void loadPositions();
+      void loadCounts();
     };
     document.addEventListener("visibilitychange", onVisible);
 
     return () => {
       active = false;
-      if (tick) clearInterval(tick);
+      clearInterval(tick);
       if (reloadTimer) clearTimeout(reloadTimer);
       document.removeEventListener("visibilitychange", onVisible);
       supabase.removeChannel(channel);
     };
-  }, [supabase, showGroupPins]);
+  }, [supabase, showGroupPins, player]);
 
   const { phases } = usePhaseTimer();
   const day = activeMapDay(phases);
@@ -574,6 +601,7 @@ export function useCampusMapData({
     myId,
     staffPositions,
     day,
+    myGroupId,
     nowMs,
     // Stations
     stations,
@@ -582,6 +610,7 @@ export function useCampusMapData({
     clusteredIds,
     stationSpots,
     counts,
+    staffView,
     activeSelected,
     setSelected,
     openBuilding,
@@ -596,7 +625,8 @@ export function useCampusMapData({
     // Layer
     layer,
     setLayer,
-    // Lightbulbs
+    // Projectors (lightbulbs) and where each stands (Admin → Puzzles, 0097)
+    places,
     bulbs,
     litCount,
     // The funfair's zones (3D map)

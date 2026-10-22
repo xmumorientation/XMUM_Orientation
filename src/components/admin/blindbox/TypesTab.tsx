@@ -1,6 +1,6 @@
 "use client";
 
-import { Sparkles } from "lucide-react";
+import { ArrowRight, Sparkles } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { Card } from "@/components/ui";
@@ -10,17 +10,20 @@ import { cn, friendlyError } from "@/lib/utils";
 
 import type { BlindBoxAdminData } from "./useBlindBoxAdmin";
 
+export type Step = "types" | "assign" | "codes" | "spot" | "settings";
+
 export interface TabProps {
   data: BlindBoxAdminData;
   onError: (m: string | null) => void;
   onNotice: (m: string) => void;
+  goTo: (step: Step) => void;
 }
 
 const EMPTY = { name: "", min: "1", max: "2", price: "0", stock: "10", special: false };
 
 // Box types: create, edit, delete. A type that has been assigned is archived
 // instead of deleted (history stays; its QRs stop working).
-export function TypesTab({ data, onError, onNotice }: TabProps) {
+export function TypesTab({ data, onError, onNotice, goTo }: TabProps) {
   const supabase = useMemo(() => supabaseBrowser(), []);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState(EMPTY);
@@ -71,7 +74,7 @@ export function TypesTab({ data, onError, onNotice }: TabProps) {
     const used = (data.typeStats[t.id]?.assignments ?? 0) > 0;
     const ok = window.confirm(
       used
-        ? `"${t.name}" has already been assigned, so it will be ARCHIVED: its QR codes stop working and it cannot be assigned again. History is kept. Continue?`
+        ? `"${t.name}" has already been assigned, so it will be ARCHIVED: it can no longer be bought and cannot be assigned again. Sellers' QR codes keep working for their other box types, and boxes already bought can still be opened. History is kept. Continue?`
         : `Delete the box type "${t.name}"?`
     );
     if (!ok) return;
@@ -170,9 +173,10 @@ export function TypesTab({ data, onError, onNotice }: TabProps) {
             Special box (gold reveal)
           </label>
           <p className="text-xs text-ink-faint">
-            Price 0 = free reward box. Stock is the number of boxes that exist;
-            hand them out on the Assign tab. Edits to range and price apply to
-            boxes opened from now on.
+            Price 0 = free reward box. Stock is how many boxes of this type
+            exist; hand them out in step 2. Price and range edits apply to
+            boxes bought from now on; boxes already bought keep the range they
+            were bought with.
           </p>
           <div className="flex gap-2">
             <button disabled={busy} type="submit" className="btn-primary flex-1">
@@ -260,6 +264,13 @@ export function TypesTab({ data, onError, onNotice }: TabProps) {
             )}
           </tbody>
         </table>
+        {live.length > 0 && (
+          <div className="flex justify-end border-t border-paper-200 px-4 py-3">
+            <button type="button" onClick={() => goTo("assign")} className="btn-secondary gap-1.5 px-3 text-sm">
+              Next: hand them out <ArrowRight size={16} strokeWidth={1.75} aria-hidden />
+            </button>
+          </div>
+        )}
         {archived.length > 0 && (
           <p className="border-t border-paper-200 px-4 py-3 text-xs text-ink-faint">
             Archived (history only): {archived.map((t) => t.name).join(", ")}

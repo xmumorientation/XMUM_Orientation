@@ -11,7 +11,7 @@ import { friendlyError } from "@/lib/utils";
 
 // Admin and HOGM: the funfair's setup (funfair_zones, migration 0088) and the
 // lit bulbs, both live, and a way to change a zone (fn_set_funfair_zone). Used
-// by Admin → Live control (FunfairZones) and HOGM's Game control
+// by Admin → Game → Funfair (3D map) (FunfairZones) and HOGM's Game control
 // (FunfairSection).
 
 export function useFunfairZones() {

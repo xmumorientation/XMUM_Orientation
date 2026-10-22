@@ -212,12 +212,6 @@ html.fh-snap { overflow-x: hidden; }
 .fh-menu .fh-menu-edit { display: flex; align-items: center; justify-content: center; gap: 8px; }
 .fh-menu .fh-menu-edit:hover { border-color: var(--fh-accent); color: var(--fh-accent); }
 .fh-menu .fh-menu-edit + button { margin-top: 8px; }
-.fh-menu .fh-menu-link {
-  display: flex; align-items: center; justify-content: center; margin-top: 12px; min-height: 44px; border-radius: 12px;
-  border: 1px solid var(--fh-line-2); color: var(--fh-text); font-weight: 700; font-size: 14px; text-decoration: none;
-}
-.fh-menu .fh-menu-link:hover { border-color: var(--fh-accent); color: var(--fh-accent); }
-.fh-menu .fh-menu-link + button { margin-top: 8px; }
 /* Faci: the header button is their FaciAvatar (same photo or initials as their card). */
 .fh-avatar.fh-avatar-me { width: auto; height: auto; padding: 0; background: none; box-shadow: none; border-radius: 50%; }
 .fh-avatar.fh-avatar-me:focus-visible { outline-offset: 2px; }
@@ -321,7 +315,6 @@ html.fh-snap { overflow-x: hidden; }
 .fh-btn-block { width: 100%; }
 
 /* ── 02 Your Facilitator (Freshie only) ──────────────────────────────────── */
-.fh-faci-sample { border-color: var(--fh-orange); color: var(--fh-orange); }
 .fh-facis { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
 .fh-faci {
   padding: 12px 14px; border-radius: 20px; border: 1px solid var(--fh-line); background: var(--fh-ink-2);
@@ -528,8 +521,6 @@ html.fh-snap { overflow-x: hidden; }
   background: var(--fh-ink-2); border: 1px solid var(--fh-line);
 }
 .fh-team[data-me] { border-color: var(--fh-accent); background: color-mix(in srgb, var(--fh-accent) 14%, var(--fh-ink-2)); }
-.fh-team-rk { font-size: 11px; color: var(--fh-mute); width: 20px; }
-.fh-team-sw { width: 12px; height: 12px; border-radius: 50%; flex: none; }
 .fh-team b { flex: 1; font-weight: 600; font-size: 15px; display: flex; align-items: center; gap: 8px; }
 .fh-you { font-size: 9.5px; letter-spacing: 0.14em; padding: 3px 7px; border-radius: 999px; background: var(--fh-accent); color: var(--fh-on-blue); font-weight: 700; }
 .fh-team-sc { font-size: 18px; color: var(--fh-mute); font-variant-numeric: tabular-nums; }
@@ -594,14 +585,57 @@ html.fh-snap { overflow-x: hidden; }
   .fh-sched-item b { font-size: 15px; }
 }
 
+/* ── Freshie / Faci map page (FreshieMap.tsx) ────────────────────────────────
+   CampusMap's own markup, recoloured to the night and the group colour:
+   night cards, mono accent headings, slab station codes, dark-glass map
+   buttons. The full-screen map is a portal outside .fh-map and keeps its own look. */
+.fh-map { max-width: 980px; margin: 0 auto; font-family: var(--font-nexus-body), Outfit, sans-serif; }
+.fh-map-top { display: grid; gap: 6px; padding: 8px 0 16px; }
+.fh-map-top .fh-h2 { font-family: var(--font-vx-display), Georgia, serif; font-weight: 400; font-size: clamp(38px, 9vw, 52px); }
+.fh-map-sub { margin: 0; font-size: 13.5px; color: var(--fh-mute); }
+
+.fh-map .card {
+  border-radius: 20px; border: 1px solid var(--fh-line); box-shadow: none;
+  background: color-mix(in srgb, var(--fh-ink-2) 88%, transparent); color: var(--fh-text);
+}
+.fh-map .card :is(.border-paper-200, .divide-paper-200 > *) { border-color: var(--fh-line); }
+.fh-map .card > h2 {
+  padding: 12px 16px 10px; font-family: var(--font-mono), "JetBrains Mono", ui-monospace, monospace;
+  font-size: 11px; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; color: var(--fh-accent);
+}
+/* GroupStatusList's "needs attention" card keeps red. */
+.fh-map .card > h2.bg-red-50 { background: rgba(255, 77, 94, 0.12); border-color: rgba(255, 77, 94, 0.35); color: #ff8a95; }
+.fh-map .card.border-red-200 { border-color: rgba(255, 77, 94, 0.35); }
+.fh-map .card li .w-14 { font-family: var(--font-vx-slab), Georgia, serif; font-weight: 400; font-size: 16px; color: var(--fh-text); }
+.fh-map .card .text-ink-faint { color: var(--fh-mute); }
+.fh-map .card :is(.text-ink-soft, .text-ink-base) { color: var(--fh-text-2); }
+.fh-map .card .text-green-700 { color: #4ade80; }
+.fh-map .card .text-amber-700 { color: #fcd34d; }
+.fh-map .card .chip { font-family: var(--font-mono), "JetBrains Mono", ui-monospace, monospace; font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; }
+.fh-map .card :is(.hover\:bg-paper-100, .hover\:bg-paper-200):hover { background: var(--fh-ink-3); }
+.fh-map .card .bg-amber-50:not(.text-amber-950) { background: rgba(251, 191, 36, 0.12); } /* selected lightbulb */
+.fh-map .bg-red-50 { background: rgba(255, 77, 94, 0.12); color: #ff8a95; }
+/* The inline map's "Show names" and "Full screen" buttons. */
+.fh-map .card .relative > button {
+  background: rgba(3, 11, 28, 0.78); color: var(--fh-text); box-shadow: 0 0 0 1px var(--fh-line-2);
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+}
+.fh-map .card .relative > button[aria-pressed="true"] { color: var(--fh-blue-light); box-shadow: 0 0 0 1px var(--fh-accent); }
+/* 2D map only: the Stations / Lightbulbs tabs. */
+.fh-map [role="tablist"][aria-label="Map view"] { background: var(--fh-ink-3); box-shadow: 0 0 0 1px var(--fh-line); }
+.fh-map [role="tablist"][aria-label="Map view"] > button { color: var(--fh-text-2); }
+.fh-map [role="tablist"][aria-label="Map view"] > button:hover { background: var(--fh-ink-2); }
+.fh-map [role="tablist"][aria-label="Map view"] > button[aria-selected="true"] { background: var(--fh-accent); color: var(--fh-on-blue); }
+
 /* ── Freshie Items page (items/FreshieItems.tsx) ─────────────────────────────
    Projectors over their puzzle keys → key banner → item shelf (tokens, boxes).
    A location's puzzle, the key, item details and Activity open in sheets.
    Group colour comes in through --fh-accent / --fh-glow, set on .fi. Lit
-   projectors use gold for "the light is back" and the lighting group's own
-   colour for "who lit it". */
+   projectors use gold for "our group lit it" and --fi-other for "another
+   group lit it" (which group is Committee only, 0096). */
 .fi, .fi-sheet, .bb, .fh-prog-keys, .fh-prog-tokens {
   --fi-gold: #ffd66b;
+  --fi-other: #c9c3dc;
   --fi-up: #3ddc97;
   --fi-down: #ff5c7a;
 }
@@ -793,7 +827,7 @@ html.fh-snap { overflow-x: hidden; }
 .fi-detail-key[data-complete="true"]:not([data-mode="idle"]), .fi-key-big { filter: drop-shadow(0 0 10px var(--fi-key)); }
 .fi-detail[data-state="idle"] .fi-count, .fi-detail[data-state="done"] .fi-count { text-decoration: line-through; color: var(--fh-mute); }
 .fi-detail-note { margin: 12px 2px 14px; font-size: 13.5px; color: var(--fh-text-2); }
-.fi-tag { display: inline-flex; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 8px; color: var(--fi-tag); background: color-mix(in srgb, var(--fi-tag) 20%, transparent); }
+.fi-tag { display: inline-flex; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 8px; color: var(--fi-other); background: color-mix(in srgb, var(--fi-other) 20%, transparent); }
 
 /* Activity sheet */
 .fi-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
@@ -867,25 +901,86 @@ html.fh-snap { overflow-x: hidden; }
 .bb-overlay { position: fixed; inset: 0; z-index: 60; background: radial-gradient(ellipse at 50% 40%, rgba(40, 22, 80, 0.86), rgba(2, 4, 14, 0.94) 70%); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
 .bb {
   position: fixed; inset: 0; z-index: 61; overflow-y: auto;
-  display: flex; align-items: center; justify-content: center; padding: 56px 16px calc(24px + env(safe-area-inset-bottom, 0px));
+  display: flex; align-items: flex-start; justify-content: center; padding: 56px 16px calc(24px + env(safe-area-inset-bottom, 0px));
 }
+/* Centred when it fits. On a short screen (a phone on its side) it starts at
+   the top and scrolls; align-items: center would cut the top off where
+   nothing can scroll to. */
+.bb > .bb-flow { margin-block: auto; }
 .bb:focus { outline: none; }
 .bb-flow { width: min(400px, 100%); position: relative; display: flex; flex-direction: column; align-items: center; }
 .bb-flow[data-kind="gold"] { --bb-a: #ffd66b; --bb-b: #ff7a3d; --bb-q: #ffd66b; }
 .bb-flow[data-kind="standard"] { --bb-a: #5cb8ff; --bb-b: #e0b4fc; --bb-q: #fe06ab; }
 .bb-x { position: fixed; top: calc(14px + env(safe-area-inset-top, 0px)); right: 16px; z-index: 3; }
 
-/* Ask */
+/* Ask: the blind box poster floats over the card's top edge; Vortexa title
+   face, the box's colour on the eyebrow and title, the holo line on top. */
 .bb-card {
-  width: 100%; display: flex; flex-direction: column; align-items: center; text-align: center;
-  padding: 20px 18px 16px; border-radius: 26px; border: 1px solid var(--fh-line-2);
-  background: linear-gradient(180deg, color-mix(in srgb, var(--bb-a) 8%, var(--fh-ink-2)), var(--fh-ink-2));
-  box-shadow: 0 24px 60px -20px #000;
+  position: relative; width: 100%; margin-top: 118px;
+  display: flex; flex-direction: column; align-items: center; text-align: center;
+  padding: 104px 20px 14px; border-radius: 30px;
+  border: 1px solid color-mix(in srgb, var(--bb-a) 38%, var(--fh-line-2));
+  background:
+    radial-gradient(90% 55% at 50% 0%, color-mix(in srgb, var(--bb-a) 20%, transparent), transparent 70%),
+    radial-gradient(70% 40% at 100% 100%, color-mix(in srgb, var(--fh-pink) 12%, transparent), transparent 70%),
+    linear-gradient(180deg, #0d1638, var(--fh-ink-2) 60%, #050d24);
+  box-shadow: 0 30px 70px -24px #000, 0 0 0 1px rgba(255, 255, 255, 0.03) inset;
 }
-.bb-mini { height: 150px; display: grid; place-items: center; margin-bottom: 6px; }
-.bb-mini .bb-cube { transform: scale(0.6) rotateX(-14deg) rotateY(-30deg); }
-.bb-ask-title { margin: 6px 0 2px; font-size: 22px; }
-.bb-ask-sub { margin: 0 0 14px; font-size: 13px; color: var(--fh-text-2); }
+.bb-holo {
+  position: absolute; top: -1px; left: 34px; right: 34px; height: 2px; border-radius: 2px;
+  background: var(--fh-holo); box-shadow: 0 0 14px color-mix(in srgb, var(--fh-pink) 60%, transparent);
+}
+.bb-ask-art {
+  position: absolute; left: 50%; top: -112px; width: 210px; height: 210px; margin-left: -105px;
+  display: grid; place-items: center; perspective: 900px;
+}
+.bb-ask-light {
+  position: absolute; inset: 6%; border-radius: 50%; filter: blur(6px);
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--bb-a) 55%, transparent), transparent);
+}
+.bb-ask-box {
+  position: relative; width: 100%; height: auto;
+  -webkit-mask-image: radial-gradient(circle at 50% 52%, #000 52%, transparent 71%);
+  mask-image: radial-gradient(circle at 50% 52%, #000 52%, transparent 71%);
+  filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.5));
+}
+.bb-star {
+  position: absolute; width: 14px; height: 14px;
+  clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
+}
+.bb-star[data-c="pink"] { left: -4px; top: 46px; background: var(--fh-pink); box-shadow: 0 0 10px var(--fh-pink); }
+.bb-star[data-c="cyan"] { right: 2px; top: 22px; width: 10px; height: 10px; background: #0dfcfd; }
+.bb-star[data-c="yellow"] { right: -10px; top: 120px; background: var(--fh-yellow); }
+.bb-star[data-c="lilac"] { left: 12px; bottom: 26px; width: 9px; height: 9px; background: var(--fh-lilac); }
+.bb-ask-eb { font-size: 11px; letter-spacing: 0.24em; text-transform: uppercase; color: var(--bb-a); }
+.bb-ask-title {
+  margin: 8px 0 6px; font-family: var(--font-vx-display), Georgia, serif; font-weight: 400;
+  font-size: clamp(28px, 8.4vw, 34px); line-height: 1.12; color: var(--fh-text); text-wrap: balance;
+}
+.bb-ask-title em {
+  font-style: normal;
+  background: linear-gradient(100deg, var(--bb-a), var(--bb-b));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(0 0 14px color-mix(in srgb, var(--bb-a) 40%, transparent));
+}
+.bb-ask-sub { margin: 0 0 18px; max-width: 28ch; font-size: 14px; line-height: 1.45; color: var(--fh-text-2); }
+.bb-ask-facts {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); width: 100%; margin: 0 0 18px;
+  border: 1px solid var(--fh-line); border-radius: 18px; background: color-mix(in srgb, var(--fh-ink) 60%, transparent);
+}
+.bb-ask-facts div { padding: 12px 4px 10px; display: grid; gap: 4px; }
+.bb-ask-facts div + div { border-left: 1px solid var(--fh-line); }
+.bb-ask-facts dt { font-size: 9.5px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--fh-mute); white-space: nowrap; }
+.bb-ask-facts dd { margin: 0; font-size: 26px; line-height: 1; color: var(--fh-text); }
+.bb-ask-facts div:first-child dd { color: var(--bb-a); text-shadow: 0 0 16px color-mix(in srgb, var(--bb-a) 45%, transparent); }
+.bb-go { gap: 8px; min-height: 54px; font-size: 17px; }
+/* Short screens: a smaller box over the card, so Unlock stays in view. */
+@media (max-height: 600px) {
+  .bb-card { margin-top: 70px; padding-top: 68px; }
+  .bb-ask-art { top: -74px; width: 140px; height: 140px; margin-left: -70px; }
+  .bb-star[data-c="yellow"] { top: 84px; }
+  .bb-ask-sub, .bb-ask-facts { margin-bottom: 12px; }
+}
 .bb-later { margin-top: 6px; min-height: 40px; padding: 0 16px; border: 0; background: none; color: var(--fh-mute); font: inherit; font-size: 13.5px; cursor: pointer; }
 .bb-error { margin: 8px 0 0; font-size: 13px; color: var(--fi-down); }
 .bb-locked { display: flex; align-items: flex-start; gap: 8px; margin: 0; padding: 10px 12px; border-radius: 14px; font-size: 13px; text-align: left; color: var(--fh-text-2); background: var(--fh-ink-3); }
@@ -966,12 +1061,13 @@ html.fh-snap { overflow-x: hidden; }
 .bb-no { margin-top: 12px; font-size: 12px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--fh-mute); }
 .bb-rtitle { margin: 4px 0 6px; font-size: clamp(30px, 9vw, 40px); line-height: 1.1; color: var(--fh-text); text-shadow: 0 0 24px color-mix(in srgb, var(--bb-a) 45%, transparent); }
 .bb-rdetail { margin: 0 0 22px; max-width: 30ch; font-size: 14px; color: var(--fh-text-2); }
+.bb-rdetail b { color: var(--fh-text); }
 .bb-ractions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
 .bb-ractions .fh-btn { min-width: 140px; }
 
 @media (prefers-reduced-motion: no-preference) {
   .bb[data-state="open"] .bb-card { animation: fi-up 0.32s cubic-bezier(0.2, 0.9, 0.3, 1); }
-  .bb-mini .bb-cube { animation: bb-turn 6s ease-in-out infinite; }
+  .bb-ask-box { animation: bbuy-float 4s 0.35s ease-in-out infinite; }
   [data-stage="sealed"] .bb-cube { animation: bb-drop 0.6s cubic-bezier(0.2, 1.3, 0.4, 1) both, bb-float 3.2s 0.6s ease-in-out infinite; }
   [data-stage="sealed"] .bb-shadow { animation: bb-shadow 3.2s 0.6s ease-in-out infinite; }
   [data-stage="sealed"] .bb-hint { animation: fh-pulse 1.8s ease-in-out infinite; }
@@ -991,7 +1087,6 @@ html.fh-snap { overflow-x: hidden; }
   .bb-reveal > .bb-rdetail { animation-delay: 0.46s; }
   .bb-reveal > .bb-ractions { animation-delay: 0.55s; }
 }
-@keyframes bb-turn { 50% { transform: scale(0.6) rotateX(-14deg) rotateY(-50deg); } }
 @keyframes bb-drop { from { transform: translateY(-60px) rotateX(-14deg) rotateY(-80deg); opacity: 0; } }
 @keyframes bb-float { 0%, 100% { transform: translateY(0) rotateX(-14deg) rotateY(-30deg); } 50% { transform: translateY(-12px) rotateX(-10deg) rotateY(-22deg); } }
 @keyframes bb-shadow { 50% { transform: scale(0.85); opacity: 0.7; } }
@@ -1086,17 +1181,111 @@ html.fh-snap { overflow-x: hidden; }
 .fh-edit .fi-sheet-title { padding-right: 44px; }
 .fh-edit-form { display: grid; gap: 16px; margin-top: 4px; }
 .fh-edit-photo { display: flex; align-items: center; gap: 14px; }
-.fh-edit-soonbtn {
+.fh-edit-photobtn {
   display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 16px; border-radius: 999px;
-  border: 1px solid var(--fh-line-2); background: transparent; color: var(--fh-mute); font: inherit; font-weight: 600; cursor: not-allowed;
+  border: 1px solid var(--fh-line-2); background: transparent; color: var(--fh-text); font: inherit; font-weight: 600; cursor: pointer;
 }
+.fh-edit-file { display: none; }
 .fh-edit-field { display: grid; gap: 8px; }
 .fh-edit-field > span:first-child { font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--fh-mute); }
 .fh-edit-field textarea { resize: vertical; min-height: 84px; line-height: 1.45; }
 .fh-edit-at { position: relative; display: block; }
 .fh-edit-at i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-style: normal; color: var(--fh-mute); }
 .fh-edit-at .fh-input { padding-left: 28px; }
-.fh-edit-soon { display: grid; gap: 14px; margin: 0; padding: 14px; border-radius: 16px; border: 1px dashed var(--fh-line-2); min-width: 0; }
-.fh-edit-soon legend { display: flex; align-items: center; gap: 8px; padding: 0 6px; font-size: 12.5px; color: var(--fh-text-2); }
-.fh-edit-soontag { font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; padding: 3px 8px; border-radius: 999px; border: 1px solid var(--fh-orange); color: var(--fh-orange); }
-.fh-edit-soon .fh-input { opacity: 0.55; cursor: not-allowed; }
+
+/* ── Blind box buy page (/blindbox) ─────────────────────────────────────────
+   One left-aligned column on the night background, lit by the group's colour.
+   The box is the poster art, its dark edges masked into the page; .bb-flow
+   gives the glow behind it its colour (gold for a special box). */
+.bbuy {
+  min-height: 100dvh;
+  background:
+    radial-gradient(70% 45% at 50% 18%, color-mix(in srgb, var(--fh-glow) 32%, transparent), transparent 70%),
+    radial-gradient(60% 40% at 90% 100%, color-mix(in srgb, var(--fh-pink) 12%, transparent), transparent 70%),
+    var(--fh-ink);
+}
+.bbuy-col {
+  width: min(440px, 100%); margin: 0 auto; padding: calc(16px + env(safe-area-inset-top, 0px)) 16px calc(28px + env(safe-area-inset-bottom, 0px));
+  display: flex; flex-direction: column;
+}
+.bbuy-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; }
+.bbuy-back { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; font-size: 14px; font-weight: 600; color: var(--fh-text-2); text-decoration: none; }
+.bbuy-back:hover { color: var(--fh-accent); }
+.bbuy-who { display: inline-flex; align-items: center; gap: 8px; max-width: 70%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-color: var(--fh-accent); color: var(--fh-text); }
+.bbuy-who i { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--fh-accent); }
+.bbuy-eyebrow { margin: 28px 0 4px; font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--fh-accent); }
+.bbuy-title { margin: 0; font-size: clamp(34px, 10vw, 46px); line-height: 1.02; overflow-wrap: anywhere; }
+
+.bbuy-art { align-self: center; margin: 4px 0 0; }
+.bbuy-scene { position: relative; display: grid; place-items: center; width: min(340px, 76vw); aspect-ratio: 1; perspective: 900px; }
+.bbuy-box {
+  width: 100%; height: auto; transform-origin: 50% 60%;
+  -webkit-mask-image: radial-gradient(circle at 50% 52%, #000 52%, transparent 71%);
+  mask-image: radial-gradient(circle at 50% 52%, #000 52%, transparent 71%);
+}
+.bbuy-scene .bb-shadow { bottom: 6%; }
+.bbuy-light {
+  position: absolute; inset: 18%; border-radius: 50%; z-index: -1;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--bb-a) 45%, transparent), transparent);
+}
+
+.bbuy-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+.bbuy-head h2 { margin: 0; font-size: 18px; font-weight: 700; }
+.bbuy-cap { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: var(--fh-mute); }
+.bbuy-cap i { width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid var(--fh-line-2); }
+.bbuy-cap i[data-on] { border-color: var(--fh-accent); background: var(--fh-accent); }
+.bbuy-cap i:last-of-type { margin-right: 4px; }
+
+.bbuy-list { list-style: none; margin: 0; padding: 0; border: 1px solid var(--fh-line); border-radius: 20px; background: color-mix(in srgb, var(--fh-ink-2) 88%, transparent); }
+.bbuy-list li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 12px; padding: 14px 14px 14px 16px; }
+.bbuy-list li + li { border-top: 1px solid var(--fh-line); }
+.bbuy-list li[data-off] .bbuy-opt b, .bbuy-list li[data-off] .bbuy-price { opacity: 0.5; }
+.bbuy-opt { display: grid; gap: 2px; min-width: 0; }
+.bbuy-opt b { display: inline-flex; align-items: center; gap: 6px; font-size: 16px; font-weight: 700; }
+.bbuy-opt b svg { color: var(--fh-yellow); flex: none; }
+.bbuy-opt small { font-size: 12.5px; color: var(--fh-mute); }
+.bbuy-list li[data-off] .bbuy-opt small { color: var(--fh-orange); }
+.bbuy-price { font-size: 13px; color: var(--fh-text-2); white-space: nowrap; }
+.bbuy-btn { min-height: 44px; min-width: 84px; padding: 0 16px; }
+.bbuy-error { margin: 0 0 10px; padding: 10px 14px; border-radius: 14px; border: 1px solid rgba(255, 77, 94, 0.5); background: rgba(255, 77, 94, 0.14); color: #ffc2c8; font-size: 13px; }
+
+.bbuy-state { display: flex; gap: 12px; align-items: flex-start; padding: 16px; border-radius: 20px; border: 1px dashed var(--fh-line-2); background: color-mix(in srgb, var(--fh-ink-2) 80%, transparent); }
+.bbuy-state svg { flex: none; margin-top: 2px; color: var(--fh-accent); }
+.bbuy-state b { font-size: 17px; }
+.bbuy-state p { margin: 4px 0 0; font-size: 14px; line-height: 1.45; color: var(--fh-text-2); }
+
+/* Bought: a receipt (paid, tokens left, boxes) and a note that it is still sealed. */
+.bbuy-receipt {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 4px 0 12px;
+  border: 1px solid var(--fh-line-2); border-radius: 20px; background: color-mix(in srgb, var(--fh-ink-2) 88%, transparent);
+}
+.bbuy-receipt[data-cells="2"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.bbuy-receipt div { padding: 14px 8px 12px; display: grid; justify-items: center; gap: 4px; text-align: center; }
+.bbuy-receipt div + div { border-left: 1px solid var(--fh-line); }
+.bbuy-receipt dt { font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--fh-mute); }
+.bbuy-receipt dd { margin: 0; font-size: 30px; line-height: 1; color: var(--fh-text); }
+.bbuy-receipt dd span { font-size: 18px; color: var(--fh-mute); }
+.bbuy-receipt div:first-child dd { color: var(--fh-accent); }
+.bbuy-receipt small { font-size: 12px; color: var(--fh-text-2); min-height: 16px; }
+.bbuy-dots { display: inline-flex; align-items: center; gap: 4px; }
+.bbuy-dots i { width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid var(--fh-line-2); }
+.bbuy-dots i[data-on] { border-color: var(--fh-accent); background: var(--fh-accent); }
+.bbuy-note {
+  display: flex; align-items: center; gap: 12px; margin: 0 0 16px; padding: 12px 14px; border-radius: 16px;
+  border: 1px dashed color-mix(in srgb, var(--fh-accent) 45%, transparent);
+  background: color-mix(in srgb, var(--fh-accent) 8%, transparent);
+  font-size: 14.5px; line-height: 1.4; color: var(--fh-text-2);
+}
+.bbuy-note svg { flex: none; color: var(--fh-accent); }
+.bbuy-note b { color: var(--fh-text); }
+.bbuy-actions { display: grid; gap: 10px; }
+.bbuy-items { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; min-height: 44px; margin-top: 16px; font-size: 14px; font-weight: 600; color: var(--fh-accent); text-decoration: none; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .bbuy-scene[data-stage="sealed"] .bbuy-box { animation: bbuy-drop 0.6s cubic-bezier(0.2, 1.3, 0.4, 1) both, bbuy-float 4s 0.6s ease-in-out infinite; }
+  .bbuy-scene[data-stage="sealed"] .bb-shadow { animation: bb-shadow 3.2s 0.6s ease-in-out infinite; }
+  .bbuy-list li, .bbuy-state, .bbuy-done { animation: bbuy-in 0.45s cubic-bezier(0.16, 1, 0.3, 1) both; animation-delay: calc(var(--i, 0) * 70ms + 150ms); }
+}
+@keyframes bbuy-drop { from { opacity: 0; transform: translateY(-48px) scale(0.9) rotateY(-18deg); } }
+@keyframes bbuy-float { 0%, 100% { transform: translateY(0) rotateY(-7deg) rotateX(3deg); } 50% { transform: translateY(-12px) rotateY(7deg) rotateX(-2deg); } }
+@keyframes bbuy-in { from { opacity: 0; transform: translateY(10px); } }

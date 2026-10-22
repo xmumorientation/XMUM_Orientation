@@ -163,6 +163,95 @@ export function makeGridFacade(seed: number, { rows, cols, wall, glass, repeat }
   return { map, emissiveMap };
 }
 
+/** B1's wall textures: one tile is this many metres wide and as high as the walls (their roof). */
+export const B1_WALL_W = 12;
+
+/**
+ * B1's walls (photos): `glazed`, the activity centre behind its floor bands: a brick base up to the podium, then
+ * glass walls with dark mullions and brick piers on the ground floor and the first floor, white where the bands'
+ * slabs meet the wall. `hall`, the sports hall at the east end: brick with glass doors at the bottom, white walls
+ * and a band of high windows. Heights in metres (b1.tsx). As in makeFacade, the emissive maps light only some panes.
+ */
+export function makeB1Walls(
+  seed: number,
+  y: { podium: number; roof: number; bandA: readonly number[]; bandB: readonly number[] },
+) {
+  const W = 512;
+  const H = 256;
+  const mx = W / B1_WALL_W;
+  const my = H / y.roof;
+  const r = rng(seed);
+  const make = (paint: (ctx: CanvasRenderingContext2D, ectx: CanvasRenderingContext2D) => void) => {
+    const [c, ctx] = canvas(W, H);
+    const [e, ectx] = canvas(W, H);
+    ectx.fillStyle = "#000";
+    ectx.fillRect(0, 0, W, H);
+    paint(ctx, ectx);
+    const map = texture(c);
+    const emissiveMap = texture(e);
+    for (const t of [map, emissiveMap]) t.wrapS = THREE.RepeatWrapping;
+    return { map, emissiveMap };
+  };
+  /** A rectangle from x0 to x1 metres along the wall and y0 to y1 metres up. */
+  const rect = (ctx: CanvasRenderingContext2D, x0: number, x1: number, y0: number, y1: number) =>
+    ctx.fillRect(x0 * mx, H - y1 * my, (x1 - x0) * mx, (y1 - y0) * my);
+  const panes = (
+    ctx: CanvasRenderingContext2D,
+    ectx: CanvasRenderingContext2D,
+    x0: number,
+    x1: number,
+    y0: number,
+    y1: number,
+    pane: number,
+    lit: number,
+  ) => {
+    const g = ctx.createLinearGradient(0, H - y1 * my, 0, H - y0 * my);
+    g.addColorStop(0, "#71879a");
+    g.addColorStop(1, "#46576a");
+    ctx.fillStyle = g;
+    rect(ctx, x0, x1, y0, y1);
+    ctx.fillStyle = "#2c3642";
+    for (let x = x0; x <= x1 + 1e-6; x += pane) rect(ctx, x - 0.06, x + 0.06, y0, y1);
+    rect(ctx, x0, x1, y1 - 0.12, y1);
+    for (let x = x0; x < x1 - 1e-6; x += pane) {
+      if (r() >= lit) continue;
+      ectx.fillStyle = r() < 0.7 ? "#ffc875" : "#fff0c8";
+      rect(ectx, x + 0.1, x + pane - 0.1, y0 + 0.1, y1 - 0.2);
+    }
+  };
+  const white = (ctx: CanvasRenderingContext2D, y0: number, y1: number) => {
+    ctx.fillStyle = "#f4f2ec";
+    rect(ctx, 0, B1_WALL_W, y0, y1);
+  };
+  const brickRect = (ctx: CanvasRenderingContext2D, x0: number, x1: number, y0: number, y1: number) =>
+    brick(ctx, x0 * mx, H - y1 * my, (x1 - x0) * mx, (y1 - y0) * my);
+
+  const glazed = make((ctx, ectx) => {
+    const [g0, g1] = [y.podium, y.bandA[0]];
+    const [f0, f1] = [y.bandA[1], y.bandB[0]];
+    white(ctx, 0, y.roof);
+    brickRect(ctx, 0, B1_WALL_W, 0, g0);
+    // ground floor: glass, a brick pier every 6 m
+    panes(ctx, ectx, 0, B1_WALL_W, g0, g1, 1.2, 0.75);
+    brickRect(ctx, 0, 1.2, g0, g1);
+    brickRect(ctx, 6, 7.2, g0, g1);
+    // first floor: glass with brick panels
+    panes(ctx, ectx, 0, B1_WALL_W, f0, f1, 1.2, 0.6);
+    brickRect(ctx, 4.8, 6, f0, f1);
+    brickRect(ctx, 10.8, 12, f0, f1);
+  });
+  const hall = make((ctx, ectx) => {
+    const high = y.roof - 3.6;
+    white(ctx, 0, y.roof);
+    ctx.fillStyle = "rgba(120,110,100,0.18)";
+    for (let x = 0; x < B1_WALL_W; x += 3) rect(ctx, x, x + 0.05, 4, high);
+    brickRect(ctx, 0, B1_WALL_W, 0, 4);
+    for (const x of [2.2, 8.2]) panes(ctx, ectx, x, x + 2.4, 0, 3, 1.2, 0.8);
+    panes(ctx, ectx, 0, B1_WALL_W, high, high + 2.2, 1.5, 0.45);
+  });
+  return { glazed, hall };
+}
+
 /** Glazed roof tiles: courses that run parallel to the eaves. */
 export function makeRoofTiles() {
   const [c, ctx] = canvas(32, 128);

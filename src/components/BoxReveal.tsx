@@ -1,7 +1,12 @@
 "use client";
 
-import { Coins, Sparkles } from "lucide-react";
+import { Coins } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+
+import { themeFromColor } from "@/components/freshie/groupTheme";
+import { RewardArt } from "@/components/freshie/items/BlindBox";
+import { nexusBody, vxDisplay, vxSlab } from "@/components/home/fonts";
+import "@/components/freshie/freshie.css";
 
 // The opening clip (public/blind-box-fast.mp4: the original blind-box.mp4 at
 // 2.5x, about 4 seconds) and the frame shown while it loads.
@@ -14,18 +19,24 @@ const POSTER = "/blind-box-poster.jpg";
 const GIVE_UP_MS = 8000;
 
 // Blind box opening — hero moment. The clip plays full screen and ends on a
-// star burst; then the prize is shown. Tap to skip at any time.
+// star burst; then the prize is shown, in the Items page's reveal look (rays,
+// coin, sparks) and the group's colour. Tap to skip at any time.
+// Rendered in a portal outside the themed page, so it sets the --fh-* colours
+// itself from `color`.
 export function BoxReveal({
   tokens,
   special,
   memberName,
   balance,
+  color,
   onContinue,
 }: {
   tokens: number;
   special: boolean;
   memberName: string | null;
   balance: number | null;
+  /** The group's colour (groups.color). */
+  color: string | null | undefined;
   /** Called by the Continue button. Without it, Continue goes to the dashboard. */
   onContinue?: () => void;
 }) {
@@ -57,10 +68,14 @@ export function BoxReveal({
   }, [stage]);
 
   const playing = stage === "playing";
+  const theme = themeFromColor(color);
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-night-900 px-6"
+      className="fixed inset-0 z-[100] flex flex-col items-center justify-center overflow-hidden px-4"
+      style={{
+        background: `radial-gradient(70% 50% at 50% 38%, color-mix(in srgb, ${theme.glow} 26%, transparent), transparent 72%), #030b1c`,
+      }}
       onClick={() => playing && setStage("revealed")}
     >
       {/* Kept mounted (hidden once revealed) so the clip is never re-created. */}
@@ -96,45 +111,55 @@ export function BoxReveal({
           Tap to skip
         </p>
       ) : (
-        <div className="animate-burst flex flex-col items-center text-center">
-          {special ? (
-            <Coins
-              size={96}
-              strokeWidth={1.25}
-              className="text-amber-400 drop-shadow-[0_0_40px_rgba(251,191,36,0.9)]"
-            />
-          ) : (
-            <Sparkles
-              size={96}
-              strokeWidth={1.25}
-              className="text-brand-1 drop-shadow-[0_0_24px_rgb(var(--brand-1-rgb)/0.7)]"
-            />
-          )}
-          <p className="mt-6 font-display text-3xl font-bold text-white">
-            +{tokens} Token{tokens !== 1 ? "s" : ""}
-          </p>
-          {special && (
-            <p className="mt-2 animate-pulseglow text-lg font-semibold text-amber-400">
-              Special blind box!
+        <div
+          className={`fh bb-flow ${vxDisplay.variable} ${vxSlab.variable} ${nexusBody.variable}`}
+          data-kind={special ? "gold" : "standard"}
+          style={
+            {
+              "--fh-accent": theme.accent,
+              "--fh-glow": theme.glow,
+              "--fh-blue": theme.accent,
+              "--fh-blue-light": theme.accentLight,
+              "--fh-on-blue": theme.onAccent,
+              // A normal box glows in the group's colour; a special one stays gold.
+              ...(special ? {} : { "--bb-a": theme.accentLight, "--bb-q": theme.accent }),
+            } as React.CSSProperties
+          }
+          role="status"
+        >
+          <div className="bb-reveal">
+            <span className="bb-rays" aria-hidden />
+            <RewardArt type="tokens">
+              <span className="bb-coin" aria-hidden>
+                <Coins size={56} strokeWidth={2} />
+              </span>
+            </RewardArt>
+            <span className="bb-rtag fh-mono">{special ? "Special Box" : "Tokens"}</span>
+            {memberName && <span className="bb-no fh-mono">From {memberName}</span>}
+            <h2 className="bb-rtitle fh-slab">
+              +{tokens} Token{tokens !== 1 ? "s" : ""}
+            </h2>
+            <p className="bb-rdetail">
+              Added to your group&apos;s tokens.
+              {balance !== null && (
+                <>
+                  <br />
+                  You now have <b>{balance} tokens</b>.
+                </>
+              )}
             </p>
-          )}
-          {memberName && (
-            <p className="mt-2 text-white/70">from {memberName}</p>
-          )}
-          {balance !== null && (
-            <p className="mt-4 font-mono text-sm text-brand-1">
-              Group balance: {balance}
-            </p>
-          )}
-          {onContinue ? (
-            <button type="button" onClick={onContinue} className="btn-primary mt-10 min-w-[160px]">
-              Continue
-            </button>
-          ) : (
-            <a href="/dashboard" className="btn-primary mt-10 min-w-[160px]">
-              Continue
-            </a>
-          )}
+            <div className="bb-ractions">
+              {onContinue ? (
+                <button type="button" onClick={onContinue} className="fh-btn fh-btn-primary">
+                  Back to Items
+                </button>
+              ) : (
+                <a href="/dashboard" className="fh-btn fh-btn-primary">
+                  Continue
+                </a>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>

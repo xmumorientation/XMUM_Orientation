@@ -1,6 +1,6 @@
 "use client";
 
-import { Activity, ArrowRight, CalendarDays, Check, Coins, Copy, Gift, Map, Monitor, Sparkles } from "lucide-react";
+import { Activity, ArrowRight, CalendarDays, Check, Coins, Copy, Flag, Gift, Map, Sparkles } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
@@ -16,7 +16,8 @@ import {
 import { FreshieSky, type SkyCabin } from "@/components/freshie/FreshieSky";
 import { groupSwatch, VORTEXA_THEME } from "@/components/freshie/groupTheme";
 import { nexusBody, vxDisplay, vxSlab } from "@/components/home/fonts";
-import { useMyBlindBoxes } from "@/components/BlindBoxCard";
+import { priceText, useMyBlindBoxes } from "@/components/BlindBoxCard";
+import { GroupBadge } from "@/components/GroupBadge";
 import { usePhaseTimer } from "@/components/PhaseTimerProvider";
 import { useProfile } from "@/components/ProfileProvider";
 import { OPS_CHIP } from "@/components/staff/OpsHeader";
@@ -26,13 +27,14 @@ import { ROLE_LABELS, type UserRole } from "@/lib/types";
 import "@/components/freshie/freshie.css";
 import "./staff-home.css";
 
-// Home (/dashboard) for HOF, HOGM and Committee (OPS_ROLES). Same layout as
+// Home (/dashboard) for HOF, HOGM, Committee and GM (VORTEXA_ROLES). Same layout as
 // Freshie Home: one-screen stops that snap, starting with the Welcome stop
 // (Vortexa lockup, countdown, live game, two buttons, credits), in the public
 // Welcome page's colours instead of a group colour (VORTEXA_THEME, .fh-vx in
 // staff-home.css). Then the account's own blind boxes and QR, the scoreboard
-// and the event tools. Navigation is the tab bar (phones and portrait tablets)
-// or TopNav (landscape tablets and desktops).
+// and the event tools. A GM's main button and first tool are its Station panel
+// (/gm) instead of Ops, and it has no blind box stop. Navigation is the tab bar
+// (phones and portrait tablets) or TopNav (landscape tablets and desktops).
 
 const STOPS = [
   { id: "sh-welcome", label: "Welcome" },
@@ -41,9 +43,13 @@ const STOPS = [
   { id: "sh-tools", label: "Tools" },
 ] as const;
 
+const GM_STOPS = STOPS.filter((s) => s.id !== "sh-bb");
+
 type HomeGroup = { id: number; name: string; color: string | null; token_balance: number };
 
-/** Groups and their tokens, live: the scoreboard and the sky's cabins. */
+/** Groups and their tokens, live: the scoreboard and the sky's cabins. Reads
+ *  fn_scoreboard() because a GM may not select the groups table (0002 RLS); the
+ *  30-second refresh covers the realtime events RLS does not send to a GM. */
 function useGroups() {
   const supabase = useMemo(() => supabaseBrowser(), []);
   const [groups, setGroups] = useState<HomeGroup[] | null>(null);
@@ -51,21 +57,26 @@ function useGroups() {
   useEffect(() => {
     let active = true;
     async function load() {
-      const { data: gs } = await supabase.from("groups").select("id, name, color, token_balance").order("id");
-      if (!active) return;
+      const { data: gs } = await supabase.rpc("fn_scoreboard");
+      if (!active || !gs) return;
       setGroups(
-        ((gs as HomeGroup[]) ?? [])
+        (gs as HomeGroup[])
           .map((g) => ({ ...g, token_balance: g.token_balance ?? 0 }))
-          .sort((a, b) => b.token_balance - a.token_balance || a.id - b.id)
+          .sort((a, b) => a.id - b.id)
       );
     }
     load();
+    const refreshVisible = () => { if (document.visibilityState === "visible") void load(); };
+    const timer = window.setInterval(refreshVisible, 30000);
+    document.addEventListener("visibilitychange", refreshVisible);
     const channel = supabase
       .channel(`sh-groups-${crypto.randomUUID()}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "groups" }, load)
       .subscribe();
     return () => {
       active = false;
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", refreshVisible);
       supabase.removeChannel(channel);
     };
   }, [supabase]);
@@ -111,11 +122,18 @@ function WelcomeStop({ name, role }: { name: string; role: UserRole }) {
         </>
       )}
       <div className="fh-actions">
-        <Link href="/committee" className="fh-btn fh-btn-primary">
-          <Activity size={18} aria-hidden />
-          Ops
-        </Link>
-        <button type="button" className="fh-btn fh-btn-ghost" onClick={() => goTo("sh-bb")}>
+        {role === "gm" ? (
+          <Link href="/gm" className="fh-btn fh-btn-primary">
+            <Flag size={18} aria-hidden />
+            Station
+          </Link>
+        ) : (
+          <Link href="/committee" className="fh-btn fh-btn-primary">
+            <Activity size={18} aria-hidden />
+            Ops
+          </Link>
+        )}
+        <button type="button" className="fh-btn fh-btn-ghost" onClick={() => goTo(role === "gm" ? "sh-scores" : "sh-bb")}>
           More Info ↓
         </button>
       </div>
@@ -126,7 +144,7 @@ function WelcomeStop({ name, role }: { name: string; role: UserRole }) {
 
 /** The account's own blind boxes: what is left and the QR a Freshie scans. Same data as BlindBoxCard. */
 function BlindBoxStop() {
-  const { loaded, error, sellers, copy, copied } = useMyBlindBoxes();
+  const { loaded, error, sellers, copy, copied, paused } = useMyBlindBoxes();
   const left = sellers.reduce((n, s) => n + s.left, 0);
   return (
     <section id="sh-bb" className="fh-stop" aria-labelledby="sh-bb-title">
@@ -151,43 +169,41 @@ function BlindBoxStop() {
         <ul className="sh-bb-list">
           {sellers.map((s) => (
             <li key={s.id} className="sh-bb">
-              <div className="sh-bb-info">
-                <span className="sh-bb-who fh-mono">{s.station ? `Station ${s.station.name} / shared` : "Your own boxes"}</span>
-                <ul className="sh-bb-types">
-                  {s.rows.map((r) => (
-                    <li key={r.id}>
-                      <b>
-                        {r.type?.name ?? "Box"}
-                        {r.type?.is_special && <Sparkles size={14} aria-label="special" />}
-                      </b>
-                      <span className="fh-slab">
-                        {Math.max(r.quantity - r.opened, 0)}
-                        <small>/{r.quantity}</small>
-                      </span>
-                      <small>{r.type ? (r.type.price > 0 ? `${r.type.price} token${r.type.price !== 1 ? "s" : ""}` : "Free") : ""}</small>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div className="sh-bb-code">
-                {!s.live ? (
-                  <p className="sh-bb-state" data-tone="off">Switched off by Admin. This code doesn&apos;t work right now.</p>
-                ) : s.left <= 0 ? (
-                  <p className="sh-bb-state">All boxes sold.</p>
-                ) : s.qr ? (
-                  <>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={s.qr.qr} alt="Blind box QR code" className="sh-bb-qr" />
-                    <small className="sh-bb-note">A Freshie scans this after your mini-game. Each group can buy one box.</small>
-                    <button type="button" className="fh-btn fh-btn-ghost sh-bb-copy" onClick={() => copy(s.id, s.qr!.url)}>
-                      {copied === s.id ? <Check size={16} aria-hidden /> : <Copy size={16} aria-hidden />}
-                      {copied === s.id ? "Copied" : "Copy link"}
-                    </button>
-                  </>
-                ) : (
-                  <p className="sh-bb-note">Loading QR…</p>
-                )}
-              </div>
+              <span className="sh-bb-who fh-mono">Your own boxes</span>
+              {!s.live ? (
+                <p className="sh-bb-state" data-tone="off">Switched off by Admin. This code doesn&apos;t work right now.</p>
+              ) : paused && s.left > 0 ? (
+                <p className="sh-bb-state" data-tone="off">{paused}</p>
+              ) : s.left <= 0 ? (
+                <p className="sh-bb-state">All boxes sold.</p>
+              ) : s.qr ? (
+                <>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={s.qr.qr} alt="Blind box QR code" className="sh-bb-qr" />
+                  <small className="sh-bb-note">A Freshie scans this after your mini-game. Each group can buy one box.</small>
+                  <button type="button" className="fh-btn fh-btn-ghost sh-bb-copy" onClick={() => copy(s.id, s.qr!.url)}>
+                    {copied === s.id ? <Check size={16} aria-hidden /> : <Copy size={16} aria-hidden />}
+                    {copied === s.id ? "Copied" : "Copy link"}
+                  </button>
+                </>
+              ) : (
+                <span className="sh-bb-qr sh-bb-qr-wait" aria-label="Loading QR" />
+              )}
+              <ul className="sh-bb-types">
+                {s.rows.map((r) => (
+                  <li key={r.id}>
+                    <b>
+                      {r.type?.name ?? "Box"}
+                      {r.type?.is_special && <Sparkles size={14} aria-label="special" />}
+                    </b>
+                    <span className="fh-slab">
+                      {Math.max(r.quantity - r.opened, 0)}
+                      <small>/{r.quantity}</small>
+                    </span>
+                    <small>{priceText(r.type)}</small>
+                  </li>
+                ))}
+              </ul>
             </li>
           ))}
         </ul>
@@ -200,16 +216,15 @@ function ScoresStop({ groups }: { groups: HomeGroup[] | null }) {
   return (
     <section id="sh-scores" className="fh-stop" aria-labelledby="sh-scores-title">
       <div className="fh-stop-head fh-stop-head-row">
-        <h2 id="sh-scores-title" className="fh-h2 fh-slab">Scoreboard</h2>
+        <h2 id="sh-scores-title" className="fh-h2 fh-slab">Tokens</h2>
         <Link href="/token" className="sh-more">
           Full scoreboard <ArrowRight size={15} aria-hidden />
         </Link>
       </div>
       <ol className="fh-board">
-        {(groups ?? []).map((row, i) => (
+        {(groups ?? []).map((row) => (
           <li key={row.id} className="fh-team">
-            <span className="fh-team-rk fh-mono">{String(i + 1).padStart(2, "0")}</span>
-            <i className="fh-team-sw" style={{ background: groupSwatch(row.id, row.color) }} aria-hidden />
+            <GroupBadge id={row.id} color={groupSwatch(row.id, row.color)} />
             <b>{row.name}</b>
             <span className="fh-team-sc fh-slab">{row.token_balance}</span>
           </li>
@@ -220,20 +235,26 @@ function ScoresStop({ groups }: { groups: HomeGroup[] | null }) {
 }
 
 const TOOLS = [
-  { href: "/bigscreen", Icon: Monitor, title: "Big screen", text: "Open the event display" },
   { href: "/map", Icon: Map, title: "Campus map", text: "Stations and group locations" },
   { href: "/schedule", Icon: CalendarDays, title: "Schedule", text: "The two-day programme" },
   { href: "/token", Icon: Coins, title: "Scoreboard", text: "Live tokens and puzzle pieces" },
 ];
 
-function ToolsStop() {
+const GM_TOOLS = [
+  { href: "/gm", Icon: Flag, title: "Station panel", text: "Results, rewards and station status" },
+  { href: "/map", Icon: Map, title: "Campus map", text: "Every station and its status" },
+  { href: "/schedule", Icon: CalendarDays, title: "Schedule", text: "The two-day programme" },
+  { href: "/token", Icon: Coins, title: "Scoreboard", text: "Live tokens and puzzle counts" },
+];
+
+function ToolsStop({ role }: { role: UserRole }) {
   return (
     <section id="sh-tools" className="fh-stop" aria-labelledby="sh-tools-title">
       <div className="fh-stop-head">
         <h2 id="sh-tools-title" className="fh-h2 fh-slab">Event Tools</h2>
       </div>
       <ul className="sh-tools">
-        {TOOLS.map(({ href, Icon, title, text }) => (
+        {(role === "gm" ? GM_TOOLS : TOOLS).map(({ href, Icon, title, text }) => (
           <li key={href}>
             <Link href={href} className="sh-tool">
               <span className="sh-tool-ic" aria-hidden>
@@ -255,6 +276,7 @@ function ToolsStop() {
 export function StaffHome() {
   const profile = useProfile();
   const groups = useGroups();
+  const isGm = profile.role === "gm";
 
   // Section-by-section snapping, this page only (same as Freshie Home).
   useEffect(() => {
@@ -297,17 +319,16 @@ export function StaffHome() {
               groupName={null}
               roleLabel={ROLE_LABELS[profile.role]}
               logoutHref="/login"
-              links={[{ href: "/bigscreen", label: "Big screen" }]}
             />
           </div>
         </div>
-        <StopBar stops={STOPS} />
+        <StopBar stops={isGm ? GM_STOPS : STOPS} />
       </header>
 
       <WelcomeStop name={profile.full_name ?? ""} role={profile.role} />
-      <BlindBoxStop />
+      {!isGm && <BlindBoxStop />}
       <ScoresStop groups={groups} />
-      <ToolsStop />
+      <ToolsStop role={profile.role} />
     </div>
   );
 }

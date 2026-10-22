@@ -1,9 +1,12 @@
 "use client";
 
+import { useFrame } from "@react-three/fiber";
 import { useLayoutEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 
+import { courtCells, LIFT, SPEC, type Cell, type Spec } from "./courts";
 import {
+  B1_NORTH_BAYS,
   CARPARK,
   PITCH_M,
   SPORTS,
@@ -24,48 +27,6 @@ import { makeGlow } from "./textures";
 // keep real proportions; posts, nets and goals are drawn a little taller
 // than life so they read at map zoom. Colours follow an aerial photo of the
 // campus: blue-grey hard courts, the tennis courts lightest.
-
-/** Equipment height exaggeration (heights only; positions stay to scale). */
-const LIFT = 1.6;
-
-type Spec = { L: number; W: number; area: string; court: string; line: string; key?: string };
-
-/** Playing area (length along the court's long axis, width) in metres, and paint. */
-export const SPEC: Record<Sport, Spec> = {
-  tennis: { L: 23.77, W: 10.97, area: "#6f7b8c", court: "#7d8c9c", line: "#f5f5f0" },
-  basketball: { L: 28, W: 15, area: "#5b6875", court: "#657a87", line: "#f5f5f0", key: "#90949b" },
-  // small-sided futsal: three fit across a 40 m block
-  futsal: { L: 25, W: 12, area: "#5e6a74", court: "#687680", line: "#f5f5f0" },
-  // not visible in the photo; same court family, a little warmer
-  volleyball: { L: 18, W: 9, area: "#6a7480", court: "#7a8590", line: "#f5f5f0" },
-};
-
-export type Cell = {
-  sport: Sport;
-  cx: number;
-  cz: number;
-  /** true when the court's long axis runs along world X */
-  alongX: boolean;
-  /** world units per metre for this court's markings */
-  s: number;
-};
-
-export function courtCells(b: CourtBlock): Cell[] {
-  const alongX = b.long === "x";
-  const [x0, x1] = b.x;
-  const [z0, z1] = b.z;
-  const spanL = alongX ? x1 - x0 : z1 - z0;
-  const spanW = (alongX ? z1 - z0 : x1 - x0) / b.count;
-  const spec = SPEC[b.sport];
-  // real size, unless the court's share of the block is too small for it
-  const s = Math.min(UNITS_PER_M, (spanL * 0.9) / spec.L, (spanW * 0.88) / spec.W);
-  const mid = alongX ? (x0 + x1) / 2 : (z0 + z1) / 2;
-  const start = alongX ? z0 : x0;
-  return Array.from({ length: b.count }, (_, i) => {
-    const across = start + spanW * (i + 0.5);
-    return { sport: b.sport, cx: alongX ? mid : across, cz: alongX ? across : mid, alongX, s };
-  });
-}
 
 // ── Ground paint ─────────────────────────────────────────────────────────
 
@@ -415,29 +376,77 @@ function Goal({
   );
 }
 
+const FENCED = SPORTS.filter((b) => b.fence);
+
+const corners = (b: CourtBlock): [number, number][] => [
+  [b.x[0], b.z[0]],
+  [b.x[1], b.z[0]],
+  [b.x[1], b.z[1]],
+  [b.x[0], b.z[1]],
+];
+
+/**
+ * A fence side is hidden while it stands between the camera and what it looks at from close by, so a low view into
+ * the courts (the tennis game's broadcast view) is not seen through the mesh. From further away or higher up,
+ * every side shows.
+ */
+const CUTAWAY = { distance: 15, height: 12 };
+
+function useFenceCutaway() {
+  const sides = useRef<(THREE.Group | null)[]>([]);
+  const segments = useMemo(
+    () => FENCED.flatMap((b) => corners(b).map((p, k, all) => [p, all[(k + 1) % 4]] as const)),
+    [],
+  );
+  useFrame(({ camera, controls }) => {
+    const target = (controls as unknown as { target?: THREE.Vector3 } | null)?.target;
+    const cam = camera.position;
+    segments.forEach(([p, q], i) => {
+      const side = sides.current[i];
+      if (!side) return;
+      let hide = false;
+      if (target && cam.y < CUTAWAY.height) {
+        // where the line from the camera to its target (seen from above) crosses this side, if it does
+        const [dx, dz] = [target.x - cam.x, target.z - cam.z];
+        const [ex, ez] = [q[0] - p[0], q[1] - p[1]];
+        const den = dx * ez - dz * ex;
+        if (Math.abs(den) > 1e-9) {
+          const t = ((p[0] - cam.x) * ez - (p[1] - cam.z) * ex) / den;
+          const u = ((p[0] - cam.x) * dz - (p[1] - cam.z) * dx) / den;
+          hide = t > 0 && t < 1 && u >= 0 && u <= 1 && t * Math.hypot(dx, dz) < CUTAWAY.distance;
+        }
+      }
+      side.visible = !hide;
+    });
+  });
+  return sides;
+}
+
 /** Courts' posts, nets, goals and hoops, fences round each block, and floodlights. */
 export function SportsCourts({ glow }: { glow: number }) {
   const mats = useMaterials();
   const cells = useMemo(() => SPORTS.flatMap(courtCells), []);
   const glowTex = useMemo(makeGlow, []);
   const fenceH = 3.2 * UNITS_PER_M * LIFT;
+  const sides = useFenceCutaway();
   return (
     <group>
       {cells.map((c, i) => (
         <Equipment key={i} c={c} mats={mats} />
       ))}
-      {SPORTS.filter((b) => b.fence).map((b, i) => {
-        const corners: [number, number][] = [
-          [b.x[0], b.z[0]],
-          [b.x[1], b.z[0]],
-          [b.x[1], b.z[1]],
-          [b.x[0], b.z[1]],
-        ];
+      {FENCED.map((b, i) => {
+        const ring = corners(b);
         return (
           <group key={i}>
-            {corners.map((p, k) => (
+            {ring.map((p, k) => (
               <group key={k}>
-                <Panel a={p} b={corners[(k + 1) % 4]} y0={0} y1={fenceH} material={mats.fence} />
+                <group
+                  ref={(g) => {
+                    sides.current[i * 4 + k] = g;
+                  }}
+                >
+                  <Panel a={p} b={ring[(k + 1) % 4]} y0={0} y1={fenceH} material={mats.fence} />
+                </group>
                 <Post at={p} h={fenceH + 0.03} r={0.03} color="#2f4a3c" />
               </group>
             ))}
@@ -490,20 +499,38 @@ function OutdoorGym() {
 
 const BAY = { w: 2.5 * UNITS_PER_M, d: 5 * UNITS_PER_M };
 
-/** One row of bays along B1's south face; the rest of the strip is the service road. */
+/**
+ * One row of bays along B1's south face (the rest of the strip is the service road), and the row along the north
+ * side of B1's north road (B1_NORTH_BAYS; b1.tsx paints them).
+ */
 function bays() {
   const [, x1] = CARPARK.x;
   const [z0, z1] = CARPARK.z;
   const n = Math.floor((z1 - z0) / BAY.w);
-  return Array.from({ length: n }, (_, i) => ({ x: x1 - BAY.d / 2, z: z0 + (i + 0.5) * BAY.w }));
+  const south = Array.from({ length: n }, (_, i) => ({ x: x1 - BAY.d / 2, z: z0 + (i + 0.5) * BAY.w }));
+  return [...south, ...B1_NORTH_BAYS.map(([x, z]) => ({ x, z }))];
 }
 
 export function drawCarPark(ctx: CanvasRenderingContext2D) {
   const [x0, x1] = CARPARK.x;
   const [z0, z1] = CARPARK.z;
+  const [r0, r1] = CARPARK.road;
   if (x1 - x0 < BAY.d * 1.6) return;
-  ctx.fillStyle = "#7f725f";
-  ctx.fillRect(x0, z0 - 1, x1 - x0, z1 - z0 + 2);
+  // red brick paving (imagery), from B1's west road to the east road, in courses about 1.7 m apart
+  ctx.fillStyle = "#a85d45";
+  ctx.fillRect(x0, r0, x1 - x0, r1 - r0);
+  ctx.strokeStyle = "rgba(70,25,15,0.16)";
+  ctx.lineWidth = 0.025;
+  ctx.beginPath();
+  for (let x = x0 + 0.25; x < x1; x += 0.25) {
+    ctx.moveTo(x, r0);
+    ctx.lineTo(x, r1);
+  }
+  for (let z = r0 + 0.25; z < r1; z += 0.25) {
+    ctx.moveTo(x0, z);
+    ctx.lineTo(x1, z);
+  }
+  ctx.stroke();
   ctx.strokeStyle = "rgba(255,255,255,0.75)";
   ctx.lineWidth = 0.05;
   for (let z = z0; z <= z1 + 1e-6; z += BAY.w) {
@@ -512,15 +539,6 @@ export function drawCarPark(ctx: CanvasRenderingContext2D) {
     ctx.lineTo(x1, z);
     ctx.stroke();
   }
-  // centre line of the service road
-  const road = (x0 + x1 - BAY.d) / 2;
-  ctx.setLineDash([0.5, 0.4]);
-  ctx.strokeStyle = "rgba(255,255,255,0.6)";
-  ctx.beginPath();
-  ctx.moveTo(road, z0 - 1);
-  ctx.lineTo(road, z1 + 1);
-  ctx.stroke();
-  ctx.setLineDash([]);
 }
 
 const CAR_COLORS = ["#e9e9e9", "#1f2328", "#9aa3ad", "#b3262a", "#2d4e7e", "#d8d2c4", "#5a5f66"];

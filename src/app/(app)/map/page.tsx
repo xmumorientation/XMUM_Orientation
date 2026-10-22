@@ -1,32 +1,29 @@
 "use client";
 
 import { CampusMap } from "@/components/CampusMap";
-import { FaciTrackingPanel } from "@/components/FaciTrackingPanel";
+import { FreshieMap } from "@/components/freshie/FreshieMap";
 import { vxDisplay, vxSlab } from "@/components/home/fonts";
 import { useProfile } from "@/components/ProfileProvider";
 import "@/components/staff/game/game-control.css";
-import { StationBoard } from "@/components/staff/StationBoard";
 import { PageTitle } from "@/components/ui";
-import { COMMITTEE_TIER, OPS_ROLES } from "@/lib/types";
+import { COMMITTEE_TIER, VORTEXA_ROLES } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
+// Nobody checks groups in from the map: a GM's Day 2 Start does it, and HOGM
+// or Admin clear a group left behind on Ops → Stations or Admin → Stations.
+// Tapping a station shows its status and who is there, for every role.
 export default function MapPage() {
   const profile = useProfile();
-  // D-1: committee sees all group pins; Faci sees own group only (the RPC
-  // enforces this server-side - the flag just requests pins).
-  const showPins =
-    COMMITTEE_TIER.includes(profile.role) || profile.role === "faci";
-  const map = (
-    <CampusMap
-      showGroupPins={showPins}
-      canManageStations={profile.role === "admin"}
-    />
-  );
 
-  // HOF, HOGM, Committee: the same night, eyebrow and title as their other
-  // tabs (Ops, Scores). Under the map, every station read only (StationBoard)
-  // in place of the map's own "Available stations" list.
-  if (OPS_ROLES.includes(profile.role)) {
+  // Every role sees every group's pin (0101; Ben: the group locations are
+  // open to everyone in the app). The flag just requests pins.
+  const showPins =
+    COMMITTEE_TIER.includes(profile.role) ||
+    ["gm", "guardian_gm", "faci", "freshie"].includes(profile.role);
+
+  // HOF, HOGM, Committee and GM: the same night, eyebrow and title as their
+  // other tabs (Ops or Station, Scores).
+  if (VORTEXA_ROLES.includes(profile.role)) {
     return (
       <div className={cn("gc gc-map", vxDisplay.variable, vxSlab.variable)}>
         <div className="gc-bg" aria-hidden>
@@ -38,14 +35,19 @@ export default function MapPage() {
           <h1 className="gc-title">Map</h1>
           <p className="gc-muted">Tap the map for a full-screen view. Tap a station for details.</p>
         </header>
-        <CampusMap showGroupPins={showPins} hasSelection />
-        <StationBoard />
+        <CampusMap showGroupPins={showPins} />
       </div>
     );
   }
 
+  // Freshie and Faci: the night look and group colour of Freshie Home.
+  if (profile.role === "freshie" || profile.role === "faci") {
+    return <FreshieMap showGroupPins={showPins} />;
+  }
+
+  // Admin (and Guardian GM, who is not in VORTEXA_ROLES).
   return (
-    <div>
+    <div className="space-y-4">
       <PageTitle
         title="Campus map"
         subtitle={
@@ -54,8 +56,8 @@ export default function MapPage() {
             : "Live game stations. Tap the map for a full-screen view. Tap a station or a building's badge for details."
         }
       />
-      <FaciTrackingPanel />
-      {map}
+
+      <CampusMap showGroupPins={showPins} canManageStations={profile.role === "admin"} />
     </div>
   );
 }

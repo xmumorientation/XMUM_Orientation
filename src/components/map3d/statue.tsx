@@ -11,22 +11,22 @@ import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js
 // sections; arms, legs and the cane are swept tubes; lapels, waistcoat, tie and
 // pocket flaps are thin "ribbons" draped on those surfaces. Every bronze part
 // is merged into one mesh (vertex colours carry the wear), the pedestal is one
-// granite mesh, the steps one stone mesh and the gold inscription one plane.
+// granite mesh, the round flower bed one mesh and the gold inscription one plane.
 // Up +Y, the statue and the inscription face +Z; statue's left is +X.
 
 type V3 = [number, number, number];
 type P2 = [number, number];
 
 // ── pedestal, metres ─────────────────────────────────────────────────────
-const STEP1 = { w: 3.3, h: 0.15 };
-const STEP2 = { w: 2.8, h: 0.15 };
+/** The round bed the pedestal stands in (Ben's photo): a low stone kerb round red-flowered shrubs. */
+export const BED = { r: 1.9, h: 0.3 };
 const BASE1 = { w: 2.05, h: 0.2 };
 const BASE2 = { w: 1.86, h: 0.15 };
 const SHAFT = { w: 1.65, h: 2.2 };
 const CAP1 = { w: 1.73, h: 0.06 };
 const CAP2 = { w: 1.86, h: 0.16 };
 const PLATE = { w: 1.0, d: 0.9, h: 0.07 };
-const Y_BASE1 = STEP1.h + STEP2.h;
+const Y_BASE1 = BED.h;
 const Y_SHAFT = Y_BASE1 + BASE1.h + BASE2.h;
 const Y_CAP = Y_SHAFT + SHAFT.h;
 const Y_PLATE = Y_CAP + CAP1.h + CAP2.h;
@@ -963,11 +963,47 @@ function granitePieces() {
     slab(CAP1.w, CAP1.h, CAP1.w, Y_CAP),
     slab(CAP2.w, CAP2.h, CAP2.w, Y_CAP + CAP1.h),
   ])!;
-  const stone = mergeGeometries([
-    slab(STEP1.w, STEP1.h, STEP1.w, 0, 1.6),
-    slab(STEP2.w, STEP2.h, STEP2.w, STEP1.h, 1.6),
-  ])!;
-  return { granite, stone };
+  return { granite, bed: bedGeometry() };
+}
+
+/** The bed: kerb, soil and two rings of shrubs, coloured per triangle (leaves, about a fifth red flowers). */
+function bedGeometry() {
+  let s = 5;
+  const rnd = () => {
+    s = (s * 16807) % 2147483647;
+    return s / 2147483647;
+  };
+  /** One colour per triangle, so the flowers show as patches. */
+  const paint = (g: THREE.BufferGeometry, color: () => string) => {
+    const flat = g.index ? g.toNonIndexed() : g;
+    const n = flat.getAttribute("position").count;
+    const c = new THREE.Color();
+    const colors = new Float32Array(n * 3);
+    for (let i = 0; i < n; i += 3) {
+      c.set(color());
+      for (let k = 0; k < 3; k++) c.toArray(colors, (i + k) * 3);
+    }
+    flat.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+    flat.deleteAttribute("uv");
+    return flat;
+  };
+  const parts = [
+    paint(new THREE.CylinderGeometry(BED.r, BED.r, BED.h, 48).translate(0, BED.h / 2, 0), () => "#8d8a84"),
+    paint(new THREE.CylinderGeometry(BED.r - 0.1, BED.r - 0.1, 0.04, 48).translate(0, BED.h, 0), () => "#3b2a1d"),
+  ];
+  for (const [r, count, size] of [
+    [1.28, 10, 0.42],
+    [1.64, 14, 0.36],
+  ]) {
+    for (let k = 0; k < count; k++) {
+      const a = ((k + (r > 1.5 ? 0.5 : 0)) / count) * Math.PI * 2;
+      const shrub = new THREE.IcosahedronGeometry(size * (0.9 + rnd() * 0.2), 1)
+        .scale(1, 0.8, 1)
+        .translate(Math.cos(a) * r, BED.h + size * 0.45, Math.sin(a) * r);
+      parts.push(paint(shrub, () => (rnd() < 0.22 ? (rnd() < 0.5 ? "#b8432e" : "#d4603f") : rnd() < 0.5 ? "#2a4f26" : "#35602d")));
+    }
+  }
+  return mergeGeometries(parts)!;
 }
 
 function makeTextures() {
@@ -984,12 +1020,6 @@ function makeTextures() {
   grain.colorSpace = THREE.SRGBColorSpace;
   grain.wrapS = grain.wrapT = THREE.RepeatWrapping;
   grain.anisotropy = 4;
-
-  const [sc, sctx] = mk(512, 512);
-  speckle(sctx, 512, 512, "#7f7c77", 11);
-  const sgrain = new THREE.CanvasTexture(sc);
-  sgrain.colorSpace = THREE.SRGBColorSpace;
-  sgrain.wrapS = sgrain.wrapT = THREE.RepeatWrapping;
 
   // inscription: the whole front face of the shaft, 1.65 x 2.2 m; bold
   // engraved gold (dark lower edge, light face) so it reads from a distance
@@ -1037,12 +1067,12 @@ function makeTextures() {
   const ins = new THREE.CanvasTexture(ic);
   ins.colorSpace = THREE.SRGBColorSpace;
   ins.anisotropy = 8;
-  return { grain, sgrain, ins };
+  return { grain, ins };
 }
 
 export function TanKahKeeStatue() {
   const bronze = useMemo(buildBronze, []);
-  const { granite, stone } = useMemo(granitePieces, []);
+  const { granite, bed } = useMemo(granitePieces, []);
   const tex = useMemo(makeTextures, []);
   const mats = useMemo(
     () => ({
@@ -1053,7 +1083,7 @@ export function TanKahKeeStatue() {
         side: THREE.DoubleSide,
       }),
       granite: new THREE.MeshStandardMaterial({ color: "#ffffff", map: tex?.grain ?? null, roughness: 0.28 }),
-      stone: new THREE.MeshStandardMaterial({ color: "#ffffff", map: tex?.sgrain ?? null, roughness: 0.85 }),
+      bed: new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.9 }),
       ins: new THREE.MeshStandardMaterial({ map: tex?.ins ?? null, roughness: 0.32, metalness: 0.05 }),
     }),
     [tex],
@@ -1063,7 +1093,7 @@ export function TanKahKeeStatue() {
     <group>
       <mesh geometry={bronze} material={mats.bronze} castShadow receiveShadow />
       <mesh geometry={granite} material={mats.granite} castShadow receiveShadow />
-      <mesh geometry={stone} material={mats.stone} castShadow receiveShadow />
+      <mesh geometry={bed} material={mats.bed} castShadow receiveShadow />
       <mesh
         geometry={insGeo}
         material={mats.ins}

@@ -591,7 +591,7 @@ export function CampusMap2DView({
                       }
                     >
                       <title>
-                        {bulbTitle(b)} / {bulbStatus(b, nowMs)}
+                        {bulbTitle(b, data.places)} / {bulbStatus(b, nowMs, data.myGroupId)}
                       </title>
                       <circle cx={x} cy={y + 20} r="110" fill="transparent" />
                       {lit && (

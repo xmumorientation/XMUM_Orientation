@@ -1,10 +1,11 @@
 "use client";
 
 import * as Dialog from "@radix-ui/react-dialog";
-import { Coins, Lock, Puzzle, X } from "lucide-react";
+import { Coins, Lock, Puzzle, Sparkles, X } from "lucide-react";
+import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 
-import { vxSlab } from "@/components/home/fonts";
+import { vxDisplay, vxSlab } from "@/components/home/fonts";
 import { PIECES_PER_SET } from "@/lib/types";
 
 import { zoneNames } from "./derive";
@@ -12,7 +13,7 @@ import { KeyEmblem } from "./KeyEmblem";
 import type { BoxGroup, BoxKind, BoxReward, ItemsData } from "./types";
 
 // Blind box flow, opened from a box tile on the shelf. Four stages:
-//   ask     → "Unlock a Gold box?" with what is left and what it can give
+//   ask     → "Unlock a Gold Box?" over the blind box poster, with what is left
 //   sealed  → the 3D box floats; tap it to open
 //   opening → it shakes, the lid flies off and light pours out (~1.4s)
 //   reveal  → rays behind the reward card: tokens or a puzzle piece
@@ -50,7 +51,7 @@ export function BlindBox({
     <Dialog.Root open={kind !== null} onOpenChange={(next) => !next && onClose()}>
       <Dialog.Portal>
         <Dialog.Overlay className="bb-overlay" />
-        <Dialog.Content className={`fh bb ${vxSlab.variable}`} style={themeVars} aria-describedby={undefined}>
+        <Dialog.Content className={`fh bb ${vxSlab.variable} ${vxDisplay.variable}`} style={themeVars} aria-describedby={undefined}>
           {kind && <BoxFlow kind={kind} data={data} canOpen={canOpen} onOpenBox={onOpenBox} onReveal={onReveal} onClose={onClose} />}
         </Dialog.Content>
       </Dialog.Portal>
@@ -81,6 +82,7 @@ function BoxFlow({
   useEffect(() => () => window.clearTimeout(timer.current), []);
 
   const group = data.boxes.find((b) => b.key === kind);
+  const article = group && /^[aeiou]/i.test(group.name) ? "an" : "a";
 
   async function unlock() {
     if (busy) return;
@@ -119,37 +121,53 @@ function BoxFlow({
 
   return (
     <div className="bb-flow" data-kind={group.special ? "gold" : "standard"} data-stage={stage}>
-      <Dialog.Title className="fh-sr">{stage === "reveal" ? "Box opened" : `Unlock a ${info.name.toLowerCase()}`}</Dialog.Title>
+      <Dialog.Title className="fh-sr">{stage === "reveal" ? "Box Opened" : `Unlock ${article} ${info.name}`}</Dialog.Title>
       <Dialog.Close className="fi-x bb-x" aria-label="Close">
         <X size={16} />
       </Dialog.Close>
 
       {stage === "ask" && (
         <div className="bb-card">
-          <div className="bb-mini" aria-hidden>
-            <Box3D group={group} />
+          <span className="bb-holo" aria-hidden />
+          <div className="bb-ask-art" aria-hidden>
+            <span className="bb-ask-light" />
+            <Image src="/blind-box-poster.jpg" alt="" width={640} height={640} sizes="210px" priority className="bb-ask-box" />
+            <i className="bb-star" data-c="pink" />
+            <i className="bb-star" data-c="cyan" />
+            <i className="bb-star" data-c="yellow" />
+            <i className="bb-star" data-c="lilac" />
           </div>
-          <span className="fi-eb fh-mono">Blind box / {info.label}</span>
-          <h2 className="bb-ask-title">Unlock a {info.name.toLowerCase()}?</h2>
-          <p className="bb-ask-sub">{info.range ?? HIDDEN_RANGE}</p>
-          <dl className="fi-facts">
+          <span className="bb-ask-eb fh-mono">Blind Box / {info.label}</span>
+          <h2 className="bb-ask-title">
+            Unlock {article} <em>{info.name}</em>?
+          </h2>
+          <p className="bb-ask-sub">{info.range ?? "The prize stays hidden until you open it."}</p>
+          <dl className="bb-ask-facts">
             <div>
-              <dt>To open</dt>
+              <dt className="fh-mono">To Open</dt>
               <dd className="fh-slab">{stock.unopened}</dd>
             </div>
             <div>
-              <dt>Opened</dt>
+              <dt className="fh-mono">Opened</dt>
               <dd className="fh-slab">{stock.opened.length}</dd>
             </div>
             <div>
-              <dt>Tokens from them</dt>
+              <dt className="fh-mono">Tokens Won</dt>
               <dd className="fh-slab">+{stock.opened.reduce((sum, v) => sum + v, 0)}</dd>
             </div>
           </dl>
           {canOpen ? (
             <>
-              <button type="button" className="fh-btn fh-btn-primary fh-btn-block" disabled={stock.unopened === 0 || busy} onClick={unlock}>
-                {stock.unopened === 0 ? "No boxes to open" : busy ? "Unlocking…" : "Unlock"}
+              <button type="button" className="fh-btn fh-btn-primary fh-btn-block bb-go" disabled={stock.unopened === 0 || busy} onClick={unlock}>
+                {stock.unopened === 0 ? (
+                  "No boxes to open"
+                ) : busy ? (
+                  "Unlocking…"
+                ) : (
+                  <>
+                    <Sparkles size={18} aria-hidden /> Unlock
+                  </>
+                )}
               </button>
               {failed && <p className="bb-error">Could not open the box. Try again.</p>}
               <Dialog.Close asChild>
@@ -248,6 +266,24 @@ const SPARKS = Array.from({ length: 10 }, (_, i) => {
   return { dx: Math.round(Math.cos(a) * r), dy: Math.round(Math.sin(a) * r), delay: (i % 4) * 0.05 };
 });
 
+/** The prize art with its halo and a burst of sparks (Items sheet and the real-box reveal). */
+export function RewardArt({ type, children }: { type: BoxReward["type"]; children: React.ReactNode }) {
+  return (
+    <div className="bb-art" data-reward={type}>
+      <span className="bb-halo" aria-hidden />
+      {children}
+      {SPARKS.map((s, i) => (
+        <span
+          key={i}
+          className="bb-spark"
+          aria-hidden
+          style={{ "--dx": `${s.dx}px`, "--dy": `${s.dy}px`, animationDelay: `${0.15 + s.delay}s` } as React.CSSProperties}
+        />
+      ))}
+    </div>
+  );
+}
+
 function Reveal({
   group,
   reward,
@@ -273,8 +309,8 @@ function Reveal({
   let art: React.ReactNode;
   if (reward.type === "tokens") {
     tag = "Tokens";
-    title = `+${reward.amount} tokens`;
-    detail = `Added to ${data.group.name}'s tokens. You now have ${data.tokens.balance}.`;
+    title = `+${reward.amount} Token${reward.amount !== 1 ? "s" : ""}`;
+    detail = `Added to ${data.group.name}'s tokens.\nYou now have ${data.tokens.balance} tokens.`;
     art = (
       <span className="bb-coin" aria-hidden>
         <Coins size={56} strokeWidth={2} />
@@ -283,7 +319,7 @@ function Reveal({
   } else {
     const name = zoneNames(data)[reward.loc];
     const owned = data.pieces[reward.loc];
-    tag = "Puzzle piece";
+    tag = "Puzzle Piece";
     title = `${name.short} piece #${reward.piece}`;
     detail = `A piece of the ${name.short} key. ${owned.length}/${PIECES_PER_SET} collected.`;
     art = (
@@ -301,24 +337,15 @@ function Reveal({
   return (
     <div className="bb-reveal">
       <span className="bb-rays" aria-hidden />
-      <div className="bb-art" data-reward={reward.type}>
-        <span className="bb-halo" aria-hidden />
-        {art}
-        {SPARKS.map((s, i) => (
-          <span
-            key={i}
-            className="bb-spark"
-            aria-hidden
-            style={{ "--dx": `${s.dx}px`, "--dy": `${s.dy}px`, animationDelay: `${0.15 + s.delay}s` } as React.CSSProperties}
-          />
-        ))}
-      </div>
+      <RewardArt type={reward.type}>{art}</RewardArt>
       <span className="bb-rtag fh-mono">{tag}</span>
       <span className="bb-no fh-mono">
         {group.label} / No. {pad(stock.opened.length)} / {pad(total)}
       </span>
       <h2 className="bb-rtitle fh-slab">{title}</h2>
-      <p className="bb-rdetail">{detail}</p>
+      <p className="bb-rdetail" style={{ whiteSpace: "pre-line" }}>
+        {detail}
+      </p>
       <div className="bb-ractions">
         {canOpenAnother && (
           <button type="button" className="fh-btn fh-btn-primary" disabled={busy} onClick={onOpenAnother}>

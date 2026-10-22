@@ -9,12 +9,14 @@ import type { MapControls as MapControlsImpl } from "three-stdlib";
 import { allZonesOn, anyZoneOn, FUNFAIR_OFF, type FunfairPower } from "@/lib/funfair";
 
 import { Atmosphere, Effects, MODES, type Mode } from "./atmosphere";
-import { B1Building, Blocks, Bridge, Flag, Grandstand, Statue } from "./buildings";
+import { B1Building } from "./b1";
+import { Blocks, Bridge, Flag, Grandstand, Statue } from "./buildings";
 import { Funfair } from "./funfair/Funfair";
 import { FUNFAIR_LABEL } from "./funfair/labels";
 import { LABELS } from "./geo";
 import { Ground, Slab } from "./ground";
 import { LakefrontStage } from "./lakefront/LakefrontStage";
+import { Plateau } from "./plateau";
 import { SportsCourts, TrackFixtures } from "./sports";
 import { Lamps, Vegetation } from "./vegetation";
 import { Duck, Lakes } from "./water";
@@ -200,6 +202,7 @@ const Campus = memo(function Campus({ mode, lite }: { mode: Mode; lite: boolean 
       <Atmosphere look={look} mode={mode} lite={lite} />
       <Slab />
       <Ground lite={lite} />
+      <Plateau />
       <Lakes />
       <Duck />
       <Blocks glow={look.windows} />

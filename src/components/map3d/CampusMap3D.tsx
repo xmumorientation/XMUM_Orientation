@@ -11,6 +11,8 @@ import { MODES, type Mode } from "./atmosphere";
 import CampusScene, { type CameraView } from "./CampusScene";
 
 import { GPS_MARKERS } from "./geo";
+import { courtView, TENNIS_COURTS } from "./tennis/court";
+import { TennisDemo } from "./tennis/TennisDemo";
 import { prefersLite } from "./webgl";
 
 // DRAFT (map-3d-draft branch, not for main): the /map3d demo page. Wraps
@@ -29,6 +31,8 @@ type Demo = {
    * the funfair, like the real map (on while all three zones are on).
    */
   concert: boolean | "flip" | undefined;
+  /** The tennis courts' looping rally (the tennis game's batch T1a), with the broadcast view's lens. */
+  tennis: { fov: number } | null;
 };
 
 /**
@@ -36,7 +40,8 @@ type Demo = {
  * ?intro=0 no swoop, ?gps=1 the team's GPS points, ?lite=0|1 force lite mode, ?stats=1 log draw calls (dev only),
  * ?funfair=1,0,1 which funfair zones are on (west, central, east; default all on), ?concert=0|1|flip the lake
  * stage's concert (default: on while all three zones are on; flip: on 4 s after load), ?showt=<seconds>
- * (development) hold the concert at that moment.
+ * (development) hold the concert at that moment, ?tennis=demo a rally on each tennis court, seen from behind the
+ * middle court (unless ?cam is given).
  */
 function readDemo(): { demo: Demo; mode: Mode | null } {
   const q = new URLSearchParams(window.location.search);
@@ -45,16 +50,22 @@ function readDemo(): { demo: Demo; mode: Mode | null } {
   const m = q.get("mode");
   const lite = q.get("lite");
   const concert = q.get("concert");
+  const tennis = q.get("tennis") === "demo" ? courtView(TENNIS_COURTS[1], window.innerWidth / window.innerHeight) : null;
   return {
     demo: {
-      camera: cam ? { position: [cam[0], cam[1], cam[2]], target: [cam[3], cam[4], cam[5]] } : undefined,
-      intro: !cam && q.get("intro") !== "0",
+      camera: cam
+        ? { position: [cam[0], cam[1], cam[2]], target: [cam[3], cam[4], cam[5]] }
+        : tennis
+          ? { position: tennis.position, target: tennis.target }
+          : undefined,
+      intro: !cam && !tennis && q.get("intro") !== "0",
       gps: q.get("gps") === "1",
       lite: lite === "1" ? true : lite === "0" ? false : prefersLite(),
       stats: process.env.NODE_ENV === "development" && q.get("stats") === "1",
       touch: window.matchMedia("(max-width: 768px)").matches,
       funfair: parseFunfair(q.get("funfair")) ?? { west: 1, central: 1, east: 1 },
       concert: concert === "1" ? true : concert === "0" ? false : concert === "flip" ? "flip" : undefined,
+      tennis: tennis && { fov: cam ? 30 : tennis.fov },
     },
     mode: m === "day" || m === "sunset" || m === "night" ? m : null,
   };
@@ -152,6 +163,8 @@ export default function CampusMap3D() {
     const r = readDemo();
     setDemo(r.demo);
     if (r.mode) setMode(r.mode);
+    // the names sit over the courts in the broadcast view
+    if (r.demo.tennis) setLabels(false);
   }, []);
   const touch = demo?.touch ?? false;
   const [flipped, setFlipped] = useState(false);
@@ -175,6 +188,7 @@ export default function CampusMap3D() {
           concert={demo.concert === "flip" ? flipped : demo.concert}
         >
           {demo.gps && <GpsMarkers />}
+          {demo.tennis && <TennisDemo fov={demo.tennis.fov} />}
           {demo.stats && <RenderStats lite={demo.lite} />}
         </CampusScene>
       )}

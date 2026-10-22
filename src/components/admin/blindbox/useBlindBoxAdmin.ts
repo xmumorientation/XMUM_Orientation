@@ -15,13 +15,6 @@ export interface Staff {
   id: string;
   full_name: string;
   role: UserRole;
-  station_id: number | null;
-}
-
-export interface StationLite {
-  id: number;
-  code: string;
-  name: string;
 }
 
 export interface ClaimLite {
@@ -30,7 +23,24 @@ export interface ClaimLite {
   type_id: number;
   group_id: number;
   price: number;
-  tokens: number;
+  /** Null until the box is opened. */
+  tokens: number | null;
+  /** A Spot box: does not count toward the group cap. */
+  spot: boolean;
+}
+
+/** One seller (an account) with every box type they hold, and their one QR. */
+export interface Seller {
+  id: number;
+  name: string;
+  kind: string;
+  rows: BlindBoxAssignment[];
+}
+
+/** The Spot box: its hidden type and its one assignment (null until set up). */
+export interface Spot {
+  type: BlindBoxType;
+  assignment: BlindBoxAssignment;
 }
 
 export interface TypeStats {
@@ -59,7 +69,9 @@ export interface BlindBoxAdminData {
   assignments: BlindBoxAssignment[];
   claims: ClaimLite[];
   staff: Staff[];
-  stations: StationLite[];
+  /** Assignments grouped by seller, for Codes & stock. */
+  sellers: Seller[];
+  spot: Spot | null;
   cap: number;
   /** Rehearsal mode is on (Admin → Live control): the test reset is allowed. */
   rehearsal: boolean;
@@ -68,15 +80,15 @@ export interface BlindBoxAdminData {
   linksStatus: "loading" | "ready" | "error";
   typeStats: Record<number, TypeStats>;
   overview: Overview;
-  sellerName: (a: BlindBoxAssignment) => string;
-  sellerKind: (a: BlindBoxAssignment) => string;
   reload: () => Promise<void>;
 }
 
 const DEFAULT_CAP = 4;
 
 // Everything the Admin blind-box page reads, kept live. Writes go through the
-// fn_bb_* RPCs from the tabs; this hook only reads and recomputes the numbers.
+// fn_bb_* RPCs from the steps; this hook only reads and recomputes the numbers.
+// The Spot's hidden type and assignment are kept apart from the rest, and old
+// station rows (history since 0100) are left out.
 export function useBlindBoxAdmin(onError: (m: string | null) => void): BlindBoxAdminData {
   const supabase = useMemo(() => supabaseBrowser(), []);
   const [loaded, setLoaded] = useState(false);
@@ -84,41 +96,44 @@ export function useBlindBoxAdmin(onError: (m: string | null) => void): BlindBoxA
   const [assignments, setAssignments] = useState<BlindBoxAssignment[]>([]);
   const [claims, setClaims] = useState<ClaimLite[]>([]);
   const [staff, setStaff] = useState<Staff[]>([]);
-  const [stations, setStations] = useState<StationLite[]>([]);
+  const [spot, setSpot] = useState<Spot | null>(null);
   const [cap, setCap] = useState(DEFAULT_CAP);
   const [rehearsal, setRehearsal] = useState(false);
   const [links, setLinks] = useState<Record<number, { url: string; active: boolean }>>({});
   const [linksStatus, setLinksStatus] = useState<"loading" | "ready" | "error">("loading");
 
   const reload = useCallback(async () => {
-    const [t, a, c, st, sn, cfg] = await Promise.all([
+    const [t, a, c, st, cfg] = await Promise.all([
       supabase.from("blind_box_types").select("*").order("id"),
       supabase.from("blind_box_assignments").select("*").order("id"),
       supabase
         .from("blind_box_claims")
-        .select("id, assignment_id, type_id, group_id, price, tokens"),
+        .select("id, assignment_id, type_id, group_id, price, tokens, spot"),
       supabase
         .from("profiles")
-        .select("id, full_name, role, station_id")
+        .select("id, full_name, role")
         .in("role", BLINDBOX_HOLDER_ROLES)
         .order("role")
         .order("full_name"),
-      supabase.from("stations").select("id, code, name").order("id"),
       supabase
         .from("game_config")
         .select("key, value")
         .in("key", ["blindbox_group_cap", "rehearsal_mode"]),
     ]);
-    const failed = [t, a, c, st, sn].find((r) => r.error);
+    const failed = [t, a, c, st].find((r) => r.error);
     if (failed?.error) {
       onError(failed.error.message);
       return;
     }
-    setTypes((t.data as BlindBoxType[]) ?? []);
-    setAssignments((a.data as BlindBoxAssignment[]) ?? []);
+    const allTypes = (t.data as BlindBoxType[]) ?? [];
+    const allRows = (a.data as BlindBoxAssignment[]) ?? [];
+    const spotType = allTypes.find((x) => x.is_spot);
+    const spotRow = spotType && allRows.find((x) => x.type_id === spotType.id);
+    setSpot(spotType && spotRow ? { type: spotType, assignment: spotRow } : null);
+    setTypes(allTypes.filter((x) => !x.is_spot));
+    setAssignments(allRows.filter((x) => x.profile_id));
     setClaims((c.data as ClaimLite[]) ?? []);
     setStaff((st.data as Staff[]) ?? []);
-    setStations((sn.data as StationLite[]) ?? []);
     const conf = new Map(
       ((cfg.data as { key: string; value: unknown }[] | null) ?? []).map((r) => [r.key, r.value])
     );
@@ -167,6 +182,7 @@ export function useBlindBoxAdmin(onError: (m: string | null) => void): BlindBoxA
       .on("postgres_changes", { event: "*", schema: "public", table: "blind_box_types" }, reload)
       .on("postgres_changes", { event: "*", schema: "public", table: "blind_box_assignments" }, reload)
       .on("postgres_changes", { event: "*", schema: "public", table: "blind_box_claims" }, reload)
+      .on("postgres_changes", { event: "*", schema: "public", table: "blind_box_sellers" }, reload)
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
@@ -207,9 +223,9 @@ export function useBlindBoxAdmin(onError: (m: string | null) => void): BlindBoxA
     let tokensIn = 0;
     let tokensOut = 0;
     for (const c of claims) {
-      perGroup.set(c.group_id, (perGroup.get(c.group_id) ?? 0) + 1);
+      if (!c.spot) perGroup.set(c.group_id, (perGroup.get(c.group_id) ?? 0) + 1);
       tokensIn += c.price;
-      tokensOut += c.tokens;
+      tokensOut += c.tokens ?? 0;
     }
     let groupsAtCap = 0;
     for (const n of perGroup.values()) if (n >= cap) groupsAtCap += 1;
@@ -225,27 +241,24 @@ export function useBlindBoxAdmin(onError: (m: string | null) => void): BlindBoxA
     };
   }, [types, typeStats, claims, cap]);
 
-  const sellerName = useCallback(
-    (a: BlindBoxAssignment) => {
-      if (a.profile_id) {
-        return staff.find((s) => s.id === a.profile_id)?.full_name || a.profile_id.slice(0, 8);
+  const sellers = useMemo<Seller[]>(() => {
+    const out = new Map<number, Seller>();
+    for (const a of assignments) {
+      let s = out.get(a.seller_id);
+      if (!s) {
+        const who = staff.find((x) => x.id === a.profile_id);
+        s = {
+          id: a.seller_id,
+          name: who?.full_name || a.profile_id!.slice(0, 8),
+          kind: who ? ROLE_LABELS[who.role] : "Account",
+          rows: [],
+        };
+        out.set(a.seller_id, s);
       }
-      const st = stations.find((s) => s.id === a.station_id);
-      return st ? `${st.code} / ${st.name}` : `Station ${a.station_id}`;
-    },
-    [staff, stations]
-  );
-
-  const sellerKind = useCallback(
-    (a: BlindBoxAssignment) => {
-      if (a.profile_id) {
-        const role = staff.find((s) => s.id === a.profile_id)?.role;
-        return role ? ROLE_LABELS[role] : "Account";
-      }
-      return "Station (shared pool)";
-    },
-    [staff]
-  );
+      s.rows.push(a);
+    }
+    return [...out.values()].sort((x, y) => x.name.localeCompare(y.name));
+  }, [assignments, staff]);
 
   return {
     loaded,
@@ -253,15 +266,14 @@ export function useBlindBoxAdmin(onError: (m: string | null) => void): BlindBoxA
     assignments,
     claims,
     staff,
-    stations,
+    sellers,
+    spot,
     cap,
     rehearsal,
     links,
     linksStatus,
     typeStats,
     overview,
-    sellerName,
-    sellerKind,
     reload,
   };
 }

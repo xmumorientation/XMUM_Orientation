@@ -48,6 +48,7 @@ const SECTIONS: Section[] = [
       { href: "/admin/puzzles", label: "Puzzles" },
       { href: "/admin/blindbox", label: "Blind box" },
       { href: "/admin/nfc", label: "NFC" },
+      { href: "/admin/funfair", label: "Funfair (3D map)" },
     ],
   },
   {

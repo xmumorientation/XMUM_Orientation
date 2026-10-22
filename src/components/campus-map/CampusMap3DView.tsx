@@ -9,13 +9,14 @@ import type { MapControls as MapControlsImpl } from "three-stdlib";
 
 import { MODES, type Mode } from "@/components/map3d/atmosphere";
 import CampusScene, { type CameraView, type Vec3 } from "@/components/map3d/CampusScene";
-import { EXTENT, UNITS_PER_M, gpsToWorld } from "@/components/map3d/geo";
+import { EXTENT, UNITS_PER_M, gpsToWorld, groundHit, groundY } from "@/components/map3d/geo";
 import {
   CameraRig,
   GroundMarks,
   HitArea,
   Marker,
   RideTags,
+  ZoneSigns,
   clusterArt,
   isTap,
   pinArt,
@@ -33,20 +34,26 @@ import {
   areaPlace,
   clampToSlab,
   labelPoint,
-  ringPoint,
 } from "@/components/map3d/places";
 import { ZONE_CENTERS } from "@/components/map3d/funfair/labels";
 import { stageView } from "@/components/map3d/lakefront/layout";
 import { prefersLite } from "@/components/map3d/webgl";
 import { stationDotColor } from "@/components/ui";
 import { ACTIVATION_JOURNEY_KEY, readActivationJourney } from "@/lib/activation-journey";
-import { FUNFAIR_ZONE_NAMES, type FunfairPower, type FunfairZone, isFunfairPreview, type FunfairPreview } from "@/lib/funfair";
+import { type FunfairPower, type FunfairZone, isFunfairPreview, type FunfairPreview, zoneTitle } from "@/lib/funfair";
 import { groupPinColor } from "@/lib/mapGeo";
 import type { Station } from "@/lib/types";
 
 import type { CampusMapViewProps } from "./CampusMap2DView";
 import { MapInfoCard } from "./CampusMapPanels";
 import { clusterStatus } from "./useCampusMapData";
+
+function initialActivationArrival(): { zones: FunfairZone[]; on: boolean } | null {
+  if (typeof window === "undefined" || new URLSearchParams(window.location.search).get("arrival") !== "activation") return null;
+  let zones: FunfairZone[] = [];
+  try { zones = readActivationJourney(sessionStorage.getItem(ACTIVATION_JOURNEY_KEY), Date.now()); } catch { /* Storage may be blocked. */ }
+  return { zones, on: false };
+}
 
 // Signal an actual rendered frame, rather than starting the power-up while
 // the 3D bundle, shaders or phone GPU are still loading.
@@ -73,8 +80,6 @@ const LABEL_GAP = 13;
 /** Dot and badge radii (CSS px) of an unselected station and building badge (markers.tsx). */
 const DOT_R = 11;
 const BADGE_R = 15;
-/** In full screen, a building's badge splits into its stations when the camera is this close (world units). */
-const SPLIT_DISTANCE = 120;
 /** How close a tap on a badge in full screen takes the camera. */
 const FOCUS_DISTANCE = 75;
 /** Markers in the card are smaller than in full screen (the card shows the whole campus). */
@@ -146,24 +151,6 @@ const LOOKS: { mode: Mode | null; label: string; Icon: typeof Sun }[] = [
   { mode: "night", label: "Night", Icon: Moon },
 ];
 
-/** Reports which areas the camera is close to (full screen only), as "A3|B1". */
-function SplitWatch({ enabled, onChange }: { enabled: boolean; onChange: (key: string) => void }) {
-  const last = useRef("");
-  const point = useMemo(() => new THREE.Vector3(), []);
-  useFrame(({ camera }) => {
-    const key = enabled
-      ? AREA_PLACES.filter((p) => camera.position.distanceTo(point.set(...labelPoint(p))) < SPLIT_DISTANCE)
-          .map((p) => p.area)
-          .join("|")
-      : "";
-    if (key !== last.current) {
-      last.current = key;
-      onChange(key);
-    }
-  });
-  return null;
-}
-
 /** Accuracy check: the open ground takes taps, so Admin can tap where they really are. */
 function GroundTap({ taps }: { taps: Taps }) {
   return (
@@ -175,7 +162,8 @@ function GroundTap({ taps }: { taps: Taps }) {
         if (!isTap(e)) return;
         e.stopPropagation();
         taps.used(e);
-        taps.ground(e.point.x, e.point.z);
+        // the spot on the ground the ray meets, the A-row's raised ground included
+        taps.ground(...groundHit(e.ray.origin, e.ray.direction));
       }}
     >
       <planeGeometry args={[EXTENT.x * 2, EXTENT.z * 2]} />
@@ -190,8 +178,6 @@ function SceneMarks({
   outlines,
   lite,
   flight,
-  splitEnabled,
-  onSplit,
   checking,
   taps,
 }: {
@@ -199,8 +185,6 @@ function SceneMarks({
   outlines: GroundOutline[];
   lite: boolean;
   flight: Flight | null;
-  splitEnabled: boolean;
-  onSplit: (key: string) => void;
   /** Admin's accuracy check: taps go to the ground, not the buildings. */
   checking: boolean;
   taps: Taps;
@@ -225,7 +209,6 @@ function SceneMarks({
         />
       ))}
       <CameraRig flight={flight} />
-      <SplitWatch enabled={splitEnabled} onChange={onSplit} />
     </>
   );
 }
@@ -236,6 +219,7 @@ function SceneMarkers({
   badges,
   pins,
   tags,
+  funfair,
   showNames,
   accent,
   size,
@@ -245,6 +229,8 @@ function SceneMarkers({
   badges: BadgeMark[];
   pins: PinMark[];
   tags: TagMark[];
+  /** Which zones are on, for the zone signs. */
+  funfair: FunfairPower;
   showNames: boolean;
   accent: string;
   size: number;
@@ -253,6 +239,7 @@ function SceneMarkers({
   return (
     <>
       <RideTags />
+      {showNames && <ZoneSigns power={funfair} size={size} />}
       {tags.map((t) => (
         <Marker key={`tag-${t.key}`} position={t.at} art={tagArt(t.text)} dy={t.dot ? 24 : 16} order={9} size={size} />
       ))}
@@ -263,12 +250,11 @@ function SceneMarkers({
         ))}
       {badges.map((b) => {
         const status = clusterStatus(b.stations);
-        const open = b.stations.filter((s) => s.status === "available").length;
         return (
           <Marker
             key={`badge-${b.area}`}
             position={b.at}
-            art={clusterArt(status, stationDotColor(status), open, b.big, b.big ? accent : null)}
+            art={clusterArt(status, stationDotColor(status), b.stations.length, b.big, b.big ? accent : null)}
             dy={b.dy}
             order={b.order}
             size={size}
@@ -372,14 +358,13 @@ export function CampusMap3DView({
   const [accent, setAccent] = useState(DEFAULT_ACCENT);
   const [onAccent, setOnAccent] = useState("#ffffff");
   const [flight, setFlight] = useState<Flight | null>(null);
-  const [splitKey, setSplitKey] = useState("");
   // The light switch: null is Auto (by the time of day). It lasts until Auto is picked again or the page reloads.
   const [look, setLook] = useState<Mode | null>(null);
   // Accuracy check: where Admin last tapped (world x, z).
   const [checkTap, setCheckTap] = useState<[number, number] | null>(null);
   const [sceneReady, setSceneReady] = useState(false);
   const markSceneReady = useCallback(() => setSceneReady(true), []);
-  const [arrival, setArrival] = useState<{ zones: FunfairZone[]; on: boolean } | null>(null);
+  const [arrival, setArrival] = useState(initialActivationArrival);
   const arrivalStarted = useRef(false);
   const checking = checkMode && canManageStations;
 
@@ -422,9 +407,6 @@ export function CampusMap3DView({
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("arrival") === "activation") {
-      let zones: FunfairZone[] = [];
-      try { zones = readActivationJourney(sessionStorage.getItem(ACTIVATION_JOURNEY_KEY), Date.now()); } catch { /* Storage may be blocked. */ }
-      setArrival({ zones, on: false });
       onFullscreenChange(true);
       return;
     }
@@ -462,7 +444,6 @@ export function CampusMap3DView({
     [data.funfair, preview, arrival],
   );
   const concert = preview?.zone === "lakefront" ? preview.on : undefined;
-  const split = useMemo(() => new Set(fullscreen && splitKey ? splitKey.split("|") : []), [fullscreen, splitKey]);
 
   function fly(plan: FlightPlan) {
     setFlight({ ...plan, id: ++flights.current });
@@ -476,8 +457,8 @@ export function CampusMap3DView({
     [fullscreen, envReady, camera],
   );
   useEffect(() => {
-    if (fullView) setFlight({ kind: "to", ...fullView, id: ++flights.current });
-  }, [fullView]);
+    if (fullView && !arrival) setFlight({ kind: "to", ...fullView, id: ++flights.current });
+  }, [fullView, arrival]);
 
   useEffect(() => {
     if (!arrival || arrivalStarted.current || !sceneReady || !envReady || !fullscreen || !data.funfairReady) return;
@@ -503,7 +484,7 @@ export function CampusMap3DView({
   }, [sceneReady, envReady, fullscreen, data.funfairReady, data.funfair, arrival]);
 
   useEffect(() => {
-    if (!arrival || arrival.on) return;
+    if (!arrival || arrival.on || !sceneReady) return;
     // If connectivity drops or a committee member reverses the activation,
     // reveal the real state rather than leaving a zone hidden indefinitely.
     const timeout = window.setTimeout(() => {
@@ -512,7 +493,7 @@ export function CampusMap3DView({
       try { sessionStorage.removeItem(ACTIVATION_JOURNEY_KEY); } catch { /* Optional storage. */ }
     }, 15000);
     return () => window.clearTimeout(timeout);
-  }, [arrival]);
+  }, [arrival, sceneReady]);
 
   function openFullscreen() {
     onFullscreenChange(true);
@@ -548,24 +529,18 @@ export function CampusMap3DView({
     return map;
   }, [mapStations]);
 
-  // Each station's marker spot: alone, or in a building's badge, it floats over the building's label; once the
-  // badge splits (full screen, close up) the stations stand round the building.
+  // Each station's marker spot: alone, or in a building's badge, it floats over the building's label. A building
+  // with several stations always shows one badge (its station count), never separate dots.
   const spots = useMemo(() => {
     const map = new Map<number, Spot>();
     for (const [area, list] of byArea) {
       const place = areaPlace(area)!;
-      const together = list.length >= 2 && !split.has(area);
-      list.forEach((s, i) => {
-        if (list.length >= 2 && !together) {
-          map.set(s.id, { at: ringPoint(place, i, list.length), dy: 0, r: DOT_R, key: `s${s.id}` });
-        } else {
-          const r = together ? BADGE_R : DOT_R;
-          map.set(s.id, { at: labelPoint(place), dy: LABEL_GAP + r, r, key: `a${area}` });
-        }
-      });
+      const together = list.length >= 2;
+      const r = together ? BADGE_R : DOT_R;
+      for (const s of list) map.set(s.id, { at: labelPoint(place), dy: LABEL_GAP + r, r, key: `a${area}` });
     }
     return map;
-  }, [byArea, split]);
+  }, [byArea]);
 
   const isSelected = (s: Station) => s.id === activeSelected?.id || s.id === highlightStationId;
 
@@ -574,7 +549,7 @@ export function CampusMap3DView({
   const badgeMarks: BadgeMark[] = [];
   if (!checking) {
     for (const [area, list] of byArea) {
-      if (list.length >= 2 && !split.has(area)) {
+      if (list.length >= 2) {
         const big = clusterArea === area || openBuilding === area || list.some(isSelected);
         const spot = spots.get(list[0].id)!;
         badgeMarks.push({ area, stations: list, at: spot.at, dx: 0, dy: spot.dy, order: big ? 5 : 0, opacity: 1, big });
@@ -596,17 +571,17 @@ export function CampusMap3DView({
     for (const o of check.others) {
       if (check.live && o.user_id === myId) continue;
       const [x, z] = clampToSlab(gpsToWorld(o.lat, o.lng));
-      tags.push({ key: `admin-${o.user_id}`, text: o.full_name ?? "Admin", at: [x, 0.4, z] });
+      tags.push({ key: `admin-${o.user_id}`, text: o.full_name ?? "Admin", at: [x, 0.4 + groundY(x, z), z] });
       circles.push({ x, z, r: 0.5, color: "#334155", dashed: false });
     }
     if (check.live) {
       const [x, z] = clampToSlab(gpsToWorld(check.live.lat, check.live.lng));
-      tags.push({ key: "you", text: "You", at: [x, 0.4, z], dot: true });
+      tags.push({ key: "you", text: "You", at: [x, 0.4 + groundY(x, z), z], dot: true });
       circles.push({ x, z, r: Math.max(0.5, check.live.acc * UNITS_PER_M), color: "#0284c7", dashed: false });
     }
     if (checkTap) {
       const [x, z] = checkTap;
-      tags.push({ key: "tap", text: "Tapped", at: [x, 0.4, z] });
+      tags.push({ key: "tap", text: "Tapped", at: [x, 0.4 + groundY(x, z), z] });
       circles.push({ x, z, r: 0.6, color: accent, dashed: false });
     }
   }
@@ -631,7 +606,7 @@ export function CampusMap3DView({
       };
       if (pin.source === "gps" && g.gps_lat != null && g.gps_lng != null) {
         const [x, z] = clampToSlab(gpsToWorld(g.gps_lat, g.gps_lng));
-        const mark = { ...base, at: [x, 0, z] as Vec3, dx: 0, dy: 0 };
+        const mark = { ...base, at: [x, groundY(x, z), z] as Vec3, dx: 0, dy: 0 };
         const key = `${Math.round(x)}:${Math.round(z)}`;
         atSpot.set(key, [...(atSpot.get(key) ?? []), mark]);
         pinMarks.push(mark);
@@ -696,8 +671,8 @@ export function CampusMap3DView({
       }
       const list = byArea.get(area) ?? [];
       if (list.length === 1) taps.station(list[0]);
-      else if (list.length >= 2 && !split.has(area)) taps.badge(area);
-      return list.length === 1 || (list.length >= 2 && !split.has(area));
+      else if (list.length >= 2) taps.badge(area);
+      return list.length >= 1;
     },
     group: (id) => data.setSelectedGroup((current) => (current === id ? null : id)),
     // The averaged GPS fix's offset from the tapped spot, in metres (true scale: no warp to undo; +X is north,
@@ -792,7 +767,7 @@ export function CampusMap3DView({
                 concert={concert}
                 lite={isLite}
                 camera={camera ?? env.camera}
-                intro={intro}
+                intro={arrival ? false : intro}
                 labels={showNames}
                 controlsRef={controls}
                 interactive={fullscreen}
@@ -803,6 +778,7 @@ export function CampusMap3DView({
                     badges={badgeMarks}
                     pins={pinMarks}
                     tags={tags}
+                    funfair={funfair}
                     showNames={showNames}
                     accent={accent}
                     size={fullscreen ? 1 : CARD_MARKER_SIZE}
@@ -816,8 +792,6 @@ export function CampusMap3DView({
                   outlines={outlines}
                   lite={isLite}
                   flight={flight}
-                  splitEnabled={fullscreen}
-                  onSplit={setSplitKey}
                   checking={checking}
                   taps={taps}
                 />
@@ -840,7 +814,7 @@ export function CampusMap3DView({
           >
             <div ref={fullSlot} className="absolute inset-0 cursor-grab active:cursor-grabbing" />
             {arrival && <div role="status" className="pointer-events-none absolute inset-x-4 bottom-24 z-30 mx-auto max-w-sm rounded-2xl bg-black/80 px-5 py-3 text-center text-sm text-white">
-              {!arrival.on ? "Your magic is reaching the funfair…" : arrival.zones.length ? `${arrival.zones.map(zone => FUNFAIR_ZONE_NAMES[zone].split(" / ")[1]).join(" & ")} — lit up!` : "Your projector is revived. Explore the funfair!"}
+              {!arrival.on ? "Your magic is reaching the funfair…" : arrival.zones.length ? `${arrival.zones.map(zoneTitle).join(" & ")} — lit up!` : "Your projector is lit. Explore the funfair!"}
             </div>}
 
             <div

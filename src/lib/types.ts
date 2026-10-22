@@ -155,9 +155,11 @@ export interface BlindBoxType {
   stock: number;
   is_special: boolean;
   archived: boolean;
+  /** The Spot's hidden type (migration 0100). Not shown with the other types. */
+  is_spot?: boolean;
 }
 
-/** A box type handed to one seller: an account OR a station (shared pool). */
+/** A box type handed to one seller: an account, or the Spot (station rows are history only). */
 export interface BlindBoxAssignment {
   id: number;
   type_id: number;
@@ -215,6 +217,8 @@ export interface BlindBoxOption {
 
 export interface BlindBoxPreview {
   status: BlindBoxPageStatus;
+  /** The hidden Spot box (migration 0100): free, one per group. */
+  spot?: boolean;
   seller_name: string;
   group_name: string;
   balance: number;
@@ -355,11 +359,17 @@ export interface AuditEntry {
 
 export const PROJECTOR_LOCATIONS: ProjectorLocation[] = ["B1", "A3", "TF"];
 
+/**
+ * Default places. A page shows game_config projector_place_<location> (0097),
+ * set by Admin and HOGM: read it with projectorPlaces() / useProjectorPlaces().
+ */
 export const PROJECTOR_LABELS: Record<ProjectorLocation, string> = {
   B1: "B1 Basement",
   A3: "A3 Building",
   TF: "Track & Field",
 };
+
+export const PROJECTOR_SHORT_LABELS: Record<ProjectorLocation, string> = { B1: "B1", A3: "A3", TF: "T&F" };
 
 /** Code names used until the full map unlocks, so a page never gives a location away. */
 export const PROJECTOR_CODE_NAMES: Record<ProjectorLocation, string> = {
@@ -419,11 +429,16 @@ export const COMMITTEE_TIER: UserRole[] = ["hof", "hogm", "committee", "admin"];
 /** Event operations crew: the Vortexa staff home, the Ops tab bar and the Welcome page colours. */
 export const OPS_ROLES: UserRole[] = ["hof", "hogm", "committee"];
 
-/** Roles that can hold blind boxes: everyone except Facilitator and Freshie.
- *  Mirrors bb_holder_role() in migration 0054. */
+/** Roles with no group whose pages use the Welcome page colours: the ops crew and
+ *  Game Masters. Same Vortexa home, tab bar and subpage look; a GM's center tab is
+ *  Station (/gm) instead of Ops. */
+export const VORTEXA_ROLES: UserRole[] = [...OPS_ROLES, "gm"];
+
+/** Roles that can hold blind boxes: Committee, HOF, HOGM and Admin. Used by
+ *  Admin's assign lists and /api/blindbox/links. Stricter than bb_holder_role()
+ *  in migration 0054 on purpose: GM and Guardian GM have no blind box QR any
+ *  more (Ben, 2026-10-20), but the database still allows them. */
 export const BLINDBOX_HOLDER_ROLES: UserRole[] = [
-  "gm",
-  "guardian_gm",
   "committee",
   "hof",
   "hogm",

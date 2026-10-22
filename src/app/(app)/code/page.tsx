@@ -41,9 +41,13 @@ export default function GroupCodePage() {
     let active = true;
     setError(null);
     setPng(null);
-    groupQrPng(groupId, code, color).then((file) => {
+    (async () => {
+      const res = await fetch("/api/group-join");
+      const url = res.ok ? ((await res.json()).urls?.[groupId] as string | undefined) : undefined;
+      if (!url) throw new Error("Group QR unavailable");
+      const file = await groupQrPng(`GROUP ${groupId}`, url, color);
       if (active) setPng(file);
-    }).catch(() => { if (active) setError("Could not generate the QR code. Please reload to try again."); });
+    })().catch(() => { if (active) setError("Could not generate the QR code. Please reload to try again."); });
     return () => {
       active = false;
     };
@@ -53,7 +57,7 @@ export default function GroupCodePage() {
 
   return (
     <div className="mx-auto flex max-w-md flex-col items-center gap-4">
-      <PageTitle title="Group code" subtitle="The password, link, and QR for your group" />
+      <PageTitle title="Group code" subtitle="Your group's password and QR. The QR never changes; the password can." />
       <ErrorBanner message={error} />
       {!ready || groupLoading ? (
         <Spinner />
@@ -61,6 +65,10 @@ export default function GroupCodePage() {
         <p className="text-sm text-ink-faint">This group does not have a login code yet.</p>
       ) : (
         <>
+          <p className="text-center">
+            <span className="block text-xs font-semibold uppercase tracking-wide text-ink-faint">Password</span>
+            <span className="font-mono text-4xl font-bold tracking-[0.2em] text-ink">{code}</span>
+          </p>
           {!png && !error && <Spinner />}
           {png && (
             // The card is a generated image, same file Freshie control downloads.

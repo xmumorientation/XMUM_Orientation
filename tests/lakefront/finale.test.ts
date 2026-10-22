@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { allZonesOn, isFunfairPreview } from "../../src/lib/funfair";
+import { allZonesOn, isFunfairPreview, zoneTitle } from "../../src/lib/funfair";
 
 // The finale's trigger (src/lib/funfair.ts): the lake stage's concert plays only while all three funfair zones
 // are on, and Admin's preview link (?funfair_preview=) takes the lake stage or a zone, nothing else.
@@ -21,4 +21,11 @@ describe("lake stage finale", () => {
     expect(["west", "central", "east", "lakefront"].every(isFunfairPreview)).toBe(true);
     for (const v of [null, "", "LAKEFRONT", "north", "toString"]) expect(isFunfairPreview(v)).toBe(false);
   });
+});
+
+// Labels survive separator changes without dropping the area's name.
+it("names each funfair zone with its projector and area", () => {
+  expect(zoneTitle("west")).toBe("Wheel / Neon Pier");
+  expect(zoneTitle("central")).toBe("Orbit / Starlight Midway");
+  expect(zoneTitle("east")).toBe("Star / Big Top");
 });

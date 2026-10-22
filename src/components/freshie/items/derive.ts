@@ -1,7 +1,6 @@
 import {
   PIECES_PER_SET,
   PROJECTOR_CODE_NAMES,
-  PROJECTOR_LABELS,
   PROJECTOR_LOCATIONS,
   type ProjectorLocation,
 } from "@/lib/types";
@@ -19,19 +18,17 @@ export type LampState = "sleep" | "dark" | "ready" | "ours" | "other";
 /** locked: Day 1 · collecting · key: 5/5, key unlocked · lit: we lit it · idle: someone else lit it · done: we lit another one. */
 export type CardState = "locked" | "collecting" | "key" | "lit" | "idle" | "done";
 
-const SHORT_LABEL: Record<ProjectorLocation, string> = { B1: "B1", A3: "A3", TF: "T&F" };
-
-/** Code names used until the full map unlocks, so the page never gives a location away. */
+/** Code names used until the group earns a place, so the page never gives a location away. */
 export const CODE_NAMES = PROJECTOR_CODE_NAMES;
 
 export type ZoneName = { short: string; long: string };
 
-/** What the viewer may call each location: its code name, or the real place once the map unlocks. */
+/** What the viewer may call each location: its code name, or its place once the group has earned it (0098). */
 export function zoneNames(data: ItemsData): Record<ProjectorLocation, ZoneName> {
-  const name = (loc: ProjectorLocation): ZoneName =>
-    data.mapUnlocked
-      ? { short: SHORT_LABEL[loc], long: PROJECTOR_LABELS[loc] }
-      : { short: CODE_NAMES[loc], long: KEY_NAMES[loc] };
+  const name = (loc: ProjectorLocation): ZoneName => {
+    const place = data.places[loc];
+    return place ? { short: place.short, long: place.name } : { short: CODE_NAMES[loc], long: KEY_NAMES[loc] };
+  };
   return { B1: name("B1"), A3: name("A3"), TF: name("TF") };
 }
 

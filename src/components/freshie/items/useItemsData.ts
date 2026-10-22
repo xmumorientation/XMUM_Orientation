@@ -3,12 +3,14 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { usePhaseTimer } from "@/components/PhaseTimerProvider";
+import { puzzleImageUrl, useConfig } from "@/components/useConfig";
 import { useGroup } from "@/components/useGroup";
+import { loadProjectorClues, projectorPlaces, type ProjectorClues } from "@/lib/projectorPlaces";
+import { loadProjectorStates, type ProjectorState } from "@/lib/projectorStates";
 import { supabaseBrowser } from "@/lib/supabase/client";
-import { PROJECTOR_LOCATIONS, type Phase, type ProjectorLocation, type RiskTier } from "@/lib/types";
+import { PIECES_PER_SET, PROJECTOR_LOCATIONS, type Phase, type ProjectorLocation, type RiskTier } from "@/lib/types";
 import { formatCountdown } from "@/lib/utils";
 
-import { groupSwatch } from "../groupTheme";
 import { GUARDIAN, SAMPLE_BOXES } from "./sampleData";
 import type { GamePhase, HistoryEntry, ItemsData, LitBy } from "./types";
 
@@ -16,14 +18,17 @@ import type { GamePhase, HistoryEntry, ItemsData, LitBy } from "./types";
 // sources Admin sees:
 //   tokens      groups.token_balance (useGroup, live)
 //   pieces      inventory + items (granted on a Day 2 station win)
-//   projectors  projectors.activated_by_group, names/colours from fn_scoreboard
+//   projectors  fn_projector_states (0096): lit or not, and whether our group
+//               lit it. Which other group lit one is Committee only.
 //   phase, time phases (Live control), via usePhaseTimer
 //   costs       Day 2 stations' entry_cost by risk tier
 //   history     the group's token_transactions, pieces and lit projector
+//   places      fn_my_projector_clues (0098): the place and picture of each
+//               projector the group has earned (all 5 pieces, or lit it)
 // A Freshie or Faci reads only their own group's rows (RLS).
-// Not live yet: the Guardian spot text. Blind boxes are added by the Items page
-// (useBlindBoxes); their buy and open token changes show here as "box" entries.
-// The map unlocks (real location names) in the endgame.
+// Blind boxes are added by the Items page (useBlindBoxes); their buy and open
+// token changes show here as "box" entries. The map unlocks (Show on map) in
+// the endgame.
 
 type PieceRow = {
   id: number;
@@ -32,15 +37,14 @@ type PieceRow = {
   items: { puzzle_location: ProjectorLocation | null; puzzle_index: number | null } | null;
 };
 type TxRow = { id: number; delta: number; reason: string; created_at: string };
-type ProjectorRow = { location: ProjectorLocation; activated_by_group: number | null; activated_at: string | null };
-type TeamRow = { id: number; name: string; color: string | null };
 type StationRow = { risk_tier: RiskTier; entry_cost: number };
 
 type Fetched = {
   pieces: PieceRow[];
   tx: TxRow[];
-  projectors: ProjectorRow[];
-  teams: TeamRow[];
+  projectors: ProjectorState[];
+  // "missing" until 0098 runs: the config then decides, for the keys the group has earned.
+  clues: ProjectorClues | "missing";
   costs: ItemsData["costs"];
 };
 
@@ -73,6 +77,7 @@ function entryTitle(reason: string) {
 export function useItemsData(): { data: ItemsData; loading: boolean } {
   const { group } = useGroup();
   const { phases, offsetMs, tick } = usePhaseTimer();
+  const { config } = useConfig();
   const supabase = useMemo(() => supabaseBrowser(), []);
   const groupId = group?.id ?? null;
   const [fetched, setFetched] = useState<Fetched | null>(null);
@@ -81,7 +86,7 @@ export function useItemsData(): { data: ItemsData; loading: boolean } {
     if (!groupId) return;
     let active = true;
     async function load() {
-      const [pieces, tx, projectors, teams, stations] = await Promise.all([
+      const [pieces, tx, projectors, stations, clues] = await Promise.all([
         supabase
           .from("inventory")
           .select("id, created_at, source, items!inner(type, puzzle_location, puzzle_index)")
@@ -93,9 +98,9 @@ export function useItemsData(): { data: ItemsData; loading: boolean } {
           .eq("group_id", groupId!)
           .order("created_at", { ascending: false })
           .limit(200),
-        supabase.from("projectors").select("location, activated_by_group, activated_at"),
-        supabase.rpc("fn_scoreboard"),
+        loadProjectorStates(supabase),
         supabase.from("stations").select("risk_tier, entry_cost").eq("day", 2),
+        loadProjectorClues(supabase),
       ]);
       if (!active) return;
       const costs = { ...DEFAULT_COSTS };
@@ -106,20 +111,22 @@ export function useItemsData(): { data: ItemsData; loading: boolean } {
         if (!seen.has(s.risk_tier) || s.entry_cost < costs[s.risk_tier]) costs[s.risk_tier] = s.entry_cost;
         seen.add(s.risk_tier);
       }
-      setFetched({
+      setFetched((cur) => ({
         pieces: (pieces.data ?? []) as unknown as PieceRow[],
         tx: (tx.data ?? []) as TxRow[],
-        projectors: (projectors.data ?? []) as ProjectorRow[],
-        teams: (teams.data ?? []) as TeamRow[],
+        // A failed call keeps the last answer instead of showing every projector dark.
+        projectors: projectors ?? cur?.projectors ?? [],
+        clues: clues ?? cur?.clues ?? "missing",
         costs,
-      });
+      }));
     }
     load();
     const channel = supabase
       .channel(`items-live-${groupId}-${crypto.randomUUID()}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "inventory", filter: `group_id=eq.${groupId}` }, load)
       .on("postgres_changes", { event: "*", schema: "public", table: "token_transactions", filter: `group_id=eq.${groupId}` }, load)
-      .on("postgres_changes", { event: "*", schema: "public", table: "projectors" }, load)
+      // A Freshie gets no projectors events (0096); a projector change also writes game_config.
+      .on("postgres_changes", { event: "*", schema: "public", table: "game_config" }, load)
       .subscribe();
     return () => {
       active = false;
@@ -147,17 +154,26 @@ export function useItemsData(): { data: ItemsData; loading: boolean } {
     }
     for (const loc of PROJECTOR_LOCATIONS) pieces[loc].sort((a, b) => a - b);
 
-    const teams = new Map((fetched?.teams ?? []).map((t) => [t.id, t]));
     const projectors = { B1: null, A3: null, TF: null } as Record<ProjectorLocation, LitBy | null>;
     for (const p of fetched?.projectors ?? []) {
-      if (!p.activated_by_group) continue;
-      const team = teams.get(p.activated_by_group);
-      projectors[p.location] = {
-        groupId: p.activated_by_group,
-        name: team?.name ?? `Group ${p.activated_by_group}`,
-        color: groupSwatch(p.activated_by_group, team?.color),
-        isUs: p.activated_by_group === groupId,
-      };
+      if (!p.activated_at) continue;
+      projectors[p.location] = { isUs: p.activated_by_group === groupId };
+    }
+
+    // The place and picture of each projector the group has earned (0098). Before 0098 the config
+    // still reaches a Freshie, so the same rule is applied here: all 5 pieces, or our group lit it.
+    const places: ItemsData["places"] = { B1: null, A3: null, TF: null };
+    const images: ItemsData["images"] = { B1: null, A3: null, TF: null };
+    const fromConfig = projectorPlaces(config);
+    for (const loc of PROJECTOR_LOCATIONS) {
+      const clue =
+        fetched?.clues === "missing"
+          ? pieces[loc].length >= PIECES_PER_SET || projectors[loc]?.isUs
+            ? { place: fromConfig[loc], imageUrl: puzzleImageUrl(config, loc) }
+            : null
+          : (fetched?.clues[loc] ?? null);
+      places[loc] = clue?.place ?? null;
+      images[loc] = clue?.imageUrl ?? null;
     }
 
     // History, newest first. Day 2 starts when Live control started day2.
@@ -214,6 +230,8 @@ export function useItemsData(): { data: ItemsData; loading: boolean } {
       timeLeft: remaining === null ? null : formatCountdown(Math.max(0, remaining)),
       group: { id: groupId ?? 0, name: group?.name ?? "" },
       mapUnlocked: phase === "endgame" || phase === "done",
+      places,
+      images,
       tokens: { balance: group?.token_balance ?? 0 },
       costs: fetched?.costs ?? DEFAULT_COSTS,
       projectors,
@@ -222,7 +240,7 @@ export function useItemsData(): { data: ItemsData; loading: boolean } {
       boxes: SAMPLE_BOXES,
       history: events.map(({ at: _at, ...rest }) => rest),
     };
-  }, [fetched, phases, offsetMs, tick, group, groupId]);
+  }, [fetched, phases, offsetMs, tick, group, groupId, config]);
 
   return { data, loading: fetched === null };
 }

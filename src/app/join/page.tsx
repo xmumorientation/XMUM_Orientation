@@ -16,8 +16,13 @@ export default function JoinPage() {
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
-    const parsed = parseGroupJoin(new URLSearchParams(window.location.search));
-    if (!parsed) {
+    const params = new URLSearchParams(window.location.search);
+    // Current QRs carry ?g=<signed group token>; the server signs in with the
+    // group's current password. Older prints carry ?group3=1234 and work until
+    // that group's password is changed.
+    const token = params.get("g");
+    const parsed = token ? null : parseGroupJoin(params);
+    if (!token && !parsed) {
       setMessage("This scan link is not a group login.");
       setFailed(true);
       return;
@@ -25,13 +30,25 @@ export default function JoinPage() {
 
     let cancelled = false;
     (async () => {
+      // This phone only: a global sign-out would end every phone of the group.
       await supabase.auth.signOut({ scope: "local" });
-      const { error } = await supabase.auth.signInWithPassword({
-        email: groupLoginEmail(parsed.groupId),
-        password: groupLoginPassword(parsed.code),
-      });
+      let failed: boolean;
+      if (token) {
+        const res = await fetch("/api/group-join", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ t: token }),
+        });
+        failed = !res.ok;
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({
+          email: groupLoginEmail(parsed!.groupId),
+          password: groupLoginPassword(parsed!.code),
+        });
+        failed = !!error;
+      }
       if (cancelled) return;
-      if (error) {
+      if (failed) {
         setMessage("This scan link did not sign the group in.");
         setFailed(true);
         return;

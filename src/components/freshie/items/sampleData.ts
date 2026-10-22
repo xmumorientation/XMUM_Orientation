@@ -1,3 +1,6 @@
+import { DEFAULT_PLACES } from "@/lib/projectorPlaces";
+import { PIECES_PER_SET, type ProjectorLocation } from "@/lib/types";
+
 import type { BoxGroup, HistoryEntry, ItemsData } from "./types";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -6,8 +9,8 @@ import type { BoxGroup, HistoryEntry, ItemsData } from "./types";
 // ?demo=complete plays the T&F key completing (the 5th piece arrives, with a
 // Replay button); ?demo=day1|day2|ready|taken|won shows the other states.
 // GUARDIAN and SAMPLE_BOXES are also used by live data for now.
-// Locations show as code names (Star, Wheel, Orbit) until the map unlocks;
-// only "ready" and "won" are unlocked here.
+// Locations show as code names (Star, Wheel, Orbit) until the group completes
+// that key or lights it (0098); sampleItems() gives those keys their default place.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const SAMPLE_SCENARIOS = ["day1", "day2", "ready", "taken", "won", "complete"] as const;
@@ -44,8 +47,8 @@ const DAY2_HISTORY: HistoryEntry[] = [
 
 function sampleBoxes(goldLeft: number, goldOpened: number[], stdLeft: number, stdOpened: number[]): BoxGroup[] {
   return [
-    { key: "gold", name: "Gold box", label: "Gold", special: true, range: "4–6 tokens or a puzzle piece", mayGivePiece: true, unopened: goldLeft, opened: goldOpened },
-    { key: "standard", name: "Standard box", label: "Standard", special: false, range: "1–2 tokens each", unopened: stdLeft, opened: stdOpened },
+    { key: "gold", name: "Gold Box", label: "Gold", special: true, range: "4–6 tokens or a puzzle piece", mayGivePiece: true, unopened: goldLeft, opened: goldOpened },
+    { key: "standard", name: "Standard Box", label: "Standard", special: false, range: "1–2 tokens each", unopened: stdLeft, opened: stdOpened },
   ];
 }
 
@@ -58,6 +61,8 @@ function base(): ItemsData {
     timeLeft: "1:05:12",
     group: { id: 7, name: "Group 7" },
     mapUnlocked: false,
+    places: { B1: null, A3: null, TF: null },
+    images: { B1: null, A3: null, TF: null },
     tokens: { balance: 14 },
     costs: { low: 2, medium: 4, high: 6 },
     projectors: { B1: null, A3: null, TF: null },
@@ -68,7 +73,15 @@ function base(): ItemsData {
   };
 }
 
+/** A sample shows the default place of each key it has completed or lit, as fn_my_projector_clues would (0098). */
 export function sampleItems(scenario: SampleScenario = "day2"): ItemsData {
+  const data = sampleScenario(scenario);
+  const earned = (loc: ProjectorLocation) => data.pieces[loc].length >= PIECES_PER_SET || !!data.projectors[loc]?.isUs;
+  const place = (loc: ProjectorLocation) => (earned(loc) ? DEFAULT_PLACES[loc] : null);
+  return { ...data, places: { B1: place("B1"), A3: place("A3"), TF: place("TF") } };
+}
+
+function sampleScenario(scenario: SampleScenario): ItemsData {
   const data = base();
   switch (scenario) {
     case "day1":
@@ -104,7 +117,7 @@ export function sampleItems(scenario: SampleScenario = "day2"): ItemsData {
     case "taken":
       return {
         ...data,
-        projectors: { B1: null, A3: { groupId: 4, name: "Group 4", color: "#fc9e3d", isUs: false }, TF: null },
+        projectors: { B1: null, A3: { isUs: false }, TF: null },
       };
     case "won":
       return {
@@ -115,8 +128,8 @@ export function sampleItems(scenario: SampleScenario = "day2"): ItemsData {
         tokens: { balance: 8 },
         pieces: { B1: [1, 2, 3, 4, 5], A3: [3], TF: [2] },
         projectors: {
-          B1: { groupId: 7, name: "Group 7", color: "#0dfcfd", isUs: true },
-          A3: { groupId: 4, name: "Group 4", color: "#fc9e3d", isUs: false },
+          B1: { isUs: true },
+          A3: { isUs: false },
           TF: null,
         },
         history: [

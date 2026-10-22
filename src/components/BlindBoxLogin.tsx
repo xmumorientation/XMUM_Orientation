@@ -17,16 +17,23 @@ type FreshieGroup = { id: number; name: string };
  * password, and the same page reloads on the buy screen: the scan link is
  * kept, so nothing needs scanning twice.
  *
- * `notFreshie`: the visitor is signed in, but as staff or a Faci. Only Freshie
- * groups can buy, so offer to switch to a Freshie login.
+ * `notFreshie`: the visitor is signed in, but as staff or a Faci (or, with
+ * `noGroup`, as a Freshie account with no group). Only Freshie group logins
+ * can buy, so offer to switch to one.
  */
 export function BlindBoxLogin({
   sellerName,
+  spot = false,
   notFreshie = false,
+  noGroup = false,
 }: {
   sellerName: string;
+  /** The hidden Spot box (free, claimed instead of bought). */
+  spot?: boolean;
   notFreshie?: boolean;
+  noGroup?: boolean;
 }) {
+  const what = spot ? "You found a hidden blind box!" : `${sellerName} is selling blind boxes.`;
   const supabase = useMemo(() => supabaseBrowser(), []);
   const router = useRouter();
   const [switching, setSwitching] = useState(false);
@@ -53,6 +60,8 @@ export function BlindBoxLogin({
 
   async function switchToFreshie() {
     setBusy(true);
+    // This device only: a global sign-out would end the account's sessions on
+    // every other device too.
     await supabase.auth.signOut({ scope: "local" });
     setBusy(false);
     setSwitching(true);
@@ -79,14 +88,18 @@ export function BlindBoxLogin({
   if (notFreshie && !switching) {
     return (
       <AuthShell
-        role="Blind box"
-        lead={`${sellerName} is selling blind boxes. Only Freshie groups can buy them, and you are signed in with a staff or Facilitator account.`}
+        role="Blind Box"
+        lead={
+          noGroup
+            ? `${what} Your account is not in a group yet, so it cannot buy. Log in with your group's 4-digit password instead.`
+            : `${what} Only Freshie groups can get one, and you are signed in with a staff or Facilitator account.`
+        }
         backHref="/dashboard"
         backLabel="Back to home"
       >
         <div className="vx-login-form">
           <button type="button" className="vx-btn vx-btn-primary" onClick={switchToFreshie} disabled={busy}>
-            {busy ? "Signing out…" : "Log in as a Freshie"}
+            {busy ? "Signing out…" : noGroup ? "Log in as your group" : "Log in as a Freshie"}
           </button>
         </div>
       </AuthShell>
@@ -95,11 +108,11 @@ export function BlindBoxLogin({
 
   return (
     <AuthShell
-      role="Blind box"
+      role="Blind Box"
       lead={
         <>
           <Package size={18} aria-hidden style={{ display: "inline", verticalAlign: "-3px", marginRight: 6 }} />
-          {sellerName} is selling blind boxes. Pick your group and enter its 4-digit password to buy one.
+          {what} Pick your group and enter its 4-digit password to {spot ? "claim it" : "buy one"}.
         </>
       }
     >
@@ -140,7 +153,7 @@ export function BlindBoxLogin({
           </p>
         )}
         <button type="submit" className="vx-btn vx-btn-primary" disabled={busy || code.length !== 4 || !groupId}>
-          {busy ? "Checking…" : "Continue to the blind box"}
+          {busy ? "Checking…" : "Continue to the Blind Box"}
         </button>
       </form>
     </AuthShell>
