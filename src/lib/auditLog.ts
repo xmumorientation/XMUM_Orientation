@@ -36,6 +36,8 @@ export const AUDIT_ACTIONS: Record<string, AuditKind> = {
   "tokens.day1_reward": "tokens",
   "tokens.undo": "tokens",
   "tokens.reset": "tokens",
+  "tokens.log_edit": "tokens",
+  "tokens.log_delete": "tokens",
   "token_rule.update": "tokens",
   "day2.challenge": "stations",
   "station.status": "stations",
@@ -78,6 +80,13 @@ export const AUDIT_ACTIONS: Record<string, AuditKind> = {
   "phase.resume": "game",
   "phase.end": "game",
   "phase.extend": "game",
+  // The live database runs the bonding-session branch's fn_phase_control, which writes session.* for the same things.
+  "session.start": "game",
+  "session.pause": "game",
+  "session.resume": "game",
+  "session.end": "game",
+  "session.extend": "game",
+  "session.reset": "game",
   "config.set": "game",
   "faci_location.log": "location",
   "faci_location.edit": "location",
@@ -93,6 +102,7 @@ export const AUDIT_ACTIONS: Record<string, AuditKind> = {
   "user.assign_group": "facis",
   "freshie.set_group_count": "groups",
   "group.set_color": "groups",
+  "group.profile_set": "groups",
 };
 
 /** The actions under these filters. */
@@ -165,10 +175,11 @@ const SWITCHES: Record<string, string> = {
   day2_map_layer: "Day 2 map layer (map unlock)",
 };
 
-const PHASE_VERBS: Record<string, string> = { start: "Started", pause: "Paused", resume: "Resumed", end: "Ended" };
+const PHASE_VERBS: Record<string, string> = { start: "Started", pause: "Paused", resume: "Resumed", end: "Ended", reset: "Reset" };
 
 const num = (v: unknown) => (typeof v === "number" ? v : Number(v));
 const str = (v: unknown) => (v == null ? "" : String(v));
+const signed = (v: unknown) => (num(v) > 0 ? `+${num(v)}` : String(num(v)));
 const plural = (n: number, word: string) => `${n} ${word}${Math.abs(n) === 1 ? "" : "s"}`;
 const join = (...parts: unknown[]) => parts.filter((p) => typeof p === "string" && p).join(" · ");
 
@@ -228,6 +239,31 @@ export function describeAudit(e: AuditEntry, n: AuditNames): AuditRow {
           `${plural(num(d.pieces_deleted), "piece")} removed`,
           `${plural(num(d.logs_deleted), "token log row")} removed`
         ),
+      };
+    case "tokens.log_edit": {
+      const before = (d.before ?? {}) as { group_id?: unknown; amount?: unknown; type?: unknown; notes?: unknown };
+      const after = (d.after ?? {}) as { group_id?: unknown; amount?: unknown; type?: unknown; notes?: unknown };
+      const moved = before.group_id != null && num(before.group_id) !== num(after.group_id);
+      return {
+        ...G,
+        action: "Transaction edited",
+        // The balance moves by the difference, unless the entry moved to another group.
+        tokens: moved ? undefined : num(after.amount) - num(before.amount),
+        detail: join(
+          `was ${signed(before.amount)}, now ${signed(after.amount)}`,
+          moved && `moved from ${groupName(before.group_id)}`,
+          before.type !== after.type && `${str(before.type)} → ${str(after.type)}`,
+          str(after.notes).trim() && `"${str(after.notes).trim()}"`,
+          `balance ${num(d.balance_after)}`
+        ),
+      };
+    }
+    case "tokens.log_delete":
+      return {
+        ...onGroup(d.group_id ?? target("group")),
+        action: "Transaction deleted",
+        tokens: -num(d.amount),
+        detail: join(`was ${signed(d.amount)} (${str(d.type)})`, str(d.notes).trim() && `"${str(d.notes).trim()}"`, `balance ${num(d.balance_after)}`),
       };
     case "token_rule.update": {
       const key = target("rule");
@@ -344,8 +380,14 @@ export function describeAudit(e: AuditEntry, n: AuditNames): AuditRow {
     case "phase.pause":
     case "phase.resume":
     case "phase.end":
-      return { object: phase(target("phase")), action: PHASE_VERBS[e.action.slice(6)], detail: "" };
+    case "session.start":
+    case "session.pause":
+    case "session.resume":
+    case "session.end":
+    case "session.reset":
+      return { object: phase(target("phase")), action: PHASE_VERBS[e.action.split(".")[1]], detail: "" };
     case "phase.extend":
+    case "session.extend":
       return { object: phase(target("phase")), action: "Extended", detail: `+${num(d.extend_minutes)} min` };
     case "config.set":
       return describeConfig(target("config"), d.value, phase);
@@ -374,7 +416,11 @@ export function describeAudit(e: AuditEntry, n: AuditNames): AuditRow {
       return { ...G, action: "Headcount after close", detail: join(session(d.session_id), str(d.headcount)) };
     case "group.faci_set": {
       const ids = Array.isArray(d.user_ids) ? (d.user_ids as string[]) : [];
-      return { ...G, action: "Facilitators set", detail: ids.length ? ids.map(person).join(", ") : "none" };
+      return {
+        ...G,
+        action: "Facilitators set",
+        detail: join(ids.length ? ids.map(person).join(", ") : "none", d.moved_to != null && `a Facilitator moved to ${groupName(d.moved_to)}`),
+      };
     }
     case "faci_profile.set":
       return { object: person(e.target), action: "Profile updated", detail: "" };
@@ -386,6 +432,14 @@ export function describeAudit(e: AuditEntry, n: AuditNames): AuditRow {
       return { object: person(target("user")), action: "Moved to a group", detail: groupName(d.group_id) };
     case "freshie.set_group_count":
       return { object: "Groups", action: "Number of groups set", detail: str(d.count) };
+    case "group.profile_set": {
+      const side = (v: unknown) => {
+        const x = (v ?? {}) as { name?: unknown; slogan?: unknown };
+        return join(str(x.name) && `"${str(x.name)}"`, str(x.slogan) && `slogan "${str(x.slogan)}"`);
+      };
+      const before = side(d.before);
+      return { ...G, action: "Group name or slogan changed", detail: join(side(d.after), before && `was ${before}`) };
+    }
     case "group.set_color":
       return { ...G, action: "Colour changed", detail: str(d.color) };
     default:
@@ -401,6 +455,7 @@ function describeConfig(key: string, value: unknown, phase: (key: string) => str
     return { object: projectorName(key.slice(16)), action: "Place set", detail: `"${str(place?.name)}"` };
   }
   if (key.startsWith("bonding_session_duration_")) return { object: phase(key.slice(25)), action: "Game length set", detail: `${str(value)} min` };
+  if (key.startsWith("gm_blindbox_")) return { object: "GM blind box (old setting)", action: "Set", detail: `${key.slice(12)}: ${str(value)}` };
   if (key === "undo_window_minutes") return { object: "Undo window", action: "Set", detail: `${str(value)} min` };
   if (key === "blindbox_group_cap") return { object: "Blind boxes per group", action: "Set", detail: str(value) };
   const shown = JSON.stringify(value) ?? "";

@@ -7,7 +7,8 @@ export type TransactionType =
   | "DAY2_ENTRY"
   | "MANUAL_GM_ADJUST"
   | "MANUAL_ADMIN_ADJUST"
-  | "SYSTEM_RESET";
+  | "SYSTEM_RESET"
+  | "TOKEN_REVERSAL";
 
 export interface TokenGroup {
   group_id: number;
