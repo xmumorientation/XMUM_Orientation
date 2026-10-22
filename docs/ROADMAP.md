@@ -248,6 +248,14 @@ Numbered after main's `0093`-`0098` (renamed from 0097 / 0098 when merging main,
 - `0100_blindbox_spot_no_stations.sql`: the Spot box, no station boxes, Restore only. Deletes unsold station boxes and switches sold ones off. Safe to run again.
 - Env: `/api/group-join` signs group QRs with `NFC_TOKEN_SECRET` (already set for blind boxes and NFC). Changing that secret changes every group QR.
 
+### HOGM sees the game log: Game control → Log, 2026-10-22
+No migration (HOGM has read `audit_log` since 0002). Ben asked for it, with each action written out and the name of who did it.
+- A fourth tab on HOGM's Ops, **Log** ([LogSection.tsx](../src/components/staff/game/LogSection.tsx)), after Stations, Puzzles and Funfair. Phones get four equal icon tabs.
+- Only game actions: tokens, token rules, Day 2, stations and their GMs, puzzle pieces, projectors and NFC, blind boxes, games and phases, and settings (`config.set`). Account, attendance, headcount and Faci changes stay on Admin → Audit. This is a page filter: the database still lets HOGM (and HOF) read every audit row.
+- A table (Ben found one sentence per row hard to scan): Time (24-hour clock, the date when not today, time ago), Who (the person's name and role), Object (a group with its colour dot, a station, a projector, a box type, a setting), Action ("Day 1 win", "Bought a blind box"), Tokens (+ green, − red) and Details ("balance 66", "Standard · from Test HOGM · free"). At 680px and wider it fits; on phones it slides sideways inside its card with Time pinned. Filters: What (All, Tokens, Stations, Puzzles, Projectors, Blind box, Games & settings), Who (Anyone, Game Masters, HOGM, Admin, Groups, System) and a group. The group filter also finds projector and NFC rows, which name the group in `detail.group_id`. 50 rows, then Load more; refreshes every 30 s (no realtime on `audit_log`) and with the refresh button.
+- A new audit action shows on Log only once it is added to `ACTIONS` and `describe()` in `LogSection.tsx`. Funfair key changes (0088) write no audit rows, so they are not on it.
+- Checked in headless Chrome as `hogm.test` against the live project (read only), at 390×844, 747×900 and 1280×800: no sideways page scroll; the What, Who and group filters work; no console errors. `tsc` (src) and `next lint` are clean.
+
 ### Funfair card moved to Admin → Game, 2026-10-22 (Jiamin)
 - The Funfair (3D map) card (zone keys, overrides, the finale) is off Live control and on its own tab, Admin → Game → **Funfair (3D map)** (`/admin/funfair`). Same component (`FunfairZones`); HOGM's Game control → Funfair is unchanged.
 

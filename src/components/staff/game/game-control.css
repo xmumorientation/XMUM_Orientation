@@ -84,10 +84,10 @@
   .gc-grid3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
-/* Section switcher: three equal icon tabs on phones / portrait tablets (all
+/* Section switcher: four equal icon tabs on phones / portrait tablets (all
    visible, no sideways scroll), side rail ≥1024px. */
 .gc-nav {
-  position: sticky; top: 8px; z-index: 5; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px;
+  position: sticky; top: 8px; z-index: 5; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px;
   padding: 4px; border-radius: 18px; border: 1px solid var(--gc-line);
   background: rgba(14, 12, 21, 0.86); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
 }
@@ -257,6 +257,40 @@
 /* ── Plain rows (NFC issued) ──────────────────────────────────────── */
 .gc-rows { list-style: none; margin: 8px 0 0; padding: 0 0 6px; }
 .gc-rows > li { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 48px; padding: 8px 16px; border-top: 1px solid var(--gc-line); font-size: 14px; }
+
+/* ── Log (LogSection): filters as wrapping pills, then a table ──────────── */
+.gc-log-filters { display: grid; gap: 12px; padding: 14px 16px; }
+.gc .gc-log-filters select { max-width: 320px; }
+.gc-pills { display: flex; flex-wrap: wrap; gap: 6px; }
+.gc .gc-pills button {
+  min-height: 40px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--gc-line-2); background: transparent;
+  color: var(--gc-text-2); font: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer; box-shadow: none;
+}
+.gc .gc-pills button[aria-pressed="true"] { border-color: var(--gc-cyan); background: rgba(13, 252, 253, 0.1); color: var(--gc-cyan); }
+/* Phones: the table scrolls sideways inside its card (never the page), with Time pinned. */
+.gc-log-wrap { overflow-x: auto; overscroll-behavior-x: contain; }
+.gc-log { width: 100%; min-width: 680px; border-collapse: collapse; font-size: 14px; line-height: 1.35; }
+.gc-log th {
+  padding: 14px 12px 10px; border-bottom: 1px solid var(--gc-line-2); text-align: left; white-space: nowrap;
+  font-family: var(--gc-mono); font-size: 10.5px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gc-mute);
+}
+.gc-log td { padding: 10px 12px; border-top: 1px solid var(--gc-line); vertical-align: top; }
+.gc-log tbody tr:first-child td { border-top: 0; }
+.gc-log tbody tr:hover td { background: var(--gc-ink-3); }
+.gc-log :is(th, td):first-child { position: sticky; left: 0; z-index: 1; padding-left: 16px; background: var(--gc-ink-2); }
+.gc-log :is(th, td):last-child { padding-right: 16px; }
+.gc-log small { display: block; margin-top: 2px; font-size: 12px; color: var(--gc-mute); }
+.gc-log-time { width: 84px; white-space: nowrap; font-variant-numeric: tabular-nums; font-weight: 600; }
+.gc-log-who { width: 128px; }
+.gc-log-who b { font-weight: 600; }
+.gc-log-obj { width: 150px; font-weight: 600; }
+.gc-log-obj i { display: inline-block; width: 9px; height: 9px; margin-right: 7px; border-radius: 50%; background: var(--gc-log-dot); vertical-align: 1px; }
+.gc-log-act { width: 150px; color: var(--gc-text-2); }
+.gc-log .gc-log-tok { width: 64px; text-align: right; }
+.gc-log td.gc-log-tok { white-space: nowrap; font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--gc-mute); }
+.gc-log td.gc-log-tok[data-sign="+"] { color: var(--gc-green); }
+.gc-log td.gc-log-tok[data-sign="-"] { color: var(--gc-red); }
+.gc-log-detail { min-width: 120px; color: var(--gc-mute); overflow-wrap: anywhere; }
 
 /* ── Scores (GroupScores, HOGM's /token) ─────────────────────────────────── */
 .gc-scores-head, .gc .gc-score-head { display: grid; grid-template-columns: 32px minmax(0, 1fr) 52px 64px 18px; align-items: center; gap: 10px; }

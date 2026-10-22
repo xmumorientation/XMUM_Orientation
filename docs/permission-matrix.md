@@ -89,7 +89,8 @@ This reflects only the migration files in the repo. Any manual changes made to t
 | Facilitator group assignment (`fn_admin_set_group_facis`; HOF on Ops → Facilitators, Admin on Ops → Facilitators and Admin → Freshies; `is_faci_lead()`, migration 0080) | — | — | — | — | — | ✓ | — | ✓ | DB |
 | Ops → Facilitators: each group's Facilitators and its Faci-related audit entries (Recent changes) | — | — | — | — | — | ✓ | — | ✓ | DB (Committee-tier reads) |
 | Live Ops stats | — | — | — | — | — | † | † | ✓ | DB |
-| Audit Log | — | — | — | — | — | † | † | ✓ | DB |
+| Audit Log (Admin → Audit, every action; the database lets HOF and HOGM read every row (0002), but `/admin/audit` shows them "Admin access required", so only a direct API call reaches it) | — | — | — | — | — | API only | API only | ✓ | DB |
+| Game log (Ops → Game control → Log: game actions only, each in words with who did it) | — | — | — | — | — | — | ✓ | — (Admin → Audit) | UI filter; DB allows every row |
 | Freshie control (/admin/freshies: groups, sessions, headcount) | — | — | — | — | — | — | — | ✓ | ⚠ UI |
 | **Scoreboard (/token)** | | | | | | | | | |
 | View the live group scoreboard (no rules, no log) | — | — | ✓ | ✓ | ✓ | ✓ | ✓ | — | UI |

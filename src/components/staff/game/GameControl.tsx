@@ -1,6 +1,6 @@
 "use client";
 
-import { FerrisWheel, ImageIcon, MapPin, type LucideIcon } from "lucide-react";
+import { FerrisWheel, ImageIcon, MapPin, ScrollText, type LucideIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { vxDisplay, vxSlab } from "@/components/home/fonts";
@@ -8,24 +8,27 @@ import { cn } from "@/lib/utils";
 
 import { FunfairSection } from "./FunfairSection";
 import "./game-control.css";
+import { LogSection } from "./LogSection";
 import { PuzzlesSection } from "./PuzzlesSection";
 import { StationsSection } from "./StationsSection";
 
 // HOGM's Ops page (/committee): part of Admin's game console in the Welcome
 // page style. Stations, Puzzles, Funfair (which keys power each zone of the 3D
-// map's funfair). Starting and ending the games, token rules and the reset,
-// and NFC are Admin's (Live control, Admin → Token, Admin → NFC). Each group's
-// tokens and puzzles are on the Scores tab (GroupScores); the HOGM's own
-// blind-box QR is on Home (StaffHome). Phones and portrait tablets switch
-// sections with three equal icon tabs; landscape tablets and desktops get a
-// side rail. Server permissions: migration 0071.
+// map's funfair) and Log (the game's audit log, read only). Starting and
+// ending the games, token rules and the reset, and NFC are Admin's (Live
+// control, Admin → Token, Admin → NFC). Each group's tokens and puzzles are on
+// the Scores tab (GroupScores); the HOGM's own blind-box QR is on Home
+// (StaffHome). Phones and portrait tablets switch sections with four equal
+// icon tabs; landscape tablets and desktops get a side rail. Server
+// permissions: migration 0071.
 
-type SectionKey = "stations" | "puzzles" | "funfair";
+type SectionKey = "stations" | "puzzles" | "funfair" | "log";
 
 const SECTIONS: { key: SectionKey; label: string; Icon: LucideIcon }[] = [
   { key: "stations", label: "Stations", Icon: MapPin },
   { key: "puzzles", label: "Puzzles", Icon: ImageIcon },
   { key: "funfair", label: "Funfair", Icon: FerrisWheel },
+  { key: "log", label: "Log", Icon: ScrollText },
 ];
 
 /** Section from the link: #stations. */
@@ -83,6 +86,7 @@ export function GameControl() {
           {section === "stations" && <StationsSection />}
           {section === "puzzles" && <PuzzlesSection />}
           {section === "funfair" && <FunfairSection />}
+          {section === "log" && <LogSection />}
         </section>
       </div>
     </div>
