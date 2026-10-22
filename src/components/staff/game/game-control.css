@@ -262,11 +262,11 @@
 .gc-log-filters { display: grid; gap: 12px; padding: 14px 16px; }
 .gc .gc-log-filters select { max-width: 320px; }
 .gc-pills { display: flex; flex-wrap: wrap; gap: 6px; }
-.gc .gc-pills button {
+:is(.gc, .gc-sheet) .gc-pills button {
   min-height: 40px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--gc-line-2); background: transparent;
   color: var(--gc-text-2); font: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer; box-shadow: none;
 }
-.gc .gc-pills button[aria-pressed="true"] { border-color: var(--gc-cyan); background: rgba(13, 252, 253, 0.1); color: var(--gc-cyan); }
+:is(.gc, .gc-sheet) .gc-pills button[aria-pressed="true"] { border-color: var(--gc-cyan); background: rgba(13, 252, 253, 0.1); color: var(--gc-cyan); }
 /* Phones: the table scrolls sideways inside its card (never the page), with Time pinned. */
 .gc-log-wrap { overflow-x: auto; overscroll-behavior-x: contain; }
 .gc-log { width: 100%; min-width: 680px; border-collapse: collapse; font-size: 14px; line-height: 1.35; }
@@ -284,13 +284,19 @@
 .gc-log-who { width: 128px; }
 .gc-log-who b { font-weight: 600; }
 .gc-log-obj { width: 150px; font-weight: 600; }
-.gc-log-obj i { display: inline-block; width: 9px; height: 9px; margin-right: 7px; border-radius: 50%; background: var(--gc-log-dot); vertical-align: 1px; }
+.gc-log-obj > span { display: inline-flex; align-items: center; gap: 8px; }
 .gc-log-act { width: 150px; color: var(--gc-text-2); }
 .gc-log .gc-log-tok { width: 64px; text-align: right; }
 .gc-log td.gc-log-tok { white-space: nowrap; font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--gc-mute); }
 .gc-log td.gc-log-tok[data-sign="+"] { color: var(--gc-green); }
 .gc-log td.gc-log-tok[data-sign="-"] { color: var(--gc-red); }
 .gc-log-detail { min-width: 120px; color: var(--gc-mute); overflow-wrap: anywhere; }
+/* A group's Recent changes (faci/GroupLog) in a wide sheet. */
+.gc-log-sheet { display: grid; gap: 12px; align-content: start; padding-bottom: 4px; }
+.gc-log-box { border: 1px solid var(--gc-line); border-radius: 16px; }
+.gc-sheet .gc-log :is(th, td):first-child { background: var(--gc-ink-3); }
+.gc-sheet .gc-log tbody tr:hover td { background: var(--gc-raised); }
+.gc-sheet .gc-log-act { width: 200px; }
 
 /* ── Scores (GroupScores, HOGM's /token) ─────────────────────────────────── */
 .gc-scores-head, .gc .gc-score-head { display: grid; grid-template-columns: 32px minmax(0, 1fr) 52px 64px 18px; align-items: center; gap: 10px; }
@@ -319,6 +325,12 @@
 .gc-sheet.gc-sheet h2 { font-family: var(--gc-slab); font-weight: 400; font-size: 20px; color: var(--gc-text); padding-right: 44px; }
 .gc-sheet.gc-sheet button[aria-label="Close"] { color: var(--gc-mute); }
 .gc-sheet.gc-sheet button[aria-label="Close"]:hover { background: var(--gc-raised); color: var(--gc-text); }
+/* Wide: most of the screen; from 1024px a centred window (fixed with top and
+   bottom 0 and a height, so margin auto centres it without a transform). */
+.gc-sheet.gc-sheet.gc-sheet-wide { display: flex; flex-direction: column; max-width: 1000px; height: 88dvh; }
+@media (min-width: 1024px) {
+  .gc-sheet.gc-sheet.gc-sheet-wide { top: 0; margin: auto; height: min(84dvh, 900px); border-bottom: 1px solid var(--gc-line-2); border-radius: 24px; }
+}
 .gc-scrim.gc-scrim { background: rgba(0, 0, 0, 0.7); }
 .gc-form { display: grid; gap: 14px; padding-bottom: 4px; }
 .gc-sheet-body { font-size: 14.5px; line-height: 1.5; color: var(--gc-text-2); }
@@ -357,13 +369,6 @@
 }
 .gc.gc-map .card .relative > button[aria-pressed="true"] { color: var(--gc-cyan); box-shadow: 0 0 0 1px rgba(13, 252, 253, 0.5); }
 .gc.gc-map .gc-top { padding-bottom: 14px; }
-
-/* ── Ops → Facilitators: the recent-changes sheet (staff/faci/FaciAssign.tsx) */
-.gc-hist small { font-size: 12px; color: var(--gc-mute); }
-.gc-hist { list-style: none; margin: 0; padding: 0; display: grid; }
-.gc-hist li { display: grid; gap: 2px; padding: 8px 0; border-top: 1px solid var(--gc-line); font-size: 13.5px; }
-.gc-hist li:first-child { border-top: 0; }
-.gc-hist em { font-style: normal; color: var(--gc-text-2); }
 
 /* ── Scores, piece counts (GM's /token: GroupScores countsOnly) ──────────── */
 .gc-key .gc-key-count {

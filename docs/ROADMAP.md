@@ -248,12 +248,24 @@ Numbered after main's `0093`-`0098` (renamed from 0097 / 0098 when merging main,
 - `0100_blindbox_spot_no_stations.sql`: the Spot box, no station boxes, Restore only. Deletes unsold station boxes and switches sold ones off. Safe to run again.
 - Env: `/api/group-join` signs group QRs with `NFC_TOKEN_SECRET` (already set for blind boxes and NFC). Changing that secret changes every group QR.
 
+### A group's Recent changes: every change, the game included, 2026-10-22
+No migration. Ben asked for the clock icon on Ops → Facilitators, now called **Faci & Status** (HOF and Admin), to open a bigger window with the group's recent changes, the game included.
+- A wide sheet ([GroupLog.tsx](../src/components/staff/faci/GroupLog.tsx)): most of the screen on phones, a centred window from 1024px (`Sheet wide` in `game/parts.tsx`). It replaces the old list of 8 Faci-related changes.
+- Rows for the group: the group in the target or `detail.group_id`, or done by one of its accounts (`profiles.group_id`: its Freshie login and its Facilitators). Pills: All, Game, Location, Headcount, Facilitators. The same table as HOGM's Log without the Object column: an object that is not the group (a projector, a station) goes to the front of Details.
+- Shared code: [auditLog.ts](../src/lib/auditLog.ts) (actions, words, `groupOr`) and [AuditLog.tsx](../src/components/staff/AuditLog.tsx) (`useAuditLookups`, `useAuditPage`, `AuditTable`, `AuditPills`); HOGM's `LogSection` now uses them too. New in the words: location sent and edited ("Arrived at B1-215"), headcount set and cleared (with the split and the value before), headcount after close, Facilitators set, Faci profile updated and cleared, account moved to a group, group colour.
+- Left out on purpose: the per-person roster and its attendance marks (`freshies`, `attendance_records`, `fn_mark_attendance`), dropped in 0041, so their old `freshie.*` and `attendance.bulk_present` / `edit_closed` rows are not asked for.
+- Not logged, so not shown: Admin's "New passwords for all groups" (0099) writes no audit row.
+- Checked in headless Chrome as `hof.test` (Group 1, live project, read only) at 390×844 and 1280×800: game, headcount and Facilitator rows show, each pill filters, no console errors; HOGM's Log unchanged. `tsc` (src) and `next lint` are clean.
+
+### Ops → Location: a room number joins the building, 2026-10-22
+- HOF, Committee and Admin's Ops → Location shows "Arrived at B1-215" when the details are a short room code (`roomOf()` in [faciLocation.ts](../src/lib/faciLocation.ts): at most 10 characters, no spaces). A longer comment keeps its own line. Admin → Headcount and location and the Faci's "Last update" are unchanged.
+
 ### HOGM sees the game log: Game control → Log, 2026-10-22
 No migration (HOGM has read `audit_log` since 0002). Ben asked for it, with each action written out and the name of who did it.
 - A fourth tab on HOGM's Ops, **Log** ([LogSection.tsx](../src/components/staff/game/LogSection.tsx)), after Stations, Puzzles and Funfair. Phones get four equal icon tabs.
 - Only game actions: tokens, token rules, Day 2, stations and their GMs, puzzle pieces, projectors and NFC, blind boxes, games and phases, and settings (`config.set`). Account, attendance, headcount and Faci changes stay on Admin → Audit. This is a page filter: the database still lets HOGM (and HOF) read every audit row.
 - A table (Ben found one sentence per row hard to scan): Time (24-hour clock, the date when not today, time ago), Who (the person's name and role), Object (a group with its colour dot, a station, a projector, a box type, a setting), Action ("Day 1 win", "Bought a blind box"), Tokens (+ green, − red) and Details ("balance 66", "Standard · from Test HOGM · free"). At 680px and wider it fits; on phones it slides sideways inside its card with Time pinned. Filters: What (All, Tokens, Stations, Puzzles, Projectors, Blind box, Games & settings), Who (Anyone, Game Masters, HOGM, Admin, Groups, System) and a group. The group filter also finds projector and NFC rows, which name the group in `detail.group_id`. 50 rows, then Load more; refreshes every 30 s (no realtime on `audit_log`) and with the refresh button.
-- A new audit action shows on Log only once it is added to `ACTIONS` and `describe()` in `LogSection.tsx`. Funfair key changes (0088) write no audit rows, so they are not on it.
+- A new audit action shows on Log only once it is added to `AUDIT_ACTIONS` and `describeAudit()` in [auditLog.ts](../src/lib/auditLog.ts) (shared with a group's Recent changes, below). Funfair key changes (0088) write no audit rows, so they are not on it.
 - Checked in headless Chrome as `hogm.test` against the live project (read only), at 390×844, 747×900 and 1280×800: no sideways page scroll; the What, Who and group filters work; no console errors. `tsc` (src) and `next lint` are clean.
 
 ### Funfair card moved to Admin → Game, 2026-10-22 (Jiamin)

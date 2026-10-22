@@ -7,7 +7,7 @@ import { useProfile } from "@/components/ProfileProvider";
 import { FaciAssign } from "@/components/staff/faci/FaciAssign";
 import { GameControl } from "@/components/staff/game/GameControl";
 import { Card, PageTitle } from "@/components/ui";
-import { clock, describeLocation, type FaciLocation } from "@/lib/faciLocation";
+import { clock, describeLocation, roomOf, type FaciLocation } from "@/lib/faciLocation";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import type { Group } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -104,7 +104,7 @@ function OpsOverview({ canAssignFacis }: { canAssignFacis: boolean }) {
     { key: "headcount", label: "Headcount", desc: "People per group" },
     { key: "location", label: "Location", desc: "Where each group is" },
     { key: "freshies", label: "Freshies", desc: "Name, slogan, password" },
-    ...(canAssignFacis ? [{ key: "facis" as const, label: "Facilitators", desc: "Who is in each group" }] : []),
+    ...(canAssignFacis ? [{ key: "facis" as const, label: "Faci & Status", desc: "Facis and recent changes" }] : []),
   ];
 
   const name = (g: Group) => g.display_name?.trim() || g.name;
@@ -174,6 +174,7 @@ function OpsOverview({ canAssignFacis }: { canAssignFacis: boolean }) {
           <Card className="divide-y divide-paper-200 p-0">
             {groups.map((g) => {
               const l = locations[g.id];
+              const room = l ? roomOf(l.details) : null;
               return (
                 <div key={g.id} className="flex items-start gap-3 px-4 py-3">
                   <GroupBadge id={g.id} color={g.color} />
@@ -181,8 +182,11 @@ function OpsOverview({ canAssignFacis }: { canAssignFacis: boolean }) {
                     <p className="truncate text-sm font-medium">{name(g)}</p>
                     {l ? (
                       <>
-                        <p className="text-sm font-bold text-ink">{describeLocation(l)}</p>
-                        {l.details && <p className="text-sm text-ink-faint">{l.details}</p>}
+                        <p className="text-sm font-bold text-ink">
+                          {describeLocation(l)}
+                          {room && `-${room}`}
+                        </p>
+                        {l.details && !room && <p className="text-sm text-ink-faint">{l.details}</p>}
                         <p className="mt-0.5 text-xs text-ink-faint">
                           {senders[l.user_id] ?? "Facilitator"} · {clock(l.created_at)}
                           {l.edited_at ? " · edited by Admin" : ""}
