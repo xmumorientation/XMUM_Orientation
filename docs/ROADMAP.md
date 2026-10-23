@@ -293,6 +293,11 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 
 ## Done
 
+### Faci Group Code loading, 2026-10-23 (David)
+- Removed the password → join-link → image waterfall: the QR request starts as soon as the group is known, independently of the password RPC, and each section renders independently. Password fetch failures now end the loading state and show an error.
+- Stable QR links use a 60-second in-memory cache scoped to account and group, including in-flight deduplication; failures are evicted. Passwords are not cached. Existing PNG reuse remains in place; no API permissions, printed QR links or database data changed.
+- The isolated QR-only release passed all 188 tests, production build (including type and lint checks), and diff checks. David tested the Faci Group Code page and confirmed it opens noticeably faster; no numerical timing was measured. The existing 2D map image advisory remains.
+
 ### Tennis game T1a: players, the swing and the broadcast view, 2026-10-22 (Ben)
 Roadmap item 9, batch T1a. See it at `/map3d?tennis=demo` (desktop and a phone size). No game and no network yet.
 - `src/components/map3d/tennis/`:
