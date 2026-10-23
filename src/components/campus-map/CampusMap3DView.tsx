@@ -87,14 +87,14 @@ const CARD_MARKER_SIZE = 0.8;
 const MAX_FIT = 360;
 
 /**
- * Look from the funfair side toward the A-row, keeping the blocks spread across the screen. Fit the
+ * Look from the A-row side toward the Funfair, keeping the blocks spread across the screen. Fit the
  * buildings, courts and dorms, including their markers.
  */
 function fitCamera(aspect: number): CameraView {
   const [x0, x1] = CONTENT_BOUNDS.x;
   const [z0, z1] = CONTENT_BOUNDS.z;
   const target = new THREE.Vector3((x0 + x1) / 2, 0, (z0 + z1) / 2);
-  const back = new THREE.Vector3(1, 0.95, 0).normalize();
+  const back = new THREE.Vector3(-1, 0.95, 0).normalize();
   const right = new THREE.Vector3(0, 1, 0).cross(back).normalize();
   const up = back.clone().cross(right);
   const tanV = Math.tan((15 * Math.PI) / 180) * 0.9;

@@ -21,9 +21,8 @@ export default function MapPage() {
     COMMITTEE_TIER.includes(profile.role) ||
     ["gm", "guardian_gm", "faci", "freshie"].includes(profile.role);
 
-  // HOF, HOGM, Committee and GM: the same night, eyebrow and title as their
-  // other tabs (Ops or Station, Scores).
-  if (VORTEXA_ROLES.includes(profile.role)) {
+  // Admin shares the staff map frame; only its station controls differ.
+  if (VORTEXA_ROLES.includes(profile.role) || profile.role === "admin") {
     return (
       <div className={cn("gc gc-map", vxDisplay.variable, vxSlab.variable)}>
         <div className="gc-bg" aria-hidden>
@@ -33,9 +32,12 @@ export default function MapPage() {
         <header className="gc-top">
           <p className="gc-eyebrow">Campus</p>
           <h1 className="gc-title">Map</h1>
-          <p className="gc-muted">Tap the map for a full-screen view. Tap a station for details.</p>
+          <p className="gc-muted">
+            Tap the map for a full-screen view. Tap a station for details.
+            {profile.role === "admin" && " Select a building on the map to add or edit its stations."}
+          </p>
         </header>
-        <CampusMap showGroupPins={showPins} />
+        <CampusMap showGroupPins={showPins} canManageStations={profile.role === "admin"} />
       </div>
     );
   }
@@ -45,19 +47,15 @@ export default function MapPage() {
     return <FreshieMap showGroupPins={showPins} />;
   }
 
-  // Admin (and Guardian GM, who is not in VORTEXA_ROLES).
+  // Guardian GM keeps the older staff map.
   return (
     <div className="space-y-4">
       <PageTitle
         title="Campus map"
-        subtitle={
-          profile.role === "admin"
-            ? "Live game stations. Tap the map for a full-screen view. Click a building to add a station or change its game and status."
-            : "Live game stations. Tap the map for a full-screen view. Tap a station or a building's badge for details."
-        }
+        subtitle="Live game stations. Tap the map for a full-screen view. Tap a station or a building's badge for details."
       />
 
-      <CampusMap showGroupPins={showPins} canManageStations={profile.role === "admin"} />
+      <CampusMap showGroupPins={showPins} />
     </div>
   );
 }

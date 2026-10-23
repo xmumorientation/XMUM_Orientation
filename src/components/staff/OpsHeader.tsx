@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { Menu } from "lucide-react";
 
 import { AccountMenu } from "@/components/freshie/FreshieHome";
 import { VORTEXA_THEME } from "@/components/freshie/groupTheme";
@@ -23,7 +24,7 @@ import "./staff-home.css";
 /** Short role name for the header chip. */
 export const OPS_CHIP: Partial<Record<UserRole, string>> = { hof: "HOF", hogm: "HOGM", committee: "Committee", gm: "GM" };
 
-export function OpsHeader() {
+export function OpsHeader({ onOpenMenu }: { onOpenMenu?: () => void }) {
   const profile = useProfile();
   const t = VORTEXA_THEME;
   return (
@@ -48,6 +49,11 @@ export function OpsHeader() {
           <PhaseTimer compact />
         </div>
         <div className="fh-head-r">
+          {onOpenMenu && (
+            <button type="button" className="fh-navbtn" aria-label="Open menu" onClick={onOpenMenu}>
+              <Menu size={20} aria-hidden />
+            </button>
+          )}
           <span className="fh-chip fh-mono">{OPS_CHIP[profile.role] ?? ROLE_LABELS[profile.role]}</span>
           <AccountMenu
             name={profile.full_name ?? ""}

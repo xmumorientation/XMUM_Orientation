@@ -2,7 +2,7 @@
 .vt-sky{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 38%,#252152 0%,transparent 60%)}
 .vt-sky i{position:absolute;width:3px;height:3px;background:var(--color);box-shadow:0 0 10px var(--color);border-radius:50%;animation:vt-twinkle 3s var(--delay) ease-in-out infinite alternate}
 .vt-logo{position:absolute;top:max(22px,env(safe-area-inset-top));left:50%;transform:translateX(-50%);width:126px;z-index:2}.vt-logo img{width:100%;height:auto}
-.vt-magic{position:absolute;top:35%;left:50%;width:0;height:0;z-index:2}
+.vt-magic{position:absolute;top:50%;left:50%;width:0;height:0;z-index:2}
 .vt-core{position:absolute;width:84px;height:84px;left:-42px;top:-42px;filter:drop-shadow(0 0 18px #0dfcfd);animation:vt-core-charge 2.1s ease-in both}.vt-core svg{width:100%;height:100%;fill:#fff6c5}
 .vt-trail{position:absolute;inset:-130px;border:1px solid transparent;border-top:2px solid var(--color);border-right-color:var(--color);border-radius:50%;transform:rotate(var(--turn));animation:vt-gather calc(2.1s - var(--delay)) var(--delay) cubic-bezier(.6,0,.4,1) both}.vt-trail i{position:absolute;left:35px;top:35px;width:9px;height:9px;background:var(--color);border-radius:50%;box-shadow:0 0 22px var(--color)}
 .vt-charging{position:absolute;top:52%;width:100%;font-size:16px;letter-spacing:.04em;color:#e0b4fc;transition:opacity .2s}.vt-charging span{display:block;margin:18px auto;width:100px;height:2px;background:#e0b4fc;transform-origin:left;animation:vt-progress 2.1s linear both}

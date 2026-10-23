@@ -4,6 +4,7 @@ import { useEffect, useRef, type ReactNode } from "react";
 import { ArrowLeft, Crosshair, Lightbulb, MapPin, X } from "lucide-react";
 
 import { AccuracyCheckPanel } from "@/components/AccuracyCheck";
+import { nexusBody, vxDisplay, vxSlab } from "@/components/home/fonts";
 import { BuildingStationPanel } from "@/components/BuildingStationPanel";
 import {
   GroupStatusList,
@@ -63,7 +64,7 @@ export function LayerSwitch({
           on
             ? "bg-stone-900 text-white shadow-sm"
             : dark
-              ? "text-stone-700"
+              ? "text-stone-900"
               : "text-ink-soft hover:bg-paper-200"
         }`}
       >
@@ -72,7 +73,7 @@ export function LayerSwitch({
         {value === "bulbs" && litCount > 0 && (
           <span
             className={`ml-0.5 rounded-full px-1.5 py-0.5 text-[10px] leading-none ${
-              on ? "bg-amber-400 text-stone-900" : "bg-amber-100 text-amber-800"
+              on ? "bg-amber-400 text-amber-950" : "bg-amber-100 text-amber-800"
             } ${newLit ? "animate-pulse ring-2 ring-amber-400" : ""}`}
           >
             {litCount} lit
@@ -113,7 +114,7 @@ export function MapToolbar({
           <button
             type="button"
             onClick={data.startCheck}
-            className="inline-flex min-h-[36px] items-center gap-1.5 rounded-lg border border-paper-200 px-3 text-xs font-semibold hover:bg-paper-100"
+            className="campus-map-accuracy inline-flex min-h-[44px] items-center gap-1.5 rounded-lg border border-paper-200 px-3 text-xs font-semibold hover:bg-paper-100"
           >
             <Crosshair className="h-3.5 w-3.5" />
             Accuracy check
@@ -486,6 +487,7 @@ export function CampusMapPanels({
       </section>}
       {canManageStations && (
         <StationEditDialog
+          className={`gc-sheet gc-map-sheet ${nexusBody.variable} ${vxDisplay.variable} ${vxSlab.variable}`}
           station={data.editing}
           onClose={() => data.setEditing(null)}
           onSaved={data.loadStations}
