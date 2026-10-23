@@ -13,10 +13,12 @@ export function StationEditDialog({
   station,
   onClose,
   onSaved,
+  className,
 }: {
   station: Station | null;
   onClose: () => void;
   onSaved: () => void;
+  className?: string;
 }) {
   const supabase = useMemo(() => supabaseBrowser(), []);
   const [purposes, setPurposes] = useState<StationPurpose[]>([]);
@@ -102,7 +104,7 @@ export function StationEditDialog({
 
   return (
     <Dialog open={station !== null} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent title={station ? `Edit ${station.code}` : "Edit station"}>
+      <DialogContent className={className} title={station ? `Edit ${station.code}` : "Edit station"}>
         <form onSubmit={save} className="space-y-3">
           <ErrorBanner message={error} />
           <label className="block text-sm">

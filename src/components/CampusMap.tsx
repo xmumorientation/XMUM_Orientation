@@ -2,6 +2,9 @@
 
 import { StaffLocationSwitch } from "@/components/StaffLocationSharing";
 import { useState } from "react";
+import { Building2, CircleHelp, CircleDot, LayoutGrid, Trophy } from "lucide-react";
+import { MAP_BUILDINGS } from "@/lib/mapBuildings";
+import "@/components/campus-map/campus-map-controls.css";
 
 import {
   CampusMapPanels,
@@ -42,6 +45,19 @@ export function CampusMap({
   // Full-screen viewer. The inline map stays still so the page can scroll.
   const [fullscreen, setFullscreen] = useState(false);
   const panelView = view ?? "3d";
+  const areas = [...new Set(data.mapStations.map((station) => station.area))].sort((a, b) => {
+    const rank = (area: string) => {
+      const index = MAP_BUILDINGS.findIndex((building) => building.area === area);
+      return index < 0 ? MAP_BUILDINGS.length : index;
+    };
+    return rank(a) - rank(b) || a.localeCompare(b);
+  });
+  function selectArea(area: string | null) {
+    data.setLayer("stations");
+    data.setOpenBuilding(null);
+    data.setClusterArea(area);
+    data.setSelected(null);
+  }
 
   return (
     <div>
@@ -52,16 +68,26 @@ export function CampusMap({
         </div>
       )}
       <MapToolbar data={data} canManageStations={canManageStations} view={panelView} />
-      <nav aria-label={`Day ${data.day} map buildings`} className="mb-3 flex flex-wrap gap-2">
-        <span className="w-full text-sm font-semibold">Day {data.day} stations / Choose a building</span>
-        {[...new Set(data.mapStations.map((s) => s.area))].map((area) => (
-          <button key={area} type="button" aria-pressed={data.clusterArea === area}
-            className="btn-secondary min-h-[44px] min-w-[52px] px-3"
-            onClick={() => { data.setLayer("stations"); data.setOpenBuilding(null); data.setClusterArea(area); data.setSelected(null); }}>
-            {area}
+      {view === "2d" && <nav aria-label={`Day ${data.day} map buildings`} className="campus-map-buildings">
+        <p className="campus-map-buildings-title">Day {data.day} / Find a station</p>
+        <div className="campus-map-building-options">
+          <button type="button" className="campus-map-building" aria-pressed={data.layer === "stations" && data.clusterArea === null}
+            onClick={() => selectArea(null)}>
+            <LayoutGrid size={18} aria-hidden /><span>All</span><span className="campus-map-building-count">{data.mapStations.length}</span>
           </button>
-        ))}
-      </nav>
+          {areas.map((area) => {
+            const stations = data.mapStations.filter((station) => station.area === area);
+            const available = stations.filter((station) => station.status === "available").length;
+            const Icon = /^[AB]\d+$/.test(area) ? Building2 : area === "Track & Field" ? Trophy : area.includes("Court") ? CircleDot : CircleHelp;
+            return <button key={area} type="button" aria-pressed={data.layer === "stations" && data.clusterArea === area}
+              className="campus-map-building" title={`${area}: ${available} available / ${stations.length} stations`}
+              aria-label={`${area}, ${available} available of ${stations.length} stations`}
+              onClick={() => selectArea(area)}>
+              <Icon size={18} aria-hidden /><span>{area}</span><span className="campus-map-building-count" aria-hidden>{stations.length}</span>
+            </button>;
+          })}
+        </div>
+      </nav>}
       <CampusMapView
         view={view}
         onFail={fallBack}

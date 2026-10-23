@@ -373,7 +373,7 @@
   .gc-btn, .gc-fold-chev { transition: none; }
 }
 
-/* ── Map (/map for HOF, HOGM, Committee) ─────────────────────────────────────
+/* ── Map (/map for Admin, HOF, HOGM, Committee and GM) ───────────────────────
    CampusMap's own markup and layout, recoloured to match Ops and Scores:
    night cards, mono cyan headings, slab station codes, dark-glass map buttons.
    The full-screen map is a portal outside .gc-map and keeps its own look. */
@@ -392,6 +392,29 @@
 }
 .gc.gc-map .card .relative > button[aria-pressed="true"] { color: var(--gc-cyan); box-shadow: 0 0 0 1px rgba(13, 252, 253, 0.5); }
 .gc.gc-map .gc-top { padding-bottom: 14px; }
+.gc-map-sheet.gc-map-sheet { border-radius: 24px; border-bottom: 1px solid var(--gc-line-2); }
+.gc-map-sheet .input {
+  min-height: 44px; background: var(--gc-ink-3); color: var(--gc-text); border-color: var(--gc-line-2);
+}
+.gc-map-sheet .input::placeholder { color: var(--gc-text-2); }
+.gc-map-sheet .input:focus { outline: 2px solid var(--gc-cyan); outline-offset: 2px; box-shadow: none; }
+.gc-map-sheet .btn-primary {
+  min-height: 44px; background: var(--gc-yellow); color: var(--gc-ink); box-shadow: none;
+}
+.gc-map .campus-map-accuracy {
+  min-height: 44px; border: 1px solid var(--gc-line-2); border-radius: 12px;
+  background: var(--gc-ink-2); color: var(--gc-text-2); box-shadow: none;
+  transition: background-color 150ms, border-color 150ms, color 150ms;
+}
+.gc-map .campus-map-accuracy:hover {
+  background: var(--gc-raised); border-color: var(--gc-cyan); transform: none;
+}
+.gc-map .campus-map-accuracy:focus-visible {
+  outline: 2px solid var(--gc-cyan); outline-offset: 3px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .gc-map .campus-map-accuracy { transition: none; }
+}
 
 /* ── Scores, piece counts (GM's /token: GroupScores countsOnly) ──────────── */
 .gc-key .gc-key-count {
