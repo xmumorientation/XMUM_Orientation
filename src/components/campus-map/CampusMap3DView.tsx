@@ -80,8 +80,6 @@ const LABEL_GAP = 13;
 /** Dot and badge radii (CSS px) of an unselected station and building badge (markers.tsx). */
 const DOT_R = 11;
 const BADGE_R = 15;
-/** How close a tap on a badge in full screen takes the camera. */
-const FOCUS_DISTANCE = 75;
 /** Markers in the card are smaller than in full screen (the card shows the whole campus). */
 const CARD_MARKER_SIZE = 0.8;
 
@@ -89,14 +87,14 @@ const CARD_MARKER_SIZE = 0.8;
 const MAX_FIT = 360;
 
 /**
- * The start view for a card of this shape: from the scene's usual heading, just far enough back that the
- * buildings, courts and dorms (and the markers over them) fit.
+ * Look from the A-row side toward the Funfair, keeping the blocks spread across the screen. Fit the
+ * buildings, courts and dorms, including their markers.
  */
 function fitCamera(aspect: number): CameraView {
   const [x0, x1] = CONTENT_BOUNDS.x;
   const [z0, z1] = CONTENT_BOUNDS.z;
   const target = new THREE.Vector3((x0 + x1) / 2, 0, (z0 + z1) / 2);
-  const back = new THREE.Vector3(1, 0.95, 1).normalize();
+  const back = new THREE.Vector3(-1, 0.95, 0).normalize();
   const right = new THREE.Vector3(0, 1, 0).cross(back).normalize();
   const up = back.clone().cross(right);
   const tanV = Math.tan((15 * Math.PI) / 180) * 0.9;
@@ -651,16 +649,12 @@ export function CampusMap3DView({
     },
     badge: (area) => {
       data.setSelected(null);
-      if (fullscreen) {
-        const place = areaPlace(area);
-        if (place) fly({ kind: "focus", target: [place.pos[0], 0, place.pos[1]], distance: FOCUS_DISTANCE });
-        return;
-      }
       if (canManageStations) {
         toggleBuilding(area);
         return;
       }
-      data.setClusterArea((current) => (current === area ? null : area));
+      data.setClusterArea((current) => (!fullscreen && current === area ? null : area));
+      if (fullscreen) closeFullscreen();
     },
     // A building or court itself: the same as its marker, or Admin's building panel. False when the tap does
     // nothing here (the card then opens full screen, as a tap on the 2D map's picture does).

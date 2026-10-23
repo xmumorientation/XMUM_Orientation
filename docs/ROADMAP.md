@@ -293,6 +293,12 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 
 ## Done
 
+### Admin campus map aligned with HOF / HOGM, 2026-10-23 (David)
+- Admin `/map` now uses the same staff map frame, night palette, title, mobile header and content width as HOF / HOGM. Admin station editing and accuracy checks remain Admin-only; no data or permission changes.
+- Building selectors now share icons, labels, station counts, an All option, campus ordering, selected states and keyboard focus treatment. Freshie / Faci use their group theme; staff use the Ops theme. Accuracy check has a 44px touch target.
+- Admin retains a menu button in the shared mobile header (Admin has no staff bottom tabs). Verified the narrow-screen Admin menu, building selection and return to all stations. The map's station editor now uses the shared dark dialog tokens; opening and dismissing it was checked without saving changes.
+- Typecheck, lint and diff checks passed (the existing 2D map image advisory remains). Real phone checks remain outstanding.
+
 ### Faci Group Code loading, 2026-10-23 (David)
 - Removed the password → join-link → image waterfall: the QR request starts as soon as the group is known, independently of the password RPC, and each section renders independently. Password fetch failures now end the loading state and show an error.
 - Stable QR links use a 60-second in-memory cache scoped to account and group, including in-flight deduplication; failures are evicted. Passwords are not cached. Existing PNG reuse remains in place; no API permissions, printed QR links or database data changed.
@@ -1140,3 +1146,13 @@ Branch `jiamin-blind-box-integration`. Migration `0070_blindbox_buy_flow.sql` (t
 - Found the initial branch-number check missed `fix/log-audit-gaps`'s `0102_admin_token_log_audit.sql`. Staff sharing moves to **0103**, with identical SQL; only its own migration-history version is repaired, without rerunning DDL or changing event/location rows. Do not reuse teammate's 0102.
 
 - **Confirmed:** live history now identifies staff sharing as 0103. Production release `f98c17e` reached Ready at [xmum-orientation.vercel.app](https://xmum-orientation.vercel.app); 184 tests passed again after the filename correction. Physical-phone GPS and multi-device checks remain outstanding.
+
+### David, 2026-10-24 — Funfair-facing map view (local trial)
+- Changed the shared 3D map's default heading to look from the A-row side toward the Funfair, spreading the blocks horizontally. Removed the extra building-button row from 3D; retained it for the 2D fallback.
+- Fullscreen building badges now return to the page with the building's station list selected, matching inline building taps.
+- Verified with mock-data preview: desktop and 390 × 844 viewport rendering, inline A5/A3 roof taps and fullscreen A5 badge selection. Typecheck and targeted lint passed. Real-phone touch testing and user review remain pending; not committed, pushed or deployed.
+
+- **Release confirmed (2026-10-24):** the scoped map view change merged via PR #59 as `6f9ae8894c2092e91bd466cc7c81ab35b4c42244`. 188 tests / 19 suites and production build passed; GitHub CI and Vercel production status succeeded. Production `/map` redirects unauthenticated visitors to login as expected; authenticated live-map and physical-phone checks remain pending. Other local layout edits were excluded.
+
+### David, 2026-10-24 — Projector activation transition alignment
+- Centred the gathering-magic focal point in the activation takeover viewport. The result screen, map hand-off and reduced-motion behaviour are unchanged. Included in local commit `5c0d764`; not pushed or deployed.
