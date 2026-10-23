@@ -1140,3 +1140,8 @@ Branch `jiamin-blind-box-integration`. Migration `0070_blindbox_buy_flow.sql` (t
 - Found the initial branch-number check missed `fix/log-audit-gaps`'s `0102_admin_token_log_audit.sql`. Staff sharing moves to **0103**, with identical SQL; only its own migration-history version is repaired, without rerunning DDL or changing event/location rows. Do not reuse teammate's 0102.
 
 - **Confirmed:** live history now identifies staff sharing as 0103. Production release `f98c17e` reached Ready at [xmum-orientation.vercel.app](https://xmum-orientation.vercel.app); 184 tests passed again after the filename correction. Physical-phone GPS and multi-device checks remain outstanding.
+
+### David, 2026-10-24 — Funfair-facing map view
+- Default 3D view looks from the Funfair toward the A-row. The extra building-button row is now limited to the 2D fallback.
+- Fullscreen building badges return to the page with that building's station list selected. Inline roof taps continue to select stations or building lists.
+- Checked desktop and 390 × 844 mock previews, inline A5/A3 roof taps and fullscreen A5 badge selection. Physical-phone touch testing remains pending.
