@@ -52,7 +52,7 @@ export function CampusMap({
         </div>
       )}
       <MapToolbar data={data} canManageStations={canManageStations} view={panelView} />
-      <nav aria-label={`Day ${data.day} map buildings`} className="mb-3 flex flex-wrap gap-2">
+      {view === "2d" && <nav aria-label={`Day ${data.day} map buildings`} className="mb-3 flex flex-wrap gap-2">
         <span className="w-full text-sm font-semibold">Day {data.day} stations / Choose a building</span>
         {[...new Set(data.mapStations.map((s) => s.area))].map((area) => (
           <button key={area} type="button" aria-pressed={data.clusterArea === area}
@@ -61,7 +61,7 @@ export function CampusMap({
             {area}
           </button>
         ))}
-      </nav>
+      </nav>}
       <CampusMapView
         view={view}
         onFail={fallBack}
