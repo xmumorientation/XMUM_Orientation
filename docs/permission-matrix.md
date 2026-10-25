@@ -101,6 +101,7 @@ This reflects only the migration files in the repo. Any manual changes made to t
 | **Admin Console (/admin/*)** | | | | | | | | | |
 | Phase Control (start / extend / end, no pause since 0102, game length: runs the game timer only, station statuses are not changed; the Day 1 / Day 2 game also starts by itself at its schedule item's planned start, `fn_game_autostart` 0101) | — | — | — | — | — | — | § | ✓ | DB |
 | Day 2 inner schedule (segment times, Start / End segment, Back to auto, Station game / Blind box / Funfair switches; `fn_day2_control` 0102; everyone reads `fn_day2_state`) | — | — | — | — | — | — | — | ✓ | DB |
+| Game master, always live (Live control; `fn_admin_token_adjust`, `fn_admin_give_piece`, `fn_admin_give_blindbox`, `fn_admin_undo_gift`, 0103): add or deduct tokens, give a puzzle piece, gift a blind box. Ignores phases, the schedule and the Day 2 switches; the token freeze still blocks tokens | — | — | — | — | — | — | — | ✓ | DB |
 | Kill-switches | — | — | — | — | — | — | — | ✓ | DB |
 | Users (CSV import; edit role / group / station) | — | — | — | — | — | — | — | ✓ | DB + API |
 | Stations config (add / edit / delete, Game Masters) | — | — | — | — | — | — | ✓ ‡ | ✓ | DB |

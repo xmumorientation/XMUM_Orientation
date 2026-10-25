@@ -242,6 +242,13 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 
 ## Done
 
+### Admin Game master (Live control), 2026-10-25 (Jiamin)
+- **Run on Supabase:** `0103_admin_game_master.sql` after 0102, before deploying the frontend (Admin → Blind box now reads `blind_box_claims.gift`). Plan and preview: [docs/plans/admin-game-master.md](plans/admin-game-master.md).
+- Live control → **Game master** (`GameMaster`, Admin only, folded by default): pick a group, then Tokens (Add uses the Day 1 rules, Deduct the Day 2 Easy / Medium / Hard fees, Custom 1 to 50, reason, Undo), Puzzle (give a missing piece), Blind box (gift 1 to 5 unopened boxes; they show on the group's Items page) and Funfair (the zone card).
+- Always live: no phase, schedule or Day 2 switch check. The token freeze still blocks Tokens. A gift is free, uses no stock, is not counted as sold and does not count toward the group cap (`gift` flag; `fn_bb_buy` and `fn_bb_seller_preview` patched, `fn_live_ops` leaves gifts out).
+- The Funfair (3D map) tab is gone from Admin → Game; `/admin/funfair` redirects to Live control. HOGM's Game control → Funfair is unchanged.
+- Not tested against a database yet: run 0103, then try each tab.
+
 ### Day 2 game inner schedule; no more Pause, 2026-10-25 (Jiamin)
 - **Run on Supabase:** `0102_day2_inner_schedule.sql` after 0101, before deploying the frontend. Safe to run again (each guard is added once). Plan: [docs/plans/day2-inner-schedule.md](plans/day2-inner-schedule.md).
 - Segments from the Day 2 game's real start: Normal (0-60), CHALLENGE MODE (60-90), Normal (90-120), Funfair (120-end). Live control → Day 2 inner schedule (`Day2Schedule`, Admin only, `fn_day2_control`): three sliders move the boundaries, Start <segment> holds one (also with no game on) until Back to auto, End <segment> moves its end to now, and the Station game / Blind box / Funfair switches can be flipped until the next segment.
