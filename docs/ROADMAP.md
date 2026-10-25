@@ -293,6 +293,31 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 
 ## Done
 
+### Admin Game master (Live control), 2026-10-25 (Jiamin)
+- **Run on Supabase:** `0103_admin_game_master.sql` after 0102, before deploying the frontend (Admin → Blind box now reads `blind_box_claims.gift`). Plan and preview: [docs/plans/admin-game-master.md](plans/admin-game-master.md).
+- Live control → **Game master** (`GameMaster`, Admin only, folded by default): pick a group, then Tokens (Add uses the Day 1 rules, Deduct the Day 2 Easy / Medium / Hard fees, Custom 1 to 50, reason, Undo), Puzzle (give a missing piece), Blind box (gift 1 to 5 unopened boxes; they show on the group's Items page) and Funfair (the zone card).
+- Always live: no phase, schedule or Day 2 switch check. The token freeze still blocks Tokens. A gift is free, uses no stock, is not counted as sold and does not count toward the group cap (`gift` flag; `fn_bb_buy` and `fn_bb_seller_preview` patched, `fn_live_ops` leaves gifts out).
+- The Funfair (3D map) tab is gone from Admin → Game; `/admin/funfair` redirects to Live control. HOGM's Game control → Funfair is unchanged.
+- Not tested against a database yet: run 0103, then try each tab.
+
+### Day 2 game inner schedule; no more Pause, 2026-10-25 (Jiamin)
+- **Run on Supabase:** `0102_day2_inner_schedule.sql` after 0101, before deploying the frontend. Safe to run again (each guard is added once). Plan: [docs/plans/day2-inner-schedule.md](plans/day2-inner-schedule.md).
+- Segments from the Day 2 game's real start: Normal (0-60), CHALLENGE MODE (60-90), Normal (90-120), Funfair (120-end). Live control → Day 2 inner schedule (`Day2Schedule`, Admin only, `fn_day2_control`): three sliders move the boundaries, Start <segment> holds one (also with no game on) until Back to auto, End <segment> moves its end to now, and the Station game / Blind box / Funfair switches can be flipped until the next segment.
+- Server guards (`fn_day2_guard`, inserted as the first statement of the live definitions): `fn_day2_challenge` (station), `fn_bb_buy` / `fn_bb_buy_at` / `fn_bb_seller_preview` (blind box), `fn_nfc_v2_redeem_nfc_card` / `fn_activate_projector` / `fn_activate_projector_manual` / `fn_demo_activate_projector` (funfair). The Endgame phase rule is removed from `fn_day2_challenge` and `fn_activate_projector`. Kill-switches still win; Rehearsal mode does not bypass the switches.
+- No Pause: `fn_phase_control` and `fn_schedule_timer` refuse `pause` (NO_PAUSE); the Pause buttons are gone. Resume shows only for something paused before 0102.
+- Pages: `useDay2State` (fn_day2_state, anon too, realtime + 15 s). Red blinking CHALLENGE MODE (`ChallengeBanner`) in the Welcome / Staff Home countdown, Freshie Home's phase card, the GM Station page and Live control. Staff Home's blind box QR greys with "Opens in challenge mode" / "Switched off by Admin"; the scan page shows the same. GM Check step shows when the Station game is off.
+- Check after running: the migration prints a notice for any function it could not patch (missing, or not plpgsql). `fn_nfc_v2_redeem_nfc_card` is live-only, so check it got the guard: `select pg_get_functiondef('public.fn_nfc_v2_redeem_nfc_card'::regproc) like '%fn_day2_guard%';`.
+- Tests: `tests/game-lead/day2-schedule.test.ts` (8). All 189 pass. `tsc` and `eslint` clean. Not checked in the browser.
+
+### Games start themselves at their planned time; countdown labels; HOGM Tokens tab, 2026-10-25 (Jiamin)
+- **Run on Supabase:** `0101_game_autostart.sql`, before deploying the frontend (open pages call `fn_game_autostart`). Safe to run again.
+- `fn_game_autostart` (0101) starts the Day 1 / Day 2 game (`phases` day1 / day2) when its schedule item ("Day 1 Game", "Day 2 Game", matched by title) reaches its planned start. The game runs to the item's end (Live control's new end, else the planned end), not for the game length, so the Welcome page and the game timer reach zero together. It only runs the timer; stations are not changed (0078). It runs every minute by pg_cron, and open pages call it during a game's first 2 minutes (`useEventCountdown`).
+- Start in Live control still works at any time, for a test run before the planned time. The auto-start leaves alone a game that is running or paused (a test run still on at the planned time keeps going: End it to get the scheduled run), one Admin ended after the planned start, the other day's running game, and an item stopped in Live control.
+- Renaming "Day 1 Game" / "Day 2 Game" in the schedule turns this off for that day (and its ENDS IN countdown). An "is game" field on schedule items would be sturdier.
+- Welcome page countdown (`useEventCountdown`): only the two games count down to their end ("DAY 1 GAME ENDS IN"). During any other item it counts to the next item's start. The Schedule tab's NOW badge still marks whatever item is on (`nowId`). Live control's "Now on the Welcome page" shows Pause / ±5 / Stop only during a game.
+- HOGM's Ops page (Game control) has the Tokens tab back: token rules and the Rehearsal-mode reset (`TokensSection`, restored from before d851e58). The server already allowed it (0071).
+- Tests: `tests/game-lead/autostart.test.ts` (8, on the live `fn_phase_control`). `tests/game-lead`: 25 pass. `tsc` and `eslint` clean. Not checked in the browser.
+
 ### David, 2026-10-25 — Committee test account
 - Official Committee seed account is now `cmt.test@xmu.edu.my` (Test Committee), with the requested shared demo password. The old counter account is preserved.
 

@@ -74,6 +74,13 @@ export default async function BlindBoxPage({
       return <BlindBoxLogin sellerName={sellerName} spot={spot} notFreshie noGroup />;
     }
     if (error.message.includes("BOX_UNKNOWN")) return <ErrorScreen {...UNKNOWN} />;
+    // Closed by the Day 2 inner schedule (0102): the seller's QR is greyed too.
+    if (error.message.includes("BB_NOT_YET")) {
+      return <ErrorScreen title="Opens in challenge mode" message="Blind boxes can't be bought yet. Nothing was charged." />;
+    }
+    if (error.message.includes("BB_OFF_BY_ADMIN")) {
+      return <ErrorScreen title="Switched off by Admin" message="Blind boxes can't be bought right now. Nothing was charged." />;
+    }
     return (
       <ErrorScreen title="Something Went Wrong" message="Couldn't load the blind box. Find a committee member for help." />
     );

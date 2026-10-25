@@ -144,7 +144,7 @@ function WelcomeStop({ name, role }: { name: string; role: UserRole }) {
 
 /** The account's own blind boxes: what is left and the QR a Freshie scans. Same data as BlindBoxCard. */
 function BlindBoxStop() {
-  const { loaded, error, sellers, copy, copied, paused } = useMyBlindBoxes();
+  const { loaded, error, sellers, copy, copied, paused, closed } = useMyBlindBoxes();
   const left = sellers.reduce((n, s) => n + s.left, 0);
   return (
     <section id="sh-bb" className="fh-stop" aria-labelledby="sh-bb-title">
@@ -176,6 +176,13 @@ function BlindBoxStop() {
                 <p className="sh-bb-state" data-tone="off">{paused}</p>
               ) : s.left <= 0 ? (
                 <p className="sh-bb-state">All boxes sold.</p>
+              ) : s.qr && closed ? (
+                <>
+                  {/* Day 2 inner schedule (0102): greyed, and a scan shows the same reason. */}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={s.qr.qr} alt="Blind box QR code, closed" className="sh-bb-qr" data-closed />
+                  <p className="sh-bb-state" data-tone="off">{closed}</p>
+                </>
               ) : s.qr ? (
                 <>
                   {/* eslint-disable-next-line @next/next/no-img-element */}

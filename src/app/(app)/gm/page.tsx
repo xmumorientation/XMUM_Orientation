@@ -11,7 +11,9 @@ import { useProfile } from "@/components/ProfileProvider";
 import "@/components/staff/game/game-control.css";
 import { ConfirmSheet, StatusLine, useStatus } from "@/components/staff/game/parts";
 import { undoWindowMinutes } from "@/components/token/UndoWindowSetting";
+import { ChallengeBanner } from "@/components/ChallengeBanner";
 import { useConfig } from "@/components/useConfig";
+import { useDay2State } from "@/components/useDay2State";
 import { useOfflineQueue } from "@/components/useOfflineQueue";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import {
@@ -79,6 +81,7 @@ function day2Checks({
   counts,
   locations,
   phaseOn,
+  stationOn,
   frozen,
   places,
 }: {
@@ -87,6 +90,8 @@ function day2Checks({
   counts: Counts | null | undefined;
   locations: ProjectorLocation[];
   phaseOn: boolean;
+  /** Live control's Station game switch (Day 2 inner schedule, 0102). */
+  stationOn: boolean;
   frozen: boolean;
   places: Places;
 }): Day2Check[] {
@@ -113,6 +118,7 @@ function day2Checks({
       ? { label: "Day 2 game", text: "Running", state: "ok" }
       : { label: "Day 2 game", text: "Not started yet. Results are refused until Live control starts it.", state: "bad" }
   );
+  if (!stationOn) checks.push({ label: "Station game", text: "Switched off by Admin in Live control. Results are refused.", state: "bad" });
 
   const need = RISK_TIER_META[station.risk_tier].pick;
   const piece = "Puzzle piece";
@@ -168,6 +174,7 @@ export default function GmPanelPage() {
   const supabase = useMemo(() => supabaseBrowser(), []);
   const { queue, failed, dismissFailed, submit } = useOfflineQueue();
   const { phases, offsetMs } = usePhaseTimer();
+  const day2 = useDay2State();
   const { config } = useConfig();
   const places = projectorPlaces(config);
   const result = useStatus();
@@ -475,22 +482,23 @@ export default function GmPanelPage() {
     setGroupId(id);
   }
 
-  // Same rule as the server's phase_active(): rehearsal mode, or the day2 or
-  // endgame phase active and not past its end.
+  // Same rule as the server's phase_active(): rehearsal mode, or the day2
+  // phase active and not past its end. (The endgame phase is gone: 0102.)
   const serverNow = Date.now() + offsetMs;
   const phaseOn =
     flag(config["rehearsal_mode"]) ||
     phases.some(
       (p) =>
-        (p.key === "day2" || p.key === "endgame") &&
+        p.key === "day2" &&
         p.state === "active" &&
         (!p.ends_at || Date.parse(p.ends_at) > serverNow)
     );
+  const stationOn = day2.switches.station;
   const frozen = flag(config["tokens_frozen"]);
   const group = groups.find((g) => g.id === groupId) ?? null;
   const counts = piecesFor && piecesFor.groupId === groupId ? piecesFor.counts : undefined;
   const checks = group
-    ? day2Checks({ station, balance: group.token_balance, counts, locations, phaseOn, frozen, places })
+    ? day2Checks({ station, balance: group.token_balance, counts, locations, phaseOn, stationOn, frozen, places })
     : [];
   const canStart = !!group && checks.every((c) => c.state === "ok" || c.state === "warn");
   const step = game ? (confirmWin !== null ? 2 : 1) : 0;
@@ -505,7 +513,7 @@ export default function GmPanelPage() {
     setBusy(false);
     setPiecesFor({ groupId, counts: fresh });
     const balance = rows?.find((g) => g.id === groupId)?.token_balance ?? group?.token_balance ?? null;
-    const blocked = day2Checks({ station, balance, counts: fresh, locations, phaseOn, frozen, places }).find(
+    const blocked = day2Checks({ station, balance, counts: fresh, locations, phaseOn, stationOn, frozen, places }).find(
       (c) => c.state === "bad" || c.state === "wait"
     );
     if (blocked) return result.setError(`${blocked.label}: ${blocked.text}`);
@@ -609,6 +617,7 @@ export default function GmPanelPage() {
             "Ask Admin to assign your station"
           )}
         </p>
+        <ChallengeBanner />
         {days.length > 0 && (
           <ul className="gc-st-days" aria-label="Your stations">
             {([1, 2] as const).map((d) => {

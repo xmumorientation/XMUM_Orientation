@@ -8,6 +8,8 @@ import {
   PageTitle,
   SuccessBanner,
 } from "@/components/ui";
+import { Day2Schedule } from "@/components/admin/Day2Schedule";
+import { GameMaster } from "@/components/admin/GameMaster";
 import { GameToggles } from "@/components/admin/GameToggles";
 import { usePhaseTimer } from "@/components/PhaseTimerProvider";
 import { NowOnWelcome } from "@/components/admin/NowOnWelcome";
@@ -32,7 +34,8 @@ interface LiveOps {
 
 // FR-11.5 kill-switches + FR-11.6 live ops + FR-10.1 games (GameToggles,
 // started and ended by hand), filtered by the Day selector (All / Day 1 / Day 2).
-// The funfair's keys are on Game → Funfair (3D map).
+// GameMaster (always live, Admin only): tokens, puzzle pieces, gift blind
+// boxes and the funfair's keys, for D-day backup.
 export default function AdminControlRoomPage() {
   const supabase = useMemo(() => supabaseBrowser(), []);
   const [ops, setOps] = useState<LiveOps | null>(null);
@@ -160,6 +163,8 @@ export default function AdminControlRoomPage() {
       )}
 
       <div className="grid items-start gap-4">
+        {shownDay !== "Day 1" && <Day2Schedule onError={setError} onNotice={flashNotice} />}
+        <GameMaster onError={setError} onNotice={flashNotice} />
         <section>
           <h2 className="mb-2 font-semibold">Safety switches & testing overrides</h2>
           <Card className="divide-y divide-paper-200 p-0">

@@ -43,8 +43,8 @@ function whenLabel(item: ScheduleItem) {
 export function FreshieSchedule({ vortexa = false }: { vortexa?: boolean }) {
   const { group } = useGroup();
   const theme = vortexa ? VORTEXA_THEME : themeFromColor(group?.color);
-  const { live, itemId } = useEventCountdown();
-  const nowId = vortexa && live ? itemId : null;
+  const { nowId: onId } = useEventCountdown();
+  const nowId = vortexa ? onId : null;
   const supabase = useMemo(() => supabaseBrowser(), []);
   const [items, setItems] = useState<ScheduleItem[] | null>(null);
   const [active, setActive] = useState(0);

@@ -28,6 +28,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { GAME_PHASES, SPONSORS, SPONSORS_ARE_EXAMPLES } from "@/components/home/data";
 import { vxDisplay, vxSlab } from "@/components/home/fonts";
+import { ChallengeBanner } from "@/components/ChallengeBanner";
 import { GroupBadge } from "@/components/GroupBadge";
 import { usePhaseTimer } from "@/components/PhaseTimerProvider";
 import { useProfile } from "@/components/ProfileProvider";
@@ -150,6 +151,7 @@ export function PhaseCard() {
 
   return (
     <div className="fh-phasecard" data-endgame={current.is_endgame}>
+      <ChallengeBanner />
       <div className="fh-phasecard-top fh-mono">
         <i aria-hidden />
         {current.state === "paused" ? "PAUSED" : current.is_endgame ? "ENDGAME" : "LIVE"} / PHASE {i + 1} OF{" "}

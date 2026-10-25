@@ -27,6 +27,8 @@ export interface ClaimLite {
   tokens: number | null;
   /** A Spot box: does not count toward the group cap. */
   spot: boolean;
+  /** An Admin gift (Live control → Game master): not a sale, no cap. */
+  gift: boolean;
 }
 
 /** One seller (an account) with every box type they hold, and their one QR. */
@@ -108,7 +110,7 @@ export function useBlindBoxAdmin(onError: (m: string | null) => void): BlindBoxA
       supabase.from("blind_box_assignments").select("*").order("id"),
       supabase
         .from("blind_box_claims")
-        .select("id, assignment_id, type_id, group_id, price, tokens, spot"),
+        .select("id, assignment_id, type_id, group_id, price, tokens, spot, gift"),
       supabase
         .from("profiles")
         .select("id, full_name, role")
@@ -223,7 +225,7 @@ export function useBlindBoxAdmin(onError: (m: string | null) => void): BlindBoxA
     let tokensIn = 0;
     let tokensOut = 0;
     for (const c of claims) {
-      if (!c.spot) perGroup.set(c.group_id, (perGroup.get(c.group_id) ?? 0) + 1);
+      if (!c.spot && !c.gift) perGroup.set(c.group_id, (perGroup.get(c.group_id) ?? 0) + 1);
       tokensIn += c.price;
       tokensOut += c.tokens ?? 0;
     }

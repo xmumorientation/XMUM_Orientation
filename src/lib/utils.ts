@@ -80,7 +80,17 @@ const ERROR_MESSAGES: Record<string, string> = {
   ALREADY_REDEEMED: "This set has already been redeemed.",
   NFC_DISABLED: "Lighting projectors by NFC is turned off by Admin.",
   NOT_IN_GROUP: "Your account isn't assigned to a group yet.",
-  NOT_ENDGAME: "Projectors can only be lit during the Endgame.",
+  NOT_ENDGAME: "Projectors can only be lit during the Funfair.",
+  // Day 2 inner schedule (0102)
+  BB_NOT_YET: "Blind boxes open in challenge mode. Nothing was charged.",
+  BB_OFF_BY_ADMIN: "Blind boxes are switched off by Admin. Nothing was charged.",
+  FUNFAIR_NOT_YET: "The map can be lit only in the Funfair.",
+  FUNFAIR_OFF_BY_ADMIN: "Lighting the map is switched off by Admin.",
+  STATION_GAME_OFF: "Station games are switched off by Admin in Live control.",
+  NO_PAUSE: "Pause has been removed. Use +5 / −5 or End.",
+  // Admin Game master (0103)
+  INVALID_QUANTITY: "Give 1 to 5 boxes at a time.",
+  GIFT_ALREADY_OPENED: "The group has already opened that box, so it can't be taken back.",
   TOKEN_UNKNOWN: "This NFC code isn't recognised.",
   TOKEN_USED: "This NFC code has already been used.",
   SET_NOT_REDEEMED: "Your group's puzzle set hasn't been verified by a Guardian yet.",

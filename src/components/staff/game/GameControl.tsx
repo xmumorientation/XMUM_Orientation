@@ -1,6 +1,6 @@
 "use client";
 
-import { FerrisWheel, ImageIcon, MapPin, ScrollText } from "lucide-react";
+import { Coins, FerrisWheel, ImageIcon, MapPin, ScrollText } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { FunfairSection } from "./FunfairSection";
@@ -8,19 +8,21 @@ import { LogSection } from "./LogSection";
 import { OpsShell, type OpsSection } from "./OpsShell";
 import { PuzzlesSection } from "./PuzzlesSection";
 import { StationsSection } from "./StationsSection";
+import { TokensSection } from "./TokensSection";
 
 // HOGM's Ops page (/committee): part of Admin's game console in the Welcome
-// page style (OpsShell). Stations, Puzzles, Funfair (which keys power each
-// zone of the 3D map's funfair) and Log (the game's audit log, read only).
-// Starting and ending the games, token rules and the reset, and NFC are
-// Admin's (Live control, Admin → Token, Admin → NFC). Each group's tokens and
-// puzzles are on the Scores tab (GroupScores); the HOGM's own blind-box QR is
-// on Home (StaffHome). Server permissions: migration 0071.
+// page style (OpsShell). Stations, Tokens (rules, reset), Puzzles, Funfair
+// (which keys power each zone of the 3D map's funfair) and Log (the game's
+// audit log, read only). Starting and ending the games and NFC are Admin's
+// (Live control, Admin → NFC). Each group's tokens and puzzles are on the
+// Scores tab (GroupScores); the HOGM's own blind-box QR is on Home
+// (StaffHome). Server permissions: migration 0071.
 
-type SectionKey = "stations" | "puzzles" | "funfair" | "log";
+type SectionKey = "stations" | "tokens" | "puzzles" | "funfair" | "log";
 
 const SECTIONS: OpsSection<SectionKey>[] = [
   { key: "stations", label: "Stations", Icon: MapPin },
+  { key: "tokens", label: "Tokens", Icon: Coins },
   { key: "puzzles", label: "Puzzles", Icon: ImageIcon },
   { key: "funfair", label: "Funfair", Icon: FerrisWheel },
   { key: "log", label: "Log", Icon: ScrollText },
@@ -53,6 +55,7 @@ export function GameControl() {
   return (
     <OpsShell name="Game control" sections={SECTIONS} current={section} onPick={pick}>
       {section === "stations" && <StationsSection />}
+      {section === "tokens" && <TokensSection />}
       {section === "puzzles" && <PuzzlesSection />}
       {section === "funfair" && <FunfairSection />}
       {section === "log" && <LogSection />}

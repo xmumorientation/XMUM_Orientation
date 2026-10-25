@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Game master preview</title>
+<style>
+:root{--bg:#030b1c;--card:#071a30;--raised:#0b2246;--line:#25405e;--line2:#34516e;--line3:#16305a;--text:#eef5ff;--faint:#a4b8d1;--mute:#8ba3c4;--cyan:#0dfcfd;--yellow:#f2ff0b;--ease:cubic-bezier(.32,.72,0,1)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 "Plus Jakarta Sans","Geist",system-ui,sans-serif;padding:28px 16px 80px}
+.wrap{max-width:1040px;margin:0 auto}
+h1{font-size:20px;margin:0 0 4px}.sub{color:var(--mute);margin:0 0 22px;font-size:13px}
+button{font:inherit;color:inherit;cursor:pointer}
+.shell{padding:6px;border-radius:28px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.07)}
+.core{border-radius:22px;background:var(--card);box-shadow:inset 0 1px 0 rgba(255,255,255,.09);overflow:hidden}
+.more{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:58px;padding:6px 8px 6px 20px;background:none;border:0;text-align:left}
+.more b{font-size:14px}.more small{display:block;color:var(--mute);font-size:12px;font-weight:400}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;padding:4px 10px;border-radius:999px;border:1px solid rgba(242,85,85,.5);color:#ffb4b4;font-size:10px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;margin-right:10px}
+.chev{display:grid;place-items:center;width:40px;height:40px;border-radius:999px;background:rgba(255,255,255,.1);transition:transform .5s var(--ease)}
+.chev svg,.ico svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.more[aria-expanded=true] .chev{transform:rotate(180deg)}
+.fold{display:grid;grid-template-rows:0fr;transition:grid-template-rows .6s var(--ease)}
+.fold.open{grid-template-rows:1fr}.fold>div{min-height:0;overflow:hidden}
+.body{display:grid;grid-template-columns:230px 1fr;gap:0;border-top:1px solid var(--line)}
+@media(max-width:760px){.body{grid-template-columns:1fr}.rail{flex-direction:row!important;overflow-x:auto;border-right:0!important;border-bottom:1px solid var(--line)}.g{min-width:132px}}
+.rail{display:flex;flex-direction:column;gap:6px;padding:14px;border-right:1px solid var(--line)}
+.rail h4{margin:0 0 4px;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--mute);font-weight:600}
+.g{display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:14px;background:none;border:1px solid transparent;text-align:left;transition:background .4s var(--ease),border-color .4s var(--ease),transform .4s var(--ease)}
+.g:hover{background:rgba(255,255,255,.04)}.g:active{transform:scale(.98)}
+.g[aria-pressed=true]{background:var(--raised);border-color:color-mix(in srgb,var(--c) 70%,transparent);box-shadow:0 14px 30px -18px var(--c)}
+.g i{width:10px;height:10px;border-radius:99px;background:var(--c);flex:none}
+.g span{flex:1;font-weight:600;font-size:13px}.g em{font-style:normal;color:var(--faint);font-size:12px;font-variant-numeric:tabular-nums}
+.panel{padding:18px 20px 22px;min-width:0}
+.tabs{display:inline-flex;gap:2px;padding:3px;border-radius:999px;background:var(--bg);border:1px solid var(--line);margin-bottom:18px;flex-wrap:wrap}
+.tabs button{border:0;background:none;padding:7px 14px;border-radius:999px;font-size:12.5px;font-weight:700;color:var(--faint);transition:background .4s var(--ease),color .4s var(--ease)}
+.tabs button[aria-selected=true]{background:var(--raised);color:var(--text);box-shadow:inset 0 1px 0 rgba(255,255,255,.1)}
+.pane{display:none;animation:in .6s var(--ease) both}.pane.on{display:block}
+@keyframes in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.who{display:flex;align-items:baseline;gap:10px;margin-bottom:16px}.who b{font-size:17px}.who span{color:var(--mute);font-size:12px}
+.big{font-size:44px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1}
+.big small{font-size:13px;color:var(--mute);font-weight:500;letter-spacing:0;margin-left:6px}
+.row{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:16px 0}
+.seg{display:inline-flex;padding:3px;border-radius:999px;background:var(--bg);border:1px solid var(--line)}
+.seg button{border:0;background:none;padding:7px 16px;border-radius:999px;font-weight:700;font-size:13px;color:var(--faint);transition:all .4s var(--ease)}
+.seg button[aria-pressed=true].add{background:#16a34a;color:#fff}.seg button[aria-pressed=true].minus{background:#dc2626;color:#fff}
+.chip{border:1px solid var(--line);background:var(--raised);border-radius:999px;padding:7px 14px;font-weight:700;font-size:13px;transition:transform .3s var(--ease),border-color .3s}
+.chip:hover{border-color:var(--line2)}.chip:active{transform:scale(.95)}.chip[aria-pressed=true]{border-color:var(--cyan);box-shadow:0 0 0 1px var(--cyan)}
+.lab{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--mute);margin:18px 0 8px;font-weight:600}
+input.t{width:100%;max-width:420px;background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:10px 14px;color:var(--text);font:inherit;outline:none}
+input.t:focus{border-color:var(--cyan)}
+.log{margin:6px 0 0;padding:0;list-style:none;border-top:1px solid var(--line)}
+.log li{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid color-mix(in srgb,var(--line) 55%,transparent);font-size:12.5px;color:var(--faint)}
+.log b{font-variant-numeric:tabular-nums}.pos{color:#4ade80}.neg{color:#f87171}
+.btn{display:inline-flex;align-items:center;gap:10px;min-height:42px;padding:4px 18px 4px 6px;border-radius:999px;border:1px solid var(--line2);background:var(--raised);font-weight:700;font-size:13px;transition:transform .4s var(--ease),background .4s var(--ease)}
+.btn .ico{display:grid;place-items:center;width:32px;height:32px;border-radius:99px;background:rgba(255,255,255,.1);transition:transform .4s var(--ease)}
+.btn:hover .ico{transform:translate(2px,-1px) scale(1.06)}.btn:active{transform:scale(.97)}
+.btn.go{background:var(--yellow);border-color:var(--yellow);color:#111}.btn.go .ico{background:rgba(0,0,0,.1)}
+.btn[disabled]{opacity:.4;cursor:not-allowed}
+.confirm{margin-top:18px;display:none;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:12px 14px 12px 18px;border-radius:18px;border:1px solid var(--cyan);background:color-mix(in srgb,var(--cyan) 8%,transparent);animation:in .5s var(--ease) both}
+.confirm.on{display:flex}.confirm p{margin:0;font-size:13.5px}.confirm .arrow{color:var(--mute);margin:0 4px}
+.pieces{display:grid;gap:12px}
+.loc{padding:12px 14px;border-radius:16px;border:1px solid var(--line);background:color-mix(in srgb,var(--raised) 50%,transparent)}
+.loc h5{margin:0 0 10px;font-size:13px;display:flex;justify-content:space-between}.loc h5 span{color:var(--mute);font-weight:500;font-size:12px}
+.pc{display:flex;gap:8px;flex-wrap:wrap}
+.pc button{width:48px;height:48px;border-radius:14px;border:1px dashed var(--line2);background:none;color:var(--mute);font-weight:700;transition:all .4s var(--ease)}
+.pc button:hover{border-color:var(--cyan);color:var(--cyan)}.pc button[aria-pressed=true]{border:1px solid var(--cyan);box-shadow:0 0 0 1px var(--cyan);color:var(--cyan)}
+.pc button.own{border:1px solid transparent;background:color-mix(in srgb,var(--c) 30%,transparent);color:#fff;cursor:default}
+.types{display:flex;gap:10px;flex-wrap:wrap}
+.ty{padding:12px 16px;border-radius:16px;border:1px solid var(--line);background:color-mix(in srgb,var(--raised) 50%,transparent);text-align:left;min-width:150px;transition:all .4s var(--ease)}
+.ty[aria-pressed=true]{border-color:#fbbf24;box-shadow:0 0 0 1px rgba(251,191,36,.5),0 14px 30px -20px #fbbf24}
+.ty b{display:block;font-size:14px}.ty small{color:var(--mute);font-size:11.5px}
+.stepper{display:inline-flex;align-items:center;padding:3px;border-radius:999px;background:var(--bg);border:1px solid var(--line)}
+.stepper button{width:30px;height:30px;border-radius:99px;border:0;background:var(--raised);font-size:16px}.stepper output{min-width:34px;text-align:center;font-weight:700}
+.note{color:var(--mute);font-size:12px;margin:12px 0 0;max-width:520px}
+.zone{padding:12px 14px;border-radius:16px;border:1px solid var(--line);background:color-mix(in srgb,var(--raised) 50%,transparent);margin-bottom:10px}
+.zone .h{display:flex;align-items:center;gap:10px;margin-bottom:10px}.zone .h b{flex:1}
+.pill{padding:2px 9px;border-radius:99px;font-size:10.5px;font-weight:700;letter-spacing:.1em}.pill.on{background:#16a34a33;color:#4ade80}.pill.off{background:#ffffff14;color:var(--mute)}
+.opt{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:6px}.opt span{width:64px;font-size:11.5px;color:var(--mute)}
+.opt button{border:1px solid var(--line);background:none;padding:6px 12px;border-radius:99px;font-size:12px;font-weight:700;transition:all .3s var(--ease)}
+.opt button[aria-pressed=true]{background:var(--text);color:#07101f;border-color:var(--text)}
+.banner{display:none;margin:0 0 16px;padding:10px 14px;border-radius:14px;border:1px solid rgba(242,85,85,.5);background:rgba(242,85,85,.1);color:#ffb4b4;font-size:12.5px}
+.banner.on{display:block}
+.toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,30px);opacity:0;pointer-events:none;display:flex;align-items:center;gap:14px;padding:10px 10px 10px 18px;border-radius:999px;background:#f3f6fb;color:#07101f;font-weight:700;font-size:13px;box-shadow:0 18px 40px -14px rgba(0,0,0,.6);transition:all .6s var(--ease)}
+.toast.on{transform:translate(-50%,0);opacity:1;pointer-events:auto}
+.toast button{border:0;background:#07101f;color:#fff;border-radius:99px;padding:7px 14px;font-weight:700;font-size:12px}
+.toast .bar{position:absolute;left:18px;right:18px;bottom:3px;height:2px;border-radius:2px;background:#07101f33;overflow:hidden}.toast .bar i{display:block;height:100%;background:#07101f;transform-origin:left;transform:scaleX(1)}
+.toast.on .bar i{animation:drain 10s linear forwards}@keyframes drain{to{transform:scaleX(0)}}
+.legend{margin-top:26px;color:var(--mute);font-size:12px}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition-duration:.01ms!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>Admin → Live control → Game master</h1>
+<p class="sub">Design preview. Every number and group here is sample data, nothing is saved. Click through it.</p>
+
+<div class="shell"><div class="core">
+  <button class="more" id="more" aria-expanded="false" aria-controls="fold">
+    <span><span class="eyebrow">Emergency</span><b>Game master</b><small>Always live. Tokens, puzzle pieces, blind boxes and the funfair for any group.</small></span>
+    <span class="chev"><svg viewBox="0 0 16 16"><path d="M4 6l4 4 4-4"/></svg></span>
+  </button>
+  <div class="fold" id="fold"><div>
+    <div class="body">
+      <nav class="rail" id="rail" aria-label="Group"></nav>
+      <div class="panel">
+        <div class="banner" id="frozen">Token freeze is on, so token changes are blocked. Switch it off under Kill-switches to continue.</div>
+        <div class="tabs" role="tablist" id="tabs">
+          <button role="tab" aria-selected="true" data-t="tok">Tokens</button>
+          <button role="tab" aria-selected="false" data-t="puz">Puzzle</button>
+          <button role="tab" aria-selected="false" data-t="bb">Blind box</button>
+          <button role="tab" aria-selected="false" data-t="ff">Funfair</button>
+        </div>
+
+        <section class="pane on" id="p-tok">
+          <div class="who"><b class="gname"></b><span>Day 1 or Day 2, no schedule needed</span></div>
+          <div class="big"><span id="bal">0</span><small>tokens now</small></div>
+          <div class="row">
+            <div class="seg" id="dir"><button class="add" aria-pressed="true" data-d="1">Add</button><button class="minus" aria-pressed="false" data-d="-1">Deduct</button></div>
+            <div class="row" style="margin:0" id="amts"></div>
+          </div>
+          <div class="lab" id="alab">Amount comes from the token settings. Add uses Day 1, Deduct uses Day 2 entry fees.</div>
+          <div class="lab">Reason</div>
+          <div class="row" style="margin:0 0 10px" id="rs"></div>
+          <input class="t" id="reason" placeholder="Backup: GM missed the result">
+          <div class="confirm" id="c-tok"><p id="c-tok-t"></p><button class="btn go" id="ok-tok"><span class="ico"><svg viewBox="0 0 16 16"><path d="M3.5 8.5l3 3 6-7"/></svg></span>Confirm</button></div>
+          <div class="row" style="margin-top:20px"><button class="btn go" id="go-tok"><span class="ico"><svg viewBox="0 0 16 16"><path d="M3 8h9M9 4.5L12.5 8 9 11.5"/></svg></span>Review change</button></div>
+          <div class="lab">Last transactions</div>
+          <ul class="log" id="log"></ul>
+        </section>
+
+        <section class="pane" id="p-puz">
+          <div class="who"><b class="gname"></b><span>Tap a missing piece to give it</span></div>
+          <div class="pieces" id="pieces"></div>
+          <div class="confirm" id="c-puz"><p id="c-puz-t"></p><button class="btn go" id="ok-puz"><span class="ico"><svg viewBox="0 0 16 16"><path d="M3.5 8.5l3 3 6-7"/></svg></span>Confirm</button></div>
+          <p class="note">A wrong piece is removed on the Puzzles page, as today.</p>
+        </section>
+
+        <section class="pane" id="p-bb">
+          <div class="who"><b class="gname"></b><span>Appears on the group's Items page, unopened</span></div>
+          <div class="lab" style="margin-top:0">Box type</div>
+          <div class="types" id="types"></div>
+          <div class="row"><span style="color:var(--mute);font-size:12px">Quantity</span><div class="stepper"><button id="q-">−</button><output id="q">1</output><button id="q+">+</button></div></div>
+          <div class="confirm" id="c-bb"><p id="c-bb-t"></p><button class="btn go" id="ok-bb"><span class="ico"><svg viewBox="0 0 16 16"><path d="M3.5 8.5l3 3 6-7"/></svg></span>Confirm</button></div>
+          <div class="row" style="margin-top:20px"><button class="btn go" id="go-bb"><span class="ico"><svg viewBox="0 0 16 16"><path d="M3 8h9M9 4.5L12.5 8 9 11.5"/></svg></span>Review gift</button></div>
+          <p class="note">A gift is free. It does not use a seller's quantity or the type's stock, and it is not counted as sold. The group opens it themselves and the tokens come out as usual.</p>
+        </section>
+
+        <section class="pane" id="p-ff">
+          <div class="who"><b>Funfair (3D map)</b><span>Moved here from Game → Funfair</span></div>
+          <div id="zones"></div>
+          <p class="note">Auto: a zone is on when its keys are lit. A change shows on every map within about 10 s.</p>
+        </section>
+      </div>
+    </div>
+  </div></div>
+</div></div>
+
+<p class="legend">On a phone the group list becomes a strip across the top, and the panel stacks below it. Folded, only the first bar shows.</p>
+</div>
+
+<div class="toast" id="toast"><span id="toast-t"></span><button id="undo">Undo</button><span class="bar"><i></i></span></div>
+
+<script>
+const G=[{n:'Group 1',c:'#f25555',t:14},{n:'Group 2',c:'#38bdf8',t:9},{n:'Group 3',c:'#a78bfa',t:21},{n:'Group 4',c:'#34d399',t:6},{n:'Group 5',c:'#fbbf24',t:17},{n:'Group 6',c:'#f472b6',t:11}];
+const LOC=[{n:'A3',k:4},{n:'Track and Field',k:4},{n:'B1',k:4}];
+const TY=[{n:'Normal',r:'1 to 2 tokens'},{n:'Lucky',r:'2 to 4 tokens'},{n:'Special',r:'one of a kind'}];
+const ZN=['West','Central','East'];
+const own=G.map((_,i)=>LOC.map((l,j)=>Array.from({length:l.k},(_,p)=>(i+j+p)%3===0)));
+const logs=G.map(()=>[['Day 1 win','+2','10:12'],['Entry fee','-4','11:40'],['Blind box','+2','11:55']]);
+let gi=0,dir=1,amt=5,reason='',pick=null,ty=0,qty=1,undoFn=null,tm;
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+$('#more').onclick=e=>{const o=e.currentTarget.getAttribute('aria-expanded')!=='true';e.currentTarget.setAttribute('aria-expanded',o);$('#fold').classList.toggle('open',o)};
+function rail(){$('#rail').innerHTML='<h4>Group</h4>'+G.map((g,i)=>`<button class="g" style="--c:${g.c}" aria-pressed="${i===gi}" data-i="${i}"><i></i><span>${g.n}</span><em>${g.t}</em></button>`).join('');
+$$('.g').forEach(b=>b.onclick=()=>{gi=+b.dataset.i;pick=null;hide();render()})}
+function hide(){$$('.confirm').forEach(c=>c.classList.remove('on'))}
+function render(){rail();$$('.gname').forEach(e=>e.textContent=G[gi].n);$('#bal').textContent=G[gi].t;
+$('#log').innerHTML=logs[gi].map(l=>`<li><span>${l[0]} · ${l[2]}</span><b class="${l[1][0]==='+'?'pos':'neg'}">${l[1]}</b></li>`).join('');
+$('#pieces').innerHTML=LOC.map((l,j)=>`<div class="loc"><h5>${l.n}<span>${own[gi][j].filter(Boolean).length} of ${l.k}</span></h5><div class="pc">${own[gi][j].map((o,p)=>`<button class="${o?'own':''}" style="--c:${G[gi].c}" ${o?'disabled':''} aria-pressed="${pick&&pick[0]===j&&pick[1]===p}" data-j="${j}" data-p="${p}">${o?'✓':p+1}</button>`).join('')}</div></div>`).join('');
+$$('.pc button:not(.own)').forEach(b=>b.onclick=()=>{pick=[+b.dataset.j,+b.dataset.p];render();$('#c-puz-t').innerHTML=`${G[gi].n} · give <b>${LOC[pick[0]].n}</b> piece ${pick[1]+1}`;$('#c-puz').classList.add('on')})}
+const PRE={1:[['Day 1 win',2],['Day 1 lose',1],['Custom',0]],'-1':[['Easy',2],['Medium',4],['Hard',6],['Custom',0]]};
+let pi=0;
+function presets(){const a=PRE[dir];if(pi>=a.length)pi=0;amt=a[pi][1]||amt;
+$('#amts').innerHTML=a.map(([l,n],i)=>`<button class="chip" aria-pressed="${i===pi}" data-i="${i}">${l}${n?` <span style="color:var(--mute);font-weight:500;margin-left:4px">${n}</span>`:''}</button>`).join('')+(a[pi][1]?'':`<div class="stepper"><button id="c-">−</button><output id="cv">${amt}</output><button id="c+">+</button></div>`);
+$$('#amts .chip').forEach(b=>b.onclick=()=>{pi=+b.dataset.i;if(a[pi][1])amt=a[pi][1];hide();presets()});
+const m=$('#c-'),pl=document.getElementById('c+');if(m){m.onclick=()=>{amt=Math.max(1,amt-1);$('#cv').textContent=amt;hide()};pl.onclick=()=>{amt=Math.min(50,amt+1);$('#cv').textContent=amt;hide()}}}
+$$('#dir button').forEach(b=>b.onclick=()=>{dir=+b.dataset.d;pi=0;presets();$$('#dir button').forEach(x=>x.setAttribute('aria-pressed',x===b));hide()});
+$('#rs').innerHTML=['GM missed a result','Wrong scan','Station closed early','Fee refund'].map(r=>`<button class="chip" aria-pressed="false">${r}</button>`).join('');
+$$('#rs .chip').forEach(b=>b.onclick=()=>{reason=b.textContent;$('#reason').value=reason;$$('#rs .chip').forEach(x=>x.setAttribute('aria-pressed',x===b))});
+$('#go-tok').onclick=()=>{const d=dir*amt,a=G[gi].t,z=a+d;if(z<0){$('#c-tok-t').innerHTML=`Can't deduct ${amt}: ${G[gi].n} only has ${a}.`;$('#ok-tok').disabled=true}else{$('#ok-tok').disabled=false;$('#c-tok-t').innerHTML=`${G[gi].n} · ${d>0?'+':''}${d} tokens<span class="arrow">·</span>${a} → <b>${z}</b>`}$('#c-tok').classList.add('on')};
+$('#ok-tok').onclick=()=>{const d=dir*amt,i=gi,r=$('#reason').value||'Admin backup';G[i].t+=d;logs[i].unshift([r,(d>0?'+':'')+d,'now']);hide();render();toast(`${G[i].n} ${d>0?'+':''}${d} tokens`,()=>{G[i].t-=d;logs[i].shift();render()})};
+$('#ok-puz').onclick=()=>{const [j,p]=pick,i=gi;own[i][j][p]=true;pick=null;hide();render();toast(`${G[i].n} got ${LOC[j].n} piece ${p+1}`,()=>{own[i][j][p]=false;render()})};
+$('#types').innerHTML=TY.map((t,i)=>`<button class="ty" aria-pressed="${i===0}" data-i="${i}"><b>${t.n}</b><small>${t.r}</small></button>`).join('');
+$$('.ty').forEach(b=>b.onclick=()=>{ty=+b.dataset.i;$$('.ty').forEach(x=>x.setAttribute('aria-pressed',x===b));hide()});
+$('#q-').onclick=()=>{qty=Math.max(1,qty-1);$('#q').textContent=qty;hide()};$('#q\\+').onclick=()=>{qty=Math.min(5,qty+1);$('#q').textContent=qty;hide()};
+$('#go-bb').onclick=()=>{$('#c-bb-t').innerHTML=`${G[gi].n} · gift <b>${qty} ${TY[ty].n}</b> blind box${qty>1?'es':''}<span class="arrow">·</span>free, not counted as sold`;$('#c-bb').classList.add('on')};
+$('#ok-bb').onclick=()=>{const i=gi,q=qty,n=TY[ty].n;hide();toast(`${q} ${n} box${q>1?'es':''} sent to ${G[i].n}`,()=>{})};
+const zs=ZN.map(()=>({keys:[true,false,false],rule:'any',ov:null}));
+function zones(){$('#zones').innerHTML=ZN.map((n,i)=>{const z=zs[i],lit=z.keys[i]||(z.ov===true),on=z.ov===null?lit:z.ov;return `<div class="zone"><div class="h"><b>${n}</b><span class="pill ${on?'on':'off'}">${on?'ON':'OFF'}</span></div>
+<div class="opt"><span>Keys</span>${LOC.map((l,k)=>`<button aria-pressed="${z.keys[k]}" data-z="${i}" data-k="${k}">${l.n}</button>`).join('')}</div>
+<div class="opt"><span>Override</span>${[['Auto',null],['On',true],['Off',false]].map(([l,v])=>`<button aria-pressed="${z.ov===v}" data-z="${i}" data-o="${v}">${l}</button>`).join('')}</div></div>`}).join('');
+$$('#zones [data-k]').forEach(b=>b.onclick=()=>{const z=zs[+b.dataset.z];z.keys[+b.dataset.k]=!z.keys[+b.dataset.k];zones()});
+$$('#zones [data-o]').forEach(b=>b.onclick=()=>{zs[+b.dataset.z].ov=b.dataset.o==='null'?null:b.dataset.o==='true';zones()})}
+function toast(t,fn){undoFn=fn;$('#toast-t').textContent=t;const e=$('#toast');e.classList.remove('on');void e.offsetWidth;e.classList.add('on');clearTimeout(tm);tm=setTimeout(()=>e.classList.remove('on'),10000)}
+$('#undo').onclick=()=>{undoFn&&undoFn();$('#toast').classList.remove('on')};
+$$('#tabs button').forEach(b=>b.onclick=()=>{$$('#tabs button').forEach(x=>x.setAttribute('aria-selected',x===b));$$('.pane').forEach(p=>p.classList.remove('on'));$('#p-'+b.dataset.t).classList.add('on');hide()});
+render();zones();presets();
+</script>
+</body>
+</html>
