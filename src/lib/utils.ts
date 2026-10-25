@@ -95,7 +95,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   TOKEN_USED: "This NFC code has already been used.",
   SET_NOT_REDEEMED: "Your group's puzzle set hasn't been verified by a Guardian yet.",
   ALREADY_ACTIVATED: "This projector is already lit!",
-  GROUP_ALREADY_ACTIVATED_ONE: "Your group has already lit a projector.",
+  GROUP_ALREADY_ACTIVATED_ONE: "This group has already lit a projector.",
   NFC_DEMO_OFF: "Demo scanning is off. Admin turns it on in Live control.",
   PROJECTOR_NOT_FOUND: "That lightbulb doesn't exist.",
   NOT_YOUR_STATION: "You can only update your own station.",

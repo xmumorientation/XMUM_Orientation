@@ -33,6 +33,7 @@ export const GAME_KINDS: AuditKind[] = ["tokens", "stations", "puzzles", "projec
 /** Every action the logs show, and the filter it falls under. */
 export const AUDIT_ACTIONS: Record<string, AuditKind> = {
   "tokens.adjust": "tokens",
+  "tokens.admin_adjust": "tokens",
   "tokens.day1_reward": "tokens",
   "tokens.undo": "tokens",
   "tokens.reset": "tokens",
@@ -46,11 +47,14 @@ export const AUDIT_ACTIONS: Record<string, AuditKind> = {
   "station.gm_unassign": "stations",
   "station.gm_set": "stations",
   "inventory.grant": "puzzles",
+  "inventory.admin_give_piece": "puzzles",
   "puzzle.redeem": "puzzles",
   "projector.activate": "projectors",
   "projector.activate_manual": "projectors",
+  "projector.game_lead_light": "projectors",
   "projector.demo_activate": "projectors",
   "projector.reset": "projectors",
+  "projector.reset_all": "projectors",
   "nfc.generate": "projectors",
   "nfc.delete": "projectors",
   "nfc.test.start": "projectors",
@@ -58,6 +62,8 @@ export const AUDIT_ACTIONS: Record<string, AuditKind> = {
   "nfc.test.reset": "projectors",
   "blindbox.buy": "blindbox",
   "blindbox.open": "blindbox",
+  "blindbox.admin_gift": "blindbox",
+  "blindbox.admin_gift_undo": "blindbox",
   "blindbox.claim": "blindbox",
   "blindbox.sale": "blindbox",
   "blindbox.assign": "blindbox",
@@ -215,6 +221,10 @@ export function describeAudit(e: AuditEntry, n: AuditNames): AuditRow {
       const reason = str(d.reason).trim();
       return { ...G, action: "Tokens changed by hand", tokens: num(d.delta), detail: join(reason && `"${reason}"`, `balance ${num(d.balance_after)}`) };
     }
+    case "tokens.admin_adjust": {
+      const reason = str(d.reason).trim();
+      return { ...G, action: "Tokens changed (Game master)", tokens: num(d.delta), detail: join(reason && `"${reason}"`, `balance ${num(d.balance_after)}`) };
+    }
     case "tokens.day1_reward":
       return { ...G, action: d.result === "win" ? "Day 1 win" : "Day 1 loss", tokens: num(d.delta), detail: `balance ${num(d.balance_after)}` };
     case "tokens.undo":
@@ -260,6 +270,8 @@ export function describeAudit(e: AuditEntry, n: AuditNames): AuditRow {
     }
     case "inventory.grant":
       return { ...G, action: "Piece given", detail: str(d.item_name) };
+    case "inventory.admin_give_piece":
+      return { ...G, action: "Piece given (Game master)", detail: join(projectorName(d.location), `piece ${num(d.index)}`) };
     case "puzzle.redeem": {
       const note = str(d.nfc_note).trim();
       return { ...G, action: "Puzzle handed in", detail: join(projectorName(d.location), note && `"${note}"`) };
@@ -268,8 +280,12 @@ export function describeAudit(e: AuditEntry, n: AuditNames): AuditRow {
       return { object: P, action: "Lit with an NFC scan", detail: join(groupName(d.group_id), test) };
     case "projector.activate_manual":
       return { object: P, action: "Lit by hand", detail: join(`for ${groupName(d.group_id)}`, test) };
+    case "projector.game_lead_light":
+      return { object: P, action: d.replaced ? "Lit by hand, taken over" : "Lit by hand", detail: `for ${groupName(d.group_id)}` };
     case "projector.demo_activate":
       return { object: P, action: "Lit (demo)", detail: `for ${groupName(d.group_id)}` };
+    case "projector.reset_all":
+      return { object: "Every key", action: "Funfair reset", detail: `${num(d.count)} lit key${num(d.count) === 1 ? "" : "s"} cleared` };
     case "projector.reset":
       return { object: P, action: "Set to not lit", detail: d.was_group_id ? `was lit by ${groupName(d.was_group_id)}` : "" };
     case "nfc.generate":
@@ -289,6 +305,10 @@ export function describeAudit(e: AuditEntry, n: AuditNames): AuditRow {
       const price = num(d.price);
       return { ...G, action: "Bought a blind box", tokens: -price, detail: join(boxType(d.type), `from ${str(d.seller)}`, price === 0 && "free") };
     }
+    case "blindbox.admin_gift":
+      return { ...G, action: "Blind box gift", detail: join(boxType(d.type), `${num(d.quantity)} box${num(d.quantity) === 1 ? "" : "es"}`) };
+    case "blindbox.admin_gift_undo":
+      return { object: "Blind box", action: "Gift taken back", detail: "" };
     case "blindbox.open":
       return { ...G, action: "Opened a blind box", tokens: num(d.tokens), detail: boxType(d.type) };
     case "blindbox.claim":
