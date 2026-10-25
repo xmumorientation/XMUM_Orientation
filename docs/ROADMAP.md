@@ -293,6 +293,10 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 
 ## Done
 
+### David, 2026-10-25 — Committee test account
+- Official Committee seed account is now `cmt.test@xmu.edu.my` (Test Committee), with the requested shared demo password. The old counter account is preserved.
+
+
 ### David, 2026-10-25 — Faci profile navigation and general Committee
 - Profile editor now restores focus to its opener or the visible Account button before refreshing the server profile. The tab-bar shell uses `overflow: clip` to prevent hidden programmatic scrolling of the navigation frame.
 - Reused the existing `committee` role for a labelled read-only Ops overview. Added the HOF Faci & Status view and group history without assignment controls; Committee phone pages now share OpsHeader.

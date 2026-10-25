@@ -19,7 +19,7 @@ const TEST_ACCOUNTS = [
   { email: "hogm.test@xmu.edu.my", role: "hogm", name: "Test HOGM", password: "TestPass123!" },
   { email: "faci.test@xmu.edu.my", role: "faci", name: "Test Facilitator", group_id: 1, password: "TestPass123!" },
   { email: "gm.test@xmu.edu.my", role: "gm", name: "Test GameMaster", station_id: 1, password: "TestPass123!" },
-  { email: "counter.test@xmu.edu.my", role: "committee", name: "Test Counter", password: "TestPass123!" },
+  { email: "cmt.test@xmu.edu.my", role: "committee", name: "Test Committee", password: "TestPass123!" },
 
   // Quick Short Accounts (test.com)
   { email: "admin@test.com", role: "admin", name: "Test Admin", password: "pass123" },
