@@ -37,7 +37,7 @@ export const SWITCHES: { key: Day2Switch; label: string }[] = [
   { key: "funfair", label: "Funfair" },
 ];
 
-const DEFAULTS: Record<Day2Segment | "off", Record<Day2Switch, boolean>> = {
+export const SEGMENT_DEFAULTS: Record<Day2Segment | "off", Record<Day2Switch, boolean>> = {
   off: { station: true, blindbox: false, funfair: false },
   normal1: { station: true, blindbox: false, funfair: false },
   challenge: { station: true, blindbox: true, funfair: false },
@@ -77,7 +77,7 @@ export function day2Now(s: Day2State | null, nowMs: number): Day2Now {
       nowMs >= starts.funfair ? "funfair" : nowMs >= starts.normal2 ? "normal2" : nowMs >= starts.challenge ? "challenge" : "normal1";
   }
   const flipped = s && s.override_segment === segment ? s.overrides : {};
-  return { segment, manual: !!s?.manual_segment, switches: { ...DEFAULTS[segment], ...flipped }, flipped, starts };
+  return { segment, manual: !!s?.manual_segment, switches: { ...SEGMENT_DEFAULTS[segment], ...flipped }, flipped, starts };
 }
 
 /** Why the blind box QR is grey, or null when it is open. */
