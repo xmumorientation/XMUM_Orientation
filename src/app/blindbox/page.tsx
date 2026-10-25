@@ -92,11 +92,33 @@ export default async function BlindBoxPage({
     ? await supabase.from("groups").select("color").eq("id", me.group_id).maybeSingle()
     : { data: null };
 
+  // One code per box type (bb4, a seller with two or more types): only that
+  // type is shown, so the Freshie scans and buys, with nothing to choose.
+  // An old seller-wide code (bb3) of a seller who now has several types asks
+  // for the right one instead.
+  let preview = data as BlindBoxPreview;
+  if (token.assignmentId !== undefined) {
+    const only = preview.options.filter((o) => o.assignment_id === token.assignmentId);
+    if (only.length === 0) return <ErrorScreen {...UNKNOWN} />;
+    preview = {
+      ...preview,
+      options: only,
+      status: preview.status === "ok" && only[0].status === "sold_out" ? "sold_out" : preview.status,
+    };
+  } else if (preview.options.length > 1) {
+    return (
+      <ErrorScreen
+        title="Scan the box's own code"
+        message="This seller has more than one box, each with its own QR. Scan the code of the box you want."
+      />
+    );
+  }
+
   return (
     <BlindBoxBuy
       sellerId={token.sellerId}
       version={token.version}
-      preview={data as BlindBoxPreview}
+      preview={preview}
       color={(group?.color as string | null) ?? null}
     />
   );

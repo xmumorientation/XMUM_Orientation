@@ -293,6 +293,11 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 
 ## Done
 
+### One blind box QR per box type, 2026-10-25 (Jiamin)
+- No migration. A seller with **two or more live box types** now gets one QR per type (token `bb4`: seller, QR version, assignment). Scanning it shows only that box, so the Freshie just buys; nothing to choose. A seller with one type, and the Spot, keep the seller-wide `bb3` code that is already printed. An old seller-wide code of a seller who now holds several types shows "Scan the box's own code".
+- Where: `lib/blindbox.ts`, `/api/blindbox/links` (decides per seller), `/blindbox` page (shows only the code's assignment), Staff Home "My Blind Box" (a QR for each type), Admin → Blind box → Codes (a QR and copy button for each type). Tests: `tests/blindbox/links-route.test.ts`.
+- Unchanged: one box per group per seller, so a group that bought one type from a seller sees "already bought" on that seller's other code. The page limits the choice; the buy RPC still takes the assignment id from the client.
+
 ### Light a key for a group (Admin and HOGM), 2026-10-25 (Jiamin)
 - **Run on Supabase:** `0105_game_lead_light_projector.sql`. Admin → Live control → Game master → Funfair and HOGM → Game control → Funfair have **Light a key for a group** (`FunfairLightGroup`, `fn_game_lead_light_projector`): pick a group, light B1, A3 or TF for it. No card tap, no Guardian check, no Day 2 Funfair switch. One group per key and one key per group; only Admin can take a key over. Audit action `projector.game_lead_light` (also registered: the 0103 Game master actions).
 
