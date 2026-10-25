@@ -10,7 +10,6 @@ const state = vi.hoisted(() => ({
   role: "admin" as string | null,
   rows: [] as unknown[],
   error: null as { message: string } | null,
-  inIds: null as number[] | null,
 }));
 
 vi.mock("@/lib/auth", () => ({
@@ -23,10 +22,6 @@ vi.mock("@/lib/supabase/server", () => ({
     from: () => {
       const query = {
         select: () => query,
-        in: (_col: string, ids: number[]) => {
-          state.inIds = ids;
-          return query;
-        },
         then: (resolve: (v: unknown) => void) => resolve({ data: state.rows, error: state.error }),
       };
       return query;
@@ -45,7 +40,6 @@ beforeEach(() => {
   state.role = "admin";
   state.rows = [];
   state.error = null;
-  state.inIds = null;
 });
 
 describe("/api/blindbox/links", () => {
@@ -77,7 +71,6 @@ describe("/api/blindbox/links", () => {
       { id: 12, active: true, seller: null }, // seller hidden by RLS: no link
     ];
     const res = await call({ ids: [10, 11, 12] });
-    expect(state.inIds).toEqual([10, 11, 12]);
     const { links } = (await res.json()) as { links: { id: number; active: boolean; url: string }[] };
     expect(links.map((l) => l.id)).toEqual([10, 11]);
     expect(links[0].url).toBe(links[1].url); // one QR per seller
@@ -88,10 +81,27 @@ describe("/api/blindbox/links", () => {
     expect(verifyBlindBoxToken(url.searchParams.get("t")!)).toEqual({ valid: true, sellerId: 3, version: 123456789 });
   });
 
+  it("gives a seller with two or more live types one link per type", async () => {
+    const seller = { id: 4, qr_version: 7 };
+    state.rows = [
+      { id: 20, active: true, seller, type: { archived: false } },
+      { id: 21, active: true, seller, type: [{ archived: false }] },
+      { id: 22, active: true, seller, type: { archived: true } }, // archived: not live
+      { id: 30, active: true, seller: { id: 5, qr_version: 9 }, type: { archived: false } }, // one type: one link
+    ];
+    const res = await call({ ids: [20, 21, 30] });
+    const { links } = (await res.json()) as { links: { id: number; url: string }[] };
+    expect(links.map((l) => l.id)).toEqual([20, 21, 30]);
+    expect(links[0].url).not.toBe(links[1].url);
+    const tok = (i: number) => verifyBlindBoxToken(new URL(links[i].url).searchParams.get("t")!);
+    expect(tok(0)).toEqual({ valid: true, sellerId: 4, version: 7, assignmentId: 20 });
+    expect(tok(1)).toEqual({ valid: true, sellerId: 4, version: 7, assignmentId: 21 });
+    expect(tok(2)).toEqual({ valid: true, sellerId: 5, version: 9 }); // unchanged seller-wide code
+  });
+
   it("reports a database error", async () => {
     state.error = { message: "boom" };
     const res = await call({});
     expect(res.status).toBe(500);
-    expect(state.inIds).toBeNull(); // no ids: every assignment the caller can see
   });
 });

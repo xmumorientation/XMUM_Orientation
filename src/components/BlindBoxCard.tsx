@@ -27,13 +27,17 @@ export interface MyBlindBoxSeller {
   live: boolean;
   left: number;
   qr: Shown | undefined;
+  /** Two or more live box types: one QR per type (shown[row.id]), none for the seller as a whole. */
+  typed: boolean;
+  /** Each assignment's QR, by assignment id. */
+  shown: Record<number, Shown>;
 }
 
 // game_config values are jsonb: true or "true".
 const isOn = (v: unknown) => v === true || v === "true";
 
-// The signed-in account's own blind boxes, with its one QR (stations no longer
-// hold boxes, since 0100). Used by BlindBoxCard and by Staff
+// The signed-in account's own blind boxes, with its QR (one per box type when it
+// holds two or more; stations no longer hold boxes, since 0100). Used by BlindBoxCard and by Staff
 // Home's "My Blind Box" stop. Links are recomputed by the server on demand, so
 // showing a QR never invalidates one that is already out there; only Admin's
 // Regenerate does.
@@ -156,6 +160,8 @@ export function useMyBlindBoxes() {
     live: list.some((r) => r.active && !r.type?.archived),
     left: list.reduce((n, r) => n + (r.active && !r.type?.archived ? Math.max(r.quantity - r.opened, 0) : 0), 0),
     qr: shown[list[0].id],
+    typed: list.filter((r) => r.active && !r.type?.archived).length > 1,
+    shown,
   }));
 
   return { loaded, error, sellers, copy, copied, paused, closed };

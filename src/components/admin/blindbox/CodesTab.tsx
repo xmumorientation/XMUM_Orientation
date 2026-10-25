@@ -12,7 +12,9 @@ import { cn, friendlyError } from "@/lib/utils";
 import type { TabProps } from "./TypesTab";
 import type { Seller } from "./useBlindBoxAdmin";
 
-// One row per seller: their ONE QR (every box type they hold), and per type
+// One row per seller: their ONE QR when they hold one box type, or one QR per
+// box type when they hold two or more (so a Freshie scans the code of the box
+// they want and cannot choose), and per type
 // how many are sold out of how many, with the number editable and an on/off
 // switch. Setting a number to 0 takes that type back (only while none sold).
 // Previewing a QR never changes it; Regenerate does.
@@ -21,19 +23,24 @@ export function CodesTab({ data, onError, onNotice, goTo }: TabProps) {
   const [typeFilter, setTypeFilter] = useState("");
   const [search, setSearch] = useState("");
   const [edits, setEdits] = useState<Record<number, string>>({});
-  const [copied, setCopied] = useState<number | null>(null);
+  const [copied, setCopied] = useState<string | null>(null);
   const [qrs, setQrs] = useState<Record<number, string>>({});
-  const [big, setBig] = useState<Seller | null>(null);
+  const [big, setBig] = useState<{ title: string; label: string; id: number } | null>(null);
 
   const urlOf = (s: Seller) => data.links[s.rows[0].id]?.url;
+  const typeOf = (a: BlindBoxAssignment) => data.types.find((t) => t.id === a.type_id);
+  // The server's rule (api/blindbox/links): two or more live types, one code per type.
+  const typed = (s: Seller) => s.rows.filter((a) => a.active && !typeOf(a)?.archived).length > 1;
 
   useEffect(() => {
     let cancel = false;
     (async () => {
       const next: Record<number, string> = {};
       for (const s of data.sellers) {
-        const url = data.links[s.rows[0].id]?.url;
-        if (url) next[s.id] = await QRCode.toDataURL(url, { width: 480, margin: 1 });
+        for (const a of s.rows) {
+          const url = data.links[a.id]?.url;
+          if (url) next[a.id] = await QRCode.toDataURL(url, { width: 480, margin: 1 });
+        }
       }
       if (!cancel) setQrs(next);
     })();
@@ -82,15 +89,15 @@ export function CodesTab({ data, onError, onNotice, goTo }: TabProps) {
   async function regenerate(s: Seller) {
     if (
       !window.confirm(
-        `Give ${s.name} a new QR? It is their one QR for every box type: any copy already shown or printed stops working. Boxes already bought are not affected.`
+        `Give ${s.name} new QRs? Every QR of theirs, for every box type: any copy already shown or printed stops working. Boxes already bought are not affected.`
       )
     ) {
       return;
     }
-    await call("fn_bb_regenerate", { p_id: s.rows[0].id }, "New QR made. The old one no longer works.");
+    await call("fn_bb_regenerate", { p_id: s.rows[0].id }, "New QRs made. The old ones no longer work.");
   }
 
-  async function copy(id: number, url: string) {
+  async function copy(id: string, url: string) {
     try {
       await navigator.clipboard.writeText(url);
       setCopied(id);
@@ -104,7 +111,7 @@ export function CodesTab({ data, onError, onNotice, goTo }: TabProps) {
     return (
       <Card className="max-w-xl space-y-3 text-sm">
         <p className="font-semibold">Nobody holds boxes yet</p>
-        <p className="text-ink-faint">Hand boxes to people in step 2. Each person then gets one QR for all their boxes.</p>
+        <p className="text-ink-faint">Hand boxes to people in step 2. Each person gets one QR per box type they hold.</p>
         <button type="button" onClick={() => goTo("assign")} className="btn-primary px-4">
           Go to step 2
         </button>
@@ -141,24 +148,31 @@ export function CodesTab({ data, onError, onNotice, goTo }: TabProps) {
       <Card className="divide-y divide-paper-200 p-0">
         {rows.map((s) => {
           const url = urlOf(s);
+          const many = typed(s);
           return (
             <div key={s.id} className="grid gap-4 p-4 sm:grid-cols-[5.5rem_minmax(0,1fr)]">
-              <button
-                type="button"
-                onClick={() => setBig(s)}
-                disabled={!qrs[s.id]}
-                aria-label={`Show ${s.name}'s QR`}
-                className="grid h-[5.5rem] w-[5.5rem] place-items-center rounded-xl border border-paper-200 bg-white p-1.5 transition hover:border-ink-faint active:scale-[0.98]"
-              >
-                {qrs[s.id] ? (
-                  // eslint-disable-next-line @next/next/no-img-element -- local data URL
-                  <img src={qrs[s.id]} alt="" className="h-full w-full" />
-                ) : data.linksStatus === "error" ? (
-                  <span className="text-[11px] text-red-500">no link</span>
-                ) : (
-                  <span className="h-full w-full animate-pulse rounded-lg bg-paper-200" />
-                )}
-              </button>
+              {many ? (
+                <div className="grid h-[5.5rem] w-[5.5rem] place-items-center rounded-xl border border-dashed border-paper-300 p-2 text-center text-[11px] leading-tight text-ink-faint">
+                  One QR per box type
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setBig({ title: s.name, label: s.rows.map((a) => typeOf(a)?.name ?? "Box").join(" / "), id: s.rows[0].id })}
+                  disabled={!qrs[s.rows[0].id]}
+                  aria-label={`Show ${s.name}'s QR`}
+                  className="grid h-[5.5rem] w-[5.5rem] place-items-center rounded-xl border border-paper-200 bg-white p-1.5 transition hover:border-ink-faint active:scale-[0.98]"
+                >
+                  {qrs[s.rows[0].id] ? (
+                    // eslint-disable-next-line @next/next/no-img-element -- local data URL
+                    <img src={qrs[s.rows[0].id]} alt="" className="h-full w-full" />
+                  ) : data.linksStatus === "error" ? (
+                    <span className="text-[11px] text-red-500">no link</span>
+                  ) : (
+                    <span className="h-full w-full animate-pulse rounded-lg bg-paper-200" />
+                  )}
+                </button>
+              )}
 
               <div className="min-w-0 space-y-2">
                 <div className="flex flex-wrap items-start justify-between gap-2">
@@ -167,15 +181,17 @@ export function CodesTab({ data, onError, onNotice, goTo }: TabProps) {
                     <p className="text-xs text-ink-faint">{s.kind}</p>
                   </div>
                   <div className="flex gap-1.5">
-                    <button
-                      type="button"
-                      disabled={!url}
-                      onClick={() => url && copy(s.id, url)}
-                      className="btn-secondary min-h-[36px] gap-1 px-3 text-xs"
-                    >
-                      {copied === s.id ? <Check size={14} strokeWidth={2} /> : <Copy size={14} strokeWidth={1.75} />}
-                      {copied === s.id ? "Copied" : "Copy link"}
-                    </button>
+                    {!many && (
+                      <button
+                        type="button"
+                        disabled={!url}
+                        onClick={() => url && copy(`s${s.id}`, url)}
+                        className="btn-secondary min-h-[36px] gap-1 px-3 text-xs"
+                      >
+                        {copied === `s${s.id}` ? <Check size={14} strokeWidth={2} /> : <Copy size={14} strokeWidth={1.75} />}
+                        {copied === `s${s.id}` ? "Copied" : "Copy link"}
+                      </button>
+                    )}
                     <button type="button" onClick={() => regenerate(s)} className="btn-secondary min-h-[36px] gap-1 px-3 text-xs">
                       <RefreshCw size={14} strokeWidth={1.75} />
                       Regenerate
@@ -193,6 +209,33 @@ export function CodesTab({ data, onError, onNotice, goTo }: TabProps) {
                         key={a.id}
                         className={cn("flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg bg-paper-100 px-3 py-1.5 text-sm", dead && "opacity-60")}
                       >
+                        {many && a.active && !type?.archived && (
+                          <span className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => setBig({ title: s.name, label: type?.name ?? "Box", id: a.id })}
+                              disabled={!qrs[a.id]}
+                              aria-label={`Show ${s.name}'s ${type?.name ?? "box"} QR`}
+                              className="grid h-12 w-12 place-items-center rounded-lg border border-paper-200 bg-white p-1 transition hover:border-ink-faint active:scale-[0.98]"
+                            >
+                              {qrs[a.id] ? (
+                                // eslint-disable-next-line @next/next/no-img-element -- local data URL
+                                <img src={qrs[a.id]} alt="" className="h-full w-full" />
+                              ) : (
+                                <span className="h-full w-full animate-pulse rounded bg-paper-200" />
+                              )}
+                            </button>
+                            <button
+                              type="button"
+                              disabled={!data.links[a.id]?.url}
+                              onClick={() => data.links[a.id]?.url && copy(`a${a.id}`, data.links[a.id].url)}
+                              aria-label={`Copy ${type?.name ?? "box"} link`}
+                              className="btn-secondary min-h-[32px] px-2 text-xs"
+                            >
+                              {copied === `a${a.id}` ? <Check size={14} strokeWidth={2} /> : <Copy size={14} strokeWidth={1.75} />}
+                            </button>
+                          </span>
+                        )}
                         <span className="inline-flex min-w-[7rem] items-center gap-1 font-medium">
                           {type?.name ?? "?"}
                           {type?.is_special && <Sparkles size={14} strokeWidth={1.75} className="text-amber-500" aria-label="special" />}
@@ -244,15 +287,13 @@ export function CodesTab({ data, onError, onNotice, goTo }: TabProps) {
       {big && qrs[big.id] && (
         <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/70 p-6" onClick={() => setBig(null)}>
           <div className="card w-full max-w-sm bg-white p-5 text-center" onClick={(e) => e.stopPropagation()}>
-            <p className="font-semibold">{big.name}</p>
-            <p className="mb-3 text-sm text-ink-faint">
-              {big.rows.map((a) => data.types.find((t) => t.id === a.type_id)?.name ?? "Box").join(" / ")}
-            </p>
+            <p className="font-semibold">{big.title}</p>
+            <p className="mb-3 text-sm text-ink-faint">{big.label}</p>
             {/* eslint-disable-next-line @next/next/no-img-element -- local data URL */}
-            <img src={qrs[big.id]} alt={`${big.name}'s blind box QR`} className="w-full" />
+            <img src={qrs[big.id]} alt={`${big.title}'s blind box QR, ${big.label}`} className="w-full" />
             <input
               readOnly
-              value={urlOf(big) ?? ""}
+              value={data.links[big.id]?.url ?? ""}
               aria-label="Blind box link"
               onFocus={(e) => e.currentTarget.select()}
               className="input mt-3 text-xs"

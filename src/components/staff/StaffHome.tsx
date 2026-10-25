@@ -16,7 +16,7 @@ import {
 import { FreshieSky, type SkyCabin } from "@/components/freshie/FreshieSky";
 import { groupSwatch, VORTEXA_THEME } from "@/components/freshie/groupTheme";
 import { nexusBody, vxDisplay, vxSlab } from "@/components/home/fonts";
-import { priceText, useMyBlindBoxes } from "@/components/BlindBoxCard";
+import { priceText, useMyBlindBoxes, type MyBlindBoxSeller } from "@/components/BlindBoxCard";
 import { GroupBadge } from "@/components/GroupBadge";
 import { usePhaseTimer } from "@/components/PhaseTimerProvider";
 import { useProfile } from "@/components/ProfileProvider";
@@ -145,6 +145,7 @@ function WelcomeStop({ name, role }: { name: string; role: UserRole }) {
 /** The account's own blind boxes: what is left and the QR a Freshie scans. Same data as BlindBoxCard. */
 function BlindBoxStop() {
   const { loaded, error, sellers, copy, copied, paused, closed } = useMyBlindBoxes();
+  const [openQr, setOpenQr] = useState<{ src: string; alt: string } | null>(null);
   const left = sellers.reduce((n, s) => n + s.left, 0);
   return (
     <section id="sh-bb" className="fh-stop" aria-labelledby="sh-bb-title">
@@ -168,54 +169,135 @@ function BlindBoxStop() {
       ) : (
         <ul className="sh-bb-list">
           {sellers.map((s) => (
-            <li key={s.id} className="sh-bb">
-              <span className="sh-bb-who fh-mono">Your own boxes</span>
-              {!s.live ? (
-                <p className="sh-bb-state" data-tone="off">Switched off by Admin. This code doesn&apos;t work right now.</p>
-              ) : paused && s.left > 0 ? (
-                <p className="sh-bb-state" data-tone="off">{paused}</p>
-              ) : s.left <= 0 ? (
-                <p className="sh-bb-state">All boxes sold.</p>
-              ) : s.qr && closed ? (
-                <>
-                  {/* Day 2 inner schedule (0102): greyed, and a scan shows the same reason. */}
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={s.qr.qr} alt="Blind box QR code, closed" className="sh-bb-qr" data-closed />
-                  <p className="sh-bb-state" data-tone="off">{closed}</p>
-                </>
-              ) : s.qr ? (
-                <>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={s.qr.qr} alt="Blind box QR code" className="sh-bb-qr" />
-                  <small className="sh-bb-note">A Freshie scans this after your mini-game. Each group can buy one box.</small>
-                  <button type="button" className="fh-btn fh-btn-ghost sh-bb-copy" onClick={() => copy(s.id, s.qr!.url)}>
-                    {copied === s.id ? <Check size={16} aria-hidden /> : <Copy size={16} aria-hidden />}
-                    {copied === s.id ? "Copied" : "Copy link"}
-                  </button>
-                </>
-              ) : (
-                <span className="sh-bb-qr sh-bb-qr-wait" aria-label="Loading QR" />
-              )}
-              <ul className="sh-bb-types">
-                {s.rows.map((r) => (
-                  <li key={r.id}>
-                    <b>
-                      {r.type?.name ?? "Box"}
-                      {r.type?.is_special && <Sparkles size={14} aria-label="special" />}
-                    </b>
-                    <span className="fh-slab">
-                      {Math.max(r.quantity - r.opened, 0)}
-                      <small>/{r.quantity}</small>
-                    </span>
-                    <small>{priceText(r.type)}</small>
-                  </li>
-                ))}
-              </ul>
-            </li>
+            <SellerBox key={s.id} s={s} paused={paused} closed={closed} copy={copy} copied={copied} onOpen={setOpenQr} />
           ))}
         </ul>
       )}
+      {openQr && <QrLightbox qr={openQr} onClose={() => setOpenQr(null)} />}
     </section>
+  );
+}
+
+/**
+ * One seller's boxes, laid out as before (a switcher for two or more live
+ * types, the QR, the note, Copy link, the box list). Tapping the QR opens it
+ * full screen on its own, like a photo. Switched off, paused and sold out are
+ * plain status lines.
+ */
+function SellerBox({
+  s,
+  paused,
+  closed,
+  copy,
+  copied,
+  onOpen,
+}: {
+  s: MyBlindBoxSeller;
+  paused: string | null;
+  closed: string | null;
+  copy: (id: number, url: string) => void;
+  copied: number | null;
+  onOpen: (qr: { src: string; alt: string }) => void;
+}) {
+  const live = s.rows.filter((r) => r.active && !r.type?.archived);
+  const [pick, setPick] = useState<number | null>(null);
+  // One QR for a single type; one per type (and a switcher) for two or more.
+  const row = s.typed ? (live.find((r) => r.id === pick) ?? live[0]) : null;
+  const shown = row ? s.shown[row.id] : s.qr;
+  const sold = row ? row.quantity - row.opened <= 0 : false;
+  const status = !s.live
+    ? { text: "Switched off by Admin. This code doesn't work right now.", off: true }
+    : paused && s.left > 0
+      ? { text: paused, off: true }
+      : s.left <= 0
+        ? { text: "All boxes sold.", off: false }
+        : null;
+  const copyId = row ? row.id : s.id;
+  return (
+    <li className="sh-bb">
+      <span className="sh-bb-who fh-mono">Your own boxes</span>
+      {status ? (
+        <p className="sh-bb-state" data-tone={status.off ? "off" : undefined}>{status.text}</p>
+      ) : (
+        <>
+          {s.typed && (
+            <div className="sh-bb-switch" role="tablist" aria-label="Which box to show">
+              {live.map((r) => (
+                <button key={r.id} type="button" role="tab" aria-selected={r.id === row?.id} onClick={() => setPick(r.id)}>
+                  {r.type?.name ?? "Box"}
+                  <small>{Math.max(r.quantity - r.opened, 0)} left</small>
+                </button>
+              ))}
+            </div>
+          )}
+          {sold ? (
+            <p className="sh-bb-state">Sold out.</p>
+          ) : (
+            shown ? (
+              <button
+                type="button"
+                className="sh-bb-qrbtn"
+                disabled={!!closed}
+                aria-label={`Open the ${row?.type?.name ?? "blind box"} QR code full screen`}
+                onClick={() => onOpen({ src: shown.qr, alt: `${row?.type?.name ?? "Blind box"} QR code` })}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={shown.qr} alt="" className="sh-bb-qr" data-closed={closed ? "" : undefined} />
+              </button>
+            ) : (
+              <span className="sh-bb-qr sh-bb-qr-wait" aria-label="Loading QR" />
+            )
+          )}
+          {closed ? (
+            <p className="sh-bb-state" data-tone="off">{closed}</p>
+          ) : (
+            <>
+              <small className="sh-bb-note">
+                {row ? `${row.type?.name ?? "Box"} · ${priceText(row.type)}. ` : ""}A Freshie scans this after your mini-game. Tap the code to enlarge it. Each group can buy one box.
+              </small>
+              {shown && !sold && (
+                <button type="button" className="fh-btn fh-btn-ghost sh-bb-copy" onClick={() => copy(copyId, shown.url)}>
+                  {copied === copyId ? <Check size={16} aria-hidden /> : <Copy size={16} aria-hidden />}
+                  {copied === copyId ? "Copied" : "Copy link"}
+                </button>
+              )}
+            </>
+          )}
+          {!s.typed && (
+            <ul className="sh-bb-types">
+              {s.rows.map((r) => (
+                <li key={r.id}>
+                  <b>
+                    {r.type?.name ?? "Box"}
+                    {r.type?.is_special && <Sparkles size={14} aria-label="special" />}
+                  </b>
+                  <span className="fh-slab">
+                    {Math.max(r.quantity - r.opened, 0)}
+                    <small>/{r.quantity}</small>
+                  </span>
+                  <small>{priceText(r.type)}</small>
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
+      )}
+    </li>
+  );
+}
+
+/** The QR picture alone, full screen, like opening a photo. Tap anywhere or press Escape to close. */
+function QrLightbox({ qr, onClose }: { qr: { src: string; alt: string }; onClose: () => void }) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+  return (
+    <div className="sh-bb-lightbox" role="dialog" aria-modal="true" aria-label="Blind box QR code" onClick={onClose}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={qr.src} alt={qr.alt} />
+    </div>
   );
 }
 

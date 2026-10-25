@@ -169,3 +169,20 @@
 @media (min-width: 768px) {
   .sh-tools { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
+/* Two or more box types: a switcher, one code at a time */
+.sh-bb-switch { display: flex; gap: 4px; padding: 4px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, 0.14); width: fit-content; max-width: 100%; margin: 0 auto; overflow-x: auto; }
+.sh-bb-switch button {
+  display: grid; justify-items: center; padding: 6px 16px; border: 0; border-radius: 999px; background: none; color: inherit; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap;
+  transition: background 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.sh-bb-switch button small { font-size: 10.5px; font-weight: 500; opacity: 0.7; }
+.sh-bb-switch button[aria-selected="true"] { background: var(--fh-accent, #f2ff0b); color: var(--fh-on-blue, #111); }
+
+/* The QR is a button: tap to open it full screen */
+.sh-bb-qrbtn { display: block; width: min(240px, 100%); padding: 0; border: 0; background: none; border-radius: 18px; cursor: zoom-in; transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1); }
+.sh-bb-qrbtn:active:not(:disabled) { transform: scale(0.98); }
+.sh-bb-qrbtn:disabled { cursor: default; }
+.sh-bb-qrbtn .sh-bb-qr { width: 100%; }
+.sh-bb-lightbox { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; padding: 24px; background: rgba(0, 0, 0, 0.88); cursor: zoom-out; animation: sh-bb-in 0.35s cubic-bezier(0.32, 0.72, 0, 1) both; }
+.sh-bb-lightbox img { width: min(86vw, 86vh, 520px); height: auto; border-radius: 16px; background: #fff; }
+@keyframes sh-bb-in { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: none; } }
