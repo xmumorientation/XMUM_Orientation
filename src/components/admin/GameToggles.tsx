@@ -19,12 +19,14 @@ const DAY_GAME: Record<string, string> = { "Day 1": "day1", "Day 2": "day2" };
 
 // Live control header, beside the Day dropdown: that day's game. Set its
 // length, Start (green) runs it for that long (fn_phase_control); while it
-// runs: countdown, Pause / Resume, +5 min, End (red). It ends itself when
+// runs: countdown, +5 min, End (red). There is no Pause. It ends itself when
 // time is up (fn_game_expire, 0052). A running game unlocks its game rules.
 // It does NOT touch station statuses (0078): Start / End / the countdown only
 // run the timer, and every station is set by hand by Admin (here, or on Admin
 // → Stations) or by its Game Master. The countdown is separate from the
-// Welcome page's, which follows the schedule.
+// Welcome page's, which follows the schedule. The game also starts by itself
+// when its schedule item ("Day 1 Game") reaches its planned start
+// (fn_game_autostart, 0101); Start here is for test runs before then.
 // "n/m stations open" lists the day's stations with their status.
 // The live fn_phase_control (bonding-session 0032 / 0036) only adds time, runs
 // one game at a time and takes the length from game_config
@@ -63,7 +65,7 @@ export function GameToggles({
     };
   }, [loadStations, supabase]);
 
-  async function control(p: Phase, action: "start" | "pause" | "resume" | "extend" | "end", minutes = 0) {
+  async function control(p: Phase, action: "start" | "resume" | "extend" | "end", minutes = 0) {
     // an unsaved length typed in the box counts for this Start
     const typed = Math.round(Number(lengthDraft));
     const saved = gameLength(config, p);
@@ -154,13 +156,10 @@ export function GameToggles({
           <span className="font-mono text-2xl font-black tabular-nums" role="timer" aria-label={`${game.name} time left`}>
             {formatCountdown(left)}
           </span>
-          {game.state === "paused" ? (
+          {/* No Pause (removed 0102); Resume only frees a game paused before then. */}
+          {game.state === "paused" && (
             <button disabled={busy} onClick={() => control(game, "resume")} className="btn-secondary min-h-[36px] px-3 text-xs">
               ⏵ Resume
-            </button>
-          ) : (
-            <button disabled={busy} onClick={() => control(game, "pause")} className="btn-secondary min-h-[36px] px-3 text-xs">
-              ⏸ Pause
             </button>
           )}
           <button disabled={busy} onClick={() => control(game, "extend", 5)} className="btn-secondary min-h-[36px] px-3 text-xs">

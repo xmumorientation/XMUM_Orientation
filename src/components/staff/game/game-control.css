@@ -84,10 +84,10 @@
   .gc-grid3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
-/* Section switcher: three equal icon tabs on phones / portrait tablets (all
+/* Section switcher: four equal icon tabs on phones / portrait tablets (all
    visible, no sideways scroll), side rail ≥1024px. */
 .gc-nav {
-  position: sticky; top: 8px; z-index: 5; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px;
+  position: sticky; top: 8px; z-index: 5; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px;
   padding: 4px; border-radius: 18px; border: 1px solid var(--gc-line);
   background: rgba(14, 12, 21, 0.86); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
 }

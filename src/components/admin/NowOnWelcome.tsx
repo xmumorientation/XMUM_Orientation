@@ -33,7 +33,7 @@ export function NowOnWelcome({
       .then(({ data }) => setTitle(data?.title ?? null));
   }, [itemId, supabase]);
 
-  async function act(action: "pause" | "resume" | "extend" | "end", minutes = 0) {
+  async function act(action: "resume" | "extend" | "end", minutes = 0) {
     if (itemId === null || !title) return;
     if (action === "end" && !window.confirm(`Stop ${title} now? The countdown moves to the next item.`)) return;
     setBusy(true);
@@ -62,13 +62,10 @@ export function NowOnWelcome({
       </p>
       {live && (
         <div className="ml-auto flex flex-wrap gap-1.5">
-          {paused ? (
+          {/* No Pause (removed 0102); Resume only frees an item paused before then. */}
+          {paused && (
             <button disabled={busy} onClick={() => act("resume")} className="btn-secondary min-h-[36px] px-3 text-xs">
               ⏵ Resume
-            </button>
-          ) : (
-            <button disabled={busy} onClick={() => act("pause")} className="btn-secondary min-h-[36px] px-3 text-xs">
-              ⏸ Pause
             </button>
           )}
           <button disabled={busy || (seconds ?? 0) < 60} onClick={() => act("extend", -5)} className="btn-secondary min-h-[36px] px-3 text-xs">

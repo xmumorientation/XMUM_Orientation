@@ -2,6 +2,7 @@
 
 import type { CSSProperties } from "react";
 
+import { ChallengeBanner } from "@/components/ChallengeBanner";
 import { countdownParts, useEventCountdown } from "@/components/useEventCountdown";
 
 import { FONT } from "./data";
@@ -136,6 +137,7 @@ export function Countdown() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+    <ChallengeBanner />
     <div className="vx-count-label vx-mono">{label}</div>
     <div className="vx-count" role="timer" aria-label={label.toLowerCase()} aria-atomic="true" aria-live="off" data-paused={paused || undefined}>
       {units.map((u, i) => (

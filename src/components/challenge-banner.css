@@ -1,0 +1,25 @@
+/* ChallengeBanner: the Day 2 game's challenge mode (0102). Red on every page. */
+.challenge-banner {
+  --challenge-red: #ff2d3d;
+  font-weight: 900;
+  font-size: clamp(28px, 8vw, 56px);
+  line-height: 1;
+  letter-spacing: 0.06em;
+  text-align: center;
+  text-transform: uppercase;
+  color: var(--challenge-red);
+  text-shadow: 0 0 18px rgb(255 45 61 / 0.7);
+  animation: challenge-blink 1s ease-in-out infinite;
+}
+
+@keyframes challenge-blink {
+  50% {
+    opacity: 0.15;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .challenge-banner {
+    animation: none;
+  }
+}

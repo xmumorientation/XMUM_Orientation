@@ -8,6 +8,7 @@ import {
   PageTitle,
   SuccessBanner,
 } from "@/components/ui";
+import { Day2Schedule } from "@/components/admin/Day2Schedule";
 import { GameToggles } from "@/components/admin/GameToggles";
 import { usePhaseTimer } from "@/components/PhaseTimerProvider";
 import { NowOnWelcome } from "@/components/admin/NowOnWelcome";
@@ -160,6 +161,7 @@ export default function AdminControlRoomPage() {
       )}
 
       <div className="grid items-start gap-4">
+        {shownDay !== "Day 1" && <Day2Schedule onError={setError} onNotice={flashNotice} />}
         <section>
           <h2 className="mb-2 font-semibold">Kill-switches</h2>
           <Card className="divide-y divide-paper-200 p-0">

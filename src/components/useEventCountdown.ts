@@ -12,11 +12,13 @@ export interface EventCountdown {
   label: string;
   /** Seconds left; null while loading (render "--"). 0 when nothing is counting. */
   seconds: number | null;
-  /** True while a schedule item is on (or paused). */
+  /** True while a game is on (or an item is paused): the countdown is to its end. */
   live: boolean;
   paused: boolean;
   /** The schedule item being counted (its start or its end), if any. */
   itemId: number | null;
+  /** The schedule item on now, game or not (the Schedule tab's NOW badge). */
+  nowId: number | null;
 }
 
 export type CountdownItem = Pick<
@@ -34,12 +36,18 @@ export type CountdownItem = Pick<
 const result = (
   label: string,
   seconds: number,
-  extra: Partial<Pick<EventCountdown, "live" | "paused" | "itemId">> = {}
-): EventCountdown => ({ label, seconds, live: false, paused: false, itemId: null, ...extra });
+  extra: Partial<Pick<EventCountdown, "live" | "paused" | "itemId" | "nowId">> = {}
+): EventCountdown => ({ label, seconds, live: false, paused: false, itemId: null, nowId: null, ...extra });
 
 // Day dates have no time of day; count to this (event local time) until the
 // first item gets a planned start.
 const DAY_START = "08:00:00+08:00";
+
+/** The Day 1 and Day 2 games ("Day 1 Game", "Day 2 Game" in the schedule):
+ *  the only items the countdown follows to their end. */
+export function isGameItem(i: Pick<ScheduleItem, "title">) {
+  return /^day\s*\d+\s+game$/i.test(i.title.trim());
+}
 
 /** When an item's live run ends: Live control's change, else the planned end. */
 export function liveEnd(i: Pick<ScheduleItem, "timer_end_override" | "ends_at">) {
@@ -49,8 +57,9 @@ export function liveEnd(i: Pick<ScheduleItem, "timer_end_override" | "ends_at">)
 // One countdown for the whole event, used by the Welcome page, Freshie Home
 // and Live control. Schedule items run by their planned times by themselves:
 //   before Day N's first item   → "ORIENTATION DAY N STARTS IN"
-//   an item is on               → "<ITEM> ENDS IN" (to its live end)
+//   a game is on                → "DAY N GAME ENDS IN" (to its live end)
 //   an item is paused           → "<ITEM> PAUSED", frozen
+//   any other item is on        → "<NEXT ITEM> STARTS IN"
 //   between items               → "<NEXT ITEM> STARTS IN"
 //   after the last item         → "ORIENTATION COMPLETE"
 // Live control can pause, move the end (±5 min, new end time), stop early or
@@ -102,10 +111,32 @@ export function useEventCountdown(): EventCountdown {
   const tick = shared?.tick;
   const offsetMs = shared?.offsetMs ?? 0;
 
-  return useMemo((): EventCountdown => {
+  const { countdown, autostart } = useMemo(() => {
+    const out = followSchedule();
+    return { countdown: out, autostart: out.live && !out.paused && out.itemId !== null ? startKey(out.itemId) : null };
+  }, [items, dayDates, shared, now, tick, offsetMs]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // A game's planned start has come: start it (fn_game_autostart, 0101), in
+  // case pg_cron is off. Tried every 15 s for its first 2 minutes, so a
+  // device clock a little ahead of the server's still gets it started.
+  useEffect(() => {
+    if (autostart) void supabaseBrowser().rpc("fn_game_autostart");
+  }, [autostart]);
+
+  return countdown;
+
+  /** "<item>-<15 s slot>" during a game's first 2 minutes, else null. */
+  function startKey(itemId: number): string | null {
+    const item = items?.find((i) => i.id === itemId);
+    if (!item?.starts_at) return null;
+    const since = (shared ? Date.now() : (now as number)) + offsetMs - new Date(item.starts_at).getTime();
+    return since >= 0 && since < 120_000 ? `${itemId}-${Math.floor(since / 15_000)}` : null;
+  }
+
+  function followSchedule(): EventCountdown {
     // Server render and first client render: nothing yet, so markup matches.
     if (items === null || (!shared && now === null)) {
-      return { label: "ORIENTATION BEGINS IN", seconds: null, live: false, paused: false, itemId: null };
+      return { label: "ORIENTATION BEGINS IN", seconds: null, live: false, paused: false, itemId: null, nowId: null };
     }
     void tick;
     const t = (shared ? Date.now() : (now as number)) + offsetMs;
@@ -122,16 +153,20 @@ export function useEventCountdown(): EventCountdown {
           live: true,
           paused: true,
           itemId: paused.id,
+          nowId: paused.id,
         });
       }
 
       // 2. On now: past its planned start, before its live end, not stopped.
+      // Only a game counts down to its end; during anything else the
+      // countdown is to the next item's start.
       const on = timed.find((i) => {
         const end = liveEnd(i);
         return i.timer_state !== "ended" && ms(i.starts_at as string) <= t && end !== null && t < ms(end);
       });
-      if (on) {
-        return result(`${upper(on.title)} ENDS IN`, until(liveEnd(on) as string), { live: true, itemId: on.id });
+      const nowId = on?.id ?? null;
+      if (on && isGameItem(on)) {
+        return result(`${upper(on.title)} ENDS IN`, until(liveEnd(on) as string), { live: true, itemId: on.id, nowId });
       }
 
       // 3. Next to start.
@@ -141,10 +176,10 @@ export function useEventCountdown(): EventCountdown {
         return result(
           firstOfDay ? `ORIENTATION ${upper(next.day_label)} STARTS IN` : `${upper(next.title)} STARTS IN`,
           until(next.starts_at as string),
-          { itemId: next.id }
+          { itemId: next.id, nowId }
         );
       }
-      return result("ORIENTATION COMPLETE", 0);
+      return result("ORIENTATION COMPLETE", 0, { nowId });
     }
 
     // 4. No planned times yet: the day dates from the Schedule page.
@@ -158,7 +193,7 @@ export function useEventCountdown(): EventCountdown {
     // 5. Nothing set in Admin yet: the fixed event date.
     if (until(EVENT.dates.day1) > 0) return result("ORIENTATION BEGINS IN", until(EVENT.dates.day1));
     return result("ORIENTATION IS ON", 0);
-  }, [items, dayDates, shared, now, tick, offsetMs]);
+  }
 }
 
 /** Splits seconds into the four countdown cells. */

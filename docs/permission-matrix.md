@@ -11,7 +11,7 @@ This reflects only the migration files in the repo. Any manual changes made to t
 - View All / Manage = can view everything / can manage
 - † = the backend allows it, but there is no menu entry or UI; reachable only by typing the URL or calling the RPC directly
 - ‡ = HOGM does this on Ops → Game control, after migration 0071 (`is_game_lead()`). Kill-switches and other config keys stay Admin only.
-- § = the server still allows HOGM (`is_game_lead()` / `/api/admin/nfc`), but HOGM's Ops page no longer has the control (Game, Tokens and NFC tabs removed 2026-10-19). Admin does it on Live control / Admin → Token / Admin → NFC. Tighten the server check if HOGM must not do it at all.
+- § = the server still allows HOGM (`is_game_lead()` / `/api/admin/nfc`), but HOGM's Ops page no longer has the control (Game and NFC tabs removed 2026-10-19; Tokens came back 2026-10-25). Admin does it on Live control / Admin → NFC. Tighten the server check if HOGM must not do it at all.
 - Enforcement: DB = enforced by the database; UI = hidden in the frontend only; ⚠ = no server-side check
 
 ## Matrix
@@ -95,11 +95,12 @@ This reflects only the migration files in the repo. Any manual changes made to t
 | View the live group scoreboard (no rules, no log) | — | — | ✓ | ✓ | ✓ | ✓ | ✓ | — | UI |
 | **Token page (/admin/token)** | | | | | | | | | |
 | View token rules, scoreboard and log | — | — | — | — | — | — | — | ✓ | UI |
-| Set token rules (Day 1 rewards, Day 2 fee per tier) | — | — | — | — | — | — | § | ✓ | DB |
+| Set token rules (Day 1 rewards, Day 2 fee per tier) | — | — | — | — | — | — | ✓ | ✓ | DB |
 | Edit / delete logs | — | — | — | — | — | — | — | ✓ | ⚠ UI |
-| Reset All (Rehearsal mode only) | — | — | — | — | — | — | § | ✓ | DB |
+| Reset All (Rehearsal mode only) | — | — | — | — | — | — | ✓ | ✓ | DB |
 | **Admin Console (/admin/*)** | | | | | | | | | |
-| Phase Control (start / pause / extend / end, game length: runs the game timer only, station statuses are not changed) | — | — | — | — | — | — | § | ✓ | DB |
+| Phase Control (start / extend / end, no pause since 0102, game length: runs the game timer only, station statuses are not changed; the Day 1 / Day 2 game also starts by itself at its schedule item's planned start, `fn_game_autostart` 0101) | — | — | — | — | — | — | § | ✓ | DB |
+| Day 2 inner schedule (segment times, Start / End segment, Back to auto, Station game / Blind box / Funfair switches; `fn_day2_control` 0102; everyone reads `fn_day2_state`) | — | — | — | — | — | — | — | ✓ | DB |
 | Kill-switches | — | — | — | — | — | — | — | ✓ | DB |
 | Users (CSV import; edit role / group / station) | — | — | — | — | — | — | — | ✓ | DB + API |
 | Stations config (add / edit / delete, Game Masters) | — | — | — | — | — | — | ✓ ‡ | ✓ | DB |

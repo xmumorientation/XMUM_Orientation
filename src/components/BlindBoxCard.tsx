@@ -5,6 +5,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { useProfile } from "@/components/ProfileProvider";
 import { useConfig } from "@/components/useConfig";
+import { useDay2State } from "@/components/useDay2State";
+import { blindBoxReason } from "@/lib/day2";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import type { BlindBoxAssignment, BlindBoxType } from "@/lib/types";
 
@@ -38,6 +40,7 @@ const isOn = (v: unknown) => v === true || v === "true";
 export function useMyBlindBoxes() {
   const profile = useProfile();
   const { config } = useConfig();
+  const day2 = useDay2State();
   const supabase = useMemo(() => supabaseBrowser(), []);
   const [rows, setRows] = useState<Row[]>([]);
   const [shown, setShown] = useState<Record<number, Shown>>({});
@@ -51,6 +54,8 @@ export function useMyBlindBoxes() {
     : isOn(config.tokens_frozen)
       ? "Tokens are frozen by Admin, so buying is paused. Your QR works again when they are unfrozen."
       : null;
+  /** Closed by the Day 2 inner schedule (0102): the QR shows, greyed, with this reason. */
+  const closed = blindBoxReason(day2);
 
   // Several events can start overlapping loads; only the newest one may
   // update the state, so a slow older answer never brings back a dead QR.
@@ -153,7 +158,7 @@ export function useMyBlindBoxes() {
     qr: shown[list[0].id],
   }));
 
-  return { loaded, error, sellers, copy, copied, paused };
+  return { loaded, error, sellers, copy, copied, paused, closed };
 }
 
 /** "Free", "1 token", "3 tokens". */
