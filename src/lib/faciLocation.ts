@@ -37,7 +37,16 @@ export type FaciLocation = {
 export function describeLocation(l: Pick<FaciLocation, "status" | "other_text" | "building">): string {
   if (l.status === "heading_to") return `Heading to ${l.building}`;
   if (l.status === "arrived") return `Arrived at ${l.building}`;
-  return `${l.other_text ?? "Other"} · ${l.building}`;
+  return `${l.other_text ?? "Other"} / ${l.building}`;
+}
+
+/**
+ * The details when they are a short room code ("215", "G01"), to show after
+ * the building: "Arrived at B1-215". Null for a comment, which keeps its own line.
+ */
+export function roomOf(details: string | null): string | null {
+  const t = details?.trim() ?? "";
+  return t && t.length <= 10 && !/\s/.test(t) ? t : null;
 }
 
 export const clock = (iso: string) =>

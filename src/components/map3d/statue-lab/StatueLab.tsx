@@ -68,7 +68,7 @@ export default function StatueLab({ Statue, name }: { Statue: ComponentType; nam
           color: "#1d2733",
         }}
       >
-        {name} · Tan Kah Kee statue lab · 1 unit = 1 m · grey figure = 1.75 m
+        {name} / Tan Kah Kee statue lab / 1 unit = 1 m / grey figure = 1.75 m
       </div>
     </main>
   );

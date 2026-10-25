@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, ArrowRight, Ban, Check, Pause, Sparkles } from "lucide-react";
+import { ArrowLeft, ArrowRight, Ban, Check, Package, Pause, Sparkles } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -29,22 +29,25 @@ function blockedText(status: Blocked, p: BlindBoxPreview): { title: string; mess
       return { Icon: Pause, title: "Paused", message: "The committee has paused tokens for a moment. Try again shortly." };
     case "sold_out":
       return p.spot
-        ? { Icon: Ban, title: "All found!", message: "Every hidden box has been claimed already." }
-        : { Icon: Ban, title: "All gone!", message: `${p.seller_name} has sold all their blind boxes.` };
+        ? { Icon: Ban, title: "All Found!", message: "Every hidden box has been claimed already." }
+        : { Icon: Ban, title: "All Gone!", message: `${p.seller_name} has sold all their blind boxes.` };
     case "already_from_seller":
       return p.spot
-        ? { Icon: Check, title: "Already yours", message: `${p.group_name} already claimed a hidden box. Find it in My Items.` }
+        ? { Icon: Check, title: "Already Yours", message: `${p.group_name} already claimed a hidden box. Find it in My Items.` }
         : {
             Icon: Check,
-            title: "Already bought",
+            title: "Already Bought",
             message: `${p.group_name} already bought a box from ${p.seller_name}. Find another seller! Your box is in My Items.`,
           };
     case "cap_reached":
-      return { Icon: Ban, title: "No more boxes", message: `${p.group_name} has bought all ${p.cap} boxes it can.` };
+      return { Icon: Ban, title: "No More Boxes", message: `${p.group_name} has bought all ${p.cap} boxes it can.` };
   }
 }
 
 const tokens = (n: number) => `${n} token${n !== 1 ? "s" : ""}`;
+
+/** "Gold" -> "Gold Box"; a type already named "... Box" keeps its name. */
+const boxTitle = (typeName: string) => (/box$/i.test(typeName) ? typeName : `${typeName} Box`);
 
 function optionNote(o: BlindBoxOption, balance: number): string {
   if (o.status === "sold_out") return "Sold out";
@@ -126,13 +129,13 @@ export function BlindBoxBuy({
           </Link>
           <span className="fh-pill fh-mono bbuy-who">
             <i aria-hidden />
-            {preview.group_name} · {tokens(balance)}
+            {preview.group_name} / {tokens(balance)}
           </span>
         </header>
 
-        <p className="bbuy-eyebrow fh-mono">{spot ? "You found a hidden blind box" : "Blind box from"}</p>
+        <p className="bbuy-eyebrow fh-mono">{bought ? `Bought from ${preview.seller_name}` : spot ? "You found a hidden Blind Box" : "Blind Box from"}</p>
         <h1 className="bbuy-title fh-slab">
-          {bought ? (bought.special ? "A special box!" : `${bought.type_name} box`) : spot ? "Hidden box" : preview.seller_name}
+          {bought ? (bought.special ? "A Special Box!" : boxTitle(bought.type_name)) : spot ? "Hidden Box" : preview.seller_name}
         </h1>
 
         <div className="bb-flow bbuy-art" data-kind={(bought?.special ?? special) ? "gold" : "standard"}>
@@ -153,12 +156,37 @@ export function BlindBoxBuy({
 
         {bought ? (
           <section className="bbuy-done" aria-live="polite">
-            <p className="bbuy-lead">
-              {spot
-                ? "The hidden box is yours."
-                : `Box ${Math.min(preview.group_claims + 1, preview.cap)} of ${preview.cap} is yours.`}{" "}
-              {bought.price > 0 ? `${tokens(bought.price)} paid.` : "It was free."} It&apos;s waiting in your Items: open
-              it there.
+            <dl className="bbuy-receipt" data-cells={spot ? 2 : 3}>
+              <div>
+                <dt className="fh-mono">Paid</dt>
+                <dd className="fh-slab">{bought.price > 0 ? bought.price : "Free"}</dd>
+                <small>{bought.price > 0 ? "tokens" : ""}</small>
+              </div>
+              <div>
+                <dt className="fh-mono">Tokens Left</dt>
+                <dd className="fh-slab">{balance}</dd>
+                <small>tokens</small>
+              </div>
+              {!spot && (
+                <div>
+                  <dt className="fh-mono">Boxes</dt>
+                  <dd className="fh-slab">
+                    {Math.min(preview.group_claims + 1, preview.cap)}
+                    <span>/{preview.cap}</span>
+                  </dd>
+                  <small className="bbuy-dots" aria-hidden>
+                    {Array.from({ length: preview.cap }, (_, i) => (
+                      <i key={i} data-on={i <= preview.group_claims || undefined} />
+                    ))}
+                  </small>
+                </div>
+              )}
+            </dl>
+            <p className="bbuy-note">
+              <Package size={20} aria-hidden />
+              <span>
+                <b>Still sealed.</b> You see the prize when you open it.
+              </span>
             </p>
             <div className="bbuy-actions">
               <Link href="/inventory" className="fh-btn fh-btn-primary fh-btn-block">
@@ -180,7 +208,7 @@ export function BlindBoxBuy({
         ) : (
           <section>
             <div className="bbuy-head">
-              <h2>{spot ? "Claim it" : "Pick a box"}</h2>
+              <h2>{spot ? "Claim It" : "Pick a Box"}</h2>
               {!spot && (
                 <span className="bbuy-cap fh-mono" aria-label={`Bought ${preview.group_claims} of ${preview.cap}`}>
                   {Array.from({ length: preview.cap }, (_, i) => (
@@ -200,7 +228,7 @@ export function BlindBoxBuy({
                 <li key={o.assignment_id} style={{ "--i": i } as React.CSSProperties} data-off={o.status !== "ok" || undefined}>
                   <div className="bbuy-opt">
                     <b>
-                      {spot ? "Hidden box" : o.type_name}
+                      {spot ? "Hidden Box" : o.type_name}
                       {o.special && <Sparkles size={15} aria-label="special" />}
                     </b>
                     <small>{optionNote(o, preview.balance)}</small>

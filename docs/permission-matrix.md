@@ -3,6 +3,8 @@
 Compiled from the current code: SQL migrations (RLS + RPC, the real permission boundary), the menu config in [AppShell.tsx](../src/components/AppShell.tsx), and the role checks in each page.
 This reflects only the migration files in the repo. Any manual changes made to the live database are not included.
 
+General **Committee is read-only** (migration `0104_committee_read_only.sql`): the same Ops overview and Faci & Status history as HOF, with no assignment editor. A statement trigger on every current public table rejects Committee INSERT/UPDATE/DELETE/TRUNCATE, including writes through legacy SECURITY DEFINER RPCs or permissive RLS. Existing HOF/Admin permissions are unchanged. Add the same guard to future event tables. The migration must be applied before claiming this restriction is live.
+
 ## Legend
 
 - ✓ = available / visible
@@ -27,7 +29,7 @@ This reflects only the migration files in the repo. Any manual changes made to t
 | Reset a lightbulb | — | — | — | — | — | — | — | ✓ | DB |
 | Funfair zones on the 3D map, on or off (`fn_funfair_state`, 0088; before 0088 the default keys in code) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | DB |
 | Funfair setup: each zone's keys, any/all rule, manual override (`funfair_zones`, `fn_set_funfair_zone`, 0088). Only game leads can read it, because the keys would show where the unlit bulbs are. | — | — | — | — | — | — | ✓ ‡ | ✓ | DB |
-| Group locations on the map (`fn_group_positions`; Freshie and Faci own group only, 0094 reverses 0089) | Own Group | Own Group | — | — | View All | View All | View All | View All | DB |
+| Group locations on the map (`fn_group_positions`, 0101: every signed-in account sees every group; replaces 0094's own-group rule). A group's Facis on the map's list (`fn_group_faci_status`): the same, phone numbers Committee tier only | View All | View All | View All | View All | View All | View All | View All | View All | DB |
 | Phase Timer (view) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | DB |
 | Schedule (view) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | DB |
 | FAQ (view; sidebar entry for Freshie only) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | DB |
@@ -64,7 +66,7 @@ This reflects only the migration files in the repo. Any manual changes made to t
 | **Attendance / Location** | | | | | | | | | |
 | Mark attendance (Attendance Roster) | — | Own Group | — | — | — | All † | All † | Manage All | DB |
 | Headcount fallback entry | — | Own Group | — | — | — | † | — | Manage | DB |
-| Manual Location Check-in (station check-in; `fn_manual_checkin`, `fn_uncheckin`; 0095) | — | — | Own Station | Own Station | — | All | — | All | DB |
+| Station check-in (`fn_manual_checkin`, `fn_uncheckin`; 0095). No check-in on the map any more: a GM's Day 2 Start checks the group in at their own station and the end checks it out; HOGM and Admin can only clear a group left behind (Ops → Stations, Admin → Stations). The server still lets HOGM and Admin check in at any station (no UI) | — | — | Own Station (Day 2 Start) | Own Station † | — | — | Clear | Clear | DB |
 | Manual Location Update: a text-only note of where a GROUP is, sent by any Facilitator in it (status Heading to / Arrived / Other + typed text, a building and an optional comment; no GPS, not linked to the map; `fn_faci_log_location`, table `faci_location_updates`; the group shares the latest update) | — | Own group (add, read) | — | — | Read all | Read all | Read all | Read all + edit a group's latest entry (`fn_admin_edit_faci_location`, marked and audited) | DB |
 | Manage the location options Facilitators choose from (add, rename, reorder, delete; `fn_admin_location_option_save` / `_delete` / `_move`, table `faci_location_options`; everyone signed in can read them) | — | Read | Read | Read | Read | Read | Read | Manage | DB |
 | GPS auto-report | — | ✓ | — | — | — | — | — | — | DB |
@@ -85,11 +87,12 @@ This reflects only the migration files in the repo. Any manual changes made to t
 | Group QR links (`GET /api/group-join`: signed with the group number, never change; the Faci's own group on /code) | — | Own Group | — | — | — | — | — | ✓ | API |
 | Sign in by scanning a group QR (`POST /api/group-join`: the server signs in with the group's current password) | anyone with the QR | anyone | anyone | anyone | anyone | anyone | anyone | anyone | API (valid signed token only) |
 | New passwords for all groups (Admin → Freshies: `/api/admin/group-logins` with `refresh: "all"`; signs out every Freshie phone via `fn_end_user_sessions`, 0099, service role only) | — | — | — | — | — | — | — | ✓ | API |
-| Freshie group assignment (Committee → Register tab) | — | — | — | — | ✓ | — | — | ✓ | DB |
-| Facilitator group assignment (`fn_admin_set_group_facis`; HOF on Ops → Facilitators, Admin on Ops → Facilitators and Admin → Freshies; `is_faci_lead()`, migration 0080) | — | — | — | — | — | ✓ | — | ✓ | DB |
-| Ops → Facilitators: each group's Facilitators and its Faci-related audit entries (Recent changes) | — | — | — | — | — | ✓ | — | ✓ | DB (Committee-tier reads) |
+| Freshie group assignment (legacy `fn_assign_group`; Committee is read-only since 0104) | — | — | — | — | — | — | — | ✓ | DB |
+| Facilitator group assignment (`fn_admin_set_group_facis`; HOF on Ops → Faci & Status, Admin on Ops → Faci & Status and Admin → Freshies; `is_faci_lead()`, migration 0080) | — | — | — | — | — | ✓ | — | ✓ | DB |
+| Ops → Faci & Status: each group's Facilitators, and its Recent changes (every audit entry for the group or by its accounts, the game included) | — | — | — | — | View All | ✓ | — | ✓ | DB (Committee audit reads added in 0104; assignment writes remain HOF/Admin only) |
 | Live Ops stats | — | — | — | — | — | † | † | ✓ | DB |
-| Audit Log | — | — | — | — | — | † | † | ✓ | DB |
+| Audit Log (Admin → Audit, every action; Committee (0104), HOF and HOGM can read every row through the API; their UI uses the filtered group/game history) | — | — | — | — | API only | API only | API only | ✓ | DB |
+| Game log (Ops → Game control → Log: game actions only, each in words with who did it) | — | — | — | — | — | — | ✓ | — (Admin → Audit) | UI filter; DB allows every row |
 | Freshie control (/admin/freshies: groups, sessions, headcount) | — | — | — | — | — | — | — | ✓ | ⚠ UI |
 | **Scoreboard (/token)** | | | | | | | | | |
 | View the live group scoreboard (no rules, no log) | — | — | ✓ | ✓ | ✓ | ✓ | ✓ | — | UI |

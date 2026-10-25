@@ -1,5 +1,7 @@
 "use client";
 
+import { usePathname } from "next/navigation";
+import { saveAdminDayFilter } from "@/lib/adminDayFilter";
 import { useEffect } from "react";
 
 import { Card } from "@/components/ui";
@@ -13,6 +15,7 @@ export default function AppError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const pathname = usePathname();
   useEffect(() => {
     console.error(error);
   }, [error]);
@@ -29,6 +32,10 @@ export default function AppError({
       <button onClick={reset} className="btn-primary mt-3">
         Try again
       </button>
+      {pathname === "/admin" && <button className="btn-secondary min-h-[44px]" onClick={() => {
+        saveAdminDayFilter("Day 1");
+        window.location.assign("/admin");
+      }}>Reopen Live control on Day 1</button>}
     </Card>
   );
 }

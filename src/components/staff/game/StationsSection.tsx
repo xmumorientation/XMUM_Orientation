@@ -3,17 +3,21 @@
 import { Check, ChevronDown, Pencil, Plus, Trash2, Users } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { usePhaseTimer } from "@/components/PhaseTimerProvider";
+import { useStationOccupants, type Occupant } from "@/components/staff/useStationOccupants";
 import { MAP_BUILDINGS, stationPosition } from "@/lib/mapBuildings";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { RISK_TIER_META, type RiskTier, type Station, type StationStatus } from "@/lib/types";
 import { cn, friendlyError } from "@/lib/utils";
 
-import { ConfirmSheet, Sheet, StatusLine, useStatus } from "./parts";
+import { ConfirmSheet, FoldBody, Sheet, StatusLine, useStatus } from "./parts";
 
 // Admin → Stations for HOGM, as folding cards: closed shows the name and
 // status; open shows the details, status, Game Masters, edit and delete.
 // Same writes as the Admin page (stations table, fn_admin_set_station_gms);
-// status goes through fn_set_station_status like Live control's override.
+// status goes through fn_set_station_status like Live control's override. A
+// station shows the group playing there (a GM's Day 2 Start checks it in);
+// Clear checks out a group a GM's phone could not (useStationOccupants).
 
 const OTHER_BLOCK = "__other__";
 const DEFAULT_BLOCKS = [...MAP_BUILDINGS.map((b) => b.area), "Courts"];
@@ -24,7 +28,7 @@ const STATUS: { value: StationStatus; label: string }[] = [
 ];
 const STATUS_TONE: Record<StationStatus, string> = { available: "ok", in_progress: "warn", closed: "off" };
 
-type DayFilter = "all" | 1 | 2;
+type Day = 1 | 2;
 type GmUser = { id: string; full_name: string };
 type GmAssignment = { user_id: string; station_id: number; day: number };
 type Form = {
@@ -47,10 +51,16 @@ const floorOf = (s: Station) => (s.code.startsWith(`${s.area}-`) ? s.code.slice(
 export function StationsSection() {
   const supabase = useMemo(() => supabaseBrowser(), []);
   const { error, setError, notice, flash } = useStatus();
+  const occupants = useStationOccupants();
+  const [clearing, setClearing] = useState<{ station: Station; occupant: Occupant } | null>(null);
   const [stations, setStations] = useState<Station[]>([]);
   const [gmUsers, setGmUsers] = useState<GmUser[]>([]);
   const [assignments, setAssignments] = useState<GmAssignment[]>([]);
-  const [dayFilter, setDayFilter] = useState<DayFilter>("all");
+  // Day 1 or Day 2 (no "All", Ben). Until one is picked, the day whose game runs (Day 2 for the endgame too).
+  const { phases } = usePhaseTimer();
+  const [pickedDay, setPickedDay] = useState<Day | null>(null);
+  const live = phases.find((p) => p.state === "active" || p.state === "paused");
+  const dayFilter: Day = pickedDay ?? (live && (live.key === "day2" || live.is_endgame) ? 2 : 1);
   const [openId, setOpenId] = useState<number | null>(null);
   const [editing, setEditing] = useState<Station | "new" | null>(null);
   const [form, setForm] = useState<Form>(EMPTY);
@@ -87,7 +97,7 @@ export function StationsSection() {
     () => Array.from(new Set([...DEFAULT_BLOCKS, ...stations.map((s) => s.area)])).filter(Boolean),
     [stations]
   );
-  const visible = stations.filter((s) => dayFilter === "all" || s.day === dayFilter);
+  const visible = stations.filter((s) => s.day === dayFilter);
   const gmName = (id: string) => gmUsers.find((g) => g.id === id)?.full_name || "Unnamed";
   const gmsOf = (stationId: number) =>
     assignments
@@ -98,6 +108,17 @@ export function StationsSection() {
     return at ? (stations.find((x) => x.id === at.station_id)?.name ?? "another station") : null;
   };
 
+  async function confirmClear() {
+    if (!clearing) return;
+    const { station: s, occupant: o } = clearing;
+    setBusy(true);
+    const message = await occupants.clear(o.groupId);
+    setBusy(false);
+    setClearing(null);
+    if (message) setError(message);
+    else flash(`${o.name} cleared from ${s.name}`);
+  }
+
   async function setStatus(s: Station, status: StationStatus) {
     const { error } = await supabase.rpc("fn_set_station_status", { p_station_id: s.id, p_status: status });
     if (error) return setError(friendlyError(error));
@@ -106,7 +127,7 @@ export function StationsSection() {
   }
 
   function openAdd() {
-    setForm({ ...EMPTY, day: dayFilter === 2 ? 2 : 1, block: blocks[0] ?? "A1" });
+    setForm({ ...EMPTY, day: dayFilter, block: blocks[0] ?? "A1" });
     setEditing("new");
   }
 
@@ -206,9 +227,9 @@ export function StationsSection() {
     <div className="gc-stack">
       <div className="gc-toolbar">
         <div className="gc-seg" role="tablist" aria-label="Day">
-          {(["all", 1, 2] as DayFilter[]).map((d) => (
-            <button key={d} type="button" role="tab" aria-selected={dayFilter === d} onClick={() => setDayFilter(d)}>
-              {d === "all" ? "All" : `Day ${d}`}
+          {([1, 2] as Day[]).map((d) => (
+            <button key={d} type="button" role="tab" aria-selected={dayFilter === d} onClick={() => setPickedDay(d)}>
+              Day {d}
             </button>
           ))}
         </div>
@@ -222,6 +243,7 @@ export function StationsSection() {
         {visible.map((s) => {
           const open = openId === s.id;
           const gms = gmsOf(s.id);
+          const here = occupants.byStation[s.id] ?? [];
           return (
             <li key={s.id} className="gc-card gc-fold" data-open={open || undefined}>
               <button
@@ -232,21 +254,21 @@ export function StationsSection() {
               >
                 <span className="gc-fold-name">
                   {s.name}
-                  {dayFilter === "all" && <small>Day {s.day}</small>}
+                  {here.length > 0 && <small className="gc-fold-here">{here.map((o) => o.name).join(", ")} here</small>}
                 </span>
                 <span className="gc-chip" data-tone={STATUS_TONE[s.status]}>
                   {STATUS.find((x) => x.value === s.status)?.label}
                 </span>
                 <ChevronDown size={18} aria-hidden className="gc-fold-chev" />
               </button>
-              {open && (
+              <FoldBody open={open}>
                 <div className="gc-fold-body">
                   <dl className="gc-facts">
                     <div><dt>Location</dt><dd>{s.code}</dd></div>
                     <div><dt>Game</dt><dd>{s.purpose || "—"}</dd></div>
                     <div><dt>Groups at once</dt><dd>{s.max_groups ?? "—"}</dd></div>
                     {s.day === 2 && (
-                      <div><dt>Risk · entry</dt><dd>{RISK_TIER_META[s.risk_tier].label} · −{s.entry_cost}</dd></div>
+                      <div><dt>Risk &amp; entry</dt><dd>{RISK_TIER_META[s.risk_tier].label} / −{s.entry_cost}</dd></div>
                     )}
                   </dl>
                   <div className="gc-seg gc-seg-status" role="group" aria-label={`${s.name} status`}>
@@ -262,6 +284,16 @@ export function StationsSection() {
                       </button>
                     ))}
                   </div>
+                  {here.map((o) => (
+                    <div key={o.groupId} className="gc-here">
+                      <span>
+                        <b>{o.name}</b> is here
+                      </span>
+                      <button type="button" className="gc-btn gc-btn-danger" onClick={() => setClearing({ station: s, occupant: o })}>
+                        Clear
+                      </button>
+                    </div>
+                  ))}
                   <button type="button" className="gc-gms" onClick={() => openGms(s)}>
                     <Users size={16} aria-hidden />
                     <span>{gms.length ? gms.map((g) => g.name).join(", ") : "No Game Master yet"}</span>
@@ -276,7 +308,7 @@ export function StationsSection() {
                     </button>
                   </div>
                 </div>
-              )}
+              </FoldBody>
             </li>
           );
         })}
@@ -354,7 +386,7 @@ export function StationsSection() {
         </form>
       </Sheet>
 
-      <Sheet open={gmStation !== null} onClose={() => setGmStation(null)} title={gmStation ? `Game Masters · ${gmStation.name}` : "Game Masters"}>
+      <Sheet open={gmStation !== null} onClose={() => setGmStation(null)} title={gmStation ? `Game Masters / ${gmStation.name}` : "Game Masters"}>
         {gmStation && (
           <div className="gc-form">
             <input
@@ -393,11 +425,26 @@ export function StationsSection() {
               {gmUsers.length === 0 && <li className="gc-empty">No Game Masters yet.</li>}
             </ul>
             <button type="button" className="gc-btn gc-btn-primary" disabled={busy} onClick={saveGms}>
-              Save · {picked.length} selected
+              Save ({picked.length} selected)
             </button>
           </div>
         )}
       </Sheet>
+
+      <ConfirmSheet
+        open={clearing !== null}
+        onClose={() => setClearing(null)}
+        onConfirm={confirmClear}
+        busy={busy}
+        danger
+        title={clearing ? `Clear ${clearing.occupant.name}?` : "Clear group?"}
+        confirmLabel="Clear"
+        body={
+          clearing
+            ? `${clearing.occupant.name} leaves ${clearing.station.name} on every map. Use this when a game has ended but the Game Master's phone could not clear it (no battery, no network). If the station still says In progress, set its status above.`
+            : ""
+        }
+      />
 
       <ConfirmSheet
         open={deleting !== null}

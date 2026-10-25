@@ -24,15 +24,28 @@ function roundRect(
  * the QR never changes, but Admin can give the group a new password.
  * `url` comes from GET /api/group-join.
  */
-export async function groupQrPng(label: string, url: string, color: string): Promise<string> {
-  const theme = themeFromColor(color);
-  const qrUrl = await QRCode.toDataURL(url, { width: 640, margin: 1, errorCorrectionLevel: "M" });
-  const img = new Image();
-  await new Promise<void>((resolve, reject) => {
-    img.onload = () => resolve();
-    img.onerror = () => reject(new Error("Could not draw the QR code"));
-    img.src = qrUrl;
+const qrCards = new Map<string, Promise<string>>();
+
+export function groupQrPng(label: string, url: string, color: string): Promise<string> {
+  const key = JSON.stringify([label, url, color]);
+  const cached = qrCards.get(key);
+  if (cached) return cached;
+  if (qrCards.size >= 12) {
+    const oldest = qrCards.keys().next().value;
+    if (oldest !== undefined) qrCards.delete(oldest);
+  }
+  const card = renderGroupQr(label, url, color).catch((error: unknown) => {
+    qrCards.delete(key);
+    throw error;
   });
+  qrCards.set(key, card);
+  return card;
+}
+
+async function renderGroupQr(label: string, url: string, color: string): Promise<string> {
+  const theme = themeFromColor(color);
+  const img = document.createElement("canvas");
+  await QRCode.toCanvas(img, url, { width: 640, margin: 1, errorCorrectionLevel: "M" });
 
   const outer = 48;
   const qrPad = 32;
@@ -41,7 +54,7 @@ export async function groupQrPng(label: string, url: string, color: string): Pro
   const width = innerW + outer * 2;
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
-  if (!ctx) return qrUrl;
+  if (!ctx) return img.toDataURL("image/png");
 
   const labelSize = 72;
   const top = 36;

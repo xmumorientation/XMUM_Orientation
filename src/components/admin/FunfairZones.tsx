@@ -97,7 +97,7 @@ function FinaleRow({ live }: { live: boolean | null }) {
   return (
     <div className="space-y-1 px-4 py-3">
       <div className="flex items-center gap-3">
-        <p className="min-w-0 flex-1 text-sm font-semibold">Finale · Lake stage concert</p>
+        <p className="min-w-0 flex-1 text-sm font-semibold">Finale: Lake stage concert</p>
         {live !== null && (
           <span
             className={cn(

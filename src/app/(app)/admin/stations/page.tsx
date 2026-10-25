@@ -11,6 +11,7 @@ import {
   StationStatusChip,
   SuccessBanner,
 } from "@/components/ui";
+import { useStationOccupants, type Occupant } from "@/components/staff/useStationOccupants";
 import { Dialog, DialogContent } from "@/components/ui/Dialog";
 import { readAdminDayFilter } from "@/lib/adminDayFilter";
 import {
@@ -157,6 +158,17 @@ export default function AdminStationsPage() {
   function flash(msg: string) {
     setNotice(msg);
     setTimeout(() => setNotice(null), 2000);
+  }
+
+  // The group playing at each station (a GM's Day 2 Start checks it in). Clear
+  // checks out a group a GM's phone could not (no battery, no network).
+  const occupants = useStationOccupants();
+  async function clearGroup(s: Station, o: Occupant) {
+    if (!window.confirm(`Clear ${o.name} from ${s.name}? It leaves the station on every map. Set the status too if it still says In Progress.`)) return;
+    setError(null);
+    const message = await occupants.clear(o.groupId);
+    if (message) setError(message);
+    else flash(`${o.name} cleared from ${s.name}`);
   }
 
   const gmName = (id: string) => gmUsers.find((g) => g.id === id)?.full_name || "Unnamed";
@@ -401,7 +413,7 @@ Groups checked in here will lose that check-in.`)) return;
                       <p className="truncate font-semibold">{s.name}</p>
                       <p className="truncate text-xs text-ink-faint">
                         {s.code}
-                        {s.purpose ? ` · ${s.purpose}` : ""}
+                        {s.purpose ? ` / ${s.purpose}` : ""}
                         {s.max_groups != null ? ` (max ${s.max_groups})` : ""}
                       </p>
                     </td>
@@ -417,6 +429,14 @@ Groups checked in here will lose that check-in.`)) return;
                         <option value="in_progress">In Progress</option>
                         <option value="closed">Closed</option>
                       </select>
+                      {(occupants.byStation[s.id] ?? []).map((o) => (
+                        <p key={o.groupId} className="mt-1 flex items-center gap-2 text-xs">
+                          <span className="font-semibold">{o.name} here</span>
+                          <button type="button" className="font-semibold text-red-600 underline" onClick={() => clearGroup(s, o)}>
+                            Clear
+                          </button>
+                        </p>
+                      ))}
                     </td>
                     <td className="px-4 py-2.5">
                       {s.day === 2 ? RISK_TIER_META[s.risk_tier].label : "—"}
@@ -432,7 +452,7 @@ Groups checked in here will lose that check-in.`)) return;
                         aria-label={`Edit Game Masters for ${s.name}`}
                       >
                         {assigned.length === 0 ? (
-                          <span className="text-ink-faint">Unassigned · click to assign</span>
+                          <span className="text-ink-faint">Unassigned / click to assign</span>
                         ) : (
                           assigned.map((g) => (
                             <span key={g.id} className="rounded-full bg-[#25405e] px-2.5 py-0.5 text-xs font-semibold text-white">
@@ -479,7 +499,7 @@ Groups checked in here will lose that check-in.`)) return;
       </section>
 
       <Dialog open={gmStation !== null} onOpenChange={(open) => !open && setGmStation(null)}>
-        <DialogContent title={gmStation ? `Game Masters · ${gmStation.name} (Day ${gmStation.day})` : "Game Masters"}>
+        <DialogContent title={gmStation ? `Game Masters / ${gmStation.name} (Day ${gmStation.day})` : "Game Masters"}>
           {gmStation && (
             <div className="space-y-3">
               <input

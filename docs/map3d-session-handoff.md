@@ -26,6 +26,14 @@ Ben may continue this work in a new Claude conversation. This file says where ev
 
 ## Where things stand
 
+### Tennis game on the tennis courts (2026-10-22, T1a done, committed on `main`)
+
+- Plan, Ben's decisions and batches T1a–T3b: [ROADMAP.md](ROADMAP.md), item 9. What T1a built: its "Done".
+- Code: `src/components/map3d/tennis/`. It meets the map in `CampusMap3D.tsx` (`?tennis=demo`) and in `sports.tsx` (the fence cutaway). Court sizes: `courts.ts`.
+- **The view is Ben's:** like a TV broadcast (his reference: an Australian Open broadcast), with clear court lines. `courtView()` blends a wide-screen preset (low, 18° lens) and an upright-phone preset (45°, 30° lens). The wide pitch is already as low as `maxPolarAngle` allows.
+- The crisp courts (`surface.tsx`) write no depth and use a polygon offset; they fade out beyond 25–45 units, so far views keep the painted courts.
+- Views: `/map3d?tennis=demo` (desktop and `390x844m`); night `&mode=night`; mid-distance `&cam=-34,18,42,-10.98,0,24.54`.
+
 ### B1, the Student Activity Centre (2026-10-21, branch `map3d-b1`)
 
 - B1 is modelled on the real building from Ben's photos and Esri imagery (`map3d/b1.tsx`). What it has is in the roadmap's "Done".

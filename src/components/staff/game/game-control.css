@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   Game Control (HOGM's Ops page). The public Welcome page's look
+   Ops (OpsShell): HOGM's Game control and the HOF / Committee / Admin overview. The public Welcome page's look
    (components/home/vortexa.css): near-black violet night with a dot grid,
    Shrikhand title, Alfa Slab headings and numbers, mono labels, Outfit text.
    Cyan = selected, yellow = primary action, green / red = start / stop.
@@ -46,17 +46,6 @@
 
 /* ── Type ────────────────────────────────────────────────────────────────── */
 .gc .gc-title { margin: 0; font-family: var(--gc-display); font-weight: 400; font-size: clamp(36px, 9vw, 52px); line-height: 1.05; color: var(--gc-text); }
-/* OPS: the Welcome page's holo mark (vortexa.css .vx-welcome-mark). */
-.gc .gc-title-holo {
-  justify-self: start; padding: 0 0.08em 0.1em 0; font-size: clamp(52px, 16vw, 76px); line-height: 1;
-  background: linear-gradient(90deg, #0dfcfd 0%, #e0b4fc 22%, #fe06ab 44%, #fc9e3d 66%, #e0b4fc 84%, #0dfcfd 100%) 0 0 / 200% 100%;
-  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: transparent;
-  filter: drop-shadow(0 6px 28px rgba(13, 252, 253, 0.22));
-}
-@media (prefers-reduced-motion: no-preference) {
-  .gc .gc-title-holo { animation: gc-shimmer 8s linear infinite; }
-}
-@keyframes gc-shimmer { to { background-position: 200% 0; } }
 .gc-sub {
   display: flex; align-items: center; gap: 8px; margin: 0;
   font-family: var(--gc-mono); font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gc-mute);
@@ -84,10 +73,10 @@
   .gc-grid3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
-/* Section switcher: four equal icon tabs on phones / portrait tablets (all
-   visible, no sideways scroll), side rail ≥1024px. */
+/* Section switcher: equal icon tabs on phones / portrait tablets (all visible,
+   no sideways scroll; --gc-tabs is the count, set by OpsShell), side rail ≥1024px. */
 .gc-nav {
-  position: sticky; top: 8px; z-index: 5; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px;
+  position: sticky; top: 8px; z-index: 5; display: grid; grid-template-columns: repeat(var(--gc-tabs, 4), minmax(0, 1fr)); gap: 4px;
   padding: 4px; border-radius: 18px; border: 1px solid var(--gc-line);
   background: rgba(14, 12, 21, 0.86); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
 }
@@ -199,7 +188,12 @@
 }
 .gc-fold-name { flex: 1; min-width: 0; font-size: 15.5px; font-weight: 600; overflow-wrap: anywhere; }
 .gc-fold-name small { display: block; font-size: 12px; font-weight: 500; color: var(--gc-mute); }
-.gc-fold-chev { flex: none; color: var(--gc-mute); transition: transform 0.2s ease; }
+.gc-fold-name small.gc-fold-here { color: var(--gc-cyan); }
+/* The group at a station (a GM's Day 2 Start checks it in), with Clear. */
+.gc-here { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 8px 8px 14px; border: 1px solid var(--gc-line); border-radius: 14px; font-size: 14px; }
+.gc-here b { font-weight: 600; }
+.gc-fold-chev { flex: none; color: var(--gc-mute); transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
+/* The body's open and close animation (FoldBody) is in app/globals.css, for every page. */
 .gc-fold[data-open] .gc-fold-chev { transform: rotate(180deg); }
 .gc-fold-body { display: grid; gap: 12px; padding: 0 14px 14px; }
 .gc-facts { margin: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; padding: 12px 0; border-top: 1px solid var(--gc-line); }
@@ -258,6 +252,75 @@
 .gc-rows { list-style: none; margin: 8px 0 0; padding: 0 0 6px; }
 .gc-rows > li { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 48px; padding: 8px 16px; border-top: 1px solid var(--gc-line); font-size: 14px; }
 
+/* ── Log (LogSection): filters as wrapping pills, then a table ──────────── */
+.gc-log-filters { display: grid; gap: 12px; padding: 14px 16px; }
+.gc .gc-log-filters select { max-width: 320px; }
+.gc-pills { display: flex; flex-wrap: wrap; gap: 6px; }
+:is(.gc, .gc-sheet) .gc-pills button {
+  min-height: 40px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--gc-line-2); background: transparent;
+  color: var(--gc-text-2); font: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer; box-shadow: none;
+}
+:is(.gc, .gc-sheet) .gc-pills button[aria-pressed="true"] { border-color: var(--gc-cyan); background: rgba(13, 252, 253, 0.1); color: var(--gc-cyan); }
+/* Phones: the table scrolls sideways inside its card (never the page), with Time pinned. */
+.gc-log-wrap { overflow-x: auto; overscroll-behavior-x: contain; }
+.gc-log { width: 100%; min-width: 680px; border-collapse: collapse; font-size: 14px; line-height: 1.35; }
+.gc-log th {
+  padding: 14px 12px 10px; border-bottom: 1px solid var(--gc-line-2); text-align: left; white-space: nowrap;
+  font-family: var(--gc-mono); font-size: 10.5px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gc-mute);
+}
+.gc-log td { padding: 10px 12px; border-top: 1px solid var(--gc-line); vertical-align: top; }
+.gc-log tbody tr:first-child td { border-top: 0; }
+.gc-log tbody tr:hover td { background: var(--gc-ink-3); }
+.gc-log :is(th, td):first-child { position: sticky; left: 0; z-index: 1; padding-left: 16px; background: var(--gc-ink-2); }
+.gc-log :is(th, td):last-child { padding-right: 16px; }
+.gc-log small { display: block; margin-top: 2px; font-size: 12px; color: var(--gc-mute); }
+.gc-log-time { width: 84px; white-space: nowrap; font-variant-numeric: tabular-nums; font-weight: 600; }
+.gc-log-who { width: 128px; }
+.gc-log-who b { font-weight: 600; }
+.gc-log-obj { width: 150px; font-weight: 600; }
+.gc-log-obj > span { display: inline-flex; align-items: center; gap: 8px; }
+.gc-log-act { width: 150px; color: var(--gc-text-2); }
+.gc-log .gc-log-tok { width: 64px; text-align: right; }
+.gc-log td.gc-log-tok { white-space: nowrap; font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--gc-mute); }
+.gc-log td.gc-log-tok[data-sign="+"] { color: var(--gc-green); }
+.gc-log td.gc-log-tok[data-sign="-"] { color: var(--gc-red); }
+.gc-log-detail { min-width: 120px; color: var(--gc-mute); overflow-wrap: anywhere; }
+/* A group's Recent changes (faci/GroupLog) in a wide sheet. */
+.gc-log-sheet { display: grid; gap: 12px; align-content: start; padding-bottom: 4px; }
+.gc-log-box { border: 1px solid var(--gc-line); border-radius: 16px; }
+.gc-sheet .gc-log :is(th, td):first-child { background: var(--gc-ink-3); }
+.gc-sheet .gc-log tbody tr:hover td { background: var(--gc-raised); }
+.gc-sheet .gc-log-act { width: 200px; }
+
+/* ── Ops overview (HOF, Committee, Admin: committee/page.tsx, faci/FaciAssign) */
+.gc-ops-rows { list-style: none; margin: 0; padding: 0; }
+.gc-ops-rows > li + li { border-top: 1px solid var(--gc-line); }
+.gc-ops-row { display: flex; align-items: center; gap: 12px; min-height: 64px; padding: 10px 16px; }
+.gc-ops-top { align-items: flex-start; }
+.gc-ops-body { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.gc-ops-name { margin: 0; overflow: hidden; font-size: 15px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.gc-ops-main { margin: 0; font-size: 14.5px; font-weight: 600; }
+.gc-ops-sub { margin: 0; font-size: 13.5px; color: var(--gc-text-2); overflow-wrap: anywhere; }
+.gc-ops-meta { margin: 2px 0 0; font-size: 12px; color: var(--gc-mute); }
+.gc-ops-code { flex: none; display: grid; justify-items: end; gap: 2px; }
+.gc-ops-code small { font-family: var(--gc-mono); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gc-mute); }
+.gc-ops-code b { font-family: var(--gc-mono); font-size: 17px; font-weight: 700; letter-spacing: 0.08em; font-variant-numeric: tabular-nums; }
+/* Headcount: the group, then Local / Intl / Total. */
+.gc-ops-hc { display: grid; grid-template-columns: minmax(0, 1fr) repeat(3, 56px); align-items: center; gap: 8px; min-height: 56px; padding: 8px 16px; }
+.gc-ops-head {
+  min-height: 0; padding: 14px 16px 10px; border-bottom: 1px solid var(--gc-line-2);
+  font-family: var(--gc-mono); font-size: 10.5px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gc-mute);
+}
+.gc-ops-head span:not(:first-child), .gc-ops-num { text-align: right; }
+.gc-ops-group { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.gc-ops-num { font-size: 15px; font-variant-numeric: tabular-nums; color: var(--gc-text-2); }
+.gc-ops-total { font-weight: 700; color: var(--gc-text); }
+/* Phones: Edit is an icon, the size of the clock next to it, so the names keep their width. */
+@media (max-width: 479px) {
+  .gc .gc-ops-edit { width: 38px; min-height: 38px; padding: 0; border-radius: 11px; }
+  .gc-ops-edit span { display: none; }
+}
+
 /* ── Scores (GroupScores, HOGM's /token) ─────────────────────────────────── */
 .gc-scores-head, .gc .gc-score-head { display: grid; grid-template-columns: 32px minmax(0, 1fr) 52px 64px 18px; align-items: center; gap: 10px; }
 .gc-scores-head { padding: 0 14px 8px 16px; font-family: var(--gc-mono); font-size: 9.5px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--gc-mute); }
@@ -285,6 +348,12 @@
 .gc-sheet.gc-sheet h2 { font-family: var(--gc-slab); font-weight: 400; font-size: 20px; color: var(--gc-text); padding-right: 44px; }
 .gc-sheet.gc-sheet button[aria-label="Close"] { color: var(--gc-mute); }
 .gc-sheet.gc-sheet button[aria-label="Close"]:hover { background: var(--gc-raised); color: var(--gc-text); }
+/* Wide: most of the screen; from 1024px a centred window (fixed with top and
+   bottom 0 and a height, so margin auto centres it without a transform). */
+.gc-sheet.gc-sheet.gc-sheet-wide { display: flex; flex-direction: column; max-width: 1000px; height: 88dvh; }
+@media (min-width: 1024px) {
+  .gc-sheet.gc-sheet.gc-sheet-wide { top: 0; margin: auto; height: min(84dvh, 900px); border-bottom: 1px solid var(--gc-line-2); border-radius: 24px; }
+}
 .gc-scrim.gc-scrim { background: rgba(0, 0, 0, 0.7); }
 .gc-form { display: grid; gap: 14px; padding-bottom: 4px; }
 .gc-sheet-body { font-size: 14.5px; line-height: 1.5; color: var(--gc-text-2); }
@@ -304,7 +373,7 @@
   .gc-btn, .gc-fold-chev { transition: none; }
 }
 
-/* ── Map (/map for HOF, HOGM, Committee) ─────────────────────────────────────
+/* ── Map (/map for Admin, HOF, HOGM, Committee and GM) ───────────────────────
    CampusMap's own markup and layout, recoloured to match Ops and Scores:
    night cards, mono cyan headings, slab station codes, dark-glass map buttons.
    The full-screen map is a portal outside .gc-map and keeps its own look. */
@@ -323,13 +392,29 @@
 }
 .gc.gc-map .card .relative > button[aria-pressed="true"] { color: var(--gc-cyan); box-shadow: 0 0 0 1px rgba(13, 252, 253, 0.5); }
 .gc.gc-map .gc-top { padding-bottom: 14px; }
-
-/* ── Ops → Facilitators: the recent-changes sheet (staff/faci/FaciAssign.tsx) */
-.gc-hist small { font-size: 12px; color: var(--gc-mute); }
-.gc-hist { list-style: none; margin: 0; padding: 0; display: grid; }
-.gc-hist li { display: grid; gap: 2px; padding: 8px 0; border-top: 1px solid var(--gc-line); font-size: 13.5px; }
-.gc-hist li:first-child { border-top: 0; }
-.gc-hist em { font-style: normal; color: var(--gc-text-2); }
+.gc-map-sheet.gc-map-sheet { border-radius: 24px; border-bottom: 1px solid var(--gc-line-2); }
+.gc-map-sheet .input {
+  min-height: 44px; background: var(--gc-ink-3); color: var(--gc-text); border-color: var(--gc-line-2);
+}
+.gc-map-sheet .input::placeholder { color: var(--gc-text-2); }
+.gc-map-sheet .input:focus { outline: 2px solid var(--gc-cyan); outline-offset: 2px; box-shadow: none; }
+.gc-map-sheet .btn-primary {
+  min-height: 44px; background: var(--gc-yellow); color: var(--gc-ink); box-shadow: none;
+}
+.gc-map .campus-map-accuracy {
+  min-height: 44px; border: 1px solid var(--gc-line-2); border-radius: 12px;
+  background: var(--gc-ink-2); color: var(--gc-text-2); box-shadow: none;
+  transition: background-color 150ms, border-color 150ms, color 150ms;
+}
+.gc-map .campus-map-accuracy:hover {
+  background: var(--gc-raised); border-color: var(--gc-cyan); transform: none;
+}
+.gc-map .campus-map-accuracy:focus-visible {
+  outline: 2px solid var(--gc-cyan); outline-offset: 3px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .gc-map .campus-map-accuracy { transition: none; }
+}
 
 /* ── Scores, piece counts (GM's /token: GroupScores countsOnly) ──────────── */
 .gc-key .gc-key-count {

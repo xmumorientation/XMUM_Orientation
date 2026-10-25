@@ -25,30 +25,30 @@ export const GUARDIAN: ItemsData["guardian"] = {
 
 const DAY1_HISTORY: HistoryEntry[] = [
   { id: "d1-6", kind: "box", day: 1, title: "Opened a gold box", detail: "From Mei, OC Team", amount: 5, time: "11:02" },
-  { id: "d1-5", kind: "game", day: 1, title: "Station 9 · Win", detail: "Day 1 game", amount: 2, time: "10:48" },
-  { id: "d1-4", kind: "game", day: 1, title: "Station 2 · Lost", detail: "PK vs Group 2 · base reward", amount: 1, time: "10:31" },
+  { id: "d1-5", kind: "game", day: 1, title: "Station 9 / Win", detail: "Day 1 game", amount: 2, time: "10:48" },
+  { id: "d1-4", kind: "game", day: 1, title: "Station 2 / Lost", detail: "PK vs Group 2 / base reward", amount: 1, time: "10:31" },
   { id: "d1-3", kind: "box", day: 1, title: "Opened a standard box", detail: "From Jason, HOF", amount: 2, time: "10:12" },
-  { id: "d1-2", kind: "game", day: 1, title: "Station 5 · Win", detail: "Day 1 game", amount: 2, time: "09:55" },
-  { id: "d1-1", kind: "game", day: 1, title: "Station 3 · Win", detail: "Day 1 game", amount: 2, time: "09:34" },
+  { id: "d1-2", kind: "game", day: 1, title: "Station 5 / Win", detail: "Day 1 game", amount: 2, time: "09:55" },
+  { id: "d1-1", kind: "game", day: 1, title: "Station 3 / Win", detail: "Day 1 game", amount: 2, time: "09:34" },
 ];
 
 const DAY2_HISTORY: HistoryEntry[] = [
-  { id: "d2-9", kind: "piece", day: 2, title: "Won {B1} piece #4", detail: "Station 11 · HOGM picked {B1}", amount: 0, time: "14:51" },
-  { id: "d2-8", kind: "entry", day: 2, title: "Station 11 · High risk", detail: "Entry fee", amount: -6, time: "14:36" },
-  { id: "d2-7", kind: "piece", day: 2, title: "Won {TF} piece #2", detail: "Station 6 · HOGM picked {B1} + {TF}", amount: 0, time: "14:30" },
-  { id: "d2-6", kind: "entry", day: 2, title: "Station 6 · Medium risk", detail: "Entry fee", amount: -4, time: "14:14" },
-  { id: "d2-5", kind: "game", day: 2, title: "Station 1 · Lost", detail: "No piece this time", amount: 0, time: "14:09" },
-  { id: "d2-4", kind: "entry", day: 2, title: "Station 1 · Low risk", detail: "Entry fee", amount: -2, time: "13:58" },
-  { id: "d2-3", kind: "piece", day: 2, title: "Won {B1} piece #2", detail: "Station 10 · HOGM picked {B1} + {TF}", amount: 0, time: "13:49" },
-  { id: "d2-2", kind: "entry", day: 2, title: "Station 10 · Medium risk", detail: "Entry fee", amount: -4, time: "13:33" },
-  { id: "d2-1", kind: "piece", day: 2, title: "Won {B1} piece #1", detail: "Station 2 · Random region", amount: 0, time: "13:20" },
-  { id: "d2-0", kind: "entry", day: 2, title: "Station 2 · Low risk", detail: "Entry fee", amount: -2, time: "13:08" },
+  { id: "d2-9", kind: "piece", day: 2, title: "Won {B1} piece #4", detail: "Station 11 / HOGM picked {B1}", amount: 0, time: "14:51" },
+  { id: "d2-8", kind: "entry", day: 2, title: "Station 11 / High risk", detail: "Entry fee", amount: -6, time: "14:36" },
+  { id: "d2-7", kind: "piece", day: 2, title: "Won {TF} piece #2", detail: "Station 6 / HOGM picked {B1} + {TF}", amount: 0, time: "14:30" },
+  { id: "d2-6", kind: "entry", day: 2, title: "Station 6 / Medium risk", detail: "Entry fee", amount: -4, time: "14:14" },
+  { id: "d2-5", kind: "game", day: 2, title: "Station 1 / Lost", detail: "No piece this time", amount: 0, time: "14:09" },
+  { id: "d2-4", kind: "entry", day: 2, title: "Station 1 / Low risk", detail: "Entry fee", amount: -2, time: "13:58" },
+  { id: "d2-3", kind: "piece", day: 2, title: "Won {B1} piece #2", detail: "Station 10 / HOGM picked {B1} + {TF}", amount: 0, time: "13:49" },
+  { id: "d2-2", kind: "entry", day: 2, title: "Station 10 / Medium risk", detail: "Entry fee", amount: -4, time: "13:33" },
+  { id: "d2-1", kind: "piece", day: 2, title: "Won {B1} piece #1", detail: "Station 2 / Random region", amount: 0, time: "13:20" },
+  { id: "d2-0", kind: "entry", day: 2, title: "Station 2 / Low risk", detail: "Entry fee", amount: -2, time: "13:08" },
 ];
 
 function sampleBoxes(goldLeft: number, goldOpened: number[], stdLeft: number, stdOpened: number[]): BoxGroup[] {
   return [
-    { key: "gold", name: "Gold box", label: "Gold", special: true, range: "4–6 tokens or a puzzle piece", mayGivePiece: true, unopened: goldLeft, opened: goldOpened },
-    { key: "standard", name: "Standard box", label: "Standard", special: false, range: "1–2 tokens each", unopened: stdLeft, opened: stdOpened },
+    { key: "gold", name: "Gold Box", label: "Gold", special: true, range: "4–6 tokens or a puzzle piece", mayGivePiece: true, unopened: goldLeft, opened: goldOpened },
+    { key: "standard", name: "Standard Box", label: "Standard", special: false, range: "1–2 tokens each", unopened: stdLeft, opened: stdOpened },
   ];
 }
 
@@ -103,8 +103,8 @@ function sampleScenario(scenario: SampleScenario): ItemsData {
         tokens: { balance: 8 },
         pieces: { B1: [1, 2, 3, 4, 5], A3: [3], TF: [2] },
         history: [
-          { id: "r-2", kind: "piece", day: 2, title: "Won {B1} piece #5", detail: "Station 12 · HOGM picked {B1}", amount: 0, time: "15:40" },
-          { id: "r-1", kind: "entry", day: 2, title: "Station 12 · High risk", detail: "Entry fee", amount: -6, time: "15:24" },
+          { id: "r-2", kind: "piece", day: 2, title: "Won {B1} piece #5", detail: "Station 12 / HOGM picked {B1}", amount: 0, time: "15:40" },
+          { id: "r-1", kind: "entry", day: 2, title: "Station 12 / High risk", detail: "Entry fee", amount: -6, time: "15:24" },
           ...data.history,
         ],
       };
@@ -160,7 +160,7 @@ export function withLastTrackPiece(data: ItemsData): ItemsData {
     ...data,
     pieces: { ...data.pieces, TF: [...data.pieces.TF, 3].sort((a, b) => a - b) },
     history: [
-      { id: `tf3-${Date.now()}`, kind: "piece", day: 2, title: "Won {TF} piece #3", detail: "Station 8 · HOGM picked {TF}", amount: 0, time: "15:32" },
+      { id: `tf3-${Date.now()}`, kind: "piece", day: 2, title: "Won {TF} piece #3", detail: "Station 8 / HOGM picked {TF}", amount: 0, time: "15:32" },
       ...data.history,
     ],
   };

@@ -117,16 +117,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   // GM gets the same look; its center tab and yellow pill are Station (/gm).
   const isGm = profile.role === "gm";
   const isVortexa = VORTEXA_ROLES.includes(profile.role);
+  const isAdminMap = isAdmin && (pathname === "/map" || pathname.startsWith("/map/"));
   const isStaffDashboard = !isFreshie && pathname === "/dashboard";
   // Every Committee, Faci, GM, HOF, HOGM, Guardian GM and Admin page uses the
   // dark staff design. The map and Items pages keep their own design.
   // The ops crew's and GM's map is the Ops page's map, so it gets the same dark design.
   const keepsOwnDesign =
-    (!isVortexa && (pathname === "/map" || pathname.startsWith("/map/"))) || pathname.startsWith("/inventory");
+    (!isVortexa && !isAdminMap && (pathname === "/map" || pathname.startsWith("/map/"))) || pathname.startsWith("/inventory");
   const isStaffArea = !isFreshie && !keepsOwnDesign;
   const isStaffSubpage = isStaffArea && !isStaffDashboard;
   // Roles whose subpages use Home's header (OpsHeader) instead of the staff phone header.
-  const hasOpsHeader = profile.role === "hogm" || profile.role === "hof" || isGm;
+  const hasOpsHeader = isOps || isGm || isAdminMap;
   const items = NAV.filter((n) => n.roles.includes(profile.role));
   // Freshie and facilitator phones share the night tab bar. Freshie Scan is
   // the raised center button; a facilitator gets Code there instead.
@@ -148,7 +149,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, [pathname]);
 
   async function signOut() {
-    await supabaseBrowser().auth.signOut();
+    await supabaseBrowser().auth.signOut({ scope: "local" });
     window.location.href = isFreshie ? "/" : "/login";
   }
 
@@ -190,12 +191,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div
       className={cn(
-        // With the tab bar the page itself never scrolls (see .app-scroll below).
-        showTabBar ? "h-dvh overflow-hidden" : "min-h-dvh",
+        // Clip cannot be scrolled by focus restoration; only .app-scroll scrolls.
+        showTabBar ? "h-dvh overflow-clip" : "min-h-dvh",
         "w-full",
         isNight && (isVortexa ? "bg-[#07060b]" : "bg-[#030b1c]"),
         isStaffArea && `staff-dashboard-shell ${nexusBody.variable} ${vxDisplay.variable}`,
-        isStaffArea && isVortexa && "staff-vx"
+        isStaffArea && (isVortexa || isAdminMap) && "staff-vx"
       )}
       style={
         {
@@ -233,7 +234,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         onSignOut={signOut}
       />
       {/* HOGM and HOF subpages: Home's logo, role chip and account menu (OpsHeader). */}
-      {isStaffSubpage && hasOpsHeader && <OpsHeader />}
+      {isStaffSubpage && hasOpsHeader && <OpsHeader onOpenMenu={isAdminMap ? () => setMenuOpen(true) : undefined} />}
       {!isNight && !(isStaffSubpage && hasOpsHeader) && (
       <header className={cn("sticky top-0 z-40 border-b border-paper-200 bg-paper-50/95 pt-[env(safe-area-inset-top)] shadow-[0_1px_0_rgba(28,26,23,0.03)] backdrop-blur lg:hidden", isStaffSubpage && "sp-header")}>
         {isStaffSubpage ? (
@@ -294,7 +295,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             title="Navigation menu"
             titleVisuallyHidden
             showClose={false}
-            className={cn("lg:hidden", isStaffArea && `sd-drawer sd-top-menu ${nexusBody.variable}`, isStaffArea && isVortexa && "staff-vx")}
+            className={cn("lg:hidden", isStaffArea && `sd-drawer sd-top-menu ${nexusBody.variable}`, isStaffArea && (isVortexa || isAdminMap) && "staff-vx")}
             overlayClassName={isStaffArea ? "sd-menu-overlay" : undefined}
           >
             <div className={cn("flex flex-col", !isStaffArea && "h-full")}>
@@ -345,7 +346,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           // In the tab-bar column the scroller sets the height; min-h-dvh there
           // would make even a short page scroll by the tab bar's height.
           showTabBar ? "min-h-full" : "min-h-dvh",
-          isAdmin ? "max-w-[96rem]" : "max-w-6xl",
+          isAdmin && !isAdminMap ? "max-w-[96rem]" : "max-w-6xl",
           // Admin pages already carry their own dark theme (.av).
           isStaffSubpage && !pathname.startsWith("/admin") && "sp",
           // Room for the Scan button, which rises above the tab bar.

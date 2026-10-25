@@ -13,6 +13,7 @@ import { PIECES_PER_SET, PROJECTOR_LOCATIONS, type ProjectorLocation } from "@/l
 import { cn } from "@/lib/utils";
 
 import "./game-control.css";
+import { FoldBody } from "./parts";
 
 // HOGM's and HOF's Scores tab (/token): every group's tokens and puzzle pieces. Tap a
 // group to see its three puzzle keys, drawn like the Freshie Items page
@@ -148,7 +149,7 @@ export function GroupScores({ countsOnly = false }: { countsOnly?: boolean }) {
                 </b>
                 <ChevronDown size={18} aria-hidden className="gc-fold-chev" />
               </button>
-              {open && (
+              <FoldBody open={open}>
                 <div className="gc-fold-body">
                   <ul className="gc-keys" aria-label={`${g.name} puzzle keys`}>
                     {PROJECTOR_LOCATIONS.map((loc) => {
@@ -185,7 +186,7 @@ export function GroupScores({ countsOnly = false }: { countsOnly?: boolean }) {
                     })}
                   </ul>
                 </div>
-              )}
+              </FoldBody>
             </li>
           );
         })}

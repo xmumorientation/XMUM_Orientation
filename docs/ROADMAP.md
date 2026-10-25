@@ -23,6 +23,7 @@ Last updated: 2026-10-22
 | Zichien | Everything on the map: Figma design, game station status, and so on | [5](#5-map-ready) |
 | _To assign_ | Backend for Faci profiles (the UI is built) | [7](#7-faci-profiles-backend-ready) |
 | _To assign_ | Take GM out of the database's blind box holders | [8](#8-gm-blind-boxes-bring-the-database-in-line-with-the-app-later) |
+| Ben | Tennis game on the 3D map's tennis courts | [9](#9-3d-map-a-tennis-game-on-the-tennis-courts-later) |
 
 Items 3, 7 and 8 have no owner yet.
 
@@ -150,7 +151,7 @@ The design branches are merged. These remote branches are still not in `main` (c
 **Scope:**
 - Build the map to match the Figma design.
 - Game station status on the map (for example open, busy, closed).
-- Group locations on the map: Committee and above see all groups; Faci and Freshie see only their own (0094 reverses 0089, which had opened every group to them).
+- Group locations on the map: every role sees every group (0101, Ben, 2026-10-22; replaces 0094, which had limited Faci and Freshie to their own group).
 - Anything else on the map page.
 
 **Figma:** [XMUM campus map](https://www.figma.com/design/3dcEv45KenmKcoTcbaZmQ0/Untitled?node-id=24-2) (frame `XMUM Block Cube_XMUM Map 1`).
@@ -236,6 +237,56 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 2. Decide what to do with station pools: reject the station modes in the assign function, or leave them if a station seller comes back later.
 3. Before applying, check the live database for boxes already held by GMs or stations (on 2026-10-20 there were none) and revoke them first.
 
+## 9. 3D map: a tennis game on the tennis courts (Later)
+
+**Owner:** Ben. T1a is built (2026-10-22, see "Done"); the rest is not. Ben is not sure his Claude usage covers it, so it is split into small batches that each fit one conversation.
+
+**Goal:** the 3D map is more fun. Two people play tennis against each other on the map's tennis courts, and everyone who opens the map sees the match being played.
+
+**Decisions (Ben, 2026-10-22):**
+- **No GPS.** Anyone who taps Play on the tennis court joins a queue and is paired with the next person to tap. Nobody has to be at the court.
+- **At most 3 matches at once, one per court.** Everyone else waits in the queue.
+- **Everyone with the map open sees the matches**: two players and the ball on the court.
+- **A mini game, just for fun.** No tokens or rewards.
+- **Everyone signed in can play.**
+- **Plain points, short matches:** the first to 5 points wins, with no tennis scoring (15–30–40) and no deuce. The winner's and loser's screens then ask "Rematch?"; if both say yes, a new match starts on the same court.
+- The Supabase project will move to **Pro**.
+
+**Design (proposed; change it here if Ben decides otherwise):**
+- **Where:** the three courts of the tennis block (`SPORTS` in [geo.ts](../src/components/map3d/geo.ts), laid out by [courts.ts](../src/components/map3d/courts.ts), drawn in [sports.tsx](../src/components/map3d/sports.tsx); the net is `Equipment`). The players are low-poly figures (`tennis/player.ts`) in the player's group colour.
+- **The view (Ben, 2026-10-22: like a TV broadcast, with clear court lines):** from behind the near baseline, as `courtView()` in `tennis/court.ts` works it out for the screen's shape. Wide screens get a low camera and a long lens (18°). An upright phone's camera is higher (45°), so its narrow screen holds the court's width. Up close the courts are drawn crisp (`tennis/surface.tsx`), and the fence side between the camera and the court is hidden (`useFenceCutaway` in `sports.tsx`).
+- **Controls:** drag left and right to move along the baseline; tap to swing. Swinging early hits cross-court and late hits down the line. Tap to serve.
+- **Who is who:** Freshies share one login per group, so a player is a random ID per phone, not the account. A player's tag shows their group's name. Read group names and colours with `fn_scoreboard()`, which every role may call (a GM cannot select `groups`).
+- **Sync, with no new tables:**
+  - Supabase Realtime **Presence** holds the queue and which courts are busy, with the score.
+  - One Realtime **Broadcast** channel per court carries the match:
+    - one message per shot (time, direction, speed); both phones work out the same ball path from it;
+    - each player's position, about 8 times a second.
+  - The phone receiving the ball judges hit or miss and broadcasts the result, so a player's own swing never lags.
+  - A player who drops out: the match pauses for 10 s, then the other player wins.
+- **Spectators:**
+  - With the camera far away, a busy court shows two figures playing a looping rally drawn on the phone, with the real names and score from Presence. This costs no traffic.
+  - With the camera close to the courts, the phone joins that court's channel and replays the real shots.
+  - The figures move only while the courts are on screen. The map draws on demand, so ask for frames the way `usePowerRamp` does.
+- **Phones:** check lite mode on a phone size. The map draws every frame during a match.
+- **Limits:** Realtime counts each message delivered to each phone, and the Supabase plan caps messages per second (Free about 100, Pro about 500; check the project's plan). The two-layer spectator view above keeps traffic low however many people have the map open.
+
+**Testing:** the Supabase project in `.env.local` is the live one. Batches T1 to T2a send no messages to it: the game talks over the browser's `BroadcastChannel` between two tabs on the one dev server (:3000). T2b sends Realtime messages to the live project. It writes nothing to the database, but it needs Ben's OK first.
+
+**Batches** (each in a new conversation; show Ben the results and wait for his go before the next):
+
+| Batch | Work | Size |
+|---|---|---|
+| T1a | **Done.** Players on the courts: the figures, the swing, a looping rally on all three courts, the broadcast view with crisp courts (`/map3d?tennis=demo`). No game yet. | Small |
+| T1b | The game on one phone against a bot: ball flight with bounce and net, hit or miss, scoring, touch controls. | Medium |
+| T2a | Two players over `BroadcastChannel` (two tabs): queue, pairing, the 3 courts, shot messages, score, drop-outs. Keep the transport behind one interface so T2b only swaps it. | Medium |
+| T2b | The Supabase Realtime transport (Presence and Broadcast). | Small |
+| T3a | Spectators: the looping rally from afar (`tennis/rally.ts`, built in T1a), the real shots up close. The players are too small to see from the map's usual distance, so a busy court also needs a tag over it (names and score, like the lake stage's "● LIVE"). | Medium |
+| T3b | In the real map pages: tap the tennis court, then Play; an Admin on/off switch; end-of-match card; phone check. | Small |
+
+**Later (polish):** the far fence fills the top of the broadcast view with big diamonds (its mesh is sized for map distances); a finer mesh up close, or a backdrop like a stadium wall, would look more like TV. Each player is 5 meshes, so draw only the busy courts' players (the demo draws all three courts: about 43 draw calls).
+
+
 ---
 
 ---
@@ -267,11 +318,110 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 - HOGM's Ops page (Game control) has the Tokens tab back: token rules and the Rehearsal-mode reset (`TokensSection`, restored from before d851e58). The server already allowed it (0071).
 - Tests: `tests/game-lead/autostart.test.ts` (8, on the live `fn_phase_control`). `tests/game-lead`: 25 pass. `tsc` and `eslint` clean. Not checked in the browser.
 
+### David, 2026-10-25 — Committee test account
+- Official Committee seed account is now `cmt.test@xmu.edu.my` (Test Committee), with the requested shared demo password. The old counter account is preserved.
+
+
+### David, 2026-10-25 — Faci profile navigation and general Committee
+- Profile editor now restores focus to its opener or the visible Account button before refreshing the server profile. The tab-bar shell uses `overflow: clip` to prevent hidden programmatic scrolling of the navigation frame.
+- Reused the existing `committee` role for a labelled read-only Ops overview. Added the HOF Faci & Status view and group history without assignment controls; Committee phone pages now share OpsHeader.
+- Migration `0104_committee_read_only.sql` grants Committee audit reads and rejects its writes to current public tables, including legacy SECURITY DEFINER RPCs. Apply this migration before releasing the UI; future event tables need the same guard.
+- Verification: typecheck and production build passed; lint passed with the existing map `<img>` warning; 197 tests passed, including 9 new real-Postgres Committee permission tests. Browser fixture checks used real components and dummy data at 1024 × 768 and 820 × 1180: save/cancel returned focus, navigation stayed visible, Committee had history without Edit, and HOF retained Edit. Physical iPad keyboard reproduction remains pending. David confirmed that migration 0104 ran successfully in Supabase; production frontend release is in progress through the existing GitHub → Vercel integration.
+
+
+### Admin campus map aligned with HOF / HOGM, 2026-10-23 (David)
+- Admin `/map` now uses the same staff map frame, night palette, title, mobile header and content width as HOF / HOGM. Admin station editing and accuracy checks remain Admin-only; no data or permission changes.
+- Building selectors now share icons, labels, station counts, an All option, campus ordering, selected states and keyboard focus treatment. Freshie / Faci use their group theme; staff use the Ops theme. Accuracy check has a 44px touch target.
+- Admin retains a menu button in the shared mobile header (Admin has no staff bottom tabs). Verified the narrow-screen Admin menu, building selection and return to all stations. The map's station editor now uses the shared dark dialog tokens; opening and dismissing it was checked without saving changes.
+- Typecheck, lint and diff checks passed (the existing 2D map image advisory remains). Real phone checks remain outstanding.
+
+### Faci Group Code loading, 2026-10-23 (David)
+- Removed the password → join-link → image waterfall: the QR request starts as soon as the group is known, independently of the password RPC, and each section renders independently. Password fetch failures now end the loading state and show an error.
+- Stable QR links use a 60-second in-memory cache scoped to account and group, including in-flight deduplication; failures are evicted. Passwords are not cached. Existing PNG reuse remains in place; no API permissions, printed QR links or database data changed.
+- The isolated QR-only release passed all 188 tests, production build (including type and lint checks), and diff checks. David tested the Faci Group Code page and confirmed it opens noticeably faster; no numerical timing was measured. The existing 2D map image advisory remains.
+
+### Tennis game T1a: players, the swing and the broadcast view, 2026-10-22 (Ben)
+Roadmap item 9, batch T1a. See it at `/map3d?tennis=demo` (desktop and a phone size). No game and no network yet.
+- `src/components/map3d/tennis/`:
+  - `player.ts`: the low-poly player (5 meshes, one vertex-coloured material; shirt in the group colour) with a racket. `posePlayer()` sets the joints; `swingPose()` gives the forehand and backhand keyframes; `racketAtContact()` works out where the racket meets the ball.
+  - `rally.ts`: a looping rally, a pure function of time and a seed, so later every phone can draw the same moment. The ball clears the net, bounces in and meets the racket at each contact (`tests/tennis/rally.test.ts`).
+  - `court.ts`: the three tennis courts, each court's own frame in metres (`courtFrame`), and `courtView()`, the broadcast view for the screen's shape.
+  - `surface.tsx`: the crisp courts (paving, courts and 7–10 cm lines) over the ground's painted ones; it fades out between 25 and 45 units from the camera, where the painted courts take over.
+  - `TennisDemo.tsx`: the demo (sample shirt colours, soft round shadows, the long lens while it shows).
+- `courts.ts` (new): the court sizes, their height `LIFT` and `courtCells()` moved out of `sports.tsx`, so tests can import them without JSX.
+- `sports.tsx`: a fence side between the camera and its target is hidden when the camera is within 15 units of it and lower than 12 units (`useFenceCutaway`).
+- `CampusMap3D.tsx`: `?tennis=demo` starts at the middle court's broadcast view with names off. With `?cam`, it keeps the map's own lens.
+
 ### Migrations to run on Supabase for the 2026-10-22 work (Jiamin)
 Numbered after main's `0093`-`0098` (renamed from 0097 / 0098 when merging main, whose projector migrations took those numbers). Run both **before** deploying the frontend: Admin → Blind boxes calls the new `fn_bb_assign` (no station arguments) and `fn_bb_spot_save`.
 - `0099_group_password_refresh.sql`: `fn_end_user_sessions` (service role only).
 - `0100_blindbox_spot_no_stations.sql`: the Spot box, no station boxes, Restore only. Deletes unsold station boxes and switches sold ones off. Safe to run again.
 - Env: `/api/group-join` signs group QRs with `NFC_TOKEN_SECRET` (already set for blind boxes and NFC). Changing that secret changes every group QR.
+
+### Folding cards open and close with an animation (HOGM first), 2026-10-22
+- `FoldBody` in [parts.tsx](../src/components/staff/game/parts.tsx): a folding card's body grows to its height and shrinks back (`.gc-fold-wrap`, grid rows 0fr → 1fr, 0.3 s ease-out, with a fade); it stays mounted while closing and is inert when closed. Opening flushes the closed state with a layout read before it sets `data-open` (a first version waited two animation frames, and Ben saw it open at once). Reduced motion: no animation.
+- Used by HOGM's Ops → Stations cards, the Scores cards (`GroupScores`, so HOF's and GM's Scores too) and the map's Facis list in Group locations (every role's map; it loads the Facis first, then opens once to its full height). The fold styles are in `app/globals.css`, so it works on pages without `game-control.css` (the Freshie map). HOF has no other folding cards (Ops rows, Recent changes is a sheet). Freshie / Faci Home's own folding parts are still to do.
+- Home's token list (Staff Home and Freshie Home) is titled "Tokens", not "Scoreboard" (Ben: it shows token counts).
+- Checked in headless Chrome as `hogm.test`: the station card's body grows 0 → 55 → 169 → 246 → 312 px and the Scores card 0 → 210 px over about 0.3 s, both close the same way, no console errors.
+
+### Ops header: the running game in the bar; Stations by day, 2026-10-22
+- `OpsHeader` (HOF, HOGM, Committee and GM subpages on phones and portrait tablets): the NOW strip under the bar is gone; the running game is a pill in the middle of the bar (`PhaseTimer compact`), a night pill with a holo ring (the Welcome page's cyan → lilac → pink → orange, static; Ben chose the ring over a filled pill), mono cyan NOW and white text, the endgame still red. TopNav's pill (landscape tablets, desktops) has the same ring. `app-neon.css` forces its own timer colours with `!important`, so OpsHeader's rule needs `!important` too. A long phase name gives way with an ellipsis (it does at 360 px; at 390 px "NOW Day 2 Game 2:03:02" fits); the time always shows.
+- HOGM's Ops → Stations: Day 1 and Day 2 only, no All (Ben). It opens on the day whose game runs (Day 2 for the endgame), else Day 1; Add starts on the day shown.
+- Checked in headless Chrome as `hogm.test` at 360, 390 and 768 px: no sideways scroll, no console errors.
+
+### No check-in on the map; HOGM and Admin clear a group left behind, 2026-10-22
+No migration. With the GM's Day 2 Start checking the group in, the map's check-in popup (`GmStationCheckinModal`, white, Admin and HOGM) only added a second, conflicting source of who is where (Ben agreed to remove it).
+- The popup is deleted. On `/map` a tap on a station shows the same card for every role: its status and who is there.
+- [useStationOccupants.ts](../src/components/staff/useStationOccupants.ts): which group is at each station (`station_occupancy` + group names, realtime and every 10 s) and `clear` (`fn_uncheckin`). HOGM's Ops → Stations shows "Group 3 here" on the card and, inside it, the group with **Clear** (a confirm sheet); Admin → Stations shows it under the status with a Clear link (`window.confirm`, like Delete). For a GM's phone that could not end the game (no battery, no network): clear the group, and set the status back if it still says In progress.
+- Checked in headless Chrome: HOGM's map tap opens no popup and shows the station card; HOGM's Ops → Stations and Admin → Stations load all 39 stations, no console errors. Not checked: Clear itself (nobody was checked in; it would change live data).
+
+### One "Group locations" list under the map, 2026-10-22
+- `GroupStatusList` is one list, Group 1 to 10 in order, each with where it was last seen ("Last seen at A1 · 13 min ago", "No location yet", "· rough" for a rough GPS fix) and its Facis button. It replaces "Not seen for 10+ min" (red, listed first) and "Groups on the map" (Ben). `isNotSeen()` went with it.
+
+### Everyone sees every group on the map (0101), 2026-10-22
+Migration `0101_group_positions_everyone.sql` (**applied** on the live database 2026-10-22: `gm.test`, `freshie.test`, `faci.test`, `hof.test` and `hogm.test` each get all 10 groups; do not run 0094 after it). Ben: the group locations are open to everyone in the app, GMs included.
+- `fn_group_positions()` returns every group to every signed-in account (Freshie, Faci, GM, Guardian GM, Committee tier). `fn_group_faci_status()` the same: a group's Facis' names and last report; phone numbers stay Committee tier only. This is 0089's rule plus GMs, and replaces 0094 (own group only for Freshie and Faci, nothing for GMs).
+- `/map` asks for group pins for GMs too (`showPins`), so every role gets the pins, "Not seen for 10+ min" and "Groups on the map".
+- The station lists still name the groups only for Committee tier; Freshie, Faci and GM see "1 group here" (`whoIsHere`).
+- **Live database, checked 2026-10-22 (read only):** 0094 has not run there; `freshie.test` and `faci.test` already get all 10 groups (0089), `gm.test` none. After 0101, GMs get all 10 too.
+- Not checked: 0101 against a database (no local Postgres here); its bodies are 0094's and 0082's with the visibility condition changed.
+
+### A Day 2 game shows on the maps: Busy and which group, 2026-10-22
+No migration. Ben's flow: the GM picks the group and the funfair places, starts the game, the station turns Busy; Freshies and Facis see it busy with a group there, Committee tier sees which group.
+- GM Station page (`gm/page.tsx`): Start game also checks the group in at the station (`fn_manual_checkin` with `p_group_id`; a GM may at their own station, 0095); Submit or Cancel also checks it out (`fn_uncheckin`). Only the maps read it, so a failure shows a note and the game goes on. Before, the playing group lived only in the GM's browser until Submit.
+- Map, every role: two lists under the map (Ben), **In progress** first (short) and then **Available stations**; Closed stations are in neither (a building's own list, from its badge, still shows all of its stations). Each row says who is there: Committee tier (HOF, HOGM, Committee, Admin; `staffView` in `useCampusMapData`) gets the groups by name (from `fn_group_positions`' `checkin_station_id`); Freshie, Faci and GM get "1 group here" or "Your group is here" on an In progress station and the count on an Available one. A tapped station shows its status and the same line.
+- Day 1 is untouched: the map shows Day 2 stations only and a Day 1 station has no game to start.
+- Checked live: Ben started a Day 2 game as `gm.test` (A1-2, Group 1, 11:54); the audit log has the status change and the check-in, and in headless Chrome (read only) the In progress list shows "A1-2 · Group 1" to `hof.test` and "A1-2 · 1 group here" to `gm.test` and `freshie.test`, with 20 Available stations below. The end is checked too: at 12:09:27 the game ended, A1-2 went back to Available and Group 1 was checked out (audit log). `tsc` (src) and `next lint` are clean.
+- Not covered: `fn_station_occupants` is open to every signed-in account, so a Freshie could call it directly and see group names (the map itself shows them only a count).
+
+### One Ops look for HOF, Committee, Admin and HOGM, 2026-10-22
+Ben compared the two Ops pages and chose HOGM's (the Welcome page's night background, the OPS mark, mono "where you are" line, icon tabs).
+- [OpsShell.tsx](../src/components/staff/game/OpsShell.tsx) is that frame, taken out of `GameControl`. HOGM's Game control and the HOF / Committee / Admin overview ([committee/page.tsx](../src/app/(app)/committee/page.tsx)) both use it. The tab count sets the columns (`--gc-tabs`), so Committee's three tabs fill the row.
+- The overview's sections: Headcount (Users), Location (MapPin), Freshies (IdCard), Faci & Status (UserCheck; HOF and Admin). The mono line reads "Overview · Headcount". Gone: the "Operations" title, "Live situational awareness", the card tabs with their descriptions (so "Facis and recent changes" no longer shows) and the heading that repeated the tab name.
+- Lists in the Game control style (`.gc-ops-*`): Headcount keeps its columns (Group, Local, Intl, Total), Location and Freshies are rows, the password in mono. Faci & Status rows use `gc-icon` / `gc-btn`; under 480px Edit is an icon the size of the clock.
+- The OPS title is plain white, like the other subpages' titles (Ben); the holo mark and its shimmer stay on the Welcome page. The cyan mono line, the night background and the yellow Ops button in the tab bar still set Ops apart.
+- Deep links still work: Home's Live floor tiles open `/committee?view=headcount` (or location, freshies, facis); HOGM's `#stations` and the rest are unchanged.
+- Checked in headless Chrome at 390×844 and 1280×800 as `hof.test` (all four sections), `counter.test` (an Admin on the live project) and `hogm.test`: no tab label cut, no sideways scroll, no console errors. Not checked: a real Committee account (none among the test accounts). `tsc` (src) and `next lint` are clean.
+
+### A group's Recent changes: every change, the game included, 2026-10-22
+No migration. Ben asked for the clock icon on Ops → Facilitators, now called **Faci & Status** (HOF and Admin), to open a bigger window with the group's recent changes, the game included.
+- A wide sheet ([GroupLog.tsx](../src/components/staff/faci/GroupLog.tsx)): most of the screen on phones, a centred window from 1024px (`Sheet wide` in `game/parts.tsx`). It replaces the old list of 8 Faci-related changes.
+- Rows for the group: the group in the target or `detail.group_id`, or done by one of its accounts (`profiles.group_id`: its Freshie login and its Facilitators). Pills: All, Game, Location, Headcount, Facilitators. The same table as HOGM's Log without the Object column: an object that is not the group (a projector, a station) goes to the front of Details.
+- Shared code: [auditLog.ts](../src/lib/auditLog.ts) (actions, words, `groupOr`) and [AuditLog.tsx](../src/components/staff/AuditLog.tsx) (`useAuditLookups`, `useAuditPage`, `AuditTable`, `AuditPills`); HOGM's `LogSection` now uses them too. New in the words: location sent and edited ("Arrived at B1-215"), headcount set and cleared (with the split and the value before), headcount after close, Facilitators set, Faci profile updated and cleared, account moved to a group, group colour.
+- Left out on purpose: the per-person roster and its attendance marks (`freshies`, `attendance_records`, `fn_mark_attendance`), dropped in 0041, so their old `freshie.*` and `attendance.bulk_present` / `edit_closed` rows are not asked for.
+- Not logged, so not shown: Admin's "New passwords for all groups" (0099) writes no audit row.
+- Checked in headless Chrome as `hof.test` (Group 1, live project, read only) at 390×844 and 1280×800: game, headcount and Facilitator rows show, each pill filters, no console errors; HOGM's Log unchanged. `tsc` (src) and `next lint` are clean.
+
+### Ops → Location: a room number joins the building, 2026-10-22
+- HOF, Committee and Admin's Ops → Location shows "Arrived at B1-215" when the details are a short room code (`roomOf()` in [faciLocation.ts](../src/lib/faciLocation.ts): at most 10 characters, no spaces). A longer comment keeps its own line. Admin → Headcount and location and the Faci's "Last update" are unchanged.
+
+### HOGM sees the game log: Game control → Log, 2026-10-22
+No migration (HOGM has read `audit_log` since 0002). Ben asked for it, with each action written out and the name of who did it.
+- A fourth tab on HOGM's Ops, **Log** ([LogSection.tsx](../src/components/staff/game/LogSection.tsx)), after Stations, Puzzles and Funfair. Phones get four equal icon tabs.
+- Only game actions: tokens, token rules, Day 2, stations and their GMs, puzzle pieces, projectors and NFC, blind boxes, games and phases, and settings (`config.set`). Account, attendance, headcount and Faci changes stay on Admin → Audit. This is a page filter: the database still lets HOGM (and HOF) read every audit row.
+- A table (Ben found one sentence per row hard to scan): Time (24-hour clock, the date when not today, time ago), Who (the person's name and role), Object (a group with its colour dot, a station, a projector, a box type, a setting), Action ("Day 1 win", "Bought a blind box"), Tokens (+ green, − red) and Details ("balance 66", "Standard · from Test HOGM · free"). At 680px and wider it fits; on phones it slides sideways inside its card with Time pinned. Filters: What (All, Tokens, Stations, Puzzles, Projectors, Blind box, Games & settings), Who (Anyone, Game Masters, HOGM, Admin, Groups, System) and a group. The group filter also finds projector and NFC rows, which name the group in `detail.group_id`. 50 rows, then Load more; refreshes every 30 s (no realtime on `audit_log`) and with the refresh button.
+- A new audit action shows on Log only once it is added to `AUDIT_ACTIONS` and `describeAudit()` in [auditLog.ts](../src/lib/auditLog.ts) (shared with a group's Recent changes, below). Funfair key changes (0088) write no audit rows, so they are not on it.
+- Checked in headless Chrome as `hogm.test` against the live project (read only), at 390×844, 747×900 and 1280×800: no sideways page scroll; the What, Who and group filters work; no console errors. `tsc` (src) and `next lint` are clean.
 
 ### Funfair card moved to Admin → Game, 2026-10-22 (Jiamin)
 - The Funfair (3D map) card (zone keys, overrides, the finale) is off Live control and on its own tab, Admin → Game → **Funfair (3D map)** (`/admin/funfair`). Same component (`FunfairZones`); HOGM's Game control → Funfair is unchanged.
@@ -342,7 +492,7 @@ Migration `0095_gm_station_checkin.sql` (**needs running**):
 - `/checkin` cleanly redirects all users to `/map`.
 
 ### Faci and Freshie see only their own group on the map, 2026-10-19
-Migration `0094_group_positions_own_group.sql` (**needs running**) reverses `0089`: `fn_group_positions()` returns every group only to Committee tier; a Faci or Freshie gets just the group on their profile, so the "Not seen for 10+ min" and "Groups on the map" lists show one group. No frontend change beyond a comment. The 2026-10-19 note under the Freshie/Faci map section saying every group is public is superseded.
+(Superseded by 0101: do not run 0094; everyone sees every group.) Migration `0094_group_positions_own_group.sql` reversed `0089`: `fn_group_positions()` returns every group only to Committee tier; a Faci or Freshie gets just the group on their profile, so the "Not seen for 10+ min" and "Groups on the map" lists show one group. No frontend change beyond a comment. The 2026-10-19 note under the Freshie/Faci map section saying every group is public is superseded.
 
 ### David, 2026-10-19 (NFC success → 3D funfair)
 - Connected ordinary activation and Guardian verification to the live v2 handover contract; preserved explicit Admin test stickers and missing-function-only legacy fallback. Guardian now reads and refreshes persisted state.
@@ -507,7 +657,7 @@ Migration `0089` (applied). Freshie's and Faci's `/map` dropped the white page a
 - CampusMap's markup is unchanged; `.fh-map` in `freshie.css` recolours its cards, lists, chips, the inline map buttons and the 2D Stations / Lightbulbs tabs. The full-screen map keeps its own look, as on the ops crew's map.
 - AppShell treats `/map` as a night page for Freshie and Faci, so the light mobile header is hidden there.
 - Admin's `/map` and Faci's `/checkin` keep the light design.
-- (Superseded by 0094: Faci and Freshie see only their own group.) Freshies and Facis see every group's location on the map (Ben: the group pins are public to them). Migration `0089_freshie_group_positions.sql` (applied on the project; Ben, 2026-10-19) lets `fn_group_positions()` return every group to a Freshie or Faci. This also applies to Faci's `/checkin` map.
+- (0094 limited this to their own group; 0101 opens it again, GMs included.) Freshies and Facis see every group's location on the map (Ben: the group pins are public to them). Migration `0089_freshie_group_positions.sql` (applied on the project; Ben, 2026-10-19) lets `fn_group_positions()` return every group to a Freshie or Faci. This also applies to Faci's `/checkin` map.
 
 ### Map: East funfair rides on their dorms' real middles, and the midway, 2026-10-17 (Ben, branch `funfair-east-layout`)
 No migration. Built on `map3d-footpaths` (the lawn round the funfair's land), so merge that first.
@@ -532,6 +682,9 @@ No migration.
 - OSM draws the walk along that lawn's east edge about 11 m into the trees. It is traced again, and `emit_phase1.py` leaves the OSM way out.
 - Not drawn: OSM's sidewalks outside the outer road, car roads, and walks on the funfair's land.
 - To check on site: the imagery suggests a walk between A3 and A4, under trees. It is not drawn.
+
+### David, 2026-10-19 (logo intro frequency)
+- The global Vortexa logo intro now plays once per browser tab session. Refreshes and login redirects in the same tab skip it, with no overlay flash while checking session storage. Activation and its preview keep their existing exemption. If storage is disabled, repeat full-page loads cannot retain the seen flag.
 
 ### Map: LakeFront Café as the lake stage, 2026-10-16 to 10-17 (Ben, branch `funfair-central`; partly done)
 No migration. Design and batches: [map3d-lakefront-design.md](map3d-lakefront-design.md).
@@ -1003,3 +1156,37 @@ Branch `jiamin-blind-box-integration`. Migration `0070_blindbox_buy_flow.sql` (t
 - Admin redesign step A: Admin nav is now 4 sections (Live, Freshies, Game, Settings) with sub-tabs; Freshie control moved to `/admin/freshies` (old `/freshie-control` redirects); admin sidebar can collapse to icons. UI only. Step B done: Users (role chips, group filter, table, CSV import in a pop-up), Audit (action and role chips, table), Control room (phase rows, switches). Step C done: Stations (table, add in pop-up), Blind box (two tabs, table), NFC, Puzzles, FAQ (grouped, add in pop-up), Brand, Tokens (full width, layout only). Admin redesign complete.
 - Removed Interview Booking (`/booking`) and Practice Reservations (`/reservations`) for every role: pages, nav, dashboard cards. Migration `0039` drops any leftover booking tables, functions and types.
 - Facilitators set a group name and slogan on the home checklist. "Group 1" stays the number. HOF still cannot see the list.
+
+
+### David, 2026-10-22 — field fixes (source ready; not deployed)
+- Map follows the live Day 1/Day 2 phase, with foreground refresh and polling; added large building buttons for phones and restricted transparent 3D marker hit areas. Expanded group Faci details inherit the dark surface.
+- Live control All uses independent realtime subscriptions; original crash reproduced and fixed in the browser.
+- Current-device sign-out avoids invalidating other phones on shared group accounts. Auth redirects retain refreshed cookies and transient service errors do not redirect users as signed out.
+- Group QR cards draw directly to canvas, use a bounded in-memory cache, and no longer regenerate on unrelated group balance updates.
+- HOF/HOGM opt-in GPS sharing added (0102), including Stop, role-restricted visibility, no position history and two-minute expiry. HOF Faci-assignment edits were excluded because David confirmed a teammate has fixed them.
+- Validated: 142 tests across 13 suites, typecheck, production build, local browser regressions. Pending: apply 0102, deploy, and check real-phone GPS/multi-device sessions. See [field-fix test and release notes](testing/orientation-field-fixes-2026-10-22.md).
+
+### David, 2026-10-22 — website punctuation
+- Replaced visible middle-dot separators throughout the website with context-appropriate slashes, ampersands, colons or parentheses. Updated the funfair arrival title split to match the new separator; existing database zone/phase labels are formatted at display time. No database migration or live-data edit. Source changes only, not deployed.
+
+### David, 2026-10-22 (field-fix release preparation)
+- Integrated latest main (`3b4365d`) with the local field fixes; preserved teammate Faci, group QR, GM and map work. Kept the once-per-tab intro and the activation exemption.
+- Renamed staff sharing from 0089 to **0102** because main already owns 0089 and has migrations through 0101; database tests follow the new filename.
+- Adapted the QR cache to the static signed group-link API and restored Group locations' dark expanded surface with the animated fold. Fixed merged funfair zone title separators; regression added.
+- Final checks: **184 tests / 18 files**, production build, typecheck and lint. **Still pending:** live 0102 application, deployment, real-phone GPS and simultaneous device checks. Platform access is being resolved; no live NFC or event data was reset or deleted. See [release notes](testing/orientation-field-fixes-2026-10-22.md).
+
+- **Live follow-up:** 0102 was applied transactionally to `orientation-2612` and registered in migration history; RLS, direct-read denial, anonymous RPC denial and the three function definitions were verified. No location rows were created. Vercel preview for `c8ce19d` is Ready; production release and physical-phone checks remain pending.
+
+### David, 2026-10-23 (staff sharing migration number correction)
+- PR #56 merged as `f98c17e`; production deployment is in progress.
+- Found the initial branch-number check missed `fix/log-audit-gaps`'s `0102_admin_token_log_audit.sql`. Staff sharing moves to **0103**, with identical SQL; only its own migration-history version is repaired, without rerunning DDL or changing event/location rows. Do not reuse teammate's 0102.
+
+- **Confirmed:** live history now identifies staff sharing as 0103. Production release `f98c17e` reached Ready at [xmum-orientation.vercel.app](https://xmum-orientation.vercel.app); 184 tests passed again after the filename correction. Physical-phone GPS and multi-device checks remain outstanding.
+
+### David, 2026-10-24 — Funfair-facing map view
+- Default 3D view now looks from the A-row toward the Funfair, a 180° rotation from the PR #59 heading. The extra building-button row is limited to the 2D fallback.
+- Fullscreen building badges return to the page with that building's station list selected. Inline roof taps continue to select stations or building lists.
+- Checked desktop and 390 × 844 mock previews, inline A5/A3 roof taps and fullscreen A5 badge selection. Physical-phone touch testing remains pending.
+
+### David, 2026-10-24 — Projector activation transition alignment
+- Centred the gathering-magic focal point in the activation takeover viewport. The result screen, map hand-off and reduced-motion behaviour are unchanged.

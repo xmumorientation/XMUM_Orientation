@@ -27,7 +27,7 @@ function ErrorScreen({ title, message }: { title: string; message: string }) {
 }
 
 const UNKNOWN = {
-  title: "Code not active",
+  title: "Code Not Active",
   message: "This QR code isn't active right now. Ask the seller to show their latest QR.",
 };
 
@@ -40,7 +40,7 @@ export default async function BlindBoxPage({
 
   const token = t ? verifyBlindBoxToken(t) : null;
   if (!t || !token || !token.valid) {
-    return <ErrorScreen title="Invalid QR code" message="This blind box code isn't recognised. Scan a real blind box QR." />;
+    return <ErrorScreen title="Invalid QR Code" message="This blind box code isn't recognised. Scan a real blind box QR." />;
   }
 
   const supabase = await supabaseServer();
@@ -82,7 +82,7 @@ export default async function BlindBoxPage({
       return <ErrorScreen title="Switched off by Admin" message="Blind boxes can't be bought right now. Nothing was charged." />;
     }
     return (
-      <ErrorScreen title="Something went wrong" message="Couldn't load the blind box. Find a committee member for help." />
+      <ErrorScreen title="Something Went Wrong" message="Couldn't load the blind box. Find a committee member for help." />
     );
   }
 

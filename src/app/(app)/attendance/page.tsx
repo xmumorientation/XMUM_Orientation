@@ -132,8 +132,8 @@ export default function AttendancePage() {
           </form>
           {saved && (
             <p className="mt-2 text-xs text-ink-soft">
-              Saved: Local <span className="font-semibold text-ink">{saved.local_count ?? "—"}</span> ·
-              International <span className="font-semibold text-ink">{saved.international_count ?? "—"}</span> ·
+              Saved: Local <span className="font-semibold text-ink">{saved.local_count ?? "—"}</span> /
+              International <span className="font-semibold text-ink">{saved.international_count ?? "—"}</span> /
               Total <span className="font-semibold text-ink">{saved.headcount}</span>
             </p>
           )}

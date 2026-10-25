@@ -13,9 +13,9 @@ export type FunfairZone = "west" | "central" | "east";
 export const FUNFAIR_ZONES: FunfairZone[] = ["west", "central", "east"];
 
 export const FUNFAIR_ZONE_NAMES: Record<FunfairZone, string> = {
-  west: "West · Neon Pier",
-  central: "Central · Starlight Midway",
-  east: "East · Big Top",
+  west: "West / Neon Pier",
+  central: "Central / Starlight Midway",
+  east: "East / Big Top",
 };
 
 /** Each zone's power: 0 off, 1 on. */
@@ -36,7 +36,7 @@ export const SIGN_NOTE =
  * so the map's zone signs and Items' keys match. East, Central and West are for Admin and HOGM only.
  */
 export function zoneTitle(zone: FunfairZone): string {
-  return `${PROJECTOR_CODE_NAMES[DEFAULT_ZONE_KEYS[zone]]} · ${FUNFAIR_ZONE_NAMES[zone].split(" · ")[1]}`;
+  return `${PROJECTOR_CODE_NAMES[DEFAULT_ZONE_KEYS[zone]]} / ${FUNFAIR_ZONE_NAMES[zone].split(" / ")[1]}`;
 }
 
 /** A row of funfair_zones. */

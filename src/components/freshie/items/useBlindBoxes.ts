@@ -22,7 +22,7 @@ export function boxGroupsOf(claims: BlindBoxClaim[]): BoxGroup[] {
     if (!g) {
       g = {
         key,
-        name: /box$/i.test(c.type_name) ? c.type_name : `${c.type_name} box`,
+        name: /box$/i.test(c.type_name) ? c.type_name : `${c.type_name} Box`,
         label: c.type_name,
         special: c.special,
         unopened: 0,

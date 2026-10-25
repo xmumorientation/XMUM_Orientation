@@ -43,7 +43,13 @@
 }
 .staff-vx .vx-topnav-link { color: #b4adc6; }
 .staff-vx .vx-topnav-link-primary { color: #111; }
-.staff-vx .vx-topnav .app-phase-timer:not(.is-endgame) { background: #15121e; color: #f3f0fa; }
+/* Staff (Welcome colours): a night pill with a holo ring, same as OpsHeader's. */
+.staff-vx .vx-topnav .app-phase-timer:not(.is-endgame) {
+  border: 1.5px solid transparent; color: #f3f0fa;
+  background:
+    linear-gradient(#15121e, #15121e) padding-box,
+    linear-gradient(100deg, #0dfcfd 0%, #e0b4fc 35%, #fe06ab 65%, #fc9e3d 100%) border-box;
+}
 .staff-vx .vx-topnav-menu { background: #15121e; border-color: #3a3448; }
 .staff-vx .vx-topnav-menu span { color: #8d87a0; }
 .staff-vx .vx-topnav-menu button { border-color: #3a3448; color: #f3f0fa; }

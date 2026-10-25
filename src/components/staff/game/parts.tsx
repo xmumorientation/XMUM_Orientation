@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { vxDisplay, vxSlab } from "@/components/home/fonts";
 import { Dialog, DialogContent } from "@/components/ui/Dialog";
@@ -29,16 +29,57 @@ export function StatusLine({ error, notice }: { error: string | null; notice: st
   return null;
 }
 
-/** Bottom sheet in the Game control colours (rendered in a portal, so it carries its own). */
+const FOLD_MS = 300;
+
+/**
+ * A folding card's body that opens and closes with a height animation
+ * (.gc-fold-wrap: grid rows 0fr to 1fr). On open it mounts closed, the closed
+ * state is flushed (a layout read), and only then does it get data-open, so the
+ * browser always has a start to animate from. It stays mounted while it closes;
+ * closed, it is inert. With reduced motion it opens and closes at once.
+ */
+export function FoldBody({ open, children }: { open: boolean; children: React.ReactNode }) {
+  const [mounted, setMounted] = useState(open);
+  const ref = useRef<HTMLDivElement>(null);
+  if (open && !mounted) setMounted(true);
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    if (open) {
+      void el.offsetHeight;
+      el.dataset.open = "";
+      return;
+    }
+    delete el.dataset.open;
+    const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const timer = window.setTimeout(() => setMounted(false), still ? 0 : FOLD_MS);
+    return () => window.clearTimeout(timer);
+  }, [open, mounted]);
+
+  if (!mounted) return null;
+  return (
+    <div ref={ref} className="gc-fold-wrap" inert={!open}>
+      <div className="gc-fold-inner">{children}</div>
+    </div>
+  );
+}
+
+/**
+ * Bottom sheet in the Game control colours (rendered in a portal, so it
+ * carries its own). `wide`: most of the screen, centred from 1024px, for a table.
+ */
 export function Sheet({
   open,
   onClose,
   title,
+  wide = false,
   children,
 }: {
   open: boolean;
   onClose: () => void;
   title: string;
+  wide?: boolean;
   children: React.ReactNode;
 }) {
   return (
@@ -46,7 +87,7 @@ export function Sheet({
       <DialogContent
         layout="sheetBottom"
         title={title}
-        className={cn("gc-sheet", vxDisplay.variable, vxSlab.variable)}
+        className={cn("gc-sheet", wide && "gc-sheet-wide", vxDisplay.variable, vxSlab.variable)}
         overlayClassName="gc-scrim"
       >
         {children}

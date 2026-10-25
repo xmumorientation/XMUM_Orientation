@@ -93,7 +93,7 @@ function GameIdle() {
       <i aria-hidden />
       <div>
         <b>No game running</b>
-        <span>{next ? `Next: ${next.name} · started from Live control` : "Games start from Live control"}</span>
+        <span>{next ? `Next: ${next.name} / started from Live control` : "Games start from Live control"}</span>
       </div>
     </div>
   );
@@ -110,7 +110,7 @@ function WelcomeStop({ name, role }: { name: string; role: UserRole }) {
         <span className="fh-mark">Vortexa</span>
       </h1>
       <p className="fh-hello">
-        Hi <b>{name || "there"}</b> · {ROLE_LABELS[role]}
+        Hi <b>{name || "there"}</b> / {ROLE_LABELS[role]}
       </p>
       {/* Same rule as Freshie Home: the running game, else the event countdown. */}
       {live ? (
@@ -223,7 +223,7 @@ function ScoresStop({ groups }: { groups: HomeGroup[] | null }) {
   return (
     <section id="sh-scores" className="fh-stop" aria-labelledby="sh-scores-title">
       <div className="fh-stop-head fh-stop-head-row">
-        <h2 id="sh-scores-title" className="fh-h2 fh-slab">Scoreboard</h2>
+        <h2 id="sh-scores-title" className="fh-h2 fh-slab">Tokens</h2>
         <Link href="/token" className="sh-more">
           Full scoreboard <ArrowRight size={15} aria-hidden />
         </Link>

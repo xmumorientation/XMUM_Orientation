@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { readingText, useAccuracyCheck, useCheckLog } from "@/components/AccuracyCheck";
+import { usePhaseTimer } from "@/components/PhaseTimerProvider";
+import { activeMapDay } from "@/lib/mapDay";
 import { bulbTitle } from "@/components/LightbulbList";
 import { useProfile } from "@/components/ProfileProvider";
 import { useProjectorPlaces } from "@/components/useConfig";
@@ -17,6 +19,8 @@ import type {
 } from "@/lib/types";
 import { MAP_BUILDINGS, stationPosition } from "@/lib/mapBuildings";
 import { resolveGroupPin, type GroupPin } from "@/lib/groupPosition";
+import { parseStaffPositions, type StaffPosition } from "@/lib/staffLocation";
+import { COMMITTEE_TIER } from "@/lib/types";
 import { loadProjectorClues, NO_CLUES, type MapPlaces, type ProjectorClues } from "@/lib/projectorPlaces";
 import { friendlyError } from "@/lib/utils";
 import { gpsToMapPercent, setExtraAnchors } from "@/lib/mapGeo";
@@ -117,8 +121,9 @@ export function buildGroupPins(
     if (!st) return null;
     return stationSpots.get(id) ?? { x: Number(st.map_x), y: Number(st.map_y) };
   };
+  const areaOf = (id: number) => stations.find((s) => s.id === id)?.area ?? null;
   const pins = new Map<number, GroupPin | null>();
-  for (const g of positions) pins.set(g.group_id, resolveGroupPin(g, spotOf, nowMs));
+  for (const g of positions) pins.set(g.group_id, resolveGroupPin(g, spotOf, areaOf, nowMs));
   return pins;
 }
 
@@ -163,7 +168,11 @@ export function useCampusMapData({
   const supabase = useMemo(() => supabaseBrowser(), []);
   const profile = useProfile();
   const myId = profile.id;
+  const canSeeStaff = profile.role !== "freshie";
+  const [staffPositions, setStaffPositions] = useState<StaffPosition[]>([]);
   const myGroupId = profile.group_id;
+  // The station lists name the groups at a station for Committee tier; everyone else gets a count (Ben).
+  const staffView = COMMITTEE_TIER.includes(profile.role);
   const [stations, setStations] = useState<Station[]>([]);
   const [layerState, setLayerState] = useState<MapLayer>("stations");
   const layer: MapLayer = bulbLayer ? layerState : "stations";
@@ -206,6 +215,23 @@ export function useCampusMapData({
   const activeSelected = selected
     ? (stations.find((s) => s.id === selected.id) ?? selected)
     : null;
+
+  useEffect(() => {
+    if (!canSeeStaff) return;
+    let active = true;
+    let request = 0;
+    async function loadStaff() {
+      const revision = ++request;
+      const { data, error } = await supabase.rpc("fn_staff_positions");
+      if (active && revision === request) setStaffPositions(error ? [] : parseStaffPositions(data));
+    }
+    void loadStaff();
+    const timer = setInterval(loadStaff, 10_000);
+    const onVisible = () => { if (document.visibilityState === "visible") void loadStaff(); };
+    window.addEventListener("staff-location-change", loadStaff);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => { active = false; clearInterval(timer); window.removeEventListener("staff-location-change", loadStaff); document.removeEventListener("visibilitychange", onVisible); };
+  }, [supabase, canSeeStaff]);
 
   const loadStations = useCallback(async () => {
     const { data } = await supabase.from("stations").select("*").order("id");
@@ -506,12 +532,15 @@ export function useCampusMapData({
     // Pins fade with age, so re-check the clock even when no new report
     // arrives. Reload too, in case a realtime event was missed: every 10 s,
     // so a pin is never more than 15 s behind (Ben).
-    const tick = showGroupPins
-      ? setInterval(() => {
-          setNowMs(Date.now());
-          loadPositions();
-        }, 10_000)
-      : null;
+    // The stations' group counts reload on the same beat: a missed occupancy event (a check-out from another
+    // phone, a dropped socket) would otherwise leave "1 groups" on the list after the station is empty.
+    const tick = setInterval(() => {
+      if (showGroupPins) {
+        setNowMs(Date.now());
+        loadPositions();
+      }
+      loadCounts();
+    }, 10_000);
 
     // A phone back from another app may have missed realtime events while it slept, so reload the bulbs (a newly
     // lit one then also asks the funfair again) and the group pins.
@@ -520,20 +549,27 @@ export function useCampusMapData({
       void loadBulbs();
       setNowMs(Date.now());
       void loadPositions();
+      void loadCounts();
     };
     document.addEventListener("visibilitychange", onVisible);
 
     return () => {
       active = false;
-      if (tick) clearInterval(tick);
+      clearInterval(tick);
       if (reloadTimer) clearTimeout(reloadTimer);
       document.removeEventListener("visibilitychange", onVisible);
       supabase.removeChannel(channel);
     };
   }, [supabase, showGroupPins, player]);
 
-  // The map shows Day 2 stations only (Day 1 stations are managed on Admin → Stations).
-  const mapStations = useMemo(() => stations.filter((s) => s.day === 2), [stations]);
+  const { phases } = usePhaseTimer();
+  const day = activeMapDay(phases);
+  const mapStations = useMemo(() => stations.filter((s) => s.day === day), [stations, day]);
+  useEffect(() => {
+    setSelected(null);
+    setOpenBuilding(null);
+    setClusterArea(null);
+  }, [day]);
 
   const clusters = useMemo(() => buildClusters(mapStations), [mapStations]);
   const clusteredIds = useMemo(
@@ -563,6 +599,8 @@ export function useCampusMapData({
 
   return {
     myId,
+    staffPositions,
+    day,
     myGroupId,
     nowMs,
     // Stations
@@ -572,6 +610,7 @@ export function useCampusMapData({
     clusteredIds,
     stationSpots,
     counts,
+    staffView,
     activeSelected,
     setSelected,
     openBuilding,

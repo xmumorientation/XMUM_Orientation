@@ -1,33 +1,31 @@
 "use client";
 
-import { Coins, FerrisWheel, ImageIcon, MapPin, type LucideIcon } from "lucide-react";
+import { Coins, FerrisWheel, ImageIcon, MapPin, ScrollText } from "lucide-react";
 import { useEffect, useState } from "react";
 
-import { vxDisplay, vxSlab } from "@/components/home/fonts";
-import { cn } from "@/lib/utils";
-
 import { FunfairSection } from "./FunfairSection";
-import "./game-control.css";
+import { LogSection } from "./LogSection";
+import { OpsShell, type OpsSection } from "./OpsShell";
 import { PuzzlesSection } from "./PuzzlesSection";
 import { StationsSection } from "./StationsSection";
 import { TokensSection } from "./TokensSection";
 
 // HOGM's Ops page (/committee): part of Admin's game console in the Welcome
-// page style. Stations, Tokens (rules, reset), Puzzles, Funfair (which keys
-// power each zone of the 3D map's funfair). Starting and ending the games and
-// NFC are Admin's (Live control, Admin → NFC). Each group's tokens and puzzles
-// are on the Scores tab (GroupScores); the HOGM's own blind-box QR is on Home
-// (StaffHome). Phones and portrait tablets switch sections with four equal
-// icon tabs; landscape tablets and desktops get a
-// side rail. Server permissions: migration 0071.
+// page style (OpsShell). Stations, Tokens (rules, reset), Puzzles, Funfair
+// (which keys power each zone of the 3D map's funfair) and Log (the game's
+// audit log, read only). Starting and ending the games and NFC are Admin's
+// (Live control, Admin → NFC). Each group's tokens and puzzles are on the
+// Scores tab (GroupScores); the HOGM's own blind-box QR is on Home
+// (StaffHome). Server permissions: migration 0071.
 
-type SectionKey = "stations" | "tokens" | "puzzles" | "funfair";
+type SectionKey = "stations" | "tokens" | "puzzles" | "funfair" | "log";
 
-const SECTIONS: { key: SectionKey; label: string; Icon: LucideIcon }[] = [
+const SECTIONS: OpsSection<SectionKey>[] = [
   { key: "stations", label: "Stations", Icon: MapPin },
   { key: "tokens", label: "Tokens", Icon: Coins },
   { key: "puzzles", label: "Puzzles", Icon: ImageIcon },
   { key: "funfair", label: "Funfair", Icon: FerrisWheel },
+  { key: "log", label: "Log", Icon: ScrollText },
 ];
 
 /** Section from the link: #stations. */
@@ -54,40 +52,13 @@ export function GameControl() {
     window.history.replaceState(null, "", `${window.location.pathname}#${key}`);
   }
 
-  const current = SECTIONS.find((s) => s.key === section)!;
-
   return (
-    <div className={cn("gc", vxDisplay.variable, vxSlab.variable)}>
-      <div className="gc-bg" aria-hidden>
-        <i className="gc-orb gc-orb-navy" />
-        <i className="gc-orb gc-orb-pink" />
-      </div>
-
-      <header className="gc-top">
-        <h1 className="gc-title gc-title-holo">OPS</h1>
-        <p className="gc-sub">
-          <i aria-hidden />
-          Game control · <b>{current.label}</b>
-        </p>
-      </header>
-
-      <div className="gc-layout">
-        <nav className="gc-nav" aria-label="Game control sections">
-          {SECTIONS.map(({ key, label, Icon }) => (
-            <button key={key} type="button" aria-current={key === section ? "page" : undefined} onClick={() => pick(key)}>
-              <Icon size={17} aria-hidden />
-              {label}
-            </button>
-          ))}
-        </nav>
-
-        <section className="gc-main" aria-label={current.label}>
-          {section === "stations" && <StationsSection />}
-          {section === "tokens" && <TokensSection />}
-          {section === "puzzles" && <PuzzlesSection />}
-          {section === "funfair" && <FunfairSection />}
-        </section>
-      </div>
-    </div>
+    <OpsShell name="Game control" sections={SECTIONS} current={section} onPick={pick}>
+      {section === "stations" && <StationsSection />}
+      {section === "tokens" && <TokensSection />}
+      {section === "puzzles" && <PuzzlesSection />}
+      {section === "funfair" && <FunfairSection />}
+      {section === "log" && <LogSection />}
+    </OpsShell>
   );
 }

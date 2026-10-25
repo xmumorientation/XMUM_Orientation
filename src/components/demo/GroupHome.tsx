@@ -67,7 +67,7 @@ export default function GroupHome({ group }: { group: DemoGroup }) {
           </span>
           <div className="vx-demo-top-meta">
             <b>{group.name}</b>
-            <span>GROUP {group.number} · VORTEXA PORTAL</span>
+            <span>GROUP {group.number} / VORTEXA PORTAL</span>
           </div>
         </div>
 
@@ -110,7 +110,7 @@ export default function GroupHome({ group }: { group: DemoGroup }) {
                 <p className="vx-demo-pass-kicker">TEAM IDENTITY</p>
                 <h1 className="vx-demo-pass-title">{group.name}</h1>
                 <p className="vx-demo-pass-sub">
-                  Wristband Verified · Sector Station Ready
+                  Wristband Verified / Sector Station Ready
                 </p>
               </div>
 
@@ -125,7 +125,7 @@ export default function GroupHome({ group }: { group: DemoGroup }) {
             <div className="vx-demo-pass-footer">
               <div className="flex items-center gap-2">
                 <Users size={14} strokeWidth={1.75} className="text-[var(--vx-mute)]" />
-                <span className="text-xs text-[var(--vx-text-2)]">Squad Active · XMUM</span>
+                <span className="text-xs text-[var(--vx-text-2)]">Squad Active / XMUM</span>
               </div>
               <span className="vx-demo-pass-live">● RADAR SYNCED</span>
             </div>

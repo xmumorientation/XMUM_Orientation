@@ -11,13 +11,13 @@ describe("classifyScan", () => {
   it("opens the blind box link inside the app, whichever configured origin minted it", () => {
     for (const base of ORIGINS) {
       const r = classifyScan(`${base}/blindbox?t=abc.def`, ORIGINS);
-      expect(r).toEqual({ kind: "app", path: "/blindbox?t=abc.def", label: "Blind box" });
+      expect(r).toEqual({ kind: "app", path: "/blindbox?t=abc.def", label: "Blind Box" });
     }
   });
 
   it("opens any other page of this site inside the app", () => {
-    expect(classifyScan(`${SITE}/activate?t=xyz`, ORIGINS)).toMatchObject({ kind: "app", path: "/activate?t=xyz", label: "Projector card" });
-    expect(classifyScan(`${SITE}/inventory`, ORIGINS)).toMatchObject({ kind: "app", path: "/inventory", label: "App link" });
+    expect(classifyScan(`${SITE}/activate?t=xyz`, ORIGINS)).toMatchObject({ kind: "app", path: "/activate?t=xyz", label: "Projector Card" });
+    expect(classifyScan(`${SITE}/inventory`, ORIGINS)).toMatchObject({ kind: "app", path: "/inventory", label: "App Link" });
     expect(classifyScan(`  ${SITE}/map  `, ORIGINS)).toMatchObject({ kind: "app", path: "/map" });
   });
 
@@ -50,13 +50,13 @@ describe("classifyScan", () => {
     expect(classifyScan("vortexa.example//evil.com/x", ORIGINS)).toMatchObject({ kind: "app", path: "/evil.com/x" });
     expect(classifyScan(`${SITE}/\\evil.com`, ORIGINS)).toMatchObject({ kind: "app", path: "/evil.com" });
     // a code minted from a site URL ending in "/" still opens the blind box
-    expect(classifyScan(`${SITE}//blindbox?t=abc`, ORIGINS)).toEqual({ kind: "app", path: "/blindbox?t=abc", label: "Blind box" });
+    expect(classifyScan(`${SITE}//blindbox?t=abc`, ORIGINS)).toEqual({ kind: "app", path: "/blindbox?t=abc", label: "Blind Box" });
     // and the login block still applies
     expect(classifyScan(`${SITE}//join?group1=1`, ORIGINS).kind).toBe("blocked");
   });
 
   it("opens a scheme-less link to this site, but leaves other bare hosts as text", () => {
-    expect(classifyScan("vortexa.example/blindbox?t=abc.def", ORIGINS)).toEqual({ kind: "app", path: "/blindbox?t=abc.def", label: "Blind box" });
+    expect(classifyScan("vortexa.example/blindbox?t=abc.def", ORIGINS)).toEqual({ kind: "app", path: "/blindbox?t=abc.def", label: "Blind Box" });
     expect(classifyScan("example.com/promo", ORIGINS).kind).toBe("text");
     expect(classifyScan("vortexa.example", ORIGINS).kind).toBe("text");
   });
@@ -117,6 +117,6 @@ describe("blind box token", () => {
 
   it("the scanner sends a blind box link to the page", () => {
     const url = blindBoxUrl(blindBoxToken(7, 1));
-    expect(classifyScan(url, [new URL(url).origin])).toMatchObject({ kind: "app", label: "Blind box" });
+    expect(classifyScan(url, [new URL(url).origin])).toMatchObject({ kind: "app", label: "Blind Box" });
   });
 });

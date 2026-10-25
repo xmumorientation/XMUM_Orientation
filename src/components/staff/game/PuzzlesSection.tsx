@@ -53,7 +53,7 @@ export function PuzzlesSection() {
           return (
             <article key={loc} className="gc-card gc-puzzle">
               <header className="gc-game-head">
-                <h3 className="gc-h4">{PROJECTOR_CODE_NAMES[loc]} · {places[loc].name}</h3>
+                <h3 className="gc-h4">{PROJECTOR_CODE_NAMES[loc]} / {places[loc].name}</h3>
                 <span className="gc-chip" data-tone={url ? "ok" : "off"}>{url ? "SET" : "EMPTY"}</span>
               </header>
               <ProjectorPlaceForm loc={loc} place={places[loc]} dark onSaved={flash} onError={setError} />

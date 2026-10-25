@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { AppShell } from "@/components/AppShell";
 import { FaciLocationProvider } from "@/components/FaciLocationTracker";
 import { PhaseTimerProvider } from "@/components/PhaseTimerProvider";
+import { StaffLocationProvider } from "@/components/StaffLocationSharing";
 import { ProfileProvider } from "@/components/ProfileProvider";
 import { supabaseServer } from "@/lib/supabase/server";
 import type { Group, Profile } from "@/lib/types";
@@ -24,12 +25,13 @@ export default async function AppLayout({
   if (!userId) redirect("/login");
 
   // One round trip for profile + group (the dashboard needs both).
-  const { data: row } = await supabase
+  const { data: row, error: profileError } = await supabase
     .from("profiles")
     .select("*, group:groups!profiles_group_id_fkey(*)")
     .eq("id", userId)
     .single();
 
+  if (profileError) throw new Error("Could not load your profile. Please try again.");
   if (!row) redirect("/login");
 
   const { group, ...profile } = row as Profile & { group: Group | null };
@@ -39,7 +41,7 @@ export default async function AppLayout({
     <ProfileProvider profile={profile as Profile} initialGroup={group}>
       <PhaseTimerProvider>
         <FaciLocationProvider>
-          <AppShell>{children}</AppShell>
+          <StaffLocationProvider><AppShell>{children}</AppShell></StaffLocationProvider>
         </FaciLocationProvider>
       </PhaseTimerProvider>
     </ProfileProvider>

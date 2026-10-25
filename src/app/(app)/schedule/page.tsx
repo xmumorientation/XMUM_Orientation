@@ -421,7 +421,7 @@ function StaffSchedule() {
                             </span>
                           )}
                           {i.location && i.description && (
-                            <span aria-hidden="true">·</span>
+                            <span aria-hidden="true">/</span>
                           )}
                           {i.description}
                         </p>

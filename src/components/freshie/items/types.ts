@@ -19,7 +19,7 @@ export type BoxKind = string;
 /** The group's boxes of one type: how many are still sealed, and what opened ones gave. */
 export type BoxGroup = {
   key: BoxKind;
-  /** e.g. "Gold box". */
+  /** e.g. "Gold Box". */
   name: string;
   /** Short name used in tags, e.g. "Gold". */
   label: string;

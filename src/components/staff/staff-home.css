@@ -42,8 +42,31 @@
   background: rgba(7, 6, 11, 0.94); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
   border-bottom: 1px solid #25202f;
 }
-.ops-head .app-phase-timer:not(.is-endgame) { background: #15121e; color: #f3f0fa; }
-.ops-head .app-phase-timer > span:first-child { color: #0dfcfd; }
+/* The running game as a pill between the logo and the role chip (TopNav's pill on
+   phones): a night pill with a holo ring (the Welcome page's colours, static), mono
+   cyan NOW and white text; the endgame stays red. A long phase name gives way with
+   an ellipsis; the time always shows. */
+.ops-head .fh-head-row { gap: 8px; }
+.ops-head-now { flex: 1; min-width: 0; display: flex; justify-content: center; }
+.ops-head .app-phase-timer {
+  max-width: 100%; min-width: 0; gap: 6px; padding: 5px 11px; border-radius: 999px;
+  font-size: 12.5px; white-space: nowrap;
+}
+/* The ring is a second background under a transparent border. !important:
+   app-neon.css forces its own faint timer background and colour with !important. */
+.ops-head .app-phase-timer:not(.is-endgame) {
+  border: 1.5px solid transparent;
+  background:
+    linear-gradient(#15121e, #15121e) padding-box,
+    linear-gradient(100deg, #0dfcfd 0%, #e0b4fc 35%, #fe06ab 65%, #fc9e3d 100%) border-box !important;
+  color: #f3f0fa !important;
+}
+.ops-head .app-phase-timer > span:first-child {
+  flex: none; font-family: var(--font-mono), "JetBrains Mono", monospace; font-size: 10px; letter-spacing: 0.16em; color: #0dfcfd;
+}
+.ops-head .app-phase-timer.is-endgame > span:first-child { color: #fff; }
+.ops-head .app-phase-timer > span:nth-child(2) { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.ops-head .app-phase-timer > span:last-child { flex: none; }
 @media (min-width: 1024px) {
   .fh.ops-head { display: none; }
 }
