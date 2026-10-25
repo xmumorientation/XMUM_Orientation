@@ -25,7 +25,7 @@ type Faci = { id: string; full_name: string | null; group_id: number | null };
 
 const faciName = (f: Faci | undefined) => f?.full_name || "Unnamed";
 
-export function FaciAssign() {
+export function FaciAssign({ readOnly = false }: { readOnly?: boolean }) {
   const supabase = useMemo(() => supabaseBrowser(), []);
   const { error, setError, notice, flash } = useStatus();
   const [groups, setGroups] = useState<Group[]>([]);
@@ -76,7 +76,7 @@ export function FaciAssign() {
   }
 
   async function saveFacis() {
-    if (!editing) return;
+    if (readOnly || !editing) return;
     setBusy(true);
     const { error } = await supabase.rpc("fn_admin_set_group_facis", { p_group_id: editing.id, p_user_ids: picked });
     setBusy(false);
@@ -111,10 +111,10 @@ export function FaciAssign() {
               >
                 <History size={17} aria-hidden />
               </button>
-              <button type="button" className="gc-btn gc-ops-edit" aria-label={`Edit ${g.name}'s Facilitators`} onClick={() => openFacis(g)}>
+              {!readOnly && <button type="button" className="gc-btn gc-ops-edit" aria-label={`Edit ${g.name}'s Facilitators`} onClick={() => openFacis(g)}>
                 <Pencil size={14} aria-hidden />
                 <span>Edit</span>
-              </button>
+              </button>}
             </li>
           );
         })}
@@ -130,8 +130,8 @@ export function FaciAssign() {
         {historyOf && <GroupLog groupId={historyOf.id} />}
       </Sheet>
 
-      <Sheet open={editing !== null} onClose={() => setEditing(null)} title={editing ? `Facilitators / ${editing.name}` : "Facilitators"}>
-        {editing && (
+      <Sheet open={!readOnly && editing !== null} onClose={() => setEditing(null)} title={editing ? `Facilitators / ${editing.name}` : "Facilitators"}>
+        {!readOnly && editing && (
           <div className="gc-form">
             <input
               className="gc-input"

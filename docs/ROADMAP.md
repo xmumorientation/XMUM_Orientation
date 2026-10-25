@@ -293,6 +293,13 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 
 ## Done
 
+### David, 2026-10-25 — Faci profile navigation and general Committee
+- Profile editor now restores focus to its opener or the visible Account button before refreshing the server profile. The tab-bar shell uses `overflow: clip` to prevent hidden programmatic scrolling of the navigation frame.
+- Reused the existing `committee` role for a labelled read-only Ops overview. Added the HOF Faci & Status view and group history without assignment controls; Committee phone pages now share OpsHeader.
+- Migration `0104_committee_read_only.sql` grants Committee audit reads and rejects its writes to current public tables, including legacy SECURITY DEFINER RPCs. Apply this migration before releasing the UI; future event tables need the same guard.
+- Verification: typecheck and production build passed; lint passed with the existing map `<img>` warning; 197 tests passed, including 9 new real-Postgres Committee permission tests. Browser fixture checks used real components and dummy data at 1024 × 768 and 820 × 1180: save/cancel returned focus, navigation stayed visible, Committee had history without Edit, and HOF retained Edit. Physical iPad keyboard reproduction remains pending. David confirmed that migration 0104 ran successfully in Supabase; production frontend release is in progress through the existing GitHub → Vercel integration.
+
+
 ### Admin campus map aligned with HOF / HOGM, 2026-10-23 (David)
 - Admin `/map` now uses the same staff map frame, night palette, title, mobile header and content width as HOF / HOGM. Admin station editing and accuracy checks remain Admin-only; no data or permission changes.
 - Building selectors now share icons, labels, station counts, an All option, campus ordering, selected states and keyboard focus treatment. Freshie / Faci use their group theme; staff use the Ops theme. Accuracy check has a 44px touch target.

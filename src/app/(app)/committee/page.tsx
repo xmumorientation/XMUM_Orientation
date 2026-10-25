@@ -34,6 +34,7 @@ export default function CommitteePage() {
 // (OpsShell); Admin edits them in Admin → Freshies. HOF and Admin also get a
 // fourth, Faci & Status, to choose each group's Facilitators and see its
 // Recent changes (FaciAssign; fn_admin_set_group_facis allows only them).
+// Committee sees the same fourth section and history without an Edit action.
 //   Headcount  Local / International / Total, as Facilitators report it
 //   Location   the group's latest manual location update
 //   Freshies   the group's name, slogan and 4-digit password (migration 0092)
@@ -52,7 +53,7 @@ function OpsOverview({ canAssignFacis }: { canAssignFacis: boolean }) {
   useEffect(() => {
     const v = new URLSearchParams(window.location.search).get("view");
     if (v === "headcount" || v === "location" || v === "freshies") setView(v);
-    else if (v === "facis" && canAssignFacis) setView(v);
+    else if (v === "facis") setView(v);
     else if (v === "attendance") setView("headcount"); // older links
   }, [canAssignFacis]);
 
@@ -105,14 +106,14 @@ function OpsOverview({ canAssignFacis }: { canAssignFacis: boolean }) {
     { key: "headcount", label: "Headcount", Icon: Users },
     { key: "location", label: "Location", Icon: MapPin },
     { key: "freshies", label: "Freshies", Icon: IdCard },
-    ...(canAssignFacis ? [{ key: "facis" as const, label: "Faci & Status", Icon: UserCheck }] : []),
+    { key: "facis", label: "Faci & Status", Icon: UserCheck },
   ];
 
   const name = (g: Group) => g.display_name?.trim() || g.name;
   const n = (v: number | null | undefined) => (v == null ? "—" : v);
 
   return (
-    <OpsShell name="Overview" sections={sections} current={view} onPick={setView}>
+    <OpsShell name={canAssignFacis ? "Overview" : "Committee / Read only"} sections={sections} current={view} onPick={setView}>
       {view === "headcount" && (
         <div className="gc-card">
           <div className="gc-ops-hc gc-ops-head">
@@ -192,7 +193,7 @@ function OpsOverview({ canAssignFacis }: { canAssignFacis: boolean }) {
         </ul>
       )}
 
-      {view === "facis" && canAssignFacis && <FaciAssign />}
+      {view === "facis" && <FaciAssign readOnly={!canAssignFacis} />}
     </OpsShell>
   );
 }

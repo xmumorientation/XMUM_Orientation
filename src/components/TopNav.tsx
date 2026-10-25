@@ -95,6 +95,7 @@ export function TopNav({
             type="button"
             className="vx-topnav-avatar"
             aria-label="Account"
+            data-profile-account={canEditProfile ? "" : undefined}
             aria-expanded={open}
             aria-controls="vx-topnav-menu"
             onClick={() => setOpen(!open)}

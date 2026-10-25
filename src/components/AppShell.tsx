@@ -127,7 +127,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const isStaffArea = !isFreshie && !keepsOwnDesign;
   const isStaffSubpage = isStaffArea && !isStaffDashboard;
   // Roles whose subpages use Home's header (OpsHeader) instead of the staff phone header.
-  const hasOpsHeader = profile.role === "hogm" || profile.role === "hof" || isGm || isAdminMap;
+  const hasOpsHeader = isOps || isGm || isAdminMap;
   const items = NAV.filter((n) => n.roles.includes(profile.role));
   // Freshie and facilitator phones share the night tab bar. Freshie Scan is
   // the raised center button; a facilitator gets Code there instead.
@@ -191,8 +191,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div
       className={cn(
-        // With the tab bar the page itself never scrolls (see .app-scroll below).
-        showTabBar ? "h-dvh overflow-hidden" : "min-h-dvh",
+        // Clip cannot be scrolled by focus restoration; only .app-scroll scrolls.
+        showTabBar ? "h-dvh overflow-clip" : "min-h-dvh",
         "w-full",
         isNight && (isVortexa ? "bg-[#07060b]" : "bg-[#030b1c]"),
         isStaffArea && `staff-dashboard-shell ${nexusBody.variable} ${vxDisplay.variable}`,

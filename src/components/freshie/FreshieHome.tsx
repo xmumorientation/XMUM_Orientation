@@ -1055,6 +1055,7 @@ export function AccountMenu({
         aria-label="Account"
         aria-expanded={open}
         aria-controls="fh-account"
+        data-profile-account={onEditProfile ? "" : undefined}
         onClick={() => setOpen(!open)}
       >
         {roleLabel === "Freshie" ? (

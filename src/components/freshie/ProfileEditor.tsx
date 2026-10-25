@@ -118,6 +118,8 @@ export function ProfileEditor({
   const supabase = useMemo(() => supabaseBrowser(), []);
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
+  const returnFocus = useRef<HTMLElement | null>(null);
+  const refreshAfterClose = useRef(false);
   const [name, setName] = useState(me.name);
   const [instagram, setInstagram] = useState(me.instagram ?? "");
   const [programme, setProgramme] = useState(me.programme);
@@ -209,8 +211,10 @@ export function ProfileEditor({
     if (photo && oldPath && oldPath !== avatarPath) void supabase.storage.from("faci-avatars").remove([oldPath]);
     window.dispatchEvent(new Event(FACI_PROFILE_SAVED_EVENT));
     onSaved(trimmed);
-    // Server-rendered profile (menu drawer, other pages) picks up the new name.
-    router.refresh();
+    // Close the keyboard and restore the account control before refreshing
+    // the server tree. Refreshing with focus in the portal can move iPad's
+    // viewport while the application shell is clipped.
+    refreshAfterClose.current = true;
     onClose();
   }
 
@@ -218,7 +222,24 @@ export function ProfileEditor({
     <Dialog.Root open={open} onOpenChange={(next) => !next && onClose()}>
       <Dialog.Portal>
         <Dialog.Overlay className="fi-overlay" />
-        <Dialog.Content className={`fh fi-sheet fh-edit ${vxSlab.variable}`} style={themeVars} aria-describedby={undefined}>
+        <Dialog.Content className={`fh fi-sheet fh-edit ${vxSlab.variable}`} style={themeVars} aria-describedby={undefined}
+          onOpenAutoFocus={() => {
+            returnFocus.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+          }}
+          onCloseAutoFocus={(event) => {
+            // This controlled dialog has no Dialog.Trigger for Radix to focus.
+            event.preventDefault();
+            const opener = returnFocus.current;
+            const account = Array.from(document.querySelectorAll<HTMLButtonElement>("[data-profile-account]"))
+              .find((button) => button.getClientRects().length > 0);
+            const target = opener?.isConnected && opener !== document.body && opener.getClientRects().length > 0 ? opener : account;
+            target?.focus({ preventScroll: true });
+            if (refreshAfterClose.current) {
+              refreshAfterClose.current = false;
+              router.refresh();
+            }
+          }}
+        >
           <span className="fi-grab" aria-hidden />
           <Dialog.Title className="fi-sheet-title fh-slab">Edit Profile</Dialog.Title>
           <p className="fi-sheet-sub">This is what your partner and your group see.</p>

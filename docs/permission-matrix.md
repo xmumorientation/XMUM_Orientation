@@ -3,6 +3,8 @@
 Compiled from the current code: SQL migrations (RLS + RPC, the real permission boundary), the menu config in [AppShell.tsx](../src/components/AppShell.tsx), and the role checks in each page.
 This reflects only the migration files in the repo. Any manual changes made to the live database are not included.
 
+General **Committee is read-only** (migration `0104_committee_read_only.sql`): the same Ops overview and Faci & Status history as HOF, with no assignment editor. A statement trigger on every current public table rejects Committee INSERT/UPDATE/DELETE/TRUNCATE, including writes through legacy SECURITY DEFINER RPCs or permissive RLS. Existing HOF/Admin permissions are unchanged. Add the same guard to future event tables. The migration must be applied before claiming this restriction is live.
+
 ## Legend
 
 - ✓ = available / visible
@@ -85,11 +87,11 @@ This reflects only the migration files in the repo. Any manual changes made to t
 | Group QR links (`GET /api/group-join`: signed with the group number, never change; the Faci's own group on /code) | — | Own Group | — | — | — | — | — | ✓ | API |
 | Sign in by scanning a group QR (`POST /api/group-join`: the server signs in with the group's current password) | anyone with the QR | anyone | anyone | anyone | anyone | anyone | anyone | anyone | API (valid signed token only) |
 | New passwords for all groups (Admin → Freshies: `/api/admin/group-logins` with `refresh: "all"`; signs out every Freshie phone via `fn_end_user_sessions`, 0099, service role only) | — | — | — | — | — | — | — | ✓ | API |
-| Freshie group assignment (Committee → Register tab) | — | — | — | — | ✓ | — | — | ✓ | DB |
+| Freshie group assignment (legacy `fn_assign_group`; Committee is read-only since 0104) | — | — | — | — | — | — | — | ✓ | DB |
 | Facilitator group assignment (`fn_admin_set_group_facis`; HOF on Ops → Faci & Status, Admin on Ops → Faci & Status and Admin → Freshies; `is_faci_lead()`, migration 0080) | — | — | — | — | — | ✓ | — | ✓ | DB |
-| Ops → Faci & Status: each group's Facilitators, and its Recent changes (every audit entry for the group or by its accounts, the game included) | — | — | — | — | — | ✓ | — | ✓ | DB (Committee-tier reads; audit_log for HOF and Admin, 0002) |
+| Ops → Faci & Status: each group's Facilitators, and its Recent changes (every audit entry for the group or by its accounts, the game included) | — | — | — | — | View All | ✓ | — | ✓ | DB (Committee audit reads added in 0104; assignment writes remain HOF/Admin only) |
 | Live Ops stats | — | — | — | — | — | † | † | ✓ | DB |
-| Audit Log (Admin → Audit, every action; the database lets HOF and HOGM read every row (0002), but `/admin/audit` shows them "Admin access required", so only a direct API call reaches it) | — | — | — | — | — | API only | API only | ✓ | DB |
+| Audit Log (Admin → Audit, every action; Committee (0104), HOF and HOGM can read every row through the API; their UI uses the filtered group/game history) | — | — | — | — | API only | API only | API only | ✓ | DB |
 | Game log (Ops → Game control → Log: game actions only, each in words with who did it) | — | — | — | — | — | — | ✓ | — (Admin → Audit) | UI filter; DB allows every row |
 | Freshie control (/admin/freshies: groups, sessions, headcount) | — | — | — | — | — | — | — | ✓ | ⚠ UI |
 | **Scoreboard (/token)** | | | | | | | | | |
