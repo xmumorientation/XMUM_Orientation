@@ -293,6 +293,9 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 
 ## Done
 
+### Light a key for a group (Admin and HOGM), 2026-10-25 (Jiamin)
+- **Run on Supabase:** `0105_game_lead_light_projector.sql`. Admin → Live control → Game master → Funfair and HOGM → Game control → Funfair have **Light a key for a group** (`FunfairLightGroup`, `fn_game_lead_light_projector`): pick a group, light B1, A3 or TF for it. No card tap, no Guardian check, no Day 2 Funfair switch. One group per key and one key per group; only Admin can take a key over. Audit action `projector.game_lead_light` (also registered: the 0103 Game master actions).
+
 ### Admin Game master (Live control), 2026-10-25 (Jiamin)
 - **Run on Supabase:** `0103_admin_game_master.sql` after 0102, before deploying the frontend (Admin → Blind box now reads `blind_box_claims.gift`). Plan and preview: [docs/plans/admin-game-master.md](plans/admin-game-master.md).
 - Live control → **Game master** (`GameMaster`, Admin only, folded by default): pick a group, then Tokens (Add uses the Day 1 rules, Deduct the Day 2 Easy / Medium / Hard fees, Custom 1 to 50, reason, Undo), Puzzle (give a missing piece), Blind box (gift 1 to 5 unopened boxes; they show on the group's Items page) and Funfair (the zone card).

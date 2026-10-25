@@ -554,3 +554,32 @@
 .gc-st-days li b { font-family: var(--gc-mono); font-size: 10.5px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gc-mute); }
 .gc-st-days li[data-now] { border-color: rgba(13, 252, 253, 0.5); color: var(--gc-text); }
 .gc-st-days li[data-now] b { color: var(--gc-cyan); }
+
+/* ── Funfair tab ─────────────────────────────────────────────────────────── */
+.gc-ff-card { padding: 16px 18px; }
+.gc-ff-list { overflow: hidden; }
+.gc-ff-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; padding: 14px 18px 12px; }
+.gc-ff-pad { padding: 0 18px 14px; }
+.gc-ff-row {
+  display: grid; grid-template-columns: minmax(150px, 1fr) minmax(0, 3fr) auto; align-items: center; gap: 12px 20px;
+  padding: 14px 18px; border-top: 1px solid var(--gc-line);
+}
+.gc-ff-name { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.gc-ff-name h4 { margin: 0; font-size: 14px; font-weight: 600; }
+.gc-ff-ctl { display: flex; flex-wrap: wrap; gap: 10px 20px; }
+.gc-ff-ctl .gc-field { gap: 4px; }
+.gc-ff-ctl .gc-field > span { font-size: 10.5px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gc-mute); }
+.gc-seg-sm { padding: 2px; border-radius: 12px; gap: 2px; }
+.gc-seg-sm button { flex: 0 0 auto; min-height: 32px; padding: 0 12px; font-size: 12px; border-radius: 9px; }
+.gc-ff-icon {
+  display: grid; place-items: center; width: 36px; height: 36px; border-radius: 12px; color: var(--gc-mute);
+  border: 1px solid var(--gc-line); transition: color 0.3s, border-color 0.3s;
+}
+.gc-ff-icon:hover { color: var(--gc-cyan); border-color: var(--gc-cyan); }
+.gc-ff-finale .gc-muted { margin: 0; }
+.gc-ff-notes { padding: 0 4px; }
+.gc-ff-notes summary { cursor: pointer; padding: 6px 0; font-size: 12.5px; color: var(--gc-mute); }
+@media (max-width: 860px) {
+  .gc-ff-row { grid-template-columns: minmax(0, 1fr) auto; }
+  .gc-ff-ctl, .gc-ff-finale .gc-muted { grid-column: 1 / -1; order: 3; }
+}

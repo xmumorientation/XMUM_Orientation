@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { FunfairLightGroup } from "@/components/admin/FunfairLightGroup";
 import { FunfairZones } from "@/components/admin/FunfairZones";
 import { groupColor } from "@/components/freshie/groupTheme";
 import { useConfig, useProjectorPlaces } from "@/components/useConfig";
@@ -428,7 +429,7 @@ export function GameMaster({
 
                   {tab === "ff" && (
                     <div className="gm-pane" key="ff">
-                      <div className="gm-who"><b>Funfair (3D map)</b><span>Which keys light each zone, and manual overrides</span></div>
+                      <FunfairLightGroup groups={groups} groupId={gid} canReplace onError={onError} onNotice={onNotice} />
                       <FunfairZones />
                     </div>
                   )}
