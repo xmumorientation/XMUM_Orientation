@@ -29,7 +29,7 @@ General **Committee is read-only** (migration `0104_committee_read_only.sql`): t
 | Reset a lightbulb | — | — | — | — | — | — | — | ✓ | DB |
 | Funfair zones on the 3D map, on or off (`fn_funfair_state`, 0088; before 0088 the default keys in code) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | DB |
 | Funfair setup: each zone's keys, any/all rule, manual override (`funfair_zones`, `fn_set_funfair_zone`, 0088). Only game leads can read it, because the keys would show where the unlit bulbs are. | — | — | — | — | — | — | ✓ ‡ | ✓ | DB |
-| Group locations on the map (`fn_group_positions`, 0101: every signed-in account sees every group; replaces 0094's own-group rule). A group's Facis on the map's list (`fn_group_faci_status`): the same, phone numbers Committee tier only | View All | View All | View All | View All | View All | View All | View All | View All | DB |
+| Group locations on the map (`fn_group_positions`, 0108: every signed-in account sees every group; replaces 0094's own-group rule). A group's Facis on the map's list (`fn_group_faci_status`): the same, phone numbers Committee tier only | View All | View All | View All | View All | View All | View All | View All | View All | DB |
 | Phase Timer (view) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | DB |
 | Schedule (view) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | DB |
 | FAQ (view; sidebar entry for Freshie only) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | DB |
@@ -104,7 +104,7 @@ General **Committee is read-only** (migration `0104_committee_read_only.sql`): t
 | **Admin Console (/admin/*)** | | | | | | | | | |
 | Phase Control (start / extend / end, no pause since 0102, game length: runs the game timer only, station statuses are not changed; the Day 1 / Day 2 game also starts by itself at its schedule item's planned start, `fn_game_autostart` 0101) | — | — | — | — | — | — | § | ✓ | DB |
 | Day 2 inner schedule (segment times, Start / End segment, Back to auto, Station game / Blind box / Funfair switches; `fn_day2_control` 0102; everyone reads `fn_day2_state`) | — | — | — | — | — | — | — | ✓ | DB |
-| Game master, always live (Live control; `fn_admin_token_adjust`, `fn_admin_give_piece`, `fn_admin_give_blindbox`, `fn_admin_undo_gift`, 0103): add or deduct tokens, give a puzzle piece, gift a blind box. Ignores phases, the schedule and the Day 2 switches; the token freeze still blocks tokens | — | — | — | — | — | — | — | ✓ | DB |
+| Game master, always live (Live control; `fn_admin_token_adjust`, `fn_admin_give_piece`, `fn_admin_give_blindbox`, `fn_admin_undo_gift`, 0107): add or deduct tokens, give a puzzle piece, gift a blind box. Ignores phases, the schedule and the Day 2 switches; the token freeze still blocks tokens | — | — | — | — | — | — | — | ✓ | DB |
 | Light a key (projector) for a chosen group, no card tap or Guardian check (`fn_game_lead_light_projector`, 0105; Admin → Live control → Game master → Funfair, and HOGM → Game control → Funfair). Only Admin can take a key over (`p_replace`) | — | — | — | — | — | — | ✓ | ✓ | DB |
 | Kill-switches | — | — | — | — | — | — | — | ✓ | DB |
 | Users (CSV import; edit role / group / station) | — | — | — | — | — | — | — | ✓ | DB + API |

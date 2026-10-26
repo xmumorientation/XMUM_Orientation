@@ -12,7 +12,7 @@ import { friendlyError } from "@/lib/utils";
 
 import "./game-master.css";
 
-// Admin → Live control → Game master (migration 0103, Admin only): D-day
+// Admin → Live control → Game master (migration 0107, Admin only): D-day
 // backup tools that do not depend on the games, the schedule or the Day 2
 // switches. Pick a group once, then Tokens / Puzzle / Blind box; Funfair is the
 // zone card that used to be on Game → Funfair. The only kill-switch that

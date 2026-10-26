@@ -1,4 +1,4 @@
--- Migration 0101: every signed-in account sees every group's location.
+-- Migration 0108: every signed-in account sees every group's location.
 --
 -- Ben (2026-10-22): the group locations are open to everyone in the app:
 -- Freshies, Facis, Game Masters and Committee tier alike. This replaces 0094

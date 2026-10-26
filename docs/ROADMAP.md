@@ -3,9 +3,11 @@
 This file lists work we have agreed on or are still discussing, but have not built yet.
 Read it before starting a new round of development. When a decision changes, update the item.
 
+For everything already merged, day by day since the first commit, see [CHANGELOG.md](CHANGELOG.md).
+
 > **From Ben:** when you finish your work, write down what you completed in the "Done" section at the end of this file, so the next teammate can see it. Do this for partly finished items too: say which parts are done and which are left.
 
-Last updated: 2026-10-22
+Last updated: 2026-10-26
 
 ## Status key
 
@@ -19,9 +21,9 @@ Last updated: 2026-10-22
 |---|---|---|
 | David | **Priority:** bring the important `bonding-session` features into the current code | [Read before merging `bonding-session`](#read-before-merging-bonding-session) |
 | David | Port or delete the branches not merged into `main` | [4](#4-branches-not-merged-into-main-ready) |
-| Jiamin | HOF sees every group's name and slogan | [6](#6-hof-sees-every-groups-name-and-slogan-ready) |
+| Jiamin | HOF sees every group's name and slogan (done) | [6](#6-hof-sees-every-groups-name-and-slogan-done-ops--freshies-shows-them-read-only) |
 | Zichien | Everything on the map: Figma design, game station status, and so on | [5](#5-map-ready) |
-| _To assign_ | Backend for Faci profiles (the UI is built) | [7](#7-faci-profiles-backend-ready) |
+| _To assign_ | Faci profiles: confirm `0069` is on the live database, then test | [7](#7-faci-profiles-backend-built-needs-0069-run-and-tested) |
 | _To assign_ | Take GM out of the database's blind box holders | [8](#8-gm-blind-boxes-bring-the-database-in-line-with-the-app-later) |
 | Ben | Tennis game on the 3D map's tennis courts | [9](#9-3d-map-a-tennis-game-on-the-tennis-courts-later) |
 
@@ -151,7 +153,7 @@ The design branches are merged. These remote branches are still not in `main` (c
 **Scope:**
 - Build the map to match the Figma design.
 - Game station status on the map (for example open, busy, closed).
-- Group locations on the map: every role sees every group (0101, Ben, 2026-10-22; replaces 0094, which had limited Faci and Freshie to their own group).
+- Group locations on the map: every role sees every group (0108, Ben, 2026-10-22; replaces 0094, which had limited Faci and Freshie to their own group).
 - Anything else on the map page.
 
 **Figma:** [XMUM campus map](https://www.figma.com/design/3dcEv45KenmKcoTcbaZmQ0/Untitled?node-id=24-2) (frame `XMUM Block Cube_XMUM Map 1`).
@@ -187,14 +189,13 @@ The design branches are merged. These remote branches are still not in `main` (c
 
 ## 7. Faci profiles backend (Built, needs `0069` run and tested)
 
-**Owner:** to assign. The UI is built and in `main` (Ben); this item is the backend only.
+**Owner:** to assign. The UI (Ben), migration `0069_faci_profiles.sql` and the frontend wiring are all in `main` (see Done, 2026-10-13). What is left: confirm `0069` has run on the live database, then run the tests at the end of this item. The steps below are kept as the record of what `0069` does.
 
 **Goal:** a Faci edits their own profile (photo, name, Instagram, programme, languages, intro). Their partner Faci and the Freshies in their group see it.
 
-**Current state (frontend, already built):**
-- Faci Home "You & Your Partner" lists the group's real Facis by reading `profiles` directly (allowed by the "faci reads own group members" policy), live on `profiles` changes for that group.
-- Freshie Home "Your Facilitator" calls `fn_group_facis()`. It does not exist yet, so the page falls back to sample profiles marked "Sample".
-- Edit Profile sheet ([ProfileEditor.tsx](../src/components/freshie/ProfileEditor.tsx)): **name already saves** (`profiles.full_name`). Photo, Instagram, programme, languages and intro show as "Soon" (disabled).
+**Current state (frontend, built):**
+- Faci Home "You & Your Partner" and Freshie Home "Your Facilitator" both call `fn_group_facis()` through one `useGroupFacis()` in [FreshieHome.tsx](../src/components/freshie/FreshieHome.tsx), and reload on `profiles` / `faci_profiles` changes. The sample profiles are removed.
+- Edit Profile sheet ([ProfileEditor.tsx](../src/components/freshie/ProfileEditor.tsx)) saves name, Instagram, programme, languages, intro and photo through `fn_set_my_faci_profile`; the photo goes to `faci-avatars/<user id>/`.
 - Instagram chip: grey and inactive with no handle; with a real handle it links to instagram.com.
 - **No WhatsApp or phone number anywhere** (decision 2026-10-13). Do not add one.
 
@@ -203,7 +204,7 @@ The design branches are merged. These remote branches are still not in `main` (c
 - Freshies never read the table directly. They go through `fn_group_facis()`, so the backend decides which fields they get.
 - Photos are not reviewed before they show. Admin can clear a bad photo or intro afterwards.
 
-**To do (one migration, `0069_faci_profiles.sql`; tell Jiamin the number first so it does not collide):**
+**What `0069_faci_profiles.sql` does (written):**
 1. Table `faci_profiles`: `user_id` (PK, references `profiles.id`, cascade delete), `instagram` text (handle without @; letters, digits, `.` and `_`, at most 30), `programme` text (≤ 80), `languages` text[] (≤ 6 items), `intro` text (≤ 160), `avatar_path` text, `updated_at`. Put the format and length rules in `check` constraints.
 2. RLS on `faci_profiles`, select only: the row's owner; a Faci whose `my_group_id()` equals the owner's group; Committee and Admin. No insert, update or delete policies (writes go through the RPC).
 3. `fn_set_my_faci_profile(p_instagram, p_programme, p_languages, p_intro, p_avatar_path)`: security definer; caller must be `faci`; upserts the caller's own row only; validates again; `audit('faci_profile.set', ...)`.
@@ -213,7 +214,7 @@ The design branches are merged. These remote branches are still not in `main` (c
 7. Add `faci_profiles` to the `supabase_realtime` publication so a partner's edits show live on Faci Home.
 8. `revoke all ... from public; grant execute ... to authenticated` on each new function.
 
-**Frontend step after the migration (small):**
+**Frontend step after the migration (done 2026-10-13):**
 - [faciProfiles.ts](../src/components/freshie/faciProfiles.ts) `faciFromProfile()`: map `programme`, `languages`, `intro`, `avatar_url`.
 - `useGroupFacis()` in [FreshieHome.tsx](../src/components/freshie/FreshieHome.tsx): switch to `fn_group_facis()` and also listen to `faci_profiles` changes.
 - `ProfileEditor.tsx`: enable the "Soon" fields and the photo button; save through `fn_set_my_faci_profile`; resize the photo on the phone (square, 512 px, webp) before uploading to `faci-avatars/<user id>/`.
@@ -222,7 +223,7 @@ The design branches are merged. These remote branches are still not in `main` (c
 
 **Test before running it on the live project** (on a test Supabase project): a Faci cannot change another Faci's row; a Freshie cannot select from `faci_profiles`; another group's members get nothing from `fn_group_facis()`; a Faci can upload only into their own avatar folder; Admin can clear a profile.
 
-**Release order:** run `0069` in Supabase first, then deploy the frontend. The other order calls functions that do not exist yet. Then add the new table and functions to [permission-matrix.md](permission-matrix.md). (done)
+**Release order:** run `0069` in Supabase first, then deploy the frontend. The other order calls functions that do not exist yet. [permission-matrix.md](permission-matrix.md) already lists the new table and functions.
 
 ## 8. GM blind boxes: bring the database in line with the app (Later)
 
@@ -233,7 +234,7 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 - Assigning to stations (one station, By station, All stations) checks no role. Only a station's GMs could show those boxes, so they cannot be sold now. Ben will change Admin's assign modes himself.
 
 **How to fix:**
-1. Add a new migration (the next free number after `0089`; do not edit 0054). Redefine `bb_holder_role()` as `p_role in ('committee', 'hof', 'hogm', 'admin')`, the same as `BLINDBOX_HOLDER_ROLES`.
+1. Add a new migration (the next free number; `0106` is the last one used on 2026-10-26; do not edit 0054). Redefine `bb_holder_role()` as `p_role in ('committee', 'hof', 'hogm', 'admin')`, the same as `BLINDBOX_HOLDER_ROLES`.
 2. Decide what to do with station pools: reject the station modes in the assign function, or leave them if a station seller comes back later.
 3. Before applying, check the live database for boxes already held by GMs or stations (on 2026-10-20 there were none) and revoke them first.
 
@@ -293,20 +294,25 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 
 ## Done
 
+### Duplicate migration numbers fixed, 2026-10-26 (Ben)
+- Two migration numbers were used twice. Renamed the files, with no change to their SQL: `0103_admin_game_master.sql` is now `0107_admin_game_master.sql`, and `0101_group_positions_everyone.sql` is now `0108_group_positions_everyone.sql`. Comments and docs that named them follow.
+- `0101_game_autostart` and `0103_staff_location_sharing` keep their numbers. `0102` runs after the first, and the live database's migration history records the second as `0103` (David, 2026-10-23).
+- Nothing to run on Supabase: both files were already applied through the SQL Editor, and no later migration depends on them. Older notes below may still use the old numbers.
+
 ### One blind box QR per box type, 2026-10-25 (Jiamin)
 - No migration. A seller with **two or more live box types** now gets one QR per type (token `bb4`: seller, QR version, assignment). Scanning it shows only that box, so the Freshie just buys; nothing to choose. A seller with one type, and the Spot, keep the seller-wide `bb3` code that is already printed. An old seller-wide code of a seller who now holds several types shows "Scan the box's own code".
 - Where: `lib/blindbox.ts`, `/api/blindbox/links` (decides per seller), `/blindbox` page (shows only the code's assignment), Staff Home "My Blind Box" (a QR for each type), Admin → Blind box → Codes (a QR and copy button for each type). Tests: `tests/blindbox/links-route.test.ts`.
 - Unchanged: one box per group per seller, so a group that bought one type from a seller sees "already bought" on that seller's other code. The page limits the choice; the buy RPC still takes the assignment id from the client.
 
 ### Light a key for a group (Admin and HOGM), 2026-10-25 (Jiamin)
-- **Run on Supabase:** `0105_game_lead_light_projector.sql`. Admin → Live control → Game master → Funfair and HOGM → Game control → Funfair have **Light a key for a group** (`FunfairLightGroup`, `fn_game_lead_light_projector`): pick a group, light B1, A3 or TF for it. No card tap, no Guardian check, no Day 2 Funfair switch. One group per key and one key per group; only Admin can take a key over. Audit action `projector.game_lead_light` (also registered: the 0103 Game master actions).
+- **Run on Supabase:** `0105_game_lead_light_projector.sql`. Admin → Live control → Game master → Funfair and HOGM → Game control → Funfair have **Light a key for a group** (`FunfairLightGroup`, `fn_game_lead_light_projector`): pick a group, light B1, A3 or TF for it. No card tap, no Guardian check, no Day 2 Funfair switch. One group per key and one key per group; only Admin can take a key over. Audit action `projector.game_lead_light` (also registered: the 0107 Game master actions).
 
 ### Admin Game master (Live control), 2026-10-25 (Jiamin)
-- **Run on Supabase:** `0103_admin_game_master.sql` after 0102, before deploying the frontend (Admin → Blind box now reads `blind_box_claims.gift`). Plan and preview: [docs/plans/admin-game-master.md](plans/admin-game-master.md).
+- **Run on Supabase:** `0107_admin_game_master.sql` after 0102, before deploying the frontend (Admin → Blind box now reads `blind_box_claims.gift`). Plan and preview: [docs/plans/admin-game-master.md](plans/admin-game-master.md).
 - Live control → **Game master** (`GameMaster`, Admin only, folded by default): pick a group, then Tokens (Add uses the Day 1 rules, Deduct the Day 2 Easy / Medium / Hard fees, Custom 1 to 50, reason, Undo), Puzzle (give a missing piece), Blind box (gift 1 to 5 unopened boxes; they show on the group's Items page) and Funfair (the zone card).
 - Always live: no phase, schedule or Day 2 switch check. The token freeze still blocks Tokens. A gift is free, uses no stock, is not counted as sold and does not count toward the group cap (`gift` flag; `fn_bb_buy` and `fn_bb_seller_preview` patched, `fn_live_ops` leaves gifts out).
 - The Funfair (3D map) tab is gone from Admin → Game; `/admin/funfair` redirects to Live control. HOGM's Game control → Funfair is unchanged.
-- Not tested against a database yet: run 0103, then try each tab.
+- Not tested against a database yet: run 0107, then try each tab.
 
 ### Day 2 game inner schedule; no more Pause, 2026-10-25 (Jiamin)
 - **Run on Supabase:** `0102_day2_inner_schedule.sql` after 0101, before deploying the frontend. Safe to run again (each guard is added once). Plan: [docs/plans/day2-inner-schedule.md](plans/day2-inner-schedule.md).
@@ -337,6 +343,20 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 - Verification: typecheck and production build passed; lint passed with the existing map `<img>` warning; 197 tests passed, including 9 new real-Postgres Committee permission tests. Browser fixture checks used real components and dummy data at 1024 × 768 and 820 × 1180: save/cancel returned focus, navigation stayed visible, Committee had history without Edit, and HOF retained Edit. Physical iPad keyboard reproduction remains pending. David confirmed that migration 0104 ran successfully in Supabase; production frontend release is in progress through the existing GitHub → Vercel integration.
 
 
+### David, 2026-10-24 — Projector activation transition alignment
+- Centred the gathering-magic focal point in the activation takeover viewport. The result screen, map hand-off and reduced-motion behaviour are unchanged.
+
+### David, 2026-10-24 — Funfair-facing map view
+- Default 3D view now looks from the A-row toward the Funfair, a 180° rotation from the PR #59 heading. The extra building-button row is limited to the 2D fallback.
+- Fullscreen building badges return to the page with that building's station list selected. Inline roof taps continue to select stations or building lists.
+- Checked desktop and 390 × 844 mock previews, inline A5/A3 roof taps and fullscreen A5 badge selection. Physical-phone touch testing remains pending.
+
+### David, 2026-10-23 (staff sharing migration number correction)
+- PR #56 merged as `f98c17e`; production deployment is in progress.
+- Found the initial branch-number check missed `fix/log-audit-gaps`'s `0102_admin_token_log_audit.sql`. Staff sharing moves to **0103**, with identical SQL; only its own migration-history version is repaired, without rerunning DDL or changing event/location rows. Do not reuse teammate's 0102.
+
+- **Confirmed:** live history now identifies staff sharing as 0103. Production release `f98c17e` reached Ready at [xmum-orientation.vercel.app](https://xmum-orientation.vercel.app); 184 tests passed again after the filename correction. Physical-phone GPS and multi-device checks remain outstanding.
+
 ### Admin campus map aligned with HOF / HOGM, 2026-10-23 (David)
 - Admin `/map` now uses the same staff map frame, night palette, title, mobile header and content width as HOF / HOGM. Admin station editing and accuracy checks remain Admin-only; no data or permission changes.
 - Building selectors now share icons, labels, station counts, an All option, campus ordering, selected states and keyboard focus treatment. Freshie / Faci use their group theme; staff use the Ops theme. Accuracy check has a 44px touch target.
@@ -347,6 +367,25 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 - Removed the password → join-link → image waterfall: the QR request starts as soon as the group is known, independently of the password RPC, and each section renders independently. Password fetch failures now end the loading state and show an error.
 - Stable QR links use a 60-second in-memory cache scoped to account and group, including in-flight deduplication; failures are evicted. Passwords are not cached. Existing PNG reuse remains in place; no API permissions, printed QR links or database data changed.
 - The isolated QR-only release passed all 188 tests, production build (including type and lint checks), and diff checks. David tested the Faci Group Code page and confirmed it opens noticeably faster; no numerical timing was measured. The existing 2D map image advisory remains.
+
+### David, 2026-10-22 (field-fix release preparation)
+- Integrated latest main (`3b4365d`) with the local field fixes; preserved teammate Faci, group QR, GM and map work. Kept the once-per-tab intro and the activation exemption.
+- Renamed staff sharing from 0089 to **0102** because main already owns 0089 and has migrations through 0101; database tests follow the new filename.
+- Adapted the QR cache to the static signed group-link API and restored Group locations' dark expanded surface with the animated fold. Fixed merged funfair zone title separators; regression added.
+- Final checks: **184 tests / 18 files**, production build, typecheck and lint. **Still pending:** live 0102 application, deployment, real-phone GPS and simultaneous device checks. Platform access is being resolved; no live NFC or event data was reset or deleted. See [release notes](testing/orientation-field-fixes-2026-10-22.md).
+
+- **Live follow-up:** 0102 was applied transactionally to `orientation-2612` and registered in migration history; RLS, direct-read denial, anonymous RPC denial and the three function definitions were verified. No location rows were created. Vercel preview for `c8ce19d` is Ready; production release and physical-phone checks remain pending.
+
+### David, 2026-10-22 — website punctuation
+- Replaced visible middle-dot separators throughout the website with context-appropriate slashes, ampersands, colons or parentheses. Updated the funfair arrival title split to match the new separator; existing database zone/phase labels are formatted at display time. No database migration or live-data edit. Source changes only, not deployed.
+
+### David, 2026-10-22 — field fixes (source ready; not deployed)
+- Map follows the live Day 1/Day 2 phase, with foreground refresh and polling; added large building buttons for phones and restricted transparent 3D marker hit areas. Expanded group Faci details inherit the dark surface.
+- Live control All uses independent realtime subscriptions; original crash reproduced and fixed in the browser.
+- Current-device sign-out avoids invalidating other phones on shared group accounts. Auth redirects retain refreshed cookies and transient service errors do not redirect users as signed out.
+- Group QR cards draw directly to canvas, use a bounded in-memory cache, and no longer regenerate on unrelated group balance updates.
+- HOF/HOGM opt-in GPS sharing added (0102), including Stop, role-restricted visibility, no position history and two-minute expiry. HOF Faci-assignment edits were excluded because David confirmed a teammate has fixed them.
+- Validated: 142 tests across 13 suites, typecheck, production build, local browser regressions. Pending: apply 0102, deploy, and check real-phone GPS/multi-device sessions. See [field-fix test and release notes](testing/orientation-field-fixes-2026-10-22.md).
 
 ### Tennis game T1a: players, the swing and the broadcast view, 2026-10-22 (Ben)
 Roadmap item 9, batch T1a. See it at `/map3d?tennis=demo` (desktop and a phone size). No game and no network yet.
@@ -386,13 +425,13 @@ No migration. With the GM's Day 2 Start checking the group in, the map's check-i
 ### One "Group locations" list under the map, 2026-10-22
 - `GroupStatusList` is one list, Group 1 to 10 in order, each with where it was last seen ("Last seen at A1 · 13 min ago", "No location yet", "· rough" for a rough GPS fix) and its Facis button. It replaces "Not seen for 10+ min" (red, listed first) and "Groups on the map" (Ben). `isNotSeen()` went with it.
 
-### Everyone sees every group on the map (0101), 2026-10-22
-Migration `0101_group_positions_everyone.sql` (**applied** on the live database 2026-10-22: `gm.test`, `freshie.test`, `faci.test`, `hof.test` and `hogm.test` each get all 10 groups; do not run 0094 after it). Ben: the group locations are open to everyone in the app, GMs included.
+### Everyone sees every group on the map (0108), 2026-10-22
+Migration `0108_group_positions_everyone.sql` (**applied** on the live database 2026-10-22: `gm.test`, `freshie.test`, `faci.test`, `hof.test` and `hogm.test` each get all 10 groups; do not run 0094 after it). Ben: the group locations are open to everyone in the app, GMs included.
 - `fn_group_positions()` returns every group to every signed-in account (Freshie, Faci, GM, Guardian GM, Committee tier). `fn_group_faci_status()` the same: a group's Facis' names and last report; phone numbers stay Committee tier only. This is 0089's rule plus GMs, and replaces 0094 (own group only for Freshie and Faci, nothing for GMs).
 - `/map` asks for group pins for GMs too (`showPins`), so every role gets the pins, "Not seen for 10+ min" and "Groups on the map".
 - The station lists still name the groups only for Committee tier; Freshie, Faci and GM see "1 group here" (`whoIsHere`).
-- **Live database, checked 2026-10-22 (read only):** 0094 has not run there; `freshie.test` and `faci.test` already get all 10 groups (0089), `gm.test` none. After 0101, GMs get all 10 too.
-- Not checked: 0101 against a database (no local Postgres here); its bodies are 0094's and 0082's with the visibility condition changed.
+- **Live database, checked 2026-10-22 (read only):** 0094 has not run there; `freshie.test` and `faci.test` already get all 10 groups (0089), `gm.test` none. After 0108, GMs get all 10 too.
+- Not checked: 0108 against a database (no local Postgres here); its bodies are 0094's and 0082's with the visibility condition changed.
 
 ### A Day 2 game shows on the maps: Busy and which group, 2026-10-22
 No migration. Ben's flow: the GM picks the group and the funfair places, starts the game, the station turns Busy; Freshies and Facis see it busy with a group there, Committee tier sees which group.
@@ -500,7 +539,7 @@ Migration `0095_gm_station_checkin.sql` (**needs running**):
 - `/checkin` cleanly redirects all users to `/map`.
 
 ### Faci and Freshie see only their own group on the map, 2026-10-19
-(Superseded by 0101: do not run 0094; everyone sees every group.) Migration `0094_group_positions_own_group.sql` reversed `0089`: `fn_group_positions()` returns every group only to Committee tier; a Faci or Freshie gets just the group on their profile, so the "Not seen for 10+ min" and "Groups on the map" lists show one group. No frontend change beyond a comment. The 2026-10-19 note under the Freshie/Faci map section saying every group is public is superseded.
+(Superseded by 0108: do not run 0094; everyone sees every group.) Migration `0094_group_positions_own_group.sql` reversed `0089`: `fn_group_positions()` returns every group only to Committee tier; a Faci or Freshie gets just the group on their profile, so the "Not seen for 10+ min" and "Groups on the map" lists show one group. No frontend change beyond a comment. The 2026-10-19 note under the Freshie/Faci map section saying every group is public is superseded.
 
 ### David, 2026-10-19 (NFC success → 3D funfair)
 - Connected ordinary activation and Guardian verification to the live v2 handover contract; preserved explicit Admin test stickers and missing-function-only legacy fallback. Guardian now reads and refreshes persisted state.
@@ -665,7 +704,7 @@ Migration `0089` (applied). Freshie's and Faci's `/map` dropped the white page a
 - CampusMap's markup is unchanged; `.fh-map` in `freshie.css` recolours its cards, lists, chips, the inline map buttons and the 2D Stations / Lightbulbs tabs. The full-screen map keeps its own look, as on the ops crew's map.
 - AppShell treats `/map` as a night page for Freshie and Faci, so the light mobile header is hidden there.
 - Admin's `/map` and Faci's `/checkin` keep the light design.
-- (0094 limited this to their own group; 0101 opens it again, GMs included.) Freshies and Facis see every group's location on the map (Ben: the group pins are public to them). Migration `0089_freshie_group_positions.sql` (applied on the project; Ben, 2026-10-19) lets `fn_group_positions()` return every group to a Freshie or Faci. This also applies to Faci's `/checkin` map.
+- (0094 limited this to their own group; 0108 opens it again, GMs included.) Freshies and Facis see every group's location on the map (Ben: the group pins are public to them). Migration `0089_freshie_group_positions.sql` (applied on the project; Ben, 2026-10-19) lets `fn_group_positions()` return every group to a Freshie or Faci. This also applies to Faci's `/checkin` map.
 
 ### Map: East funfair rides on their dorms' real middles, and the midway, 2026-10-17 (Ben, branch `funfair-east-layout`)
 No migration. Built on `map3d-footpaths` (the lawn round the funfair's land), so merge that first.
@@ -690,9 +729,6 @@ No migration.
 - OSM draws the walk along that lawn's east edge about 11 m into the trees. It is traced again, and `emit_phase1.py` leaves the OSM way out.
 - Not drawn: OSM's sidewalks outside the outer road, car roads, and walks on the funfair's land.
 - To check on site: the imagery suggests a walk between A3 and A4, under trees. It is not drawn.
-
-### David, 2026-10-19 (logo intro frequency)
-- The global Vortexa logo intro now plays once per browser tab session. Refreshes and login redirects in the same tab skip it, with no overlay flash while checking session storage. Activation and its preview keep their existing exemption. If storage is disabled, repeat full-page loads cannot retain the seen flag.
 
 ### Map: LakeFront Café as the lake stage, 2026-10-16 to 10-17 (Ben, branch `funfair-central`; partly done)
 No migration. Design and batches: [map3d-lakefront-design.md](map3d-lakefront-design.md).
@@ -1164,37 +1200,3 @@ Branch `jiamin-blind-box-integration`. Migration `0070_blindbox_buy_flow.sql` (t
 - Admin redesign step A: Admin nav is now 4 sections (Live, Freshies, Game, Settings) with sub-tabs; Freshie control moved to `/admin/freshies` (old `/freshie-control` redirects); admin sidebar can collapse to icons. UI only. Step B done: Users (role chips, group filter, table, CSV import in a pop-up), Audit (action and role chips, table), Control room (phase rows, switches). Step C done: Stations (table, add in pop-up), Blind box (two tabs, table), NFC, Puzzles, FAQ (grouped, add in pop-up), Brand, Tokens (full width, layout only). Admin redesign complete.
 - Removed Interview Booking (`/booking`) and Practice Reservations (`/reservations`) for every role: pages, nav, dashboard cards. Migration `0039` drops any leftover booking tables, functions and types.
 - Facilitators set a group name and slogan on the home checklist. "Group 1" stays the number. HOF still cannot see the list.
-
-
-### David, 2026-10-22 — field fixes (source ready; not deployed)
-- Map follows the live Day 1/Day 2 phase, with foreground refresh and polling; added large building buttons for phones and restricted transparent 3D marker hit areas. Expanded group Faci details inherit the dark surface.
-- Live control All uses independent realtime subscriptions; original crash reproduced and fixed in the browser.
-- Current-device sign-out avoids invalidating other phones on shared group accounts. Auth redirects retain refreshed cookies and transient service errors do not redirect users as signed out.
-- Group QR cards draw directly to canvas, use a bounded in-memory cache, and no longer regenerate on unrelated group balance updates.
-- HOF/HOGM opt-in GPS sharing added (0102), including Stop, role-restricted visibility, no position history and two-minute expiry. HOF Faci-assignment edits were excluded because David confirmed a teammate has fixed them.
-- Validated: 142 tests across 13 suites, typecheck, production build, local browser regressions. Pending: apply 0102, deploy, and check real-phone GPS/multi-device sessions. See [field-fix test and release notes](testing/orientation-field-fixes-2026-10-22.md).
-
-### David, 2026-10-22 — website punctuation
-- Replaced visible middle-dot separators throughout the website with context-appropriate slashes, ampersands, colons or parentheses. Updated the funfair arrival title split to match the new separator; existing database zone/phase labels are formatted at display time. No database migration or live-data edit. Source changes only, not deployed.
-
-### David, 2026-10-22 (field-fix release preparation)
-- Integrated latest main (`3b4365d`) with the local field fixes; preserved teammate Faci, group QR, GM and map work. Kept the once-per-tab intro and the activation exemption.
-- Renamed staff sharing from 0089 to **0102** because main already owns 0089 and has migrations through 0101; database tests follow the new filename.
-- Adapted the QR cache to the static signed group-link API and restored Group locations' dark expanded surface with the animated fold. Fixed merged funfair zone title separators; regression added.
-- Final checks: **184 tests / 18 files**, production build, typecheck and lint. **Still pending:** live 0102 application, deployment, real-phone GPS and simultaneous device checks. Platform access is being resolved; no live NFC or event data was reset or deleted. See [release notes](testing/orientation-field-fixes-2026-10-22.md).
-
-- **Live follow-up:** 0102 was applied transactionally to `orientation-2612` and registered in migration history; RLS, direct-read denial, anonymous RPC denial and the three function definitions were verified. No location rows were created. Vercel preview for `c8ce19d` is Ready; production release and physical-phone checks remain pending.
-
-### David, 2026-10-23 (staff sharing migration number correction)
-- PR #56 merged as `f98c17e`; production deployment is in progress.
-- Found the initial branch-number check missed `fix/log-audit-gaps`'s `0102_admin_token_log_audit.sql`. Staff sharing moves to **0103**, with identical SQL; only its own migration-history version is repaired, without rerunning DDL or changing event/location rows. Do not reuse teammate's 0102.
-
-- **Confirmed:** live history now identifies staff sharing as 0103. Production release `f98c17e` reached Ready at [xmum-orientation.vercel.app](https://xmum-orientation.vercel.app); 184 tests passed again after the filename correction. Physical-phone GPS and multi-device checks remain outstanding.
-
-### David, 2026-10-24 — Funfair-facing map view
-- Default 3D view now looks from the A-row toward the Funfair, a 180° rotation from the PR #59 heading. The extra building-button row is limited to the 2D fallback.
-- Fullscreen building badges return to the page with that building's station list selected. Inline roof taps continue to select stations or building lists.
-- Checked desktop and 390 × 844 mock previews, inline A5/A3 roof taps and fullscreen A5 badge selection. Physical-phone touch testing remains pending.
-
-### David, 2026-10-24 — Projector activation transition alignment
-- Centred the gathering-magic focal point in the activation takeover viewport. The result screen, map hand-off and reduced-motion behaviour are unchanged.

@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 export default function MapPage() {
   const profile = useProfile();
 
-  // Every role sees every group's pin (0101; Ben: the group locations are
+  // Every role sees every group's pin (0108; Ben: the group locations are
   // open to everyone in the app). The flag just requests pins.
   const showPins =
     COMMITTEE_TIER.includes(profile.role) ||
