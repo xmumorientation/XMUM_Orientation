@@ -60,7 +60,7 @@ export function JoinChooser({ open, onClose }: { open: boolean; onClose: () => v
           Freshie Login
         </a>
         <a href="/login" className="vx-btn vx-btn-ghost">
-          Committee, Faci, GM login
+          Committee, Faci, GM Login
         </a>
       </div>
     </div>,

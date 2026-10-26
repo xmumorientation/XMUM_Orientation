@@ -87,7 +87,7 @@ export function LoadingReveal({ reduced = false, skip = false, onDone }: Props) 
         <div ref={line2}
           className="mt-3 font-display text-xl font-bold uppercase tracking-tight text-white/90 opacity-0 sm:text-3xl md:text-4xl"
           style={{ textShadow: "0 0 40px rgba(164,55,255,0.7)" }}>
-          One ticket, One Ride, Discover adventure Inside.
+          One ticket, One Ride, Discover Adventure Inside.
         </div>
       </div>
     </div>

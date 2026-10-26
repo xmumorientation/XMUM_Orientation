@@ -16,7 +16,7 @@ export function WelcomeSection({ onJoin }: { onJoin?: () => void }) {
           <span className="vx-welcome-mark vx-holo">Vortexa</span>
         </h1>
 
-        <p className="vx-welcome-slogan vx-rise-2">One Ticket, One Ride.<br />Discover the Adventure Inside.</p>
+        <p className="vx-welcome-slogan vx-rise-2">One Ticket, One Ride.<br />Discover Adventure Inside.</p>
 
 
         <div className="vx-welcome-actions vx-rise-3">
