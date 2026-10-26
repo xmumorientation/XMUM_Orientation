@@ -26,10 +26,12 @@ Ben may continue this work in a new Claude conversation. This file says where ev
 
 ## Where things stand
 
-### Tennis game on the tennis courts (2026-10-22, T1a done, committed on `main`)
+### Tennis game on the tennis courts (T1a done 2026-10-22; T1b done 2026-10-26)
 
-- Plan, Ben's decisions and batches T1a–T3b: [ROADMAP.md](ROADMAP.md), item 9. What T1a built: its "Done".
-- Code: `src/components/map3d/tennis/`. It meets the map in `CampusMap3D.tsx` (`?tennis=demo`) and in `sports.tsx` (the fence cutaway). Court sizes: `courts.ts`.
+- Plan, Ben's decisions and batches T1a–T3b and T1c: [ROADMAP.md](ROADMAP.md), item 9. What T1a and T1b built: its "Done".
+- Code: `src/components/map3d/tennis/`. It meets the map in `CampusMap3D.tsx` (`?tennis=demo`, `?tennis=bot`) and in `sports.tsx` (the fence cutaway). Court sizes: `courts.ts`.
+- The game (T1b): `match.ts` is the rules, pure and stepped by time (`step(t)` takes events in time order); `ball.ts` the flight; `TennisGame.tsx` draws it (`TennisCourt`, in the scene) and lays the HUD over the page (`TennisHud`). `CampusMap3D` imports `TennisGame` only when the URL asks for the game, so the map's own chunk does not grow.
+- Shots of a game: `?tennis=bot&auto=1&t=<seconds>` holds the two bots' match (seed 17) at that moment, the same every time. Event times for picking moments: step a `new Match(17, [true, true])` in a test and print `drain()`.
 - **The view is Ben's:** like a TV broadcast (his reference: an Australian Open broadcast), with clear court lines. `courtView()` blends a wide-screen preset (low, 18° lens) and an upright-phone preset (45°, 30° lens). The wide pitch is already as low as `maxPolarAngle` allows.
 - The crisp courts (`surface.tsx`) write no depth and use a polygon offset; they fade out beyond 25–45 units, so far views keep the painted courts.
 - Views: `/map3d?tennis=demo` (desktop and `390x844m`); night `&mode=night`; mid-distance `&cam=-34,18,42,-10.98,0,24.54`.
@@ -192,12 +194,13 @@ Ben may continue this work in a new Claude conversation. This file says where ev
 
 ## Useful facts
 
-- **Dev server:** `npx next dev -p 3000`. If nothing is listening on port 3000, start it.
+- **Dev server:** `npx next dev -p 3000`. If nothing is listening on port 3000, start it. A `next build` while it runs breaks it (pages load, but `main-app.js` and `layout.css` give 404 and nothing runs): restart it.
 - **Screenshots:** headless Chrome over the DevTools protocol.
   - Start Chrome with `--headless=new --remote-debugging-port=9222 --user-data-dir=<a temp folder>`.
   - A small script (written in each session's scratchpad, since it does not carry over) opens a tab per shot, emulates the size (phones: touch, DPR 2), waits, saves a PNG, and prints the console's errors and warnings.
   - `/map3d` URL parameters: `?intro=0`, `?mode=day|sunset|night`, `?cam=x,y,z,tx,ty,tz`, `?lite=0|1`, `?perf=0`. In development, `?stats=1` logs draw calls and triangles.
   - **Always use `?perf=0` for headless shots.** Without it, SwiftShader is slow enough that the 3D map gives up and shows 2D.
+  - When the dev server can't be used, a Vite preview of `/map3d` works (2026-10-26): Vite ships with vitest. A config in the scratchpad with `root` the repo, `@` aliased to `src`, `process.env.NODE_ENV` defined, `cacheDir` and `envDir` in the scratchpad, and a middleware that serves an HTML page mounting `CampusMap3D`. The map code imports nothing from Next.
 - **Checks:**
   - `npx tsc --noEmit -p .` (clean, tests included);
   - `npx eslint <changed files>`;

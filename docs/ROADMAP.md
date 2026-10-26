@@ -240,7 +240,7 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 
 ## 9. 3D map: a tennis game on the tennis courts (Later)
 
-**Owner:** Ben. T1a is built (2026-10-22, see "Done"); the rest is not. Ben is not sure his Claude usage covers it, so it is split into small batches that each fit one conversation.
+**Owner:** Ben. T1a (2026-10-22) and T1b (2026-10-26) are built, see "Done"; the rest is not. Ben is not sure his Claude usage covers it, so it is split into small batches that each fit one conversation. Ben (2026-10-26): keep the load on Supabase, Vercel and phones low.
 
 **Goal:** the 3D map is more fun. Two people play tennis against each other on the map's tennis courts, and everyone who opens the map sees the match being played.
 
@@ -256,7 +256,7 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 **Design (proposed; change it here if Ben decides otherwise):**
 - **Where:** the three courts of the tennis block (`SPORTS` in [geo.ts](../src/components/map3d/geo.ts), laid out by [courts.ts](../src/components/map3d/courts.ts), drawn in [sports.tsx](../src/components/map3d/sports.tsx); the net is `Equipment`). The players are low-poly figures (`tennis/player.ts`) in the player's group colour.
 - **The view (Ben, 2026-10-22: like a TV broadcast, with clear court lines):** from behind the near baseline, as `courtView()` in `tennis/court.ts` works it out for the screen's shape. Wide screens get a low camera and a long lens (18°). An upright phone's camera is higher (45°), so its narrow screen holds the court's width. Up close the courts are drawn crisp (`tennis/surface.tsx`), and the fence side between the camera and the court is hidden (`useFenceCutaway` in `sports.tsx`).
-- **Controls:** drag left and right to move along the baseline; tap to swing. Swinging early hits cross-court and late hits down the line. Tap to serve.
+- **Controls (built in T1b):** drag left and right to move along the baseline (or ← →); tap (click, Space) to swing, and to serve. A tap counts from 0.5 s to 0.06 s before the ball reaches the racket: early pulls the ball cross-court, late pushes it down the line, the middle hits deep and fast through the middle. A ring on the court shows where to meet the ball. A touch that turns into a drag drops its swing.
 - **Who is who:** Freshies share one login per group, so a player is a random ID per phone, not the account. A player's tag shows their group's name. Read group names and colours with `fn_scoreboard()`, which every role may call (a GM cannot select `groups`).
 - **Sync, with no new tables:**
   - Supabase Realtime **Presence** holds the queue and which courts are busy, with the score.
@@ -279,13 +279,14 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 | Batch | Work | Size |
 |---|---|---|
 | T1a | **Done.** Players on the courts: the figures, the swing, a looping rally on all three courts, the broadcast view with crisp courts (`/map3d?tennis=demo`). No game yet. | Small |
-| T1b | The game on one phone against a bot: ball flight with bounce and net, hit or miss, scoring, touch controls. | Medium |
+| T1b | **Done.** The game on one phone against a bot (`/map3d?tennis=bot`): ball flight with bounce and net, hit or miss, scoring, touch controls, with the TV score bug and calls and the hit effects (trail, racket blur, rings, flash). | Medium |
 | T2a | Two players over `BroadcastChannel` (two tabs): queue, pairing, the 3 courts, shot messages, score, drop-outs. Keep the transport behind one interface so T2b only swaps it. | Medium |
 | T2b | The Supabase Realtime transport (Presence and Broadcast). | Small |
 | T3a | Spectators: the looping rally from afar (`tennis/rally.ts`, built in T1a), the real shots up close. The players are too small to see from the map's usual distance, so a busy court also needs a tag over it (names and score, like the lake stage's "● LIVE"). | Medium |
 | T3b | In the real map pages: tap the tennis court, then Play; an Admin on/off switch; end-of-match card; phone check. | Small |
+| T1c | The look, after T3b (the first batch to drop if time or usage runs short): each player one `SkinnedMesh` (1 draw call, not 5) with elbows and knees, a run cycle, a split-step, win and lose poses; a shadow in the player's shape on phones too (planar projected, no shadow map); no tilt-shift (the map's miniature blur) in the tennis view; the ball drawn true size up close. | Medium |
 
-**Later (polish):** the far fence fills the top of the broadcast view with big diamonds (its mesh is sized for map distances); a finer mesh up close, or a backdrop like a stadium wall, would look more like TV. Each player is 5 meshes, so draw only the busy courts' players (the demo draws all three courts: about 43 draw calls).
+**Later (polish):** the far fence fills the top of the broadcast view with big diamonds (its mesh is sized for map distances); a finer mesh up close, or a backdrop like a stadium wall, would look more like TV. Each player is 5 meshes (T1c makes it 1), so draw only the busy courts' players (the demo draws all three courts: about 43 draw calls).
 
 
 ---
@@ -293,6 +294,19 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 ---
 
 ## Done
+
+### Tennis game T1b: the game against a bot, 2026-10-26 (Ben)
+Roadmap item 9, batch T1b. Play it at `/map3d?tennis=bot`. No network: the bot plays on the phone, and the game's code loads only on that URL.
+- `src/components/map3d/tennis/`:
+  - `ball.ts`: the ball's flight from a shot (when and where it left the racket, how fast). The net, the bounces, the roll and the back fence follow from it, so two phones that share shots draw the same path (T2). `aim()` sends the ball to a bounce point with a chosen margin over the net; `meetPoint()` is where the receiver meets it: coming down through racket height after the bounce, at most 2.4 m behind the baseline.
+  - `match.ts`: the rules: first to 5, the serve changes every point. A tap counts from 0.5 s to 0.06 s before the ball reaches the racket (see "Controls" above); past 90% of that window, the earliest go into the net and the latest go wide. The swing then meets the ball itself: the feet slide up to 0.6 m out (further when stepping away from a ball at the body, given time) and the arm reaches up or down to the ball's height, so the ball always meets the racket as drawn. The receiver judges hit or miss. The bot aims cross-court, through the middle or down the line, and misses its timing by a random share (more when it leads, so matches stay close).
+  - `effects.ts`: the ball's trail in the hitter's colour, the racket's blur, a ring where the ball lands (red when out) or meets the net, a flash at each hit (a clean hit also jolts the camera a little), and the ring that shows the player where to meet the ball (in their colour once they can reach it, pulsing while a tap would meet it).
+  - `TennisGame.tsx`, `tennis.css`: the match in the scene (the broadcast view, following the play a little, less on an upright phone) and the HUD: a TV score bug with the server's ball, the calls (OUT, NET, WINNER, MISS; TOO EARLY, TOO LATE or TOO FAR for the player's own misses), MATCH POINT, hints, and an end card with Play again.
+  - `player.ts`: the serve (toss and overhead), `swingPose(rel, hand, lift)` reaching for high and low balls, `racketAt()` and `handAt()`, and points for the racket's tip and throat and the other hand.
+- `CampusMap3D.tsx`: `?tennis=bot` (`&auto=1` two bots, `&color=%23rrggbb` the player's shirt); `?t=<seconds>` holds the T1a rally or the two bots' match at that moment, for screenshots. In the game the map's controls are off, and the map draws only while something moves.
+- Load: no Supabase or Vercel calls (no network code, no API route). Phone size (lite) in the game: 71 draw calls, the same as the T1a demo; desktop 427 (demo 412).
+- Balance, two bots over 40 matches: about 8.5 shots a point, 2.3 minutes a match, close scores. To tune: `LEAD_MAX` / `LEAD_MIN` (the window), `LUNGE` (reach), `BOT_SPREAD` and `BOT_RUN` (the bot), `DRAG_M` in `TennisGame.tsx` (drag speed).
+- Tests: `tests/tennis/match.test.ts` (the flight and aim, the tap window, whole bot matches, the ball meeting the racket at every hit). Checked in headless Chrome at desktop and phone size, including tap to serve and drag to move. Not yet on a real phone; the feel (window, drag speed, bot strength) needs Ben's hands on it.
 
 ### Duplicate migration numbers fixed, 2026-10-26 (Ben)
 - Two migration numbers were used twice. Renamed the files, with no change to their SQL: `0103_admin_game_master.sql` is now `0107_admin_game_master.sql`, and `0101_group_positions_everyone.sql` is now `0108_group_positions_everyone.sql`. Comments and docs that named them follow.

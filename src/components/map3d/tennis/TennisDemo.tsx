@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 
 import { makeGlow } from "../textures";
+import { BALL_R } from "./ball";
 import { courtFrame, TENNIS_COURTS } from "./court";
 import { makePlayer, playerMaterial, posePlayer } from "./player";
 import { rallyAt } from "./rally";
@@ -22,16 +23,15 @@ const DEMO_SHIRTS: [string, string][] = [
   ["#fc9e3d", "#e0b4fc"],
 ];
 
-/** The ball, drawn about five times life size so it shows at map distances (metres in the court frame). */
-const BALL_R = 0.16;
 /** Shadows lie just over the court (metres in the court frame; about 0.02 world units). */
 const SHADOW_Y = 0.15;
 
-function Court({ index, shirts, material, shadowTex }: {
+function Court({ index, shirts, material, shadowTex, at }: {
   index: number;
   shirts: [string, string];
   material: THREE.Material;
   shadowTex: THREE.Texture;
+  at: number | null;
 }) {
   const frame = courtFrame(TENNIS_COURTS[index]);
   const players = useMemo(() => shirts.map((s) => makePlayer(s, material)), [shirts, material]);
@@ -43,7 +43,7 @@ function Court({ index, shirts, material, shadowTex }: {
   const offset = index * 0.83;
 
   useFrame(({ clock, invalidate }) => {
-    const f = rallyAt(clock.elapsedTime + offset, seed);
+    const f = rallyAt((at ?? clock.elapsedTime) + offset, seed);
     f.players.forEach((p, i) => {
       const { rig } = players[i];
       rig.root.position.set(p.x, 0, p.z);
@@ -58,8 +58,8 @@ function Court({ index, shirts, material, shadowTex }: {
       s.position.set(bx, SHADOW_Y, bz);
       s.scale.setScalar(Math.max(0.5, 1 - by / 8));
     }
-    // the map draws on demand on phones: keep asking while the rally plays
-    invalidate();
+    // the map draws on demand on phones: keep asking while the rally plays (a held moment needs no more frames)
+    if (at === null) invalidate();
   });
 
   return (
@@ -105,8 +105,8 @@ function useLens(fov: number) {
   }, [camera, fov, invalidate]);
 }
 
-/** `fov`: the lens courtView() chose with the start view. */
-export function TennisDemo({ fov }: { fov: number }) {
+/** `fov`: the lens courtView() chose with the start view. `at`: hold the rally at this many seconds in (screenshots). */
+export function TennisDemo({ fov, at = null }: { fov: number; at?: number | null }) {
   useLens(fov);
   const material = useMemo(playerMaterial, []);
   const shadowTex = useMemo(makeGlow, []);
@@ -121,7 +121,7 @@ export function TennisDemo({ fov }: { fov: number }) {
     <>
       <CourtSurface />
       {TENNIS_COURTS.map((_, i) => (
-        <Court key={i} index={i} shirts={DEMO_SHIRTS[i % DEMO_SHIRTS.length]} material={material} shadowTex={shadowTex} />
+        <Court key={i} index={i} shirts={DEMO_SHIRTS[i % DEMO_SHIRTS.length]} material={material} shadowTex={shadowTex} at={at} />
       ))}
     </>
   );

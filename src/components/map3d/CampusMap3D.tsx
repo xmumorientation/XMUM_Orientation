@@ -13,6 +13,7 @@ import CampusScene, { type CameraView } from "./CampusScene";
 import { GPS_MARKERS } from "./geo";
 import { courtView, TENNIS_COURTS } from "./tennis/court";
 import { TennisDemo } from "./tennis/TennisDemo";
+import type { Game, TennisOptions } from "./tennis/TennisGame";
 import { prefersLite } from "./webgl";
 
 // DRAFT (map-3d-draft branch, not for main): the /map3d demo page. Wraps
@@ -31,8 +32,10 @@ type Demo = {
    * the funfair, like the real map (on while all three zones are on).
    */
   concert: boolean | "flip" | undefined;
-  /** The tennis courts' looping rally (the tennis game's batch T1a), with the broadcast view's lens. */
-  tennis: { fov: number } | null;
+  /** The tennis courts' looping rally (the tennis game's batch T1a), with the broadcast view's lens; `at` holds it. */
+  tennis: { fov: number; at: number | null } | null;
+  /** The tennis game against a bot (batch T1b). */
+  game: TennisOptions | null;
 };
 
 /**
@@ -41,7 +44,8 @@ type Demo = {
  * ?funfair=1,0,1 which funfair zones are on (west, central, east; default all on), ?concert=0|1|flip the lake
  * stage's concert (default: on while all three zones are on; flip: on 4 s after load), ?showt=<seconds>
  * (development) hold the concert at that moment, ?tennis=demo a rally on each tennis court, seen from behind the
- * middle court (unless ?cam is given).
+ * middle court (unless ?cam is given), ?tennis=bot the tennis game against a bot on the middle court (?auto=1 two
+ * bots, ?color=%23rrggbb the player's shirt), ?t=<seconds> hold the rally or the two bots' match at that moment.
  */
 function readDemo(): { demo: Demo; mode: Mode | null } {
   const q = new URLSearchParams(window.location.search);
@@ -50,7 +54,10 @@ function readDemo(): { demo: Demo; mode: Mode | null } {
   const m = q.get("mode");
   const lite = q.get("lite");
   const concert = q.get("concert");
-  const tennis = q.get("tennis") === "demo" ? courtView(TENNIS_COURTS[1], window.innerWidth / window.innerHeight) : null;
+  const tq = q.get("tennis");
+  const tennis = tq === "demo" || tq === "bot" ? courtView(TENNIS_COURTS[1], window.innerWidth / window.innerHeight) : null;
+  const held = q.get("t") === null ? NaN : Number(q.get("t"));
+  const at = Number.isFinite(held) ? held : null;
   return {
     demo: {
       camera: cam
@@ -65,7 +72,8 @@ function readDemo(): { demo: Demo; mode: Mode | null } {
       touch: window.matchMedia("(max-width: 768px)").matches,
       funfair: parseFunfair(q.get("funfair")) ?? { west: 1, central: 1, east: 1 },
       concert: concert === "1" ? true : concert === "0" ? false : concert === "flip" ? "flip" : undefined,
-      tennis: tennis && { fov: cam ? 30 : tennis.fov },
+      tennis: tq === "demo" && tennis ? { fov: cam ? 30 : tennis.fov, at } : null,
+      game: tq === "bot" ? { color: q.get("color") ?? "", auto: q.get("auto") === "1", at } : null,
     },
     mode: m === "day" || m === "sunset" || m === "night" ? m : null,
   };
@@ -164,8 +172,21 @@ export default function CampusMap3D() {
     setDemo(r.demo);
     if (r.mode) setMode(r.mode);
     // the names sit over the courts in the broadcast view
-    if (r.demo.tennis) setLabels(false);
+    if (r.demo.tennis || r.demo.game) setLabels(false);
   }, []);
+  // the game's code loads only when the page asks for it
+  const [tennis, setTennis] = useState<{ mod: typeof import("./tennis/TennisGame"); game: Game } | null>(null);
+  const gameOptions = demo?.game;
+  useEffect(() => {
+    if (!gameOptions) return;
+    let live = true;
+    import("./tennis/TennisGame").then((mod) => {
+      if (live) setTennis({ mod, game: mod.createGame(gameOptions) });
+    });
+    return () => {
+      live = false;
+    };
+  }, [gameOptions]);
   const touch = demo?.touch ?? false;
   const [flipped, setFlipped] = useState(false);
   useEffect(() => {
@@ -184,22 +205,27 @@ export default function CampusMap3D() {
           intro={demo.intro}
           labels={labels}
           controlsRef={controls}
+          // the game owns the camera and every touch
+          interactive={!demo.game}
           funfair={demo.funfair}
           concert={demo.concert === "flip" ? flipped : demo.concert}
         >
           {demo.gps && <GpsMarkers />}
-          {demo.tennis && <TennisDemo fov={demo.tennis.fov} />}
+          {demo.tennis && <TennisDemo fov={demo.tennis.fov} at={demo.tennis.at} />}
+          {tennis && <tennis.mod.TennisCourt game={tennis.game} />}
           {demo.stats && <RenderStats lite={demo.lite} />}
         </CampusScene>
       )}
+      {tennis && <tennis.mod.TennisHud game={tennis.game} />}
 
+      {/* the game has its own HUD instead */}
       <div
         style={{
           position: "absolute",
           top: 16,
           left: 16,
           right: 16,
-          display: "flex",
+          display: demo?.game ? "none" : "flex",
           justifyContent: "space-between",
           alignItems: "flex-start",
           gap: 12,
@@ -231,7 +257,7 @@ export default function CampusMap3D() {
           left: 16,
           right: 16,
           bottom: "calc(20px + env(safe-area-inset-bottom))",
-          display: "flex",
+          display: demo?.game ? "none" : "flex",
           justifyContent: "center",
           gap: 8,
           flexWrap: "wrap",
