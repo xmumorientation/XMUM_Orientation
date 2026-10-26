@@ -90,7 +90,7 @@ describe("tennis strokes", () => {
 describe("tennis match", () => {
   it("plays two bots to 5, serving in turn, each serve into the service box", () => {
     for (const seed of [1, 2, 3, 4, 5]) {
-      const m = new Match(seed, [true, true]);
+      const m = new Match(seed, ["bot", "bot"]);
       const servers: Side[] = [];
       let before = m.phase;
       let serveLands = false;
@@ -121,7 +121,7 @@ describe("tennis match", () => {
   it("meets the ball with the racket as drawn, at every hit", () => {
     const rig = makeRig();
     for (const seed of [7, 8, 9]) {
-      const m = new Match(seed, [true, true]);
+      const m = new Match(seed, ["bot", "bot"]);
       let hits = 0;
       play(m, (_, fx) => {
         for (const e of fx) {
@@ -141,7 +141,7 @@ describe("tennis match", () => {
 
   it("is the same match for the same seed", () => {
     const run = (seed: number) => {
-      const m = new Match(seed, [true, true]);
+      const m = new Match(seed, ["bot", "bot"]);
       return { t: play(m), score: m.score };
     };
     expect(run(11)).toEqual(run(11));
@@ -156,7 +156,7 @@ const FOREHAND_Z = -racketAtContact(1).x;
  * forehand. Null if the bot misses.
  */
 function setUp(seed: number) {
-  const m = new Match(seed, [false, true]);
+  const m = new Match(seed, ["player", "bot"]);
   let t = 0.2;
   m.step(t);
   m.tap(0, t);
@@ -250,7 +250,7 @@ describe("tennis player's taps", () => {
   });
 
   it("tells the player how to serve, then how to play until their first good stroke", () => {
-    const m = new Match(3, [false, true]);
+    const m = new Match(3, ["player", "bot"]);
     expect(m.getView().hint).toBe("serve");
     m.step(0.1);
     m.tap(0, 0.1);

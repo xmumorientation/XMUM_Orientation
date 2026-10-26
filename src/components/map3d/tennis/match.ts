@@ -5,19 +5,26 @@ import { COURT } from "./court";
 import { handAt, racketAt, racketAtContact, servePose, STILL, swingPose, TOSS_S, type Hand, type SwingPose } from "./player";
 import { rand, STEP_RATE, yawOf, type PlayerFrame, type V3 } from "./rally";
 
-// DRAFT: the tennis game's rules (docs/ROADMAP.md, item 9, batch T1b): one match on one court, first to 5 points,
-// a player against a bot (or two bots, for tests and screenshots). Pure logic in metres in the court's frame
-// (court.ts); no drawing and no network. step(t) moves the match on to time t, taking events (hits, bounces, the
-// net) in time order, so a slow phone plays the same match as a fast one.
+// DRAFT: the tennis game's rules (docs/ROADMAP.md, item 9, batches T1b and T2a): one match on one court, first to
+// 5 points. Pure logic in metres in the court's frame (court.ts); no drawing and no network. step(t) moves the
+// match on to time t, taking events (hits, bounces, the net) in time order, so a slow phone plays the same match as
+// a fast one.
 //
 // Controls (ROADMAP item 9): drag to move along the baseline, tap to swing. The tap must come between LEAD_MAX and
 // LEAD_MIN seconds before the ball reaches the racket; early in that window pulls the ball cross-court, late
 // pushes it down the line, and the middle hits deep and fast. The swing then meets the ball on its own (a short
 // slide of the feet, and the arm reaches up or down to its height), so the ball always meets the racket as drawn.
-// The receiver judges hit or miss, as in the two-phone design.
+//
+// Two phones (T2a): each runs its own Match with its own player as side 0 and the other phone's as a "remote"
+// side 1. A phone says what its player does (takeNotes(): swings, shots) and the link sends it across; the other
+// phone takes it in (receive()). The phone receiving the ball judges hit or miss and calls the point, so a
+// player's own swing never waits for the network. Out and net follow from the shot, so both phones call those at
+// once; a miss on the other side waits for that phone's call, the ball held at their racket meanwhile.
 
 export type Side = 0 | 1;
 export type Phase = "serve" | "rally" | "point" | "over";
+/** Who plays a side: the player on this phone, the bot, or the player on the other phone (T2). */
+export type Who = "player" | "bot" | "remote";
 /** Why a point ended: the ball went out or into the net (the hitter loses), or bounced twice (the receiver loses). */
 export type Why = "out" | "net" | "winner" | "miss";
 /** Why a swing missed: too early, too late, or the ball was out of reach. */
@@ -37,6 +44,8 @@ export type MatchView = {
   matchPoint: boolean;
   /** Who won, once the match is over. */
   winner: Side | null;
+  /** The side that left the match, if that ended it (T2). */
+  left: Side | null;
   /** What to tell the player (side 0): how to serve, or how to play until their first good stroke. */
   hint: "serve" | "play" | null;
 };
@@ -46,6 +55,27 @@ export type Fx =
   | { type: "hit"; t: number; p: V3; by: Side; clean: number }
   | { type: "bounce"; t: number; p: V3; out: boolean }
   | { type: "net"; t: number; p: V3 };
+
+/**
+ * What one phone tells the other (T2), in its own frame (the link turns it round for the other phone): its
+ * player's swing (and where its feet slide, if it meets the ball), a dropped swing, a shot, and a point it called.
+ * A point carries the points played before it, and swings and shots their times, so one from an earlier point
+ * (or from before a point was played again) is ignored.
+ */
+export type Note =
+  | {
+      type: "swing";
+      start: number;
+      contact: number;
+      hand: Hand;
+      lift: number;
+      serve: boolean;
+      to: [number, number] | null;
+      toss: { from: V3; to: V3 } | null;
+    }
+  | { type: "cancel" }
+  | { type: "shot"; flight: Flight; clean: number }
+  | { type: "point"; n: number; t: number; winner: Side; why: Why; miss: Miss | null };
 
 /** Points to win the match. */
 export const POINTS_TO_WIN = 5;
@@ -71,6 +101,10 @@ const CANCEL_S = 0.25;
 const POINT_PAUSE = 1.7;
 const BOT_SERVE_WAIT = 1.1;
 const BALL_HIDE = 1.1;
+/** Against another phone, a player who has not served after this long (from the bot's wait) serves anyway. */
+const SERVE_TIMEOUT = 7;
+/** Waiting this much longer than it should on the other phone, the match has stalled (stalled()). */
+const STALL_S = 2;
 /** Running speeds (m/s): across the court, the bot, and up and back (automatic). */
 const RUN = 6.5;
 const BOT_RUN = 4.8;
@@ -97,6 +131,23 @@ export const AIM_MAX = COURT.halfW + 2.2;
 const HOME_BACK = 1.4;
 const SERVE_BACK = 0.35;
 const RETURN_BACK = 1;
+/**
+ * The other phone's player runs on from their last position at their last speed, for at most AHEAD_S (their phone
+ * sends a new one as soon as that guess is out: link.ts), and the figure eases onto the guess at EASE a second. A
+ * ball that comes from them eases onto its path over BLEND_S.
+ */
+export const AHEAD_S = 0.5;
+const EASE = 10;
+const BLEND_S = 0.15;
+
+/** A player's position and speed at time t, as one phone sends it to the other. */
+export type Seen = { t: number; x: number; z: number; vx: number; vz: number };
+
+/** Where a player is at time t, guessed from what was last sent: the same guess on both phones. */
+export function guess(s: Seen, t: number): [number, number] {
+  const ahead = clamp(t - s.t, 0, AHEAD_S);
+  return [s.x + s.vx * ahead, s.z + s.vz * ahead];
+}
 
 const SIDES = [0, 1] as const;
 const other = (side: Side): Side => (side === 0 ? 1 : 0);
@@ -186,7 +237,7 @@ type Swing = {
 };
 
 type Player = {
-  bot: boolean;
+  who: Who;
   x: number;
   z: number;
   vx: number;
@@ -198,9 +249,11 @@ type Player = {
   swing: Swing | null;
   /** A bot's return: when it starts to run, to where, and when it taps. */
   plan: { moveAt: number; z: number; tapAt: number } | null;
+  /** The other phone's player: what their phone last sent. */
+  seen: Seen | null;
 };
 
-const newPlayer = (bot: boolean): Player => ({ bot, x: 0, z: 0, vx: 0, vz: 0, aim: 0, push: 0, swing: null, plan: null });
+const newPlayer = (who: Who): Player => ({ who, x: 0, z: 0, vx: 0, vz: 0, aim: 0, push: 0, swing: null, plan: null, seen: null });
 
 const READY = swingPose(-1, 1);
 
@@ -229,38 +282,48 @@ export class Match {
   private shot: Shot | null = null;
   /** The ball's path since the last hit (after a point too, until it is hidden). */
   private flight: Flight | null = null;
+  /** A ball from the other phone eases from where it was drawn onto its path (T2). */
+  private blend: { at: number; from: V3 } | null = null;
   private shots = 0;
   private matches = 0;
   private t = 0;
   private serveAt = 0;
+  /** When the point being played began (T2: the other phone's notes from before it are ignored). */
+  private pointAt = 0;
   private nextAt = 0;
   private endedAt = 0;
   private call: Call | null = null;
   private calls = 0;
+  private won: Side | null = null;
   private learned = false;
   private fx: Fx[] = [];
+  private notes: Note[] = [];
   private view!: MatchView;
   private listeners = new Set<() => void>();
   /** The usual contact height: the receiver meets the ball as it comes down through it. */
   private readonly height = racketAtContact(1).y;
 
-  /** `bots`: which sides the bot plays (side 0 is the player's, nearest the camera). */
+  /** `who`: who plays each side (side 0 is this phone's, nearest the camera). `first`: who serves first. */
   constructor(
     private readonly seed: number,
-    bots: [boolean, boolean],
+    who: [Who, Who],
+    first?: Side,
   ) {
-    this.players = [newPlayer(bots[0]), newPlayer(bots[1])];
-    this.reset(0);
+    this.players = [newPlayer(who[0]), newPlayer(who[1])];
+    this.reset(0, first);
   }
 
-  /** A new match from time t. The first serve changes hands each match. */
-  reset(t: number) {
+  /** A new match from time t. The first serve changes hands each match, unless `first` says who serves. */
+  reset(t: number, first?: Side) {
     this.t = t;
     this.score = [0, 0];
-    this.server = (this.matches++ % 2) as Side;
+    this.server = first ?? ((this.matches % 2) as Side);
+    this.matches++;
     this.call = null;
+    this.won = null;
+    this.blend = null;
     for (const side of SIDES) {
-      Object.assign(this.players[side], { x: dirOf(side) * (COURT.halfL + HOME_BACK), z: 0, vx: 0, vz: 0, aim: 0, push: 0, swing: null, plan: null });
+      Object.assign(this.players[side], { x: dirOf(side) * (COURT.halfL + HOME_BACK), z: 0, vx: 0, vz: 0, aim: 0, push: 0, swing: null, plan: null, seen: null });
     }
     this.startPoint(t);
   }
@@ -281,6 +344,13 @@ export class Match {
     return out;
   }
 
+  /** What to tell the other phone since the last call (T2). */
+  takeNotes(): Note[] {
+    const out = this.notes;
+    this.notes = [];
+    return out;
+  }
+
   /** Moves where `side` wants to stand across the court by dz metres (a drag). */
   moveAim(side: Side, dz: number) {
     const p = this.players[side];
@@ -295,6 +365,7 @@ export class Match {
   /** A tap from `side` at time t: serves, or swings at the ball coming to them. */
   tap(side: Side, t: number) {
     const p = this.players[side];
+    if (p.who === "remote" || this.phase === "over") return;
     if (p.swing && !(p.swing.done && t >= p.swing.contact + FOLLOW)) return;
     if (this.phase === "serve") {
       if (side !== this.server) return;
@@ -315,6 +386,7 @@ export class Match {
       };
       p.vx = p.vz = 0;
       p.aim = p.z;
+      this.tell(p.swing);
       this.emit();
       return;
     }
@@ -325,6 +397,7 @@ export class Match {
       const hand: Hand = meet && (meet.p[2] - p.z) * racketSide(side) < 0 ? -1 : 1;
       p.swing = { serve: false, start: t, contact, hand, lift: 0, hit: null, miss, toss: null, done: false };
       if (miss) shot.missed = miss;
+      this.tell(p.swing);
     };
     if (!meet) return whiff(null, t + WHIFF_LEAD);
     const lead = meet.t - t;
@@ -345,18 +418,20 @@ export class Match {
       done: false,
     };
     shot.missed = null;
+    this.tell(p.swing);
   }
 
   /** The tap turned into a drag: its swing is dropped, unless its stroke has begun. */
   cancel(side: Side, t: number) {
     const p = this.players[side];
     const s = p.swing;
-    if (!s || s.done) return;
+    if (!s || s.done || p.who === "remote") return;
     const before = s.serve ? s.contact - TOSS_S : Math.min(s.start + CANCEL_S, s.contact - 0.08);
     if (t >= before) return;
     p.swing = null;
     p.aim = p.z;
     if (this.shot && s.miss && this.shot.missed === s.miss) this.shot.missed = null;
+    if (this.online()) this.notes.push({ type: "cancel" });
     if (s.serve) this.emit();
   }
 
@@ -371,6 +446,92 @@ export class Match {
       e.run();
     }
     for (const p of this.players) if (p.swing?.done && t >= p.swing.contact + SWING_END) p.swing = null;
+  }
+
+  /** A note from the other phone (T2), already turned into this phone's frame: their player is the remote side. */
+  receive(note: Note) {
+    const side = this.players[1].who === "remote" ? 1 : this.players[0].who === "remote" ? 0 : null;
+    if (side === null || this.phase === "over") return;
+    const p = this.players[side];
+    if (note.type === "swing") {
+      if (note.start < this.pointAt) return;
+      p.swing = {
+        serve: note.serve,
+        start: note.start,
+        contact: note.contact,
+        hand: note.hand,
+        lift: note.lift,
+        hit: note.to ? { from: [p.x, p.z], to: note.to, timing: 0 } : null,
+        miss: null,
+        toss: note.toss,
+        done: false,
+      };
+    } else if (note.type === "cancel") {
+      if (p.swing && !p.swing.done) p.swing = null;
+    } else if (note.type === "shot") {
+      if (note.flight.t0 < this.pointAt || this.phase === "point") return;
+      const was = this.ballAt(this.t);
+      if (this.phase === "serve") this.phase = "rally";
+      this.launch(side, note.flight, note.clean);
+      if (was) this.blend = { at: this.t, from: was };
+    } else if (note.n === this.score[0] + this.score[1] && this.phase === "rally") {
+      // their miss: a ball held at their racket goes on past it
+      const s = this.shot;
+      if (s?.meet && this.flight === s.flight && this.t > s.meet.t) this.flight = { ...s.flight, t0: s.flight.t0 + (this.t - s.meet.t) };
+      this.endPoint(note.t, note.winner, note.why, note.miss, false);
+    }
+  }
+
+  /** The other phone's player at time t (T2): where they stand, for their figure to follow. */
+  receivePosition(s: Seen) {
+    const p = this.players.find((q) => q.who === "remote");
+    if (p && (!p.seen || s.t >= p.seen.t)) p.seen = s;
+  }
+
+  /**
+   * Plays a point again from time t (after a pause, T2). `score` and `server`: the host's, which the guest takes,
+   * since a point called while the phones could not hear each other may have reached only one of them.
+   */
+  replay(t: number, score: [number, number] = this.score, server: Side = this.server) {
+    this.t = t;
+    this.score = [score[0], score[1]];
+    this.server = server;
+    for (const p of this.players) {
+      p.swing = null;
+      p.plan = null;
+    }
+    this.startPoint(t);
+  }
+
+  /** Ends the match with this score: the host's, when this phone missed the last point (T2). */
+  finish(score: [number, number]) {
+    this.score = [score[0], score[1]];
+    this.phase = "over";
+    this.flight = null;
+    this.emit();
+  }
+
+  /**
+   * The match has waited on the other phone too long: a ball held at their racket, or their serve, that never
+   * came (a note lost on the way). A reason to play the point again (T2).
+   */
+  stalled(t: number): boolean {
+    const s = this.shot;
+    // their phone calls a miss at the second bounce, so the wait runs from then
+    if (this.phase === "rally" && s?.meet && this.flight === s.flight && this.players[other(s.by)].who === "remote") {
+      return t - (s.second ?? s.meet.t) > STALL_S;
+    }
+    const srv = this.players[this.server];
+    if (this.phase !== "serve" || srv.who !== "remote") return false;
+    return srv.swing?.serve ? t - srv.swing.contact > STALL_S : t - this.serveAt > SERVE_TIMEOUT + STALL_S;
+  }
+
+  /** Ends the match at once: the other side left it (T2). */
+  forfeit(left: Side) {
+    this.phase = "over";
+    this.won = other(left);
+    this.flight = null;
+    this.emit();
   }
 
   /** A player's body and pose at time t, for drawing. */
@@ -415,7 +576,19 @@ export class Match {
       return [p.x + dx, y, p.z + dz];
     }
     if (!this.flight || (this.phase === "point" && t > this.endedAt + BALL_HIDE)) return null;
-    return flightAt(this.flight, t);
+    // the other phone has not said yet whether its player hit it: hold it at their racket
+    const s = this.shot;
+    if (this.phase === "rally" && s?.meet && this.flight === s.flight && this.players[other(s.by)].who === "remote" && t > s.meet.t) {
+      return [...s.meet.p];
+    }
+    const p = flightAt(this.flight, t);
+    const b = this.blend;
+    if (b && t < b.at + BLEND_S) {
+      const k = 1 - (t - b.at) / BLEND_S;
+      const q = flightAt(this.flight, b.at);
+      return [p[0] + (b.from[0] - q[0]) * k, p[1] + (b.from[1] - q[1]) * k, p[2] + (b.from[2] - q[2]) * k];
+    }
+    return p;
   }
 
   /** The ball coming to `side`: when and where they should meet it, or null. */
@@ -444,8 +617,8 @@ export class Match {
 
   /** Whether anything moves or is about to. The map draws on demand: ask for frames while this holds. */
   busy(): boolean {
-    if (this.phase === "rally" || this.phase === "point") return true;
-    if (this.phase === "serve" && this.players[this.server].bot) return true;
+    if (this.phase === "rally" || this.phase === "point" || this.online()) return true;
+    if (this.phase === "serve" && this.players[this.server].who === "bot") return true;
     return this.players.some(
       (p) => p.swing !== null || p.push !== 0 || Math.abs(p.vx) > 0.02 || Math.abs(p.vz) > 0.02 || Math.abs(p.aim - p.z) > 0.01,
     );
@@ -453,14 +626,28 @@ export class Match {
 
   // ── Inside ──────────────────────────────────────────────────────────────────
 
+  /** The other phone's player is on this court (T2). */
+  private online() {
+    return this.players[0].who === "remote" || this.players[1].who === "remote";
+  }
+
+  /** Tells the other phone about a swing of this phone's player (or bot). */
+  private tell(s: Swing) {
+    if (!this.online()) return;
+    const { start, contact, hand, lift, serve, toss } = s;
+    this.notes.push({ type: "swing", start, contact, hand, lift, serve, to: s.hit ? s.hit.to : null, toss });
+  }
+
   private startPoint(t: number) {
     this.phase = "serve";
     this.shot = null;
     this.flight = null;
+    this.blend = null;
+    this.pointAt = t;
     this.serveAt = t + BOT_SERVE_WAIT;
     const srv = this.players[this.server];
     // a bot serves from a spot of its own, off the middle
-    if (srv.bot) srv.aim = (rand(this.seed, this.shots, 7) * 2 - 1) * 1.6;
+    if (srv.who === "bot") srv.aim = (rand(this.seed, this.shots, 7) * 2 - 1) * 1.6;
     for (const p of this.players) p.plan = null;
     this.emit();
   }
@@ -498,7 +685,8 @@ export class Match {
 
   private move(dt: number, t: number) {
     if (dt <= 0) return;
-    for (const p of this.players) {
+    for (const side of SIDES) {
+      const p = this.players[side];
       const s = p.swing;
       if (s?.hit && !s.done) {
         // the stroke's footwork: a slide to where the racket meets the ball, by the contact
@@ -515,30 +703,52 @@ export class Match {
         p.vx = p.vz = 0;
         continue;
       }
-      if (p.bot && p.plan && t >= p.plan.moveAt) p.aim = p.plan.z;
+      if (p.who === "remote") {
+        this.follow(p, t, dt);
+        continue;
+      }
+      if (p.who === "bot" && p.plan && t >= p.plan.moveAt) p.aim = p.plan.z;
       if (p.push) p.aim = clamp(p.aim + p.push * RUN * dt, -AIM_MAX, AIM_MAX);
-      const top = p.bot ? BOT_RUN : RUN;
+      const top = p.who === "bot" ? BOT_RUN : RUN;
       p.vz = approach(p.vz, clamp((p.aim - p.z) * 8, -top, top), dt * 18);
       p.z += p.vz * dt;
-      const side = (p === this.players[0] ? 0 : 1) as Side;
       p.vx = approach(p.vx, clamp((this.depthFor(side) - p.x) * 5, -DEPTH_RUN, DEPTH_RUN), dt * 18);
       p.x += p.vx * dt;
     }
   }
 
-  /** The earliest thing due: a bot's serve or tap, a swing's contact, the ball's net or bounce, the next point. */
+  /** The other phone's player: eased onto the guess from what their phone last sent. */
+  private follow(p: Player, t: number, dt: number) {
+    if (!p.seen) return;
+    const [x, z] = guess(p.seen, t);
+    const k = Math.min(1, dt * EASE);
+    const [nx, nz] = [p.x + (x - p.x) * k, p.z + (z - p.z) * k];
+    p.vx = approach(p.vx, (nx - p.x) / dt, dt * 12);
+    p.vz = approach(p.vz, (nz - p.z) / dt, dt * 12);
+    p.x = nx;
+    p.z = nz;
+  }
+
+  /** The earliest thing due: a serve or a bot's tap, a swing's contact, the ball's net or bounce, the next point. */
   private nextEvent(): { at: number; run: () => void } | null {
     let next: { at: number; run: () => void } | null = null;
     const add = (at: number, run: () => void) => {
       if (!next || at < next.at) next = { at, run };
     };
     const srv = this.players[this.server];
-    if (this.phase === "serve" && srv.bot && !srv.swing) add(this.serveAt, () => this.tap(this.server, this.serveAt));
+    if (this.phase === "serve" && !srv.swing) {
+      if (srv.who === "bot") add(this.serveAt, () => this.tap(this.server, this.serveAt));
+      // against another phone, a player who does not serve serves anyway
+      else if (srv.who === "player" && this.online()) {
+        const at = this.serveAt + SERVE_TIMEOUT;
+        add(at, () => this.tap(this.server, at));
+      }
+    }
     if (this.phase === "point") add(this.nextAt, () => this.nextPoint(this.nextAt));
     for (const side of SIDES) {
       const p = this.players[side];
       const plan = p.plan;
-      if (p.bot && plan && this.phase === "rally") {
+      if (p.who === "bot" && plan && this.phase === "rally") {
         add(plan.tapAt, () => {
           p.plan = null;
           p.aim = plan.z;
@@ -553,7 +763,8 @@ export class Match {
       const { net, land, second } = shot;
       if (net) add(net.t, () => this.intoNet(shot, net));
       else if (land && !shot.landed) add(land.t, () => this.landed(shot, land));
-      else if (second !== null) add(second, () => this.twice(shot, second));
+      // a ball the other phone's player should meet: that phone calls the point
+      else if (second !== null && this.players[other(shot.by)].who !== "remote") add(second, () => this.twice(shot, second));
     }
     return next;
   }
@@ -561,28 +772,34 @@ export class Match {
   private contact(side: Side, s: Swing) {
     s.done = true;
     const p = this.players[side];
+    // the other phone's player: their shot comes as a note
+    if (p.who === "remote") return;
     if (s.serve && s.toss) {
       const k = this.shots;
       // into the service box across the centre line from the server
       const across = -Math.sign(p.z || racketSide(side)) * (1.3 + 1.4 * rand(this.seed, k, 3));
       const deep = 3.6 + 2.2 * rand(this.seed, k, 4);
       this.phase = "rally";
-      this.fire(side, s.contact, s.toss.to, [dirOf(other(side)) * deep, across], SERVE_CLEAR + (p.bot ? BOT_FLOAT : 0), 0.7);
+      this.fire(side, s.contact, s.toss.to, [dirOf(other(side)) * deep, across], SERVE_CLEAR + (p.who === "bot" ? BOT_FLOAT : 0), 0.7);
       return;
     }
     const shot = this.shot;
     if (!s.hit || !shot?.meet || shot.by === side || this.phase !== "rally") return;
     const { to, clear } = strokeTarget(side, s.hand, s.hit.timing, rand(this.seed, this.shots, 5) - 0.5);
     // the player stays where the stroke took them; the bot heads back toward the middle
-    p.aim = p.bot ? s.hit.to[1] * 0.3 : s.hit.to[1];
-    if (!p.bot) this.learned = true;
-    this.fire(side, s.contact, shot.meet.p, to, clear < 0 ? clear : clear + (p.bot ? BOT_FLOAT : 0), 1 - Math.abs(s.hit.timing));
+    p.aim = p.who === "bot" ? s.hit.to[1] * 0.3 : s.hit.to[1];
+    if (p.who === "player") this.learned = true;
+    this.fire(side, s.contact, shot.meet.p, to, clear < 0 ? clear : clear + (p.who === "bot" ? BOT_FLOAT : 0), 1 - Math.abs(s.hit.timing));
   }
 
-  /** The ball leaves `by`'s racket at time t: works out its whole path and what it will do. */
+  /** The ball leaves `by`'s racket at time t, aimed at a bounce at `to`. */
   private fire(by: Side, t: number, from: V3, to: [number, number], clear: number, clean: number) {
+    this.launch(by, aim(t, from, to, clear), clean);
+  }
+
+  /** The ball leaves `by`'s racket on this flight: works out its whole path and what it will do. */
+  private launch(by: Side, flight: Flight, clean: number) {
     const r = other(by);
-    const flight = aim(t, from, to, clear);
     const net = netHit(flight);
     let land: Shot["land"] = null;
     let second: number | null = null;
@@ -599,9 +816,11 @@ export class Match {
     }
     this.shot = { by, flight, net, land, second, meet, reach, landed: false, missed: null };
     this.flight = flight;
+    this.blend = null;
+    if (this.players[by].who !== "remote" && this.online()) this.notes.push({ type: "shot", flight, clean });
     this.shots++;
-    this.fx.push({ type: "hit", t, p: from, by, clean });
-    if (this.players[r].bot && meet) this.planReturn(r, t);
+    this.fx.push({ type: "hit", t: flight.t0, p: flight.p, by, clean });
+    if (this.players[r].who === "bot" && meet) this.planReturn(r, flight.t0);
     this.emit();
   }
 
@@ -622,25 +841,32 @@ export class Match {
     p.plan = { moveAt: t + BOT_REACT, z: clamp(meet.p[2] - r.dz, -AIM_MAX, AIM_MAX), tapAt: meet.t - lead };
   }
 
+  /** This phone calls the shot's point if its own player was to receive it; the other phone calls the rest. */
+  private callsHere(shot: Shot) {
+    return this.players[other(shot.by)].who !== "remote";
+  }
+
   private intoNet(shot: Shot, net: Bounce) {
     this.flight = offNet(shot.flight, net);
     this.fx.push({ type: "net", t: net.t, p: net.p });
-    this.endPoint(net.t, other(shot.by), "net", null);
+    this.endPoint(net.t, other(shot.by), "net", null, this.callsHere(shot));
   }
 
   private landed(shot: Shot, land: Bounce & { in: boolean }) {
     shot.landed = true;
     this.fx.push({ type: "bounce", t: land.t, p: land.p, out: !land.in });
-    if (!land.in) this.endPoint(land.t, other(shot.by), "out", null);
+    if (!land.in) this.endPoint(land.t, other(shot.by), "out", null, this.callsHere(shot));
   }
 
   /** The ball bounced twice on the receiver's side (or came down against the back fence). */
   private twice(shot: Shot, at: number) {
     this.fx.push({ type: "bounce", t: at, p: flightAt(shot.flight, at), out: false });
-    this.endPoint(at, shot.by, shot.missed ? "miss" : "winner", shot.missed);
+    this.endPoint(at, shot.by, shot.missed ? "miss" : "winner", shot.missed, this.callsHere(shot));
   }
 
-  private endPoint(t: number, winner: Side, why: Why, miss: Miss | null) {
+  /** The point is over. `tell`: this phone called it, so the other phone hears (T2). */
+  private endPoint(t: number, winner: Side, why: Why, miss: Miss | null, tell: boolean) {
+    if (tell && this.online()) this.notes.push({ type: "point", n: this.score[0] + this.score[1], t, winner, why, miss });
     this.score = winner === 0 ? [this.score[0] + 1, this.score[1]] : [this.score[0], this.score[1] + 1];
     this.phase = "point";
     this.endedAt = t;
@@ -664,15 +890,16 @@ export class Match {
   private emit() {
     const human = this.players[0];
     let hint: MatchView["hint"] = null;
-    if (!human.bot && this.phase === "serve" && this.server === 0 && !human.swing?.serve) hint = "serve";
-    else if (!human.bot && this.phase === "rally" && !this.learned) hint = "play";
+    if (human.who === "player" && this.phase === "serve" && this.server === 0 && !human.swing?.serve) hint = "serve";
+    else if (human.who === "player" && this.phase === "rally" && !this.learned) hint = "play";
     this.view = {
       score: this.score,
       server: this.server,
       phase: this.phase,
       call: this.call,
       matchPoint: this.phase !== "over" && Math.max(...this.score) === POINTS_TO_WIN - 1,
-      winner: this.phase === "over" ? (this.score[0] > this.score[1] ? 0 : 1) : null,
+      winner: this.phase === "over" ? (this.won ?? (this.score[0] > this.score[1] ? 0 : 1)) : null,
+      left: this.won === null ? null : other(this.won),
       hint,
     };
     this.listeners.forEach((fn) => fn());

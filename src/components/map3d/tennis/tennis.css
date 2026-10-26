@@ -180,8 +180,14 @@
   opacity: 0.85;
 }
 
-.tn-again {
+.tn-btns {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
   margin-top: 16px;
+}
+
+.tn-btn {
   padding: 10px 22px;
   border: none;
   border-radius: 999px;
@@ -190,6 +196,73 @@
   font-size: 14px;
   font-weight: 800;
   cursor: pointer;
+  pointer-events: auto;
+}
+
+.tn-btn[data-kind="ghost"] {
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: transparent;
+  color: #fff;
+}
+
+/* Online: the queue's panel, at the bottom. */
+.tn-panel {
+  position: absolute;
+  bottom: calc(22px + env(safe-area-inset-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  min-width: 240px;
+  padding: 16px 20px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 18px;
+  background: rgba(9, 13, 28, 0.86);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+  text-align: center;
+  pointer-events: auto;
+}
+
+.tn-panel .tn-btns {
+  margin-top: 12px;
+}
+
+.tn-panel-title {
+  font-size: 17px;
+  font-weight: 900;
+  font-style: italic;
+}
+
+.tn-panel-sub {
+  margin-top: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  opacity: 0.8;
+}
+
+/* Online: who the match is against and on which court, and the countdown. */
+.tn-banner {
+  position: absolute;
+  top: 26%;
+  left: 0;
+  right: 0;
+  text-align: center;
+}
+
+.tn-banner-title {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: rgba(9, 13, 28, 0.78);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.tn-count {
+  margin-top: 10px;
+  font-size: 64px;
+  font-weight: 900;
+  font-style: italic;
+  line-height: 1;
+  text-shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
 }
 
 @keyframes tn-pop {

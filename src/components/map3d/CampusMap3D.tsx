@@ -34,7 +34,7 @@ type Demo = {
   concert: boolean | "flip" | undefined;
   /** The tennis courts' looping rally (the tennis game's batch T1a), with the broadcast view's lens; `at` holds it. */
   tennis: { fov: number; at: number | null } | null;
-  /** The tennis game against a bot (batch T1b). */
+  /** The tennis game: against a bot (batch T1b), or against another tab (batch T2a). */
   game: TennisOptions | null;
 };
 
@@ -45,7 +45,9 @@ type Demo = {
  * stage's concert (default: on while all three zones are on; flip: on 4 s after load), ?showt=<seconds>
  * (development) hold the concert at that moment, ?tennis=demo a rally on each tennis court, seen from behind the
  * middle court (unless ?cam is given), ?tennis=bot the tennis game against a bot on the middle court (?auto=1 two
- * bots, ?color=%23rrggbb the player's shirt), ?t=<seconds> hold the rally or the two bots' match at that moment.
+ * bots, ?color=%23rrggbb the player's shirt), ?t=<seconds> hold the rally or the two bots' match at that moment,
+ * ?tennis=online the game against another tab of this browser (open two; ?name= the player's name, ?auto=1 a bot
+ * plays for this tab).
  */
 function readDemo(): { demo: Demo; mode: Mode | null } {
   const q = new URLSearchParams(window.location.search);
@@ -55,7 +57,8 @@ function readDemo(): { demo: Demo; mode: Mode | null } {
   const lite = q.get("lite");
   const concert = q.get("concert");
   const tq = q.get("tennis");
-  const tennis = tq === "demo" || tq === "bot" ? courtView(TENNIS_COURTS[1], window.innerWidth / window.innerHeight) : null;
+  const play = tq === "bot" || tq === "online" ? tq : null;
+  const tennis = tq === "demo" || play ? courtView(TENNIS_COURTS[1], window.innerWidth / window.innerHeight) : null;
   const held = q.get("t") === null ? NaN : Number(q.get("t"));
   const at = Number.isFinite(held) ? held : null;
   return {
@@ -73,7 +76,7 @@ function readDemo(): { demo: Demo; mode: Mode | null } {
       funfair: parseFunfair(q.get("funfair")) ?? { west: 1, central: 1, east: 1 },
       concert: concert === "1" ? true : concert === "0" ? false : concert === "flip" ? "flip" : undefined,
       tennis: tq === "demo" && tennis ? { fov: cam ? 30 : tennis.fov, at } : null,
-      game: tq === "bot" ? { color: q.get("color") ?? "", auto: q.get("auto") === "1", at } : null,
+      game: play && { mode: play, color: q.get("color") ?? "", name: q.get("name") ?? "", auto: q.get("auto") === "1", at },
     },
     mode: m === "day" || m === "sunset" || m === "night" ? m : null,
   };
