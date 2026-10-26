@@ -240,7 +240,7 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 
 ## 9. 3D map: a tennis game on the tennis courts (Later)
 
-**Owner:** Ben. T1a is built (2026-10-22, see "Done"); the rest is not. Ben is not sure his Claude usage covers it, so it is split into small batches that each fit one conversation.
+**Owner:** Ben. T1a (2026-10-22), T1b, T2a and T2b (2026-10-26) are built, see "Done"; the rest is not. Ben is not sure his Claude usage covers it, so it is split into small batches that each fit one conversation. Ben (2026-10-26): keep the load on Supabase, Vercel and phones low.
 
 **Goal:** the 3D map is more fun. Two people play tennis against each other on the map's tennis courts, and everyone who opens the map sees the match being played.
 
@@ -256,36 +256,50 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 **Design (proposed; change it here if Ben decides otherwise):**
 - **Where:** the three courts of the tennis block (`SPORTS` in [geo.ts](../src/components/map3d/geo.ts), laid out by [courts.ts](../src/components/map3d/courts.ts), drawn in [sports.tsx](../src/components/map3d/sports.tsx); the net is `Equipment`). The players are low-poly figures (`tennis/player.ts`) in the player's group colour.
 - **The view (Ben, 2026-10-22: like a TV broadcast, with clear court lines):** from behind the near baseline, as `courtView()` in `tennis/court.ts` works it out for the screen's shape. Wide screens get a low camera and a long lens (18°). An upright phone's camera is higher (45°), so its narrow screen holds the court's width. Up close the courts are drawn crisp (`tennis/surface.tsx`), and the fence side between the camera and the court is hidden (`useFenceCutaway` in `sports.tsx`).
-- **Controls:** drag left and right to move along the baseline; tap to swing. Swinging early hits cross-court and late hits down the line. Tap to serve.
+- **Controls (built in T1b):** drag left and right to move along the baseline (or ← →); tap (click, Space) to swing, and to serve. A tap counts from 0.5 s to 0.06 s before the ball reaches the racket: early pulls the ball cross-court, late pushes it down the line, the middle hits deep and fast through the middle. A ring on the court shows where to meet the ball. A touch that turns into a drag drops its swing.
 - **Who is who:** Freshies share one login per group, so a player is a random ID per phone, not the account. A player's tag shows their group's name. Read group names and colours with `fn_scoreboard()`, which every role may call (a GM cannot select `groups`).
-- **Sync, with no new tables:**
-  - Supabase Realtime **Presence** holds the queue and which courts are busy, with the score.
-  - One Realtime **Broadcast** channel per court carries the match:
-    - one message per shot (time, direction, speed); both phones work out the same ball path from it;
-    - each player's position, about 8 times a second.
-  - The phone receiving the ball judges hit or miss and broadcasts the result, so a player's own swing never lags.
-  - A player who drops out: the match pauses for 10 s, then the other player wins.
+- **Sync, with no new tables (built: `BroadcastChannel` between tabs in T2a, Supabase Realtime between phones in T2b; `tennis/net.ts`, `tennis/realtime.ts`):**
+  - **Presence** in one room holds the queue and which courts are busy. Each phone works out the same pairs from it (`lobby.ts`): the queue's first two on the first free court (the middle one first), and a pair starts once both have asked for it.
+  - One **Broadcast** room per match carries it (`link.ts`):
+    - one message per shot: its whole flight (time, start, speed). Both phones work out the same ball path from it;
+    - each player's position and speed, sent only when the other phone's guess from the last one is 15 cm out (at most 8 a second, at least 1);
+    - the score, the server and the match's end ride along with the positions, so a lost message is noticed and set right (the host's word wins).
+  - The phone receiving the ball judges hit or miss and calls the point, so a player's own swing never lags. Out and net follow from the shot, so both phones call those at once.
+  - The host (the first of the two in the queue) keeps the clock; the guest measures the difference with pings.
+  - A player who drops out: after 4 s of silence (or at once, when they drop out of the match room's presence) the match pauses, and 10 s later the other player wins. Back in time, the point is played again. A player who taps Leave loses at once. One who closes the page usually loses by the silence: on the live project, neither the "bye" a closing page sends nor its presence leave arrived in time (2026-10-26).
+  - A phone joins the queue's room only on Play, and leaves it when it goes back to idle: Presence goes to every member, so a room everyone with the map open were in would cost the most.
 - **Spectators:**
-  - With the camera far away, a busy court shows two figures playing a looping rally drawn on the phone, with the real names and score from Presence. This costs no traffic.
+  - With the camera far away, a busy court shows two figures playing a looping rally drawn on the phone, with the real names and score. The rally costs no traffic. The names and score must not come from the queue's Presence, which a watcher must not join (T2b); see "Next session" below for a cheaper way.
   - With the camera close to the courts, the phone joins that court's channel and replays the real shots.
   - The figures move only while the courts are on screen. The map draws on demand, so ask for frames the way `usePowerRamp` does.
 - **Phones:** check lite mode on a phone size. The map draws every frame during a match.
 - **Limits:** Realtime counts each message delivered to each phone, and the Supabase plan caps messages per second (Free about 100, Pro about 500; check the project's plan). The two-layer spectator view above keeps traffic low however many people have the map open.
 
-**Testing:** the Supabase project in `.env.local` is the live one. Batches T1 to T2a send no messages to it: the game talks over the browser's `BroadcastChannel` between two tabs on the one dev server (:3000). T2b sends Realtime messages to the live project. It writes nothing to the database, but it needs Ben's OK first.
+**Testing:** the Supabase project in `.env.local` is the live one. Batches T1 to T2a send no messages to it: the game talks over the browser's `BroadcastChannel` between two tabs on the one dev server (:3000). `?net=realtime` (T2b) sends Realtime messages to the live project and writes nothing to the database; Ben OK'd it on 2026-10-26 (the T2b checks sent under a thousand messages). Keep live checks short.
 
 **Batches** (each in a new conversation; show Ben the results and wait for his go before the next):
 
 | Batch | Work | Size |
 |---|---|---|
 | T1a | **Done.** Players on the courts: the figures, the swing, a looping rally on all three courts, the broadcast view with crisp courts (`/map3d?tennis=demo`). No game yet. | Small |
-| T1b | The game on one phone against a bot: ball flight with bounce and net, hit or miss, scoring, touch controls. | Medium |
-| T2a | Two players over `BroadcastChannel` (two tabs): queue, pairing, the 3 courts, shot messages, score, drop-outs. Keep the transport behind one interface so T2b only swaps it. | Medium |
-| T2b | The Supabase Realtime transport (Presence and Broadcast). | Small |
+| T1b | **Done.** The game on one phone against a bot (`/map3d?tennis=bot`): ball flight with bounce and net, hit or miss, scoring, touch controls, with the TV score bug and calls and the hit effects (trail, racket blur, rings, flash). | Medium |
+| T2a | **Done.** Two players over `BroadcastChannel` (two tabs, `/map3d?tennis=online`): queue, pairing, the 3 courts, shot messages, score, drop-outs, rematch. The transport is behind one interface (`tennis/net.ts`), so T2b only swaps it. | Medium |
+| T2b | **Done.** The Supabase Realtime transport (Presence and Broadcast), `/map3d?tennis=online&net=realtime`. The queue's Presence is joined only on Play, so T3a must read the courts some cheaper way than joining it. Load: about 470 messages a minute per match (both phones), so 3 matches send about 24 a second. | Small |
 | T3a | Spectators: the looping rally from afar (`tennis/rally.ts`, built in T1a), the real shots up close. The players are too small to see from the map's usual distance, so a busy court also needs a tag over it (names and score, like the lake stage's "● LIVE"). | Medium |
 | T3b | In the real map pages: tap the tennis court, then Play; an Admin on/off switch; end-of-match card; phone check. | Small |
+| T1c | The look, after T3b (the first batch to drop if time or usage runs short): each player one `SkinnedMesh` (1 draw call, not 5) with elbows and knees, a run cycle, a split-step, win and lose poses; a shadow in the player's shape on phones too (planar projected, no shadow map); no tilt-shift (the map's miniature blur) in the tennis view; the ball drawn true size up close. | Medium |
 
-**Later (polish):** the far fence fills the top of the broadcast view with big diamonds (its mesh is sized for map distances); a finer mesh up close, or a backdrop like a stadium wall, would look more like TV. Each player is 5 meshes, so draw only the busy courts' players (the demo draws all three courts: about 43 draw calls).
+**Next session (start here; written 2026-10-26):**
+- The code is on branch `tennis-game` (pushed: T1b `40e154b`, T2a `6c2db5d`, then T2b), not merged into `main`. Go on working on that branch. When it is merged, add its lines to [CHANGELOG.md](CHANGELOG.md).
+- If Ben has time before T3a, check T2b on two real phones on mobile data: `/map3d?tennis=online&net=realtime` (the live project, so keep it short). It also shows how soon a player whose opponent closed the page wins (about 14 s on the PC).
+- T3a, first decision for Ben: how watchers learn which courts are busy, with names and score, without joining `tennis:lobby`. A proposal to start from:
+  1. A Broadcast-only room, `tennis:courts`. Each match's host says its court, names and score only when they change (about every 15 s a court). Realtime counts every delivery, so 300 watchers cost about 60 messages a second. A watcher who has just opened the map asks once, and each host answers.
+  2. Up close, a watcher joins that court's match room only while the camera is near it, and only a few watchers a court (each costs about 8 messages a second). Everyone else sees the looping rally.
+  3. Before choosing, check the plan's limit (Free about 100 messages a second, Pro about 500) against how many people the event expects to have the map open.
+- T3b: the Admin on/off switch probably needs a setting in the database, which means a migration. Ask Ben first, and follow how Live control's other switches work. Group names and colours come from `fn_scoreboard()`.
+- Tunables, if the playtest says so: the tap window (`LEAD_MAX`, `LEAD_MIN`) and reach (`LUNGE`) in `match.ts`; the bot (`BOT_SPREAD`, `BOT_RUN`); drag speed (`DRAG_M`, `TennisGame.tsx`); the online timings (`QUIET_S`, `GONE_S`, `link.ts`).
+
+**Later (polish):** the far fence fills the top of the broadcast view with big diamonds (its mesh is sized for map distances); a finer mesh up close, or a backdrop like a stadium wall, would look more like TV. Each player is 5 meshes (T1c makes it 1), so draw only the busy courts' players (the demo draws all three courts: about 43 draw calls).
 
 
 ---
@@ -293,6 +307,41 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 ---
 
 ## Done
+
+### Tennis game T2b: two phones over Supabase Realtime, 2026-10-26 (Ben)
+Roadmap item 9, batch T2b. `/map3d?tennis=online&net=realtime` on two phones (or two browsers), then Play on both. Nothing is written to the database.
+- `src/components/map3d/tennis/realtime.ts`: the T2a `Transport` over Supabase Realtime: a channel per room (`tennis:lobby`, `tennis:match:<key>`), Broadcast for messages (`self: false`), Presence keyed by the player's id. Messages wait until the channel has joined (realtime-js sends them over HTTP before that), and the player's presence is said again after a rejoin. It uses the app's `supabaseBrowser()` client, and is loaded only with `?net=realtime`, so the game against the bot and between tabs never downloads supabase-js.
+- `online.ts`: a phone joins the queue's room only on Play and leaves it when it goes back to idle (Cancel, Leave, the end of a match). Its finished matches are kept across its turns in the queue.
+- `link.ts`: each player is also in the match room's presence; dropping out of it pauses the match at once (the 10 s to a forfeit still apply).
+- Tests: `tests/tennis/realtime.test.ts` (the transport on a stand-in for a Realtime channel: waiting for the join, presence, rejoin, leave) and two more in `online.test.ts` (no room before Play; a phone that drops out of presence).
+- Checked live on the project's Realtime with two headless tabs: two bots stayed in step (the same score on both at every look); two players paired, served, saw the point on both, and when one tab closed the other won after the pause. Under a thousand messages in all.
+- Not yet: two real phones on mobile data, and the real map pages (T3b).
+
+### Tennis game T2a: two players over BroadcastChannel, 2026-10-26 (Ben)
+Roadmap item 9, batch T2a. Open `/map3d?tennis=online` in two tabs of one browser and tap Play in both (`&name=` sets the player's name, `&auto=1` lets a bot play for that tab). No Supabase: the tabs talk over the browser's `BroadcastChannel`.
+- `src/components/map3d/tennis/`:
+  - `net.ts`: a room with messages and presence, behind one interface (`Transport`, `Room`), and the `BroadcastChannel` version of it (`tabTransport()`). T2b adds the Supabase Realtime one, with the same shape.
+  - `lobby.ts`: the queue. Presence says who waits and who plays where; `pairings()` gives every phone the same pairs (first two in the queue on the first free court, the middle court first, at most 3 matches). A court two pairs claim at once goes to the pair that queued first (`ownsCourt()`).
+  - `link.ts`: one match between two phones. The host keeps the clock (pings), the countdown, the messages (see "Sync" above), pauses and forfeits, rematch (both must say yes), and setting a lost message right.
+  - `online.ts`: this phone's seat in the queue and its match, for the HUD.
+  - `match.ts`: a side can now be "remote" (the other phone's player). This phone tells the other its player's swings and shots and the points it calls (`takeNotes()`), takes in the other's (`receive()`), follows their position, and holds the ball at their racket until they answer.
+  - `TennisGame.tsx`: the online HUD: the queue panel (Play, Cancel, how many play and wait), "vs Name · Court n" with the countdown, the pause ("Waiting for Name… 8 s, then you win"), and the end card (Rematch, Play again, Leave). Each effect's shader is compiled when the court shows, so the first hit does not stall the phone.
+- Tests: `tests/tennis/online.test.ts` over an in-memory network with latency, clocks that disagree and phones that drop out (`tests/tennis/hub.ts`): pairing, whole matches between two bots (the same score and every shot on the same path on both phones), message counts, a phone gone for good, one back in time, 30 cases of lost messages, rematch and decline. Also run by hand: 200 drop-out cases and 20 matches at 0–150 ms latency all agreed.
+- Checked in headless Chrome with two tabs: the bots play in sync; and two players: Play, the countdown, a serve by key, the point on both tabs, the next serve on the other tab, and "Ben left · You win" when one tab leaves. Headless Chrome draws both tabs in software at a few frames a second, so use `&lite=1` and small windows, and do not take screenshots mid-match (each stalls both tabs for seconds).
+- Not yet: real phones, and Supabase (T2b).
+
+### Tennis game T1b: the game against a bot, 2026-10-26 (Ben)
+Roadmap item 9, batch T1b. Play it at `/map3d?tennis=bot`. No network: the bot plays on the phone, and the game's code loads only on that URL.
+- `src/components/map3d/tennis/`:
+  - `ball.ts`: the ball's flight from a shot (when and where it left the racket, how fast). The net, the bounces, the roll and the back fence follow from it, so two phones that share shots draw the same path (T2). `aim()` sends the ball to a bounce point with a chosen margin over the net; `meetPoint()` is where the receiver meets it: coming down through racket height after the bounce, at most 2.4 m behind the baseline.
+  - `match.ts`: the rules: first to 5, the serve changes every point. A tap counts from 0.5 s to 0.06 s before the ball reaches the racket (see "Controls" above); past 90% of that window, the earliest go into the net and the latest go wide. The swing then meets the ball itself: the feet slide up to 0.6 m out (further when stepping away from a ball at the body, given time) and the arm reaches up or down to the ball's height, so the ball always meets the racket as drawn. The receiver judges hit or miss. The bot aims cross-court, through the middle or down the line, and misses its timing by a random share (more when it leads, so matches stay close).
+  - `effects.ts`: the ball's trail in the hitter's colour, the racket's blur, a ring where the ball lands (red when out) or meets the net, a flash at each hit (a clean hit also jolts the camera a little), and the ring that shows the player where to meet the ball (in their colour once they can reach it, pulsing while a tap would meet it).
+  - `TennisGame.tsx`, `tennis.css`: the match in the scene (the broadcast view, following the play a little, less on an upright phone) and the HUD: a TV score bug with the server's ball, the calls (OUT, NET, WINNER, MISS; TOO EARLY, TOO LATE or TOO FAR for the player's own misses), MATCH POINT, hints, and an end card with Play again.
+  - `player.ts`: the serve (toss and overhead), `swingPose(rel, hand, lift)` reaching for high and low balls, `racketAt()` and `handAt()`, and points for the racket's tip and throat and the other hand.
+- `CampusMap3D.tsx`: `?tennis=bot` (`&auto=1` two bots, `&color=%23rrggbb` the player's shirt); `?t=<seconds>` holds the T1a rally or the two bots' match at that moment, for screenshots. In the game the map's controls are off, and the map draws only while something moves.
+- Load: no Supabase or Vercel calls (no network code, no API route). Phone size (lite) in the game: 71 draw calls, the same as the T1a demo; desktop 427 (demo 412).
+- Balance, two bots over 40 matches: about 8.5 shots a point, 2.3 minutes a match, close scores. To tune: `LEAD_MAX` / `LEAD_MIN` (the window), `LUNGE` (reach), `BOT_SPREAD` and `BOT_RUN` (the bot), `DRAG_M` in `TennisGame.tsx` (drag speed).
+- Tests: `tests/tennis/match.test.ts` (the flight and aim, the tap window, whole bot matches, the ball meeting the racket at every hit). Checked in headless Chrome at desktop and phone size, including tap to serve and drag to move. Not yet on a real phone; the feel (window, drag speed, bot strength) needs Ben's hands on it.
 
 ### Duplicate migration numbers fixed, 2026-10-26 (Ben)
 - Two migration numbers were used twice. Renamed the files, with no change to their SQL: `0103_admin_game_master.sql` is now `0107_admin_game_master.sql`, and `0101_group_positions_everyone.sql` is now `0108_group_positions_everyone.sql`. Comments and docs that named them follow.

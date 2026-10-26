@@ -15,7 +15,7 @@ export type PlayerFrame = { x: number; z: number; yaw: number; pose: Pose };
 export type RallyFrame = { ball: V3; players: [PlayerFrame, PlayerFrame] };
 
 /** Deterministic noise in [0, 1) for shot k (any integer) and draw n. */
-function rand(seed: number, k: number, n: number) {
+export function rand(seed: number, k: number, n: number) {
   let h = Math.imul(seed ^ 0x9e3779b9, 0x85ebca6b) ^ Math.imul(k, 0xc2b2ae35) ^ Math.imul(n + 1, 0x27d4eb2f);
   h = Math.imul(h ^ (h >>> 15), 0x2c1b3c6d);
   h = Math.imul(h ^ (h >>> 12), 0x297a2d39);
@@ -93,7 +93,7 @@ function bodyAt(player: 0 | 1, t: number, seed: number): [number, number] {
 }
 
 /** Steps per second while running, as a leg-swing phase rate. */
-const STEP_RATE = 11;
+export const STEP_RATE = 11;
 
 function playerAt(player: 0 | 1, t: number, seed: number): PlayerFrame {
   const [x, z] = bodyAt(player, t, seed);

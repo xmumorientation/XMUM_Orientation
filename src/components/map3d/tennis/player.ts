@@ -20,8 +20,11 @@ const STRINGS = "#d6dcc4";
 const HIP_Y = 0.88;
 /** The shoulders, from the hips. */
 const SHOULDER = { x: 0.25, y: 0.5 };
-/** The racket head's middle, down the right arm from the shoulder. */
+/** The racket head's middle, down the right arm from the shoulder, and half its length. */
 const RACKET_Y = 1.05;
+const RACKET_HALF = 0.15;
+/** The hand, down the arm from the shoulder. */
+const HAND_Y = 0.62;
 
 /** How the figure stands. Angles in radians, lengths in metres (before PLAYER_SCALE). */
 export type Pose = {
@@ -53,6 +56,10 @@ export type Rig = {
   offLift: THREE.Group;
   /** The racket head's middle, where the ball is hit. */
   sweetSpot: THREE.Object3D;
+  /** The racket head's tip and throat (a swing's blur runs between them), and the other hand (it tosses the serve). */
+  tip: THREE.Object3D;
+  throat: THREE.Object3D;
+  hand: THREE.Object3D;
 };
 
 function group(parent: THREE.Object3D, x = 0, y = 0, z = 0) {
@@ -60,6 +67,14 @@ function group(parent: THREE.Object3D, x = 0, y = 0, z = 0) {
   g.position.set(x, y, z);
   parent.add(g);
   return g;
+}
+
+/** A point down an arm from its shoulder. */
+function marker(parent: THREE.Object3D, y: number) {
+  const o = new THREE.Object3D();
+  o.position.y = -y;
+  parent.add(o);
+  return o;
 }
 
 /** The figure's joints, with no meshes. */
@@ -73,10 +88,11 @@ export function makeRig(): Rig {
   const armLift = group(arm);
   const off = group(upper, SHOULDER.x, SHOULDER.y);
   const offLift = group(off);
-  const sweetSpot = new THREE.Object3D();
-  sweetSpot.position.y = -RACKET_Y;
-  armLift.add(sweetSpot);
-  return { root, body, legs, upper, arm, armLift, off, offLift, sweetSpot };
+  const sweetSpot = marker(armLift, RACKET_Y);
+  const tip = marker(armLift, RACKET_Y + RACKET_HALF);
+  const throat = marker(armLift, RACKET_Y - RACKET_HALF);
+  const hand = marker(offLift, HAND_Y);
+  return { root, body, legs, upper, arm, armLift, off, offLift, sweetSpot, tip, throat, hand };
 }
 
 /** Non-indexed copy with a flat vertex colour and no uv, ready to merge (as in vegetation.tsx). */
@@ -189,19 +205,69 @@ const BACKHAND: Key[] = [
 
 const ease = (x: number) => x * x * (3 - 2 * x);
 
-/** The upper body `rel` seconds from a contact (ready when it is further than KEY_T's ends). */
-export function swingPose(rel: number, hand: Hand): SwingPose {
-  const keys = hand === 1 ? FOREHAND : BACKHAND;
+/** The keyframes round time `rel`, blended. */
+function keyed(rel: number, times: number[], keys: Key[]): Key {
   let i = 0;
-  while (i < KEY_T.length - 2 && rel > KEY_T[i + 1]) i++;
-  const f = ease(Math.min(1, Math.max(0, (rel - KEY_T[i]) / (KEY_T[i + 1] - KEY_T[i]))));
+  while (i < times.length - 2 && rel > times[i + 1]) i++;
+  const f = ease(Math.min(1, Math.max(0, (rel - times[i]) / (times[i + 1] - times[i]))));
   const [a, b] = [keys[i], keys[i + 1]];
-  const v = a.map((x, k) => x + (b[k] - x) * f);
-  return { twist: v[0], sweep: v[1], raise: v[2], offSweep: v[3], offRaise: v[4], crouch: v[5] };
+  return a.map((x, k) => x + (b[k] - x) * f) as Key;
 }
 
-const STILL = { strideX: 0, strideZ: 0, bob: 0 };
+const toPose = (v: Key): SwingPose => ({ twist: v[0], sweep: v[1], raise: v[2], offSweep: v[3], offRaise: v[4], crouch: v[5] });
+
+/**
+ * Per metre the ball is above the usual contact, the racket arm lifts this much (radians); per metre below, the
+ * knees bend this much as well. The game solves the lift for each ball's height.
+ */
+const LIFT_RAISE = 0.62;
+const LIFT_CROUCH = 0.18;
+
+/**
+ * The upper body `rel` seconds from a contact (ready when it is further than KEY_T's ends). `lift` reaches the
+ * racket up (+) or down (-) to the ball round the contact.
+ */
+export function swingPose(rel: number, hand: Hand, lift = 0): SwingPose {
+  const p = toPose(keyed(rel, KEY_T, hand === 1 ? FOREHAND : BACKHAND));
+  if (lift === 0) return p;
+  const w = ease(Math.max(0, 1 - Math.abs(rel) / 0.45));
+  return { ...p, raise: p.raise + lift * LIFT_RAISE * w, crouch: p.crouch + Math.max(0, -lift) * LIFT_CROUCH * w };
+}
+
+/** The serve's toss leaves the hand this long before the contact (s). */
+export const TOSS_S = 0.5;
+/** Seconds from the serve's contact: the ball in hand, the toss, the racket behind the head, contact, follow-through. */
+const SERVE_T = [-0.9, -TOSS_S, -0.2, 0, 0.3, 0.75];
+const SERVE: Key[] = [
+  [0, 0.9, 0.5, 1.2, 0.9, 0.04],
+  [-0.45, -0.5, 0.9, 1.45, 2.7, 0.12],
+  [-0.6, -1.1, 2.3, 1.4, 2.4, 0.16],
+  [0.2, 0.8, 2.85, 1.3, 1.1, -0.06],
+  [0.75, 2.4, 1.0, 0.6, 0.5, 0.08],
+  READY,
+];
+
+/** The upper body `rel` seconds from the serve's contact. */
+export function servePose(rel: number): SwingPose {
+  return toPose(keyed(rel, SERVE_T, SERVE));
+}
+
+export const STILL = { strideX: 0, strideZ: 0, bob: 0 };
 const contactCache = new Map<Hand, THREE.Vector3>();
+let scratch: Rig | null = null;
+
+/** A point of the rig for a player in this pose, standing on the origin and facing +z (metres, PLAYER_SCALE included). */
+function pointAt(pose: Pose, pick: (rig: Rig) => THREE.Object3D) {
+  scratch ??= makeRig();
+  posePlayer(scratch, pose);
+  scratch.root.updateMatrixWorld(true);
+  return pick(scratch).getWorldPosition(new THREE.Vector3());
+}
+
+/** The racket's sweet spot for a player in this pose (as pointAt). */
+export const racketAt = (pose: Pose) => pointAt(pose, (r) => r.sweetSpot);
+/** The other hand, which holds the ball for the serve (as pointAt). */
+export const handAt = (pose: Pose) => pointAt(pose, (r) => r.hand);
 
 /**
  * Where the racket meets the ball for a player standing on the origin and facing +z, in metres on the court
@@ -210,10 +276,7 @@ const contactCache = new Map<Hand, THREE.Vector3>();
 export function racketAtContact(hand: Hand): THREE.Vector3 {
   let v = contactCache.get(hand);
   if (!v) {
-    const rig = makeRig();
-    posePlayer(rig, { ...swingPose(0, hand), ...STILL });
-    rig.root.updateMatrixWorld(true);
-    v = rig.sweetSpot.getWorldPosition(new THREE.Vector3());
+    v = racketAt({ ...swingPose(0, hand), ...STILL });
     contactCache.set(hand, v);
   }
   return v.clone();
