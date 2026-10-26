@@ -399,6 +399,15 @@ Roadmap item 9, batch T1a. See it at `/map3d?tennis=demo` (desktop and a phone s
 - `sports.tsx`: a fence side between the camera and its target is hidden when the camera is within 15 units of it and lower than 12 units (`useFenceCutaway`).
 - `CampusMap3D.tsx`: `?tennis=demo` starts at the middle court's broadcast view with names off. With `?cam`, it keeps the map's own lens.
 
+### Log fixes from testing HOGM's Log: Admin token edits are audited, game start/end shows, 2026-10-22
+Found by clicking through the Log as HOGM, Admin and a GM against the live project. Run `0109_admin_token_log_audit.sql` (was `0102`; renamed on merge because main already uses 0102) **before** deploying the frontend: Admin → Token now calls it.
+- **Admin editing or deleting a token transaction was not audited, and could leave the balance and the ledger apart.** [token-api.ts](../src/lib/token-api.ts) changed `token_logs` and `groups` from the browser and never checked the result (a refused log update still moved the balance). `fn_admin_update_token_log` and `fn_admin_delete_token_log` (0109, Admin only) now change the row, the balances and the audit row in one transaction and refuse a negative balance. Audit actions `tokens.log_edit` and `tokens.log_delete`, shown as "Transaction edited" / "Transaction deleted" with the amount and the balance after.
+- **The edit dialog retyped a reversal.** `TOKEN_REVERSAL` (a GM's undo) was not in its list, so saving turned it into `DAY1_GAME`. It stays selectable now and the function keeps the log's own type.
+- **Game start, pause, resume, end, extend and reset were missing from the Log.** The live database runs `bonding-session`'s `fn_phase_control`, which writes `session.*`; `AUDIT_ACTIONS` only had `phase.*` and `game.*`. Both are listed now, with the same words.
+- Old `gm_blindbox_*` settings read "GM blind box (old setting)" instead of the raw key.
+- Tests: `tests/token-log/db.test.ts` (the two functions on a real Postgres: balance, log row, audit row, group move, negative balance, Admin only) and `tests/auditLog.test.ts`. `npm test`: 187 pass; `tsc` clean.
+- **Still open:** the table policies still let the browser write `token_logs` and `groups` directly (see the lock-down item above). Blind box rows say "A seller's boxes" without the seller's name (the assignment id is all the row has). A GM's "Token change undone" shows only the transaction number. `blindbox.regenerate` left no row when tried from Admin; not confirmed whether the QR changed.
+
 ### Migrations to run on Supabase for the 2026-10-22 work (Jiamin)
 Numbered after main's `0093`-`0098` (renamed from 0097 / 0098 when merging main, whose projector migrations took those numbers). Run both **before** deploying the frontend: Admin → Blind boxes calls the new `fn_bb_assign` (no station arguments) and `fn_bb_spot_save`.
 - `0099_group_password_refresh.sql`: `fn_end_user_sessions` (service role only).

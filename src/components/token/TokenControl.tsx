@@ -858,6 +858,10 @@ export default function TokenControl({ scoreboardOnly = false }: { scoreboardOnl
                   <option value="DAY2_ENTRY">DAY2_ENTRY</option>
                   <option value="MANUAL_ADMIN_ADJUST">MANUAL_ADMIN_ADJUST</option>
                   <option value="MANUAL_GM_ADJUST">MANUAL_GM_ADJUST</option>
+                  {/* A type outside the list (a GM's undo is TOKEN_REVERSAL) stays selectable, so saving does not retype it. */}
+                  {!["DAY1_GAME", "DAY2_ENTRY", "MANUAL_ADMIN_ADJUST", "MANUAL_GM_ADJUST"].includes(editLogForm.transactionType) && (
+                    <option value={editLogForm.transactionType}>{editLogForm.transactionType}</option>
+                  )}
                 </select>
               </div>
 
