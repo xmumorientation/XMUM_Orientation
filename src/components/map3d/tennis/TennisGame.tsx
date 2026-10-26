@@ -32,6 +32,8 @@ export type TennisOptions = {
   auto: boolean;
   /** Holds the bot's match at this many seconds in; with `auto`, the same moment every time. */
   at: number | null;
+  /** Online: between tabs of this browser (BroadcastChannel), or over Supabase Realtime (T2b). */
+  net: "tabs" | "realtime";
 };
 
 /** The game's own clock. It runs with the frames, at most 50 ms a frame, so a hidden tab or a stall pauses it. */
@@ -91,12 +93,18 @@ function theirColor(mine: string, theirs: string) {
   return d < 90 ? themeFromColor(mine).partner.toLowerCase() : theirs;
 }
 
-export function createGame(o: TennisOptions): Game {
+export async function createGame(o: TennisOptions): Promise<Game> {
   const color = groupColor(o.color);
   const name = o.name.trim().slice(0, 16) || `Player ${Math.floor(100 + Math.random() * 900)}`;
   const game: Game = { mode: o.mode, auto: o.auto, at: o.at, profile: { name, color }, solo: null, online: null, wake: () => {} };
   if (o.mode === "online") {
-    game.online = new Online(tabTransport(), game.profile, o.auto ? "bot" : "player");
+    // Supabase only when asked for: the game against the bot, and between tabs, never download it
+    let transport = tabTransport();
+    if (o.net === "realtime") {
+      const [{ realtimeTransport }, { supabaseBrowser }] = await Promise.all([import("./realtime"), import("@/lib/supabase/client")]);
+      transport = realtimeTransport(supabaseBrowser());
+    }
+    game.online = new Online(transport, game.profile, o.auto ? "bot" : "player");
     return game;
   }
   // a fixed seed with two bots, so a held moment is the same every time
@@ -619,13 +627,13 @@ function OnlineHud({ game, online, session }: { game: Game; online: Online; sess
   };
 
   if (!view.match || !link) {
-    const queued = lobby.me.status === "queue";
-    const full = lobby.playing >= 3;
-    const status = !queued
-      ? `${lobby.playing} playing · ${lobby.waiting} waiting`
+    // the queue's room is joined only on Play, so before that there is nothing to count
+    const queued = lobby?.me.status === "queue";
+    const status = !lobby || !queued
+      ? "Play someone on the courts"
       : lobby.waiting < 2
         ? "Finding someone to play…"
-        : full
+        : lobby.playing >= 3
           ? `Waiting for a free court · ${lobby.ahead} ahead`
           : "Pairing…";
     return (

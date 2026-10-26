@@ -90,13 +90,16 @@ export class Lobby {
   private readonly stopPresence: () => void;
   private resolving = false;
   private again = false;
-  /** Matches this seat has played: another player still on a finished match's court must not pull it back in. */
-  private readonly finished = new Set<string>();
 
+  /**
+   * `clock`: the time (ms) the queue is ordered by. `finished`: the matches this phone has played (another player
+   * still on a finished match's court must not pull it back in); kept by the caller across its turns in the queue.
+   */
   constructor(
     t: Transport,
     profile: { name: string; color: string },
     private readonly clock: () => number = Date.now,
+    private readonly finished = new Set<string>(),
   ) {
     this.room = t.join("lobby");
     this.me = { id: t.id, name: profile.name, color: profile.color, status: "idle", since: 0, want: null, court: null, match: null };

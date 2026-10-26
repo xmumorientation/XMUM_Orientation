@@ -77,6 +77,19 @@ describe("tennis queue", () => {
     expect(ownsCourt(seats, "1:a:b:5")).toBe(false);
   });
 
+  it("joins the queue's room only on Play", () => {
+    const hub = new Hub();
+    const [a, b] = phones(hub, "player", ["a", "b"]);
+    run(hub, [a, b], 1);
+    expect(a.online.getView().lobby).toBeNull();
+    expect(hub.sent.size).toBe(0);
+    a.online.play();
+    run(hub, [a, b], 0.2);
+    expect(a.online.getView().lobby).toMatchObject({ ahead: 0, waiting: 1 });
+    a.online.cancel();
+    expect(a.online.getView().lobby).toBeNull();
+  });
+
   it("puts phones that queue on the courts in pairs; the fifth waits", () => {
     const hub = new Hub();
     const list = phones(hub, "player", ["a", "b", "c", "d", "e"]);
@@ -145,6 +158,20 @@ describe("tennis between two phones", () => {
     hub.cut.delete("b");
     run(hub, [a, b], 4);
     expect(b.online.link!.match.getView()).toMatchObject({ left: 0, winner: 1 });
+  });
+
+  it("pauses at once when the other phone drops out of the room without a word, and it loses 10 s later", () => {
+    const hub = new Hub();
+    const [a, b] = phones(hub, "bot", ["a", "b"]);
+    run(hub, [a, b], 30, () => phaseOf(a) === "playing" && phaseOf(b) === "playing");
+    run(hub, [a, b], 2);
+    b.off = true;
+    hub.drop("b");
+    run(hub, [a, b], 0.5);
+    expect(phaseOf(a)).toBe("paused");
+    run(hub, [a, b], 10);
+    expect(phaseOf(a)).toBe("over");
+    expect(a.online.link!.match.getView()).toMatchObject({ left: 1, winner: 0 });
   });
 
   it("plays the point again when the quiet phone comes back in time, and the match goes on to the end", () => {
@@ -225,7 +252,8 @@ describe("tennis between two phones", () => {
     expect(phaseOf(a)).toBe("closed");
     expect(phaseOf(b)).toBe("closed");
     expect(a.online.getView().match?.link.closed).toBe("declined");
-    expect([a, b].map((p) => p.online.getView().lobby.me.status)).toEqual(["idle", "idle"]);
+    // off the court, and out of the queue's room (presence costs only while queued or playing)
+    expect([a, b].map((p) => p.online.getView().lobby)).toEqual([null, null]);
     // and back into the queue: they meet again on a new match
     a.online.playAgain();
     run(hub, [a, b], 0.1);

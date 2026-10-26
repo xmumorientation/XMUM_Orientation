@@ -26,12 +26,13 @@ Ben may continue this work in a new Claude conversation. This file says where ev
 
 ## Where things stand
 
-### Tennis game on the tennis courts (T1a done 2026-10-22; T1b and T2a done 2026-10-26, branch `tennis-game`)
+### Tennis game on the tennis courts (T1a done 2026-10-22; T1b, T2a and T2b done 2026-10-26, branch `tennis-game`)
 
-- Plan, Ben's decisions and batches T1a–T3b and T1c: [ROADMAP.md](ROADMAP.md), item 9. What T1a, T1b and T2a built: its "Done".
+- Plan, Ben's decisions and batches T1a–T3b and T1c: [ROADMAP.md](ROADMAP.md), item 9. What T1a, T1b, T2a and T2b built: its "Done". Where to pick up: item 9's "Next session".
 - Code: `src/components/map3d/tennis/`. It meets the map in `CampusMap3D.tsx` (`?tennis=demo`, `?tennis=bot`, `?tennis=online`) and in `sports.tsx` (the fence cutaway). Court sizes: `courts.ts`.
 - The game (T1b): `match.ts` is the rules, pure and stepped by time (`step(t)` takes events in time order); `ball.ts` the flight; `TennisGame.tsx` draws it (`TennisCourt`, in the scene) and lays the HUD over the page (`TennisHud`). `CampusMap3D` imports `TennisGame` only when the URL asks for the game, so the map's own chunk does not grow.
-- Online (T2a): `net.ts` (the transport: swap it for T2b), `lobby.ts` (the queue), `link.ts` (one match between two phones), `online.ts` (this phone's seat and match). Each phone runs its own `Match` with its own player as side 0; messages go in the sender's frame and the receiver turns them round. Tests run two (or more) phones on `tests/tennis/hub.ts`, a fake network with latency, clock skew and cut-offs.
+- Online (T2a, T2b): `net.ts` (the transport, and its `BroadcastChannel` version), `realtime.ts` (the Supabase Realtime version, `?net=realtime`), `lobby.ts` (the queue), `link.ts` (one match between two phones), `online.ts` (this phone's seat and match). Each phone runs its own `Match` with its own player as side 0; messages go in the sender's frame and the receiver turns them round. Tests run two (or more) phones on `tests/tennis/hub.ts`, a fake network with latency, clock skew and cut-offs.
+- `?net=realtime` talks to the live project (`.env.local`): it writes nothing, but keep checks short. Over Realtime the pairing and the start take a second or two longer than between tabs.
 - Shots of a game: `?tennis=bot&auto=1&t=<seconds>` holds the two bots' match (seed 17) at that moment, the same every time. Event times for picking moments: step a `new Match(17, ["bot", "bot"])` in a test and print `drain()`.
 - Two tabs in headless Chrome (one profile, so `BroadcastChannel` reaches both): open both, then act and read the DOM; `&lite=1` and small windows. Both tabs share one software GPU, so they stall together for seconds at first draws and at every screenshot; take screenshots at the end, not mid-match.
 - **The view is Ben's:** like a TV broadcast (his reference: an Australian Open broadcast), with clear court lines. `courtView()` blends a wide-screen preset (low, 18° lens) and an upright-phone preset (45°, 30° lens). The wide pitch is already as low as `maxPolarAngle` allows.

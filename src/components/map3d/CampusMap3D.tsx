@@ -47,7 +47,7 @@ type Demo = {
  * middle court (unless ?cam is given), ?tennis=bot the tennis game against a bot on the middle court (?auto=1 two
  * bots, ?color=%23rrggbb the player's shirt), ?t=<seconds> hold the rally or the two bots' match at that moment,
  * ?tennis=online the game against another tab of this browser (open two; ?name= the player's name, ?auto=1 a bot
- * plays for this tab).
+ * plays for this tab), and with ?net=realtime against any other phone, over the Supabase project's Realtime.
  */
 function readDemo(): { demo: Demo; mode: Mode | null } {
   const q = new URLSearchParams(window.location.search);
@@ -76,7 +76,14 @@ function readDemo(): { demo: Demo; mode: Mode | null } {
       funfair: parseFunfair(q.get("funfair")) ?? { west: 1, central: 1, east: 1 },
       concert: concert === "1" ? true : concert === "0" ? false : concert === "flip" ? "flip" : undefined,
       tennis: tq === "demo" && tennis ? { fov: cam ? 30 : tennis.fov, at } : null,
-      game: play && { mode: play, color: q.get("color") ?? "", name: q.get("name") ?? "", auto: q.get("auto") === "1", at },
+      game: play && {
+        mode: play,
+        color: q.get("color") ?? "",
+        name: q.get("name") ?? "",
+        auto: q.get("auto") === "1",
+        at,
+        net: q.get("net") === "realtime" ? "realtime" : "tabs",
+      },
     },
     mode: m === "day" || m === "sunset" || m === "night" ? m : null,
   };
@@ -184,7 +191,7 @@ export default function CampusMap3D() {
     if (!gameOptions) return;
     let live = true;
     import("./tennis/TennisGame").then((mod) => {
-      if (live) setTennis({ mod, game: mod.createGame(gameOptions) });
+      if (live) mod.createGame(gameOptions).then((game) => live && setTennis({ mod, game }));
     });
     return () => {
       live = false;

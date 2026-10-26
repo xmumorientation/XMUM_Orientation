@@ -1,4 +1,5 @@
 import type { Flight } from "./ball";
+import { parseKey } from "./lobby";
 import { guess, Match, type Note, type Seen, type Side, type Who } from "./match";
 import type { Payload, Room, Transport } from "./net";
 import type { V3 } from "./rally";
@@ -123,6 +124,13 @@ export class Link {
   /** The other phone is hidden, or this one is. */
   private theyAway = false;
   private away = false;
+  /**
+   * The other phone has gone from the room's presence (its tab closed or its connection dropped; a "bye" sent as a
+   * page closes may never arrive). The match pauses at once, as for silence, and they lose GONE_S later unless
+   * they come back. `seenThem`: they were in it.
+   */
+  private gone = false;
+  private seenThem = false;
 
   /** `key`: the lobby's Pair.key. `host`: this phone hosts it. `local`: who plays here ("bot" for two bots). */
   constructor(
@@ -171,6 +179,21 @@ export class Link {
     on("end", (p) => this.lost(swap(p.left as Side)));
     on("rematch", (p) => this.onRematch(p.yes as boolean));
     on("bye", () => this.onBye());
+    // presence in the match's room: two players, a join and a leave each, and the leave comes even when the page
+    // that left could not say so
+    const { host: h, guest } = parseKey(key);
+    const them = t.id === h ? guest : h;
+    this.stops.push(
+      this.room.onPresence((states) => {
+        const here = states.has(them);
+        if (here) this.seenThem = true;
+        const gone = this.seenThem && !here;
+        if (gone === this.gone) return;
+        this.gone = gone;
+        if (!gone && this.host && this.view.phase === "paused") this.resume();
+      }),
+    );
+    this.room.track({ here: true });
   }
 
   subscribe = (fn: () => void) => {
@@ -245,7 +268,7 @@ export class Link {
           this.overAt = now;
           this.set({ phase: "over" });
         }
-      } else if (this.theyAway || now - this.heard > QUIET_S) {
+      } else if (this.theyAway || this.gone || now - this.heard > QUIET_S) {
         this.pausedAt = now;
         // the host may still be playing (its tab was the one hidden): it restarts the point when it hears this
         this.room.send("wait", {});
@@ -309,7 +332,7 @@ export class Link {
       this.room.send("end", { left: 1 });
     }
     // back from a pause: the host starts the point again
-    if (this.view.phase === "paused" && !this.theyAway && this.host) this.resume();
+    if (this.view.phase === "paused" && !this.theyAway && !this.gone && this.host) this.resume();
   }
 
   private onPong(sent: number, hostNow: number) {
