@@ -70,7 +70,7 @@ describe("tennis courts board", () => {
   it("shows a hosted match from its countdown until it closes, in both players' shirts", () => {
     const hub = new Hub(0.04);
     const [a, b] = bots(hub, ["a", "b"], [0, 2.1]);
-    for (const p of [a, b]) hostOnBoard(p.online, hub.transport(p.id), (theirs) => [`#00000${p.id === "a" ? 1 : 2}`, theirs]);
+    for (const p of [a, b]) hostOnBoard(p.online, () => new Board(hub.transport(p.id)), (theirs) => [`#00000${p.id === "a" ? 1 : 2}`, theirs]);
     const board = new Board(hub.transport("v"));
     run(hub, [a, b], [], 10, () => board.getView().length > 0);
     const key = a.online.getView().match!.key;

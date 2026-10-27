@@ -78,15 +78,17 @@ export class Board {
 
 /**
  * Puts this phone's online match on the board while it hosts one that is on (from its countdown until it closes).
- * `colors`: both shirts as the players see them (host first), from the other player's group colour.
+ * `board`: the board to say it on, asked for when first needed. A page that shows the courts passes its own (T3b):
+ * a phone may be in a room only once. `colors`: both shirts as the players see them (host first), from the other
+ * player's group colour.
  */
-export function hostOnBoard(online: Online, transport: Transport, colors: (theirs: string) => [string, string]) {
-  let board: Board | null = null;
+export function hostOnBoard(online: Online, board: () => Board, colors: (theirs: string) => [string, string]) {
+  let on: Board | null = null;
   return online.subscribe(() => {
     const m = online.getView().match;
     if (m?.host && m.link.round > 0 && m.link.phase !== "closed") {
-      board ??= new Board(transport);
-      board.say({ court: m.court, key: m.key, colors: colors(m.opponent.color) });
-    } else board?.say(null);
+      on ??= board();
+      on.say({ court: m.court, key: m.key, colors: colors(m.opponent.color) });
+    } else on?.say(null);
   });
 }

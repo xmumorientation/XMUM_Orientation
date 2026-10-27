@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 
 import { LayerSwitch, MapLegend, MapToolbar } from "@/components/campus-map/CampusMapPanels";
 import { CampusMapView, useMapView } from "@/components/campus-map/CampusMapView";
@@ -28,6 +28,8 @@ import { FACI_GROUP, useMockMapData, type MockOptions } from "./mockData";
 // ?full=1                          open full screen
 // ?color=#16a34a                   the Freshie or Faci group colour
 // ?mode=day|sunset|night, ?lite=0|1, ?intro=0, ?cam=x,y,z,tx,ty,tz   the 3D scene
+// ?tennis=1                        the tennis game open (Admin's switch is a checkbox under the map), played
+//                                  between tabs of this browser (BroadcastChannel); ?name= the player's name
 
 type Opts = Omit<MockOptions, "bulbLayer"> & {
   highlight: string | null;
@@ -37,6 +39,8 @@ type Opts = Omit<MockOptions, "bulbLayer"> & {
   lite?: boolean;
   intro: boolean;
   cam?: CameraView;
+  tennis: boolean;
+  name: string | null;
 };
 
 function readOpts(): Opts {
@@ -66,6 +70,8 @@ function readOpts(): Opts {
       cam && cam.length === 6 && !cam.some(Number.isNaN)
         ? { position: [cam[0], cam[1], cam[2]], target: [cam[3], cam[4], cam[5]] }
         : undefined,
+    tennis: q.get("tennis") === "1",
+    name: q.get("name"),
   };
 }
 
@@ -115,6 +121,18 @@ function Preview({ opts }: { opts: Opts }) {
   const showGroupPins = role !== "freshie";
   const canManageStations = role === "admin";
   const hasSelection = role === "admin" ? pending !== null : role === "staff" ? true : undefined;
+  // The tennis game: Admin's switch is the checkbox under the map. A Freshie or Faci plays as their group, anyone
+  // else as their role (useTennisSettings on the real pages).
+  const [tennisOpen, setTennisOpen] = useState(opts.tennis);
+  const player = role === "freshie" || role === "faci";
+  const tennis = useMemo(
+    () => ({
+      open: tennisOpen,
+      profile: { name: opts.name ?? (player ? `Group ${FACI_GROUP}` : role === "admin" ? "Admin" : "Committee"), color: player ? opts.color : "" },
+      net: "tabs" as const,
+    }),
+    [tennisOpen, opts.name, opts.color, player, role],
+  );
   const viewProps = {
     data,
     showGroupPins,
@@ -138,8 +156,14 @@ function Preview({ opts }: { opts: Opts }) {
         {...viewProps}
         view={view}
         onFail={fallBack}
-        scene={{ mode: opts.mode, lite: opts.lite, intro: opts.intro, camera: opts.cam }}
+        scene={{ mode: opts.mode, lite: opts.lite, intro: opts.intro, camera: opts.cam, tennis: opts.tennis ? tennis : null }}
       />
+      {opts.tennis && (
+        <label className="card mt-3 flex items-center gap-2 p-3 text-xs font-semibold">
+          <input type="checkbox" checked={tennisOpen} onChange={(e) => setTennisOpen(e.target.checked)} />
+          Tennis open (Admin&apos;s switch in Live control)
+        </label>
+      )}
       <PreviewState data={data} pending={pending} hasSelection={hasSelection} />
     </div>
   );

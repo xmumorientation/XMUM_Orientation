@@ -139,10 +139,25 @@ function watchSession(w: Watch, c: LiveCourt): Session {
   };
 }
 
-/** The busy courts, in the map's scene: the rally on each, and the real match on the one the camera is near. */
-export function LiveCourts({ spectator }: { spectator: Spectator }) {
+/**
+ * The busy courts, in the map's scene: the rally on each, and the real match on the one the camera is near. On the
+ * map pages (T3b), this phone's own match is drawn by the game instead (`exclude`, its key), the phone watches
+ * nothing while it plays (`watch` false), and the page draws the crisp courts itself (`surface` false).
+ */
+export function LiveCourts({
+  spectator,
+  exclude = null,
+  watch: watching = true,
+  surface = true,
+}: {
+  spectator: Spectator;
+  exclude?: string | null;
+  watch?: boolean;
+  surface?: boolean;
+}) {
   const { board, transport } = spectator;
-  const courts = useSyncExternalStore(board.subscribe, board.getView, board.getView);
+  const all = useSyncExternalStore(board.subscribe, board.getView, board.getView);
+  const courts = useMemo(() => (exclude ? all.filter((c) => c.key !== exclude) : all), [all, exclude]);
   const material = useMemo(playerMaterial, []);
   const shadowTex = useMemo(makeGlow, []);
   useEffect(
@@ -158,7 +173,7 @@ export function LiveCourts({ spectator }: { spectator: Spectator }) {
 
   const { near, seen } = useNearCourt(courts);
   const hidden = useHidden();
-  const watch = useWatch(transport, hidden ? null : near);
+  const watch = useWatch(transport, hidden || !watching ? null : near);
   // until the match has a score to show, the watcher is moved on here (Play does it after)
   useFrame(({ invalidate }) => {
     if (!watch || watch.ready) return;
@@ -171,7 +186,7 @@ export function LiveCourts({ spectator }: { spectator: Spectator }) {
 
   return (
     <>
-      <CourtSurface />
+      {surface && <CourtSurface />}
       {courts.map((c) =>
         session && c.key === watch?.key ? (
           <Play key={c.key} session={session} watch />

@@ -3,17 +3,20 @@
 import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useReducer, useRef, useState, useSyncExternalStore, type CSSProperties, type PointerEvent } from "react";
 import * as THREE from "three";
+import type { MapControls as MapControlsImpl } from "three-stdlib";
 
-import { groupColor, themeFromColor } from "@/components/freshie/groupTheme";
+import { themeFromColor } from "@/components/freshie/groupTheme";
 
 import { BALL_R } from "./ball";
-import { hostOnBoard } from "./board";
+import { Board, hostOnBoard } from "./board";
 import { courtFrame, courtView, TENNIS_COURTS } from "./court";
 import { dotTexture, Flash, Marker, Pulse, Smear, Trail } from "./effects";
+import type { LobbyView } from "./lobby";
 import { Match, type Call, type Miss, type Why } from "./match";
 import { tabTransport, type Transport } from "./net";
 import { Online, type OnlineView } from "./online";
 import { makePlayer, playerMaterial, posePlayer } from "./player";
+import { playerProfile, shirtsOf } from "./shirts";
 import { CourtSurface } from "./surface";
 
 import "./tennis.css";
@@ -21,7 +24,8 @@ import "./tennis.css";
 // DRAFT: the tennis game (docs/ROADMAP.md, item 9): against a bot on /map3d?tennis=bot (batch T1b), or against
 // another tab of this browser on /map3d?tennis=online (batch T2a: open it in two tabs). One Game feeds two parts:
 // TennisCourt draws the match in the 3D scene, and TennisHud lays the broadcast's score, the calls, the queue and
-// the touch controls over it. CampusMap3D loads this file only when the page asks for the game.
+// the touch controls over it. CampusMap3D loads this file only when the page asks for the game; the map pages
+// (TennisMap.tsx, T3b) when Admin has the game open.
 
 export type TennisOptions = {
   mode: "bot" | "online";
@@ -87,13 +91,6 @@ export type Game = {
 /** With no match yet, the camera rests on the middle court, where the page's broadcast view starts. */
 export const GAME_COURT = 1;
 
-/** The other player's shirt: their colour, unless it is close to this player's (two tabs, both default blue). */
-function theirColor(mine: string, theirs: string) {
-  const [a, b] = [parseInt(mine.slice(1), 16), parseInt(theirs.slice(1), 16)];
-  const d = [16, 8, 0].reduce((sum, s) => sum + Math.abs(((a >> s) & 255) - ((b >> s) & 255)), 0);
-  return d < 90 ? themeFromColor(mine).partner.toLowerCase() : theirs;
-}
-
 /** The network: between tabs of this browser, or Supabase Realtime (only then is supabase-js downloaded). */
 export async function openTransport(net: TennisOptions["net"]): Promise<Transport> {
   if (net === "tabs") return tabTransport();
@@ -101,15 +98,20 @@ export async function openTransport(net: TennisOptions["net"]): Promise<Transpor
   return realtimeTransport(supabaseBrowser());
 }
 
+/** The game of a seat online that a map page made (TennisMap.tsx, T3b): `online` plays as `profile`. */
+export function onlineGame(online: Online, profile: { name: string; color: string }): Game {
+  return { mode: "online", auto: false, at: null, profile, solo: null, online, wake: () => {} };
+}
+
 export async function createGame(o: TennisOptions): Promise<Game> {
-  const color = groupColor(o.color);
-  const name = o.name.trim().slice(0, 16) || `Player ${Math.floor(100 + Math.random() * 900)}`;
-  const game: Game = { mode: o.mode, auto: o.auto, at: o.at, profile: { name, color }, solo: null, online: null, wake: () => {} };
+  const profile = playerProfile(o.name, o.color);
+  const { color } = profile;
+  const game: Game = { mode: o.mode, auto: o.auto, at: o.at, profile, solo: null, online: null, wake: () => {} };
   if (o.mode === "online") {
     const transport = await openTransport(o.net);
     const online = (game.online = new Online(transport, game.profile, o.auto ? "bot" : "player"));
     // the host puts its match on the courts' board (T3a), so the map shows it to everyone
-    hostOnBoard(online, transport, (theirs) => [color, theirColor(color, groupColor(theirs))]);
+    hostOnBoard(online, () => new Board(transport), (theirs) => shirtsOf(color, theirs));
     return game;
   }
   // a fixed seed with two bots, so a held moment is the same every time
@@ -144,7 +146,7 @@ function onlineSession(game: Game, online: Online, view: OnlineView): Session | 
     match: link.match,
     court: m.court,
     names: ["You", m.opponent.name],
-    colors: [game.profile.color, theirColor(game.profile.color, groupColor(m.opponent.color))],
+    colors: shirtsOf(game.profile.color, m.opponent.color),
     time: () => link.matchTime(),
     timeAt: (stamp) => link.matchTimeAt(stamp),
     advance: () => online.tick(),
@@ -182,6 +184,8 @@ const FOLLOW_TALL = 0.35;
 const SHAKE_CLEAN = 0.85;
 const SHAKE_M = 0.06;
 const SHAKE_S = 0.18;
+/** A match's camera glides onto its broadcast view (and lens) from wherever the map's camera was, over ENTER_S. */
+const ENTER_S = 1.2;
 const Y_AXIS = new THREE.Vector3(0, 1, 0);
 const WHITE = new THREE.Color("#ffffff");
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
@@ -208,8 +212,12 @@ function useBroadcast(court: number, lens = true) {
   return { cell, view, aspect };
 }
 
-/** The match on its court, in the map's scene (or, online before a match, the camera resting on the middle court). */
-export function TennisCourt({ game }: { game: Game }) {
+/**
+ * The match on its court, in the map's scene (or, online before a match, the camera resting on the middle court).
+ * The map pages (T3b) leave the camera to the map until a match (`rest` false) and draw the crisp courts themselves
+ * (`surface` false).
+ */
+export function TennisCourt({ game, rest = true, surface = true }: { game: Game; rest?: boolean; surface?: boolean }) {
   const session = useSession(game);
   const invalidate = useThree((s) => s.invalidate);
   useEffect(() => {
@@ -224,8 +232,8 @@ export function TennisCourt({ game }: { game: Game }) {
   }, [game, invalidate]);
   return (
     <>
-      <CourtSurface />
-      {session ? <Play key={session.id} session={session} held={game.solo ? game.at : null} auto={game.auto} /> : <Rest />}
+      {surface && <CourtSurface />}
+      {session ? <Play key={session.id} session={session} held={game.solo ? game.at : null} auto={game.auto} /> : rest && <Rest />}
     </>
   );
 }
@@ -255,10 +263,21 @@ export function Play({ session, held = null, auto = false, watch = false }: { se
   const { cell, view, aspect } = useBroadcast(session.court, !watch);
   const frame = courtFrame(cell);
   const camera = useThree((s) => s.camera);
-  const controls = useThree((s) => s.controls) as unknown as { target: THREE.Vector3 } | null;
+  const controls = useThree((s) => s.controls) as unknown as MapControlsImpl | null;
   const invalidate = useThree((s) => s.invalidate);
   // from an upright phone (0.46) to a wide screen (1.6), as courtView blends its presets
   const followShare = FOLLOW_TALL + (1 - FOLLOW_TALL) * clamp((aspect - 0.46) / (1.6 - 0.46), 0, 1);
+  // where the camera glides from: the map's view and lens as the match came (read before useBroadcast sets the lens)
+  const [from] = useState(() => ({
+    at: -1,
+    fov: camera instanceof THREE.PerspectiveCamera ? camera.fov : view.fov,
+    pos: new THREE.Vector3(),
+    target: new THREE.Vector3(),
+  }));
+  // the match takes the camera: a flight or the map's opening swoop still under way stops (CameraRig, Intro)
+  useEffect(() => {
+    if (!watch) controls?.dispatchEvent({ type: "start", target: controls });
+  }, [watch, controls]);
 
   const material = useMemo(playerMaterial, []);
   const dot = useMemo(dotTexture, []);
@@ -299,7 +318,10 @@ export function Play({ session, held = null, auto = false, watch = false }: { se
   const court = useRef<THREE.Group>(null);
   const ball = useRef<THREE.Mesh>(null);
   const shadows = useRef<(THREE.Mesh | null)[]>([]);
-  const tmp = useMemo(() => ({ eye: new THREE.Vector3(), color: new THREE.Color(), across: new THREE.Vector3(), target: new THREE.Vector3() }), []);
+  const tmp = useMemo(
+    () => ({ eye: new THREE.Vector3(), color: new THREE.Color(), across: new THREE.Vector3(), pos: new THREE.Vector3(), target: new THREE.Vector3() }),
+    [],
+  );
   const cam = useRef({ follow: 0, shakeAt: -Infinity, last: 0, held: false });
 
   // compile every effect's shader now, not at the first hit: a phone stalls while it compiles one, and online a
@@ -393,12 +415,33 @@ export function Play({ session, held = null, auto = false, watch = false }: { se
     const shake = u >= 0 && u < 1 ? SHAKE_M * (1 - u) * Math.sin(t * 95) : 0;
     tmp.across.set(0, 0, 1).applyAxisAngle(Y_AXIS, frame.rotY).multiplyScalar(c.follow * cell.s);
     const up = shake * cell.s;
-    camera.position.set(view.position[0] + tmp.across.x, view.position[1] + up, view.position[2] + tmp.across.z);
+    tmp.pos.set(view.position[0] + tmp.across.x, view.position[1] + up, view.position[2] + tmp.across.z);
     tmp.target.set(view.target[0] + tmp.across.x, view.target[1] + up, view.target[2] + tmp.across.z);
+    // a match that has just come: the camera glides there from the map's view (not a held moment)
+    let k = 1;
+    if (held === null) {
+      const now = performance.now() / 1000;
+      if (from.at < 0) {
+        from.at = now;
+        from.pos.copy(camera.position);
+        from.target.copy(controls?.target ?? tmp.target);
+      }
+      const u = Math.min(1, (now - from.at) / ENTER_S);
+      k = u * u * (3 - 2 * u);
+    }
+    camera.position.lerpVectors(from.pos, tmp.pos, k);
+    tmp.target.lerpVectors(from.target, tmp.target, k);
     controls?.target.copy(tmp.target);
     camera.lookAt(tmp.target);
+    if (camera instanceof THREE.PerspectiveCamera) {
+      const fov = from.fov + (view.fov - from.fov) * k;
+      if (Math.abs(camera.fov - fov) > 1e-3) {
+        camera.fov = fov;
+        camera.updateProjectionMatrix();
+      }
+    }
 
-    const moving = Math.abs(want - c.follow) > 0.004 || shake !== 0;
+    const moving = Math.abs(want - c.follow) > 0.004 || shake !== 0 || k < 1;
     if (held === null && (session.busy() || alive || moving)) invalidate();
   });
 
@@ -443,13 +486,16 @@ const DRAG_M = 14;
 /** How long a call stays up (ms). */
 const CALL_MS = 1400;
 
-/** The layer over the map: the match's score, calls and controls, and online, the queue and the match's state. */
-export function TennisHud({ game }: { game: Game }) {
+/**
+ * The layer over the map: the match's score, calls and controls, and online, the queue and the match's state.
+ * `exit`: the end card's button that leaves the courts (the map pages say "Back to map").
+ */
+export function TennisHud({ game, exit = "Leave" }: { game: Game; exit?: string }) {
   const session = useSession(game);
   return (
     <div className="tn-hud" data-held={game.at !== null || undefined}>
       {session && <MatchHud game={game} session={session} />}
-      {game.online && <OnlineHud game={game} online={game.online} session={session} />}
+      {game.online && <OnlineHud game={game} online={game.online} session={session} exit={exit} />}
     </div>
   );
 }
@@ -608,8 +654,14 @@ function MatchHud({ game, session }: { game: Game; session: Session }) {
   );
 }
 
+/** Where a phone in the queue stands. */
+export function queueStatus(lobby: LobbyView) {
+  if (lobby.waiting < 2) return "Finding someone to play…";
+  return lobby.playing >= 3 ? `Waiting for a free court · ${lobby.ahead} ahead` : "Pairing…";
+}
+
 /** Online: the queue, the match's start and pauses, and its end (rematch or not). */
-function OnlineHud({ game, online, session }: { game: Game; online: Online; session: Session | null }) {
+function OnlineHud({ game, online, session, exit }: { game: Game; online: Online; session: Session | null; exit: string }) {
   const view = useSyncExternalStore(online.subscribe, online.getView, online.getView);
   const link = view.match?.link ?? null;
   const name = view.match?.opponent.name ?? "";
@@ -642,13 +694,7 @@ function OnlineHud({ game, online, session }: { game: Game; online: Online; sess
   if (!view.match || !link) {
     // the queue's room is joined only on Play, so before that there is nothing to count
     const queued = lobby?.me.status === "queue";
-    const status = !lobby || !queued
-      ? "Play someone on the courts"
-      : lobby.waiting < 2
-        ? "Finding someone to play…"
-        : lobby.playing >= 3
-          ? `Waiting for a free court · ${lobby.ahead} ahead`
-          : "Pairing…";
+    const status = !lobby || !queued ? "Play someone on the courts" : queueStatus(lobby);
     return (
       <div className="tn-panel">
         <div className="tn-panel-title">Tennis · {game.profile.name}</div>
@@ -690,11 +736,11 @@ function OnlineHud({ game, online, session }: { game: Game; online: Online; sess
     );
   }
   if (link.phase === "playing") return null;
-  return session ? <OnlineEnd game={game} online={online} session={session} name={name} /> : null;
+  return session ? <OnlineEnd game={game} online={online} session={session} name={name} exit={exit} /> : null;
 }
 
 /** The end of an online match: who won, a rematch (both must say yes), or back to the queue. */
-function OnlineEnd({ game, online, session, name }: { game: Game; online: Online; session: Session; name: string }) {
+function OnlineEnd({ game, online, session, name, exit }: { game: Game; online: Online; session: Session; name: string; exit: string }) {
   const view = useSyncExternalStore(online.subscribe, online.getView, online.getView);
   const mv = useSyncExternalStore(session.match.subscribe, session.match.getView, session.match.getView);
   const link = view.match?.link;
@@ -741,7 +787,7 @@ function OnlineEnd({ game, online, session, name }: { game: Game; online: Online
             </button>
           ) : null}
           <button type="button" className="tn-btn" data-kind="ghost" onClick={act(() => online.leave())}>
-            Leave
+            {exit}
           </button>
         </div>
       )}

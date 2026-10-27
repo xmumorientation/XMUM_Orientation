@@ -61,8 +61,8 @@ class Fallback extends Component<{ onError: () => void; children: ReactNode }, {
   }
 }
 
-/** Scene options for the 3D view only (the dev preview sets them). */
-export type SceneOptions = Pick<CampusMap3DViewProps, "mode" | "lite" | "intro" | "camera">;
+/** Options for the 3D view only: the scene's (the dev preview sets them), and the tennis game on its courts. */
+export type SceneOptions = Pick<CampusMap3DViewProps, "mode" | "lite" | "intro" | "camera" | "tennis">;
 
 function ActivationFallback({ setLayer }: { setLayer: CampusMapViewProps["data"]["setLayer"] }) {
   const [arrival, setArrival] = useState(false);

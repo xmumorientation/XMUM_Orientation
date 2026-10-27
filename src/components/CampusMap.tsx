@@ -14,6 +14,7 @@ import {
 } from "@/components/campus-map/CampusMapPanels";
 import { CampusMapView, useMapView } from "@/components/campus-map/CampusMapView";
 import { useCampusMapData } from "@/components/campus-map/useCampusMapData";
+import { useTennisSettings } from "@/components/map3d/tennis/settings";
 import type { Station } from "@/lib/types";
 
 // FR-4.1: campus map. Data and state live in useCampusMapData, the controls
@@ -45,6 +46,8 @@ export function CampusMap({
   // Full-screen viewer. The inline map stays still so the page can scroll.
   const [fullscreen, setFullscreen] = useState(false);
   const panelView = view ?? "3d";
+  // The tennis game on the 3D map's courts, while Admin has it open (Live control).
+  const tennis = useTennisSettings();
   const areas = [...new Set(data.mapStations.map((station) => station.area))].sort((a, b) => {
     const rank = (area: string) => {
       const index = MAP_BUILDINGS.findIndex((building) => building.area === area);
@@ -91,6 +94,7 @@ export function CampusMap({
       <CampusMapView
         view={view}
         onFail={fallBack}
+        scene={{ tennis }}
         data={data}
         showGroupPins={showGroupPins}
         canManageStations={canManageStations}

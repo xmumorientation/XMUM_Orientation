@@ -7,7 +7,7 @@ For everything already merged, day by day since the first commit, see [CHANGELOG
 
 > **From Ben:** when you finish your work, write down what you completed in the "Done" section at the end of this file, so the next teammate can see it. Do this for partly finished items too: say which parts are done and which are left.
 
-Last updated: 2026-10-26
+Last updated: 2026-10-27
 
 ## Status key
 
@@ -240,7 +240,7 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 
 ## 9. 3D map: a tennis game on the tennis courts (Later)
 
-**Owner:** Ben. T1a (2026-10-22), T1b, T2a and T2b (2026-10-26, merged into `main` as PR #63) and T3a (2026-10-27, branch `tennis-game`) are built, see "Done"; the rest is not. Ben is not sure his Claude usage covers it, so it is split into small batches that each fit one conversation. Ben (2026-10-26): keep the load on Supabase, Vercel and phones low.
+**Owner:** Ben. T1a (2026-10-22), T1b, T2a and T2b (2026-10-26, merged into `main` as PR #63), T3a and T3b (2026-10-27, branch `tennis-game`) are built, see "Done"; T1c is not. Ben is not sure his Claude usage covers it, so it is split into small batches that each fit one conversation. Ben (2026-10-26): keep the load on Supabase, Vercel and phones low.
 
 **Goal:** the 3D map is more fun. Two people play tennis against each other on the map's tennis courts, and everyone who opens the map sees the match being played.
 
@@ -285,6 +285,14 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
   - **From afar** (`TennisLive.tsx`): a busy court shows two figures in the players' shirts playing the looping rally (`rally.ts`), and the map's "Tennis Court" label says "● LIVE" from any distance. No names or score.
   - **Up close** (`watch.ts`): within about 110 m of a busy court, with it on screen, for 0.6 s, the phone joins that match's room and replays what the players send. It sends nothing but its presence; the first 5 watchers stay and later ones leave at once and try again 30 s later. Each costs about 8 messages a second. It leaves 1.5 s after the camera moves away (beyond 140 m) and while its tab is hidden.
   - The figures move only while their court is on screen and within 350 m; the map draws on demand, so only then does the rally ask for frames.
+- **On the map pages (built in T3b):**
+  - `/map` for every role (`CampusMap` → `CampusMap3DView`). While Admin has the game open, the map loads it (`tennis/TennisMap.tsx`) and joins the courts' board. The switch is Live control → Mini game (`game_config` `tennis_open`), and it reaches every phone through `game_config`'s Realtime (`useConfig`).
+  - A tap on the tennis court opens its card: Play, then where the phone stands in the queue (Cancel). Admin's card also has Stations, the building panel the court opened before.
+  - A match takes the screen in a layer of its own, and the scene moves into it. The camera glides onto the broadcast view; the map's controls, names and markers go. "Back to map" on the end card (or Off) brings the camera back out over the courts. Closing full screen leaves the queue, or the match.
+  - The court's label says "● LIVE" while a match is on, even with the names hidden (the map pages hide them at first).
+  - Who plays: a Freshie or Faci in their group's chosen name (else "Group n") and colour; anyone else in their role's name and the default blue (`settings.ts`).
+  - Off: every phone closes at once: the match ends, the queue empties, Play goes, and the phone says "Tennis is closed". A phone that missed Off sees "… left · You win". Nothing on the server stops a phone that ignores Off: the Realtime rooms are open, and no tokens are involved.
+  - No migration: the switch is a `game_config` key set with `fn_set_config` (Admin only and audited, like the other switches). A missing key means closed.
 - **Phones:** check lite mode on a phone size. The map draws every frame during a match.
 - **Limits:** Realtime counts each message delivered to each phone, and the Supabase plan caps messages per second (Free about 100, Pro about 500). With 150 people on the map: 3 matches send about 24 a second, the board about 5, and 15 watchers up close (5 a court) about 120: about 150 a second, more than Free allows. **Move to Pro before the event**, or until then set `WATCH_MAX` (`watch.ts`) to 1 (about 55 a second). Free also allows only 200 connections at once, which 150 map viewers and the rest of the app's users could pass.
 
@@ -299,16 +307,17 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 | T2a | **Done.** Two players over `BroadcastChannel` (two tabs, `/map3d?tennis=online`): queue, pairing, the 3 courts, shot messages, score, drop-outs, rematch. The transport is behind one interface (`tennis/net.ts`), so T2b only swaps it. | Medium |
 | T2b | **Done.** The Supabase Realtime transport (Presence and Broadcast), `/map3d?tennis=online&net=realtime`. The queue's Presence is joined only on Play, so T3a must read the courts some cheaper way than joining it. Load: about 470 messages a minute per match (both phones), so 3 matches send about 24 a second. | Small |
 | T3a | **Done.** Spectators (`/map3d?tennis=watch`): the busy courts' board, the looping rally from afar with "● LIVE" on the Tennis Court label, the real match up close for 5 watchers a court. | Medium |
-| T3b | In the real map pages: tap the tennis court, then Play; an Admin on/off switch; end-of-match card; phone check. | Small |
+| T3b | **Done.** In the real map pages: tap the tennis court, then Play; the Admin on/off switch; the end card's Back to map; phone size checked headless (real phones not yet). | Small |
 | T1c | The look, after T3b (the first batch to drop if time or usage runs short): each player one `SkinnedMesh` (1 draw call, not 5) with elbows and knees, a run cycle, a split-step, win and lose poses; a shadow in the player's shape on phones too (planar projected, no shadow map); no tilt-shift (the map's miniature blur) in the tennis view; the ball drawn true size up close. | Medium |
 
-**Next session (start here; written 2026-10-27):**
-- The code is on branch `tennis-game`: T1b to T2b were merged into `main` (PR #63); T3a is on top of it, not merged. Go on working on that branch. When T3a is merged, add its line to [CHANGELOG.md](CHANGELOG.md).
-- Not checked yet: T2b and T3a on real phones over Realtime (`?net=realtime`: the live project, so keep it short). Two phones play (`/map3d?tennis=online&net=realtime`) and a third watches (`/map3d?tennis=watch&net=realtime`): zoom in on the court and out again.
-- T3b: put it in the real map pages: tap the tennis court, then Play; the spectator view (`LiveCourts`, `createSpectator`) for everyone on the map, with the "● LIVE" label (`CampusScene`'s `tennisLive`). The page should make one `Board` and give it to the game as well (today `createGame` makes its own, `hostOnBoard`), since a phone may join a room only once.
-- T3b: Ben's decisions are above ("Decisions, for T3b"). The on/off switch needs a setting in the database, which means a migration: follow how Live control's other switches are stored and reach phones, take the next free number (the latest is `0109`; numbers have collided before, so check with the team), and do not run it on the live project without Ben. Off must reach phones in a match at once, so they end it. Group names and colours come from `fn_scoreboard()`.
-- Before the event: Supabase Pro (see "Limits"), or `WATCH_MAX` lowered.
-- Tunables, if the playtest says so: the tap window (`LEAD_MAX`, `LEAD_MIN`) and reach (`LUNGE`) in `match.ts`; the bot (`BOT_SPREAD`, `BOT_RUN`); drag speed (`DRAG_M`, `TennisGame.tsx`); the online timings (`QUIET_S`, `GONE_S`, `link.ts`); the spectators' distances (`NEAR_M`, `LEAVE_M`, `ANIMATE_M`, `TennisLive.tsx`) and buffer (`BUFFER_S`, `watch.ts`).
+**Next session (start here; written 2026-10-27, after T3b):**
+- The code is on branch `tennis-game`: T1b to T2b were merged into `main` (PR #63); T3a and T3b are on top of it, not merged. Ben merges it himself. When it is merged, add T3a's and T3b's lines to [CHANGELOG.md](CHANGELOG.md).
+- To try it: Admin → Live control → Mini game → Tennis on the map, then `/map` on two phones: tap the tennis court, then Play. A third phone zooms in on the court to watch. Without the live project: `/map3d/preview?tennis=1&full=1` in two tabs of one browser (`&role=staff`, `&name=`); the checkbox under the map is Admin's switch.
+- Not checked yet: real phones over Realtime (T2b, T3a, T3b): the feel, lite mode in a match, a phone that sleeps mid-match, Off reaching phones.
+- Before the event: Supabase Pro (see "Limits"), or `WATCH_MAX` lowered. The switch starts closed: turn it on when the game should open.
+- When Zichien's `perf/latency-and-map` is merged (the `/map` page's map stays parked off-screen between visits: `PersistentCampusMap`, `paused`), a parked map must close the tennis game too. Pass the map's `live` to `useTennisOnMap` (closed while parked), or a phone stays in the courts' room on other pages.
+- Next batch: T1c (the look).
+- Tunables, if the playtest says so: the tap window (`LEAD_MAX`, `LEAD_MIN`) and reach (`LUNGE`) in `match.ts`; the bot (`BOT_SPREAD`, `BOT_RUN`); drag speed (`DRAG_M`, `TennisGame.tsx`); the online timings (`QUIET_S`, `GONE_S`, `link.ts`); the spectators' distances (`NEAR_M`, `LEAVE_M`, `ANIMATE_M`, `TennisLive.tsx`) and buffer (`BUFFER_S`, `watch.ts`); the camera's glide onto a match (`ENTER_S`, `TennisGame.tsx`).
 
 **Later (polish):** the far fence fills the top of the broadcast view with big diamonds (its mesh is sized for map distances); a finer mesh up close, or a backdrop like a stadium wall, would look more like TV. Each player is 5 meshes (T1c makes it 1), so draw only the busy courts' players (the demo draws all three courts: about 43 draw calls).
 
@@ -318,6 +327,21 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 ---
 
 ## Done
+
+### Tennis game T3b: on the map pages, 2026-10-27 (Ben)
+Roadmap item 9, batch T3b. Admin → Live control → Mini game turns it on; then `/map`, tap the tennis court, Play. Without the live project: `/map3d/preview?tennis=1&full=1` in two tabs.
+- `src/components/map3d/tennis/`:
+  - `onMap.ts`: the page's courts (`TennisOnMap`): one transport and one courts board, which the host also says its match on (`hostOnBoard` now takes the board: a phone may be in a room only once); the seat in the queue from the first Play; `close()` leaves every room.
+  - `TennisMap.tsx`, loaded only while the game is open: the courts in the scene (`TennisScene`: the crisp courts, every busy court as a spectator sees it, this phone's match), the court's card (`TennisCard`) and the match's HUD (`TennisMatchHud`, with "Back to map").
+  - `useTennisOnMap.ts`: the hook `CampusMap3DView` calls. It loads the game while it is open, closes it at once on Off ("Tennis is closed"), and leaves the queue when full screen closes. `settings.ts`: the switch (`tennis_open`) and who plays. `shirts.ts`: names (cut at 20 characters) and shirts.
+  - `TennisGame.tsx`: a match's camera glides onto the broadcast view and its lens over 1.2 s, and stops a flight or the opening swoop. `TennisCourt` and `LiveCourts` can leave the crisp courts and the camera to the page. `LiveCourts` leaves out this phone's own match and watches nothing while it plays.
+  - `realtime.ts`: a room joined again just after it was left (Play again, or Cancel and Play) waits until its old channel has gone. supabase-js handed the old channel back, then removed it under the new room, so the phone waited in a queue nobody saw.
+- The map (`CampusMap3DView`): the court's tap and card, the match's layer, no names or markers over a match, and the camera backing out after it. `CampusScene`: a "● LIVE" label shows even while names are hidden (the lake stage's during the concert too).
+- Admin: Live control → Mini game → "Tennis on the map" (green when open; it asks before closing). The audit log names it. [permission-matrix.md](permission-matrix.md): two rows.
+- No migration: `game_config` key `tennis_open`, set with `fn_set_config` (Admin only, audited). Missing means closed.
+- Tests: `tests/tennis/onmap.test.ts` (one courts room per phone; the queue, Cancel and Back to map; Off leaves every room; the court frees when the players' phones close) and one more in `realtime.test.ts` (joining a room just left). All 266 tests pass.
+- Checked in headless Chrome on `/map3d/preview?tennis=1`, two players (phone and wide sizes) and a viewer: court tap, card, Play, queue, the match (Space serves; the score on both), the viewer up close in the match's room, LIVE from afar with names hidden, Off ("Tennis is closed", every room left), the other player's "Ana left · You win", Back to map, and the camera backing out. No errors.
+- Not yet: real phones over Realtime.
 
 ### Tennis game T3a: spectators, 2026-10-27 (Ben)
 Roadmap item 9, batch T3a. Open `/map3d?tennis=watch` while a match is played (two tabs of `/map3d?tennis=online&auto=1`, or with `&net=realtime` on other phones), then move the camera in and out.

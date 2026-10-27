@@ -163,13 +163,17 @@ function Label({ name, pos, y, minor, live }: (typeof LABELS)[number] & { live?:
 
 const ALL_LABELS: (typeof LABELS)[number][] = [...LABELS, FUNFAIR_LABEL];
 
-/** `concert`: the lake stage's concert is playing; `tennis`: a match is on the tennis courts. Their labels say LIVE. */
-const Labels = memo(function Labels({ concert, tennis }: { concert: boolean; tennis: boolean }) {
+/**
+ * `names`: every place's label. `concert`: the lake stage's concert is playing; `tennis`: a match is on the tennis
+ * courts. Their labels say LIVE, and show even while the names are hidden (the map pages hide them at first).
+ */
+const Labels = memo(function Labels({ names, concert, tennis }: { names: boolean; concert: boolean; tennis: boolean }) {
   return (
     <>
-      {ALL_LABELS.map((l) => (
-        <Label key={l.name} {...l} live={(!!l.stage && concert) || (!!l.tennis && tennis)} />
-      ))}
+      {ALL_LABELS.map((l) => {
+        const live = (!!l.stage && concert) || (!!l.tennis && tennis);
+        return names || live ? <Label key={l.name} {...l} live={live} /> : null;
+      })}
     </>
   );
 });
@@ -291,7 +295,7 @@ export type CampusSceneProps = {
   camera?: CameraView;
   /** Swoop in at the start (default true). */
   intro?: boolean;
-  /** Place-name labels (default true). */
+  /** Place-name labels (default true). A place with something on (`concert`, `tennisLive`) keeps its label. */
   labels?: boolean;
   controlsRef?: Ref<MapControlsImpl>;
   /** Camera controls on (default true). Off, the view stays still and touches scroll the page. */
@@ -410,7 +414,7 @@ export default function CampusScene({
           <Campus mode={mode} lite={isLite} />
           <Funfair power={funfair} night={mode === "night"} dusk={mode === "sunset"} lite={isLite} />
           <LakefrontStage night={mode === "night"} dusk={mode === "sunset"} lite={isLite} live={concert} />
-          {labels && <Labels concert={concert} tennis={tennisLive} />}
+          <Labels names={labels} concert={concert} tennis={tennisLive} />
           {children}
           <MapControls
             ref={controlsRef}

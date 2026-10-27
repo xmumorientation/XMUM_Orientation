@@ -37,6 +37,7 @@ import {
 } from "@/components/map3d/places";
 import { ZONE_CENTERS } from "@/components/map3d/funfair/labels";
 import { stageView } from "@/components/map3d/lakefront/layout";
+import { TENNIS_AREA, useTennisOnMap, type TennisSettings } from "@/components/map3d/tennis/useTennisOnMap";
 import { prefersLite } from "@/components/map3d/webgl";
 import { stationDotColor } from "@/components/ui";
 import { ACTIVATION_JOURNEY_KEY, readActivationJourney } from "@/lib/activation-journey";
@@ -314,6 +315,8 @@ export type CampusMap3DViewProps = CampusMapViewProps & {
   camera?: CameraView;
   /** The 3D map can't be used on this device (no renderer, or too slow): show the 2D map. */
   onFail?: () => void;
+  /** The tennis game on the courts (docs/ROADMAP.md, item 9): Admin's switch and who plays here. None: no game. */
+  tennis?: TennisSettings | null;
 };
 
 export function CampusMap3DView({
@@ -325,6 +328,7 @@ export function CampusMap3DView({
   fullscreen,
   onFullscreenChange,
   legend,
+  tennis: tennisSettings,
   mode,
   lite,
   intro = true,
@@ -365,6 +369,11 @@ export function CampusMap3DView({
   const [arrival, setArrival] = useState(initialActivationArrival);
   const arrivalStarted = useRef(false);
   const checking = checkMode && canManageStations;
+  // The tennis game on the courts, while Admin has it open: a match takes the screen in a layer of its own, and
+  // the scene's element moves there.
+  const tennis = useTennisOnMap(tennisSettings, fullscreen);
+  const matchSlot = useRef<HTMLDivElement>(null);
+  const focusMatch = useCallback((el: HTMLDivElement | null) => el?.focus(), []);
 
   // The scene's own element, moved between the card and the full-screen viewer.
   useEffect(() => {
@@ -381,9 +390,9 @@ export function CampusMap3DView({
     return () => el.remove();
   }, []);
   useLayoutEffect(() => {
-    const slot = fullscreen ? fullSlot.current : cardSlot.current;
+    const slot = tennis.playing && matchSlot.current ? matchSlot.current : fullscreen ? fullSlot.current : cardSlot.current;
     if (host && slot && host.parentNode !== slot) slot.appendChild(host);
-  }, [host, fullscreen]);
+  }, [host, fullscreen, tennis.playing]);
 
   // The group's colour (Freshie, Faci), the Welcome cyan (HOF, HOGM, Committee) or the brand colour, for
   // selections. Read from the page (on mount and on each open or close of full screen), since the
@@ -446,6 +455,17 @@ export function CampusMap3DView({
   function fly(plan: FlightPlan) {
     setFlight({ ...plan, id: ++flights.current });
   }
+
+  // A match gone from the screen (its end card closed, or the game closed): the camera backs out over the courts,
+  // from the players' height to the map's.
+  const wasPlaying = useRef(false);
+  useEffect(() => {
+    const court = areaPlace(TENNIS_AREA);
+    if (wasPlaying.current && !tennis.playing && fullscreen && court) fly({ kind: "focus", target: [court.pos[0], 0, court.pos[1]], distance: 35 });
+    wasPlaying.current = tennis.playing;
+    // Only when a match goes (fly only sets state).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tennis.playing]);
 
   // Full screen has another shape than the card: frame the campus for it (or the given start view). Only when
   // full screen opens: the light switch also updates `env` (Auto rereads the clock) and must not move the camera.
@@ -657,8 +677,14 @@ export function CampusMap3DView({
       if (fullscreen) closeFullscreen();
     },
     // A building or court itself: the same as its marker, or Admin's building panel. False when the tap does
-    // nothing here (the card then opens full screen, as a tap on the 2D map's picture does).
+    // nothing here (the card then opens full screen, as a tap on the 2D map's picture does). While the tennis game
+    // is open, the tennis court opens its card (Play), in full screen.
     building: (area) => {
+      if (area === TENNIS_AREA && tennis.loaded) {
+        tennis.showCard();
+        if (!fullscreen) openFullscreen();
+        return true;
+      }
       if (canManageStations) {
         toggleBuilding(area);
         return true;
@@ -759,25 +785,29 @@ export function CampusMap3DView({
                 mode={sceneMode}
                 funfair={funfair}
                 concert={concert}
+                tennisLive={tennis.live && !tennis.playing}
                 lite={isLite}
                 camera={camera ?? env.camera}
                 intro={arrival ? false : intro}
-                labels={showNames}
+                // a match is the broadcast view alone: no place names or markers over it
+                labels={showNames && !tennis.playing}
                 controlsRef={controls}
                 interactive={fullscreen}
                 onFail={onFail}
                 overlay={
-                  <SceneMarkers
-                    stations={stationMarks}
-                    badges={badgeMarks}
-                    pins={pinMarks}
-                    tags={tags}
-                    funfair={funfair}
-                    showNames={showNames}
-                    accent={accent}
-                    size={fullscreen ? 1 : CARD_MARKER_SIZE}
-                    taps={taps}
-                  />
+                  !tennis.playing && (
+                    <SceneMarkers
+                      stations={stationMarks}
+                      badges={badgeMarks}
+                      pins={pinMarks}
+                      tags={tags}
+                      funfair={funfair}
+                      showNames={showNames}
+                      accent={accent}
+                      size={fullscreen ? 1 : CARD_MARKER_SIZE}
+                      taps={taps}
+                    />
+                  )
                 }
               >
                 <SceneReady onReady={markSceneReady} />
@@ -789,6 +819,7 @@ export function CampusMap3DView({
                   checking={checking}
                   taps={taps}
                 />
+                {tennis.loaded && <tennis.loaded.mod.TennisScene courts={tennis.loaded.courts} fullscreen={fullscreen} />}
               </CampusScene>,
               host,
             )}
@@ -868,7 +899,46 @@ export function CampusMap3DView({
                     : "max(1.75rem, calc(env(safe-area-inset-bottom) + 1.25rem))",
               }}
             >
-              <div className="min-w-0 flex-1">
+              <div className="min-w-0 flex-1 space-y-2">
+                {tennis.closed ? (
+                  <div
+                    role="status"
+                    className="pointer-events-auto flex items-center justify-between gap-3 rounded-2xl bg-white px-3 py-2.5 text-sm text-stone-900 shadow-lg"
+                  >
+                    <div className="min-w-0">
+                      <div className="font-semibold">Tennis is closed</div>
+                      <div className="text-xs text-ink-faint">The courts are closed for now, so the game has ended.</div>
+                    </div>
+                    <button
+                      type="button"
+                      aria-label="Close"
+                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full"
+                      onClick={tennis.dismissClosed}
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                ) : (
+                  tennis.card &&
+                  tennis.loaded && (
+                    <tennis.loaded.mod.TennisCard
+                      courts={tennis.loaded.courts}
+                      onPlay={tennis.play}
+                      onClose={tennis.hideCard}
+                      // Admin's building panel for the court: what a tap on it opens while the game is closed
+                      onStations={
+                        canManageStations
+                          ? () => {
+                              tennis.hideCard();
+                              toggleBuilding(TENNIS_AREA);
+                            }
+                          : undefined
+                      }
+                      accent={accent}
+                      onAccent={onAccent}
+                    />
+                  )
+                )}
                 <MapInfoCard
                   data={data}
                   showGroupPins={showGroupPins}
@@ -908,6 +978,26 @@ export function CampusMap3DView({
                 </button>
               </div>
             </div>
+          </div>,
+          document.body,
+        )}
+
+      {/* This phone's tennis match: over the full-screen map, with the scene moved into it (and focused, so Space swings). */}
+      {tennis.playing &&
+        tennis.loaded &&
+        createPortal(
+          <div
+            ref={focusMatch}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Tennis match"
+            tabIndex={-1}
+            className="fixed left-0 top-0 z-[85] h-dvh w-full touch-none select-none overflow-hidden overscroll-none outline-none"
+            style={{ background: sky, touchAction: "none" }}
+            onContextMenu={(e) => e.preventDefault()}
+          >
+            <div ref={matchSlot} className="absolute inset-0" />
+            <tennis.loaded.mod.TennisMatchHud courts={tennis.loaded.courts} />
           </div>,
           document.body,
         )}
