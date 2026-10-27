@@ -42,7 +42,7 @@ export type TennisOptions = {
 };
 
 /** The game's own clock. It runs with the frames, at most 50 ms a frame, so a hidden tab or a stall pauses it. */
-class Clock {
+export class Clock {
   t = 0;
   private wall = 0;
 
@@ -86,6 +86,8 @@ export type Game = {
   online: Online | null;
   /** Asks the map for a frame: it draws on demand. TennisCourt sets it. */
   wake: () => void;
+  /** A practice match on a map page (TennisMap.tsx): its end card's exit button frees the court. Unset elsewhere. */
+  leave?: () => void;
 };
 
 /** With no match yet, the camera rests on the middle court, where the page's broadcast view starts. */
@@ -494,14 +496,14 @@ export function TennisHud({ game, exit = "Leave" }: { game: Game; exit?: string 
   const session = useSession(game);
   return (
     <div className="tn-hud" data-held={game.at !== null || undefined}>
-      {session && <MatchHud game={game} session={session} />}
+      {session && <MatchHud game={game} session={session} exit={exit} />}
       {game.online && <OnlineHud game={game} online={game.online} session={session} exit={exit} />}
     </div>
   );
 }
 
 /** The broadcast's score, the calls and hints, the controls, and (against the bot) the end card. */
-function MatchHud({ game, session }: { game: Game; session: Session }) {
+function MatchHud({ game, session, exit }: { game: Game; session: Session; exit: string }) {
   const { match, names, colors } = session;
   const view = useSyncExternalStore(match.subscribe, match.getView, match.getView);
   const callId = view.call?.id ?? 0;
@@ -646,6 +648,11 @@ function MatchHud({ game, session }: { game: Game; session: Session }) {
               >
                 Play again
               </button>
+              {game.leave && (
+                <button type="button" className="tn-btn" data-kind="ghost" onClick={game.leave}>
+                  {exit}
+                </button>
+              )}
             </div>
           )}
         </div>

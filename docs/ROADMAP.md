@@ -293,6 +293,7 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
   - Who plays: a Freshie or Faci in their group's chosen name (else "Group n") and colour; anyone else in their role's name and the default blue (`settings.ts`).
   - Off: every phone closes at once: the match ends, the queue empties, Play goes, and the phone says "Tennis is closed". A phone that missed Off sees "… left · You win". Nothing on the server stops a phone that ignores Off: the Realtime rooms are open, and no tokens are involved.
   - No migration: the switch is a `game_config` key set with `fn_set_config` (Admin only and audited, like the other switches). A missing key means closed.
+  - **Play with Bot (added 2026-10-27, Ben):** the card also has a Play with Bot button next to Matchmaking. It starts at once, no queue, on the first free court (so it still counts against the 3; disabled when all three are busy). The match itself plays only on that phone (no Realtime room for it), but it is said on the courts' board like a real match, so it shows "● LIVE" and the busy count to everyone else. Off ends it too, the same as a real match.
 - **Phones:** check lite mode on a phone size. The map draws every frame during a match.
 - **Limits:** Realtime counts each message delivered to each phone, and the Supabase plan caps messages per second (Free about 100, Pro about 500). With 150 people on the map: 3 matches send about 24 a second, the board about 5, and 15 watchers up close (5 a court) about 120: about 150 a second, more than Free allows. **Move to Pro before the event**, or until then set `WATCH_MAX` (`watch.ts`) to 1 (about 55 a second). Free also allows only 200 connections at once, which 150 map viewers and the rest of the app's users could pass.
 
@@ -327,6 +328,18 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 ---
 
 ## Done
+
+### Tennis game: Play with Bot on the map pages, 2026-10-27 (Ben)
+Roadmap item 9, an ad hoc add-on to T3b (not a planned batch). `/map`, tap the tennis court: the card now offers Matchmaking or Play with Bot. Without the live project: `/map3d/preview?tennis=1&full=1`.
+- `src/components/map3d/tennis/`:
+  - `onMap.ts` (`TennisOnMap`): `playBot(who)` takes the first free court (busiest-first, like the queue would), fakes a board key (`0:bot:<id>:<time>`) and says it on the board, same as a real match's host — so it counts against the 3 courts and shows "● LIVE". `play()` and `playBot()` each refuse while the other is on; `leave()`, `close()` free the court either way. Kept free of React and the game's own simulation (`BotSeat` only carries the court, key and profile), so its tests (and `online.ts`'s unrelated two-bot auto-play mode) stay untouched.
+  - `TennisMap.tsx`: `botGame()` builds the local `Match` (`["player", "bot"]`, no network) the first time a phone's `BotSeat` is seen, the same shape as the demo's bot mode (`createGame`). `TennisCard` gets a second button, disabled once `busy >= 3`.
+  - `TennisGame.tsx`: `Clock` exported for `botGame()` to reuse; `Game` gets an optional `leave` (the bot end card's "Back to map", next to Play again — unset on the demo pages, so they are unchanged).
+  - `useTennisOnMap.ts`: `playBot()`, alongside `play()`.
+  - `CampusMap3DView.tsx`: passes `onPlayBot` to `TennisCard`.
+- Tests: two more in `tests/tennis/onmap.test.ts` (a practice match takes a court on the board and Leave frees it, blocking Play and a second Play with Bot meanwhile; all three courts taken refuses a fourth Play with Bot). All 268 tests pass.
+- Checked in headless Chrome on `/map3d/preview?tennis=1&full=1&role=staff`: the card showed both buttons, Play with Bot entered a full-screen match at once (no queue), serving and a rally scored a point against the bot ("TOO FAR"), the score bug read "Committee 0 / Bot 1". No console errors.
+- Not yet: a Realtime collision if two phones tap Play with Bot in the same instant could claim the same court on the board for a moment (as two real pairs already can); not worth guarding given how rarely two people would do this at once.
 
 ### Tennis game T3b: on the map pages, 2026-10-27 (Ben)
 Roadmap item 9, batch T3b. Admin → Live control → Mini game turns it on; then `/map`, tap the tennis court, Play. Without the live project: `/map3d/preview?tennis=1&full=1` in two tabs.

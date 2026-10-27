@@ -924,6 +924,7 @@ export function CampusMap3DView({
                     <tennis.loaded.mod.TennisCard
                       courts={tennis.loaded.courts}
                       onPlay={tennis.play}
+                      onPlayBot={tennis.playBot}
                       onClose={tennis.hideCard}
                       // Admin's building panel for the court: what a tap on it opens while the game is closed
                       onStations={
