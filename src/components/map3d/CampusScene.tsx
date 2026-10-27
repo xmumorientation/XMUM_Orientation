@@ -311,6 +311,8 @@ export type CampusSceneProps = {
   concert?: boolean;
   /** A match is on the tennis courts (tennis/board.ts): their label says LIVE. */
   tennisLive?: boolean;
+  /** The miniature look's blur (default true); off for the tennis game's broadcast view. */
+  tiltShift?: boolean;
   /** Rendered inside the Canvas, in the scene (depth-tested, post-processed): ground overlays, hit areas. */
   children?: ReactNode;
   /**
@@ -339,6 +341,7 @@ export default function CampusScene({
   funfair = FUNFAIR_OFF,
   concert: concertProp,
   tennisLive = false,
+  tiltShift = true,
   children,
   overlay,
   onFail,
@@ -436,7 +439,7 @@ export default function CampusScene({
           <Intro start={start} />
           {/* Measured once, and once more in lite after a step down. */}
           <FrameRateProbe key={stepDown ? "lite" : "first"} onResult={onFrameRate} />
-          {!isLite && <Effects look={look} />}
+          {!isLite && <Effects look={look} tiltShift={tiltShift} />}
           {/* After the effects' pass (priority 1); in lite mode the Hud draws the scene itself first. */}
           {overlay && <Hud renderPriority={isLite ? 1 : 2}>{overlay}</Hud>}
         </Canvas>

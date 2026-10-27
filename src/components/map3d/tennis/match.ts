@@ -2,8 +2,23 @@ import type * as THREE from "three";
 
 import { aim, bounces, flightAt, G, landsIn, meetPoint, netHit, offNet, type Bounce, type Flight } from "./ball";
 import { COURT } from "./court";
-import { handAt, racketAt, racketAtContact, servePose, STILL, swingPose, TOSS_S, type Hand, type SwingPose } from "./player";
-import { rand, STEP_RATE, yawOf, type PlayerFrame, type V3 } from "./rally";
+import {
+  END_S,
+  handAt,
+  racketAt,
+  racketAtContact,
+  runLegs,
+  servePose,
+  splitStep,
+  STILL,
+  swingPose,
+  toEndPose,
+  TOSS_S,
+  type Hand,
+  type Pose,
+  type SwingPose,
+} from "./player";
+import { rand, yawOf, type PlayerFrame, type V3 } from "./rally";
 
 // DRAFT: the tennis game's rules (docs/ROADMAP.md, item 9, batches T1b and T2a): one match on one court, first to
 // 5 points. Pure logic in metres in the court's frame (court.ts); no drawing and no network. step(t) moves the
@@ -292,6 +307,8 @@ export class Match {
   private pointAt = 0;
   private nextAt = 0;
   private endedAt = 0;
+  /** When the match ended (its players' end poses run from then). */
+  private overAt = 0;
   private call: Call | null = null;
   private calls = 0;
   private won: Side | null = null;
@@ -521,6 +538,7 @@ export class Match {
   /** Ends the match with this score: the host's, when this phone missed the last point (T2). */
   finish(score: [number, number]) {
     this.score = [score[0], score[1]];
+    if (this.phase !== "over") this.overAt = this.t;
     this.phase = "over";
     this.flight = null;
     this.emit();
@@ -543,6 +561,7 @@ export class Match {
 
   /** Ends the match at once: the other side left it (T2). */
   forfeit(left: Side) {
+    if (this.phase !== "over") this.overAt = this.t;
     this.phase = "over";
     this.won = other(left);
     this.flight = null;
@@ -556,19 +575,21 @@ export class Match {
     // the run in the player's own frame (as rally.ts)
     const fwd = p.vx * Math.sin(yaw) + p.vz * Math.cos(yaw);
     const right = -p.vx * Math.cos(yaw) + p.vz * Math.sin(yaw);
-    const step = Math.sin(t * STEP_RATE);
-    const speed = Math.min(1, Math.hypot(p.vx, p.vz) / 3);
-    return {
-      x: p.x,
-      z: p.z,
-      yaw,
-      pose: {
-        ...this.upper(p.swing, t),
-        strideX: step * 0.55 * Math.min(1, Math.abs(fwd) / 3),
-        strideZ: step * 0.4 * Math.min(1, Math.abs(right) / 3),
-        bob: Math.abs(step) * 0.05 * speed,
-      },
-    };
+    let pose: Pose = { ...this.upper(p.swing, t), ...runLegs(t, fwd, right) };
+    // the split-step as the other player hits, unless this player's swing has already started
+    const hit = this.lastHit();
+    if (this.phase === "rally" && hit && hit.by !== side && !(p.swing && p.swing.start >= hit.t)) pose = splitStep(pose, t - hit.t);
+    if (this.phase === "over") pose = toEndPose(pose, t - this.overAt, side === this.winner());
+    return { x: p.x, z: p.z, yaw, pose };
+  }
+
+  /** The match is over and its players are still moving into (or through) their end poses: keep drawing. */
+  posing(t: number): boolean {
+    return this.phase === "over" && t - this.overAt < END_S;
+  }
+
+  private winner(): Side {
+    return this.won ?? (this.score[0] > this.score[1] ? 0 : 1);
   }
 
   /** For the racket's blur: the swing's time from its contact (from its pose's start), or null with no swing. */
@@ -898,6 +919,7 @@ export class Match {
 
   private nextPoint(t: number) {
     if (Math.max(...this.score) >= POINTS_TO_WIN) {
+      this.overAt = t;
       this.phase = "over";
       this.flight = null;
       this.emit();

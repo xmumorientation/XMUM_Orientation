@@ -240,7 +240,7 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 
 ## 9. 3D map: a tennis game on the tennis courts (Later)
 
-**Owner:** Ben. T1a (2026-10-22), T1b, T2a and T2b (2026-10-26, merged into `main` as PR #63), T3a and T3b (2026-10-27, branch `tennis-game`) are built, see "Done"; T1c is not. Ben is not sure his Claude usage covers it, so it is split into small batches that each fit one conversation. Ben (2026-10-26): keep the load on Supabase, Vercel and phones low.
+**Owner:** Ben. T1a (2026-10-22), T1b, T2a and T2b (2026-10-26, merged into `main` as PR #63), T3a and T3b (2026-10-27, PRs #64 and #65) and T1c (2026-10-27, branch `tennis-t1c`) are built, see "Done". Ben is not sure his Claude usage covers it, so it is split into small batches that each fit one conversation. Ben (2026-10-26): keep the load on Supabase, Vercel and phones low.
 
 **Goal:** the 3D map is more fun. Two people play tennis against each other on the map's tennis courts, and everyone who opens the map sees the match being played.
 
@@ -309,17 +309,17 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 | T2b | **Done.** The Supabase Realtime transport (Presence and Broadcast), `/map3d?tennis=online&net=realtime`. The queue's Presence is joined only on Play, so T3a must read the courts some cheaper way than joining it. Load: about 470 messages a minute per match (both phones), so 3 matches send about 24 a second. | Small |
 | T3a | **Done.** Spectators (`/map3d?tennis=watch`): the busy courts' board, the looping rally from afar with "● LIVE" on the Tennis Court label, the real match up close for 5 watchers a court. | Medium |
 | T3b | **Done.** In the real map pages: tap the tennis court, then Play; the Admin on/off switch; the end card's Back to map; phone size checked headless (real phones not yet). | Small |
-| T1c | The look, after T3b (the first batch to drop if time or usage runs short): each player one `SkinnedMesh` (1 draw call, not 5) with elbows and knees, a run cycle, a split-step, win and lose poses; a shadow in the player's shape on phones too (planar projected, no shadow map); no tilt-shift (the map's miniature blur) in the tennis view; the ball drawn true size up close. | Medium |
+| T1c | **Done.** The look, after T3b: each player one `SkinnedMesh` (1 draw call, not 5) with elbows and knees, a run cycle, a split-step, win and lose poses; a shadow in the player's shape on phones too (planar projected, no shadow map); no tilt-shift (the map's miniature blur) in the tennis view; a new toy-like look (Ben found the boxy figure ugly). The ball stays its old size (life size was too small). | Medium |
 
-**Next session (start here; written 2026-10-27, after T3b):**
-- All of it is in `main` (T1b to T2b in PR #63; T3a, T3b and Play with Bot in PRs #64 and #65). [CHANGELOG.md](CHANGELOG.md) still lacks lines for T3a, T3b and Play with Bot.
+**Next session (start here; written 2026-10-27, after T1c):**
+- T1b to T3b and Play with Bot are in `main` (PRs #63, #64 and #65). T1c is on branch `tennis-t1c`, made from `fix/tennis-parked-map`, so merging it brings that fix too. [CHANGELOG.md](CHANGELOG.md) still lacks lines for T3a, T3b, Play with Bot and T1c.
+- Every planned batch is built. What is left is the playtest on real phones (below) and the "Later" polish.
 - To try it: Admin → Live control → Mini game → Tennis on the map, then `/map` on two phones: tap the tennis court, then Play. A third phone zooms in on the court to watch. Without the live project: `/map3d/preview?tennis=1&full=1` in two tabs of one browser (`&role=staff`, `&name=`); the checkbox under the map is Admin's switch.
 - Not checked yet: real phones over Realtime (T2b, T3a, T3b): the feel, lite mode in a match, a phone that sleeps mid-match, Off reaching phones.
 - Before the event: Supabase Pro (see "Limits"), or `WATCH_MAX` lowered. The switch starts closed: turn it on when the game should open.
-- Next batch: T1c (the look).
-- Tunables, if the playtest says so: the tap window (`LEAD_MAX`, `LEAD_MIN`) and reach (`LUNGE`) in `match.ts`; the bot (`BOT_SPREAD`, `BOT_RUN`); drag speed (`DRAG_M`, `TennisGame.tsx`); the online timings (`QUIET_S`, `GONE_S`, `link.ts`); the spectators' distances (`NEAR_M`, `LEAVE_M`, `ANIMATE_M`, `TennisLive.tsx`) and buffer (`BUFFER_S`, `watch.ts`); the camera's glide onto a match (`ENTER_S`, `TennisGame.tsx`).
+- Tunables, if the playtest says so: the tap window (`LEAD_MAX`, `LEAD_MIN`) and reach (`LUNGE`) in `match.ts`; the bot (`BOT_SPREAD`, `BOT_RUN`); drag speed (`DRAG_M`, `TennisGame.tsx`); the online timings (`QUIET_S`, `GONE_S`, `link.ts`); the spectators' distances (`NEAR_M`, `LEAVE_M`, `ANIMATE_M`, `TennisLive.tsx`) and buffer (`BUFFER_S`, `watch.ts`); the camera's glide onto a match (`ENTER_S`, `TennisGame.tsx`); the look (T1c): the poses' keyframes and `KICK`, `SPLIT_S`, `END_S` (`player.ts`), the shadows' darkness and `SHADOW_LONG`, and the figure's shapes and colours (`player.ts`: `HEAD_R`, the `*Geometry()` functions).
 
-**Later (polish):** the far fence fills the top of the broadcast view with big diamonds (its mesh is sized for map distances); a finer mesh up close, or a backdrop like a stadium wall, would look more like TV. Each player is 5 meshes (T1c makes it 1), so draw only the busy courts' players (the demo draws all three courts: about 43 draw calls).
+**Later (polish):** the far fence fills the top of the broadcast view with big diamonds (its mesh is sized for map distances); a finer mesh up close, or a backdrop like a stadium wall, would look more like TV. Each player is now 2 draw calls (its figure and its shadow), so the demo's three courts cost about 12 for the players.
 
 
 ---
@@ -328,8 +328,46 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 
 ## Done
 
+### Tennis game T1c: the look, 2026-10-27 (Ben)
+Roadmap item 9, batch T1c. To see it: `/map3d?tennis=bot&auto=1&t=1.8` (the serve), `&t=142.9` (the winner's jump), `/map3d?tennis=demo` (the rally), with `&lite=1` for the phone path.
+- `player.ts`:
+  - The joints are bones, with new knees and elbows. The figure is one `SkinnedMesh`, so 1 draw call (5 before).
+  - A new look (Ben, 2026-10-27: the boxy figure was ugly). The figure is toy-like and smooth-shaded (`playerMaterial`):
+    - a big round head (`HEAD_R`) with two eyes, hair, and a headband in the shirt's colour;
+    - a rounded shirt with round shoulders;
+    - round tubes for arms and legs, with a ball at each elbow and knee so a bend shows no gap;
+    - white wristbands and socks, and round shoes.
+  - The bones are where they were, so the racket and the game are unchanged.
+  - Its shadow is the same mesh flattened onto the court, away from the scene's sun (`playerShadowMaterial`, `aimShadows`). It costs 1 more draw call and needs no shadow map, so phones in lite mode get it too. It replaces the players' round shadows; the ball keeps its round one.
+  - The shadow is even: where its parts overlap, every layer gets the court's depth at that pixel, worked out from the pixel itself. The second layer then always fails the depth test. Interpolated depths differ a little between triangles, which made the shadow blotchy.
+  - The knees bend so the feet stay on the court in a crouch (`legBend`).
+  - `runLegs()` is the run cycle: a leg swinging through bends its knee. `rally.ts` and `match.ts` used to each work out the legs; both now call it.
+  - `splitStep()`: a small hop as the other player hits, landing wide and low.
+  - `endPose()`, `toEndPose()`: the winner raises the racket, jumps twice and pumps the other fist; the loser's head and racket drop.
+  - The serve's trophy pose now holds the racket up behind the head, using a new forearm `roll`.
+  - The racket arm is straight with no roll at every contact, so the racket meets the ball where it did before (`racketAtContact` is unchanged).
+- `match.ts`: the split-step after the other player's hit (not once this player's swing has started), and the end poses from when the match ends (`overAt`). `posing()` keeps the map drawing for the `END_S` the poses take.
+- The ball stays its size from before (`BALL_R`). The plan was to draw it life size up close, but Ben found it too small (2026-10-27), so that was taken out again.
+- No tilt-shift in the tennis view: `Effects` and `CampusScene` take `tiltShift`. It is off on the map pages while this phone plays (`CampusMap3DView`) and on the `/map3d?tennis=demo|bot|online` pages.
+- Tests: `tests/tennis/player.test.ts` (new):
+  - one skinned mesh, plus one for the shadow;
+  - the racket as drawn sits on the rig's sweet spot in five poses;
+  - the soles stay on the court when crouched;
+  - one knee at a time bends in the run;
+  - the split-step's hop and landing.
+- Tests: one more in `match.test.ts`: the end poses (the racket over the winner's head, the loser bowed, `posing()` ends after `END_S`).
+- Typecheck and lint clean; all 277 tests pass.
+- Checked in headless Chrome (SwiftShader) at 1280×800 and 390×844 (lite):
+  - the new figure from the front and from behind, with no headband showing through the hair;
+  - the trophy pose and the swing up to the serve;
+  - the run with the knee kicked up;
+  - the winner mid-jump and holding the racket up, the loser with the racket down;
+  - even shadows in the players' shapes (sunset and day).
+  - No console errors from the game.
+- Not yet: real phones (frame rate with skinning, how the shadows read in sunlight).
+
 ### Tennis game: a parked map leaves the tennis rooms, 2026-10-27 (Ben)
-Since the /map page's map stays parked off-screen between visits (`PersistentCampusMap`), a phone that left /map stayed in the courts' board (`tennis:courts`) and any match or watch room until the parked map was dropped, 10 minutes later.
+Since the /map page's map stays parked off-screen between visits (`PersistentCampusMap`), a phone that left /map stayed in the courts' board (`tennis:courts`) until the parked map was dropped, 10 minutes later. (The queue and a match were already left: leaving the page closes full screen, and that leaves them.)
 - `useTennisOnMap.ts`: a third argument, `active` (default true). While it is false the game is closed, as if Admin had turned it off: every room is left and the code unloads. Parking does not show "Tennis is closed" (only Admin's Off does).
 - `CampusMap3DView.tsx`: passes `!paused`.
 - `PersistentCampusMap.tsx`: `EVICT_MS` 10 minutes to 2, so a parked map frees the phone's memory sooner.

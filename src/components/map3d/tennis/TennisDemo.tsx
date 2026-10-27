@@ -7,14 +7,14 @@ import * as THREE from "three";
 import { makeGlow } from "../textures";
 import { BALL_R } from "./ball";
 import { courtFrame, TENNIS_COURTS } from "./court";
-import { makePlayer, playerMaterial, posePlayer } from "./player";
+import { aimShadows, makePlayer, playerMaterial, playerShadowMaterial, posePlayer } from "./player";
 import { rallyAt } from "./rally";
 import { CourtSurface } from "./surface";
 
 // DRAFT: /map3d?tennis=demo (docs/ROADMAP.md, item 9, batch T1a): a looping rally on each of the three tennis
 // courts, two players in sample group colours, on crisp courts (surface.tsx), seen through the broadcast view's
-// lens (court.ts courtView). No game yet. The players are far too small for the shadow map, so each has a soft
-// round shadow under it, and so does the ball (it shows how high the ball is).
+// lens (court.ts courtView). No game yet. The players are far too small for the shadow map, so each casts its own
+// flattened shadow (player.ts playerShadowMaterial), and the ball has a soft round one (it shows how high it is).
 
 /** Sample shirts, two per court (Admin's group colours in the real game). */
 const DEMO_SHIRTS: [string, string][] = [
@@ -23,42 +23,44 @@ const DEMO_SHIRTS: [string, string][] = [
   ["#fc9e3d", "#e0b4fc"],
 ];
 
-/** Shadows lie just over the court (metres in the court frame; about 0.02 world units). */
+/** The ball's shadow lies just over the court (metres in the court frame; about 0.02 world units). */
 const SHADOW_Y = 0.15;
 
 /**
  * One court's looping rally. Also a busy court's from afar (TennisLive.tsx, T3a), which keeps the map drawing only
  * while `animate()` says its court is seen.
  */
-export function RallyCourt({ index, shirts, material, shadowTex, at, animate }: {
+export function RallyCourt({ index, shirts, material, shadow, shadowTex, at, animate }: {
   index: number;
   shirts: [string, string];
   material: THREE.Material;
+  /** The players' shadows (playerShadowMaterial), and the ball's (a soft dot). */
+  shadow: THREE.Material;
   shadowTex: THREE.Texture;
   at: number | null;
   animate?: () => boolean;
 }) {
   const frame = courtFrame(TENNIS_COURTS[index]);
-  const players = useMemo(() => shirts.map((s) => makePlayer(s, material)), [shirts, material]);
+  const players = useMemo(() => shirts.map((s) => makePlayer(s, material, shadow)), [shirts, material, shadow]);
   useEffect(() => () => players.forEach((p) => p.dispose()), [players]);
   const ball = useRef<THREE.Mesh>(null);
-  const shadows = useRef<(THREE.Mesh | null)[]>([]);
+  const ballShadow = useRef<THREE.Mesh>(null);
   // each court plays its own rally, out of step with the others
   const seed = 17 + index * 101;
   const offset = index * 0.83;
 
-  useFrame(({ clock, invalidate }) => {
+  useFrame(({ clock, invalidate, scene }) => {
     const f = rallyAt((at ?? clock.elapsedTime) + offset, seed);
     f.players.forEach((p, i) => {
       const { rig } = players[i];
       rig.root.position.set(p.x, 0, p.z);
       rig.root.rotation.y = p.yaw;
       posePlayer(rig, p.pose);
-      shadows.current[i]?.position.set(p.x, SHADOW_Y, p.z);
     });
+    aimShadows(shadow, scene);
     const [bx, by, bz] = f.ball;
     ball.current?.position.set(bx, by, bz);
-    const s = shadows.current[2];
+    const s = ballShadow.current;
     if (s) {
       s.position.set(bx, SHADOW_Y, bz);
       s.scale.setScalar(Math.max(0.5, 1 - by / 8));
@@ -76,19 +78,10 @@ export function RallyCourt({ index, shirts, material, shadowTex, at, animate }: 
         <sphereGeometry args={[BALL_R, 10, 8]} />
         <meshStandardMaterial color="#d8f03c" emissive="#d8f03c" emissiveIntensity={0.4} roughness={0.6} />
       </mesh>
-      {[1.3, 1.3, 0.45].map((r, i) => (
-        <mesh
-          key={i}
-          ref={(m) => {
-            shadows.current[i] = m;
-          }}
-          rotation-x={-Math.PI / 2}
-          renderOrder={2}
-        >
-          <planeGeometry args={[r, r]} />
-          <meshBasicMaterial map={shadowTex} color="#000" transparent opacity={0.45} depthWrite={false} />
-        </mesh>
-      ))}
+      <mesh ref={ballShadow} rotation-x={-Math.PI / 2} renderOrder={2}>
+        <planeGeometry args={[0.45, 0.45]} />
+        <meshBasicMaterial map={shadowTex} color="#000" transparent opacity={0.45} depthWrite={false} />
+      </mesh>
     </group>
   );
 }
@@ -114,19 +107,29 @@ function useLens(fov: number) {
 export function TennisDemo({ fov, at = null }: { fov: number; at?: number | null }) {
   useLens(fov);
   const material = useMemo(playerMaterial, []);
+  const shadow = useMemo(playerShadowMaterial, []);
   const shadowTex = useMemo(makeGlow, []);
   useEffect(
     () => () => {
       material.dispose();
+      shadow.dispose();
       shadowTex.dispose();
     },
-    [material, shadowTex],
+    [material, shadow, shadowTex],
   );
   return (
     <>
       <CourtSurface />
       {TENNIS_COURTS.map((_, i) => (
-        <RallyCourt key={i} index={i} shirts={DEMO_SHIRTS[i % DEMO_SHIRTS.length]} material={material} shadowTex={shadowTex} at={at} />
+        <RallyCourt
+          key={i}
+          index={i}
+          shirts={DEMO_SHIRTS[i % DEMO_SHIRTS.length]}
+          material={material}
+          shadow={shadow}
+          shadowTex={shadowTex}
+          at={at}
+        />
       ))}
     </>
   );

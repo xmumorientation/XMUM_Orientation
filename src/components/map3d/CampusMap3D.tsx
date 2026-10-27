@@ -254,6 +254,7 @@ export default function CampusMap3D() {
           funfair={demo.funfair}
           concert={demo.concert === "flip" ? flipped : demo.concert}
           tennisLive={courts.length > 0}
+          tiltShift={!demo.tennis && !demo.game}
         >
           {demo.gps && <GpsMarkers />}
           {demo.tennis && <TennisDemo fov={demo.tennis.fov} at={demo.tennis.at} />}

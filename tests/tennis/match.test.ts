@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { aim, BALL_R, bounces, G, MAX_BACK, meetPoint, netHit } from "../../src/components/map3d/tennis/ball";
 import { COURT } from "../../src/components/map3d/tennis/court";
 import { LEAD_MAX, LEAD_MIN, Match, POINTS_TO_WIN, strokeTarget, type Fx, type Side } from "../../src/components/map3d/tennis/match";
-import { makeRig, posePlayer, racketAtContact } from "../../src/components/map3d/tennis/player";
+import { END_S, makeRig, posePlayer, racketAtContact } from "../../src/components/map3d/tennis/player";
 import type { V3 } from "../../src/components/map3d/tennis/rally";
 
 // The tennis game (src/components/map3d/tennis/ball.ts, match.ts): the ball's flight, where a stroke goes for the
@@ -137,6 +137,27 @@ describe("tennis match", () => {
       });
       expect(hits).toBeGreaterThan(9);
     }
+  });
+
+  it("ends with the winner's racket up and the loser bowed, and draws until they hold", () => {
+    const m = new Match(7, ["bot", "bot"]);
+    const end = play(m);
+    expect(m.phase).toBe("over");
+    const won: Side = m.score[0] > m.score[1] ? 0 : 1;
+    const lost: Side = won === 0 ? 1 : 0;
+    const rig = makeRig();
+    const racketY = (side: Side, t: number) => {
+      posePlayer(rig, m.frame(side, t).pose);
+      rig.root.updateMatrixWorld(true);
+      return rig.sweetSpot.getWorldPosition(new THREE.Vector3()).y;
+    };
+    expect(m.posing(end)).toBe(true);
+    expect(m.posing(end + END_S + 0.01)).toBe(false);
+    const late = end + END_S + 1;
+    // over the head, and down by the knees
+    expect(racketY(won, late)).toBeGreaterThan(3.2);
+    expect(racketY(lost, late)).toBeLessThan(1.2);
+    expect(m.frame(lost, late).pose.lean).toBeGreaterThan(0.3);
   });
 
   it("is the same match for the same seed", () => {

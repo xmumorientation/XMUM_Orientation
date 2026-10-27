@@ -1,5 +1,5 @@
 import { COURT } from "./court";
-import { racketAtContact, swingPose, type Hand, type Pose } from "./player";
+import { racketAtContact, runLegs, splitStep, swingPose, type Hand, type Pose } from "./player";
 
 // DRAFT: a looping rally on a tennis court (docs/ROADMAP.md, item 9). Two players hit the ball back and forth
 // forever, with no game: /map3d?tennis=demo shows it, and later a busy court shows it from afar. Everything is a
@@ -92,9 +92,6 @@ function bodyAt(player: 0 | 1, t: number, seed: number): [number, number] {
   return [p0[0] + (p1[0] - p0[0]) * f, p0[1] + (p1[1] - p0[1]) * f];
 }
 
-/** Steps per second while running, as a leg-swing phase rate. */
-export const STEP_RATE = 11;
-
 function playerAt(player: 0 | 1, t: number, seed: number): PlayerFrame {
   const [x, z] = bodyAt(player, t, seed);
   const dt = 0.04;
@@ -104,18 +101,14 @@ function playerAt(player: 0 | 1, t: number, seed: number): PlayerFrame {
   // the run in the player's own frame: toward the net, and to their right
   const fwd = vx * Math.sin(yaw) + vz * Math.cos(yaw);
   const right = -vx * Math.cos(yaw) + vz * Math.sin(yaw);
-  const step = Math.sin(t * STEP_RATE);
-  const speed = Math.min(1, Math.hypot(vx, vz) / 3);
   // the swing round the nearer of the two contacts
   const [k0, k1] = ownContacts(player, t);
   const near = t - k0 * SHOT_S < k1 * SHOT_S - t ? k0 : k1;
-  const pose: Pose = {
-    ...swingPose(t - near * SHOT_S, contact(near, seed).hand),
-    strideX: step * 0.55 * Math.min(1, Math.abs(fwd) / 3),
-    strideZ: step * 0.4 * Math.min(1, Math.abs(right) / 3),
-    bob: Math.abs(step) * 0.05 * speed,
-  };
-  return { x, z, yaw, pose };
+  const pose: Pose = { ...swingPose(t - near * SHOT_S, contact(near, seed).hand), ...runLegs(t, fwd, right) };
+  // the split-step as the other player hits (contact k is player k & 1's)
+  const k = Math.floor(t / SHOT_S);
+  const theirs = (k & 1) === player ? k - 1 : k;
+  return { x, z, yaw, pose: splitStep(pose, t - theirs * SHOT_S) };
 }
 
 /** The whole court at time t (seconds; any value, the rally never ends). */

@@ -15,7 +15,7 @@ import type { LobbyView } from "./lobby";
 import { Match, type Call, type Miss, type Why } from "./match";
 import { tabTransport, type Transport } from "./net";
 import { Online, type OnlineView } from "./online";
-import { makePlayer, playerMaterial, posePlayer } from "./player";
+import { aimShadows, makePlayer, playerMaterial, playerShadowMaterial, posePlayer } from "./player";
 import { playerProfile, shirtsOf } from "./shirts";
 import { CourtSurface } from "./surface";
 
@@ -172,7 +172,7 @@ function useSession(game: Game): Session | null {
 }
 
 const SIDES = [0, 1] as const;
-/** Shadows lie just over the court (metres), as in the demo. */
+/** The ball's shadow lies just over the court (metres), as in the demo. */
 const SHADOW_Y = 0.15;
 /**
  * The camera follows the ball across the court by this share, and the player by this, at most FOLLOW_MAX metres on
@@ -282,8 +282,9 @@ export function Play({ session, held = null, auto = false, watch = false }: { se
   }, [watch, controls]);
 
   const material = useMemo(playerMaterial, []);
+  const shadow = useMemo(playerShadowMaterial, []);
   const dot = useMemo(dotTexture, []);
-  const players = useMemo(() => session.colors.map((c) => makePlayer(c, material)), [session.colors, material]);
+  const players = useMemo(() => session.colors.map((c) => makePlayer(c, material, shadow)), [session.colors, material, shadow]);
   const fx = useMemo(
     () => ({
       trail: new Trail(),
@@ -306,6 +307,7 @@ export function Play({ session, held = null, auto = false, watch = false }: { se
   useEffect(
     () => () => {
       material.dispose();
+      shadow.dispose();
       dot.dispose();
       fx.trail.dispose();
       fx.smears.forEach((s) => s.dispose());
@@ -314,12 +316,12 @@ export function Play({ session, held = null, auto = false, watch = false }: { se
       fx.flash.dispose();
       fx.marker.dispose();
     },
-    [material, dot, fx],
+    [material, shadow, dot, fx],
   );
 
   const court = useRef<THREE.Group>(null);
   const ball = useRef<THREE.Mesh>(null);
-  const shadows = useRef<(THREE.Mesh | null)[]>([]);
+  const ballShadow = useRef<THREE.Mesh>(null);
   const tmp = useMemo(
     () => ({ eye: new THREE.Vector3(), color: new THREE.Color(), across: new THREE.Vector3(), pos: new THREE.Vector3(), target: new THREE.Vector3() }),
     [],
@@ -365,17 +367,18 @@ export function Play({ session, held = null, auto = false, watch = false }: { se
       rig.root.position.set(f.x, 0, f.z);
       rig.root.rotation.y = f.yaw;
       posePlayer(rig, f.pose);
-      shadows.current[side]?.position.set(f.x, SHADOW_Y, f.z);
       const sw = match.swingTime(side, t);
       fx.smears[side].update((ti) => match.frame(side, ti).pose, t, sw ? sw.rel : null, sw ? sw.since : t);
     }
+
+    aimShadows(shadow, scene);
 
     const b = match.ballAt(t);
     if (ball.current) {
       ball.current.visible = b !== null;
       if (b) ball.current.position.set(...b);
     }
-    const bs = shadows.current[2];
+    const bs = ballShadow.current;
     if (bs) {
       bs.visible = b !== null;
       if (b) {
@@ -406,7 +409,7 @@ export function Play({ session, held = null, auto = false, watch = false }: { se
     fx.trail.update((ti) => (hit && b ? match.ballAt(ti) : null), t, hit ? hit.t : t, tmp.eye, tmp.color, BALL_R * 0.95);
     fx.marker.update(auto || watch ? null : match.marker(0, t), t, session.colors[0]);
     if (watch) {
-      if (session.busy() || alive) invalidate();
+      if (session.busy() || alive || match.posing(t)) invalidate();
       return;
     }
 
@@ -444,7 +447,7 @@ export function Play({ session, held = null, auto = false, watch = false }: { se
     }
 
     const moving = Math.abs(want - c.follow) > 0.004 || shake !== 0 || k < 1;
-    if (held === null && (session.busy() || alive || moving)) invalidate();
+    if (held === null && (session.busy() || alive || moving || match.posing(t))) invalidate();
   });
 
   return (
@@ -456,19 +459,10 @@ export function Play({ session, held = null, auto = false, watch = false }: { se
         <sphereGeometry args={[BALL_R, 12, 10]} />
         <meshStandardMaterial color="#d8f03c" emissive="#d8f03c" emissiveIntensity={0.4} roughness={0.6} />
       </mesh>
-      {[1.3, 1.3, 0.45].map((r, i) => (
-        <mesh
-          key={i}
-          ref={(m) => {
-            shadows.current[i] = m;
-          }}
-          rotation-x={-Math.PI / 2}
-          renderOrder={2}
-        >
-          <planeGeometry args={[r, r]} />
-          <meshBasicMaterial map={dot} color="#000" transparent opacity={0.45} depthWrite={false} />
-        </mesh>
-      ))}
+      <mesh ref={ballShadow} rotation-x={-Math.PI / 2} renderOrder={2}>
+        <planeGeometry args={[0.45, 0.45]} />
+        <meshBasicMaterial map={dot} color="#000" transparent opacity={0.45} depthWrite={false} />
+      </mesh>
       <primitive object={fx.trail.mesh} />
       <primitive object={fx.land.mesh} />
       <primitive object={fx.net.mesh} />

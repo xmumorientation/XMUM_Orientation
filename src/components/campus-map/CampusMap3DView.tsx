@@ -787,6 +787,7 @@ export function CampusMap3DView({
                 funfair={funfair}
                 concert={concert}
                 tennisLive={tennis.live && !tennis.playing}
+                tiltShift={!tennis.playing}
                 lite={isLite}
                 camera={camera ?? env.camera}
                 intro={arrival ? false : intro}
