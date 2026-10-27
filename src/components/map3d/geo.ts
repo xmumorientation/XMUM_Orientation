@@ -935,9 +935,9 @@ export const TRACK_NORTH = {
 
 /**
  * Map labels. `minor` ones (the courts) only show when the camera is close. `stage`: the lake stage's, which
- * gets a "● LIVE" tag while the concert plays.
+ * gets a "● LIVE" tag while the concert plays. `tennis`: the tennis courts', which gets it while a match is on.
  */
-export const LABELS: { name: string; pos: World; y: number; minor?: boolean; stage?: boolean }[] = [
+export const LABELS: { name: string; pos: World; y: number; minor?: boolean; stage?: boolean; tennis?: boolean }[] = [
   ...BLOCKS.map((b) => ({ name: b.name, pos: b.pos, y: (b.flat ? 12.2 : 9.6) + PLATEAU_H })),
   { name: "B1", pos: B1_PLACE.pos, y: 6 },
   { name: "Track & Field", pos: toWorld(TRACK.center), y: 3 },
@@ -946,6 +946,7 @@ export const LABELS: { name: string; pos: World; y: number; minor?: boolean; sta
     pos: [(b.x[0] + b.x[1]) / 2, (b.z[0] + b.z[1]) / 2] as World,
     y: 1.8,
     minor: true,
+    tennis: b.sport === "tennis",
   })),
   { name: "LakeFront Café", pos: DOME, y: 4, stage: true },
   { name: "Tan Kah Kee Statue", pos: STATUE, y: 6.6 * UNITS_PER_M * LANDMARK_SCALE },

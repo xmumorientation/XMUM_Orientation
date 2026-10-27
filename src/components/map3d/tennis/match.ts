@@ -448,9 +448,12 @@ export class Match {
     for (const p of this.players) if (p.swing?.done && t >= p.swing.contact + SWING_END) p.swing = null;
   }
 
-  /** A note from the other phone (T2), already turned into this phone's frame: their player is the remote side. */
-  receive(note: Note) {
-    const side = this.players[1].who === "remote" ? 1 : this.players[0].who === "remote" ? 0 : null;
+  /**
+   * A note from the other phone (T2), already turned into this phone's frame: their player is the remote side.
+   * `from`: the side it is from, for a watcher, whose sides are both remote (T3a).
+   */
+  receive(note: Note, from?: Side) {
+    const side = from ?? (this.players[1].who === "remote" ? 1 : this.players[0].who === "remote" ? 0 : null);
     if (side === null || this.phase === "over") return;
     const p = this.players[side];
     if (note.type === "swing") {
@@ -482,9 +485,9 @@ export class Match {
     }
   }
 
-  /** The other phone's player at time t (T2): where they stand, for their figure to follow. */
-  receivePosition(s: Seen) {
-    const p = this.players.find((q) => q.who === "remote");
+  /** The other phone's player at time t (T2): where they stand, for their figure to follow. `from`: as receive(). */
+  receivePosition(s: Seen, from?: Side) {
+    const p = from === undefined ? this.players.find((q) => q.who === "remote") : this.players[from];
     if (p && (!p.seen || s.t >= p.seen.t)) p.seen = s;
   }
 

@@ -28,6 +28,7 @@ General **Committee is read-only** (migration `0104_committee_read_only.sql`): t
 | Demo NFC scan (only while NFC demo mode is on) | Own Group | Own Group | — | — | — | — | — | — | DB |
 | Reset a lightbulb | — | — | — | — | — | — | — | ✓ | DB |
 | Funfair zones on the 3D map, on or off (`fn_funfair_state`, 0088; before 0088 the default keys in code) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | DB |
+| Tennis on the 3D map's courts, while Admin has it open: watch the matches, tap the court and Play (just for fun, no tokens; Supabase Realtime only, nothing written; the server does not enforce Off, the app closes itself) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | UI |
 | Funfair setup: each zone's keys, any/all rule, manual override (`funfair_zones`, `fn_set_funfair_zone`, 0088). Only game leads can read it, because the keys would show where the unlit bulbs are. | — | — | — | — | — | — | ✓ ‡ | ✓ | DB |
 | Group locations on the map (`fn_group_positions`, 0108: every signed-in account sees every group; replaces 0094's own-group rule). A group's Facis on the map's list (`fn_group_faci_status`): the same, phone numbers Committee tier only | View All | View All | View All | View All | View All | View All | View All | View All | DB |
 | Phase Timer (view) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | DB |
@@ -107,6 +108,7 @@ General **Committee is read-only** (migration `0104_committee_read_only.sql`): t
 | Game master, always live (Live control; `fn_admin_token_adjust`, `fn_admin_give_piece`, `fn_admin_give_blindbox`, `fn_admin_undo_gift`, 0107): add or deduct tokens, give a puzzle piece, gift a blind box. Ignores phases, the schedule and the Day 2 switches; the token freeze still blocks tokens | — | — | — | — | — | — | — | ✓ | DB |
 | Light a key (projector) for a chosen group, no card tap or Guardian check (`fn_game_lead_light_projector`, 0105; Admin → Live control → Game master → Funfair, and HOGM → Game control → Funfair). Only Admin can take a key over (`p_replace`) | — | — | — | — | — | — | ✓ | ✓ | DB |
 | Kill-switches | — | — | — | — | — | — | — | ✓ | DB |
+| Tennis on the map, open or closed (Live control → Mini game; game_config `tennis_open` through `fn_set_config`; Off ends every match at once) | — | — | — | — | — | — | — | ✓ | DB |
 | Users (CSV import; edit role / group / station) | — | — | — | — | — | — | — | ✓ | DB + API |
 | Stations config (add / edit / delete, Game Masters) | — | — | — | — | — | — | ✓ ‡ | ✓ | DB |
 | Puzzle pictures | — | — | — | — | — | — | ✓ ‡ | ✓ | DB |

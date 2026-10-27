@@ -60,20 +60,39 @@ class FakeChannel {
   }
 }
 
+/**
+ * The client, as supabase-js keeps channels: channel() hands back the one it has for that topic, and a channel being
+ * removed stays until the server says it has left (the test says when, with `gone`).
+ */
 function fake() {
   const channels: FakeChannel[] = [];
+  const open = new Set<FakeChannel>();
+  const leaving: (() => void)[] = [];
   const client = {
     channel: (topic: string, opts: unknown) => {
+      const had = [...open].find((c) => c.topic === topic);
+      if (had) return had;
       const c = new FakeChannel(topic, opts);
       channels.push(c);
+      open.add(c);
       return c;
     },
     removeChannel: (c: FakeChannel) => {
       c.removed = true;
-      return Promise.resolve("ok");
+      return new Promise((resolve) =>
+        leaving.push(() => {
+          open.delete(c);
+          resolve("ok");
+        }),
+      );
     },
   };
-  return { transport: realtimeTransport(client as unknown as SupabaseClient, "me"), channels };
+  /** The server has said every channel being removed has left. */
+  const gone = async () => {
+    for (const done of leaving.splice(0)) done();
+    await new Promise((r) => setTimeout(r, 0));
+  };
+  return { transport: realtimeTransport(client as unknown as SupabaseClient, "me"), channels, gone };
 }
 
 describe("tennis over Supabase Realtime", () => {
@@ -137,5 +156,27 @@ describe("tennis over Supabase Realtime", () => {
     const { transport, channels } = fake();
     transport.join("lobby").leave();
     expect(channels[0].removed).toBe(true);
+  });
+
+  it("joins a room it has just left on a channel of its own, once the old one has gone (Play again)", async () => {
+    const { transport, channels, gone } = fake();
+    transport.join("lobby").leave();
+    const room = transport.join("lobby");
+    room.track({ status: "queue" });
+    // the old channel is still leaving: the room waits for it rather than take it over
+    expect(channels).toHaveLength(1);
+    await gone();
+    expect(channels).toHaveLength(2);
+    const ch = channels[1];
+    expect(ch.removed).toBe(false);
+    ch.join();
+    expect(ch.tracked).toEqual([{ status: "queue" }]);
+    // left again before its channel opened: none is opened
+    transport.join("lobby").leave();
+    room.leave();
+    transport.join("lobby").leave();
+    await gone();
+    await gone();
+    expect(channels).toHaveLength(2);
   });
 });

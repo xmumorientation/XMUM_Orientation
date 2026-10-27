@@ -1,6 +1,6 @@
 # Changelog
 
-Everything merged into `main`, from the first commit (2026-06-22) to 2026-10-25, oldest first and grouped by day.
+Everything merged into `main`, from the first commit (2026-06-22) to 2026-10-26, oldest first and grouped by day.
 It is a summary of the git history (`git log`), one or a few lines per piece of work. For details, read the commits, or the "Done" section of [ROADMAP.md](ROADMAP.md).
 
 Planned and unfinished work is in [ROADMAP.md](ROADMAP.md), not here.
@@ -224,3 +224,6 @@ PR numbers are in brackets. Migration numbers are the files in `supabase/migrati
 - Admin Game master on Live control: give tokens, puzzle pieces and blind boxes (migration `0107_admin_game_master`, first numbered 0103) (Jiamin). [#60]
 - Admin and HOGM can pick a group and light a key for it, with no card tap (migration `0105`); Admin can reset the whole funfair (migration `0106`) (Jiamin). [#61]
 - One blind box QR per box type (Jiamin). [#62]
+
+### 2026-10-26
+- 3D map tennis T1b, T2a and T2b: the game against a bot (`?tennis=bot`), two players between tabs (`?tennis=online`) and between phones over Supabase Realtime (`&net=realtime`): queue, 3 courts, rematch (Ben). [#63]

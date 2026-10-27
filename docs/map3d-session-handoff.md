@@ -26,10 +26,13 @@ Ben may continue this work in a new Claude conversation. This file says where ev
 
 ## Where things stand
 
-### Tennis game on the tennis courts (T1a done 2026-10-22; T1b, T2a and T2b done 2026-10-26, branch `tennis-game`)
+### Tennis game on the tennis courts (T1a done 2026-10-22; T1b, T2a and T2b done 2026-10-26, in `main`; T3a and T3b done 2026-10-27, branch `tennis-game`)
 
-- Plan, Ben's decisions and batches T1a–T3b and T1c: [ROADMAP.md](ROADMAP.md), item 9. What T1a, T1b, T2a and T2b built: its "Done". Where to pick up: item 9's "Next session".
-- Code: `src/components/map3d/tennis/`. It meets the map in `CampusMap3D.tsx` (`?tennis=demo`, `?tennis=bot`, `?tennis=online`) and in `sports.tsx` (the fence cutaway). Court sizes: `courts.ts`.
+- Plan, Ben's decisions and batches T1a–T3b and T1c: [ROADMAP.md](ROADMAP.md), item 9. What each batch built: its "Done". Where to pick up: item 9's "Next session".
+- Code: `src/components/map3d/tennis/`. It meets the map in `CampusMap3D.tsx` (`?tennis=demo`, `?tennis=bot`, `?tennis=online`, `?tennis=watch`), in `CampusScene.tsx` (the label's "● LIVE", `tennisLive`) and in `sports.tsx` (the fence cutaway). Court sizes: `courts.ts`.
+- Spectators (T3a): `board.ts` (which courts are busy), `watch.ts` (one watcher's replay of a match), `TennisLive.tsx` (the courts in the scene). Headless checks need focus emulation on every tab (see the roadmap's Done).
+- The map pages (T3b): `CampusMap3DView` calls `useTennisOnMap` (the switch comes from `CampusMap`'s `useTennisSettings`, `settings.ts`, as the `tennis` scene option). While Admin has the game open, it loads `TennisMap.tsx` (the scene part, the court's card and the match's HUD) and `onMap.ts` (`TennisOnMap`: the page's one transport and courts board, and its seat). A match moves the scene's element into a layer of its own (`matchSlot`), as full screen does.
+- Try the map pages without the live project: `/map3d/preview?tennis=1&full=1&cam=-34,18,42,-10.98,0,24.54` in two tabs of one browser (`&role=staff`, `&name=`): the tabs talk over `BroadcastChannel`, and the checkbox under the map is Admin's switch. In headless Chrome, retry the tap on the court: two tabs share one software GPU, and a tap during a stall can be lost.
 - The game (T1b): `match.ts` is the rules, pure and stepped by time (`step(t)` takes events in time order); `ball.ts` the flight; `TennisGame.tsx` draws it (`TennisCourt`, in the scene) and lays the HUD over the page (`TennisHud`). `CampusMap3D` imports `TennisGame` only when the URL asks for the game, so the map's own chunk does not grow.
 - Online (T2a, T2b): `net.ts` (the transport, and its `BroadcastChannel` version), `realtime.ts` (the Supabase Realtime version, `?net=realtime`), `lobby.ts` (the queue), `link.ts` (one match between two phones), `online.ts` (this phone's seat and match). Each phone runs its own `Match` with its own player as side 0; messages go in the sender's frame and the receiver turns them round. Tests run two (or more) phones on `tests/tennis/hub.ts`, a fake network with latency, clock skew and cut-offs.
 - `?net=realtime` talks to the live project (`.env.local`): it writes nothing, but keep checks short. Over Realtime the pairing and the start take a second or two longer than between tabs.

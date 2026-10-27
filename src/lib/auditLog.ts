@@ -179,6 +179,7 @@ const SWITCHES: Record<string, string> = {
   nfc_disabled: "NFC paused",
   nfc_demo_mode: "NFC demo mode",
   day2_map_layer: "Day 2 map layer (map unlock)",
+  tennis_open: "Tennis on the map",
 };
 
 const PHASE_VERBS: Record<string, string> = { start: "Started", pause: "Paused", resume: "Resumed", end: "Ended", reset: "Reset" };

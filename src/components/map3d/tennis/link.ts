@@ -13,7 +13,9 @@ import type { V3 } from "./rally";
 // Messages (Room events): hi (until the other phone answers), ping / pong (the clock), ready / start (the guest
 // is in time with the host; the match starts at `at` on the host's clock), note (Match.takeNotes), pos, away /
 // back (a tab hidden or shown), resume (the host restarts the point after a pause), end (the other one left, so
-// the sender won), rematch, bye.
+// the sender won), rematch, bye. Watchers (watch.ts, T3a) hear them too: so notes and positions say whether the
+// host sent them (`h`) and in which round (`r`), and resume says its moment in the match's time (`t`) as well as
+// on the host's clock.
 
 /**
  * A player's position and speed go when the other phone's guess from the last ones (Match guess()) is POS_ERR
@@ -258,13 +260,13 @@ export class Link {
     // a hidden tab does not play on: the other phone has paused for it
     if (this.view.phase === "playing" && !this.away) {
       this.match.step(t);
-      for (const n of this.match.takeNotes()) this.room.send("note", n as unknown as Payload);
+      for (const n of this.match.takeNotes()) this.room.send("note", { ...n, h: this.host, r: this.round });
       // waiting on a note that never came, while the other phone still talks: set both right
       if (this.match.stalled(t) && now - this.heard < ALIVE_S * 1.5) this.resync();
       if (this.match.phase === "over") {
         // the host says when the match is over (and with what score); the guest waits to hear it
         if (this.host) {
-          this.room.send("resume", { at: this.shared(now), score: this.match.score, server: this.match.server, over: true });
+          this.room.send("resume", { at: this.shared(now), t, score: this.match.score, server: this.match.server, over: true });
           this.overAt = now;
           this.set({ phase: "over" });
         }
@@ -386,7 +388,7 @@ export class Link {
     const at = this.shared() + RESUME_S;
     const { score, server } = this.match;
     const over = this.match.phase === "over";
-    this.room.send("resume", { at, score, server, over });
+    this.room.send("resume", { at, t: at - this.startAt!, score, server, over });
     if (!over) this.replayAt(at, score, server);
   }
 
@@ -478,7 +480,7 @@ export class Link {
       this.posSent = now;
       this.posLast = { t, x: p.x, z: p.z, vx: p.vx, vz: p.vz };
       const m = this.match;
-      this.room.send("pos", { ...this.posLast, sc: m.score, sv: m.server, ov: m.phase === "over" });
+      this.room.send("pos", { ...this.posLast, sc: m.score, sv: m.server, ov: m.phase === "over", h: this.host, r: this.round });
     }
   }
 }
