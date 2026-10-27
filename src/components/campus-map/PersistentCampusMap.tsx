@@ -28,7 +28,7 @@ const CampusMap = dynamic(() => import("@/components/CampusMap").then((m) => m.C
 type MapProps = ComponentProps<typeof CampusMapComponent>;
 
 const MOUNT_PARAMS = ["arrival", "funfair_preview", "map", "layer", "perf"];
-const EVICT_MS = 10 * 60 * 1000;
+const EVICT_MS = 2 * 60 * 1000;
 
 interface Shown {
   props: MapProps;

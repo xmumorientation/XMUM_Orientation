@@ -371,8 +371,8 @@ export function CampusMap3DView({
   const arrivalStarted = useRef(false);
   const checking = checkMode && canManageStations;
   // The tennis game on the courts, while Admin has it open: a match takes the screen in a layer of its own, and
-  // the scene's element moves there.
-  const tennis = useTennisOnMap(tennisSettings, fullscreen);
+  // the scene's element moves there. A parked map (between visits to /map) leaves every tennis room.
+  const tennis = useTennisOnMap(tennisSettings, fullscreen, !paused);
   const matchSlot = useRef<HTMLDivElement>(null);
   const focusMatch = useCallback((el: HTMLDivElement | null) => el?.focus(), []);
 
