@@ -15,7 +15,8 @@ import { LightbulbList, bulbStatus, bulbTitle } from "@/components/LightbulbList
 import { StationEditDialog } from "@/components/StationEditDialog";
 import { stationDotColor } from "@/components/ui";
 import type { Station } from "@/lib/types";
-import { timeAgo } from "@/lib/utils";
+import { LiveText } from "@/components/LiveAgo";
+import { timeAgoExact } from "@/lib/utils";
 
 import type { CampusMapData, MapLayer, MapView } from "./useCampusMapData";
 
@@ -302,7 +303,7 @@ export function MapInfoCard({
           {selectedPosition.group_name}
         </div>
         <div className="truncate text-xs text-ink-faint">
-          {pinSummary(selectedPosition, selectedPin, nowMs)}
+          <LiveText render={(now) => pinSummary(selectedPosition, selectedPin, now)} />
         </div>
         <div className="truncate text-xs text-ink-faint">
           {reportingSummary(selectedPosition)}
@@ -611,14 +612,14 @@ export function CampusMapPanels({
           <div className="min-w-0">
             <div className="font-semibold">{selectedPosition.group_name}</div>
             <div className="text-xs text-ink-faint">
-              {pinSummary(selectedPosition, selectedPin, nowMs)}
+              <LiveText render={(now) => pinSummary(selectedPosition, selectedPin, now)} />
             </div>
             {selectedPin?.source === "gps" &&
               selectedPosition.checkin_station_code &&
               selectedPosition.checkin_at && (
                 <div className="text-xs text-ink-faint">
                   Checked in at {selectedPosition.checkin_station_code} /{" "}
-                  {timeAgo(selectedPosition.checkin_at, nowMs)}
+                  <LiveText render={(now) => timeAgoExact(selectedPosition.checkin_at!, now)} />
                 </div>
               )}
             {selectedPin?.source === "manual" && selectedPosition.gps_at && (
@@ -626,7 +627,7 @@ export function CampusMapPanels({
                 Last GPS{" "}
                 {selectedPosition.gps_accuracy_m != null &&
                   `±${Math.round(selectedPosition.gps_accuracy_m)} m `}
-                / {timeAgo(selectedPosition.gps_at, nowMs)}
+                / <LiveText render={(now) => timeAgoExact(selectedPosition.gps_at!, now)} />
               </div>
             )}
             <div className="text-xs text-ink-faint">
@@ -653,7 +654,6 @@ export function CampusMapPanels({
         <GroupStatusList
           positions={positions}
           pins={groupPins}
-          nowMs={nowMs}
           onSelect={(id) => data.setSelectedGroup(id)}
         />
       )}

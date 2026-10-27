@@ -6,7 +6,8 @@ import { LayerSwitch, MapLegend, MapToolbar } from "@/components/campus-map/Camp
 import { CampusMapView, useMapView } from "@/components/campus-map/CampusMapView";
 import type { CampusMapData } from "@/components/campus-map/useCampusMapData";
 import { VORTEXA_THEME, themeFromColor, type GroupTheme } from "@/components/freshie/groupTheme";
-import { pinSummary } from "@/components/GroupStatusList";
+import { GroupStatusList, pinSummary } from "@/components/GroupStatusList";
+import { LiveText } from "@/components/LiveAgo";
 import { nexusBody, vxDisplay, vxSlab } from "@/components/home/fonts";
 import type { Mode } from "@/components/map3d/atmosphere";
 import type { CameraView } from "@/components/map3d/CampusScene";
@@ -90,7 +91,13 @@ function PreviewState({ data, pending, hasSelection }: { data: CampusMapData; pe
     pending && `Check-in sheet open for ${pending.code}`,
     data.clusterArea && `Station list under the map: ${data.clusterArea}`,
     data.openBuilding && `Admin building panel: ${data.openBuilding}`,
-    data.selectedPosition && `Selected group: ${data.selectedPosition.group_name} / ${pinSummary(data.selectedPosition, data.selectedPin, data.nowMs)}`,
+    data.selectedPosition && (
+      <LiveText
+        render={(now) =>
+          `Selected group: ${data.selectedPosition!.group_name} / ${pinSummary(data.selectedPosition!, data.selectedPin, now)}`
+        }
+      />
+    ),
     bulb && `Selected lightbulb: ${PROJECTOR_CODE_NAMES[bulb.location]} / ${bulb.name}`,
     hasSelection !== undefined && `hasSelection: ${hasSelection} (the available list ${hasSelection ? "is hidden" : "shows"})`,
   ].filter(Boolean);
@@ -98,8 +105,8 @@ function PreviewState({ data, pending, hasSelection }: { data: CampusMapData; pe
     <div className="card mt-3 p-3 text-xs">
       <p className="mb-1 font-semibold">Preview state (mock data)</p>
       <ul className="space-y-0.5 text-ink-faint">
-        {lines.map((line) => (
-          <li key={String(line)}>{line}</li>
+        {lines.map((line, i) => (
+          <li key={i}>{line}</li>
         ))}
       </ul>
     </div>
@@ -141,6 +148,13 @@ function Preview({ opts }: { opts: Opts }) {
         scene={{ mode: opts.mode, lite: opts.lite, intro: opts.intro, camera: opts.cam }}
       />
       <PreviewState data={data} pending={pending} hasSelection={hasSelection} />
+      {showGroupPins && (
+        <GroupStatusList
+          positions={data.positions}
+          pins={data.groupPins}
+          onSelect={(id) => data.setSelectedGroup(id)}
+        />
+      )}
     </div>
   );
   const main = "mx-auto w-full px-3 pb-8 pt-3 sm:px-5 sm:pt-5 lg:px-8 lg:py-6";

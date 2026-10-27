@@ -49,6 +49,19 @@ export function timeAgo(iso: string, nowMs?: number): string {
   return `${Math.floor(hr / 24)}d ago`;
 }
 
+/** "Last seen" to the second: "8s ago", "3m 05s ago", "1h 02m 05s ago", "2d 4h ago". */
+export function timeAgoExact(iso: string, nowMs?: number): string {
+  const then = new Date(iso).getTime();
+  const sec = Math.floor(Math.max(0, (nowMs ?? Date.now()) - then) / 1000);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  if (sec < 60) return `${sec}s ago`;
+  const min = Math.floor(sec / 60);
+  if (min < 60) return `${min}m ${pad(sec % 60)}s ago`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr}h ${pad(min % 60)}m ${pad(sec % 60)}s ago`;
+  return `${Math.floor(hr / 24)}d ${hr % 24}h ago`;
+}
+
 // FR-3.3: data older than 10 min is stale
 export function isStale(iso: string, nowMs?: number): boolean {
   return (nowMs ?? Date.now()) - new Date(iso).getTime() > 10 * 60 * 1000;
