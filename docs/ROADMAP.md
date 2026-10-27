@@ -259,6 +259,12 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 - **From afar, a busy court shows only "● LIVE"**: no names and no score.
 - **Up close, the real match**, for at most **5 watchers a court**.
 
+**Decisions (Ben, 2026-10-27, for T3b):**
+- **An on/off switch says when the mini game is open, and Admin has it.** It stops everything, so it is Admin only, like the other kill-switches (AGENTS.md); HOGM gets it only if Ben asks.
+- **Off closes the game at once:** matches being played end, the queue empties, and Play is hidden.
+- The name and shirt of a player who is not a Freshie (Faci, staff) do not matter: use the simplest (for example the role's name and the default blue).
+- **Ben merges `tennis-game` into `main` himself**, so T3b does not open a PR.
+
 **Design (proposed; change it here if Ben decides otherwise):**
 - **Where:** the three courts of the tennis block (`SPORTS` in [geo.ts](../src/components/map3d/geo.ts), laid out by [courts.ts](../src/components/map3d/courts.ts), drawn in [sports.tsx](../src/components/map3d/sports.tsx); the net is `Equipment`). The players are low-poly figures (`tennis/player.ts`) in the player's group colour.
 - **The view (Ben, 2026-10-22: like a TV broadcast, with clear court lines):** from behind the near baseline, as `courtView()` in `tennis/court.ts` works it out for the screen's shape. Wide screens get a low camera and a long lens (18°). An upright phone's camera is higher (45°), so its narrow screen holds the court's width. Up close the courts are drawn crisp (`tennis/surface.tsx`), and the fence side between the camera and the court is hidden (`useFenceCutaway` in `sports.tsx`).
@@ -300,7 +306,7 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 - The code is on branch `tennis-game`: T1b to T2b were merged into `main` (PR #63); T3a is on top of it, not merged. Go on working on that branch. When T3a is merged, add its line to [CHANGELOG.md](CHANGELOG.md).
 - Not checked yet: T2b and T3a on real phones over Realtime (`?net=realtime`: the live project, so keep it short). Two phones play (`/map3d?tennis=online&net=realtime`) and a third watches (`/map3d?tennis=watch&net=realtime`): zoom in on the court and out again.
 - T3b: put it in the real map pages: tap the tennis court, then Play; the spectator view (`LiveCourts`, `createSpectator`) for everyone on the map, with the "● LIVE" label (`CampusScene`'s `tennisLive`). The page should make one `Board` and give it to the game as well (today `createGame` makes its own, `hostOnBoard`), since a phone may join a room only once.
-- T3b: the Admin on/off switch probably needs a setting in the database, which means a migration. Ask Ben first, and follow how Live control's other switches work. Group names and colours come from `fn_scoreboard()`.
+- T3b: Ben's decisions are above ("Decisions, for T3b"). The on/off switch needs a setting in the database, which means a migration: follow how Live control's other switches are stored and reach phones, take the next free number (the latest is `0109`; numbers have collided before, so check with the team), and do not run it on the live project without Ben. Off must reach phones in a match at once, so they end it. Group names and colours come from `fn_scoreboard()`.
 - Before the event: Supabase Pro (see "Limits"), or `WATCH_MAX` lowered.
 - Tunables, if the playtest says so: the tap window (`LEAD_MAX`, `LEAD_MIN`) and reach (`LUNGE`) in `match.ts`; the bot (`BOT_SPREAD`, `BOT_RUN`); drag speed (`DRAG_M`, `TennisGame.tsx`); the online timings (`QUIET_S`, `GONE_S`, `link.ts`); the spectators' distances (`NEAR_M`, `LEAVE_M`, `ANIMATE_M`, `TennisLive.tsx`) and buffer (`BUFFER_S`, `watch.ts`).
 
