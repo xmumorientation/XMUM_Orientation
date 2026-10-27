@@ -335,7 +335,8 @@ Before, a watcher near a Play with Bot court joined its room, heard nothing (the
 - `match.ts`: `relay` keeps notes with no other phone; notes are kept with their side (`takeSided()`; `takeNotes()` unchanged for link.ts).
 - `onMap.ts`: the `BotSeat` joins the match's room, and `leave()` / `close()` leave it. `TennisMap.tsx` `botGame()` ticks the relay after each step.
 - Tests: one more in `tests/tennis/watch.test.ts` (nothing sent while unwatched; a watcher joining mid-match replays every hit on the same path and the same final score; Play again starts over). All tennis tests pass.
-- Not yet: checked on a real phone or in two browser tabs. A bot match's tab hidden freezes its clock, so its watchers see it stall until it is shown again.
+- Checked in headless Chrome on `/map3d/preview?tennis=1&full=1` (two tabs): A played with Bot to 2–5; V, zoomed in on the courts, joined the match's room and heard both sides' positions (88 and 98), 15 swings, 9 shots and 7 points, with the same final score; both figures on the middle court in their shirts. No errors.
+- Not yet: real phones over Realtime. A bot match's tab hidden freezes its clock, so its watchers see it stall until it is shown again.
 
 ### Tennis game: Play with Bot on the map pages, 2026-10-27 (Ben)
 Roadmap item 9, an ad hoc add-on to T3b (not a planned batch). `/map`, tap the tennis court: the card now offers Matchmaking or Play with Bot. Without the live project: `/map3d/preview?tennis=1&full=1`.
