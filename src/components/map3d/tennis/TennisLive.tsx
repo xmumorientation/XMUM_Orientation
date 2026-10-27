@@ -8,7 +8,7 @@ import { makeGlow } from "../textures";
 import { Board, type LiveCourt } from "./board";
 import { TENNIS_COURTS } from "./court";
 import type { Transport } from "./net";
-import { playerMaterial } from "./player";
+import { playerMaterial, playerShadowMaterial } from "./player";
 import { CourtSurface } from "./surface";
 import { RallyCourt } from "./TennisDemo";
 import { openTransport, Play, type Session, type TennisOptions } from "./TennisGame";
@@ -159,13 +159,15 @@ export function LiveCourts({
   const all = useSyncExternalStore(board.subscribe, board.getView, board.getView);
   const courts = useMemo(() => (exclude ? all.filter((c) => c.key !== exclude) : all), [all, exclude]);
   const material = useMemo(playerMaterial, []);
+  const shadow = useMemo(playerShadowMaterial, []);
   const shadowTex = useMemo(makeGlow, []);
   useEffect(
     () => () => {
       material.dispose();
+      shadow.dispose();
       shadowTex.dispose();
     },
-    [material, shadowTex],
+    [material, shadow, shadowTex],
   );
   const invalidate = useThree((s) => s.invalidate);
   // a court starting or ending changes the scene: draw it
@@ -196,6 +198,7 @@ export function LiveCourts({
             index={c.court}
             shirts={c.colors}
             material={material}
+            shadow={shadow}
             shadowTex={shadowTex}
             at={null}
             animate={() => seen.current[c.court]}

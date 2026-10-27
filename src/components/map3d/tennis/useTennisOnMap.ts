@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 import type { LiveCourt } from "./board";
 import type { OnMapView, TennisOnMap } from "./onMap";
@@ -33,10 +33,18 @@ const NO_COURTS: LiveCourt[] = [];
 const noCourts = () => NO_COURTS;
 const noSubscribe = () => () => {};
 
-/** `fullscreen`: the map's full-screen viewer is open; closing it leaves the queue (and the match). */
-export function useTennisOnMap(settings: TennisSettings | null | undefined, fullscreen: boolean) {
+/**
+ * `fullscreen`: the map's full-screen viewer is open; closing it leaves the queue (and the match).
+ * `active`: false while the map is parked off-screen between visits (PersistentCampusMap); the game closes then,
+ * so a phone on another page is in no tennis room.
+ */
+export function useTennisOnMap(settings: TennisSettings | null | undefined, fullscreen: boolean, active = true) {
   const open = settings?.open ?? false;
   const net = settings?.net ?? "realtime";
+  const running = open && active;
+  // read by the cleanup: parking the map is not Admin closing the game
+  const activeNow = useRef(active);
+  activeNow.current = active;
   const [loaded, setLoaded] = useState<Loaded | null>(null);
   // the court's card, after a tap on the court
   const [card, setCard] = useState(false);
@@ -44,7 +52,7 @@ export function useTennisOnMap(settings: TennisSettings | null | undefined, full
   const [closed, setClosed] = useState(false);
 
   useEffect(() => {
-    if (!open) return;
+    if (!running) return;
     let on = true;
     let made: TennisOnMap | null = null;
     import("./TennisMap").then((mod) =>
@@ -61,12 +69,12 @@ export function useTennisOnMap(settings: TennisSettings | null | undefined, full
     return () => {
       on = false;
       window.removeEventListener("pagehide", onHide);
-      if (made && made.getView().phase !== "idle") setClosed(true);
+      if (activeNow.current && made && made.getView().phase !== "idle") setClosed(true);
       made?.close();
       setLoaded(null);
       setCard(false);
     };
-  }, [open, net]);
+  }, [running, net]);
 
   const courts = loaded?.courts ?? null;
   // closing full screen leaves the queue, or the match (Escape)
