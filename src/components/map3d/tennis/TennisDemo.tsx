@@ -26,12 +26,17 @@ const DEMO_SHIRTS: [string, string][] = [
 /** Shadows lie just over the court (metres in the court frame; about 0.02 world units). */
 const SHADOW_Y = 0.15;
 
-function Court({ index, shirts, material, shadowTex, at }: {
+/**
+ * One court's looping rally. Also a busy court's from afar (TennisLive.tsx, T3a), which keeps the map drawing only
+ * while `animate()` says its court is seen.
+ */
+export function RallyCourt({ index, shirts, material, shadowTex, at, animate }: {
   index: number;
   shirts: [string, string];
   material: THREE.Material;
   shadowTex: THREE.Texture;
   at: number | null;
+  animate?: () => boolean;
 }) {
   const frame = courtFrame(TENNIS_COURTS[index]);
   const players = useMemo(() => shirts.map((s) => makePlayer(s, material)), [shirts, material]);
@@ -59,7 +64,7 @@ function Court({ index, shirts, material, shadowTex, at }: {
       s.scale.setScalar(Math.max(0.5, 1 - by / 8));
     }
     // the map draws on demand on phones: keep asking while the rally plays (a held moment needs no more frames)
-    if (at === null) invalidate();
+    if (at === null && (animate?.() ?? true)) invalidate();
   });
 
   return (
@@ -121,7 +126,7 @@ export function TennisDemo({ fov, at = null }: { fov: number; at?: number | null
     <>
       <CourtSurface />
       {TENNIS_COURTS.map((_, i) => (
-        <Court key={i} index={i} shirts={DEMO_SHIRTS[i % DEMO_SHIRTS.length]} material={material} shadowTex={shadowTex} at={at} />
+        <RallyCourt key={i} index={i} shirts={DEMO_SHIRTS[i % DEMO_SHIRTS.length]} material={material} shadowTex={shadowTex} at={at} />
       ))}
     </>
   );

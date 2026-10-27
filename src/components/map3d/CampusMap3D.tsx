@@ -2,7 +2,7 @@
 
 import { Html } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { MapControls as MapControlsImpl } from "three-stdlib";
 
 import { parseFunfair, type FunfairPower } from "@/lib/funfair";
@@ -11,9 +11,11 @@ import { MODES, type Mode } from "./atmosphere";
 import CampusScene, { type CameraView } from "./CampusScene";
 
 import { GPS_MARKERS } from "./geo";
+import type { LiveCourt } from "./tennis/board";
 import { courtView, TENNIS_COURTS } from "./tennis/court";
 import { TennisDemo } from "./tennis/TennisDemo";
 import type { Game, TennisOptions } from "./tennis/TennisGame";
+import type { Spectator } from "./tennis/TennisLive";
 import { prefersLite } from "./webgl";
 
 // DRAFT (map-3d-draft branch, not for main): the /map3d demo page. Wraps
@@ -36,6 +38,8 @@ type Demo = {
   tennis: { fov: number; at: number | null } | null;
   /** The tennis game: against a bot (batch T1b), or against another tab (batch T2a). */
   game: TennisOptions | null;
+  /** The tennis courts as everyone with the map open sees them (batch T3a): busy courts, and a match up close. */
+  watch: { net: TennisOptions["net"] } | null;
 };
 
 /**
@@ -48,6 +52,8 @@ type Demo = {
  * bots, ?color=%23rrggbb the player's shirt), ?t=<seconds> hold the rally or the two bots' match at that moment,
  * ?tennis=online the game against another tab of this browser (open two; ?name= the player's name, ?auto=1 a bot
  * plays for this tab), and with ?net=realtime against any other phone, over the Supabase project's Realtime.
+ * ?tennis=watch the courts as a spectator sees them (the matches being played in other tabs, or with ?net=realtime
+ * on other phones), starting near the middle court: move the camera in and out.
  */
 function readDemo(): { demo: Demo; mode: Mode | null } {
   const q = new URLSearchParams(window.location.search);
@@ -58,7 +64,8 @@ function readDemo(): { demo: Demo; mode: Mode | null } {
   const concert = q.get("concert");
   const tq = q.get("tennis");
   const play = tq === "bot" || tq === "online" ? tq : null;
-  const tennis = tq === "demo" || play ? courtView(TENNIS_COURTS[1], window.innerWidth / window.innerHeight) : null;
+  const net = q.get("net") === "realtime" ? "realtime" : "tabs";
+  const tennis = tq === "demo" || tq === "watch" || play ? courtView(TENNIS_COURTS[1], window.innerWidth / window.innerHeight) : null;
   const held = q.get("t") === null ? NaN : Number(q.get("t"));
   const at = Number.isFinite(held) ? held : null;
   return {
@@ -82,8 +89,9 @@ function readDemo(): { demo: Demo; mode: Mode | null } {
         name: q.get("name") ?? "",
         auto: q.get("auto") === "1",
         at,
-        net: q.get("net") === "realtime" ? "realtime" : "tabs",
+        net,
       },
+      watch: tq === "watch" ? { net } : null,
     },
     mode: m === "day" || m === "sunset" || m === "night" ? m : null,
   };
@@ -172,6 +180,10 @@ const glass: React.CSSProperties = {
   WebkitBackdropFilter: "blur(10px)",
 };
 
+const noSubscribe = () => () => {};
+const NO_COURTS: LiveCourt[] = [];
+const noCourts = () => NO_COURTS;
+
 export default function CampusMap3D() {
   const controls = useRef<MapControlsImpl>(null);
   const [demo, setDemo] = useState<Demo | null>(null);
@@ -197,6 +209,28 @@ export default function CampusMap3D() {
       live = false;
     };
   }, [gameOptions]);
+  // the courts as a spectator sees them, loaded only when asked for too
+  const [live, setLive] = useState<{ mod: typeof import("./tennis/TennisLive"); spectator: Spectator } | null>(null);
+  const watchNet = demo?.watch?.net;
+  useEffect(() => {
+    if (!watchNet) return;
+    let on = true;
+    let made: Spectator | null = null;
+    import("./tennis/TennisLive").then((mod) =>
+      mod.createSpectator(watchNet).then((spectator) => {
+        if (!on) return spectator.board.close();
+        made = spectator;
+        setLive({ mod, spectator });
+      }),
+    );
+    return () => {
+      on = false;
+      made?.board.close();
+      setLive(null);
+    };
+  }, [watchNet]);
+  const board = live?.spectator.board;
+  const courts = useSyncExternalStore(board?.subscribe ?? noSubscribe, board?.getView ?? noCourts, board?.getView ?? noCourts);
   const touch = demo?.touch ?? false;
   const [flipped, setFlipped] = useState(false);
   useEffect(() => {
@@ -219,10 +253,12 @@ export default function CampusMap3D() {
           interactive={!demo.game}
           funfair={demo.funfair}
           concert={demo.concert === "flip" ? flipped : demo.concert}
+          tennisLive={courts.length > 0}
         >
           {demo.gps && <GpsMarkers />}
           {demo.tennis && <TennisDemo fov={demo.tennis.fov} at={demo.tennis.at} />}
           {tennis && <tennis.mod.TennisCourt game={tennis.game} />}
+          {live && <live.mod.LiveCourts spectator={live.spectator} />}
           {demo.stats && <RenderStats lite={demo.lite} />}
         </CampusScene>
       )}

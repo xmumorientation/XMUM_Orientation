@@ -68,6 +68,10 @@ export function realtimeTransport(client: SupabaseClient, id = randomId()): Tran
           mine = state;
           if (joined) void ch.track(state);
         },
+        untrack: () => {
+          mine = null;
+          if (joined) void ch.untrack();
+        },
         onPresence: (fn) => {
           watchers.add(fn);
           return () => {

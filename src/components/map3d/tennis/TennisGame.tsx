@@ -7,10 +7,11 @@ import * as THREE from "three";
 import { groupColor, themeFromColor } from "@/components/freshie/groupTheme";
 
 import { BALL_R } from "./ball";
+import { hostOnBoard } from "./board";
 import { courtFrame, courtView, TENNIS_COURTS } from "./court";
 import { dotTexture, Flash, Marker, Pulse, Smear, Trail } from "./effects";
 import { Match, type Call, type Miss, type Why } from "./match";
-import { tabTransport } from "./net";
+import { tabTransport, type Transport } from "./net";
 import { Online, type OnlineView } from "./online";
 import { makePlayer, playerMaterial, posePlayer } from "./player";
 import { CourtSurface } from "./surface";
@@ -93,18 +94,22 @@ function theirColor(mine: string, theirs: string) {
   return d < 90 ? themeFromColor(mine).partner.toLowerCase() : theirs;
 }
 
+/** The network: between tabs of this browser, or Supabase Realtime (only then is supabase-js downloaded). */
+export async function openTransport(net: TennisOptions["net"]): Promise<Transport> {
+  if (net === "tabs") return tabTransport();
+  const [{ realtimeTransport }, { supabaseBrowser }] = await Promise.all([import("./realtime"), import("@/lib/supabase/client")]);
+  return realtimeTransport(supabaseBrowser());
+}
+
 export async function createGame(o: TennisOptions): Promise<Game> {
   const color = groupColor(o.color);
   const name = o.name.trim().slice(0, 16) || `Player ${Math.floor(100 + Math.random() * 900)}`;
   const game: Game = { mode: o.mode, auto: o.auto, at: o.at, profile: { name, color }, solo: null, online: null, wake: () => {} };
   if (o.mode === "online") {
-    // Supabase only when asked for: the game against the bot, and between tabs, never download it
-    let transport = tabTransport();
-    if (o.net === "realtime") {
-      const [{ realtimeTransport }, { supabaseBrowser }] = await Promise.all([import("./realtime"), import("@/lib/supabase/client")]);
-      transport = realtimeTransport(supabaseBrowser());
-    }
-    game.online = new Online(transport, game.profile, o.auto ? "bot" : "player");
+    const transport = await openTransport(o.net);
+    const online = (game.online = new Online(transport, game.profile, o.auto ? "bot" : "player"));
+    // the host puts its match on the courts' board (T3a), so the map shows it to everyone
+    hostOnBoard(online, transport, (theirs) => [color, theirColor(color, groupColor(theirs))]);
     return game;
   }
   // a fixed seed with two bots, so a held moment is the same every time
@@ -181,8 +186,8 @@ const Y_AXIS = new THREE.Vector3(0, 1, 0);
 const WHITE = new THREE.Color("#ffffff");
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
-/** A court's broadcast view for the screen's shape, with its lens (the map's own is 30°) while mounted. */
-function useBroadcast(court: number) {
+/** A court's broadcast view for the screen's shape, with its lens (the map's own is 30°) while mounted, if `lens`. */
+function useBroadcast(court: number, lens = true) {
   const camera = useThree((s) => s.camera);
   const size = useThree((s) => s.size);
   const invalidate = useThree((s) => s.invalidate);
@@ -190,7 +195,7 @@ function useBroadcast(court: number) {
   const aspect = size.width / Math.max(1, size.height);
   const view = useMemo(() => courtView(cell, aspect), [cell, aspect]);
   useEffect(() => {
-    if (!(camera instanceof THREE.PerspectiveCamera)) return;
+    if (!lens || !(camera instanceof THREE.PerspectiveCamera)) return;
     const was = camera.fov;
     camera.fov = view.fov;
     camera.updateProjectionMatrix();
@@ -199,7 +204,7 @@ function useBroadcast(court: number) {
       camera.fov = was;
       camera.updateProjectionMatrix();
     };
-  }, [camera, view.fov, invalidate]);
+  }, [lens, camera, view.fov, invalidate]);
   return { cell, view, aspect };
 }
 
@@ -220,7 +225,7 @@ export function TennisCourt({ game }: { game: Game }) {
   return (
     <>
       <CourtSurface />
-      {session ? <Play key={session.id} game={game} session={session} /> : <Rest />}
+      {session ? <Play key={session.id} session={session} held={game.solo ? game.at : null} auto={game.auto} /> : <Rest />}
     </>
   );
 }
@@ -240,10 +245,14 @@ function Rest() {
   return null;
 }
 
-/** A match on its court. It owns the camera: the broadcast view, following the play a little. */
-function Play({ game, session }: { game: Game; session: Session }) {
+/**
+ * A match on its court. It owns the camera: the broadcast view, following the play a little. `held`: the match
+ * held at that moment (?t=, against the bot). `auto`: a bot plays side 0, so no marker. `watch`: a spectator's
+ * match (TennisLive.tsx, T3a), drawn on the map's own camera, with no marker.
+ */
+export function Play({ session, held = null, auto = false, watch = false }: { session: Session; held?: number | null; auto?: boolean; watch?: boolean }) {
   const { match } = session;
-  const { cell, view, aspect } = useBroadcast(session.court);
+  const { cell, view, aspect } = useBroadcast(session.court, !watch);
   const frame = courtFrame(cell);
   const camera = useThree((s) => s.camera);
   const controls = useThree((s) => s.controls) as unknown as { target: THREE.Vector3 } | null;
@@ -311,13 +320,13 @@ function Play({ game, session }: { game: Game; session: Session }) {
     if (!g) return;
     const c = cam.current;
     let t: number;
-    if (game.at !== null && game.solo) {
+    if (held !== null) {
       // held: play the match up to that moment once, in the same steps every time
       if (!c.held) {
-        for (let s = 0; s <= game.at; s += 1 / 60) match.step(s);
+        for (let s = 0; s <= held; s += 1 / 60) match.step(s);
         c.held = true;
       }
-      t = game.at;
+      t = held;
     } else {
       t = session.time();
       session.advance(t);
@@ -371,11 +380,15 @@ function Play({ game, session }: { game: Game; session: Session }) {
     const hit = match.lastHit();
     if (hit && b) tmp.color.set(session.colors[hit.by]).lerp(WHITE, 0.35);
     fx.trail.update((ti) => (hit && b ? match.ballAt(ti) : null), t, hit ? hit.t : t, tmp.eye, tmp.color, BALL_R * 0.95);
-    fx.marker.update(game.auto ? null : match.marker(0, t), t, session.colors[0]);
+    fx.marker.update(auto || watch ? null : match.marker(0, t), t, session.colors[0]);
+    if (watch) {
+      if (session.busy() || alive) invalidate();
+      return;
+    }
 
     // the camera: the broadcast view, moved across with the ball and the player, and a jolt on a clean hit
     const want = followShare * clamp(FOLLOW_BALL * (b ? b[2] : 0) + FOLLOW_PLAYER * match.players[0].z, -FOLLOW_MAX, FOLLOW_MAX);
-    c.follow = game.at !== null ? want : c.follow + (want - c.follow) * Math.min(1, dt * 2.5);
+    c.follow = held !== null ? want : c.follow + (want - c.follow) * Math.min(1, dt * 2.5);
     const u = (t - c.shakeAt) / SHAKE_S;
     const shake = u >= 0 && u < 1 ? SHAKE_M * (1 - u) * Math.sin(t * 95) : 0;
     tmp.across.set(0, 0, 1).applyAxisAngle(Y_AXIS, frame.rotY).multiplyScalar(c.follow * cell.s);
@@ -386,7 +399,7 @@ function Play({ game, session }: { game: Game; session: Session }) {
     camera.lookAt(tmp.target);
 
     const moving = Math.abs(want - c.follow) > 0.004 || shake !== 0;
-    if (game.at === null && (session.busy() || alive || moving)) invalidate();
+    if (held === null && (session.busy() || alive || moving)) invalidate();
   });
 
   return (

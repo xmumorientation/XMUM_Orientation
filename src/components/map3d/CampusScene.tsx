@@ -112,12 +112,13 @@ function DepthRange() {
 /** Minor labels fade in within this distance of the camera. */
 const MINOR_LABEL_DISTANCE = 95;
 
-function Label({ name, pos, y, minor, stage, live }: (typeof LABELS)[number] & { live?: boolean }) {
+/** `live`: the place has something on (the concert, a tennis match), so the label says "● LIVE", from any distance. */
+function Label({ name, pos, y, minor, live }: (typeof LABELS)[number] & { live?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
   const at = useMemo(() => new THREE.Vector3(pos[0], y, pos[1]), [pos, y]);
   useFrame(({ camera }) => {
     if (!minor || !ref.current) return;
-    const opacity = camera.position.distanceTo(at) < MINOR_LABEL_DISTANCE ? "1" : "0";
+    const opacity = live || camera.position.distanceTo(at) < MINOR_LABEL_DISTANCE ? "1" : "0";
     if (ref.current.style.opacity !== opacity) ref.current.style.opacity = opacity;
   });
   return (
@@ -136,12 +137,12 @@ function Label({ name, pos, y, minor, stage, live }: (typeof LABELS)[number] & {
           borderRadius: 999,
           padding: "3px 8px",
           boxShadow: "0 2px 8px rgba(0,0,0,0.3)",
-          opacity: minor ? 0 : 1,
+          opacity: minor && !live ? 0 : 1,
           transition: "opacity 0.25s",
         }}
       >
         {name}
-        {stage && live && (
+        {live && (
           <span
             style={{
               marginLeft: 6,
@@ -160,14 +161,14 @@ function Label({ name, pos, y, minor, stage, live }: (typeof LABELS)[number] & {
   );
 }
 
-const ALL_LABELS = [...LABELS, FUNFAIR_LABEL];
+const ALL_LABELS: (typeof LABELS)[number][] = [...LABELS, FUNFAIR_LABEL];
 
-/** `live`: the lake stage's concert is playing, so its label gets a "● LIVE" tag. */
-const Labels = memo(function Labels({ live }: { live: boolean }) {
+/** `concert`: the lake stage's concert is playing; `tennis`: a match is on the tennis courts. Their labels say LIVE. */
+const Labels = memo(function Labels({ concert, tennis }: { concert: boolean; tennis: boolean }) {
   return (
     <>
       {ALL_LABELS.map((l) => (
-        <Label key={l.name} {...l} live={live} />
+        <Label key={l.name} {...l} live={(!!l.stage && concert) || (!!l.tennis && tennis)} />
       ))}
     </>
   );
@@ -302,6 +303,8 @@ export type CampusSceneProps = {
    * finale). True or false forces it on or off (Admin's preview, dev pages). Turning it on plays the opening.
    */
   concert?: boolean;
+  /** A match is on the tennis courts (tennis/board.ts): their label says LIVE. */
+  tennisLive?: boolean;
   /** Rendered inside the Canvas, in the scene (depth-tested, post-processed): ground overlays, hit areas. */
   children?: ReactNode;
   /**
@@ -328,6 +331,7 @@ export default function CampusScene({
   interactive = true,
   funfair = FUNFAIR_OFF,
   concert: concertProp,
+  tennisLive = false,
   children,
   overlay,
   onFail,
@@ -406,7 +410,7 @@ export default function CampusScene({
           <Campus mode={mode} lite={isLite} />
           <Funfair power={funfair} night={mode === "night"} dusk={mode === "sunset"} lite={isLite} />
           <LakefrontStage night={mode === "night"} dusk={mode === "sunset"} lite={isLite} live={concert} />
-          {labels && <Labels live={concert} />}
+          {labels && <Labels concert={concert} tennis={tennisLive} />}
           {children}
           <MapControls
             ref={controlsRef}

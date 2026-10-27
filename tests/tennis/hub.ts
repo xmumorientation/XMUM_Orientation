@@ -91,6 +91,10 @@ export class Hub {
         me.state = structuredClone(state);
         presence();
       },
+      untrack: () => {
+        me.state = null;
+        presence();
+      },
       onPresence: (fn) => {
         me.watchers.add(fn);
         this.later(() => fn(states()));

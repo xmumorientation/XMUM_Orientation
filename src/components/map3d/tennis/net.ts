@@ -13,6 +13,8 @@ export interface Room {
   on(event: string, fn: (payload: Payload) => void): () => void;
   /** Sets this member's presence state (it replaces the last). */
   track(state: Payload): void;
+  /** Takes this member out of the room's presence, and stays in the room. */
+  untrack(): void;
   /** Calls `fn` with every member's state, this one's included, whenever one changes. */
   onPresence(fn: (states: Map<string, Payload>) => void): () => void;
   leave(): void;
@@ -93,6 +95,12 @@ export function tabTransport(id = randomId()): Transport {
         track: (state) => {
           mine = state;
           post({ kind: "state", from: id, state });
+          changed();
+        },
+        untrack: () => {
+          if (!mine) return;
+          mine = null;
+          post({ kind: "state", from: id, state: null });
           changed();
         },
         onPresence: (fn) => {

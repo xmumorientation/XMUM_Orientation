@@ -26,10 +26,11 @@ Ben may continue this work in a new Claude conversation. This file says where ev
 
 ## Where things stand
 
-### Tennis game on the tennis courts (T1a done 2026-10-22; T1b, T2a and T2b done 2026-10-26, branch `tennis-game`)
+### Tennis game on the tennis courts (T1a done 2026-10-22; T1b, T2a and T2b done 2026-10-26, in `main`; T3a done 2026-10-27, branch `tennis-game`)
 
-- Plan, Ben's decisions and batches T1a–T3b and T1c: [ROADMAP.md](ROADMAP.md), item 9. What T1a, T1b, T2a and T2b built: its "Done". Where to pick up: item 9's "Next session".
-- Code: `src/components/map3d/tennis/`. It meets the map in `CampusMap3D.tsx` (`?tennis=demo`, `?tennis=bot`, `?tennis=online`) and in `sports.tsx` (the fence cutaway). Court sizes: `courts.ts`.
+- Plan, Ben's decisions and batches T1a–T3b and T1c: [ROADMAP.md](ROADMAP.md), item 9. What each batch built: its "Done". Where to pick up: item 9's "Next session".
+- Code: `src/components/map3d/tennis/`. It meets the map in `CampusMap3D.tsx` (`?tennis=demo`, `?tennis=bot`, `?tennis=online`, `?tennis=watch`), in `CampusScene.tsx` (the label's "● LIVE", `tennisLive`) and in `sports.tsx` (the fence cutaway). Court sizes: `courts.ts`.
+- Spectators (T3a): `board.ts` (which courts are busy), `watch.ts` (one watcher's replay of a match), `TennisLive.tsx` (the courts in the scene). Headless checks need focus emulation on every tab (see the roadmap's Done).
 - The game (T1b): `match.ts` is the rules, pure and stepped by time (`step(t)` takes events in time order); `ball.ts` the flight; `TennisGame.tsx` draws it (`TennisCourt`, in the scene) and lays the HUD over the page (`TennisHud`). `CampusMap3D` imports `TennisGame` only when the URL asks for the game, so the map's own chunk does not grow.
 - Online (T2a, T2b): `net.ts` (the transport, and its `BroadcastChannel` version), `realtime.ts` (the Supabase Realtime version, `?net=realtime`), `lobby.ts` (the queue), `link.ts` (one match between two phones), `online.ts` (this phone's seat and match). Each phone runs its own `Match` with its own player as side 0; messages go in the sender's frame and the receiver turns them round. Tests run two (or more) phones on `tests/tennis/hub.ts`, a fake network with latency, clock skew and cut-offs.
 - `?net=realtime` talks to the live project (`.env.local`): it writes nothing, but keep checks short. Over Realtime the pairing and the start take a second or two longer than between tabs.
