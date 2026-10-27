@@ -293,7 +293,7 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
   - Who plays: a Freshie or Faci in their group's chosen name (else "Group n") and colour; anyone else in their role's name and the default blue (`settings.ts`).
   - Off: every phone closes at once: the match ends, the queue empties, Play goes, and the phone says "Tennis is closed". A phone that missed Off sees "… left · You win". Nothing on the server stops a phone that ignores Off: the Realtime rooms are open, and no tokens are involved.
   - No migration: the switch is a `game_config` key set with `fn_set_config` (Admin only and audited, like the other switches). A missing key means closed.
-  - **Play with Bot (added 2026-10-27, Ben):** the card also has a Play with Bot button next to Matchmaking. It starts at once, no queue, on the first free court (so it still counts against the 3; disabled when all three are busy). The match itself plays only on that phone (no Realtime room for it), but it is said on the courts' board like a real match, so it shows "● LIVE" and the busy count to everyone else. Off ends it too, the same as a real match.
+  - **Play with Bot (added 2026-10-27, Ben):** the card also has a Play with Bot button next to Matchmaking. It starts at once, no queue, on the first free court (so it still counts against the 3; disabled when all three are busy). The match itself plays only on that phone, but it is said on the courts' board like a real match, so it shows "● LIVE" and the busy count to everyone else, and (since 2026-10-27, Ben: "bot也要实时") watchers up close see the real bot match, relayed from that phone (`relay.ts`). Off ends it too, the same as a real match.
 - **Phones:** check lite mode on a phone size. The map draws every frame during a match.
 - **Limits:** Realtime counts each message delivered to each phone, and the Supabase plan caps messages per second (Free about 100, Pro about 500). With 150 people on the map: 3 matches send about 24 a second, the board about 5, and 15 watchers up close (5 a court) about 120: about 150 a second, more than Free allows. **Move to Pro before the event**, or until then set `WATCH_MAX` (`watch.ts`) to 1 (about 55 a second). Free also allows only 200 connections at once, which 150 map viewers and the rest of the app's users could pass.
 
@@ -328,6 +328,14 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 ---
 
 ## Done
+
+### Tennis game: watching a match against the bot for real, 2026-10-27 (Ben)
+Before, a watcher near a Play with Bot court joined its room, heard nothing (the match plays on one phone, with no room) and kept the looping rally. Now the bot match is watched like any match.
+- `relay.ts` (new, `Relay`): sends the bot match to its room (`match:<key>`) as a hosted match would (link.ts): the player as the host (side 0), the bot as the guest (turned round), notes and positions with `h` and `r`, the host's positions with the score. `watch.ts` is unchanged. It sends only while someone is in the room's presence (no load for an unwatched bot match), and while watched the match keeps drawing (`busy`). Play again starts a new round (`Match.rounds`), so watchers start over at 0–0.
+- `match.ts`: `relay` keeps notes with no other phone; notes are kept with their side (`takeSided()`; `takeNotes()` unchanged for link.ts).
+- `onMap.ts`: the `BotSeat` joins the match's room, and `leave()` / `close()` leave it. `TennisMap.tsx` `botGame()` ticks the relay after each step.
+- Tests: one more in `tests/tennis/watch.test.ts` (nothing sent while unwatched; a watcher joining mid-match replays every hit on the same path and the same final score; Play again starts over). All tennis tests pass.
+- Not yet: checked on a real phone or in two browser tabs. A bot match's tab hidden freezes its clock, so its watchers see it stall until it is shown again.
 
 ### Tennis game: Play with Bot on the map pages, 2026-10-27 (Ben)
 Roadmap item 9, an ad hoc add-on to T3b (not a planned batch). `/map`, tap the tennis court: the card now offers Matchmaking or Play with Bot. Without the live project: `/map3d/preview?tennis=1&full=1`.

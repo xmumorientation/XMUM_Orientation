@@ -297,7 +297,9 @@ export class Match {
   private won: Side | null = null;
   private learned = false;
   private fx: Fx[] = [];
-  private notes: Note[] = [];
+  private notes: [Side, Note][] = [];
+  /** Notes are kept with no other phone too, for watchers (a bot match, relay.ts): both sides are this phone's. */
+  relay = false;
   private view!: MatchView;
   private listeners = new Set<() => void>();
   /** The usual contact height: the receiver meets the ball as it comes down through it. */
@@ -346,9 +348,19 @@ export class Match {
 
   /** What to tell the other phone since the last call (T2). */
   takeNotes(): Note[] {
+    return this.takeSided().map(([, n]) => n);
+  }
+
+  /** The same, each with the side it is from, in this phone's frame (a point's call: side 0's). */
+  takeSided(): [Side, Note][] {
     const out = this.notes;
     this.notes = [];
     return out;
+  }
+
+  /** Matches started on this Match: 1, and one more for each reset (a watcher's round, relay.ts). */
+  get rounds() {
+    return this.matches;
   }
 
   /** Moves where `side` wants to stand across the court by dz metres (a drag). */
@@ -386,7 +398,7 @@ export class Match {
       };
       p.vx = p.vz = 0;
       p.aim = p.z;
-      this.tell(p.swing);
+      this.tell(side, p.swing);
       this.emit();
       return;
     }
@@ -397,7 +409,7 @@ export class Match {
       const hand: Hand = meet && (meet.p[2] - p.z) * racketSide(side) < 0 ? -1 : 1;
       p.swing = { serve: false, start: t, contact, hand, lift: 0, hit: null, miss, toss: null, done: false };
       if (miss) shot.missed = miss;
-      this.tell(p.swing);
+      this.tell(side, p.swing);
     };
     if (!meet) return whiff(null, t + WHIFF_LEAD);
     const lead = meet.t - t;
@@ -418,7 +430,7 @@ export class Match {
       done: false,
     };
     shot.missed = null;
-    this.tell(p.swing);
+    this.tell(side, p.swing);
   }
 
   /** The tap turned into a drag: its swing is dropped, unless its stroke has begun. */
@@ -431,7 +443,7 @@ export class Match {
     p.swing = null;
     p.aim = p.z;
     if (this.shot && s.miss && this.shot.missed === s.miss) this.shot.missed = null;
-    if (this.online()) this.notes.push({ type: "cancel" });
+    if (this.telling()) this.notes.push([side, { type: "cancel" }]);
     if (s.serve) this.emit();
   }
 
@@ -634,11 +646,16 @@ export class Match {
     return this.players[0].who === "remote" || this.players[1].who === "remote";
   }
 
+  /** Notes are kept: for the other phone (T2), or for watchers (`relay`). */
+  private telling() {
+    return this.relay || this.online();
+  }
+
   /** Tells the other phone about a swing of this phone's player (or bot). */
-  private tell(s: Swing) {
-    if (!this.online()) return;
+  private tell(side: Side, s: Swing) {
+    if (!this.telling()) return;
     const { start, contact, hand, lift, serve, toss } = s;
-    this.notes.push({ type: "swing", start, contact, hand, lift, serve, to: s.hit ? s.hit.to : null, toss });
+    this.notes.push([side, { type: "swing", start, contact, hand, lift, serve, to: s.hit ? s.hit.to : null, toss }]);
   }
 
   private startPoint(t: number) {
@@ -820,7 +837,7 @@ export class Match {
     this.shot = { by, flight, net, land, second, meet, reach, landed: false, missed: null };
     this.flight = flight;
     this.blend = null;
-    if (this.players[by].who !== "remote" && this.online()) this.notes.push({ type: "shot", flight, clean });
+    if (this.players[by].who !== "remote" && this.telling()) this.notes.push([by, { type: "shot", flight, clean }]);
     this.shots++;
     this.fx.push({ type: "hit", t: flight.t0, p: flight.p, by, clean });
     if (this.players[r].who === "bot" && meet) this.planReturn(r, flight.t0);
@@ -869,7 +886,7 @@ export class Match {
 
   /** The point is over. `tell`: this phone called it, so the other phone hears (T2). */
   private endPoint(t: number, winner: Side, why: Why, miss: Miss | null, tell: boolean) {
-    if (tell && this.online()) this.notes.push({ type: "point", n: this.score[0] + this.score[1], t, winner, why, miss });
+    if (tell && this.telling()) this.notes.push([0, { type: "point", n: this.score[0] + this.score[1], t, winner, why, miss }]);
     this.score = winner === 0 ? [this.score[0] + 1, this.score[1]] : [this.score[0], this.score[1] + 1];
     this.phase = "point";
     this.endedAt = t;

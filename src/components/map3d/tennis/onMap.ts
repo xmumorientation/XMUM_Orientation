@@ -1,6 +1,6 @@
 import { Board, hostOnBoard } from "./board";
 import { COURT_ORDER, type LobbyView } from "./lobby";
-import type { Transport } from "./net";
+import type { Room, Transport } from "./net";
 import { Online } from "./online";
 import { playerProfile, shirtsOf } from "./shirts";
 
@@ -12,7 +12,8 @@ import { playerProfile, shirtsOf } from "./shirts";
 // Play with Bot (2026-10-27): a practice match against the bot, with no queue and no other phone, still takes a
 // court (so it counts against the 3) and shows on the board like a real match, but the match itself (TennisMap.tsx's
 // botGame()) plays entirely on this phone, so it is not built here (this file stays free of React and the game's
-// own simulation, so its tests stay plain). Only one of Play or Play with Bot runs at once.
+// own simulation, so its tests stay plain). The seat joins the match's room, where relay.ts sends the match to its
+// watchers. Only one of Play or Play with Bot runs at once.
 
 export type OnMapPhase = "idle" | "queue" | "match";
 
@@ -30,8 +31,8 @@ export type OnMapView = {
 
 export type Profile = { name: string; color: string };
 
-/** This phone's practice match against the bot: its court and board key, and who it plays as. */
-export type BotSeat = { key: string; court: number; profile: Profile };
+/** This phone's practice match against the bot: its court and board key, who it plays as, and its watchers' room. */
+export type BotSeat = { key: string; court: number; profile: Profile; room: Room };
 
 const IDLE: OnMapView = { phase: "idle", lobby: null, match: null };
 
@@ -94,7 +95,7 @@ export class TennisOnMap {
     if (court === undefined) return false;
     const profile = playerProfile(who.name, who.color);
     const key = `${court}:bot:${Math.random().toString(36).slice(2, 10)}:${Date.now().toString(36)}`;
-    this.bot = { key, court, profile };
+    this.bot = { key, court, profile, room: this.transport.join(`match:${key}`) };
     this.board.say({ court, key, colors: shirtsOf(profile.color, profile.color) });
     this.set({ phase: "match", lobby: null, match: key });
     return true;
@@ -103,6 +104,7 @@ export class TennisOnMap {
   /** Off the court (mid-match the other player wins) and out of the queue: the end card's Leave, or the map closed. */
   leave() {
     if (this.bot) {
+      this.bot.room.leave();
       this.bot = null;
       this.board.say(null);
       this.set(IDLE);
@@ -117,6 +119,7 @@ export class TennisOnMap {
     this.closed = true;
     this.online?.close();
     if (this.bot) {
+      this.bot.room.leave();
       this.bot = null;
       this.board.say(null);
     }

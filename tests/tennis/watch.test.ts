@@ -2,9 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import { Board, hostOnBoard } from "../../src/components/map3d/tennis/board";
 import { parseKey } from "../../src/components/map3d/tennis/lobby";
-import type { Fx, MatchView } from "../../src/components/map3d/tennis/match";
+import { Match, type Fx, type MatchView } from "../../src/components/map3d/tennis/match";
 import type { Transport } from "../../src/components/map3d/tennis/net";
 import { Online } from "../../src/components/map3d/tennis/online";
+import { Relay } from "../../src/components/map3d/tennis/relay";
 import { Watch, WATCH_MAX } from "../../src/components/map3d/tennis/watch";
 import { Hub } from "./hub";
 
@@ -160,5 +161,58 @@ describe("watching a match", () => {
     expect(watchers.map((w) => w.watch.status)).toEqual([...Array(WATCH_MAX).fill("watching"), "full", "full"]);
     // the players play on
     expect(playing(a) && playing(b)).toBe(true);
+  });
+
+  it("watches a match against the bot, played on one phone and relayed, from mid-match", () => {
+    const hub = new Hub(0.05);
+    const key = "1:bot:abc:def";
+    // two bots stand in for the player and the bot: the relay sends both sides alike
+    const match = new Match(42, ["bot", "bot"]);
+    const spy = counted(hub.transport("p"));
+    const relay = new Relay(spy.transport.join(`match:${key}`), match);
+    const fx: Fx[] = [];
+    const play = (w: Watcher[], seconds: number, until?: () => boolean) => {
+      const end = hub.now + seconds;
+      while (hub.now < end) {
+        hub.advance(hub.now + DT);
+        match.step(hub.now);
+        relay.tick(hub.now);
+        fx.push(...match.drain());
+        for (const x of w) {
+          const t = x.watch.time();
+          if (t === null) continue;
+          x.watch.advance(t);
+          if (x.watch.ready) x.readyAt ??= t;
+          x.fx.push(...x.watch.match.drain());
+        }
+        if (until?.()) return true;
+      }
+      return false;
+    };
+    // nobody watches: nothing goes
+    play([], 8);
+    expect(spy.sent).toEqual([]);
+    const w: Watcher = { watch: new Watch(hub.transport("w"), key, () => hub.now - 2.4, () => hub.now * 1000), fx: [], readyAt: null };
+    expect(play([w], 600, () => match.phase === "over")).toBe(true);
+    const same = () => w.watch.match.score.join() === match.score.join();
+    expect(same() || play([w], 2, same)).toBe(true);
+    // drawn a little behind: the last point's pause, then over
+    expect(play([w], 5, () => w.watch.match.phase === "over")).toBe(true);
+    const hits = (all: Fx[], from: number) => all.filter((e) => e.type === "hit" && e.t > from) as Extract<Fx, { type: "hit" }>[];
+    const from = w.readyAt! + 0.5;
+    const theirs = hits(fx, from);
+    const mine = hits(w.fx, from);
+    expect(theirs.length).toBeGreaterThan(4);
+    expect(mine.length).toBe(theirs.length);
+    mine.forEach((e, i) => {
+      expect(e.by).toBe(theirs[i].by);
+      expect(e.t).toBeCloseTo(theirs[i].t, 6);
+      e.p.forEach((c, k) => expect(c).toBeCloseTo(theirs[i].p[k], 6));
+    });
+    // Play again: the watcher starts over with it
+    match.reset(hub.now);
+    play([w], 3);
+    expect(w.watch.match.getView().phase).not.toBe("over");
+    expect(w.watch.match.score).toEqual(match.score);
   });
 });

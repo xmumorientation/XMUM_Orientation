@@ -8,6 +8,7 @@ import type { MapControls as MapControlsImpl } from "three-stdlib";
 import { Match } from "./match";
 import type { Online } from "./online";
 import { type BotSeat, TennisOnMap } from "./onMap";
+import { Relay } from "./relay";
 import { shirtsOf } from "./shirts";
 import { CourtSurface } from "./surface";
 import { Clock, onlineGame, openTransport, queueStatus, TennisCourt, TennisHud, type Game, type TennisOptions } from "./TennisGame";
@@ -25,12 +26,16 @@ export async function openTennisOnMap(net: TennisOptions["net"]) {
 const games = new WeakMap<Online, Game>();
 const botGames = new WeakMap<BotSeat, Game>();
 
-/** This phone's practice match (onMap.ts's BotSeat), the same object for as long as it lasts. No network. */
+/**
+ * This phone's practice match (onMap.ts's BotSeat), the same object for as long as it lasts. It plays here alone;
+ * the relay sends it to whoever watches.
+ */
 function botGame(courts: TennisOnMap, bot: BotSeat): Game {
   let game = botGames.get(bot);
   if (game) return game;
   const { profile, court } = bot;
   const match = new Match(Math.floor(Math.random() * 1e9), ["player", "bot"]);
+  const relay = new Relay(bot.room, match);
   const clock = new Clock();
   game = {
     mode: "bot",
@@ -45,9 +50,13 @@ function botGame(courts: TennisOnMap, bot: BotSeat): Game {
       colors: shirtsOf(profile.color, profile.color),
       time: () => clock.tick(performance.now()),
       timeAt: (stamp) => clock.at(stamp),
-      advance: (t) => match.step(t),
+      advance: (t) => {
+        match.step(t);
+        relay.tick(t);
+      },
       live: () => match.phase !== "over",
-      busy: () => match.busy(),
+      // watched, it keeps moving on (and sending), as an online match does
+      busy: () => match.busy() || relay.watched,
     },
     online: null,
     wake: () => {},
