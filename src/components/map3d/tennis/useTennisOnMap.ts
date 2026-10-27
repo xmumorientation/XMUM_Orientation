@@ -89,6 +89,10 @@ export function useTennisOnMap(settings: TennisSettings | null | undefined, full
     // the queue shows on the card; after the match, the map is left as it was
     setCard(false);
   }, [courts, profile]);
+  const playBot = useCallback(() => {
+    if (!courts || !profile) return;
+    if (courts.playBot(profile)) setCard(false);
+  }, [courts, profile]);
 
   return {
     /** The game is open and its code has loaded: the courts show their matches, and the court's card can open. */
@@ -105,6 +109,7 @@ export function useTennisOnMap(settings: TennisSettings | null | undefined, full
     showCard: useCallback(() => setCard(true), []),
     hideCard: useCallback(() => setCard(false), []),
     play,
+    playBot,
     /** Admin closed the game while this phone was playing or queued: say so, until dismissed. */
     closed,
     dismissClosed: useCallback(() => setClosed(false), []),

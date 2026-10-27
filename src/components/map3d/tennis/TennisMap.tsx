@@ -5,15 +5,17 @@ import { X } from "lucide-react";
 import { useEffect, useMemo, useSyncExternalStore } from "react";
 import type { MapControls as MapControlsImpl } from "three-stdlib";
 
+import { Match } from "./match";
 import type { Online } from "./online";
-import { TennisOnMap } from "./onMap";
+import { type BotSeat, TennisOnMap } from "./onMap";
+import { shirtsOf } from "./shirts";
 import { CourtSurface } from "./surface";
-import { onlineGame, openTransport, queueStatus, TennisCourt, TennisHud, type Game, type TennisOptions } from "./TennisGame";
+import { Clock, onlineGame, openTransport, queueStatus, TennisCourt, TennisHud, type Game, type TennisOptions } from "./TennisGame";
 import { LiveCourts } from "./TennisLive";
 
 // DRAFT: the tennis game on the map pages (docs/ROADMAP.md, item 9, batch T3b): the courts in the scene (every busy
-// court, this phone's match), the tennis court's card (Play, the queue) and the match's HUD. useTennisOnMap loads
-// this file only while Admin has the game open, so the map's own chunk does not grow.
+// court, this phone's match), the tennis court's card (Play, Play with Bot, the queue) and the match's HUD.
+// useTennisOnMap loads this file only while Admin has the game open, so the map's own chunk does not grow.
 
 /** The page's courts: one transport and one board (onMap.ts). */
 export async function openTennisOnMap(net: TennisOptions["net"]) {
@@ -21,9 +23,43 @@ export async function openTennisOnMap(net: TennisOptions["net"]) {
 }
 
 const games = new WeakMap<Online, Game>();
+const botGames = new WeakMap<BotSeat, Game>();
+
+/** This phone's practice match (onMap.ts's BotSeat), the same object for as long as it lasts. No network. */
+function botGame(courts: TennisOnMap, bot: BotSeat): Game {
+  let game = botGames.get(bot);
+  if (game) return game;
+  const { profile, court } = bot;
+  const match = new Match(Math.floor(Math.random() * 1e9), ["player", "bot"]);
+  const clock = new Clock();
+  game = {
+    mode: "bot",
+    auto: false,
+    at: null,
+    profile,
+    solo: {
+      id: bot.key,
+      match,
+      court,
+      names: [profile.name, "Bot"],
+      colors: shirtsOf(profile.color, profile.color),
+      time: () => clock.tick(performance.now()),
+      timeAt: (stamp) => clock.at(stamp),
+      advance: (t) => match.step(t),
+      live: () => match.phase !== "over",
+      busy: () => match.busy(),
+    },
+    online: null,
+    wake: () => {},
+    leave: () => courts.leave(),
+  };
+  botGames.set(bot, game);
+  return game;
+}
 
 /** The game for this phone's seat, the same object for as long as the seat lasts (TennisCourt and TennisHud share it). */
 function gameOf(courts: TennisOnMap): Game | null {
+  if (courts.bot) return botGame(courts, courts.bot);
   const { online, profile } = courts;
   if (!online || !profile) return null;
   let game = games.get(online);
@@ -66,13 +102,14 @@ export function TennisMatchHud({ courts }: { courts: TennisOnMap }) {
 }
 
 /**
- * The tennis court's card, after a tap on the court: Play, then where this phone stands in the queue. `accent` and
- * `onAccent`: the page's colour (the group's, or the Welcome cyan) and the text on it. `onStations`: Admin's
- * building panel for the court, which a tap on the court opens while the game is closed.
+ * The tennis court's card, after a tap on the court: Matchmaking or Play with Bot, then where this phone stands in
+ * the queue. `accent` and `onAccent`: the page's colour (the group's, or the Welcome cyan) and the text on it.
+ * `onStations`: Admin's building panel for the court, which a tap on the court opens while the game is closed.
  */
 export function TennisCard({
   courts,
   onPlay,
+  onPlayBot,
   onClose,
   onStations,
   accent,
@@ -80,6 +117,7 @@ export function TennisCard({
 }: {
   courts: TennisOnMap;
   onPlay: () => void;
+  onPlayBot: () => void;
   onClose: () => void;
   onStations?: () => void;
   accent: string;
@@ -88,6 +126,7 @@ export function TennisCard({
   const view = useSyncExternalStore(courts.subscribe, courts.getView, courts.getView);
   const busy = useSyncExternalStore(courts.board.subscribe, courts.board.getView, courts.board.getView).length;
   const queued = view.phase === "queue";
+  const full = busy >= 3;
   return (
     <div className="pointer-events-auto rounded-2xl bg-white px-3 py-2.5 text-sm text-stone-900 shadow-lg">
       <div className="flex items-start justify-between gap-3">
@@ -117,7 +156,7 @@ export function TennisCard({
           </button>
         )}
       </div>
-      <div className="mt-2 flex gap-2">
+      <div className="mt-2 flex flex-wrap gap-2">
         {queued ? (
           <button
             type="button"
@@ -134,7 +173,15 @@ export function TennisCard({
               style={{ background: accent, color: onAccent }}
               onClick={onPlay}
             >
-              Play
+              Matchmaking
+            </button>
+            <button
+              type="button"
+              className="h-11 flex-1 rounded-full font-bold text-stone-900 ring-1 ring-black/15 disabled:opacity-40"
+              onClick={onPlayBot}
+              disabled={full}
+            >
+              Play with Bot
             </button>
             {onStations && (
               <button

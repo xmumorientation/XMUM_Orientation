@@ -138,6 +138,43 @@ describe("tennis on the map pages", () => {
     expect(a.rooms()).toEqual([]);
   });
 
+  it("plays a practice match against the bot: it takes a court on the board, and Leave frees it", () => {
+    const hub = new Hub(0.04);
+    const a = phone(hub, "a", "player");
+    const viewer = phone(hub, "v", "player");
+    expect(a.courts.playBot(RED)).toBe(true);
+    expect(a.courts.getView().phase).toBe("match");
+    expect(run(hub, [a, viewer], 1, () => viewer.courts.board.getView().length > 0)).toBe(true);
+    const seen = viewer.courts.board.getView();
+    // the bot's shirt differs from the player's own, as a real opponent's would
+    expect(seen).toMatchObject([{ court: 1 }]);
+    expect(seen[0].colors[0]).toBe(RED.color);
+    expect(seen[0].colors[1]).not.toBe(RED.color);
+    // Play (matchmaking) is blocked while the bot match is on, and so is a second Play with Bot
+    a.courts.play(GREEN);
+    expect(a.courts.getView().phase).toBe("match");
+    expect(a.courts.playBot(GREEN)).toBe(false);
+    a.courts.leave();
+    expect(run(hub, [a, viewer], 1, () => viewer.courts.board.getView().length === 0)).toBe(true);
+    expect(a.courts.getView().phase).toBe("idle");
+  });
+
+  it("refuses Play with Bot once all three courts are taken", () => {
+    const hub = new Hub(0.04);
+    const phones = ["a", "b", "c"].map((id, i) => phone(hub, id, "player", i * 0.2));
+    // each phone's own board must have heard of the last one's match before it looks for a free court itself
+    for (const p of phones) {
+      expect(p.courts.playBot(RED)).toBe(true);
+      run(hub, phones, 1);
+    }
+    expect(phones[0].courts.board.getView()).toHaveLength(3);
+    const fourth = phone(hub, "d", "player", 0.9);
+    run(hub, [...phones, fourth], 1);
+    expect(fourth.courts.board.getView()).toHaveLength(3);
+    expect(fourth.courts.playBot(GREEN)).toBe(false);
+    expect(fourth.courts.getView().phase).toBe("idle");
+  });
+
   it("frees the court for everyone else when the players' phones close", () => {
     const hub = new Hub(0.04);
     const [a, b] = [phone(hub, "a", "bot"), phone(hub, "b", "bot", 0.9)];
