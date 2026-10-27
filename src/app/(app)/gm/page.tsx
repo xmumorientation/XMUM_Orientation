@@ -1,12 +1,12 @@
 "use client";
 
 import { Check, CircleDashed, TriangleAlert, Undo2, X } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
 
 import { groupSwatch } from "@/components/freshie/groupTheme";
 import { KEY_COLORS, KEY_NAMES } from "@/components/freshie/items/KeyEmblem";
 import { vxDisplay, vxSlab } from "@/components/home/fonts";
-import { usePhaseTimer } from "@/components/PhaseTimerProvider";
+import { usePhases } from "@/components/PhaseTimerProvider";
 import { useProfile } from "@/components/ProfileProvider";
 import "@/components/staff/game/game-control.css";
 import { ConfirmSheet, StatusLine, useStatus } from "@/components/staff/game/parts";
@@ -173,7 +173,19 @@ export default function GmPanelPage() {
   const profile = useProfile();
   const supabase = useMemo(() => supabaseBrowser(), []);
   const { queue, failed, dismissFailed, submit } = useOfflineQueue();
-  const { phases, offsetMs } = usePhaseTimer();
+  const { phases, offsetMs } = usePhases();
+  // The page no longer re-renders every second (usePhases has no tick), so
+  // re-render once when the Day 2 phase reaches its end: phaseOn below then
+  // turns off on time.
+  const [, rerender] = useReducer((n: number) => n + 1, 0);
+  const day2EndsAt = phases.find((p) => p.key === "day2" && p.state === "active")?.ends_at ?? null;
+  useEffect(() => {
+    if (!day2EndsAt) return;
+    const ms = Date.parse(day2EndsAt) - (Date.now() + offsetMs);
+    if (!(ms > 0)) return;
+    const timer = window.setTimeout(rerender, Math.min(ms + 50, 2_000_000_000));
+    return () => window.clearTimeout(timer);
+  }, [day2EndsAt, offsetMs]);
   const day2 = useDay2State();
   const { config } = useConfig();
   const places = projectorPlaces(config);
@@ -194,6 +206,12 @@ export default function GmPanelPage() {
   const [piecesFor, setPiecesFor] = useState<{ groupId: number; counts: Counts | null } | null>(null);
   const [days, setDays] = useState<DayStation[]>([]);
   const [undoAsk, setUndoAsk] = useState<UndoPreview | null>(null);
+  // Keep the undo prompt's "N min ago" current while it is open.
+  useEffect(() => {
+    if (!undoAsk) return;
+    const timer = window.setInterval(rerender, 30_000);
+    return () => window.clearInterval(timer);
+  }, [undoAsk]);
   // Day 1 reward waiting for the GM's confirmation.
   const [day1Ask, setDay1Ask] = useState<"win" | "lose" | null>(null);
   const [openAsk, setOpenAsk] = useState(false);

@@ -1,6 +1,6 @@
 "use client";
 
-import { CampusMap } from "@/components/CampusMap";
+import { PersistentCampusMap } from "@/components/campus-map/PersistentCampusMap";
 import { FreshieMap } from "@/components/freshie/FreshieMap";
 import { vxDisplay, vxSlab } from "@/components/home/fonts";
 import { useProfile } from "@/components/ProfileProvider";
@@ -37,7 +37,7 @@ export default function MapPage() {
             {profile.role === "admin" && " Select a building on the map to add or edit its stations."}
           </p>
         </header>
-        <CampusMap showGroupPins={showPins} canManageStations={profile.role === "admin"} />
+        <PersistentCampusMap showGroupPins={showPins} canManageStations={profile.role === "admin"} />
       </div>
     );
   }
@@ -55,7 +55,7 @@ export default function MapPage() {
         subtitle="Live game stations. Tap the map for a full-screen view. Tap a station or a building's badge for details."
       />
 
-      <CampusMap showGroupPins={showPins} />
+      <PersistentCampusMap showGroupPins={showPins} />
     </div>
   );
 }

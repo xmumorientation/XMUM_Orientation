@@ -1,6 +1,6 @@
 "use client";
 
-import { CampusMap } from "@/components/CampusMap";
+import { PersistentCampusMap } from "@/components/campus-map/PersistentCampusMap";
 import { FaciTrackingPanel } from "@/components/FaciTrackingPanel";
 import { vxDisplay, vxSlab } from "@/components/home/fonts";
 import { useGroup } from "@/components/useGroup";
@@ -40,7 +40,7 @@ export function FreshieMap({ showGroupPins }: { showGroupPins: boolean }) {
       </header>
 
       <FaciTrackingPanel />
-      <CampusMap showGroupPins={showGroupPins} />
+      <PersistentCampusMap showGroupPins={showGroupPins} />
     </div>
   );
 }

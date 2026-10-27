@@ -19,6 +19,33 @@ const PUBLIC_PATHS = [
   "/blindbox",
 ];
 
+// Routes under src/app/(app). Its layout reads the profile and sends an
+// unapproved account to /login/pending, so the middleware skips its own
+// profile query there (one Supabase round trip less per navigation and
+// prefetch). Keep this list in step with the (app) folders.
+const APP_LAYOUT_ROOTS = [
+  "/admin",
+  "/attendance",
+  "/checkin",
+  "/code",
+  "/committee",
+  "/dashboard",
+  "/faq",
+  "/gm",
+  "/guardian",
+  "/inventory",
+  "/map",
+  "/profile",
+  "/scan",
+  "/schedule",
+  "/token",
+  "/transactions",
+];
+
+function underAppLayout(path: string) {
+  return APP_LAYOUT_ROOTS.some((root) => path === root || path.startsWith(root + "/"));
+}
+
 function denyGroupPass(request: NextRequest, reason: string, groupId?: string) {
   const url = request.nextUrl.clone();
   url.pathname = "/group-pass/denied";
@@ -110,9 +137,11 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  const {
-    data: { user }, error: authError,
-  } = await supabase.auth.getUser();
+  // getClaims() refreshes an expired session like getUser(), but verifies the
+  // JWT locally when the project uses asymmetric signing keys (no Auth round
+  // trip). With the legacy shared secret it falls back to getUser().
+  const { data: claimsData, error: authError } = await supabase.auth.getClaims();
+  const userId = claimsData?.claims.sub ?? null;
 
   // A temporary Auth outage is not a logout. Let the user retry the request.
   if (authError && (authError.name === "AuthRetryableFetchError" || (authError.status ?? 0) >= 500)) {
@@ -126,7 +155,7 @@ export async function middleware(request: NextRequest) {
 
   const isPublic = PUBLIC_PATHS.some((p) => path.startsWith(p));
 
-  if (!user && !isPublic) {
+  if (!userId && !isPublic) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     // /activate?t=... arrives from an NFC tap — preserve it through login
@@ -134,11 +163,11 @@ export async function middleware(request: NextRequest) {
     return redirectWithSession(url);
   }
 
-  if (user && !path.startsWith("/auth/callback")) {
+  if (userId && !path.startsWith("/auth/callback") && !underAppLayout(path)) {
     const { data: profile } = await supabase
       .from("profiles")
       .select("approved")
-      .eq("id", user.id)
+      .eq("id", userId)
       .maybeSingle();
     const approved = profile?.approved !== false;
     const url = request.nextUrl.clone();

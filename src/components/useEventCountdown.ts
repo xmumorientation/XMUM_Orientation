@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from "react";
 import { EVENT } from "@/components/home/data";
 import { usePhaseTimerOptional } from "@/components/PhaseTimerProvider";
 import { supabaseBrowser } from "@/lib/supabase/client";
+import { useScheduleDays, useScheduleItems, type ScheduleDay } from "@/components/useScheduleFeed";
 import type { ScheduleItem } from "@/lib/types";
 
 export interface EventCountdown {
@@ -56,6 +57,8 @@ export function liveEnd(i: Pick<ScheduleItem, "timer_end_override" | "ends_at">)
   return i.timer_end_override ?? i.ends_at;
 }
 
+const NO_DAYS: ScheduleDay[] = [];
+
 // One countdown for the whole event, used by the Welcome page, Freshie Home
 // and Live control. Schedule items run by their planned times by themselves:
 //   before Day N's first item   → "ORIENTATION DAY N STARTS IN"
@@ -70,37 +73,22 @@ export function liveEnd(i: Pick<ScheduleItem, "timer_end_override" | "ends_at">)
 export function useEventCountdown(): EventCountdown {
   // Inside the app shell, reuse the shared 1s tick and server clock offset.
   const shared = usePhaseTimerOptional();
-  const [items, setItems] = useState<CountdownItem[] | null>(null);
-  const [dayDates, setDayDates] = useState<{ day_label: string; day_date: string }[]>([]);
+  const allItems = useScheduleItems();
+  const days = useScheduleDays();
+  // The countdown walks the items in planned-time order (nulls last).
+  const items = useMemo<CountdownItem[] | null>(
+    () =>
+      allItems
+        ? [...allItems].sort((x, y) =>
+            x.starts_at === null || y.starts_at === null
+              ? Number(x.starts_at === null) - Number(y.starts_at === null)
+              : Date.parse(x.starts_at) - Date.parse(y.starts_at)
+          )
+        : null,
+    [allItems]
+  );
+  const dayDates = days ?? NO_DAYS;
   const [now, setNow] = useState<number | null>(null);
-
-  useEffect(() => {
-    const supabase = supabaseBrowser();
-    let active = true;
-    async function load() {
-      const { data, error } = await supabase
-        .from("schedule_items")
-        .select("id, day_label, title, starts_at, ends_at, timer_state, timer_end_override, timer_paused_remaining")
-        .order("starts_at", { nullsFirst: false });
-      // Columns missing (migration 0049 not run yet): count to the dates.
-      if (active) setItems(error ? [] : ((data as CountdownItem[]) ?? []));
-    }
-    async function loadDays() {
-      const { data } = await supabase.from("schedule_days").select("day_label, day_date").order("day_date");
-      if (active && data) setDayDates(data);
-    }
-    load();
-    loadDays();
-    const channel = supabase
-      .channel(`event-countdown-${Math.random().toString(36).slice(2)}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "schedule_items" }, load)
-      .on("postgres_changes", { event: "*", schema: "public", table: "schedule_days" }, loadDays)
-      .subscribe();
-    return () => {
-      active = false;
-      supabase.removeChannel(channel);
-    };
-  }, []);
 
   // Own 1s tick only when there is no provider; the provider already ticks.
   useEffect(() => {

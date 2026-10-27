@@ -1,12 +1,12 @@
 "use client";
 
 import { Gamepad2, Info, Star, UtensilsCrossed, type LucideIcon } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { vxSlab, vxDisplay } from "@/components/home/fonts";
 import { useEventCountdown } from "@/components/useEventCountdown";
 import { useGroup } from "@/components/useGroup";
-import { supabaseBrowser } from "@/lib/supabase/client";
+import { useScheduleItems } from "@/components/useScheduleFeed";
 import type { ScheduleItem } from "@/lib/types";
 
 import "./freshie.css";
@@ -45,37 +45,17 @@ export function FreshieSchedule({ vortexa = false }: { vortexa?: boolean }) {
   const theme = vortexa ? VORTEXA_THEME : themeFromColor(group?.color);
   const { nowId: onId } = useEventCountdown();
   const nowId = vortexa ? onId : null;
-  const supabase = useMemo(() => supabaseBrowser(), []);
-  const [items, setItems] = useState<ScheduleItem[] | null>(null);
+  // Shared, cached feed (useScheduleFeed.ts): a return visit shows the last schedule at once.
+  const feedItems = useScheduleItems();
+  const items = useMemo<ScheduleItem[] | null>(
+    () =>
+      feedItems
+        ? [...feedItems].sort((a, b) => a.day_label.localeCompare(b.day_label) || a.sort_order - b.sort_order || a.id - b.id)
+        : null,
+    [feedItems]
+  );
   const [active, setActive] = useState(0);
   const picked = useRef(false);
-
-  const load = useCallback(async () => {
-    const { data } = await supabase
-      .from("schedule_items")
-      .select("*")
-      .order("day_label")
-      .order("sort_order")
-      .order("id");
-    return (data as ScheduleItem[]) ?? [];
-  }, [supabase]);
-
-  useEffect(() => {
-    let activeLoad = true;
-    async function run() {
-      const next = await load();
-      if (activeLoad) setItems(next);
-    }
-    run();
-    const channel = supabase
-      .channel("fh-schedule")
-      .on("postgres_changes", { event: "*", schema: "public", table: "schedule_items" }, run)
-      .subscribe();
-    return () => {
-      activeLoad = false;
-      supabase.removeChannel(channel);
-    };
-  }, [load, supabase]);
 
   const days = useMemo(() => [...new Set((items ?? []).map((item) => item.day_label))], [items]);
 

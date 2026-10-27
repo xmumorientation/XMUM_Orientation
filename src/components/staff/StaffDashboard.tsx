@@ -9,7 +9,7 @@ import { ChecklistStop, Countdown, PhaseCard } from "@/components/freshie/Freshi
 import { themeFromColor } from "@/components/freshie/groupTheme";
 import { nexusBody, vxDisplay, vxSlab } from "@/components/home/fonts";
 import { NavIcon } from "@/components/NavIcon";
-import { usePhaseTimer } from "@/components/PhaseTimerProvider";
+import { usePhases } from "@/components/PhaseTimerProvider";
 import { useProfile } from "@/components/ProfileProvider";
 import { useOpenShellMenu } from "@/components/ShellMenu";
 import { useGroup } from "@/components/useGroup";
@@ -38,7 +38,7 @@ export function StaffDashboard() {
   const openMenu = useOpenShellMenu();
   const workspace = workspaces[profile.role] ?? committee;
   const isFaci = profile.role === "faci";
-  const { phases } = usePhaseTimer();
+  const { phases } = usePhases();
   const live = phases.some((p) => p.state === "active" || p.state === "paused");
   const theme = themeFromColor(isFaci ? group?.color : "#0DFCFD");
   const vars = {

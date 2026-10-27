@@ -131,7 +131,7 @@ function BoxFlow({
           <span className="bb-holo" aria-hidden />
           <div className="bb-ask-art" aria-hidden>
             <span className="bb-ask-light" />
-            <Image src="/blind-box-poster.jpg" alt="" width={640} height={640} sizes="210px" priority className="bb-ask-box" />
+            <Image src="/blind-box-poster.webp" alt="" width={640} height={640} sizes="210px" priority className="bb-ask-box" />
             <i className="bb-star" data-c="pink" />
             <i className="bb-star" data-c="cyan" />
             <i className="bb-star" data-c="yellow" />

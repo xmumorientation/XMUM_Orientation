@@ -56,7 +56,7 @@ Ben chose true scale over the Figma layout.
   - the real-size bronze in metres: a 3.0 m figure (hat at the chest in the left hand, cane in the right, hair combed back) on a granite pedestal with a gold inscription, about 6.2 m in all;
   - it stands with its back to A3 (`STATUE_ROT_Y` in `geo.ts`);
   - Ben chose the detailed variant, with the bold inscription from another variant and the hair redone from his photo. Bench: `/map3d/statue-lab`.
-- **Flag:** one big pole flies a white XMUM flag with `public/xmum-logo-badge.png` (Ben: one big flag, not two). It is modelled at real size: a 15 m pole and a 3.6 × 2.4 m flag.
+- **Flag:** one big pole flies a white XMUM flag with `public/xmum-logo-badge.webp` (Ben: one big flag, not two). It is modelled at real size: a 15 m pole and a 3.6 × 2.4 m flag.
 - **Landmark scale:** the statue and the flag are drawn 4× larger than real (`LANDMARK_SCALE` in `geo.ts`) so they read at normal zoom. The zoom limit is 6 units, so the statue can be seen up close.
 - **Phase 2 (not started; only after Ben approves):**
   - roads (the walkways are drawn since 2026-10-17; the car roads are not), street lamps, the remaining buildings, trees and landscape (OSM has 841 tree points and 101 tree rows);

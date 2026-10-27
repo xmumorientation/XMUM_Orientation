@@ -7,11 +7,14 @@ import { usePhaseTimer } from "@/components/PhaseTimerProvider";
 import { StationStatusChip } from "@/components/ui";
 import { useConfig } from "@/components/useConfig";
 import { gameLength, otherGameRunning, saveGameLength } from "@/lib/gameLength";
+import { useStations } from "@/components/useStations";
+import { reloadSharedFeed, setSharedFeed } from "@/lib/sharedFeed";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import type { Phase, Station, StationStatus } from "@/lib/types";
 import { cn, formatCountdown, friendlyError } from "@/lib/utils";
 
 type StationRow = Pick<Station, "id" | "name" | "day" | "status">;
+const NO_STATIONS: StationRow[] = [];
 
 const PHASE_DAY: Record<string, 1 | 2> = { day1: 1, day2: 2 };
 // The game Live control runs for each day.
@@ -45,25 +48,11 @@ export function GameToggles({
   const { phases, offsetMs, tick } = usePhaseTimer();
   const { config } = useConfig();
   const [lengthDraft, setLengthDraft] = useState("");
-  const [stations, setStations] = useState<StationRow[]>([]);
+  const stations: StationRow[] = useStations() ?? NO_STATIONS;
   const [busy, setBusy] = useState(false);
   const [open, setOpen] = useState<string | null>(null);
 
-  const loadStations = useCallback(async () => {
-    const { data } = await supabase.from("stations").select("id, name, day, status").order("id");
-    setStations((data as StationRow[]) ?? []);
-  }, [supabase]);
-
-  useEffect(() => {
-    loadStations();
-    const channel = supabase
-      .channel(`live-control-stations-${crypto.randomUUID()}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "stations" }, loadStations)
-      .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [loadStations, supabase]);
+  const loadStations = useCallback(() => reloadSharedFeed("stations"), []);
 
   async function control(p: Phase, action: "start" | "resume" | "extend" | "end", minutes = 0) {
     // an unsaved length typed in the box counts for this Start
@@ -117,7 +106,7 @@ export function GameToggles({
   async function setStationStatus(id: number, status: StationStatus) {
     const { error } = await supabase.rpc("fn_set_station_status", { p_station_id: id, p_status: status });
     if (error) onError(friendlyError(error));
-    else setStations((s) => s.map((x) => (x.id === id ? { ...x, status } : x)));
+    else setSharedFeed<Station[]>("stations", (s) => (s ?? []).map((x) => (x.id === id ? { ...x, status } : x)));
   }
 
   const game = phases.find((p) => p.key === DAY_GAME[day]);
