@@ -8,7 +8,8 @@ import { supabaseBrowser } from "@/lib/supabase/client";
 import type { FaciStatus, GroupPosition } from "@/lib/types";
 import type { GroupPin } from "@/lib/groupPosition";
 import { MAX_DRAW_ACCURACY_M, groupPinColor } from "@/lib/mapGeo";
-import { friendlyError, timeAgo } from "@/lib/utils";
+import { LiveText } from "@/components/LiveAgo";
+import { friendlyError, timeAgoExact } from "@/lib/utils";
 
 /** "012-345 6789" → "60123456789" for wa.me. Assumes Malaysia when there's no country code. */
 export function whatsappNumber(phone: string) {
@@ -25,15 +26,15 @@ export function pinSummary(g: GroupPosition, pin: GroupPin | null, nowMs: number
     if (!g.gps_at) return "No location yet";
     const acc = g.gps_accuracy_m;
     return acc != null && acc > MAX_DRAW_ACCURACY_M
-      ? `Only a rough location (±${Math.round(acc)} m), ${timeAgo(g.gps_at, nowMs)}`
-      : `Outside the campus map, ${timeAgo(g.gps_at, nowMs)}`;
+      ? `Only a rough location (±${Math.round(acc)} m), ${timeAgoExact(g.gps_at, nowMs)}`
+      : `Outside the campus map, ${timeAgoExact(g.gps_at, nowMs)}`;
   }
-  if (pin.area) return `Last seen at ${pin.area} / ${timeAgo(pin.at, nowMs)}`;
+  if (pin.area) return `Last seen at ${pin.area} / ${timeAgoExact(pin.at, nowMs)}`;
   if (pin.source === "manual") {
-    return `Last seen at ${g.checkin_station_code ?? "a station"} / ${timeAgo(pin.at, nowMs)}`;
+    return `Last seen at ${g.checkin_station_code ?? "a station"} / ${timeAgoExact(pin.at, nowMs)}`;
   }
   const acc = pin.accuracyM != null ? `±${Math.round(pin.accuracyM)} m` : "accuracy unknown";
-  return `GPS ${acc} / ${timeAgo(pin.at, nowMs)}`;
+  return `GPS ${acc} / ${timeAgoExact(pin.at, nowMs)}`;
 }
 
 export function reportingSummary(g: GroupPosition) {
@@ -50,12 +51,10 @@ export function reportingSummary(g: GroupPosition) {
 export function GroupStatusList({
   positions,
   pins,
-  nowMs,
   onSelect,
 }: {
   positions: GroupPosition[];
   pins: Map<number, GroupPin | null>;
-  nowMs: number;
   onSelect: (groupId: number) => void;
 }) {
   const groups = useMemo(() => [...positions].sort((a, b) => a.group_id - b.group_id), [positions]);
@@ -67,7 +66,7 @@ export function GroupStatusList({
       <h2 className="border-b border-paper-200 px-3 py-2 text-sm font-semibold">Group locations</h2>
       <ul className="divide-y divide-paper-200">
         {groups.map((g) => (
-          <GroupRow key={g.group_id} g={g} pin={pins.get(g.group_id) ?? null} nowMs={nowMs} onSelect={onSelect} />
+          <GroupRow key={g.group_id} g={g} pin={pins.get(g.group_id) ?? null} onSelect={onSelect} />
         ))}
       </ul>
     </section>
@@ -88,12 +87,10 @@ function GroupDot({ groupId }: { groupId: number }) {
 function GroupRow({
   g,
   pin,
-  nowMs,
   onSelect,
 }: {
   g: GroupPosition;
   pin: GroupPin | null;
-  nowMs: number;
   onSelect: (groupId: number) => void;
 }) {
   const supabase = useMemo(() => supabaseBrowser(), []);
@@ -130,7 +127,7 @@ function GroupRow({
         >
           <span className="block truncate text-sm font-medium">{g.group_name}</span>
           <span className="block truncate text-xs text-ink-faint">
-            {pinSummary(g, pin, nowMs)}
+            <LiveText render={(now) => pinSummary(g, pin, now)} />
             {pin?.imprecise && pin.source === "gps" ? " / rough" : ""}
           </span>
         </button>
@@ -159,9 +156,13 @@ function GroupRow({
                   <span className="min-w-0 flex-1">
                     <span className="block truncate font-medium">{f.full_name ?? "Faci"}</span>
                     <span className="block truncate text-xs text-ink-faint">
-                      {f.last_gps_at
-                        ? `Phone last shared ${timeAgo(f.last_gps_at, nowMs)}`
-                        : "Phone hasn't shared location today"}
+                      {f.last_gps_at ? (
+                        <LiveText
+                          render={(now) => `Phone last shared ${timeAgoExact(f.last_gps_at!, now)}`}
+                        />
+                      ) : (
+                        "Phone hasn't shared location today"
+                      )}
                     </span>
                   </span>
                   {f.phone && (

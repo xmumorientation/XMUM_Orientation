@@ -9,6 +9,7 @@ import { nexusBody, vxDisplay } from "@/components/home/fonts";
 import { FreshieTabBar } from "@/components/freshie/FreshieTabBar";
 import { themeFromColor, VORTEXA_THEME } from "@/components/freshie/groupTheme";
 import { ShellMenuProvider } from "@/components/ShellMenu";
+import { PersistentMapProvider } from "@/components/campus-map/PersistentCampusMap";
 import { NavIcon } from "@/components/NavIcon";
 import { NewItemToast } from "@/components/NewItemToast";
 import { OpsHeader } from "@/components/staff/OpsHeader";
@@ -340,6 +341,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       <div className={showTabBar ? "app-scroll min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain" : undefined}>
       <ShellMenuProvider openMenu={() => setMenuOpen(true)}>
+      {/* Keeps the /map page's campus map alive between visits. */}
+      <PersistentMapProvider>
       <main
         className={cn(
           "mx-auto w-full px-3 pb-[calc(1.25rem+env(safe-area-inset-bottom))] pt-3 sm:px-5 sm:pb-8 sm:pt-5 lg:px-8 lg:py-6",
@@ -355,6 +358,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       >
         {children}
       </main>
+      </PersistentMapProvider>
       </ShellMenuProvider>
       </div>
 

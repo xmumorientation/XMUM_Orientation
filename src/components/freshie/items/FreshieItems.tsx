@@ -19,6 +19,7 @@ import { CODE_NAMES, cardState, keyLocations, zoneNames } from "./derive";
 import { KEY_NAMES, KeyEmblem } from "./KeyEmblem";
 import { ActivityList, BlueprintDetail, ItemShelf, KeyBanner, NfcSpot, ProjectorKeys, TokenDetail, type ShelfItem } from "./sections";
 import type { BoxKind, BoxReward, ItemsData } from "./types";
+import { useGameTimeLeft } from "./useItemsData";
 import { useNewPieces } from "./useNewPieces";
 
 // Freshie and facilitator Items page. Top: the three projectors, each over its
@@ -32,6 +33,14 @@ const PHASE_LABEL: Record<ItemsData["phase"], string> = {
   endgame: "Final 30 min",
   done: "Game over",
 };
+
+// The game's time left. Its own component, so only this re-renders every second.
+function GameClock({ fallback, sample }: { fallback: string | null; sample: boolean }) {
+  const live = useGameTimeLeft();
+  const timeLeft = sample ? fallback : live;
+  if (!timeLeft) return null;
+  return <span className="fi-game-clock"><Clock3 size={15} aria-hidden /><strong>{timeLeft}</strong><span>left to play</span></span>;
+}
 
 export function FreshieItems({
   data,
@@ -100,7 +109,7 @@ export function FreshieItems({
             {PHASE_LABEL[data.phase]}
             {sample && <span className="fi-sample">Sample data</span>}
           </span>
-          {data.timeLeft && <span className="fi-game-clock"><Clock3 size={15} aria-hidden /><strong>{data.timeLeft}</strong><span>left to play</span></span>}
+          <GameClock fallback={data.timeLeft} sample={sample} />
         </div>
       </header>
 

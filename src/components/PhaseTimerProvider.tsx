@@ -27,7 +27,15 @@ interface PhaseTimerValue {
   tick: number;
 }
 
-const PhaseTimerContext = createContext<PhaseTimerValue | null>(null);
+// Split in two so a page that only needs the phases does not re-render every
+// second: PhaseDataContext changes when the phases or the clock offset change,
+// TickContext every second. usePhases() reads only the first.
+interface PhaseData {
+  phases: Phase[];
+  offsetMs: number;
+}
+const PhaseDataContext = createContext<PhaseData | null>(null);
+const TickContext = createContext(0);
 
 export function PhaseTimerProvider({ children }: { children: React.ReactNode }) {
   const [phases, setPhases] = useState<Phase[]>([]);
@@ -104,27 +112,39 @@ export function PhaseTimerProvider({ children }: { children: React.ReactNode }) 
     void supabase.rpc("fn_game_expire");
   }, [phases, offsetMs, tick, supabase]);
 
-  const value = useMemo(
-    () => ({ phases, offsetMs, tick }),
-    [phases, offsetMs, tick]
-  );
+  const data = useMemo(() => ({ phases, offsetMs }), [phases, offsetMs]);
 
   return (
-    <PhaseTimerContext.Provider value={value}>
-      {children}
-    </PhaseTimerContext.Provider>
+    <PhaseDataContext.Provider value={data}>
+      <TickContext.Provider value={tick}>{children}</TickContext.Provider>
+    </PhaseDataContext.Provider>
   );
 }
 
-export function usePhaseTimer(): PhaseTimerValue {
-  const v = useContext(PhaseTimerContext);
-  if (!v)
-    throw new Error("usePhaseTimer must be used inside PhaseTimerProvider");
+/**
+ * The phases and the server clock offset, without the 1 s tick. Use this
+ * unless the component shows a live countdown; it re-renders only when the
+ * phases change.
+ */
+export function usePhases(): PhaseData {
+  const v = useContext(PhaseDataContext);
+  if (!v) throw new Error("usePhases must be used inside PhaseTimerProvider");
   return v;
 }
 
+/** usePhases() plus the 1 s tick: for live countdowns only (re-renders every second). */
+export function usePhaseTimer(): PhaseTimerValue {
+  const data = useContext(PhaseDataContext);
+  const tick = useContext(TickContext);
+  if (!data)
+    throw new Error("usePhaseTimer must be used inside PhaseTimerProvider");
+  return useMemo(() => ({ ...data, tick }), [data, tick]);
+}
+
 // For components that also render outside the app shell (the public Welcome
-// page has no provider). Returns null there.
+// page has no provider). Returns null there. Includes the 1 s tick.
 export function usePhaseTimerOptional(): PhaseTimerValue | null {
-  return useContext(PhaseTimerContext);
+  const data = useContext(PhaseDataContext);
+  const tick = useContext(TickContext);
+  return useMemo(() => (data ? { ...data, tick } : null), [data, tick]);
 }

@@ -30,11 +30,12 @@ import { GAME_PHASES, SPONSORS, SPONSORS_ARE_EXAMPLES } from "@/components/home/
 import { vxDisplay, vxSlab } from "@/components/home/fonts";
 import { ChallengeBanner } from "@/components/ChallengeBanner";
 import { GroupBadge } from "@/components/GroupBadge";
-import { usePhaseTimer } from "@/components/PhaseTimerProvider";
+import { usePhases, usePhaseTimer } from "@/components/PhaseTimerProvider";
 import { useProfile } from "@/components/ProfileProvider";
 import { useOpenShellMenu } from "@/components/ShellMenu";
 import { EDIT_PROFILE_EVENT } from "@/components/TopNav";
 import { useGroup } from "@/components/useGroup";
+import { useScoreboard } from "@/components/useScoreboard";
 import { countdownParts, useEventCountdown } from "@/components/useEventCountdown";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { PIECES_PER_SET, PROJECTOR_LOCATIONS, type Group } from "@/lib/types";
@@ -183,7 +184,7 @@ function WelcomeStop({
   group: Group | null;
   isFaci: boolean;
 }) {
-  const { phases } = usePhaseTimer();
+  const { phases } = usePhases();
   const live = phases.some((p) => p.state === "active" || p.state === "paused");
   return (
     <section id="fh-welcome" className="fh-stop fh-center" aria-labelledby="fh-welcome-title">
@@ -904,42 +905,15 @@ function GameStop() {
 // ── Scoreboard ────────────────────────────────────────────────────────────
 
 type ScoreRow = { id: number; name: string; color: string | null; token_balance: number };
+const NO_ROWS: ScoreRow[] = [];
 
 function ScoresStop({ groupId, onRows }: { groupId: number | null; onRows?: (rows: ScoreRow[]) => void }) {
-  const supabase = useMemo(() => supabaseBrowser(), []);
-  const [rows, setRows] = useState<ScoreRow[]>([]);
-
+  // Shared with Staff Home and cached between visits (useScoreboard).
+  const board = useScoreboard();
+  const rows: ScoreRow[] = board ?? NO_ROWS;
   useEffect(() => {
-    let active = true;
-    async function load() {
-      const { data } = await supabase.rpc("fn_scoreboard");
-      if (!active || !data) return;
-      const next = (data as ScoreRow[])
-        .map((row) => ({
-          id: row.id,
-          name: row.name,
-          color: row.color,
-          token_balance: row.token_balance ?? 0,
-        }))
-        .sort((a, b) => a.id - b.id);
-      setRows(next);
-      onRows?.(next);
-    }
-    load();
-    const refreshVisible = () => { if (document.visibilityState === "visible") void load(); };
-    const timer = window.setInterval(refreshVisible, 30000);
-    document.addEventListener("visibilitychange", refreshVisible);
-    const channel = supabase
-      .channel(`fh-scores-${crypto.randomUUID()}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "groups" }, load)
-      .subscribe();
-    return () => {
-      active = false;
-      window.clearInterval(timer);
-      document.removeEventListener("visibilitychange", refreshVisible);
-      supabase.removeChannel(channel);
-    };
-  }, [supabase, onRows]);
+    if (board) onRows?.(board);
+  }, [board, onRows]);
 
   return (
     <section id="fh-scores" className="fh-stop" aria-labelledby="fh-scores-title">

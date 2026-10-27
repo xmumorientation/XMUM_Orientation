@@ -1,7 +1,7 @@
 "use client";
 
 import { StaffLocationSwitch } from "@/components/StaffLocationSharing";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Building2, CircleHelp, CircleDot, LayoutGrid, Trophy } from "lucide-react";
 import { MAP_BUILDINGS } from "@/lib/mapBuildings";
 import "@/components/campus-map/campus-map-controls.css";
@@ -13,6 +13,7 @@ import {
   MapToolbar,
 } from "@/components/campus-map/CampusMapPanels";
 import { CampusMapView, useMapView } from "@/components/campus-map/CampusMapView";
+import { useMapActive } from "@/components/campus-map/mapActive";
 import { useCampusMapData } from "@/components/campus-map/useCampusMapData";
 import { useTennisSettings } from "@/components/map3d/tennis/settings";
 import type { Station } from "@/lib/types";
@@ -36,15 +37,22 @@ export function CampusMap({
   hasSelection?: boolean;
 }) {
   const [view, fallBack] = useMapView();
+  // False while parked off-screen between visits (PersistentCampusMap).
+  const live = useMapActive();
   // The Lightbulbs layer is on the 2D map only; the 3D map lists the bulbs under it.
   const data = useCampusMapData({
     showGroupPins,
     canManageStations,
     bulbLayer: view === "2d",
     loadFunfair: view === "3d",
+    live,
   });
   // Full-screen viewer. The inline map stays still so the page can scroll.
   const [fullscreen, setFullscreen] = useState(false);
+  // Leaving the page (e.g. the back button) closes full screen, which is a portal over every page.
+  useEffect(() => {
+    if (!live) setFullscreen(false);
+  }, [live]);
   const panelView = view ?? "3d";
   // The tennis game on the 3D map's courts, while Admin has it open (Live control).
   const tennis = useTennisSettings();
@@ -102,6 +110,7 @@ export function CampusMap({
         onStationTap={onStationTap}
         fullscreen={fullscreen}
         onFullscreenChange={setFullscreen}
+        paused={!live}
         legend={<MapLegend layer={data.layer} showGroupPins={showGroupPins} />}
       />
       <CampusMapPanels

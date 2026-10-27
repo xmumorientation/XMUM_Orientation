@@ -18,7 +18,8 @@ import { groupSwatch, VORTEXA_THEME } from "@/components/freshie/groupTheme";
 import { nexusBody, vxDisplay, vxSlab } from "@/components/home/fonts";
 import { priceText, useMyBlindBoxes, type MyBlindBoxSeller } from "@/components/BlindBoxCard";
 import { GroupBadge } from "@/components/GroupBadge";
-import { usePhaseTimer } from "@/components/PhaseTimerProvider";
+import { usePhases } from "@/components/PhaseTimerProvider";
+import { useScoreboard } from "@/components/useScoreboard";
 import { useProfile } from "@/components/ProfileProvider";
 import { OPS_CHIP } from "@/components/staff/OpsHeader";
 import { supabaseBrowser } from "@/lib/supabase/client";
@@ -50,43 +51,13 @@ type HomeGroup = { id: number; name: string; color: string | null; token_balance
 /** Groups and their tokens, live: the scoreboard and the sky's cabins. Reads
  *  fn_scoreboard() because a GM may not select the groups table (0002 RLS); the
  *  30-second refresh covers the realtime events RLS does not send to a GM. */
-function useGroups() {
-  const supabase = useMemo(() => supabaseBrowser(), []);
-  const [groups, setGroups] = useState<HomeGroup[] | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    async function load() {
-      const { data: gs } = await supabase.rpc("fn_scoreboard");
-      if (!active || !gs) return;
-      setGroups(
-        (gs as HomeGroup[])
-          .map((g) => ({ ...g, token_balance: g.token_balance ?? 0 }))
-          .sort((a, b) => a.id - b.id)
-      );
-    }
-    load();
-    const refreshVisible = () => { if (document.visibilityState === "visible") void load(); };
-    const timer = window.setInterval(refreshVisible, 30000);
-    document.addEventListener("visibilitychange", refreshVisible);
-    const channel = supabase
-      .channel(`sh-groups-${crypto.randomUUID()}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "groups" }, load)
-      .subscribe();
-    return () => {
-      active = false;
-      window.clearInterval(timer);
-      document.removeEventListener("visibilitychange", refreshVisible);
-      supabase.removeChannel(channel);
-    };
-  }, [supabase]);
-
-  return groups;
+function useGroups(): HomeGroup[] | null {
+  return useScoreboard() ?? null;
 }
 
 /** Shown instead of the PhaseCard while no game phase runs, so the crew knows the game is not on. */
 function GameIdle() {
-  const { phases } = usePhaseTimer();
+  const { phases } = usePhases();
   const next = phases.find((p) => p.state === "pending");
   return (
     <div className="sh-idle" role="status">
@@ -100,7 +71,7 @@ function GameIdle() {
 }
 
 function WelcomeStop({ name, role }: { name: string; role: UserRole }) {
-  const { phases } = usePhaseTimer();
+  const { phases } = usePhases();
   const live = phases.some((p) => p.state === "active" || p.state === "paused");
   return (
     <section id="sh-welcome" className="fh-stop fh-center" aria-labelledby="sh-welcome-title">

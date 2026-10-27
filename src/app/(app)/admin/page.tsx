@@ -11,7 +11,8 @@ import {
 import { Day2Schedule } from "@/components/admin/Day2Schedule";
 import { GameMaster } from "@/components/admin/GameMaster";
 import { GameToggles } from "@/components/admin/GameToggles";
-import { usePhaseTimer } from "@/components/PhaseTimerProvider";
+import { usePhases } from "@/components/PhaseTimerProvider";
+import { useConfig } from "@/components/useConfig";
 import { NowOnWelcome } from "@/components/admin/NowOnWelcome";
 import { TENNIS_SWITCH } from "@/components/map3d/tennis/settings";
 import {
@@ -19,6 +20,7 @@ import {
   readAdminDayFilter,
   saveAdminDayFilter,
 } from "@/lib/adminDayFilter";
+import { reloadSharedFeed, useSharedFeed, type FeedSource } from "@/lib/sharedFeed";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { resetGames } from "@/lib/gameLength";
 import { cn, friendlyError } from "@/lib/utils";
@@ -37,15 +39,27 @@ interface LiveOps {
 // started and ended by hand), filtered by the Day selector (All / Day 1 / Day 2).
 // GameMaster (always live, Admin only): tokens, puzzle pieces, gift blind
 // boxes and the funfair's keys, for D-day backup.
+function liveOpsSource(): FeedSource<LiveOps> {
+  const supabase = supabaseBrowser();
+  return {
+    async load() {
+      const { data } = await supabase.rpc("fn_live_ops");
+      return (data as LiveOps | null) ?? undefined;
+    },
+    pollMs: 10_000,
+  };
+}
+
 export default function AdminControlRoomPage() {
   const supabase = useMemo(() => supabaseBrowser(), []);
-  const [ops, setOps] = useState<LiveOps | null>(null);
-  const [config, setConfig] = useState<Record<string, unknown>>({});
+  // Cached between visits (sharedFeed): the figures show at once and refresh every 10 s.
+  const ops = useSharedFeed("fn_live_ops", liveOpsSource) ?? null;
+  const { config } = useConfig();
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   // Day filter beside the title: that day's games only (or both with All).
-  const { phases } = usePhaseTimer();
+  const { phases } = usePhases();
   const [day, setDay] = useState<AdminDayFilter | null>(null);
   const day1Done = phases.find((p) => p.key === "day1")?.state === "ended";
   const shownDay: AdminDayFilter = day ?? (day1Done ? "Day 2" : "Day 1");
@@ -55,26 +69,10 @@ export default function AdminControlRoomPage() {
     if (saved) setDay(saved);
   }, []);
 
-  const load = useCallback(async () => {
-    const [{ data: o }, { data: cfg }] = await Promise.all([
-      supabase.rpc("fn_live_ops"),
-      supabase.from("game_config").select("key, value"),
-    ]);
-    if (o) setOps(o as LiveOps);
-    if (cfg) {
-      const map: Record<string, unknown> = {};
-      for (const row of cfg) {
-        map[(row as { key: string }).key] = (row as { value: unknown }).value;
-      }
-      setConfig(map);
-    }
-  }, [supabase]);
-
-  useEffect(() => {
-    load();
-    const interval = setInterval(load, 10_000);
-    return () => clearInterval(interval);
-  }, [load]);
+  const load = useCallback(() => {
+    reloadSharedFeed("fn_live_ops");
+    reloadSharedFeed("game_config");
+  }, []);
 
   async function toggleConfig(key: string, current: boolean) {
     setBusy(true);

@@ -341,7 +341,7 @@ export function makeWaterNormals() {
 }
 
 /**
- * XMUM flag, 3:2: white with the university badge (public/xmum-logo-badge.png,
+ * XMUM flag, 3:2: white with the university badge (public/xmum-logo-badge.webp,
  * the crest and the name) in the middle. The badge loads after the texture is
  * made, so the flag shows plain white for a moment.
  */
@@ -360,6 +360,6 @@ export function makeXmumFlag() {
     // Scenes that draw on demand would not show it until the camera moves.
     invalidate();
   };
-  img.src = "/xmum-logo-badge.png";
+  img.src = "/xmum-logo-badge.webp";
   return t;
 }

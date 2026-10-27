@@ -300,6 +300,8 @@ export type CampusSceneProps = {
   controlsRef?: Ref<MapControlsImpl>;
   /** Camera controls on (default true). Off, the view stays still and touches scroll the page. */
   interactive?: boolean;
+  /** Draw nothing (the map is parked off-screen between visits). The last frame stays on the canvas. */
+  paused?: boolean;
   /** The funfair's zones: which are powered (default all off). A change plays the power-up. */
   funfair?: FunfairPower;
   /**
@@ -333,6 +335,7 @@ export default function CampusScene({
   labels = true,
   controlsRef,
   interactive = true,
+  paused = false,
   funfair = FUNFAIR_OFF,
   concert: concertProp,
   tennisLive = false,
@@ -396,7 +399,9 @@ export default function CampusScene({
           // Full screen keeps drawing every frame on a fast device (the water, duck, flag and clouds move), and
           // on any device while a funfair zone is on, so its rides keep turning, at night, so the lake stage's
           // beams sweep, and while its concert plays.
-          frameloop={interactive && (!isLite || anyZoneOn(funfair) || mode === "night" || concert) ? "always" : "demand"}
+          frameloop={
+            paused ? "never" : interactive && (!isLite || anyZoneOn(funfair) || mode === "night" || concert) ? "always" : "demand"
+          }
           dpr={isLite ? [1, 1.5] : [1, 1.75]}
           camera={{ fov: 30, near: 1, far: 1600, position: start.position }}
           gl={(defaults) => {

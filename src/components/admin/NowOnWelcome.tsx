@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useState } from "react";
 
 import { scheduleTimer } from "@/lib/scheduleTimer";
 import { countdownParts, useEventCountdown } from "@/components/useEventCountdown";
-import { supabaseBrowser } from "@/lib/supabase/client";
+import { useScheduleItems } from "@/components/useScheduleFeed";
 
 const pad = (n: number | undefined) => (n === undefined ? "--" : String(n).padStart(2, "0"));
 
@@ -19,19 +19,10 @@ export function NowOnWelcome({
 }) {
   const { label, seconds, live, paused, itemId } = useEventCountdown();
   const t = countdownParts(seconds);
-  const supabase = useMemo(() => supabaseBrowser(), []);
-  const [title, setTitle] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-
-  useEffect(() => {
-    if (itemId === null) return setTitle(null);
-    supabase
-      .from("schedule_items")
-      .select("title")
-      .eq("id", itemId)
-      .single()
-      .then(({ data }) => setTitle(data?.title ?? null));
-  }, [itemId, supabase]);
+  // The running item's title, from the shared schedule feed the countdown already reads.
+  const items = useScheduleItems();
+  const title = itemId === null ? null : (items?.find((i) => i.id === itemId)?.title ?? null);
 
   async function act(action: "resume" | "extend" | "end", minutes = 0) {
     if (itemId === null || !title) return;

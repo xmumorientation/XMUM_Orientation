@@ -3,7 +3,7 @@
 import { Check, ChevronDown, Pencil, Plus, Trash2, Users } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import { usePhaseTimer } from "@/components/PhaseTimerProvider";
+import { usePhases } from "@/components/PhaseTimerProvider";
 import { useStationOccupants, type Occupant } from "@/components/staff/useStationOccupants";
 import { MAP_BUILDINGS, stationPosition } from "@/lib/mapBuildings";
 import { supabaseBrowser } from "@/lib/supabase/client";
@@ -57,7 +57,7 @@ export function StationsSection() {
   const [gmUsers, setGmUsers] = useState<GmUser[]>([]);
   const [assignments, setAssignments] = useState<GmAssignment[]>([]);
   // Day 1 or Day 2 (no "All", Ben). Until one is picked, the day whose game runs (Day 2 for the endgame too).
-  const { phases } = usePhaseTimer();
+  const { phases } = usePhases();
   const [pickedDay, setPickedDay] = useState<Day | null>(null);
   const live = phases.find((p) => p.state === "active" || p.state === "paused");
   const dayFilter: Day = pickedDay ?? (live && (live.key === "day2" || live.is_endgame) ? 2 : 1);

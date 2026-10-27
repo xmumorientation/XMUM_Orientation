@@ -1,11 +1,13 @@
 "use client";
 
 import { ArrowDown, ArrowUp, GripVertical, MapPin, Pencil, Trash2 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { FreshieSchedule } from "@/components/freshie/FreshieSchedule";
 import { useProfile } from "@/components/ProfileProvider";
+import { useScheduleDays, useScheduleItems } from "@/components/useScheduleFeed";
 import { Card, EmptyState, ErrorBanner, PageTitle, Spinner, SuccessBanner } from "@/components/ui";
+import { reloadSharedFeed, setSharedFeed } from "@/lib/sharedFeed";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import type { ScheduleItem } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -38,8 +40,16 @@ function StaffSchedule() {
   const profile = useProfile();
   const isAdmin = profile.role === "admin";
   const supabase = useMemo(() => supabaseBrowser(), []);
-  const [items, setItems] = useState<ScheduleItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Shared, cached feeds (useScheduleFeed.ts): a return visit shows the last schedule at once.
+  const feedItems = useScheduleItems();
+  const items = useMemo(
+    () =>
+      [...(feedItems ?? [])].sort(
+        (a, b) => a.day_label.localeCompare(b.day_label) || a.sort_order - b.sort_order || a.id - b.id
+      ),
+    [feedItems]
+  );
+  const loading = feedItems === undefined;
   const blank = {
     day_label: "Day 1",
     time_label: "",
@@ -57,55 +67,16 @@ function StaffSchedule() {
   const [dragId, setDragId] = useState<number | null>(null);
   const [overId, setOverId] = useState<number | null>(null);
   // One date per day ("Day 1" → 2026-11-28), shared by all its items (0050).
-  const [days, setDays] = useState<Record<string, string>>({});
-
-  const load = useCallback(async () => {
-    // Order is the admin's drag order (sort_order) within each day.
-    const { data } = await supabase
-      .from("schedule_items")
-      .select("*")
-      .order("day_label")
-      .order("sort_order")
-      .order("id");
-    return (data as ScheduleItem[]) ?? [];
-  }, [supabase]);
-
+  const dayRows = useScheduleDays();
+  const days = useMemo<Record<string, string>>(
+    () => Object.fromEntries((dayRows ?? []).map((d) => [d.day_label, d.day_date])),
+    [dayRows]
+  );
+  // Fill the add form's date for its day once the dates arrive.
   useEffect(() => {
-    let active = true;
-    async function run() {
-      const next = await load();
-      if (!active) return;
-      setItems(next);
-      setLoading(false);
-    }
-    async function runDays() {
-      const { data } = await supabase.from("schedule_days").select("day_label, day_date");
-      if (!active || !data) return;
-      const map = Object.fromEntries(data.map((d) => [d.day_label, d.day_date as string]));
-      setDays(map);
-      // fill the add form's date for its day once the dates arrive
-      setForm((f) => (f.date ? f : { ...f, date: map[f.day_label] ?? "" }));
-    }
-    run();
-    runDays();
-    const channel = supabase
-      .channel("schedule-live")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "schedule_items" },
-        run
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "schedule_days" },
-        runDays
-      )
-      .subscribe();
-    return () => {
-      active = false;
-      supabase.removeChannel(channel);
-    };
-  }, [load, supabase]);
+    if (dayRows) setForm((f) => (f.date ? f : { ...f, date: days[f.day_label] ?? "" }));
+  }, [dayRows, days]);
+  const reloadItems = () => reloadSharedFeed("schedule_items");
 
   function flash(msg: string) {
     setNotice(msg);
@@ -153,7 +124,7 @@ function StaffSchedule() {
         .from("schedule_days")
         .upsert({ day_label: form.day_label, day_date: form.date, updated_at: new Date().toISOString() });
       if (dayError) return setError(`Could not save the day's date: ${dayError.message}`);
-      setDays((d) => ({ ...d, [form.day_label]: form.date }));
+      reloadSharedFeed("schedule_days");
     }
     const row = {
       day_label: form.day_label,
@@ -174,7 +145,7 @@ function StaffSchedule() {
         setEditingId(null);
         setForm({ ...blank, date: days[blank.day_label] ?? "" });
         flash("Updated.");
-        setItems(await load());
+        reloadItems();
       }
       return;
     }
@@ -186,7 +157,7 @@ function StaffSchedule() {
     else {
       setForm({ ...blank, day_label: form.day_label, date: form.date });
       flash("Added.");
-      setItems(await load());
+      reloadItems();
     }
   }
 
@@ -201,10 +172,8 @@ function StaffSchedule() {
     next.splice(toIndex, 0, moved);
     const order = new Map(next.map((i, idx) => [i.id, idx]));
     // show it straight away, then save
-    setItems((all) =>
-      [...all.map((i) => (order.has(i.id) ? { ...i, sort_order: order.get(i.id) as number } : i))].sort(
-        (a, b) => a.day_label.localeCompare(b.day_label) || a.sort_order - b.sort_order || a.id - b.id
-      )
+    setSharedFeed<ScheduleItem[]>("schedule_items", (all) =>
+      (all ?? []).map((i) => (order.has(i.id) ? { ...i, sort_order: order.get(i.id) as number } : i))
     );
     const results = await Promise.all(
       next.map((i, idx) => supabase.from("schedule_items").update({ sort_order: idx }).eq("id", i.id))
@@ -212,13 +181,13 @@ function StaffSchedule() {
     const failed = results.find((r) => r.error);
     if (failed?.error) setError(failed.error.message);
     else flash("Order saved.");
-    setItems(await load());
+    reloadItems();
   }
 
   async function remove(id: number) {
     const { error } = await supabase.from("schedule_items").delete().eq("id", id);
     if (error) setError(error.message);
-    else setItems(await load());
+    else reloadItems();
   }
 
   if (loading) {

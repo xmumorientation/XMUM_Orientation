@@ -2,11 +2,12 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-import { usePhaseTimer } from "@/components/PhaseTimerProvider";
+import { usePhases, usePhaseTimerOptional } from "@/components/PhaseTimerProvider";
 import { puzzleImageUrl, useConfig } from "@/components/useConfig";
 import { useGroup } from "@/components/useGroup";
 import { loadProjectorClues, projectorPlaces, type ProjectorClues } from "@/lib/projectorPlaces";
 import { loadProjectorStates, type ProjectorState } from "@/lib/projectorStates";
+import { useSharedFeed, type FeedSource } from "@/lib/sharedFeed";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { PIECES_PER_SET, PROJECTOR_LOCATIONS, type Phase, type ProjectorLocation, type RiskTier } from "@/lib/types";
 import { formatCountdown } from "@/lib/utils";
@@ -74,77 +75,93 @@ function entryTitle(reason: string) {
   return m ? `${m[1]} / ${TIER_LABEL[m[2].toLowerCase()]} risk` : reason;
 }
 
+/** The active game's time left ("1:05:12"), or null when no game is on. */
+function gameTimeLeft(phases: Phase[], offsetMs: number): string | null {
+  const current = phases.find((p) => p.state === "active") ?? phases.find((p) => p.state === "paused");
+  const remaining = !current
+    ? null
+    : current.state === "paused"
+      ? (current.paused_remaining ?? 0)
+      : current.ends_at
+        ? (new Date(current.ends_at).getTime() - (Date.now() + offsetMs)) / 1000
+        : null;
+  return remaining === null ? null : formatCountdown(Math.max(0, remaining));
+}
+
+/**
+ * The game's time left, counting down every second. Only the component that
+ * shows it re-renders each second, not everything that reads useItemsData.
+ * null outside the app shell.
+ */
+export function useGameTimeLeft(): string | null {
+  const timer = usePhaseTimerOptional();
+  return timer ? gameTimeLeft(timer.phases, timer.offsetMs) : null;
+}
+
+// The group's pieces, token history, projectors, Day 2 entry fees and clues, live.
+function itemsSource(groupId: number): () => FeedSource<Fetched> {
+  return () => {
+    const supabase = supabaseBrowser();
+    return {
+      async load(cur) {
+        const [pieces, tx, projectors, stations, clues] = await Promise.all([
+          supabase
+            .from("inventory")
+            .select("id, created_at, source, items!inner(type, puzzle_location, puzzle_index)")
+            .eq("group_id", groupId)
+            .eq("items.type", "puzzle"),
+          supabase
+            .from("token_transactions")
+            .select("id, delta, reason, created_at")
+            .eq("group_id", groupId)
+            .order("created_at", { ascending: false })
+            .limit(200),
+          loadProjectorStates(supabase),
+          supabase.from("stations").select("risk_tier, entry_cost").eq("day", 2),
+          loadProjectorClues(supabase),
+        ]);
+        const costs = { ...DEFAULT_COSTS };
+        const seen = new Set<string>();
+        for (const s of (stations.data ?? []) as StationRow[]) {
+          if (!(s.risk_tier in costs)) continue;
+          // The cheapest station of each tier, so the hint never overstates the fee.
+          if (!seen.has(s.risk_tier) || s.entry_cost < costs[s.risk_tier]) costs[s.risk_tier] = s.entry_cost;
+          seen.add(s.risk_tier);
+        }
+        return {
+          pieces: (pieces.data ?? []) as unknown as PieceRow[],
+          tx: (tx.data ?? []) as TxRow[],
+          // A failed call keeps the last answer instead of showing every projector dark.
+          projectors: projectors ?? cur?.projectors ?? [],
+          clues: clues ?? cur?.clues ?? "missing",
+          costs,
+        };
+      },
+      listen(reload) {
+        const channel = supabase
+          .channel(`items-live-${groupId}-${crypto.randomUUID()}`)
+          .on("postgres_changes", { event: "*", schema: "public", table: "inventory", filter: `group_id=eq.${groupId}` }, reload)
+          .on("postgres_changes", { event: "*", schema: "public", table: "token_transactions", filter: `group_id=eq.${groupId}` }, reload)
+          // A Freshie gets no projectors events (0096); a projector change also writes game_config.
+          .on("postgres_changes", { event: "*", schema: "public", table: "game_config" }, reload)
+          .subscribe();
+        return () => void supabase.removeChannel(channel);
+      },
+      reloadOnVisible: false,
+    };
+  };
+}
+
 export function useItemsData(): { data: ItemsData; loading: boolean } {
   const { group } = useGroup();
-  const { phases, offsetMs, tick } = usePhaseTimer();
+  const { phases, offsetMs } = usePhases();
   const { config } = useConfig();
-  const supabase = useMemo(() => supabaseBrowser(), []);
   const groupId = group?.id ?? null;
-  const [fetched, setFetched] = useState<Fetched | null>(null);
-
-  useEffect(() => {
-    if (!groupId) return;
-    let active = true;
-    async function load() {
-      const [pieces, tx, projectors, stations, clues] = await Promise.all([
-        supabase
-          .from("inventory")
-          .select("id, created_at, source, items!inner(type, puzzle_location, puzzle_index)")
-          .eq("group_id", groupId!)
-          .eq("items.type", "puzzle"),
-        supabase
-          .from("token_transactions")
-          .select("id, delta, reason, created_at")
-          .eq("group_id", groupId!)
-          .order("created_at", { ascending: false })
-          .limit(200),
-        loadProjectorStates(supabase),
-        supabase.from("stations").select("risk_tier, entry_cost").eq("day", 2),
-        loadProjectorClues(supabase),
-      ]);
-      if (!active) return;
-      const costs = { ...DEFAULT_COSTS };
-      const seen = new Set<string>();
-      for (const s of (stations.data ?? []) as StationRow[]) {
-        if (!(s.risk_tier in costs)) continue;
-        // The cheapest station of each tier, so the hint never overstates the fee.
-        if (!seen.has(s.risk_tier) || s.entry_cost < costs[s.risk_tier]) costs[s.risk_tier] = s.entry_cost;
-        seen.add(s.risk_tier);
-      }
-      setFetched((cur) => ({
-        pieces: (pieces.data ?? []) as unknown as PieceRow[],
-        tx: (tx.data ?? []) as TxRow[],
-        // A failed call keeps the last answer instead of showing every projector dark.
-        projectors: projectors ?? cur?.projectors ?? [],
-        clues: clues ?? cur?.clues ?? "missing",
-        costs,
-      }));
-    }
-    load();
-    const channel = supabase
-      .channel(`items-live-${groupId}-${crypto.randomUUID()}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "inventory", filter: `group_id=eq.${groupId}` }, load)
-      .on("postgres_changes", { event: "*", schema: "public", table: "token_transactions", filter: `group_id=eq.${groupId}` }, load)
-      // A Freshie gets no projectors events (0096); a projector change also writes game_config.
-      .on("postgres_changes", { event: "*", schema: "public", table: "game_config" }, load)
-      .subscribe();
-    return () => {
-      active = false;
-      supabase.removeChannel(channel);
-    };
-  }, [supabase, groupId]);
+  // Cached per group between visits (sharedFeed), and shared by Items and Freshie Home.
+  const fetched = useSharedFeed(groupId ? `items:${groupId}` : null, itemsSource(groupId ?? 0)) ?? null;
 
   const data = useMemo<ItemsData>(() => {
-    void tick; // the time left counts down every second
     const phase = gamePhase(phases);
-    const current = phases.find((p) => p.state === "active") ?? phases.find((p) => p.state === "paused");
-    const remaining = !current
-      ? null
-      : current.state === "paused"
-        ? (current.paused_remaining ?? 0)
-        : current.ends_at
-          ? (new Date(current.ends_at).getTime() - (Date.now() + offsetMs)) / 1000
-          : null;
 
     const pieces: ItemsData["pieces"] = { B1: [], A3: [], TF: [] };
     for (const row of fetched?.pieces ?? []) {
@@ -227,7 +244,8 @@ export function useItemsData(): { data: ItemsData; loading: boolean } {
 
     return {
       phase,
-      timeLeft: remaining === null ? null : formatCountdown(Math.max(0, remaining)),
+      // Live value: useGameTimeLeft() (GameClock); this one is not ticked.
+      timeLeft: gameTimeLeft(phases, offsetMs),
       group: { id: groupId ?? 0, name: group?.name ?? "" },
       mapUnlocked: phase === "endgame" || phase === "done",
       places,
@@ -240,7 +258,7 @@ export function useItemsData(): { data: ItemsData; loading: boolean } {
       boxes: SAMPLE_BOXES,
       history: events.map(({ at: _at, ...rest }) => rest),
     };
-  }, [fetched, phases, offsetMs, tick, group, groupId, config]);
+  }, [fetched, phases, offsetMs, group, groupId, config]);
 
   return { data, loading: fetched === null };
 }

@@ -334,6 +334,7 @@ export function CampusMap3DView({
   intro = true,
   camera,
   onFail,
+  paused = false,
 }: CampusMap3DViewProps) {
   const {
     mapStations,
@@ -793,6 +794,7 @@ export function CampusMap3DView({
                 labels={showNames && !tennis.playing}
                 controlsRef={controls}
                 interactive={fullscreen}
+                paused={paused}
                 onFail={onFail}
                 overlay={
                   !tennis.playing && (
