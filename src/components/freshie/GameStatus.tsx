@@ -20,7 +20,12 @@ export type GameStatus =
   | { kind: "live" | "paused"; phase: Phase; remaining: number }
   | { kind: "break"; next: Phase | null }
   | { kind: "waiting"; next: Phase | null }
-  | { kind: "over" };
+  | { kind: "over" }
+  /** Over for longer than GAME_OVER_SHOW_MS: the pill is hidden. */
+  | { kind: "none" };
+
+/** How long GAME OVER stays up after Day 2 ends. */
+const GAME_OVER_SHOW_MS = 30 * 60_000;
 
 function gameStatus(phases: Phase[], serverNow: number): GameStatus {
   const current = phases.find((p) => p.state === "active") ?? phases.find((p) => p.state === "paused");
@@ -33,8 +38,13 @@ function gameStatus(phases: Phase[], serverNow: number): GameStatus {
           : 0;
     return { kind: current.state === "paused" ? "paused" : "live", phase: current, remaining };
   }
-  const endgame = phases.find((p) => p.is_endgame || p.key === "endgame");
-  if (endgame?.state === "ended") return { kind: "over" };
+  // The game is over once Day 2 ends: the Endgame phase is gone (0102).
+  // ends_at is when it ended (time up, or Admin's End), so the pill goes after 30 min.
+  const day2 = phases.find((p) => p.key === "day2");
+  if (day2?.state === "ended") {
+    const endedAt = day2.ends_at ? new Date(day2.ends_at).getTime() : NaN;
+    return serverNow - endedAt >= GAME_OVER_SHOW_MS ? { kind: "none" } : { kind: "over" };
+  }
   const next = phases.find((p) => p.state === "pending") ?? null;
   return phases.some((p) => p.state === "ended") ? { kind: "break", next } : { kind: "waiting", next };
 }
@@ -79,6 +89,8 @@ export function GameStatusPill({ status }: { status: GameStatus }) {
         </span>
       );
     }
+    case "none":
+      return null;
     case "over":
       return (
         <span className="fa-pill" data-kind="over" role="status">

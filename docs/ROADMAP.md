@@ -328,6 +328,12 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 
 ## Done
 
+### GAME OVER once Day 2 ends, 2026-10-30 (Ben)
+- The header pill (`GameStatus.tsx`) shows GAME OVER when the Day 2 game has ended. It used to wait for the Endgame phase, which nothing starts or ends since 0102, so the pill stayed on "BREAK · Next: Endgame".
+- GAME OVER shows for 30 minutes from Day 2's end (`ends_at`, set by the timer or by Admin's End), then the pill is hidden (`GAME_OVER_SHOW_MS`). With no `ends_at` it stays.
+- The Items page (`useItemsData.ts`) moves to Game Over at the same time, which also unlocks Show on map there.
+- Frontend only. `tsc` and `eslint` clean. Not checked in the browser.
+
 ### Tennis game T1c: the look, 2026-10-27 (Ben)
 Roadmap item 9, batch T1c. To see it: `/map3d?tennis=bot&auto=1&t=1.8` (the serve), `&t=142.9` (the winner's jump), `/map3d?tennis=demo` (the rally), with `&lite=1` for the phone path.
 - `player.ts`:
