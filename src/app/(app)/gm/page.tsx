@@ -1033,15 +1033,15 @@ export default function GmPanelPage() {
                 </span>
               )}
             </div>
-            <p className="gc-muted">
-              {!station
-                ? "No station assigned to your account. Ask Admin to set your station."
-                : station.status === "closed"
-                  ? "Groups cannot check in or play here while it is closed. Open it when your station is ready."
-                  : station.day === 2
-                    ? "Changes by itself: In progress when you start a game, Available when you submit or cancel it. Admin and HOGM can close the station."
+            {!(station && station.status !== "closed" && station.day === 2) && (
+              <p className="gc-muted">
+                {!station
+                  ? "No station assigned to your account. Ask Admin to set your station."
+                  : station.status === "closed"
+                    ? "Groups cannot check in or play here while it is closed. Open it when your station is ready."
                     : "Admin and HOGM set the status of Day 1 stations."}
-            </p>
+              </p>
+            )}
             {station?.status === "closed" && (
               <button type="button" className="gc-btn gc-btn-go gc-st-open" disabled={busy} onClick={() => setOpenAsk(true)}>
                 Open Station
