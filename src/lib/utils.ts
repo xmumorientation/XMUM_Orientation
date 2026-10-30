@@ -95,7 +95,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   NOT_IN_GROUP: "Your account isn't assigned to a group yet.",
   NOT_ENDGAME: "Projectors can only be lit during the Funfair.",
   // Day 2 inner schedule (0102)
-  BB_NOT_YET: "Blind boxes open in challenge mode. Nothing was charged.",
+  BB_NOT_YET: "Blind boxes open when the Day 2 game starts. Nothing was charged.",
   BB_OFF_BY_ADMIN: "Blind boxes are switched off by Admin. Nothing was charged.",
   FUNFAIR_NOT_YET: "The map can be lit only in the Funfair.",
   FUNFAIR_OFF_BY_ADMIN: "Lighting the map is switched off by Admin.",
