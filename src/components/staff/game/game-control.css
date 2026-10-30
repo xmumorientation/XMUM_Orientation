@@ -541,6 +541,10 @@
 .gc .gc-st-award[data-tone="bad"] { border-color: rgba(255, 77, 94, 0.6); color: var(--gc-red); }
 .gc .gc-st-award[data-tone]:disabled { background: var(--gc-ink-3); border-color: var(--gc-line); color: var(--gc-mute); }
 .gc .gc-st-groups button:disabled { opacity: 0.35; cursor: not-allowed; }
+/* Day 1: one card per group playing, with its Win / Participation pick. */
+.gc-st-d1 { gap: 10px; padding-bottom: 12px; }
+.gc .gc-st-d1-pick { min-height: 76px; }
+.gc-st-d1-pick b { font-size: 32px; }
 .gc-st-status-chip { font-size: 11px; padding: 5px 11px; }
 .gc .gc-st-open { width: 100%; }
 

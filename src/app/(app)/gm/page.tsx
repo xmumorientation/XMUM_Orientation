@@ -34,6 +34,20 @@ type DayStation = { day: 1 | 2; station: { id: number; name: string } | null };
 type Counts = Record<ProjectorLocation, number>;
 /** A Day 2 game the GM started: locked until its result is submitted or it is cancelled. Kept on this phone. */
 type Day2Game = { stationId: number; groupId: number; locations: ProjectorLocation[] };
+type Day1Outcome = "win" | "lose";
+/**
+ * A Day 1 game: one group, or two head to head. Each group gets its own
+ * result. keys: one idempotency key per group, made at Start, so a retry
+ * after a lost answer never pays twice. done: groups already paid (a failed
+ * submit keeps the game for the rest). Kept on this phone.
+ */
+type Day1Game = {
+  stationId: number | null;
+  groupIds: number[];
+  keys: Record<number, string>;
+  results: Record<number, Day1Outcome>;
+  done: number[];
+};
 type CheckState = "ok" | "warn" | "bad" | "wait";
 /** What Undo would reverse (fn_undo_preview, 0093). fallback: that function is not on the database yet. */
 type UndoPreview =
@@ -145,12 +159,18 @@ function day2Checks({
 
 // GM's Station panel (/gm), in the Game control look (game-control.css) of the
 // ops crew's Ops page. Phones, top to bottom:
-//  Status    - the station's state, shown. A Day 2 game sets it: In progress
-//              when it starts, Available when its result is submitted or it is
-//              cancelled. Admin and HOGM can still set it. The GM's only manual
-//              step: Open station (Closed → Available), after a confirm.
-//  Group     - tap the group at the station (fn_scoreboard: name, colour, tokens)
-//  Result    - Day 1: win or participation reward, confirmed in a sheet first.
+//  Status    - the station's state, shown. A game sets it (Day 1 and Day 2):
+//              In progress when it starts, Available when its result is
+//              submitted or it is cancelled. Admin and HOGM can still set it.
+//              The GM's only manual step: Open station (Closed → Available),
+//              after a confirm.
+//  Group     - tap the group at the station (fn_scoreboard: name, colour, tokens);
+//              on Day 1 up to two, for a head-to-head
+//  Result    - Day 1: three steps. 1 Pick: one group or two. 2 Play: Start
+//              locks them and checks them in here. 3 Give: Win or
+//              Participation for each group (two groups may both win), then
+//              one confirm sheet; each group is paid by its own
+//              fn_gm_day1_reward, so a failed one can be retried alone.
 //              Amounts are the admin's token rules (Token page); the server
 //              reads them, the GM cannot pick one. Undo shows what it would reverse (fn_undo_preview)
 //              and asks first; Admin sets the window (Token page, default 10 min).
@@ -212,8 +232,11 @@ export default function GmPanelPage() {
     const timer = window.setInterval(rerender, 30_000);
     return () => window.clearInterval(timer);
   }, [undoAsk]);
-  // Day 1 reward waiting for the GM's confirmation.
-  const [day1Ask, setDay1Ask] = useState<"win" | "lose" | null>(null);
+  // Day 1: the groups picked before Start (one, or two head to head), the
+  // running game, and its results waiting for the GM's confirmation.
+  const [day1Picks, setDay1Picks] = useState<number[]>([]);
+  const [day1Game, setDay1Game] = useState<Day1Game | null>(null);
+  const [day1Ask, setDay1Ask] = useState(false);
   const [openAsk, setOpenAsk] = useState(false);
 
   // The GM's station follows the day (the server switches profiles.station_id
@@ -409,7 +432,31 @@ export default function GmPanelPage() {
     }
   }
 
-  // The GM no longer sets the status by hand; a Day 2 game does (fn_set_station_status, own station only).
+  // The same for a Day 1 game.
+  const day1Key = `gm-day1-game:${profile.id}`;
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(window.localStorage.getItem(day1Key) ?? "null") as Day1Game | null;
+      if (saved && saved.stationId === stationId) {
+        setDay1Game(saved);
+        setDay1Picks(saved.groupIds);
+      }
+    } catch {
+      // no storage: the game is not restored
+    }
+  }, [day1Key, stationId]);
+
+  function keepDay1Game(next: Day1Game | null) {
+    setDay1Game(next);
+    try {
+      if (next) window.localStorage.setItem(day1Key, JSON.stringify(next));
+      else window.localStorage.removeItem(day1Key);
+    } catch {
+      // no storage: the game lasts until the page closes
+    }
+  }
+
+  // The GM does not set the status by hand; a game does (fn_set_station_status, own station only).
   async function autoStatus(next: StationStatus) {
     if (!station) return;
     const { error } = await supabase.rpc("fn_set_station_status", {
@@ -423,34 +470,82 @@ export default function GmPanelPage() {
     }
   }
 
-  async function day1Reward(outcome: "win" | "lose") {
-    if (!groupId) return result.setError("先选组别 Select a group first.");
-    const label = outcome === "win" ? "Station win" : "Station participation";
+  // Day 1, like Day 2: Start sets In progress and checks the groups in here
+  // (the maps show who plays); tokens are given only after it.
+  function pickDay1(id: number) {
+    if (day1Game) return;
+    setDay1Picks((cur) => (cur.includes(id) ? cur.filter((g) => g !== id) : cur.length < 2 ? [...cur, id] : cur));
+  }
+
+  function startDay1() {
+    if (day1Picks.length === 0) return;
+    result.setError(null);
+    keepDay1Game({
+      stationId: station?.id ?? null,
+      groupIds: day1Picks,
+      keys: Object.fromEntries(day1Picks.map((id) => [id, idemKey()])),
+      results: {},
+      done: [],
+    });
+    if (station) {
+      if (station.status === "available") void autoStatus("in_progress");
+      for (const id of day1Picks) void placeGroup(station.id, id);
+    }
+  }
+
+  function setDay1Result(id: number, outcome: Day1Outcome) {
+    if (!day1Game || day1Game.done.includes(id)) return;
+    keepDay1Game({ ...day1Game, results: { ...day1Game.results, [id]: outcome } });
+  }
+
+  // Back to Available, unless Admin or HOGM closed the station meanwhile.
+  function endDay1() {
+    const playing = day1Game?.groupIds ?? [];
+    keepDay1Game(null);
+    setDay1Picks([]);
+    if (station?.status === "in_progress") void autoStatus("available");
+    for (const id of playing) void releaseGroup(id);
+  }
+
+  // One fn_gm_day1_reward per group, each with the key made at Start. A group
+  // that fails stays in the game; Submit again sends only the groups not paid.
+  async function submitDay1() {
+    if (!day1Game) return;
+    setDay1Ask(false);
     setBusy(true);
     result.setError(null);
-    setDay1Ask(null);
-    const res = await submit(
-      "fn_gm_day1_reward",
-      {
-        p_group_id: groupId,
-        p_result: outcome,
-        p_idempotency_key: idemKey(),
-      },
-      `Day 1 ${outcome} to group ${groupId}`
-    );
-    setBusy(false);
-    if (res.status === "confirmed") {
-      const d = res.data as { delta?: number; balance?: number; duplicate?: boolean };
-      if (d?.duplicate) return result.flash("Duplicate ignored (already recorded).");
-      result.flash(
-        `${label}: +${d?.delta ?? "?"}${d?.balance !== undefined ? ` / balance ${d.balance}` : ""}`
+    const done = [...day1Game.done];
+    const notes: string[] = [];
+    let failure: string | null = null;
+    for (const id of day1Game.groupIds) {
+      if (done.includes(id)) continue;
+      const outcome = day1Game.results[id];
+      const name = groups.find((g) => g.id === id)?.name ?? `Group ${id}`;
+      const res = await submit(
+        "fn_gm_day1_reward",
+        { p_group_id: id, p_result: outcome, p_idempotency_key: day1Game.keys[id] },
+        `Day 1 ${outcome} to ${name}`
       );
-      void loadGroups();
-    } else if (res.status === "queued") {
-      result.flash("Offline. Queued and will send automatically.");
-    } else {
-      result.setError(friendlyError({ message: res.error }));
+      if (res.status === "rejected") {
+        failure = `${name}: ${friendlyError({ message: res.error })}`;
+        break;
+      }
+      done.push(id);
+      if (res.status === "queued") notes.push(`${name}: offline, queued`);
+      else {
+        const d = res.data as { delta?: number; balance?: number; duplicate?: boolean };
+        notes.push(d?.duplicate ? `${name}: already given` : `${name} +${d?.delta ?? "?"}${d?.balance !== undefined ? ` / ${d.balance}` : ""}`);
+      }
     }
+    setBusy(false);
+    void loadGroups();
+    if (failure) {
+      keepDay1Game({ ...day1Game, done });
+      result.setError(`${failure}.${notes.length ? ` Done: ${notes.join(", ")}.` : ""} Submit again to retry.`);
+      return;
+    }
+    result.flash(notes.join(" / "));
+    endDay1();
   }
 
   // Step 1: what would be undone. Step 2 (the sheet's confirm): undo it.
@@ -520,6 +615,8 @@ export default function GmPanelPage() {
     : [];
   const canStart = !!group && checks.every((c) => c.state === "ok" || c.state === "warn");
   const step = game ? (confirmWin !== null ? 2 : 1) : 0;
+  const day1Ready = !!day1Game && day1Game.groupIds.every((id) => day1Game.done.includes(id) || day1Game.results[id]);
+  const day1Step = !day1Game ? 0 : day1Ready ? 2 : 1;
   const gameGroup = game ? (groups.find((g) => g.id === game.groupId) ?? null) : null;
 
   // Step 1 → 2: check again with fresh tokens and pieces, lock the group, set In progress.
@@ -699,29 +796,55 @@ export default function GmPanelPage() {
               <h2 id="st-group" className="gc-eyebrow">
                 <span className="gc-st-step">01</span> Group
               </h2>
-              {group && (
-                <span className="gc-chip" data-tone="live">
-                  {group.token_balance} token{group.token_balance !== 1 ? "s" : ""}
-                </span>
+              {day === 1 ? (
+                <span className="gc-chip">{day1Picks.length}/2</span>
+              ) : (
+                group && (
+                  <span className="gc-chip" data-tone="live">
+                    {group.token_balance} token{group.token_balance !== 1 ? "s" : ""}
+                  </span>
+                )
               )}
             </div>
-            <div className="gc-st-groups" role="radiogroup" aria-label="Active group">
-              {groups.map((g) => (
-                <button
-                  key={g.id}
-                  type="button"
-                  role="radio"
-                  aria-checked={groupId === g.id}
-                  disabled={!!game && game.groupId !== g.id}
-                  onClick={() => pickGroup(g.id)}
-                >
-                  <i className="gc-swatch" style={{ background: groupSwatch(g.id, g.color) }} aria-hidden />
-                  <span>{g.name}</span>
-                </button>
-              ))}
+            {/* Day 1: one group, or two head to head. Day 2: one group. */}
+            <div
+              className="gc-st-groups"
+              role={day === 1 ? "group" : "radiogroup"}
+              aria-label={day === 1 ? "Groups playing (up to 2)" : "Active group"}
+            >
+              {groups.map((g) => {
+                const picked = day1Picks.includes(g.id);
+                return day === 1 ? (
+                  <button
+                    key={g.id}
+                    type="button"
+                    role="checkbox"
+                    aria-checked={picked}
+                    disabled={day1Game ? !picked : !picked && day1Picks.length >= 2}
+                    onClick={() => pickDay1(g.id)}
+                  >
+                    <i className="gc-swatch" style={{ background: groupSwatch(g.id, g.color) }} aria-hidden />
+                    <span>{g.name}</span>
+                  </button>
+                ) : (
+                  <button
+                    key={g.id}
+                    type="button"
+                    role="radio"
+                    aria-checked={groupId === g.id}
+                    disabled={!!game && game.groupId !== g.id}
+                    onClick={() => pickGroup(g.id)}
+                  >
+                    <i className="gc-swatch" style={{ background: groupSwatch(g.id, g.color) }} aria-hidden />
+                    <span>{g.name}</span>
+                  </button>
+                );
+              })}
             </div>
             {groups.length === 0 && <p className="gc-muted">Loading groups…</p>}
-            {game && <p className="gc-muted">A game is running. Submit its result or cancel it to switch groups.</p>}
+            {(day === 1 ? day1Game : game) && (
+              <p className="gc-muted">A game is running. Submit its result or cancel it to switch groups.</p>
+            )}
           </section>
 
           <section className="gc-card gc-st-card" aria-labelledby="st-result">
@@ -740,7 +863,7 @@ export default function GmPanelPage() {
                     type="button"
                     role="tab"
                     aria-selected={pickedDay === d}
-                    disabled={!!game}
+                    disabled={!!game || !!day1Game}
                     onClick={() => setPickedDay(d)}
                   >
                     Day {d}
@@ -751,64 +874,117 @@ export default function GmPanelPage() {
 
             {day === 1 ? (
               <>
-                <p className="gc-muted">
-                  {group ? (
-                    <>
-                      For <b className="gc-st-target">{group.name}</b>. Tokens are added at once.
-                    </>
-                  ) : (
-                    "Pick the group at your station first."
-                  )}
-                </p>
-                <div className="gc-row2">
-                  <button
-                    type="button"
-                    className="gc-st-award"
-                    data-tone="win"
-                    disabled={busy || !groupId}
-                    onClick={() => setDay1Ask("win")}
-                  >
-                    <b>
-                      +{day1.win}
-                      <small> token{day1.win !== 1 ? "s" : ""}</small>
-                    </b>
-                    <span>Win</span>
-                  </button>
-                  <button
-                    type="button"
-                    className="gc-st-award"
-                    disabled={busy || !groupId}
-                    onClick={() => setDay1Ask("lose")}
-                  >
-                    <b>
-                      +{day1.lose}
-                      <small> token{day1.lose !== 1 ? "s" : ""}</small>
-                    </b>
-                    <span>Participation</span>
-                  </button>
-                </div>
-                {(() => {
-                  const n = day1Ask === "lose" ? day1.lose : day1.win;
-                  const tokens = `+${n} token${n !== 1 ? "s" : ""}`;
-                  return (
+                <ol className="gc-st-steps" aria-label="Day 1 steps">
+                  {["Pick", "Play", "Give"].map((label, i) => (
+                    <li key={label} aria-current={day1Step === i ? "step" : undefined}>
+                      <b>{i + 1}</b>
+                      {label}
+                    </li>
+                  ))}
+                </ol>
+
+                {!day1Game ? (
+                  <>
+                    <p className="gc-muted">
+                      {day1Picks.length === 0
+                        ? "Pick the group at your station, or two groups for a head-to-head."
+                        : <>
+                            <b className="gc-st-target">{day1Picks.map((id) => groups.find((g) => g.id === id)?.name ?? `Group ${id}`).join(" vs ")}</b>.
+                            Tokens are given after the game.
+                          </>}
+                    </p>
+                    <button
+                      type="button"
+                      className="gc-btn gc-btn-primary gc-st-submit"
+                      disabled={busy || day1Picks.length === 0}
+                      onClick={startDay1}
+                    >
+                      Start Game{day1Picks.length === 2 ? " / 2 Groups" : ""}
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <p className="gc-muted">Game over? Pick each group&apos;s result, then submit.</p>
+                    {day1Game.groupIds.map((id) => {
+                      const g = groups.find((x) => x.id === id) ?? null;
+                      const picked = day1Game.results[id];
+                      const paid = day1Game.done.includes(id);
+                      return (
+                        <div key={id} className="gc-st-game gc-st-d1">
+                          <p className="gc-st-game-who">
+                            {g && <i className="gc-swatch" style={{ background: groupSwatch(g.id, g.color) }} aria-hidden />}
+                            <b>{g?.name ?? `Group ${id}`}</b>
+                            <span className="gc-chip" data-tone={paid ? "ok" : "warn"}>
+                              {paid ? "Given" : `${g?.token_balance ?? "—"} tokens`}
+                            </span>
+                          </p>
+                          <div className="gc-row2">
+                            {(["win", "lose"] as const).map((o) => {
+                              const n = o === "win" ? day1.win : day1.lose;
+                              return (
+                                <button
+                                  key={o}
+                                  type="button"
+                                  className="gc-st-award gc-st-d1-pick"
+                                  data-tone={picked === o ? "win" : undefined}
+                                  aria-pressed={picked === o}
+                                  disabled={busy || paid}
+                                  onClick={() => setDay1Result(id, o)}
+                                >
+                                  <b>
+                                    +{n}
+                                    <small> token{n !== 1 ? "s" : ""}</small>
+                                  </b>
+                                  <span>{o === "win" ? "Win" : "Participation"}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
+                    <button
+                      type="button"
+                      className="gc-btn gc-btn-primary gc-st-submit"
+                      disabled={busy || !day1Ready}
+                      onClick={() => setDay1Ask(true)}
+                    >
+                      Submit Result{day1Game.groupIds.length > 1 ? "s" : ""}
+                    </button>
+                    <button type="button" className="gc-btn gc-st-undo" disabled={busy} onClick={endDay1}>
+                      <X size={16} aria-hidden />
+                      {day1Game.done.length ? "End Game" : "Cancel Game"}
+                      <small>{day1Game.done.length ? "tokens given stay" : "no tokens given"}</small>
+                    </button>
                     <ConfirmSheet
-                      open={day1Ask !== null}
-                      onClose={() => setDay1Ask(null)}
-                      onConfirm={() => day1Ask && day1Reward(day1Ask)}
+                      open={day1Ask}
+                      onClose={() => setDay1Ask(false)}
+                      onConfirm={submitDay1}
                       busy={busy}
-                      title={`Give ${group?.name ?? "this group"} ${tokens}?`}
-                      confirmLabel={`Give ${tokens}`}
+                      title={day1Game.groupIds.length > 1 ? "Give These Tokens?" : "Give This Token Reward?"}
+                      confirmLabel="Give Tokens"
                       body={
                         <>
-                          {day1Ask === "win" ? "Win" : "Participation"}
-                          {station ? ` at ${station.name}` : ""}.
-                          {group && ` ${group.name} goes from ${group.token_balance} to ${group.token_balance + n} tokens.`}{" "}
-                          You can undo it within {undoWindowMinutes(config["undo_window_minutes"])} minutes.
+                          {day1Game.groupIds
+                            .filter((id) => !day1Game.done.includes(id))
+                            .map((id) => {
+                              const g = groups.find((x) => x.id === id);
+                              const o = day1Game.results[id];
+                              const n = o === "win" ? day1.win : day1.lose;
+                              return (
+                                <span key={id} style={{ display: "block" }}>
+                                  <b>{g?.name ?? `Group ${id}`}</b>: {o === "win" ? "Win" : "Participation"} +{n}
+                                  {g && ` (${g.token_balance} → ${g.token_balance + n})`}
+                                </span>
+                              );
+                            })}
+                          {station ? `At ${station.name}. ` : ""}You can undo your last transaction within{" "}
+                          {undoWindowMinutes(config["undo_window_minutes"])} minutes.
                         </>
                       }
                     />
-                  );
-                })()}
+                  </>
+                )}
                 <StatusLine error={result.error} notice={result.notice} />
                 <button type="button" className="gc-btn gc-st-undo" disabled={busy} onClick={askUndo}>
                   <Undo2 size={16} aria-hidden />
@@ -1033,13 +1209,11 @@ export default function GmPanelPage() {
                 </span>
               )}
             </div>
-            {!(station && station.status !== "closed" && station.day === 2) && (
+            {(!station || station.status === "closed") && (
               <p className="gc-muted">
                 {!station
                   ? "No station assigned to your account. Ask Admin to set your station."
-                  : station.status === "closed"
-                    ? "Groups cannot check in or play here while it is closed. Open it when your station is ready."
-                    : "Admin and HOGM set the status of Day 1 stations."}
+                  : "Groups cannot check in or play here while it is closed. Open it when your station is ready."}
               </p>
             )}
             {station?.status === "closed" && (

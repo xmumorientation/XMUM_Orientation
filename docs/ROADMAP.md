@@ -328,6 +328,12 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 
 ## Done
 
+### GM Day 1: Start Game, one group or two head to head, 2026-10-30 (Ben)
+- The GM's Station page (`gm/page.tsx`) runs Day 1 like Day 2: Pick (one group, or two for a head-to-head), Start Game (station In Progress, groups checked in for the maps), then Win or Participation for each group (both may win), one confirm sheet, Available and checked out again. Tokens can only be given after Start.
+- Each group is paid by its own `fn_gm_day1_reward` with a key made at Start, so a failed group can be retried alone and a retry never pays twice. The game is kept on the phone (`gm-day1-game:<id>`) across reloads.
+- Frontend only. The server does not check that a game was started; a GM could still call `fn_gm_day1_reward` directly. Undo still reverses only the last transaction (one group).
+- Checked in the browser against requests faked in Playwright (no live writes). `tsc` and `eslint` clean.
+
 ### GAME OVER once Day 2 ends, 2026-10-30 (Ben)
 - The header pill (`GameStatus.tsx`) shows GAME OVER when the Day 2 game has ended. It used to wait for the Endgame phase, which nothing starts or ends since 0102, so the pill stayed on "BREAK · Next: Endgame".
 - GAME OVER shows for 30 minutes from Day 2's end (`ends_at`, set by the timer or by Admin's End), then the pill is hidden (`GAME_OVER_SHOW_MS`). With no `ends_at` it stays.
