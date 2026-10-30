@@ -160,8 +160,12 @@ html.fh-snap { overflow-x: hidden; }
 .fh.fa-head {
   position: sticky; top: 0; z-index: 40; flex: none;
   padding-top: env(safe-area-inset-top, 0px);
-  background: rgba(3, 11, 28, 0.94); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
-  border-bottom: 1px solid var(--fh-line);
+  /* Home's header (.fh-head): dark, fading out at the bottom, no border, so
+     the page's sky (.fh-bg, fixed) runs on under it without a seam. The
+     padding is the fade (Home's is its stop bar). No blur: the page scrolls
+     below this bar, never under it. */
+  padding-bottom: 24px;
+  background: linear-gradient(rgba(3, 11, 28, 0.94) 70%, rgba(3, 11, 28, 0));
 }
 .fa-head .fh-head-row { gap: 8px; }
 .fa-head-now { flex: 1; min-width: 0; display: flex; justify-content: center; }

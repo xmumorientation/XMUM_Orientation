@@ -85,7 +85,9 @@
 .sd-top-menu nav + button { border-radius: 10px; margin-top: 12px; }
 
 .staff-dashboard-shell { font-family: var(--font-nexus-body), Outfit, sans-serif; }
-.staff-dashboard-shell > .min-w-0 > header { background: var(--sp-header); border-color: var(--sp-line-3); color: var(--sp-text); }
+/* Not GroupHeader (.fa-head): a Faci's Schedule and Checklist are staff
+   pages here, but their header keeps Freshie Home's fade (freshie.css). */
+.staff-dashboard-shell > .min-w-0 > header:not(.fa-head) { background: var(--sp-header); border-color: var(--sp-line-3); color: var(--sp-text); }
 .staff-dashboard-shell > .min-w-0 > header button { background: transparent; color: var(--sp-text-2); border-color: var(--sp-line); box-shadow: none; }
 .staff-dashboard-shell > .min-w-0 > header .text-ink-faint { color: var(--sp-faint); }
 .staff-dashboard-shell > .min-w-0 > header .chip { background: transparent; border: 0; color: var(--sp-text-2); }
