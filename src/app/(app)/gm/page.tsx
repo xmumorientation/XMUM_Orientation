@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, CircleDashed, TriangleAlert, Undo2, X } from "lucide-react";
+import { Check, CircleDashed, History, TriangleAlert, Undo2, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
 
 import { groupSwatch } from "@/components/freshie/groupTheme";
@@ -9,6 +9,7 @@ import { vxDisplay, vxSlab } from "@/components/home/fonts";
 import { usePhases } from "@/components/PhaseTimerProvider";
 import { useProfile } from "@/components/ProfileProvider";
 import "@/components/staff/game/game-control.css";
+import { MyActivitySheet } from "@/components/staff/game/MyActivitySheet";
 import { ConfirmSheet, StatusLine, useStatus } from "@/components/staff/game/parts";
 import { undoWindowMinutes } from "@/components/token/UndoWindowSetting";
 import { ChallengeBanner } from "@/components/ChallengeBanner";
@@ -185,6 +186,7 @@ function day2Checks({
 // The database picks the current one from Live control's phases (0065:
 // profiles.station_id, Day 2 once Day 1 has ended), not from the date, so it
 // follows a rehearsal too. Only the current station can be operated.
+// Activity (top right): the GM's own token changes, by date (MyActivitySheet).
 // No blind box: GMs show no blind box QR (not here, not on Home).
 // Landscape tablets and desktops: Group and Result left, Status right.
 // A station runs Day 1 or Day 2; with no station, a Day switch shows both.
@@ -238,6 +240,7 @@ export default function GmPanelPage() {
   const [day1Game, setDay1Game] = useState<Day1Game | null>(null);
   const [day1Ask, setDay1Ask] = useState(false);
   const [openAsk, setOpenAsk] = useState(false);
+  const [activityOpen, setActivityOpen] = useState(false);
 
   // The GM's station follows the day (the server switches profiles.station_id
   // when a day's game starts or ends, or when Admin moves the GM), so it is
@@ -712,7 +715,12 @@ export default function GmPanelPage() {
         <i className="gc-orb gc-orb-pink" />
       </div>
 
-      <header className="gc-top">
+      <header className="gc-top gc-st-top">
+        <button type="button" className="gc-st-activity" onClick={() => setActivityOpen(true)}>
+          <History size={15} aria-hidden />
+          Activity
+        </button>
+        <MyActivitySheet open={activityOpen} onClose={() => setActivityOpen(false)} userId={profile.id} groups={groups} />
         <p className="gc-eyebrow">{station ? `Day ${station.day} Station` : "Station Panel"}</p>
         <h1 className="gc-title">{station?.name ?? "No Station Yet"}</h1>
         <p className="gc-sub">
