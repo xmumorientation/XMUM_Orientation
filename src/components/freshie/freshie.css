@@ -742,7 +742,6 @@ div.fi-lamp:active { transform: none; }
 .fh-map { max-width: 980px; margin: 0 auto; font-family: var(--font-nexus-body), Outfit, sans-serif; }
 .fh-map-top { display: grid; gap: 6px; padding: 8px 0 16px; }
 .fh-map-top .fh-h2 { font-family: var(--font-vx-display), Georgia, serif; font-weight: 400; font-size: clamp(38px, 9vw, 52px); }
-.fh-map-sub { margin: 0; font-size: 13.5px; color: var(--fh-mute); }
 
 .fh-map .card {
   border-radius: 20px; border: 1px solid var(--fh-line); box-shadow: none;

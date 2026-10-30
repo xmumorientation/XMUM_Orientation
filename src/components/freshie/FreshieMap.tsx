@@ -36,7 +36,6 @@ export function FreshieMap({ showGroupPins }: { showGroupPins: boolean }) {
       <header className="fh-map-top">
         <p className="fh-eyebrow fh-mono">Campus</p>
         <h1 className="fh-h2">Map</h1>
-        <p className="fh-map-sub">Live game stations. Tap the map for a full-screen view. Tap a station or a building&apos;s badge for details.</p>
       </header>
 
       <FaciTrackingPanel />
