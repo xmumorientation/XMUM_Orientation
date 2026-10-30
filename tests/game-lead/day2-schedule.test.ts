@@ -49,6 +49,7 @@ beforeAll(async () => {
   await q(sql("supabase/migrations/0102_day2_inner_schedule.sql"));
   // run twice: each guard is added once
   await q(sql("supabase/migrations/0102_day2_inner_schedule.sql"));
+  await q(sql("supabase/migrations/0111_day2_blindbox_normal1.sql"));
 }, 180_000);
 
 afterAll(async () => {
@@ -74,7 +75,8 @@ describe("Day 2 inner schedule (0102)", () => {
     await gameAt(10);
     expect(await segment()).toBe("normal1");
     expect(await tryFn("fn_day2_challenge(1)")).toBeNull();
-    expect(await tryFn("fn_bb_buy(1)")).toContain("BB_NOT_YET");
+    // blind boxes open with the game (0111)
+    expect(await tryFn("fn_bb_buy(1)")).toBeNull();
     await gameAt(70);
     expect(await segment()).toBe("challenge");
     expect(await tryFn("fn_bb_buy(1)")).toBeNull();

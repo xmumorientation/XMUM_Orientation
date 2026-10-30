@@ -76,7 +76,7 @@ export default async function BlindBoxPage({
     if (error.message.includes("BOX_UNKNOWN")) return <ErrorScreen {...UNKNOWN} />;
     // Closed by the Day 2 inner schedule (0102): the seller's QR is greyed too.
     if (error.message.includes("BB_NOT_YET")) {
-      return <ErrorScreen title="Opens in Challenge Mode" message="Blind boxes can't be bought yet. Nothing was charged." />;
+      return <ErrorScreen title="Opens When the Day 2 Game Starts" message="Blind boxes can't be bought yet. Nothing was charged." />;
     }
     if (error.message.includes("BB_OFF_BY_ADMIN")) {
       return <ErrorScreen title="Switched Off by Admin" message="Blind boxes can't be bought right now. Nothing was charged." />;

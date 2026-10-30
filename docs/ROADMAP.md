@@ -328,6 +328,12 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 
 ## Done
 
+### Day 2: blind boxes open from Normal 1, 2026-10-30 (Ben)
+- `0111_day2_blindbox_normal1.sql` (after 0102) has been run on Supabase. Safe to run again.
+- The Blind box switch now defaults to on in every Day 2 segment (Normal 1, Challenge Mode, Normal 2, Funfair). It stays off when no Day 2 game is running and no segment is held by hand. Admin's flips and the kill-switches are unchanged. Only `fn_day2_off_reason` is replaced; the guards from 0102 stay.
+- Frontend: `SEGMENT_DEFAULTS.normal1.blindbox` is on; the closed reason reads "Opens when the Day 2 game starts" (Staff Home QR, scan page, `BB_NOT_YET`).
+- Challenge Mode now differs from Normal only by its red banner.
+
 ### Tennis game T1c: the look, 2026-10-27 (Ben)
 Roadmap item 9, batch T1c. To see it: `/map3d?tennis=bot&auto=1&t=1.8` (the serve), `&t=142.9` (the winner's jump), `/map3d?tennis=demo` (the rally), with `&lite=1` for the phone path.
 - `player.ts`:
