@@ -28,7 +28,7 @@ export const OPS_CHIP: Partial<Record<UserRole, string>> = { hof: "HOF", hogm: "
 export function OpsHeader({ onOpenMenu }: { onOpenMenu?: () => void }) {
   const profile = useProfile();
   const t = VORTEXA_THEME;
-  const { phases, status, serverNow } = useGameStatus();
+  const { status, serverNow } = useGameStatus();
   return (
     <header
       className={`fh fh-vx ops-head ${vxDisplay.variable} ${vxSlab.variable}`}
@@ -66,7 +66,7 @@ export function OpsHeader({ onOpenMenu }: { onOpenMenu?: () => void }) {
           />
         </div>
       </div>
-      <GameTrack phases={phases} status={status} serverNow={serverNow} />
+      <GameTrack status={status} serverNow={serverNow} />
     </header>
   );
 }

@@ -3,6 +3,8 @@
 import { Pause, Trophy } from "lucide-react";
 
 import { usePhaseTimer } from "@/components/PhaseTimerProvider";
+import { useDay2State } from "@/components/useDay2State";
+import { SEGMENTS } from "@/lib/day2";
 import type { Phase } from "@/lib/types";
 import { formatCountdown } from "@/lib/utils";
 
@@ -10,9 +12,8 @@ import "./freshie.css";
 
 // The game's status for the page headers (GroupHeader for Freshies and
 // Facilitators, OpsHeader for HOF, HOGM, Committee and GM): a pill with the
-// running phase and its time left (or Break / Game over), and a progress
-// track with one segment per Live control phase, sized by its length and
-// filled as it runs. Colours come from the header's --fh-accent, so a group
+// running phase and its time left (or Break / Game over), and, while Day 1
+// or Day 2 runs, a progress track for that day (GameTrack). Colours come from the header's --fh-accent, so a group
 // header follows the group and OpsHeader keeps the Welcome page's cyan.
 
 export type GameStatus =
@@ -95,21 +96,58 @@ export function GameStatusPill({ status }: { status: GameStatus }) {
   }
 }
 
-export function GameTrack({ phases, status, serverNow }: { phases: Phase[]; status: GameStatus; serverNow: number }) {
-  if (phases.length === 0) return null;
+/**
+ * The running day's progress, shown only while Day 1 or Day 2 is on (or
+ * paused). Day 1 is one bar. Day 2 is split by Admin's inner schedule
+ * (fn_day2_state, 0102): Normal, Challenge, Normal, Funfair, each as long as
+ * Admin set it. A segment Admin started by hand counts as reached, so the
+ * segments before it fill up.
+ */
+export function GameTrack({ status, serverNow }: { status: GameStatus; serverNow: number }) {
+  const day2 = useDay2State();
+  if (status.kind !== "live" && status.kind !== "paused") return null;
+  const p = status.phase;
+  if (p.is_endgame || (p.key !== "day1" && p.key !== "day2")) return null;
+
+  const s = day2.state;
+  const t0 = s?.game_started_at ? new Date(s.game_started_at).getTime() : NaN;
+  const t1 = s?.game_ends_at ? new Date(s.game_ends_at).getTime() : NaN;
+  if (p.key === "day2" && s?.game_on && t1 > t0) {
+    const total = t1 - t0;
+    const at = (min: number) => Math.min(total, Math.max(0, min * 60_000));
+    const edges = [0, at(s.challenge_start_min), at(s.challenge_end_min), at(s.funfair_start_min), total];
+    for (let i = 1; i < edges.length; i++) edges[i] = Math.max(edges[i], edges[i - 1]);
+    const current = SEGMENTS.findIndex((seg) => seg.key === day2.segment);
+    const elapsed = serverNow - t0;
+    const segs = SEGMENTS.map((seg, i) => {
+      const from = edges[i];
+      const to = edges[i + 1];
+      const fill = i < current ? 1 : i > current ? 0 : to > from ? (elapsed - from) / (to - from) : 1;
+      return { ...seg, from, to, fill: Math.min(1, Math.max(0, fill)), now: i === current };
+    }).filter((seg) => seg.to > seg.from || seg.now);
+    return (
+      <div className="fa-track" data-day="2" aria-label={`Day 2: ${SEGMENTS[current]?.label ?? ""}`}>
+        {segs.map((seg) => (
+          <span
+            key={seg.key}
+            className="fa-seg"
+            data-seg={seg.key}
+            data-now={seg.now || undefined}
+            style={{ flexGrow: Math.max(seg.to - seg.from, 1) }}
+            title={seg.label}
+          >
+            <span style={{ width: `${seg.fill * 100}%` }} />
+          </span>
+        ))}
+      </div>
+    );
+  }
+
   return (
-    <div className="fa-track" data-over={status.kind === "over" || undefined} aria-hidden>
-      {phases.map((p) => (
-        <span
-          key={p.id}
-          className="fa-seg"
-          data-endgame={p.is_endgame || undefined}
-          data-state={p.state}
-          style={{ flexGrow: Math.max(p.duration_minutes, 1) }}
-        >
-          <span style={{ width: `${phaseDone(p, serverNow) * 100}%` }} />
-        </span>
-      ))}
+    <div className="fa-track" data-day="1" aria-hidden>
+      <span className="fa-seg" data-now style={{ flexGrow: 1 }}>
+        <span style={{ width: `${phaseDone(p, serverNow) * 100}%` }} />
+      </span>
     </div>
   );
 }

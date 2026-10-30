@@ -51,7 +51,7 @@ export function GroupHeader() {
   const { group } = useGroup();
   const router = useRouter();
   const avatarUrl = useMyAvatar(profile.id, isFaci);
-  const { phases, status, serverNow } = useGameStatus();
+  const { status, serverNow } = useGameStatus();
   const theme = themeFromColor(group?.color);
 
   return (
@@ -87,7 +87,7 @@ export function GroupHeader() {
           />
         </div>
       </div>
-      <GameTrack phases={phases} status={status} serverNow={serverNow} />
+      <GameTrack status={status} serverNow={serverNow} />
     </header>
   );
 }

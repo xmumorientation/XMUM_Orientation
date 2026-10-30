@@ -188,13 +188,15 @@ html.fh-snap { overflow-x: hidden; }
 @media (prefers-reduced-motion: no-preference) {
   .fa-pill[data-kind="live"] > i, .fa-pill[data-kind="endgame"] > i { animation: fh-cl-blink 1.6s ease-in-out infinite; }
 }
-/* Progress: one segment per phase, sized by its length. */
+/* Progress of the running day (GameTrack): Day 1 is one bar; Day 2 is
+   Normal, Challenge, Normal, Funfair, sized by Admin's inner schedule. */
 .fa-track { display: flex; gap: 3px; height: 3px; max-width: 1000px; margin: 0 auto; padding: 0 16px 6px; box-sizing: content-box; }
-.fa-seg { position: relative; flex-basis: 0; height: 3px; border-radius: 3px; overflow: hidden; background: var(--fh-ink-3); }
-.fa-seg > span { position: absolute; inset: 0 auto 0 0; border-radius: 3px; background: var(--fh-accent); transition: width 1s linear; }
-.fa-seg[data-state="active"] > span { box-shadow: 0 0 8px var(--fh-glow); }
-.fa-seg[data-endgame] > span { background: var(--fh-orange); }
-.fa-track[data-over] .fa-seg > span { background: var(--fh-holo); }
+.fa-seg { --k: var(--fh-accent); position: relative; flex-basis: 0; height: 3px; border-radius: 3px; overflow: hidden; background: color-mix(in srgb, var(--k) 16%, var(--fh-ink-3)); }
+.fa-seg[data-seg="challenge"] { --k: var(--fh-orange); }
+.fa-seg[data-seg="funfair"] { --k: var(--fh-lilac); }
+.fa-seg > span { position: absolute; inset: 0 auto 0 0; border-radius: 3px; background: var(--k); transition: width 1s linear; }
+.fa-seg[data-seg="funfair"] > span { background: var(--fh-holo); }
+.fa-seg[data-now] > span { box-shadow: 0 0 8px var(--k); }
 @media (min-width: 1024px) {
   .fh.fa-head { display: none; }
 }
