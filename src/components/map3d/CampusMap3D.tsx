@@ -284,7 +284,7 @@ export default function CampusMap3D() {
         }}
       >
         <div style={{ minWidth: 0 }}>
-          <div style={{ fontWeight: 800, fontSize: 18 }}>XMUM campus / 3D draft</div>
+          <div style={{ fontWeight: 800, fontSize: 18 }}>XMUM Campus / 3D Draft</div>
           <div style={{ fontSize: 12, opacity: 0.75, marginTop: 4 }}>
             {touch ? "1 finger: move / 2 fingers: rotate and zoom" : "Drag: move / Right-drag: rotate / Scroll: zoom"}
           </div>
@@ -294,7 +294,7 @@ export default function CampusMap3D() {
           onClick={() => controls.current?.reset()}
           style={{ ...pill(false), ...glass, flexShrink: 0, padding: "8px 14px" }}
         >
-          Reset view
+          Reset View
         </button>
       </div>
 

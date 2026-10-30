@@ -168,7 +168,7 @@ function Preview({ opts }: { opts: Opts }) {
       {opts.tennis && (
         <label className="card mt-3 flex items-center gap-2 p-3 text-xs font-semibold">
           <input type="checkbox" checked={tennisOpen} onChange={(e) => setTennisOpen(e.target.checked)} />
-          Tennis open (Admin&apos;s switch in Live control)
+          Tennis Open (Admin&apos;s Switch in Live Control)
         </label>
       )}
       <PreviewState data={data} pending={pending} hasSelection={hasSelection} />
@@ -216,7 +216,7 @@ function Preview({ opts }: { opts: Opts }) {
         style={themeVars(themeFromColor(opts.color), true)}
       >
         <main className={cn(main, "max-w-6xl")}>
-          <h1 className="mb-1 text-2xl font-bold">Campus map</h1>
+          <h1 className="mb-1 text-2xl font-bold">Campus Map</h1>
           <p className="mb-4 text-sm opacity-75">Group {FACI_GROUP}. Day 2 stations and group locations.</p>
           {map}
         </main>
@@ -231,7 +231,7 @@ function Preview({ opts }: { opts: Opts }) {
     >
       <main className={cn(main, role === "admin" ? "max-w-[96rem]" : "max-w-6xl")}>
         <PageTitle
-          title="Campus map"
+          title="Campus Map"
           subtitle={
             role === "admin"
               ? "Day 2 stations. Tap the map for a full-screen view. Click a building to add a station or change its game and status."

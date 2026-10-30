@@ -640,7 +640,7 @@ function MatchHud({ game, session, exit }: { game: Game; session: Session; exit:
                   game.wake();
                 }}
               >
-                Play again
+                Play Again
               </button>
               {game.leave && (
                 <button type="button" className="tn-btn" data-kind="ghost" onClick={game.leave}>
@@ -784,7 +784,7 @@ function OnlineEnd({ game, online, session, name, exit }: { game: Game; online: 
           )}
           {closed || mv.left !== null || them === false ? (
             <button type="button" className="tn-btn" data-kind={canRematch ? "ghost" : undefined} onClick={act(() => online.playAgain())}>
-              Play again
+              Play Again
             </button>
           ) : null}
           <button type="button" className="tn-btn" data-kind="ghost" onClick={act(() => online.leave())}>

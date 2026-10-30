@@ -36,7 +36,6 @@ General **Committee is read-only** (migration `0104_committee_read_only.sql`): t
 | FAQ (view; sidebar entry for Freshie only) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | DB |
 | **Tokens / Puzzles** | | | | | | | | | |
 | Token Balance card | Own Group | Own Group | — | — | — | — | — | — | DB |
-| Token History (/transactions) | Own Group | Own Group | — | — | — | — | — | — | DB |
 | Puzzle Inventory (/inventory) | Own Group | Own Group | — | — | — | — | — | — | DB |
 | **Station Panel (/gm)** | | | | | | | | | |
 | Station Panel page | — | — | ✓ | ✓ | — | † | † | † | UI |
@@ -128,6 +127,6 @@ General **Committee is read-only** (migration `0104_committee_read_only.sql`): t
 4. ~~**`/api/token` has no role check.**~~ Removed: the route was unused.
 5. **Frontend and backend disagree:**
    - The dashboard shows a Register Counter card to Faci and Committee ([dashboard/page.tsx:263](../src/app/(app)/dashboard/page.tsx#L263)), but the page is Admin-only and shows "Admin access required".
-   - `/guardian`, `/checkin` and `/transactions` are not in the sidebar and are reachable only from dashboard cards.
+   - `/guardian` and `/checkin` are not in the sidebar and are reachable only from dashboard cards.
    - The `/gm`, `/guardian`, `/attendance` and `/committee` pages have no role guard of their own; they rely entirely on RPCs to reject requests.
 6. **The definition of Freshie is inconsistent.** A code comment says freshies have no login accounts (they live in a separate `freshies` table), but login accounts with `role = 'freshie'` also exist and are used for scanning Blind Boxes and viewing Inventory. The Freshie column in the matrix means the role with a login account.

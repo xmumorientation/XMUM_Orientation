@@ -64,7 +64,7 @@ export function GroupLog({ groupId }: { groupId: number }) {
       </div>
       {log.hasMore && (
         <button type="button" className="gc-btn" disabled={log.loading} onClick={log.loadMore}>
-          Load more
+          Load More
         </button>
       )}
     </div>

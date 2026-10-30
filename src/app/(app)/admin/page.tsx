@@ -94,12 +94,12 @@ export default function AdminControlRoomPage() {
   const boolOf = (k: string) => config[k] === true || config[k] === "true";
 
   const SWITCHES: { key: string; label: string; danger: string }[] = [
-    { key: "tokens_frozen", label: "Freeze token mutations", danger: "All GM ± operations rejected" },
-    { key: "blindbox_disabled", label: "Pause blind box buying", danger: "Blind box buying paused" },
-    { key: "nfc_disabled", label: "Disable NFC activation", danger: "Sticker taps rejected" },
-    { key: "rehearsal_mode", label: "Rehearsal mode", danger: "Bypasses ALL phase gating. Testing only" },
-    { key: "day2_map_layer", label: "Day 2 map layer", danger: "Reveals projectors on everyone's map" },
-    { key: "nfc_demo_mode", label: "NFC demo mode", danger: "Freshies and Facis can light a projector without the card. Testing only" },
+    { key: "tokens_frozen", label: "Freeze Token Mutations", danger: "All GM ± operations rejected" },
+    { key: "blindbox_disabled", label: "Pause Blind Box Buying", danger: "Blind box buying paused" },
+    { key: "nfc_disabled", label: "Disable NFC Activation", danger: "Sticker taps rejected" },
+    { key: "rehearsal_mode", label: "Rehearsal Mode", danger: "Bypasses ALL phase gating. Testing only" },
+    { key: "day2_map_layer", label: "Day 2 Map Layer", danger: "Reveals projectors on everyone's map" },
+    { key: "nfc_demo_mode", label: "NFC Demo Mode", danger: "Freshies and Facis can light a projector without the card. Testing only" },
   ];
 
   const onSwitches = SWITCHES.filter((s) => boolOf(s.key));
@@ -109,7 +109,7 @@ export default function AdminControlRoomPage() {
   return (
     <div className="space-y-4">
       <PageTitle
-        title="Live control"
+        title="Live Control"
         titleAside={
           <div className="flex flex-wrap items-center gap-3">
             <select
@@ -147,13 +147,13 @@ export default function AdminControlRoomPage() {
       {ops && (
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-7">
           {[
-            ["Tokens in circulation", ops.tokens_in_circulation],
+            ["Tokens in Circulation", ops.tokens_in_circulation],
             ["Transactions", ops.transactions_count],
-            ["Blind boxes sold", ops.blindbox_claims],
-            ["Box tokens paid in", ops.blindbox_tokens_in],
-            ["Pieces granted", ops.pieces_granted],
-            ["Sets redeemed", ops.sets_redeemed],
-            ["Projectors lit", `${ops.projectors_activated}/3`],
+            ["Blind Boxes Sold", ops.blindbox_claims],
+            ["Box Tokens Paid In", ops.blindbox_tokens_in],
+            ["Pieces Granted", ops.pieces_granted],
+            ["Sets Redeemed", ops.sets_redeemed],
+            ["Projectors Lit", `${ops.projectors_activated}/3`],
           ].map(([label, value]) => (
             <Card key={String(label)} className="p-3 text-center">
               <p className="text-xl font-bold tabular-nums">{String(value)}</p>
@@ -167,11 +167,11 @@ export default function AdminControlRoomPage() {
         {shownDay !== "Day 1" && <Day2Schedule onError={setError} onNotice={flashNotice} />}
         <GameMaster onError={setError} onNotice={flashNotice} />
         <section>
-          <h2 className="mb-2 font-semibold">Mini game</h2>
+          <h2 className="mb-2 font-semibold">Mini Game</h2>
           <Card className="p-0">
             <div className="flex items-center gap-3 px-4 py-3">
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold">Tennis on the map</p>
+                <p className="text-sm font-semibold">Tennis on the Map</p>
                 <p className="text-xs text-ink-faint">
                   {tennisOpen
                     ? "Open: anyone on the 3D map can tap the tennis court and play. Off ends every match at once."
@@ -204,7 +204,7 @@ export default function AdminControlRoomPage() {
           </Card>
         </section>
         <section>
-          <h2 className="mb-2 font-semibold">Safety switches & testing overrides</h2>
+          <h2 className="mb-2 font-semibold">Safety Switches & Testing Overrides</h2>
           <Card className="divide-y divide-paper-200 p-0">
             {SWITCHES.map((s) => {
               const on = boolOf(s.key);
@@ -239,7 +239,7 @@ export default function AdminControlRoomPage() {
             {/* Rehearsal only: every game back to Not started (lib/gameLength resetGames). */}
             <div className="flex items-center gap-3 px-4 py-3">
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold">Reset games</p>
+                <p className="text-sm font-semibold">Reset Games</p>
                 <p className="text-xs text-ink-faint">
                   {boolOf("rehearsal_mode")
                     ? "Day 1, Day 2 and the endgame back to Not started. Every GM moves back to their Day 1 station."

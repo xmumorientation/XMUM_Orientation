@@ -107,7 +107,7 @@ export function TennisScene({ courts, fullscreen }: { courts: TennisOnMap; fulls
 /** This phone's match over the map: the broadcast's score, the calls, the controls and the end card. */
 export function TennisMatchHud({ courts }: { courts: TennisOnMap }) {
   const game = gameOf(courts);
-  return game ? <TennisHud game={game} exit="Back to map" /> : null;
+  return game ? <TennisHud game={game} exit="Back to Map" /> : null;
 }
 
 /**

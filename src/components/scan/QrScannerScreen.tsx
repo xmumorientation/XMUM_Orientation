@@ -175,7 +175,7 @@ export function QrScannerScreen({ onClose, closeHref = "/dashboard", preview = f
       onClick={() => fileRef.current?.click()}
       className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-full border border-white/25 px-5 text-sm font-bold text-white transition hover:bg-white/10 active:scale-[0.98]"
     >
-      <ImageUp size={18} /> Upload a photo instead
+      <ImageUp size={18} /> Upload a Photo Instead
     </button>
   );
 
@@ -320,7 +320,7 @@ export function QrScannerScreen({ onClose, closeHref = "/dashboard", preview = f
                 onClick={() => window.open((detected.route as { url: string }).url, "_blank", "noopener,noreferrer")}
                 className="flex min-h-[48px] items-center justify-center gap-2 rounded-full bg-[#0DFCFD] px-5 text-sm font-bold text-black transition active:scale-[0.98]"
               >
-                <ExternalLink size={18} /> Open link
+                <ExternalLink size={18} /> Open Link
               </button>
             )}
             {(detected.route.kind === "link" || detected.route.kind === "text") && (
@@ -333,7 +333,7 @@ export function QrScannerScreen({ onClose, closeHref = "/dashboard", preview = f
               onClick={startCamera}
               className="flex min-h-[48px] items-center justify-center gap-2 rounded-full bg-[#F2FF0B] px-5 text-sm font-bold text-black transition active:scale-[0.98]"
             >
-              <RotateCcw size={18} /> Scan again
+              <RotateCcw size={18} /> Scan Again
             </button>
             {onClose ? (
               <button type="button" onClick={onClose} className={backClass}>
@@ -341,7 +341,7 @@ export function QrScannerScreen({ onClose, closeHref = "/dashboard", preview = f
               </button>
             ) : (
               <Link href={closeHref} className={backClass}>
-                Back to home
+                Back to Home
               </Link>
             )}
           </div>
@@ -354,7 +354,7 @@ export function QrScannerScreen({ onClose, closeHref = "/dashboard", preview = f
           <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/10">
             <VideoOff size={28} className="text-[#FC9E3D]" />
           </span>
-          <h1 className="text-2xl font-black">{phase === "denied" ? "Camera access is needed to scan" : "No camera available"}</h1>
+          <h1 className="text-2xl font-black">{phase === "denied" ? "Camera Access Is Needed to Scan" : "No Camera Available"}</h1>
           {phase === "denied" ? (
             <>
               <p className="text-sm text-white/75">You blocked the camera for this site. To turn it back on:</p>
@@ -373,7 +373,7 @@ export function QrScannerScreen({ onClose, closeHref = "/dashboard", preview = f
               onClick={startCamera}
               className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-full bg-[#F2FF0B] px-5 text-sm font-bold text-black transition active:scale-[0.98]"
             >
-              <Camera size={18} /> Try again
+              <Camera size={18} /> Try Again
             </button>
             {uploadButton}
           </div>
@@ -386,7 +386,7 @@ export function QrScannerScreen({ onClose, closeHref = "/dashboard", preview = f
           <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/10">
             <Globe size={28} className="text-[#0DFCFD]" />
           </span>
-          <h1 className="text-2xl font-black">Open this page in your browser</h1>
+          <h1 className="text-2xl font-black">Open This Page in Your Browser</h1>
           <p className="rounded-2xl border border-[#FC9E3D]/50 bg-[#FC9E3D]/10 p-3 text-sm text-[#ffd6a8]">
             You&apos;re inside WeChat, Instagram or another app. The camera may not work here.
           </p>
@@ -401,11 +401,11 @@ export function QrScannerScreen({ onClose, closeHref = "/dashboard", preview = f
               onClick={copyUrl}
               className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-full bg-[#F2FF0B] px-5 text-sm font-bold text-black transition active:scale-[0.98]"
             >
-              <Copy size={18} /> {copied ? "Link copied" : "Copy link"}
+              <Copy size={18} /> {copied ? "Link Copied" : "Copy Link"}
             </button>
             {uploadButton}
             <button type="button" onClick={() => setSkipInApp(true)} className="min-h-[44px] w-full text-sm font-semibold text-white/60 underline underline-offset-4">
-              Try the camera anyway
+              Try the Camera Anyway
             </button>
           </div>
         </div>

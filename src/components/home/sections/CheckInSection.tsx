@@ -18,8 +18,8 @@ export function CheckInSection() {
       <div className="vx-inner">
         <div className="vx-ticket vx-pass vx-rise">
           <div className="vx-pass-main">
-            <div className="vx-eyebrow">Freshie check-in</div>
-            <h2 id="check-in-title" className="vx-pass-title vx-holo">How to check in</h2>
+            <div className="vx-eyebrow">Freshie Check-In</div>
+            <h2 id="check-in-title" className="vx-pass-title vx-holo">How to Check In</h2>
             <p>
               Your group is set at the counter. Scan the QR on your wristband ticket to open your group Homepage.
             </p>
@@ -30,7 +30,7 @@ export function CheckInSection() {
                   01
                 </span>
                 <div>
-                  <b>Get your wristband ticket</b>
+                  <b>Get Your Wristband Ticket</b>
                   <p>
                     At the counter you receive a wristband ticket. Your group is already assigned, and the colour is your group.
                   </p>
@@ -41,7 +41,7 @@ export function CheckInSection() {
                   02
                 </span>
                 <div>
-                  <b>Scan the group QR</b>
+                  <b>Scan the Group QR</b>
                   <p>Scan the QR on your wristband ticket to open your group Homepage.</p>
                 </div>
               </li>
@@ -50,7 +50,7 @@ export function CheckInSection() {
                   03
                 </span>
                 <div>
-                  <b>Using another device?</b>
+                  <b>Using Another Device?</b>
                   <p>Scan the QR on your wristband ticket to open your group page on another device.</p>
                 </div>
               </li>

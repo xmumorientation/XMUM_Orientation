@@ -5,9 +5,9 @@ import Link from "next/link";
 import { Menu } from "lucide-react";
 
 import { AccountMenu } from "@/components/freshie/FreshieHome";
+import { GameStatusPill, GameTrack, useGameStatus } from "@/components/freshie/GameStatus";
 import { VORTEXA_THEME } from "@/components/freshie/groupTheme";
 import { vxDisplay, vxSlab } from "@/components/home/fonts";
-import { PhaseTimer } from "@/components/PhaseTimer";
 import { useProfile } from "@/components/ProfileProvider";
 import { ROLE_LABELS, type UserRole } from "@/lib/types";
 
@@ -17,8 +17,9 @@ import "./staff-home.css";
 // HOGM's, HOF's and GM's header on Ops (GM: Station), Map, Scores and Schedule
 // (phones and portrait tablets): the same logo, role chip and account menu as their Home
 // (StaffHome), in normal flow above the scroller. The logo goes Home; Log
-// Out is in the account menu. The running game is a pill in the middle of
-// the bar (PhaseTimer compact), as on TopNav.
+// Out is in the account menu. The game's status is a pill in the middle of
+// the bar and its progress a track under it (GameStatus, as on GroupHeader),
+// in the Welcome page's colours.
 // Landscape tablets and desktops use TopNav instead.
 
 /** Short role name for the header chip. */
@@ -27,12 +28,14 @@ export const OPS_CHIP: Partial<Record<UserRole, string>> = { hof: "HOF", hogm: "
 export function OpsHeader({ onOpenMenu }: { onOpenMenu?: () => void }) {
   const profile = useProfile();
   const t = VORTEXA_THEME;
+  const { phases, status, serverNow } = useGameStatus();
   return (
     <header
       className={`fh fh-vx ops-head ${vxDisplay.variable} ${vxSlab.variable}`}
       style={
         {
           "--fh-accent": t.accent,
+          "--fh-glow": t.glow,
           "--fh-blue": t.accent,
           "--fh-blue-light": t.accentLight,
           "--fh-on-blue": t.onAccent,
@@ -46,7 +49,7 @@ export function OpsHeader({ onOpenMenu }: { onOpenMenu?: () => void }) {
           </Link>
         </div>
         <div className="ops-head-now">
-          <PhaseTimer compact />
+          <GameStatusPill status={status} />
         </div>
         <div className="fh-head-r">
           {onOpenMenu && (
@@ -63,6 +66,7 @@ export function OpsHeader({ onOpenMenu }: { onOpenMenu?: () => void }) {
           />
         </div>
       </div>
+      <GameTrack phases={phases} status={status} serverNow={serverNow} />
     </header>
   );
 }

@@ -246,7 +246,7 @@ export function BuildingStationPanel({
 
       <form onSubmit={addStation} className="grid gap-2 border-t border-paper-200 pt-3 sm:grid-cols-2">
         <p className="text-sm font-semibold sm:col-span-2">
-          New station <span className="font-bold">{nextCode}</span>
+          New Station <span className="font-bold">{nextCode}</span>
         </p>
         <label className="block text-sm">
           <span className="mb-1 block font-semibold">Name</span>
@@ -258,7 +258,7 @@ export function BuildingStationPanel({
           />
         </label>
         <label className="block text-sm">
-          <span className="mb-1 block font-semibold">Game or purpose</span>
+          <span className="mb-1 block font-semibold">Game or Purpose</span>
           <input
             className="input text-sm"
             list="station-games"
@@ -268,7 +268,7 @@ export function BuildingStationPanel({
           />
         </label>
         <label className="block text-sm">
-          <span className="mb-1 block font-semibold">Groups at once</span>
+          <span className="mb-1 block font-semibold">Groups at Once</span>
           <input
             type="number"
             min="1"
@@ -292,7 +292,7 @@ export function BuildingStationPanel({
         </label>
         <div className="flex items-end">
           <button type="submit" className="btn-primary w-full">
-            Add station
+            Add Station
           </button>
         </div>
         <datalist id="station-games">

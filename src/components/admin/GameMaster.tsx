@@ -29,7 +29,7 @@ type Tab = "tok" | "puz" | "bb" | "ff";
 const TABS: { key: Tab; label: string }[] = [
   { key: "tok", label: "Tokens" },
   { key: "puz", label: "Puzzle" },
-  { key: "bb", label: "Blind box" },
+  { key: "bb", label: "Blind Box" },
   { key: "ff", label: "Funfair" },
 ];
 const DEFAULT_RULES: Rules = { win: 2, lose: 1, easy: 2, medium: 4, hard: 6 };
@@ -171,7 +171,7 @@ export function GameMaster({
   // ── tokens ──────────────────────────────────────────────────────────
   const presets: { label: string; n: number }[] =
     dir === 1
-      ? [{ label: "Day 1 win", n: rules.win }, { label: "Day 1 lose", n: rules.lose }]
+      ? [{ label: "Day 1 Win", n: rules.win }, { label: "Day 1 Lose", n: rules.lose }]
       : [{ label: "Easy", n: rules.easy }, { label: "Medium", n: rules.medium }, { label: "Hard", n: rules.hard }];
   const isCustom = preset >= presets.length;
   const amount = isCustom ? custom : presets[preset].n;
@@ -257,13 +257,13 @@ export function GameMaster({
 
   return (
     <section className="gm">
-      <h2 className="mb-2 font-semibold">Game master</h2>
+      <h2 className="mb-2 font-semibold">Game Master</h2>
       <div className="gm-shell">
         <div className="gm-core">
           <button type="button" className="gm-more" aria-expanded={open} aria-controls="gm-fold" onClick={() => setOpen((o) => !o)}>
             <span>
               <span className="gm-eyebrow">Emergency</span>
-              <b>Game master</b>
+              <b>Game Master</b>
               <small>Always live. Tokens, puzzle pieces, blind boxes and the funfair for any group.</small>
             </span>
             <span className="gm-chev"><ChevronIcon /></span>
@@ -339,12 +339,12 @@ export function GameMaster({
 
                       <div className="gm-row" style={{ marginTop: 20 }}>
                         <button type="button" className="gm-btn" data-kind="go" disabled={busy || frozen} onClick={reviewTokens}>
-                          <span className="gm-ico"><ArrowIcon /></span>Review change
+                          <span className="gm-ico"><ArrowIcon /></span>Review Change
                         </button>
                       </div>
                       <Summary pending={pending} busy={busy} onCancel={() => setPending(null)} />
 
-                      <div className="gm-lab">Last transactions</div>
+                      <div className="gm-lab">Last Transactions</div>
                       <ul className="gm-log">
                         {tx.length === 0 && <li>No transactions yet.</li>}
                         {tx.map((t) => (
@@ -397,7 +397,7 @@ export function GameMaster({
                   {tab === "bb" && group && (
                     <div className="gm-pane" key="bb">
                       <div className="gm-who"><b>{group.name}</b><span>Appears on the group&apos;s Items page, unopened</span></div>
-                      <div className="gm-lab" style={{ marginTop: 0 }}>Box type</div>
+                      <div className="gm-lab" style={{ marginTop: 0 }}>Box Type</div>
                       <div className="gm-types">
                         {types.length === 0 && <p className="gm-note">No blind box types yet. Add one under Blind box.</p>}
                         {types.map((t) => (
@@ -417,7 +417,7 @@ export function GameMaster({
                       </div>
                       <div className="gm-row" style={{ marginTop: 20 }}>
                         <button type="button" className="gm-btn" data-kind="go" disabled={busy || typeId === null} onClick={reviewGift}>
-                          <span className="gm-ico"><ArrowIcon /></span>Review gift
+                          <span className="gm-ico"><ArrowIcon /></span>Review Gift
                         </button>
                       </div>
                       <Summary pending={pending} busy={busy} onCancel={() => setPending(null)} />

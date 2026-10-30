@@ -175,7 +175,7 @@ export function GroupScores({ countsOnly = false }: { countsOnly?: boolean }) {
                                   <Lightbulb size={11} aria-hidden /> Lit
                                 </>
                               ) : countsOnly ? (
-                                "Full set"
+                                "Full Set"
                               ) : (
                                 `${n}/${PIECES_PER_SET}`
                               )}

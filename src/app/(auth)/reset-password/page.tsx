@@ -29,7 +29,7 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <AuthShell role="Set a new password" backHref="/login" backLabel="Back to login">
+    <AuthShell role="Set a New Password" backHref="/login" backLabel="Back to Login">
       <form onSubmit={onSubmit} className="vx-login-form">
         {error && (
           <p className="vx-login-error" role="alert">
@@ -37,7 +37,7 @@ export default function ResetPasswordPage() {
           </p>
         )}
         <label htmlFor="password">
-          New password (min 8 characters)
+          New Password (Min 8 Characters)
           <input
             id="password"
             type="password"
@@ -49,7 +49,7 @@ export default function ResetPasswordPage() {
           />
         </label>
         <button type="submit" disabled={busy} className="vx-btn vx-btn-primary">
-          {busy ? <Spinner className="border-black/25 border-t-black" /> : "Set new password"}
+          {busy ? <Spinner className="border-black/25 border-t-black" /> : "Set New Password"}
         </button>
       </form>
     </AuthShell>

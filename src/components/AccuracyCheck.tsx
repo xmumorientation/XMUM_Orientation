@@ -117,7 +117,7 @@ function CheckLog({ log, nowMs, onClear }: { log: CheckReading[]; nowMs: number;
   return (
     <div className="space-y-1 border-t border-paper-200 pt-2">
       <div className="flex items-center justify-between gap-2">
-        <p className="text-xs font-semibold">Readings on this phone ({log.length})</p>
+        <p className="text-xs font-semibold">Readings on This Phone ({log.length})</p>
         <div className="flex gap-1">
           <button
             type="button"
@@ -312,7 +312,7 @@ export function AccuracyCheckPanel({
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h2 className="flex items-center gap-1.5 font-semibold">
-            <Crosshair className="h-4 w-4" /> Accuracy check
+            <Crosshair className="h-4 w-4" /> Accuracy Check
           </h2>
           <p className="mt-0.5 text-xs text-ink-faint">
             {measure
@@ -343,7 +343,7 @@ export function AccuracyCheckPanel({
       {anchors.length > 0 && (
         <details>
           <summary className="cursor-pointer text-xs font-semibold">
-            {measure ? `Saved corrections, 2D map only (${anchors.length})` : `Saved corrections (${anchors.length})`}
+            {measure ? `Saved Corrections, 2D Map Only (${anchors.length})` : `Saved Corrections (${anchors.length})`}
           </summary>
           <ul className="mt-1 divide-y divide-paper-200">
             {anchors.map((a) => (

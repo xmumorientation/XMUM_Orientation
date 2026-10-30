@@ -489,21 +489,21 @@ function bannerProblem(
 }
 
 const BANNER_TITLES: Record<string, string> = {
-  inapp: "Open this page in your browser",
-  insecure: "Location needs the secure site",
-  denied: "Location is blocked",
-  unavailable: "Your phone can't find its location",
-  imprecise: "Your location is only approximate",
-  error: "Your location wasn't sent",
-  prompt: "Allow location for the campus map",
-  requesting: "Finding your location…",
-  gap: "Your group was off the map",
+  inapp: "Open This Page in Your Browser",
+  insecure: "Location Needs the Secure Site",
+  denied: "Location Is Blocked",
+  unavailable: "Your Phone Can't Find Its Location",
+  imprecise: "Your Location Is Only Approximate",
+  error: "Your Location Wasn't Sent",
+  prompt: "Allow Location for the Campus Map",
+  requesting: "Finding Your Location…",
+  gap: "Your Group Was Off the Map",
 };
 
 /**
  * Floating banner for a Faci whose location isn't reaching the map, with
- * steps for their phone. A dismissed banner comes back when the problem
- * changes (for example, permission is turned off later).
+ * steps for their phone. Once dismissed it stays closed, whatever the
+ * problem, until the page is reloaded.
  */
 export function FaciLocationBanner() {
   const {
@@ -517,12 +517,11 @@ export function FaciLocationBanner() {
     keepAwake,
     setKeepAwake,
   } = useFaciLocation();
-  const [dismissedKey, setDismissedKey] = useState<string | null>(null);
+  const [dismissed, setDismissed] = useState(false);
 
-  if (!isFaci) return null;
+  if (!isFaci || dismissed) return null;
   const problem = bannerProblem(status, env, gapMinutes, error);
   if (!problem) return null;
-  if (dismissedKey === problem) return null;
 
   const helpProblem: LocationProblem | null =
     problem === "inapp" ||
@@ -536,7 +535,7 @@ export function FaciLocationBanner() {
   let message: string;
   switch (problem) {
     case "gap":
-      message = `Nobody in your group had the app open for ${gapMinutes} min, so Committee couldn't see you. Keep it open on at least one phone${keepAwake ? "." : ", with Keep tracking on."}`;
+      message = `Nobody in your group had the app open for ${gapMinutes} min, so Committee couldn't see you. Keep it open on at least one phone${keepAwake ? "." : ", with Keep Tracking on."}`;
       break;
     case "imprecise":
       message =
@@ -557,7 +556,7 @@ export function FaciLocationBanner() {
 
   function dismiss() {
     if (problem === "gap") dismissGap();
-    setDismissedKey(problem);
+    setDismissed(true);
   }
 
   return (
@@ -593,7 +592,7 @@ export function FaciLocationBanner() {
             className="mt-2 text-xs text-amber-950"
             open={helpProblem !== "imprecise"}
           >
-            <summary className="cursor-pointer font-semibold">How to fix it</summary>
+            <summary className="cursor-pointer font-semibold">How to Fix It</summary>
             <LocationHelp problem={helpProblem} env={env} className="mt-1.5" />
           </details>
         )}
@@ -609,7 +608,7 @@ export function FaciLocationBanner() {
                 }}
                 className="btn min-h-[36px] bg-amber-600 px-3.5 py-1.5 text-xs text-white hover:bg-amber-700"
               >
-                Turn on Keep tracking
+                Turn On Keep Tracking
               </button>
             )}
             {showRetry && (
@@ -623,7 +622,7 @@ export function FaciLocationBanner() {
                   ? "Locating…"
                   : problem === "prompt"
                     ? "Allow"
-                    : "Try again"}
+                    : "Try Again"}
               </button>
             )}
           </div>

@@ -27,7 +27,7 @@ const SECTIONS: Section[] = [
     key: "live",
     label: "Live",
     tabs: [
-      { href: "/admin", label: "Live control" },
+      { href: "/admin", label: "Live Control" },
       { href: "/admin/audit", label: "Audit" },
     ],
   },
@@ -36,7 +36,7 @@ const SECTIONS: Section[] = [
     label: "Freshies",
     tabs: [
       { href: "/admin/freshies", label: "Groups" },
-      { href: "/admin/freshies/headcount", label: "Headcount and location" },
+      { href: "/admin/freshies/headcount", label: "Headcount and Location" },
     ],
   },
   {
@@ -46,7 +46,7 @@ const SECTIONS: Section[] = [
       { href: "/admin/token", label: "Tokens" },
       { href: "/admin/stations", label: "Stations" },
       { href: "/admin/puzzles", label: "Puzzles" },
-      { href: "/admin/blindbox", label: "Blind box" },
+      { href: "/admin/blindbox", label: "Blind Box" },
       { href: "/admin/nfc", label: "NFC" },
     ],
   },

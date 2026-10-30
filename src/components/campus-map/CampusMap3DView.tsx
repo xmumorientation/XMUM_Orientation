@@ -749,7 +749,7 @@ export function CampusMap3DView({
       aria-pressed={showNames}
       onClick={() => data.setShowNames((current) => !current)}
     >
-      {showNames ? "Hide names" : "Show names"}
+      {showNames ? "Hide Names" : "Show Names"}
     </button>
   );
 
@@ -777,7 +777,7 @@ export function CampusMap3DView({
             onClick={openFullscreen}
           >
             <Maximize2 className="h-3.5 w-3.5" />
-            Full screen
+            Full Screen
           </button>
           {host &&
             env &&
@@ -909,7 +909,7 @@ export function CampusMap3DView({
                     className="pointer-events-auto flex items-center justify-between gap-3 rounded-2xl bg-white px-3 py-2.5 text-sm text-stone-900 shadow-lg"
                   >
                     <div className="min-w-0">
-                      <div className="font-semibold">Tennis is closed</div>
+                      <div className="font-semibold">Tennis Is Closed</div>
                       <div className="text-xs text-ink-faint">The courts are closed for now, so the game has ended.</div>
                     </div>
                     <button

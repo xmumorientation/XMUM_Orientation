@@ -98,7 +98,7 @@ export default function AttendancePage() {
 
       {profile.group_id && (
         <Card>
-          <h2 className="mb-1 font-semibold">Group headcount</h2>
+          <h2 className="mb-1 font-semibold">Group Headcount</h2>
           <p className="mb-3 text-xs text-ink-faint">Enter the number of people with your group. Total is required; Local and International are optional. You can change it any time.</p>
           <form onSubmit={submitHeadcount} className="space-y-3">
             <div className="grid grid-cols-3 gap-2">

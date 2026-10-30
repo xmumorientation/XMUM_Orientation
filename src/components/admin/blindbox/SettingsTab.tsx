@@ -80,7 +80,7 @@ export function SettingsTab({ data, onError, onNotice }: TabProps) {
   return (
     <div className="space-y-4">
       <Card className="max-w-xl space-y-3">
-        <h2 className="font-semibold">Limits per group</h2>
+        <h2 className="font-semibold">Limits per Group</h2>
         <form onSubmit={save} className="space-y-3">
           <div>
             <label className="label text-xs" htmlFor="bb-cap">
@@ -120,7 +120,7 @@ export function SettingsTab({ data, onError, onNotice }: TabProps) {
       </Card>
 
       <Card className="max-w-xl space-y-3 border-red-200">
-        <h2 className="font-semibold text-red-700">Reset after a rehearsal</h2>
+        <h2 className="font-semibold text-red-700">Reset After a Rehearsal</h2>
         {!unlocked ? (
           <p className="rounded-md bg-paper-200 px-3 py-2 text-sm">
             Locked. The reset only works while <b>Rehearsal mode</b> is on, so
@@ -138,7 +138,7 @@ export function SettingsTab({ data, onError, onNotice }: TabProps) {
         )}
 
         <p className="text-sm text-ink-faint">
-          <b className="text-ink">Restore boxes</b>: {plural(preview.claims, "bought box goes", "bought boxes go")}{" "}
+          <b className="text-ink">Restore Boxes</b>: {plural(preview.claims, "bought box goes", "bought boxes go")}{" "}
           back (opened or not), so every seller and the Spot have their full
           number again, and groups can buy again. Box types, who holds what, the
           Spot&apos;s settings and every QR code stay.
@@ -188,7 +188,7 @@ export function SettingsTab({ data, onError, onNotice }: TabProps) {
               (!unlocked || !confirmed) && "opacity-50"
             )}
           >
-            Restore boxes
+            Restore Boxes
           </button>
         </div>
       </Card>

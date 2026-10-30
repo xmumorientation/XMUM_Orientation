@@ -171,18 +171,18 @@ export default function AdminNfcPage() {
   return (
     <div className="space-y-4">
       <PageTitle
-        title="NFC activation tokens"
+        title="NFC Activation Tokens"
         subtitle="One-time signed URLs for the physical stickers"
       />
       <ErrorBanner message={error} />
 
       <Card className="space-y-3 border-2 border-amber-300">
         <div>
-          <h2 className="font-semibold">NFC test mode</h2>
+          <h2 className="font-semibold">NFC Test Mode</h2>
           <p className="mt-1 text-sm text-ink-soft">Creates a test-only Guardian redemption so the group can exercise the real sticker activation without waiting for Endgame. The group must scan while signed in to its account.</p>
         </div>
         <div className="grid gap-3 sm:grid-cols-3">
-          <label className="label mb-0">Test group
+          <label className="label mb-0">Test Group
             <select className="input mt-1" value={groupId} onChange={(e) => setGroupId(Number(e.target.value))}>
               {groups.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
             </select>
@@ -192,21 +192,21 @@ export default function AdminNfcPage() {
               {PROJECTOR_LOCATIONS.map((loc) => <option key={loc} value={loc}>{places[loc].name}</option>)}
             </select>
           </label>
-          <button disabled={busy || groups.length === 0} onClick={startTestRun} className="btn-primary self-end">Prepare test</button>
+          <button disabled={busy || groups.length === 0} onClick={startTestRun} className="btn-primary self-end">Prepare Test</button>
         </div>
         <p className="text-xs text-ink-faint">Preparation is refused if the group or projector already has activation or redemption state. Reset re-arms the test sticker and restores only this test redemption. NFC kill-switch still applies.</p>
         {testRuns.length > 0 && <div className="overflow-x-auto">
           <table className="w-full min-w-[560px] text-left text-sm">
-            <thead><tr className="border-b border-paper-200 text-xs font-bold uppercase tracking-wide text-ink-faint"><th className="py-2">Test run</th><th>State</th><th className="text-right">Actions</th></tr></thead>
+            <thead><tr className="border-b border-paper-200 text-xs font-bold uppercase tracking-wide text-ink-faint"><th className="py-2">Test Run</th><th>State</th><th className="text-right">Actions</th></tr></thead>
             <tbody className="divide-y divide-paper-200">
               {testRuns.map((run) => <tr key={run.id}>
                 <td className="py-2">Group {run.group_id} / {places[run.location].name}<span className="block text-xs text-ink-faint">{new Date(run.created_at).toLocaleString()}</span></td>
                 <td>{run.closed_at ? `Finished / ${new Date(run.closed_at).toLocaleString()}` : run.reset_at ? `Active / reset ${new Date(run.reset_at).toLocaleString()}` : "Active"}</td>
                 <td className="space-x-2 text-right">
                   {!run.closed_at && <>
-                    <button disabled={busy} onClick={() => mint(run)} className="btn text-xs">Generate test sticker</button>
-                    <button disabled={busy} onClick={() => resetTestRun(run)} className="btn text-xs">Reset and re-arm</button>
-                    <button disabled={busy} onClick={() => finishTestRun(run)} className="btn-danger text-xs">Finish test</button>
+                    <button disabled={busy} onClick={() => mint(run)} className="btn text-xs">Generate Test Sticker</button>
+                    <button disabled={busy} onClick={() => resetTestRun(run)} className="btn text-xs">Reset and Re-Arm</button>
+                    <button disabled={busy} onClick={() => finishTestRun(run)} className="btn-danger text-xs">Finish Test</button>
                   </>}
                 </td>
               </tr>)}
@@ -238,7 +238,7 @@ export default function AdminNfcPage() {
 
       <div className="grid items-start gap-4 lg:grid-cols-[22rem_minmax(0,1fr)]">
         <Card className="space-y-3">
-          <h2 className="font-semibold">Generate tokens</h2>
+          <h2 className="font-semibold">Generate Tokens</h2>
           <div className="grid grid-cols-3 gap-2">
             {PROJECTOR_LOCATIONS.map((loc) => (
               <button
@@ -257,7 +257,7 @@ export default function AdminNfcPage() {
           </div>
           <div className="flex items-center gap-2">
             <label className="label mb-0 flex-1" htmlFor="count">
-              How many stickers (incl. spares)?
+              How Many Stickers (Incl. Spares)?
             </label>
             <input
               id="count"
@@ -270,7 +270,7 @@ export default function AdminNfcPage() {
             />
           </div>
           <button disabled={busy} onClick={() => mint()} className="btn-primary w-full">
-            Generate {count} token{count > 1 ? "s" : ""}
+            Generate {count} Token{count > 1 ? "s" : ""}
           </button>
         </Card>
 
@@ -304,8 +304,8 @@ export default function AdminNfcPage() {
                       )}
                     >
                       {t.test_run_id && testRuns.find((r) => r.id === t.test_run_id)?.closed_at
-                        ? "test ended"
-                        : t.used_at || t.used_by_group !== null ? (t.used_by_group === null ? "used" : `used by G${t.used_by_group}`) : "unused"}
+                        ? "Test Ended"
+                        : t.used_at || t.used_by_group !== null ? (t.used_by_group === null ? "Used" : `Used by G${t.used_by_group}`) : "Unused"}
                     </span>
                   </td>
                   <td className="px-4 py-2 text-right">
@@ -331,12 +331,12 @@ export default function AdminNfcPage() {
         </Card>
       </div>
       <Dialog open={pendingDelete !== null} onOpenChange={(open) => { if (!open && !busy) setPendingDelete(null); }}>
-        <DialogContent title="Delete NFC card?" description="This permanently removes the card. Its NFC sticker and QR link will stop working. Existing logs will be kept." showClose={!busy}>
+        <DialogContent title="Delete NFC Card?" description="This permanently removes the card. Its NFC sticker and QR link will stop working. Existing logs will be kept." showClose={!busy}>
           {pendingDelete && <p className="text-sm font-semibold">{pendingDelete.label || `Card #${pendingDelete.id}`} / {pendingDelete.location} / #{pendingDelete.id}</p>}
           {deleteError && <p role="alert" className="mt-3 text-sm text-red-700">{deleteError}</p>}
           <div className="mt-4 flex justify-end gap-2">
             <button className="btn" disabled={busy} onClick={() => setPendingDelete(null)}>Cancel</button>
-            <button className="btn-danger" disabled={busy} onClick={deleteToken}>{busy ? "Deleting…" : "Delete card"}</button>
+            <button className="btn-danger" disabled={busy} onClick={deleteToken}>{busy ? "Deleting…" : "Delete Card"}</button>
           </div>
         </DialogContent>
       </Dialog>

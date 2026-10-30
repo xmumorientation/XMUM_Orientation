@@ -44,7 +44,7 @@ export function NowOnWelcome({
       className="flex flex-wrap items-center gap-x-6 gap-y-3 rounded-2xl border border-brand-1/40 bg-brand-1/5 px-4 py-3"
     >
       <div className="min-w-0">
-        <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-ink-faint">Now on the Welcome page</p>
+        <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-ink-faint">Now on the Welcome Page</p>
         <p className="font-mono text-sm font-bold tracking-[0.15em]">{label}</p>
       </div>
       <p className="font-mono text-3xl font-black tabular-nums" role="timer" aria-label={label.toLowerCase()}>

@@ -340,7 +340,7 @@ Groups checked in here will lose that check-in.`)) return;
         title="Stations"
         action={
           <button type="button" className="btn-primary px-5" onClick={openAdd}>
-            + Add station
+            + Add Station
           </button>
         }
       />
@@ -589,12 +589,12 @@ Groups checked in here will lose that check-in.`)) return;
         onOpenChange={(open) => !open && setEditing(null)}
       >
         <DialogContent
-          title={editing === "new" ? "Add station" : "Edit station"}
+          title={editing === "new" ? "Add Station" : "Edit Station"}
         >
           <form onSubmit={saveStation} className="space-y-3">
             <div>
               <label className="label" htmlFor="station-name">
-                Station name
+                Station Name
               </label>
               <input
                 id="station-name"
@@ -676,7 +676,7 @@ Groups checked in here will lose that check-in.`)) return;
 
             <div>
               <label className="label" htmlFor="station-purpose">
-                Game or purpose
+                Game or Purpose
               </label>
               <input
                 id="station-purpose"
@@ -689,7 +689,7 @@ Groups checked in here will lose that check-in.`)) return;
 
             <div>
               <label className="label" htmlFor="station-max-groups">
-                Groups at once (capacity)
+                Groups at Once (Capacity)
               </label>
               <input
                 id="station-max-groups"
@@ -729,7 +729,7 @@ Groups checked in here will lose that check-in.`)) return;
             )}
 
             <button type="submit" className="btn-primary w-full">
-              {editing === "new" ? "Add station" : "Save changes"}
+              {editing === "new" ? "Add Station" : "Save Changes"}
             </button>
           </form>
         </DialogContent>

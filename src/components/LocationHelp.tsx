@@ -37,7 +37,7 @@ export function locationSteps(problem: LocationProblem, env: BrowserEnv): string
           ? [
               "Tap \"aA\" in the address bar → Website Settings → Location → Allow.",
               "Still blocked? Settings → Privacy & Security → Location Services: turn it on, then Safari Websites → While Using the App.",
-              "Come back here and tap Try again (reload the page if nothing changes).",
+              "Come back here and tap Try Again (reload the page if nothing changes).",
             ]
           : [
               `Settings → Privacy & Security → Location Services: turn it on.`,
@@ -49,12 +49,12 @@ export function locationSteps(problem: LocationProblem, env: BrowserEnv): string
         return [
           "Tap the icon left of the web address → Permissions (or Site settings) → Location → Allow.",
           `Also check: phone Settings → Location is on, and Settings → Apps → ${name} → Permissions → Location → Allow only while using the app.`,
-          "Come back here and tap Try again.",
+          "Come back here and tap Try Again.",
         ];
       }
       return [
         "Click the icon left of the web address and allow Location for this site.",
-        "Then tap Try again.",
+        "Then tap Try Again.",
       ];
 
     case "imprecise":
@@ -62,14 +62,14 @@ export function locationSteps(problem: LocationProblem, env: BrowserEnv): string
         return [
           `Settings → Privacy & Security → Location Services → ${iosApp}.`,
           "Turn on Precise Location (and choose While Using the App).",
-          "Come back here and tap Try again. Outdoors works best.",
+          "Come back here and tap Try Again. Outdoors works best.",
         ];
       }
       if (env.os === "android") {
         return [
           `Settings → Apps → ${name} → Permissions → Location → turn on "Use precise location".`,
           "Settings → Location → Location services → turn on Google Location Accuracy.",
-          "Come back here and tap Try again. Outdoors works best.",
+          "Come back here and tap Try Again. Outdoors works best.",
         ];
       }
       return [
@@ -81,13 +81,13 @@ export function locationSteps(problem: LocationProblem, env: BrowserEnv): string
         return [
           "Settings → Privacy & Security → Location Services: make sure it is on.",
           "Turn Airplane Mode off and Wi-Fi on (Wi-Fi helps the phone find itself).",
-          "Step outside or near a window, then tap Try again.",
+          "Step outside or near a window, then tap Try Again.",
         ];
       }
       return [
         "Pull down the quick settings and turn Location on.",
         "Turn Wi-Fi on (it helps the phone find itself, even without connecting).",
-        "Step outside or near a window, then tap Try again.",
+        "Step outside or near a window, then tap Try Again.",
       ];
 
     case "nowake":

@@ -15,6 +15,7 @@ import { NewItemToast } from "@/components/NewItemToast";
 import { OpsHeader } from "@/components/staff/OpsHeader";
 import { PhaseTimer } from "@/components/PhaseTimer";
 import { FaciLocationBanner } from "@/components/FaciLocationTracker";
+import { GroupHeader } from "@/components/freshie/GroupHeader";
 import { useConfig } from "@/components/useConfig";
 import { useProfile } from "@/components/ProfileProvider";
 import { useGroup } from "@/components/useGroup";
@@ -100,7 +101,7 @@ const NAV: NavItem[] = [
     code: "OP",
     roles: ["hof", "hogm", "committee"],
   },
-  { href: "/code", label: "Code", code: "CD", roles: ["faci"] },
+  { href: "/checklist", label: "Checklist", code: "AT", roles: ["faci"] },
   { href: "/admin", label: "Admin", code: "AD", roles: ["admin"] },
 ];
 
@@ -129,9 +130,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const isStaffSubpage = isStaffArea && !isStaffDashboard;
   // Roles whose subpages use Home's header (OpsHeader) instead of the staff phone header.
   const hasOpsHeader = isOps || isGm || isAdminMap;
+  // Freshie and Faci pages other than Home (and a Freshie's Scan): GroupHeader
+  // (logo, game status and progress, account).
+  const hasGroupHeader = (isFreshie || isFaci) && pathname !== "/dashboard" && !(isFreshie && pathname === "/scan");
   const items = NAV.filter((n) => n.roles.includes(profile.role));
   // Freshie and facilitator phones share the night tab bar. Freshie Scan is
-  // the raised center button; a facilitator gets Code there instead.
+  // the raised center button; a facilitator gets Checklist there instead.
   // Home, Schedule, Items and Map hide the light mobile header for both roles.
   const { group } = useGroup();
   const groupTheme = isFreshie || isFaci ? themeFromColor(group?.color) : null;
@@ -139,7 +143,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const fhTheme = groupTheme ?? (isVortexa ? VORTEXA_THEME : null);
   const isNight = isStaffDashboard || (
     (isFreshie || isFaci) &&
-    (pathname === "/dashboard" || pathname === "/schedule" || pathname === "/inventory" || pathname === "/map"));
+    (pathname === "/dashboard" || pathname === "/schedule" || pathname === "/checklist" || pathname === "/inventory" || pathname === "/map"));
   const showTabBar = (isFreshie || isFaci || isVortexa) && !(isFreshie && pathname === "/scan");
 
   // Close the drawer on route change so it never lingers over a new page.
@@ -236,7 +240,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       />
       {/* HOGM and HOF subpages: Home's logo, role chip and account menu (OpsHeader). */}
       {isStaffSubpage && hasOpsHeader && <OpsHeader onOpenMenu={isAdminMap ? () => setMenuOpen(true) : undefined} />}
-      {!isNight && !(isStaffSubpage && hasOpsHeader) && (
+      {hasGroupHeader && <GroupHeader />}
+      {!isNight && !(isStaffSubpage && hasOpsHeader) && !hasGroupHeader && (
       <header className={cn("sticky top-0 z-40 border-b border-paper-200 bg-paper-50/95 pt-[env(safe-area-inset-top)] shadow-[0_1px_0_rgba(28,26,23,0.03)] backdrop-blur lg:hidden", isStaffSubpage && "sp-header")}>
         {isStaffSubpage ? (
           <div className="sp-header-row">
@@ -254,17 +259,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         ) : (
         <div className="flex items-center justify-between gap-3 px-3 py-2.5 sm:px-5 sm:py-3">
           <div className="flex min-w-0 items-center gap-2.5">
-            {!isFreshie && (
-                <button
-                  type="button"
-                  aria-label="Open menu"
-                  onClick={() => setMenuOpen(true)}
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-paper-300 bg-white text-ink shadow-raised transition hover:bg-paper-100 active:scale-95"
-                >
-                  <Menu size={20} strokeWidth={1.75} />
-                </button>
-            )}
-
             <Link href="/dashboard" className="flex min-w-0 items-center gap-2">
               <Monogram name={brand.eventName} size="sm" />
               <span className="min-w-0">
@@ -332,7 +326,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 onClick={signOut}
                 className="mt-2 min-h-[48px] rounded-xl border border-paper-300 bg-paper-100 px-3 text-left text-sm font-bold text-ink-soft"
               >
-                Log out
+                Log Out
               </button>
             </div>
           </DialogContent>

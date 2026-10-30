@@ -8,7 +8,7 @@ import CheckInDraw from "@/components/demo/CheckInDraw";
  * not open URL. No Scan UI on this page.
  */
 export const metadata: Metadata = {
-  title: "Check-in draw — Vortexa",
+  title: "Check-In Draw — Vortexa",
   description: "Demo counter check-in: drawing your orientation group.",
   robots: { index: false, follow: false },
 };

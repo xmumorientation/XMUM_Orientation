@@ -29,10 +29,10 @@ export default function ForgotPasswordPage() {
 
   return (
     <AuthShell
-      role="Reset password"
+      role="Reset Password"
       lead="We’ll email you a link to choose a new password."
       backHref="/login"
-      backLabel="Back to login"
+      backLabel="Back to Login"
     >
       <form onSubmit={onSubmit} className="vx-login-form">
         {error && (
@@ -47,7 +47,7 @@ export default function ForgotPasswordPage() {
         )}
 
         <label htmlFor="email">
-          Campus email
+          Campus Email
           <input
             id="email"
             type="email"
@@ -60,7 +60,7 @@ export default function ForgotPasswordPage() {
         </label>
 
         <button type="submit" disabled={busy} className="vx-btn vx-btn-primary">
-          {busy ? <Spinner className="border-black/25 border-t-black" /> : "Send reset link"}
+          {busy ? <Spinner className="border-black/25 border-t-black" /> : "Send Reset Link"}
         </button>
       </form>
     </AuthShell>

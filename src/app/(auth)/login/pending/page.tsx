@@ -66,7 +66,7 @@ export default function PendingApprovalPage() {
 
   return (
     <AuthShell
-      role="Waiting for approval"
+      role="Waiting for Approval"
       lead={
         ready
           ? label
@@ -83,7 +83,7 @@ export default function PendingApprovalPage() {
         )}
         {!ready && !error && <Spinner className="mx-auto" />}
         <button type="button" onClick={signOut} className="vx-btn vx-btn-ghost">
-          Sign out
+          Sign Out
         </button>
       </div>
     </AuthShell>

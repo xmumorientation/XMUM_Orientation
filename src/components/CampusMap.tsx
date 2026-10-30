@@ -80,7 +80,7 @@ export function CampusMap({
       )}
       <MapToolbar data={data} canManageStations={canManageStations} view={panelView} />
       {view === "2d" && <nav aria-label={`Day ${data.day} map buildings`} className="campus-map-buildings">
-        <p className="campus-map-buildings-title">Day {data.day} / Find a station</p>
+        <p className="campus-map-buildings-title">Day {data.day} / Find a Station</p>
         <div className="campus-map-building-options">
           <button type="button" className="campus-map-building" aria-pressed={data.layer === "stations" && data.clusterArea === null}
             onClick={() => selectArea(null)}>

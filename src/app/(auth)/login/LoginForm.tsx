@@ -77,7 +77,7 @@ export function LoginForm({ demoLogins }: { demoLogins: DemoLogin[] }) {
   }
 
   return (
-    <AuthShell role="Committee, Faci, GM login" lead="Sign in with your campus email or Google.">
+    <AuthShell role="Committee, Faci, GM Login" lead="Sign in with your campus email or Google.">
       <form onSubmit={onSubmit} className="vx-login-form">
         {error && (
           <p className="vx-login-error" role="alert">
@@ -86,7 +86,7 @@ export function LoginForm({ demoLogins }: { demoLogins: DemoLogin[] }) {
         )}
 
         <label htmlFor="email">
-          Campus email
+          Campus Email
           <input
             id="email"
             type="email"
@@ -125,11 +125,11 @@ export function LoginForm({ demoLogins }: { demoLogins: DemoLogin[] }) {
         </div>
 
         <button type="submit" disabled={busy} className="vx-btn vx-btn-primary">
-          {busy ? <Spinner className="border-black/25 border-t-black" /> : "Sign in"}
+          {busy ? <Spinner className="border-black/25 border-t-black" /> : "Sign In"}
         </button>
 
         <Link href="/forgot-password" className="vx-login-link">
-          Forgot password?
+          Forgot Password?
         </Link>
 
         <p className="vx-login-divider">or</p>
@@ -142,7 +142,7 @@ export function LoginForm({ demoLogins }: { demoLogins: DemoLogin[] }) {
 
       {demoLogins.length > 0 && (
         <details className="vx-login-demo">
-          <summary>Demo quick login</summary>
+          <summary>Demo Quick Login</summary>
           <div className="vx-login-demo-box">
             <p>Test accounts. Only on local dev.</p>
             <div className="vx-login-demo-row">

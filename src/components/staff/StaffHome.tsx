@@ -39,7 +39,7 @@ import "./staff-home.css";
 
 const STOPS = [
   { id: "sh-welcome", label: "Welcome" },
-  { id: "sh-bb", label: "Blind box" },
+  { id: "sh-bb", label: "Blind Box" },
   { id: "sh-scores", label: "Scores" },
   { id: "sh-tools", label: "Tools" },
 ] as const;
@@ -186,7 +186,7 @@ function SellerBox({
   const copyId = row ? row.id : s.id;
   return (
     <li className="sh-bb">
-      <span className="sh-bb-who fh-mono">Your own boxes</span>
+      <span className="sh-bb-who fh-mono">Your Own Boxes</span>
       {status ? (
         <p className="sh-bb-state" data-tone={status.off ? "off" : undefined}>{status.text}</p>
       ) : (
@@ -229,7 +229,7 @@ function SellerBox({
               {shown && !sold && (
                 <button type="button" className="fh-btn fh-btn-ghost sh-bb-copy" onClick={() => copy(copyId, shown.url)}>
                   {copied === copyId ? <Check size={16} aria-hidden /> : <Copy size={16} aria-hidden />}
-                  {copied === copyId ? "Copied" : "Copy link"}
+                  {copied === copyId ? "Copied" : "Copy Link"}
                 </button>
               )}
             </>
@@ -295,14 +295,14 @@ function ScoresStop({ groups }: { groups: HomeGroup[] | null }) {
 }
 
 const TOOLS = [
-  { href: "/map", Icon: Map, title: "Campus map", text: "Stations and group locations" },
+  { href: "/map", Icon: Map, title: "Campus Map", text: "Stations and group locations" },
   { href: "/schedule", Icon: CalendarDays, title: "Schedule", text: "The two-day programme" },
   { href: "/token", Icon: Coins, title: "Scoreboard", text: "Live tokens and puzzle pieces" },
 ];
 
 const GM_TOOLS = [
-  { href: "/gm", Icon: Flag, title: "Station panel", text: "Results, rewards and station status" },
-  { href: "/map", Icon: Map, title: "Campus map", text: "Every station and its status" },
+  { href: "/gm", Icon: Flag, title: "Station Panel", text: "Results, rewards and station status" },
+  { href: "/map", Icon: Map, title: "Campus Map", text: "Every station and its status" },
   { href: "/schedule", Icon: CalendarDays, title: "Schedule", text: "The two-day programme" },
   { href: "/token", Icon: Coins, title: "Scoreboard", text: "Live tokens and puzzle counts" },
 ];

@@ -266,9 +266,9 @@ export function StationsSection() {
                   <dl className="gc-facts">
                     <div><dt>Location</dt><dd>{s.code}</dd></div>
                     <div><dt>Game</dt><dd>{s.purpose || "—"}</dd></div>
-                    <div><dt>Groups at once</dt><dd>{s.max_groups ?? "—"}</dd></div>
+                    <div><dt>Groups at Once</dt><dd>{s.max_groups ?? "—"}</dd></div>
                     {s.day === 2 && (
-                      <div><dt>Risk &amp; entry</dt><dd>{RISK_TIER_META[s.risk_tier].label} / −{s.entry_cost}</dd></div>
+                      <div><dt>Risk &amp; Entry</dt><dd>{RISK_TIER_META[s.risk_tier].label} / −{s.entry_cost}</dd></div>
                     )}
                   </dl>
                   <div className="gc-seg gc-seg-status" role="group" aria-label={`${s.name} status`}>
@@ -315,7 +315,7 @@ export function StationsSection() {
         {visible.length === 0 && <li className="gc-empty">No stations yet.</li>}
       </ul>
 
-      <Sheet open={editing !== null} onClose={() => setEditing(null)} title={editing === "new" ? "Add station" : "Edit station"}>
+      <Sheet open={editing !== null} onClose={() => setEditing(null)} title={editing === "new" ? "Add Station" : "Edit Station"}>
         <form className="gc-form" onSubmit={saveStation}>
           <label className="gc-field">
             <span>Name</span>
@@ -349,7 +349,7 @@ export function StationsSection() {
           </div>
           {form.block === OTHER_BLOCK && (
             <label className="gc-field">
-              <span>New block name</span>
+              <span>New Block Name</span>
               <input className="gc-input" required value={form.otherBlock} onChange={(e) => setForm({ ...form, otherBlock: e.target.value })} />
             </label>
           )}
@@ -358,7 +358,7 @@ export function StationsSection() {
             <input className="gc-input" placeholder="Tug of War" value={form.purpose} onChange={(e) => setForm({ ...form, purpose: e.target.value })} />
           </label>
           <label className="gc-field">
-            <span>Groups at once</span>
+            <span>Groups at Once</span>
             <input
               className="gc-input"
               type="number"
@@ -381,7 +381,7 @@ export function StationsSection() {
             </div>
           )}
           <button type="submit" className="gc-btn gc-btn-primary" disabled={busy}>
-            {editing === "new" ? "Add station" : "Save"}
+            {editing === "new" ? "Add Station" : "Save"}
           </button>
         </form>
       </Sheet>
@@ -437,7 +437,7 @@ export function StationsSection() {
         onConfirm={confirmClear}
         busy={busy}
         danger
-        title={clearing ? `Clear ${clearing.occupant.name}?` : "Clear group?"}
+        title={clearing ? `Clear ${clearing.occupant.name}?` : "Clear Group?"}
         confirmLabel="Clear"
         body={
           clearing
@@ -453,7 +453,7 @@ export function StationsSection() {
         busy={busy}
         danger
         title={deleting?.hasHistory ? `Close ${deleting.station.name}?` : `Delete ${deleting?.station.name ?? ""}?`}
-        confirmLabel={deleting?.hasHistory ? "Close station" : "Delete"}
+        confirmLabel={deleting?.hasHistory ? "Close Station" : "Delete"}
         body={
           deleting?.hasHistory
             ? "It has token history, so it can't be deleted. Closing keeps the records."

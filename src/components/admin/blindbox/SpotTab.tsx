@@ -83,7 +83,7 @@ export function SpotTab({ data, onError, onNotice }: TabProps) {
         )}
         <button type="button" disabled={!png} onClick={download} className="btn-primary w-full gap-1.5 active:scale-[0.98]">
           <Download size={16} strokeWidth={1.75} aria-hidden />
-          Download to print
+          Download to Print
         </button>
         <p className="text-xs text-ink-faint">
           This QR never changes. Print as many copies as you like and hide them around campus.
@@ -93,7 +93,7 @@ export function SpotTab({ data, onError, onNotice }: TabProps) {
       <Card>
         <form onSubmit={save} className="space-y-4">
           <div>
-            <h2 className="font-semibold">{spot ? "Spot box" : "Set up the Spot box"}</h2>
+            <h2 className="font-semibold">{spot ? "Spot Box" : "Set Up the Spot Box"}</h2>
             <p className="text-sm text-ink-faint">
               A group that finds a copy scans it and claims one free box. Each group gets at most one Spot box, and it
               doesn&apos;t count toward their limit of {data.cap}.
@@ -120,9 +120,9 @@ export function SpotTab({ data, onError, onNotice }: TabProps) {
           <div className="grid grid-cols-3 gap-3">
             {(
               [
-                ["min", "Min tokens", 0],
-                ["max", "Max tokens", 0],
-                ["pool", "Boxes in the pool", claimed],
+                ["min", "Min Tokens", 0],
+                ["max", "Max Tokens", 0],
+                ["pool", "Boxes in the Pool", claimed],
               ] as const
             ).map(([k, label, min]) => (
               <div key={k} className="space-y-1">
@@ -148,7 +148,7 @@ export function SpotTab({ data, onError, onNotice }: TabProps) {
 
           <label className="flex items-center justify-between gap-3 rounded-xl bg-paper-100 px-3 py-2.5 text-sm">
             <span>
-              <b>Spot is on</b>
+              <b>Spot Is On</b>
               <span className="block text-xs text-ink-faint">Off: scanning a copy says the code isn&apos;t active.</span>
             </span>
             <button
@@ -167,7 +167,7 @@ export function SpotTab({ data, onError, onNotice }: TabProps) {
 
           <div className="flex gap-2">
             <button disabled={busy} type="submit" className="btn-primary px-6 active:scale-[0.98]">
-              {busy ? "Saving…" : spot ? "Save" : "Set up the Spot"}
+              {busy ? "Saving…" : spot ? "Save" : "Set Up the Spot"}
             </button>
             {form && (
               <button type="button" onClick={() => setForm(null)} className="btn-secondary">

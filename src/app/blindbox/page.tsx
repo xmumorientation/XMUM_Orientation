@@ -20,7 +20,7 @@ export const dynamic = "force-dynamic";
 
 function ErrorScreen({ title, message }: { title: string; message: string }) {
   return (
-    <AuthShell role={title} lead={message} backHref="/dashboard" backLabel="Back to home">
+    <AuthShell role={title} lead={message} backHref="/dashboard" backLabel="Back to Home">
       {null}
     </AuthShell>
   );
@@ -76,10 +76,10 @@ export default async function BlindBoxPage({
     if (error.message.includes("BOX_UNKNOWN")) return <ErrorScreen {...UNKNOWN} />;
     // Closed by the Day 2 inner schedule (0102): the seller's QR is greyed too.
     if (error.message.includes("BB_NOT_YET")) {
-      return <ErrorScreen title="Opens in challenge mode" message="Blind boxes can't be bought yet. Nothing was charged." />;
+      return <ErrorScreen title="Opens in Challenge Mode" message="Blind boxes can't be bought yet. Nothing was charged." />;
     }
     if (error.message.includes("BB_OFF_BY_ADMIN")) {
-      return <ErrorScreen title="Switched off by Admin" message="Blind boxes can't be bought right now. Nothing was charged." />;
+      return <ErrorScreen title="Switched Off by Admin" message="Blind boxes can't be bought right now. Nothing was charged." />;
     }
     return (
       <ErrorScreen title="Something Went Wrong" message="Couldn't load the blind box. Find a committee member for help." />
@@ -108,7 +108,7 @@ export default async function BlindBoxPage({
   } else if (preview.options.length > 1) {
     return (
       <ErrorScreen
-        title="Scan the box's own code"
+        title="Scan the Box's Own Code"
         message="This seller has more than one box, each with its own QR. Scan the code of the box you want."
       />
     );

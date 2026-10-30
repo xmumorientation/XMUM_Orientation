@@ -24,7 +24,7 @@ export function WelcomeSection({ onJoin }: { onJoin?: () => void }) {
             Join the Game ★
           </button>
           <button type="button" className="vx-btn vx-btn-ghost" onClick={() => scrollToSection("check-in")}>
-            How to check in
+            How to Check In
           </button>
         </div>
 

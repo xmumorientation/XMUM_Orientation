@@ -148,7 +148,7 @@ export function Day2Schedule({
 
   return (
     <section className="d2s">
-      <h2 className="mb-2 font-semibold">Day 2 inner schedule</h2>
+      <h2 className="mb-2 font-semibold">Day 2 Inner Schedule</h2>
       <div className="d2s-shell">
         <div className="d2s-core">
           <ChallengeBanner />
@@ -156,7 +156,7 @@ export function Day2Schedule({
           <div className="d2s-head">
             <span className="d2s-eyebrow">
               <span className="d2s-dot" data-live={segment !== "off"} />
-              Inner schedule
+              Inner Schedule
             </span>
             <p className="d2s-now">
               Now: <b>{segment === "off" ? "No Day 2 game" : label(segment)}</b>
@@ -229,7 +229,7 @@ export function Day2Schedule({
             aria-controls="d2s-cards"
             onClick={() => setOpen((o) => !o)}
           >
-            <span>Segment times and switches</span>
+            <span>Segment Times and Switches</span>
             <i><ChevronIcon /></i>
           </button>
 
@@ -285,7 +285,7 @@ export function Day2Schedule({
                           <div className="min-w-0">
                             <p className="d2s-sw-name">
                               {w.label}
-                              {byHand && <span className="d2s-sw-flag">By hand</span>}
+                              {byHand && <span className="d2s-sw-flag">By Hand</span>}
                             </p>
                             <p className="d2s-sw-note">{EFFECT[w.key][value ? 0 : 1]}</p>
                           </div>
@@ -318,12 +318,12 @@ export function Day2Schedule({
                         disabled={busy}
                         onClick={() => window.confirm(`End ${s.label.toLowerCase()} now?`) && saveTimes({ [endBound]: elapsed })}
                       >
-                        <i><StopIcon /></i>End now
+                        <i><StopIcon /></i>End Now
                       </button>
                     )}
                     {on && manual && (
                       <button className="d2s-btn" data-kind="go" disabled={busy} onClick={() => call({ p_action: "auto" }, "Day 2: back to auto")}>
-                        <i><BackIcon /></i>Back to auto
+                        <i><BackIcon /></i>Back to Auto
                       </button>
                     )}
                     {!on && (
@@ -331,11 +331,11 @@ export function Day2Schedule({
                         className="d2s-btn"
                         disabled={disabled}
                         onClick={() =>
-                          window.confirm(`Start ${s.label.toLowerCase()} now? It holds until Back to auto.`) &&
+                          window.confirm(`Start ${s.label.toLowerCase()} now? It holds until Back to Auto.`) &&
                           call({ p_action: "start_segment", p_segment: k }, `Day 2: ${s.label} started by hand`)
                         }
                       >
-                        <i><PlayIcon /></i>Start now
+                        <i><PlayIcon /></i>Start Now
                       </button>
                     )}
                   </div>

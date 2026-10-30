@@ -35,7 +35,7 @@ export default function ProfilePage() {
       </div>
       <button type="button" className="fd-profile-logout" onClick={signOut}>
         <LogOut size={16} strokeWidth={1.75} aria-hidden />
-        Log out
+        Log Out
       </button>
     </div>
   );

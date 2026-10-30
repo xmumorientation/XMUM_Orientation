@@ -78,7 +78,7 @@ export function FunfairZones() {
                 ))}
               </Seg>
               {row.required.length > 1 && (
-                <Seg label="On when">
+                <Seg label="On When">
                   {(["any", "all"] as const).map((rule) => (
                     <button
                       key={rule}
@@ -87,7 +87,7 @@ export function FunfairZones() {
                       disabled={busy}
                       onClick={() => row.rule !== rule && void save({ ...row, rule })}
                     >
-                      {rule === "any" ? "Any lit" : "All lit"}
+                      {rule === "any" ? "Any Lit" : "All Lit"}
                     </button>
                   ))}
                 </Seg>
@@ -121,7 +121,7 @@ export function FunfairZones() {
       })}
       <div className="ffz-row ffz-finale">
         <div className="ffz-name">
-          <h4>Finale · Lake stage concert</h4>
+          <h4>Finale · Lake Stage Concert</h4>
           {finale !== null && <span className="ffz-chip" data-on={finale}>{finale ? "LIVE" : "OFF"}</span>}
         </div>
         <p>Plays while all three zones are on. To start it early, set all three overrides to On.</p>
@@ -137,7 +137,7 @@ export function FunfairZones() {
         </a>
       </div>
       <details className="ffz-notes">
-        <summary>How this works</summary>
+        <summary>How This Works</summary>
         <p className="gm-note">
           Auto: a zone is on when its keys are lit. A change shows on every map within about 10 s. Preview plays the
           zone&apos;s power-up (or the concert&apos;s opening) on your screen only.

@@ -95,11 +95,11 @@ export function BlindBoxLogin({
             : `${what} Only Freshie groups can get one, and you are signed in with a staff or Facilitator account.`
         }
         backHref="/dashboard"
-        backLabel="Back to home"
+        backLabel="Back to Home"
       >
         <div className="vx-login-form">
           <button type="button" className="vx-btn vx-btn-primary" onClick={switchToFreshie} disabled={busy}>
-            {busy ? "Signing out…" : noGroup ? "Log in as your group" : "Log in as a Freshie"}
+            {busy ? "Signing out…" : noGroup ? "Log In as Your Group" : "Log In as a Freshie"}
           </button>
         </div>
       </AuthShell>
@@ -135,7 +135,7 @@ export function BlindBoxLogin({
           </select>
         </label>
         <label>
-          4-digit password
+          4-Digit Password
           <input
             className="vx-login-code"
             inputMode="numeric"

@@ -32,7 +32,7 @@ export default function GlobalError({
       >
         <div style={{ maxWidth: "26rem", textAlign: "center" }}>
           <h1 style={{ fontSize: "1.25rem", fontWeight: 700 }}>
-            The app hit a fatal error
+            The App Hit a Fatal Error
           </h1>
           <p style={{ marginTop: "0.5rem", fontSize: "0.875rem", color: "#6b6660" }}>
             Please reload. If this keeps happening, contact the committee.

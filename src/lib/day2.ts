@@ -26,14 +26,14 @@ export interface Day2State {
 
 export const SEGMENTS: { key: Day2Segment; label: string }[] = [
   { key: "normal1", label: "Normal" },
-  { key: "challenge", label: "Challenge mode" },
+  { key: "challenge", label: "Challenge Mode" },
   { key: "normal2", label: "Normal" },
   { key: "funfair", label: "Funfair" },
 ];
 
 export const SWITCHES: { key: Day2Switch; label: string }[] = [
-  { key: "station", label: "Station game" },
-  { key: "blindbox", label: "Blind box" },
+  { key: "station", label: "Station Game" },
+  { key: "blindbox", label: "Blind Box" },
   { key: "funfair", label: "Funfair" },
 ];
 

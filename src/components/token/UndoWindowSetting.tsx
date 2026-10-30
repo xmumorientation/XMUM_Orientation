@@ -55,7 +55,7 @@ export function UndoWindowSetting({
       <div className="min-w-0 flex-1">
         <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-300">
           <Undo2 size={14} className="text-cyan-400" />
-          GM undo window
+          GM Undo Window
         </span>
         <p className="mt-1 text-[11px] text-slate-400">
           How long a GM can undo their last Day 1 reward on the Station page ({MIN}–{MAX} min). Day 2 results

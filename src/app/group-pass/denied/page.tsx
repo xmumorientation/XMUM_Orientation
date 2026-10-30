@@ -9,7 +9,7 @@ import { denialReasonMessage } from "@/lib/group-pass";
  */
 
 export const metadata: Metadata = {
-  title: "Group pass required — Vortexa",
+  title: "Group Pass Required — Vortexa",
   robots: { index: false, follow: false },
 };
 

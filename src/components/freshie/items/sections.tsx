@@ -41,8 +41,8 @@ export function keyMode(state: CardState): KeyMode {
 const RING_LABEL: Record<CardState, (data: ItemsData, loc: ProjectorLocation) => string> = {
   locked: () => "Day 2",
   collecting: (data, loc) => `${data.pieces[loc].length}/${PIECES_PER_SET}`,
-  key: () => "Key ready",
-  lit: () => "Lit by you",
+  key: () => "Key Ready",
+  lit: () => "Lit by You",
   idle: () => "Lit",
   done: () => "Idle",
 };
@@ -55,12 +55,14 @@ export function ProjectorKeys({
   data: ItemsData;
   /** Pieces that arrived while the page was open, for the arrival effects. */
   arrivals: Arrivals;
-  onSelect: (loc: ProjectorLocation) => void;
+  /** Left out on Home, where the keys are display only. */
+  onSelect?: (loc: ProjectorLocation) => void;
 }) {
+  const Lamp = onSelect ? "button" : "div";
   return (
     <section className="fi-sec" aria-labelledby="fi-grid-title">
       <h2 id="fi-grid-title" className="fh-sr">
-        Projectors and puzzle keys
+        Projectors and Puzzle Keys
       </h2>
       <div className="fi-grid" data-endgame={data.phase === "endgame"}>
         {PROJECTOR_LOCATIONS.map((loc) => {
@@ -71,15 +73,16 @@ export function ProjectorKeys({
           const label = RING_LABEL[card](data, loc);
           const arrival = arrivals[loc];
           return (
-            <button
+            <Lamp
               key={loc}
-              type="button"
+              type={onSelect ? "button" : undefined}
               className="fi-lamp"
               data-state={lamp}
               data-card={card}
               data-celebrate={arrival?.completed || undefined}
-              onClick={() => onSelect(loc)}
-              aria-label={`${name.long}: ${owned.length} of ${PIECES_PER_SET} pieces, ${label}. Show details.`}
+              onClick={onSelect && (() => onSelect(loc))}
+              role={onSelect ? undefined : "img"}
+              aria-label={`${name.long}: ${owned.length} of ${PIECES_PER_SET} pieces, ${label}.${onSelect ? " Show details." : ""}`}
             >
               <span className="fi-bulb" aria-hidden>
                 <Lightbulb size={18} strokeWidth={1.9} />
@@ -96,7 +99,7 @@ export function ProjectorKeys({
               />
               <b>{name.short}</b>
               <small className={card === "collecting" ? "fh-mono" : undefined}>{label}</small>
-            </button>
+            </Lamp>
           );
         })}
       </div>
@@ -164,7 +167,7 @@ export function ItemShelf({ data, onSelect }: { data: ItemsData; onSelect: (item
   return (
     <section className="fi-sec" aria-labelledby="fi-shelf-title">
       <h2 id="fi-shelf-title" className="fh-sr">
-        Tokens and blind boxes
+        Tokens and Blind Boxes
       </h2>
       <div className="fi-shelf">
         {tiles.map((tile) => (
@@ -211,7 +214,7 @@ export function TokenDetail({ data }: { data: ItemsData }) {
         <Coins size={34} strokeWidth={2.2} />
       </span>
       <h2 className="fi-sheet-title">
-        <b className="fh-slab">{balance}</b> tokens
+        <b className="fh-slab">{balance}</b> Tokens
       </h2>
       <p className="fi-eb fh-mono">{data.phase === "day1" ? "On Day 2 this buys" : "You can play now"}</p>
       <div className="fi-tiers">
@@ -238,8 +241,8 @@ export function TokenDetail({ data }: { data: ItemsData }) {
 const CARD_STATUS: Record<CardState, string> = {
   locked: "Unlocks on Day 2",
   collecting: "Collecting",
-  key: "Key unlocked",
-  lit: "Projector lit",
+  key: "Key Unlocked",
+  lit: "Projector Lit",
   idle: "Idle",
   done: "Idle",
 };
@@ -263,7 +266,7 @@ export function NfcSpot({ data, loc }: { data: ItemsData; loc: ProjectorLocation
         </div>
       )}
       <figcaption>
-        <span className="fi-eb fh-mono">Where the NFC card is</span>
+        <span className="fi-eb fh-mono">Where the NFC Card Is</span>
         {place ? <b>{place.name}</b> : <span>The place appears here once all 5 pieces are in.</span>}
       </figcaption>
     </figure>
@@ -308,7 +311,7 @@ export function BlueprintDetail({ data, loc }: { data: ItemsData; loc: Projector
         {state === "lit" && "Your group lit this projector. Mission complete."}
         {state === "idle" && lit && (
           <>
-            <span className="fi-tag">Already lit</span>{" "}
+            <span className="fi-tag">Already Lit</span>{" "}
             {owned.length ? `Your ${owned.length} piece${owned.length === 1 ? " is" : "s are"} now idle.` : "This projector is closed."}
           </>
         )}
@@ -319,7 +322,7 @@ export function BlueprintDetail({ data, loc }: { data: ItemsData; loc: Projector
 
       {data.mapUnlocked && (
         <Link href={`/map?focus=${loc}`} className="fh-btn fh-btn-ghost fh-btn-block">
-          <MapPin size={16} aria-hidden /> Show on map
+          <MapPin size={16} aria-hidden /> Show on Map
         </Link>
       )}
     </div>
@@ -328,13 +331,25 @@ export function BlueprintDetail({ data, loc }: { data: ItemsData; loc: Projector
 
 // ── Activity (opened from the header) ──────────────────────────────────────
 
-type Filter = "all" | "day1" | "day2" | "boxes";
-const FILTERS: { key: Filter; label: string }[] = [
-  { key: "all", label: "All" },
-  { key: "day1", label: "Day 1" },
-  { key: "day2", label: "Day 2" },
-  { key: "boxes", label: "Boxes" },
+// One chip per kind of history. Buying and opening a box sit under Boxes,
+// not Tokens, even though they move tokens. `tone` picks the kind's colour
+// in freshie.css ([data-tone]); "all" follows the group colour.
+type Filter = "all" | "tokens" | "boxes" | "pieces" | "projectors";
+const FILTERS: { key: Filter; label: string; icon: React.ReactNode; kinds: HistoryEntry["kind"][] }[] = [
+  { key: "all", label: "All", icon: null, kinds: [] },
+  { key: "tokens", label: "Tokens", icon: <Coins size={14} />, kinds: ["game", "entry", "fix"] },
+  { key: "boxes", label: "Blind Boxes", icon: <Gift size={14} />, kinds: ["box"] },
+  { key: "pieces", label: "Puzzle Pieces", icon: <Puzzle size={14} />, kinds: ["piece"] },
+  { key: "projectors", label: "Projectors", icon: <Lightbulb size={14} />, kinds: ["lit"] },
 ];
+const KIND_TONE: Record<HistoryEntry["kind"], Filter | "fix"> = {
+  game: "tokens",
+  entry: "tokens",
+  fix: "fix",
+  box: "boxes",
+  piece: "pieces",
+  lit: "projectors",
+};
 const KIND_ICON: Record<HistoryEntry["kind"], React.ReactNode> = {
   game: <Coins size={16} />,
   entry: <Coins size={16} />,
@@ -344,6 +359,17 @@ const KIND_ICON: Record<HistoryEntry["kind"], React.ReactNode> = {
   lit: <Lightbulb size={16} />,
 };
 
+function signed(n: number) {
+  return n > 0 ? `+${n}` : n < 0 ? `−${Math.abs(n)}` : "0";
+}
+
+function entryBadge(e: HistoryEntry) {
+  if (e.amount !== 0) return signed(e.amount);
+  if (e.kind === "piece") return "+1 piece";
+  if (e.kind === "lit") return "Lit";
+  return "–";
+}
+
 export function ActivityList({
   entries,
   names,
@@ -352,44 +378,91 @@ export function ActivityList({
   names: Record<ProjectorLocation, ZoneName>;
 }) {
   const [filter, setFilter] = useState<Filter>("all");
-  const rows = entries.filter(
-    (e) =>
-      filter === "all" ||
-      (filter === "day1" && e.day === 1 && e.kind !== "box") ||
-      (filter === "day2" && e.day === 2) ||
-      (filter === "boxes" && e.kind === "box")
-  );
+  const kindsOf = (f: Filter) => FILTERS.find((x) => x.key === f)?.kinds ?? [];
+  const pick = (f: Filter) => (f === "all" ? entries : entries.filter((e) => kindsOf(f).includes(e.kind)));
+  const rows = pick(filter);
+
+  const earned = rows.reduce((sum, e) => sum + Math.max(e.amount, 0), 0);
+  const spent = rows.reduce((sum, e) => sum + Math.min(e.amount, 0), 0);
+  // Newest first, so Day 2 comes before Day 1.
+  const days = ([2, 1] as const)
+    .map((day) => ({ day, list: rows.filter((e) => e.day === day) }))
+    .filter((d) => d.list.length > 0);
 
   return (
     <div className="fi-activity">
-      <div className="fi-chips" role="group" aria-label="Filter activity">
+      <div className="fi-act-sum">
+        <div data-sign="up">
+          <small>Earned</small>
+          <b className="fh-mono">{signed(earned)}</b>
+        </div>
+        <div data-sign="down">
+          <small>Spent</small>
+          <b className="fh-mono">{signed(spent)}</b>
+        </div>
+        <div>
+          <small>Net</small>
+          <b className="fh-mono">{signed(earned + spent)}</b>
+        </div>
+      </div>
+
+      <div className="fi-act-tabs" role="group" aria-label="Filter activity">
         {FILTERS.map((f) => (
-          <button key={f.key} type="button" className="fi-chip" aria-pressed={filter === f.key} onClick={() => setFilter(f.key)}>
+          <button
+            key={f.key}
+            type="button"
+            className="fi-act-tab"
+            data-tone={f.key}
+            aria-pressed={filter === f.key}
+            onClick={() => setFilter(f.key)}
+          >
+            {f.icon && <span aria-hidden>{f.icon}</span>}
             {f.label}
+            <span className="fi-act-count fh-mono">{pick(f.key).length}</span>
           </button>
         ))}
       </div>
-      {rows.length ? (
-        <ul className="fi-hist">
-          {rows.map((e) => (
-            <li key={e.id}>
-              <span className="fi-hist-ic" aria-hidden>
-                {KIND_ICON[e.kind]}
-              </span>
-              <span className="fi-hist-text">
-                <b>{fillZones(e.title, names)}</b>
-                <small>
-                  {fillZones(e.detail, names)} / {e.time}
-                </small>
-              </span>
-              <span className="fi-hist-amt fh-mono" data-sign={e.amount > 0 ? "up" : e.amount < 0 ? "down" : "zero"}>
-                {e.amount > 0 ? `+${e.amount}` : e.amount < 0 ? `−${Math.abs(e.amount)}` : e.kind === "piece" ? "+1 piece" : "–"}
-              </span>
-            </li>
-          ))}
-        </ul>
+
+      {days.length ? (
+        days.map(({ day, list }) => (
+          <section key={day} className="fi-act-day">
+            <h3>
+              Day {day}
+              <small className="fh-mono">
+                {list.length} {list.length === 1 ? "entry" : "entries"}
+              </small>
+            </h3>
+            <ol className="fi-act-list">
+              {list.map((e) => (
+                <li key={e.id} data-tone={KIND_TONE[e.kind]}>
+                  <span className="fi-act-ic" aria-hidden>
+                    {KIND_ICON[e.kind]}
+                  </span>
+                  <span className="fi-act-text">
+                    <b>{fillZones(e.title, names)}</b>
+                    {e.detail && <small>{fillZones(e.detail, names)}</small>}
+                  </span>
+                  <span className="fi-act-side">
+                    <span
+                      className="fi-act-amt fh-mono"
+                      data-sign={e.amount > 0 ? "up" : e.amount < 0 ? "down" : "zero"}
+                    >
+                      {entryBadge(e)}
+                    </span>
+                    <time className="fh-mono">{e.time}</time>
+                  </span>
+                </li>
+              ))}
+            </ol>
+          </section>
+        ))
       ) : (
-        <p className="fi-note">Nothing here yet.</p>
+        <div className="fi-act-empty">
+          <span aria-hidden>
+            <Coins size={22} />
+          </span>
+          <p>Nothing here yet. Win station games and open blind boxes to fill this up.</p>
+        </div>
       )}
     </div>
   );

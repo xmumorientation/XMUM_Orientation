@@ -113,7 +113,7 @@ function OpsOverview({ canAssignFacis }: { canAssignFacis: boolean }) {
   const n = (v: number | null | undefined) => (v == null ? "—" : v);
 
   return (
-    <OpsShell name={canAssignFacis ? "Overview" : "Committee / Read only"} sections={sections} current={view} onPick={setView}>
+    <OpsShell name={canAssignFacis ? "Overview" : "Committee / Read Only"} sections={sections} current={view} onPick={setView}>
       {view === "headcount" && (
         <div className="gc-card">
           <div className="gc-ops-hc gc-ops-head">

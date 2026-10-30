@@ -53,7 +53,7 @@ export function GameControl() {
   }
 
   return (
-    <OpsShell name="Game control" sections={SECTIONS} current={section} onPick={pick}>
+    <OpsShell name="Game Control" sections={SECTIONS} current={section} onPick={pick}>
       {section === "stations" && <StationsSection />}
       {section === "tokens" && <TokensSection />}
       {section === "puzzles" && <PuzzlesSection />}

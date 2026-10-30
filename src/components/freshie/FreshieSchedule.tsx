@@ -96,7 +96,7 @@ export function FreshieSchedule({ vortexa = false }: { vortexa?: boolean }) {
       <div className="fh-sched-inner">
         <div className="fh-sched-side">
           <div className="fh-sched-title">
-            {vortexa && <p className="fh-eyebrow fh-mono">Two-day programme</p>}
+            {vortexa && <p className="fh-eyebrow fh-mono">Two-Day Programme</p>}
             <h1 className="fh-h2 fh-slab">Schedule</h1>
           </div>
           {days.length > 0 && (

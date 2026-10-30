@@ -54,7 +54,7 @@ type Day2Check = { label: string; text: string; state: CheckState };
 
 const STATUS: Record<StationStatus, { label: string; tone: "ok" | "warn" | "off" }> = {
   available: { label: "Available", tone: "ok" },
-  in_progress: { label: "In progress", tone: "warn" },
+  in_progress: { label: "In Progress", tone: "warn" },
   closed: { label: "Closed", tone: "off" },
 };
 
@@ -112,16 +112,16 @@ function day2Checks({
         : { label: "Tokens", text: `Has ${balance}, needs ${fee}. Short by ${fee - balance}.`, state: "bad" }
     );
   }
-  if (frozen) checks.push({ label: "Token freeze", text: "Admin froze tokens. Results are refused until they unfreeze.", state: "bad" });
+  if (frozen) checks.push({ label: "Token Freeze", text: "Admin froze tokens. Results are refused until they unfreeze.", state: "bad" });
   checks.push(
     phaseOn
-      ? { label: "Day 2 game", text: "Running", state: "ok" }
-      : { label: "Day 2 game", text: "Not started yet. Results are refused until Live control starts it.", state: "bad" }
+      ? { label: "Day 2 Game", text: "Running", state: "ok" }
+      : { label: "Day 2 Game", text: "Not started yet. Results are refused until Live control starts it.", state: "bad" }
   );
-  if (!stationOn) checks.push({ label: "Station game", text: "Switched off by Admin in Live control. Results are refused.", state: "bad" });
+  if (!stationOn) checks.push({ label: "Station Game", text: "Switched off by Admin in Live control. Results are refused.", state: "bad" });
 
   const need = RISK_TIER_META[station.risk_tier].pick;
-  const piece = "Puzzle piece";
+  const piece = "Puzzle Piece";
   if (counts === undefined) checks.push({ label: piece, text: "Checking…", state: "wait" });
   else if (counts === null) checks.push({ label: piece, text: "Could not check. The server still checks when you submit.", state: "warn" });
   else if (need === 0) {
@@ -616,8 +616,8 @@ export default function GmPanelPage() {
       </div>
 
       <header className="gc-top">
-        <p className="gc-eyebrow">{station ? `Day ${station.day} station` : "Station panel"}</p>
-        <h1 className="gc-title">{station?.name ?? "No station yet"}</h1>
+        <p className="gc-eyebrow">{station ? `Day ${station.day} Station` : "Station Panel"}</p>
+        <h1 className="gc-title">{station?.name ?? "No Station Yet"}</h1>
         <p className="gc-sub">
           <i aria-hidden />
           {station ? (
@@ -660,7 +660,7 @@ export default function GmPanelPage() {
       <div className="gc-st-msgs">
         {queue.length > 0 && (
           <div className="gc-status gc-status-warn" role="status">
-            <b>Offline queue active</b>
+            <b>Offline Queue Active</b>
             <p>
               {queue.length} submission{queue.length > 1 ? "s" : ""} waiting. Keep this page open;
               they will send when the connection returns.
@@ -812,7 +812,7 @@ export default function GmPanelPage() {
                 <StatusLine error={result.error} notice={result.notice} />
                 <button type="button" className="gc-btn gc-st-undo" disabled={busy} onClick={askUndo}>
                   <Undo2 size={16} aria-hidden />
-                  Undo my last transaction
+                  Undo My Last Transaction
                   <small>within {undoWindowMinutes(config["undo_window_minutes"])} min</small>
                 </button>
                 <ConfirmSheet
@@ -821,7 +821,7 @@ export default function GmPanelPage() {
                   onConfirm={undo}
                   busy={busy}
                   danger
-                  title="Undo your last transaction?"
+                  title="Undo Your Last Transaction?"
                   confirmLabel="Undo"
                   body={
                     !undoAsk || undoAsk.fallback ? (
@@ -933,7 +933,7 @@ export default function GmPanelPage() {
                       disabled={busy || !canStart}
                       onClick={startGame}
                     >
-                      Start game / entry −{fee} on submit
+                      Start Game / Entry −{fee} on Submit
                     </button>
                     <StatusLine error={result.error} notice={result.notice} />
                   </>
@@ -963,7 +963,7 @@ export default function GmPanelPage() {
                           <dd>−{fee} on submit</dd>
                         </div>
                         <div>
-                          <dt>Tokens now</dt>
+                          <dt>Tokens Now</dt>
                           <dd>{gameGroup?.token_balance ?? "—"}</dd>
                         </div>
                       </dl>
@@ -994,7 +994,7 @@ export default function GmPanelPage() {
                     <StatusLine error={result.error} notice={result.notice} />
                     <button type="button" className="gc-btn gc-st-undo" disabled={busy} onClick={cancelGame}>
                       <X size={16} aria-hidden />
-                      Cancel game
+                      Cancel Game
                       <small>nothing is charged</small>
                     </button>
                   </>
@@ -1014,7 +1014,7 @@ export default function GmPanelPage() {
                       {gameGroup && ` Tokens: ${gameGroup.token_balance} → ${gameGroup.token_balance - fee}.`}
                     </>
                   }
-                  confirmLabel={`Submit ${confirmWin ? "win" : "loss"} / −${fee}`}
+                  confirmLabel={`Submit ${confirmWin ? "Win" : "Loss"} / −${fee}`}
                   danger={confirmWin === false}
                   busy={busy}
                 />
@@ -1026,7 +1026,7 @@ export default function GmPanelPage() {
         <div className="gc-st-col">
           <section className="gc-card gc-st-card gc-st-status" aria-labelledby="st-status">
             <div className="gc-st-head">
-              <h2 id="st-status" className="gc-eyebrow">Station status</h2>
+              <h2 id="st-status" className="gc-eyebrow">Station Status</h2>
               {status && (
                 <span className="gc-chip gc-st-status-chip" data-tone={status.tone}>
                   {status.label}
@@ -1044,7 +1044,7 @@ export default function GmPanelPage() {
             </p>
             {station?.status === "closed" && (
               <button type="button" className="gc-btn gc-btn-go gc-st-open" disabled={busy} onClick={() => setOpenAsk(true)}>
-                Open station
+                Open Station
               </button>
             )}
             <StatusLine error={statusMsg.error} notice={statusMsg.notice} />
@@ -1059,7 +1059,7 @@ export default function GmPanelPage() {
               }}
               busy={busy}
               title={`Open ${station?.name ?? "your station"}?`}
-              confirmLabel="Open station"
+              confirmLabel="Open Station"
               body="It was closed by Admin or HOGM. Opening sets it to Available, so groups can check in and play here. The change is logged."
             />
           </section>

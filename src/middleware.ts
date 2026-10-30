@@ -27,6 +27,7 @@ const APP_LAYOUT_ROOTS = [
   "/admin",
   "/attendance",
   "/checkin",
+  "/checklist",
   "/code",
   "/committee",
   "/dashboard",
@@ -39,7 +40,6 @@ const APP_LAYOUT_ROOTS = [
   "/scan",
   "/schedule",
   "/token",
-  "/transactions",
 ];
 
 function underAppLayout(path: string) {

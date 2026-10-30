@@ -14,6 +14,10 @@ When you finish work from it, record what was done in its "Done" section.
 
 ## Rules
 
+### Copy: Title Case for headings and buttons
+
+Every heading, button, tab, chip, menu item, field label and page title is in Title Case ("Share Location", "Keep Tracking", "Back to Home"). Sentences, messages, placeholders and aria-labels stay in sentence case. The full rule, the exceptions and a checklist are in [docs/COPY_STYLE.md](docs/COPY_STYLE.md). Read it before adding or changing visible text.
+
 ### Freshie and Faci pages: per-group colours
 
 All Freshie groups share one set of pages (Freshie Home, Items, Schedule; Facilitators use the same Home). Layout, buttons and logic are the same for every group. Each group has its own colour.

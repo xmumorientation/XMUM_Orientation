@@ -286,7 +286,7 @@ export default function AdminUsersPage() {
                 setAddOpen(true);
               }}
             >
-              + Add user
+              + Add User
             </button>
           </div>
         }
@@ -296,7 +296,7 @@ export default function AdminUsersPage() {
 
       {pending.length > 0 && (
         <Card className="space-y-3">
-          <h2 className="font-semibold">Waiting for approval</h2>
+          <h2 className="font-semibold">Waiting for Approval</h2>
           <ul className="divide-y divide-paper-200">
             {pending.map((u) => (
               <li key={u.id} className="flex flex-wrap items-center gap-3 py-3">
@@ -478,7 +478,7 @@ export default function AdminUsersPage() {
         }}
       >
         <DialogContent
-          title={created ? "Account created" : "Add user"}
+          title={created ? "Account Created" : "Add User"}
           description={
             created
               ? "Copy the password now. It is not shown again."
@@ -555,7 +555,7 @@ export default function AdminUsersPage() {
                 </select>
               )}
               <button type="submit" disabled={busy} className="btn-primary w-full">
-                Create account
+                Create Account
               </button>
             </form>
           )}
@@ -565,10 +565,10 @@ export default function AdminUsersPage() {
       {/* Edit user */}
       <Dialog open={editing != null} onOpenChange={(open) => !open && setEditing(null)}>
         {editing && (
-          <DialogContent title="Edit account" description={ROLE_LABELS[editing.role]}>
+          <DialogContent title="Edit Account" description={ROLE_LABELS[editing.role]}>
             <form onSubmit={saveEdit} className="space-y-2">
               <label className="label" htmlFor="edit-name">
-                Full name
+                Full Name
               </label>
               <input
                 id="edit-name"
@@ -578,7 +578,7 @@ export default function AdminUsersPage() {
                 onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
               />
               <label className="label" htmlFor="edit-email">
-                Email (also their login)
+                Email (Also Their Login)
               </label>
               <input
                 id="edit-email"
@@ -589,7 +589,7 @@ export default function AdminUsersPage() {
                 onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
               />
               <button type="submit" disabled={busy} className="btn-primary w-full">
-                Save changes
+                Save Changes
               </button>
             </form>
             <div className="mt-4 space-y-2 border-t border-paper-200 pt-3">
@@ -599,7 +599,7 @@ export default function AdminUsersPage() {
                 onClick={resetPassword}
                 className="btn-secondary w-full"
               >
-                Reset password
+                Reset Password
               </button>
               {resetPw && (
                 <div className="rounded-xl bg-night-900 p-3 text-sm text-green-300">
@@ -625,7 +625,7 @@ export default function AdminUsersPage() {
               faci/gm/guardian_gm/hof/hogm/committee/admin.
             </p>
             <label className="btn-secondary inline-flex cursor-pointer items-center">
-              Choose CSV file…
+              Choose CSV File…
               <input
                 type="file"
                 accept=".csv,text/csv"
@@ -652,7 +652,7 @@ export default function AdminUsersPage() {
                 onClick={() => runImport(true)}
                 className="btn-secondary flex-1"
               >
-                Dry run
+                Dry Run
               </button>
               <button
                 disabled={busy || !csv.trim() || !result?.dryRun || (result?.errors?.length ?? 0) > 0}

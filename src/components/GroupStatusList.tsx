@@ -63,7 +63,7 @@ export function GroupStatusList({
 
   return (
     <section className="card mt-3 overflow-hidden p-0">
-      <h2 className="border-b border-paper-200 px-3 py-2 text-sm font-semibold">Group locations</h2>
+      <h2 className="border-b border-paper-200 px-3 py-2 text-sm font-semibold">Group Locations</h2>
       <ul className="divide-y divide-paper-200">
         {groups.map((g) => (
           <GroupRow key={g.group_id} g={g} pin={pins.get(g.group_id) ?? null} onSelect={onSelect} />

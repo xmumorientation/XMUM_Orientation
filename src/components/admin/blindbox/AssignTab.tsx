@@ -63,7 +63,7 @@ export function AssignTab({ data, onError, onNotice, goTo }: TabProps) {
         <p className="font-semibold">No box types yet</p>
         <p className="text-ink-faint">Create a box type first, then come back to hand it out.</p>
         <button type="button" onClick={() => goTo("types")} className="btn-primary px-4">
-          Go to step 1
+          Go to Step 1
         </button>
       </Card>
     );
@@ -74,7 +74,7 @@ export function AssignTab({ data, onError, onNotice, goTo }: TabProps) {
       <form onSubmit={assign} className="space-y-5">
         <div className="space-y-2">
           <label className="label" htmlFor="bb-assign-type">
-            1. Which box type?
+            1. Which Box Type?
           </label>
           <select
             id="bb-assign-type"
@@ -93,12 +93,12 @@ export function AssignTab({ data, onError, onNotice, goTo }: TabProps) {
         </div>
 
         <fieldset className="space-y-2">
-          <legend className="label">2. Who gets it?</legend>
+          <legend className="label">2. Who Gets It?</legend>
           <div className="grid grid-cols-2 gap-1 rounded-[1.1rem] bg-paper-200 p-1">
             {(
               [
-                ["accounts", "Pick people"],
-                ["role", "Everyone with a role"],
+                ["accounts", "Pick People"],
+                ["role", "Everyone with a Role"],
               ] as [Who, string][]
             ).map(([k, label]) => (
               <button
@@ -175,7 +175,7 @@ export function AssignTab({ data, onError, onNotice, goTo }: TabProps) {
 
         <div className="space-y-2">
           <label className="label" htmlFor="bb-assign-qty">
-            3. How many boxes each?
+            3. How Many Boxes Each?
           </label>
           <input
             id="bb-assign-qty"
@@ -205,7 +205,7 @@ export function AssignTab({ data, onError, onNotice, goTo }: TabProps) {
               </span>
               {short > 0 && (
                 <button type="button" onClick={() => goTo("types")} className="text-sm font-semibold underline">
-                  Add stock in step 1
+                  Add Stock in Step 1
                 </button>
               )}
             </>

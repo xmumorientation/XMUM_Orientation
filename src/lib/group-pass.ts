@@ -279,18 +279,18 @@ export function denialReasonMessage(
   switch (reason) {
     case "expired":
       return {
-        title: "Pass expired",
+        title: "Pass Expired",
         body: "Your group pass has expired. Scan your wristband QR at check-in again to continue.",
       };
     case "revoked":
     case "rotated":
       return {
-        title: "Pass no longer valid",
+        title: "Pass No Longer Valid",
         body: "This group pass was replaced. Scan your wristband QR at check-in to get a fresh pass.",
       };
     case "wrong_group":
       return {
-        title: "Wrong group",
+        title: "Wrong Group",
         body: "Your pass is for a different group. Scan the wristband QR for your assigned group at check-in.",
       };
     case "missing":
@@ -299,7 +299,7 @@ export function denialReasonMessage(
     case "payload":
     default:
       return {
-        title: "Group pass required",
+        title: "Group Pass Required",
         body: "Scan your wristband QR at check-in to open your group page. Guessing the link won’t work.",
       };
   }

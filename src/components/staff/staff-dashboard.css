@@ -112,5 +112,3 @@
    readable on navy (red #e6001b alone is about 4.1:1). The checklist lines up
    with the other dashboard blocks instead of sitting 11px further in. */
 .sd .sd-intro .sd-group { color: color-mix(in srgb, var(--fh-accent) 55%, #fff); }
-.sd .fh-check-no { color: color-mix(in srgb, var(--fh-accent) 55%, #fff); font-size: 13px; }
-.sd .fh-check-stop { width: 100%; max-width: none; margin-inline: 0; }

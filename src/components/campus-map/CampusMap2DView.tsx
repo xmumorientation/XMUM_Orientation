@@ -942,7 +942,7 @@ export function CampusMap2DView({
             aria-pressed={showNames}
             onClick={() => data.setShowNames((current) => !current)}
           >
-            {showNames ? "Hide names" : "Show names"}
+            {showNames ? "Hide Names" : "Show Names"}
           </button>
           <button
             type="button"
@@ -950,7 +950,7 @@ export function CampusMap2DView({
             onClick={openFullscreen}
           >
             <Maximize2 className="h-3.5 w-3.5" />
-            Full screen
+            Full Screen
           </button>
         </div>
         {legend}
@@ -1010,7 +1010,7 @@ export function CampusMap2DView({
                 aria-pressed={showNames}
                 onClick={() => data.setShowNames((current) => !current)}
               >
-                {showNames ? "Hide names" : "Show names"}
+                {showNames ? "Hide Names" : "Show Names"}
               </button>
             </div>
             <div

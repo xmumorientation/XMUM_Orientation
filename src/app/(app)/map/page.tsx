@@ -51,7 +51,7 @@ export default function MapPage() {
   return (
     <div className="space-y-4">
       <PageTitle
-        title="Campus map"
+        title="Campus Map"
         subtitle="Live game stations. Tap the map for a full-screen view. Tap a station or a building's badge for details."
       />
 

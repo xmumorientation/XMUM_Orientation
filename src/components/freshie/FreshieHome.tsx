@@ -10,20 +10,15 @@ import {
   Gamepad2,
   GraduationCap,
   HelpCircle,
-  KeyRound,
   Languages,
-  MapPin,
-  Menu,
-  Minus,
+  ListChecks,
   Pencil,
-  Plus,
   Puzzle,
   ScanLine,
   Trophy,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { GAME_PHASES, SPONSORS, SPONSORS_ARE_EXAMPLES } from "@/components/home/data";
@@ -32,21 +27,19 @@ import { ChallengeBanner } from "@/components/ChallengeBanner";
 import { GroupBadge } from "@/components/GroupBadge";
 import { usePhases, usePhaseTimer } from "@/components/PhaseTimerProvider";
 import { useProfile } from "@/components/ProfileProvider";
-import { useOpenShellMenu } from "@/components/ShellMenu";
 import { EDIT_PROFILE_EVENT } from "@/components/TopNav";
 import { useGroup } from "@/components/useGroup";
 import { useScoreboard } from "@/components/useScoreboard";
 import { countdownParts, useEventCountdown } from "@/components/useEventCountdown";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { PIECES_PER_SET, PROJECTOR_LOCATIONS, type Group } from "@/lib/types";
-import { DETAILS_MAX, LOC_STATUSES, OTHER_TEXT_MAX, clock, describeLocation, type FaciLocation, type LocStatus } from "@/lib/faciLocation";
-import { useLocationOptions } from "@/components/useLocationOptions";
 import { formatCountdown, friendlyError } from "@/lib/utils";
 
 import "./freshie.css";
 import { faciFromProfile, FACI_PROFILE_SAVED_EVENT, type FaciProfile, type FaciRow } from "./faciProfiles";
 import { FaciAvatar, ProfileEditor } from "./ProfileEditor";
 import { FreshieSky, type SkyCabin } from "./FreshieSky";
+import { GroupCodeStop } from "./GroupCodeStop";
 import { ProjectorKeys } from "./items/sections";
 import { useItemsData } from "./items/useItemsData";
 import { groupSwatch, themeFromColor } from "./groupTheme";
@@ -57,7 +50,8 @@ import { groupSwatch, themeFromColor } from "./groupTheme";
 // the Freshie's own group:
 //   01 Welcome + countdown (Live control's schedule timer), plus the running game.
 //      Vortexa lockup, then "Welcome <group> Freshie!".
-//   02 Checklist (facilitator only: name, attendance, location)
+//   02 Group code (facilitator only: password and QR; the Checklist is the
+//      center tab, /checklist)
 //   03 Your Facilitator (Freshie) or You & Your Partner (Faci; own card has
 //      an edit pencil). Real profiles from fn_group_facis().
 //   03 Your Progress (tokens, puzzle pieces per key, FAQ)
@@ -81,12 +75,12 @@ const STOPS = [
   { id: "fh-game", label: "Game" },
 ] as const;
 
-const CHECK_STOP = { id: "fh-check", label: "Checklist" };
+const CODE_STOP = { id: "fh-code", label: "Code" };
 
 function homeStops(isFaci: boolean) {
   if (!isFaci) return [...STOPS];
-  // A Faci gets the checklist first, then their own card and their partner's.
-  return [STOPS[0], CHECK_STOP, { id: "fh-faci", label: "Partner" }, ...STOPS.slice(2)];
+  // A Faci gets the group code first, then their own card and their partner's.
+  return [STOPS[0], CODE_STOP, { id: "fh-faci", label: "Partner" }, ...STOPS.slice(2)];
 }
 
 /** The name a Faci chose for the group, else its number name ("Group 1"). */
@@ -212,404 +206,15 @@ function WelcomeStop({
           else the event countdown (follows the Schedule). */}
       {live ? <PhaseCard /> : <Countdown />}
       <div className="fh-actions">
-        <Link href={isFaci ? "/code" : "/scan"} className="fh-btn fh-btn-primary">
-          {isFaci ? <KeyRound size={18} aria-hidden /> : <ScanLine size={18} aria-hidden />}
-          {isFaci ? "Group Code" : "Scan a QR"}
+        <Link href={isFaci ? "/checklist" : "/scan"} className="fh-btn fh-btn-primary">
+          {isFaci ? <ListChecks size={18} aria-hidden /> : <ScanLine size={18} aria-hidden />}
+          {isFaci ? "Checklist" : "Scan a QR"}
         </Link>
-        <button type="button" className="fh-btn fh-btn-ghost" onClick={() => goTo(isFaci ? "fh-check" : "fh-faci")}>
+        <button type="button" className="fh-btn fh-btn-ghost" onClick={() => goTo(isFaci ? "fh-code" : "fh-faci")}>
           My Group ↓
         </button>
       </div>
       <Credits />
-    </section>
-  );
-}
-
-// ── Checklist (facilitator only, between Welcome and Your pass) ─────────────
-
-type Headcount = { headcount: number; local_count: number | null; international_count: number | null };
-
-/** "" or a non-number is "not counted" (null); otherwise a whole number of 0 or more. */
-function countValue(v: string): number | null {
-  const n = parseInt(v, 10);
-  return Number.isNaN(n) ? null : Math.max(0, n);
-}
-
-function headcountSummary(h: Headcount | null) {
-  if (!h) return "Not counted yet";
-  if (h.local_count == null || h.international_count == null) return `${h.headcount} people`;
-  return `${h.headcount} people / ${h.local_count} Local / ${h.international_count} International`;
-}
-
-/** − / number / + for counting people at the gathering point; the number can also be typed. */
-function Counter({
-  id,
-  label,
-  value,
-  onChange,
-}: {
-  id: string;
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-}) {
-  const n = countValue(value) ?? 0;
-  return (
-    <div className="fh-counter">
-      <label htmlFor={id}>{label}</label>
-      <div className="fh-stepper">
-        <button type="button" aria-label={`One less ${label}`} disabled={n === 0} onClick={() => onChange(String(n - 1))}>
-          <Minus size={18} aria-hidden />
-        </button>
-        <input
-          id={id}
-          className="fh-slab"
-          type="number"
-          inputMode="numeric"
-          min={0}
-          placeholder="0"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-        />
-        <button type="button" aria-label={`One more ${label}`} onClick={() => onChange(String(n + 1))}>
-          <Plus size={18} aria-hidden />
-        </button>
-      </div>
-    </div>
-  );
-}
-
-export function ChecklistStop({ group, groupId }: { group: Group | null; groupId: number | null }) {
-  const supabase = useMemo(() => supabaseBrowser(), []);
-  const [displayName, setDisplayName] = useState("");
-  const [slogan, setSlogan] = useState("");
-  const [seeded, setSeeded] = useState(false);
-  const [nameError, setNameError] = useState<string | null>(null);
-  const [nameNotice, setNameNotice] = useState<string | null>(null);
-  const [savingName, setSavingName] = useState(false);
-
-  // Faci counts Local and International; Total is their sum. Same group_headcounts
-  // row and fn_set_headcount as Admin > Headcount and /attendance.
-  const [local, setLocal] = useState("");
-  const [international, setInternational] = useState("");
-  const [saved, setSaved] = useState<Headcount | null>(null);
-  const [savingCount, setSavingCount] = useState(false);
-  const [countError, setCountError] = useState<string | null>(null);
-  const [countNotice, setCountNotice] = useState<string | null>(null);
-  // Tap a row to open it; one at a time so the checklist stays on one screen.
-  const [open, setOpen] = useState<1 | 2 | 4 | null>(null);
-  const toggle = (n: 1 | 2 | 4) => setOpen((cur) => (cur === n ? null : n));
-
-  // Manual Location Update: a text-only note of where the GROUP is (status +
-  // building), sent by any Faci in it. Not GPS, not the map, not station check-in. Each submit adds an
-  // entry; Admin sees the latest one on Headcount and location.
-  const [locStatus, setLocStatus] = useState<LocStatus>("heading_to");
-  const [locOther, setLocOther] = useState("");
-  const [locBuilding, setLocBuilding] = useState("");
-  const [locDetails, setLocDetails] = useState("");
-  const { names: locNames } = useLocationOptions();
-  const [locLast, setLocLast] = useState<FaciLocation | null>(null);
-  const [locSaving, setLocSaving] = useState(false);
-  const [locError, setLocError] = useState<string | null>(null);
-  const [locNotice, setLocNotice] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!group || seeded) return;
-    setDisplayName(group.display_name ?? "");
-    setSlogan(group.slogan ?? "");
-    setSeeded(true);
-  }, [group, seeded]);
-
-  useEffect(() => {
-    if (!groupId) return;
-    let active = true;
-    supabase
-      .from("group_headcounts")
-      .select("headcount, local_count, international_count")
-      .eq("group_id", groupId)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (!active) return;
-        const row = data as Headcount | null;
-        setSaved(row);
-        setLocal(row?.local_count == null ? "" : String(row.local_count));
-        setInternational(row?.international_count == null ? "" : String(row.international_count));
-      });
-    return () => {
-      active = false;
-    };
-  }, [supabase, groupId]);
-
-  // The group's latest entry (RLS: their group's rows), whoever in the group
-  // sent it. Live, so a colleague's update and an Admin correction show up here.
-  useEffect(() => {
-    let active = true;
-    async function loadLast() {
-      const { data } = await supabase
-        .from("faci_location_updates")
-        .select("id, user_id, group_id, status, other_text, building, details, created_at, edited_by, edited_at")
-        .order("created_at", { ascending: false })
-        .order("id", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (active) setLocLast((data as FaciLocation | null) ?? null);
-    }
-    loadLast();
-    const channel = supabase
-      .channel(`faci-loc-${crypto.randomUUID()}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "faci_location_updates" }, loadLast)
-      .subscribe();
-    return () => {
-      active = false;
-      supabase.removeChannel(channel);
-    };
-  }, [supabase]);
-
-  async function saveLocation(e: React.FormEvent) {
-    e.preventDefault();
-    setLocError(null);
-    setLocNotice(null);
-    if (!locBuilding) return setLocError("Choose a building.");
-    if (locStatus === "other" && !locOther.trim()) return setLocError("Type your status.");
-    setLocSaving(true);
-    const { error } = await supabase.rpc("fn_faci_log_location", {
-      p_status: locStatus,
-      p_other_text: locStatus === "other" ? locOther : null,
-      p_building: locBuilding,
-      p_details: locDetails,
-    });
-    setLocSaving(false);
-    if (error) return setLocError(friendlyError(error));
-    setLocNotice("Saved. Admin can see it now.");
-    setLocOther("");
-    setLocDetails("");
-  }
-
-  async function saveProfile(e: React.FormEvent) {
-    e.preventDefault();
-    setNameError(null);
-    setNameNotice(null);
-    setSavingName(true);
-    const { error } = await supabase.rpc("fn_set_group_profile", {
-      p_display_name: displayName,
-      p_slogan: slogan,
-    });
-    setSavingName(false);
-    if (error) setNameError(friendlyError(error));
-    else setNameNotice("Saved.");
-  }
-
-  const localN = countValue(local);
-  const internationalN = countValue(international);
-  const counted = localN !== null || internationalN !== null;
-  // A blank side counts as 0 once the other side has a number.
-  const total = (localN ?? 0) + (internationalN ?? 0);
-
-  async function saveHeadcount(e: React.FormEvent) {
-    e.preventDefault();
-    if (!counted) return;
-    setCountError(null);
-    setCountNotice(null);
-    setSavingCount(true);
-    const next: Headcount = { headcount: total, local_count: localN ?? 0, international_count: internationalN ?? 0 };
-    const { error } = await supabase.rpc("fn_set_headcount", {
-      p_count: next.headcount,
-      p_local: next.local_count,
-      p_international: next.international_count,
-    });
-    setSavingCount(false);
-    if (error) return setCountError(friendlyError(error));
-    setSaved(next);
-    setLocal(String(next.local_count));
-    setInternational(String(next.international_count));
-    setCountNotice("Saved. Admin can see it now.");
-  }
-
-  return (
-    <section id="fh-check" className="fh-stop fh-check-stop" aria-labelledby="fh-check-title">
-      <div className="fh-stop-head">
-        <h2 id="fh-check-title" className="fh-h2 fh-slab">Checklist</h2>
-        <p className="fh-lead">Four things to do with your group.</p>
-      </div>
-      <ol className="fh-checks">
-        <li className={`fh-check${open === 1 ? " is-open" : ""}`}>
-          <button
-            type="button"
-            className="fh-check-head"
-            aria-expanded={open === 1}
-            aria-controls="fh-check-1"
-            onClick={() => toggle(1)}
-          >
-            <span className="fh-check-no fh-mono">01</span>
-            <span className="fh-check-title">
-              <b>Group Name and Slogan</b>
-              <small>{group?.display_name ? group.display_name : "Not set yet"}</small>
-            </span>
-            <ChevronDown size={20} aria-hidden className="fh-check-chev" />
-          </button>
-          <div id="fh-check-1" className="fh-check-body" hidden={open !== 1}>
-            <p>
-              {group ? `${group.name} is your number.` : "You are not in a group yet."} Choose the name your group goes by.
-            </p>
-            <form onSubmit={saveProfile}>
-              <label>
-                Name
-                <input
-                  className="fh-input"
-                  required
-                  maxLength={40}
-                  value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
-                  placeholder="Group name"
-                />
-              </label>
-              <label>
-                Slogan
-                <input
-                  className="fh-input"
-                  maxLength={80}
-                  value={slogan}
-                  onChange={(e) => setSlogan(e.target.value)}
-                  placeholder="A short slogan"
-                />
-              </label>
-              <button type="submit" className="fh-btn fh-btn-primary" disabled={savingName || !group}>
-                Save
-              </button>
-              {nameError && <small className="fh-check-msg" role="alert">{nameError}</small>}
-              {nameNotice && <small className="fh-check-msg">{nameNotice}</small>}
-            </form>
-          </div>
-        </li>
-        <li className={`fh-check${open === 2 ? " is-open" : ""}`}>
-          <button
-            type="button"
-            className="fh-check-head"
-            aria-expanded={open === 2}
-            aria-controls="fh-check-2"
-            onClick={() => toggle(2)}
-          >
-            <span className="fh-check-no fh-mono">02</span>
-            <span className="fh-check-title">
-              <b>Take Attendance</b>
-              <small>{headcountSummary(saved)}</small>
-            </span>
-            <ChevronDown size={20} aria-hidden className="fh-check-chev" />
-          </button>
-          <div id="fh-check-2" className="fh-check-body" hidden={open !== 2}>
-            <form onSubmit={saveHeadcount}>
-              <div className="fh-count-grid">
-                <Counter id="fh-count-local" label="Local" value={local} onChange={setLocal} />
-                <Counter id="fh-count-intl" label="International" value={international} onChange={setInternational} />
-              </div>
-              <div className="fh-count-total" aria-live="polite">
-                <span className="fh-mono">Total</span>
-                <b className="fh-slab">{counted ? total : "–"}</b>
-              </div>
-              {saved && saved.local_count == null && saved.international_count == null && (
-                <small className="fh-check-msg">
-                  Saved before as {saved.headcount} in total, with no Local / International split.
-                </small>
-              )}
-              <button type="submit" className="fh-btn fh-btn-primary" disabled={!counted || savingCount}>
-                {savingCount ? "Saving…" : "Save"}
-              </button>
-              {countError && <small className="fh-check-msg" role="alert">{countError}</small>}
-              {countNotice && <small className="fh-check-msg">{countNotice}</small>}
-            </form>
-          </div>
-        </li>
-        <li className="fh-check">
-          <Link href="/checkin" className="fh-check-head">
-            <span className="fh-check-no fh-mono">03</span>
-            <span className="fh-check-title">
-              <b>Update Location</b>
-              <small>Check your group in at a station</small>
-            </span>
-            <MapPin size={20} aria-hidden className="fh-check-chev" />
-          </Link>
-        </li>
-        <li className={`fh-check${open === 4 ? " is-open" : ""}`}>
-          <button
-            type="button"
-            className="fh-check-head"
-            aria-expanded={open === 4}
-            aria-controls="fh-check-4"
-            onClick={() => toggle(4)}
-          >
-            <span className="fh-check-no fh-mono">04</span>
-            <span className="fh-check-title">
-              <b>Manual Location Update</b>
-              <small>{locLast ? `${describeLocation(locLast)} / ${clock(locLast.created_at)}` : "Not sent yet"}</small>
-            </span>
-            <ChevronDown size={20} aria-hidden className="fh-check-chev" />
-          </button>
-          <div id="fh-check-4" className="fh-check-body" hidden={open !== 4}>
-            <p>Tell Admin where your group is. Any Facilitator in your group can update it, and your group shares the latest one. This is a note only: it is not GPS and not a station check-in.</p>
-            <form onSubmit={saveLocation}>
-              <label>
-                Status
-                <select className="fh-input" value={locStatus} onChange={(e) => setLocStatus(e.target.value as LocStatus)}>
-                  {LOC_STATUSES.map((st) => (
-                    <option key={st.value} value={st.value}>
-                      {st.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              {locStatus === "other" && (
-                <label>
-                  Your status
-                  <input
-                    className="fh-input"
-                    required
-                    maxLength={OTHER_TEXT_MAX}
-                    value={locOther}
-                    onChange={(e) => setLocOther(e.target.value)}
-                    placeholder="e.g. Taking photos"
-                  />
-                </label>
-              )}
-              <label>
-                Building
-                <select className="fh-input" required value={locBuilding} onChange={(e) => setLocBuilding(e.target.value)}>
-                  <option value="" disabled>
-                    Choose a building
-                  </option>
-                  {locNames.map((b) => (
-                    <option key={b} value={b}>
-                      {b}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Details (optional)
-                <textarea
-                  className="fh-input"
-                  rows={2}
-                  maxLength={DETAILS_MAX}
-                  value={locDetails}
-                  onChange={(e) => setLocDetails(e.target.value)}
-                  placeholder="Anything else Admin should know"
-                />
-              </label>
-              <button type="submit" className="fh-btn fh-btn-primary" disabled={locSaving}>
-                {locSaving ? "Sending…" : "Send update"}
-              </button>
-              {locError && <small className="fh-check-msg" role="alert">{locError}</small>}
-              {locNotice && <small className="fh-check-msg">{locNotice}</small>}
-              {locLast && (
-                <small className="fh-check-msg">
-                  Last update: {describeLocation(locLast)} / {clock(locLast.created_at)}
-                  {locLast.details ? ` / "${locLast.details}"` : ""}
-                  {locLast.edited_at ? " (edited by Admin)" : ""}
-                </small>
-              )}
-            </form>
-          </div>
-        </li>
-      </ol>
     </section>
   );
 }
@@ -791,21 +396,25 @@ function FaciStop({
 // ── 03 Your progress ─────────────────────────────────────────────────────────
 
 function ProgressStop({ group, loading }: { group: Group | null; loading: boolean }) {
-  const router = useRouter();
   // Same live data as the Items page, so both always show the same keys.
   const { data: items } = useItemsData();
   const owned = PROJECTOR_LOCATIONS.reduce((sum, loc) => sum + items.pieces[loc].length, 0);
 
   return (
     <section id="fh-pass" className="fh-stop" aria-labelledby="fh-pass-title">
-      <div className="fh-stop-head">
+      <div className="fh-stop-head fh-stop-head-row">
         <h2 id="fh-pass-title" className="fh-h2 fh-slab">Your Progress</h2>
+        {group && (
+          <Link href="/inventory" className="fh-prog-link">
+            Items <ArrowRight size={15} aria-hidden />
+          </Link>
+        )}
       </div>
       {loading ? (
         <div className="fh-skel" aria-hidden />
       ) : !group ? (
         <div className="fh-pending">
-          <div className="fh-eb fh-mono">● Group pending</div>
+          <div className="fh-eb fh-mono">● Group Pending</div>
           <p>
             You have not been assigned to a group yet. Check again after the registration counter finishes your
             check-in.
@@ -813,7 +422,8 @@ function ProgressStop({ group, loading }: { group: Group | null; loading: boolea
         </div>
       ) : (
         <div className="fh-prog">
-          <Link href="/transactions" className="fh-next fh-prog-tokens">
+          {/* Display only: the Items link sits in the heading. */}
+          <div className="fh-next fh-prog-tokens">
             {/* Same gold coin as the Tokens tile on the Items page. */}
             <span className="fh-next-ic fi-item-art" data-item="tokens" aria-hidden>
               <Coins size={22} strokeWidth={2.2} />
@@ -822,13 +432,10 @@ function ProgressStop({ group, loading }: { group: Group | null; loading: boolea
               <b className="fh-prog-title">Tokens</b>
               <b className="fh-prog-num fh-slab">{group.token_balance}</b>
             </span>
-            <span className="fh-next-arr" aria-label="Token history">
-              <ArrowRight size={20} strokeWidth={2.4} />
-            </span>
-          </Link>
+          </div>
 
           <div className="fh-prog-puzzle">
-            <Link href="/inventory" className="fh-prog-head">
+            <div className="fh-prog-head">
               <span className="fh-tile-ic" style={{ background: "#E0B4FC24", color: "#E0B4FC" }} aria-hidden>
                 <Puzzle size={20} />
               </span>
@@ -838,12 +445,9 @@ function ProgressStop({ group, loading }: { group: Group | null; loading: boolea
                   {owned}/{PROJECTOR_LOCATIONS.length * PIECES_PER_SET}
                 </small>
               </span>
-              <span className="fh-prog-more">
-                Items <ArrowRight size={14} aria-hidden />
-              </span>
-            </Link>
+            </div>
             <div className="fh-prog-keys">
-              <ProjectorKeys data={items} arrivals={{}} onSelect={() => router.push("/inventory")} />
+              <ProjectorKeys data={items} arrivals={{}} />
             </div>
           </div>
 
@@ -1110,7 +714,6 @@ export function FreshieHome() {
   const profile = useProfile();
   const { group, loading } = useGroup();
   const theme = themeFromColor(group?.color);
-  const openMenu = useOpenShellMenu();
   const isFaci = profile.role === "faci";
   const roleLabel = isFaci ? "Facilitator" : "Freshie";
   const stops = useMemo(() => homeStops(isFaci), [isFaci]);
@@ -1178,11 +781,6 @@ export function FreshieHome() {
       <header className="fh-head">
         <div className="fh-head-row">
           <div className="fh-head-l">
-            {isFaci && (
-              <button type="button" className="fh-navbtn" aria-label="Open menu" onClick={() => openMenu?.()}>
-                <Menu size={20} strokeWidth={1.75} />
-              </button>
-            )}
             <button type="button" className="fh-brand" onClick={() => goTo("fh-welcome")} aria-label="Vortexa — back to top">
               <Image src="/vortexa-logo-sm.webp" alt="" width={320} height={184} priority style={{ width: "auto" }} />
             </button>
@@ -1203,7 +801,7 @@ export function FreshieHome() {
       </header>
 
       <WelcomeStop name={isFaci ? myName : (profile.full_name ?? "")} group={group} isFaci={isFaci} />
-      {isFaci && <ChecklistStop group={group} groupId={profile.group_id} />}
+      {isFaci && <GroupCodeStop group={group} />}
       <FaciStop
         groupId={profile.group_id}
         viewer={isFaci ? { id: profile.id, name: myName } : null}

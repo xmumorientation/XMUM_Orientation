@@ -280,7 +280,7 @@ function StaffSchedule() {
               </div>
               <div className="flex gap-2">
                 <button type="submit" className="btn-primary flex-1">
-                  {editingId != null ? "Save changes" : "+ Add item"}
+                  {editingId != null ? "Save Changes" : "+ Add Item"}
                 </button>
                 {editingId != null && (
                   <button type="button" className="btn-secondary px-4" onClick={cancelEdit}>

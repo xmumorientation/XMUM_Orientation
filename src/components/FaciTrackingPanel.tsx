@@ -65,7 +65,7 @@ export function FaciTrackingPanel() {
   } else if (status === "requesting") {
     line = error ?? "Finding your location…";
   } else if (status === "idle" || status === "prompt") {
-    line = "Not sharing yet. Tap Share location.";
+    line = "Not sharing yet. Tap Share Location.";
   } else {
     line = error ?? "Not sharing.";
   }
@@ -78,7 +78,7 @@ export function FaciTrackingPanel() {
     <section className="card mb-3 space-y-3 p-3 text-sm">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h2 className="font-semibold">Your location sharing</h2>
+          <h2 className="font-semibold">Your Location Sharing</h2>
           <p className="mt-0.5 flex items-center gap-1.5 text-xs text-ink-faint">
             <span className={`inline-block h-2 w-2 shrink-0 rounded-full ${tone}`} />
             <span className="min-w-0">{line}</span>
@@ -91,7 +91,7 @@ export function FaciTrackingPanel() {
             disabled={status === "requesting"}
             className="btn-primary shrink-0 px-3 py-1.5 text-xs disabled:opacity-50"
           >
-            {status === "requesting" ? "Locating…" : "Share location"}
+            {status === "requesting" ? "Locating…" : "Share Location"}
           </button>
         )}
       </div>
@@ -105,7 +105,7 @@ export function FaciTrackingPanel() {
           className="mt-0.5 h-5 w-5 shrink-0 accent-green-600"
         />
         <span className="min-w-0">
-          <span className="block font-medium">Keep tracking</span>
+          <span className="block font-medium">Keep Tracking</span>
           <span className="block text-xs text-ink-faint">
             Keeps this screen on while the app is open, so your group stays on the
             map. Phones can&apos;t share location when locked or when the browser is
@@ -127,7 +127,7 @@ export function FaciTrackingPanel() {
       {groupId != null && facis.length > 0 && (
         <div>
           <p className="text-xs font-semibold text-ink-soft">
-            Your group&apos;s Faci phones ({sharingNow} of {facis.length} sharing now)
+            Your Group&apos;s Faci Phones ({sharingNow} of {facis.length} sharing now)
           </p>
           <ul className="mt-1 space-y-0.5">
             {facis.map((f) => {

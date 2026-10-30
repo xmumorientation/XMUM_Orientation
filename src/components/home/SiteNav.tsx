@@ -157,7 +157,7 @@ export function SiteNav({ active, onJoin }: { active: StopId; onJoin?: () => voi
             Join the Game ★
           </button>
           <button type="button" className="vx-btn vx-btn-ghost" onClick={() => go("check-in")}>
-            How to check in
+            How to Check In
           </button>
         </div>
       </div>

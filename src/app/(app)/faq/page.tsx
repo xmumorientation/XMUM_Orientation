@@ -45,7 +45,7 @@ export default function FaqPage() {
 
   return (
     <div className="space-y-4">
-      <PageTitle title="FAQ & contacts" subtitle="Stuck? Start here" />
+      <PageTitle title="FAQ & Contacts" subtitle="Stuck? Start here" />
       {items.length === 0 ? (
         <EmptyState message="FAQs will appear here soon." />
       ) : (

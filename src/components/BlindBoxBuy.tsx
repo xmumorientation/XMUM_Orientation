@@ -190,10 +190,10 @@ export function BlindBoxBuy({
             </p>
             <div className="bbuy-actions">
               <Link href="/inventory" className="fh-btn fh-btn-primary fh-btn-block">
-                Open it in Items <ArrowRight size={18} aria-hidden />
+                Open It in Items <ArrowRight size={18} aria-hidden />
               </Link>
               <Link href="/scan" className="fh-btn fh-btn-ghost fh-btn-block">
-                Scan another QR
+                Scan Another QR
               </Link>
             </div>
           </section>
@@ -240,7 +240,7 @@ export function BlindBoxBuy({
                     disabled={busyId !== null || o.status !== "ok"}
                     className="fh-btn fh-btn-primary bbuy-btn"
                   >
-                    {busyId === o.assignment_id ? "…" : spot ? "Claim it" : "Buy"}
+                    {busyId === o.assignment_id ? "…" : spot ? "Claim It" : "Buy"}
                   </button>
                 </li>
               ))}

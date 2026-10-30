@@ -77,7 +77,7 @@ export function LayerSwitch({
               on ? "bg-amber-400 text-amber-950" : "bg-amber-100 text-amber-800"
             } ${newLit ? "animate-pulse ring-2 ring-amber-400" : ""}`}
           >
-            {litCount} lit
+            {litCount} Lit
           </span>
         )}
       </button>
@@ -118,7 +118,7 @@ export function MapToolbar({
             className="campus-map-accuracy inline-flex min-h-[44px] items-center gap-1.5 rounded-lg border border-paper-200 px-3 text-xs font-semibold hover:bg-paper-100"
           >
             <Crosshair className="h-3.5 w-3.5" />
-            Accuracy check
+            Accuracy Check
           </button>
         </div>
       )}
@@ -173,7 +173,7 @@ export function MapLegend({
           </span>
           <span className="inline-flex items-center gap-1.5">
             <span className="inline-block h-2.5 w-2.5 rounded-full bg-[#e7e5e4] ring-1 ring-stone-400" />
-            Not lit yet
+            Not Lit Yet
           </span>
         </>
       ) : (
@@ -184,7 +184,7 @@ export function MapLegend({
           </span>
           <span className="inline-flex items-center gap-1.5">
             <span className="inline-block h-2.5 w-2.5 rounded-full border-2 border-[#dc2626] bg-white" />
-            In progress
+            In Progress
           </span>
           <span className="inline-flex items-center gap-1.5">
             <span className="inline-block h-2.5 w-2.5 rounded-full bg-[#9ca3af]" />
@@ -194,7 +194,7 @@ export function MapLegend({
             <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-[#16a34a] text-[9px] font-bold leading-none text-white">
               2
             </span>
-            Open stations in a building (tap for list)
+            Open Stations in a Building (Tap for List)
           </span>
         </>
       )}
@@ -202,15 +202,15 @@ export function MapLegend({
         <>
           <span className="inline-flex items-center gap-1.5">
             <span className="inline-block h-3 w-3 rounded-full border border-dashed border-ink-faint" />
-            Group, rough location
+            Group, Rough Location
           </span>
           <span className="inline-flex items-center gap-1.5">
             <span className="inline-block h-2.5 w-2.5 rounded-sm bg-[#0891b2]" />
-            Group checked in
+            Group Checked In
           </span>
           <span className="inline-flex items-center gap-1.5">
             <span className="inline-block h-3 w-3 rounded-full bg-[#9ca3af] ring-2 ring-white" />
-            Group not seen 10+ min
+            Group Not Seen 10+ Min
           </span>
         </>
       )}
@@ -480,7 +480,7 @@ export function CampusMapPanels({
   return (
     <>
       {data.staffPositions.length > 0 && <section className="card mt-3 p-3" aria-label="Staff sharing location">
-        <h2 className="font-semibold">Staff on the map</h2>
+        <h2 className="font-semibold">Staff on the Map</h2>
         <ul className="mt-2 space-y-2">{data.staffPositions.map((person) => <li key={person.user_id}>
           <span className="text-sm font-semibold">{person.role.toUpperCase()} / {person.full_name || "Staff"}</span>
           <span className="block text-xs text-ink-faint">Updated {new Date(person.updated_at).toLocaleTimeString()} / {person.accuracy_m == null ? "accuracy unknown" : `±${Math.round(person.accuracy_m)} m`}</span>
@@ -513,7 +513,7 @@ export function CampusMapPanels({
           <div className="card mt-3 overflow-hidden p-0">
             <div className="flex items-center justify-between gap-3 border-b border-paper-200 px-3 py-2">
               <h2 className="text-sm font-semibold">
-                {clusterArea} stations
+                {clusterArea} Stations
               </h2>
               <button
                 type="button"
@@ -521,7 +521,7 @@ export function CampusMapPanels({
                 className="inline-flex items-center gap-1 text-xs font-semibold text-ink-faint hover:text-ink-base"
               >
                 <ArrowLeft className="h-3.5 w-3.5" />
-                All stations
+                All Stations
               </button>
             </div>
             <ul className="divide-y divide-paper-200">
@@ -533,7 +533,7 @@ export function CampusMapPanels({
             {/* A Day 2 game in progress, and who plays it (the GM's Start checks the group in). Short, so first. */}
             <div className="card mt-3 overflow-hidden p-0">
               <h2 className="border-b border-paper-200 px-3 py-2 text-sm font-semibold">
-                In progress
+                In Progress
               </h2>
               <ul className="divide-y divide-paper-200">
                 {busyStations.map(stationRow)}
@@ -546,7 +546,7 @@ export function CampusMapPanels({
             </div>
             <div className="card mt-3 overflow-hidden p-0">
               <h2 className="border-b border-paper-200 px-3 py-2 text-sm font-semibold">
-                Available stations
+                Available Stations
               </h2>
               <ul className="divide-y divide-paper-200">
                 {openStations.map(stationRow)}
@@ -569,7 +569,7 @@ export function CampusMapPanels({
               className="inline-flex items-center gap-1.5 text-xs font-semibold text-ink-faint transition-colors hover:text-ink-base"
             >
               <ArrowLeft className="h-3.5 w-3.5" />
-              {clusterArea ? `Back to ${clusterArea} stations` : "Back to stations"}
+              {clusterArea ? `Back to ${clusterArea} Stations` : "Back to Stations"}
             </button>
             <button
               type="button"

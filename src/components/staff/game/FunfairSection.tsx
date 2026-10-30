@@ -109,7 +109,7 @@ export function FunfairSection() {
                 </div>
                 {row.required.length > 1 && (
                   <div className="gc-field">
-                    <span>On when</span>
+                    <span>On When</span>
                     <div className="gc-seg gc-seg-sm" role="group" aria-label={`${row.name} rule`}>
                       {(["any", "all"] as const).map((rule) => (
                         <button
@@ -119,7 +119,7 @@ export function FunfairSection() {
                           disabled={busy}
                           onClick={() => row.rule !== rule && save({ ...row, rule })}
                         >
-                          {rule === "any" ? "Any lit" : "All lit"}
+                          {rule === "any" ? "Any Lit" : "All Lit"}
                         </button>
                       ))}
                     </div>
@@ -158,7 +158,7 @@ export function FunfairSection() {
         })}
         <div className="gc-ff-row gc-ff-finale">
           <div className="gc-ff-name">
-            <h4>Finale · Lake stage concert</h4>
+            <h4>Finale · Lake Stage Concert</h4>
             {finale !== null && (
               <span className="gc-chip" data-tone={finale ? "live" : "off"}>
                 {finale ? "LIVE" : "OFF"}
@@ -180,7 +180,7 @@ export function FunfairSection() {
       </article>
 
       <details className="gc-ff-notes">
-        <summary>How this works</summary>
+        <summary>How This Works</summary>
         <p className="gc-muted">
           Auto: a zone is on when its keys are lit. A change shows on every map within about 10 s. Preview plays the
           zone&apos;s power-up (or the concert&apos;s opening) on your screen only.

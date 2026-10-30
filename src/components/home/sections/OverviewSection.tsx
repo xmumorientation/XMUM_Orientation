@@ -4,8 +4,8 @@ import { Countdown } from "../decor";
 
 const STATS = [
   { value: "28–29 Nov", label: "Main D-Day", color: "var(--vx-cyan)" },
-  { value: "2 Days", label: "Full program", color: "var(--vx-orange)" },
-  { value: "TBA", label: "Orientation teams", color: "var(--vx-pink)" },
+  { value: "2 Days", label: "Full Program", color: "var(--vx-orange)" },
+  { value: "TBA", label: "Orientation Teams", color: "var(--vx-pink)" },
   { value: "10", label: "Committees", color: "var(--vx-lilac)" },
 ];
 

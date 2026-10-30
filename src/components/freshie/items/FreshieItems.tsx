@@ -30,8 +30,8 @@ import { useNewPieces } from "./useNewPieces";
 const PHASE_LABEL: Record<ItemsData["phase"], string> = {
   day1: "Day 1",
   day2: "Day 2",
-  endgame: "Final 30 min",
-  done: "Game over",
+  endgame: "Final 30 Min",
+  done: "Game Over",
 };
 
 // The game's time left. Its own component, so only this re-renders every second.
@@ -48,6 +48,7 @@ export function FreshieItems({
   canOpenBoxes,
   onOpenBox,
   sample = false,
+  hideStatus = false,
 }: {
   data: ItemsData;
   groupColor: string | null | undefined;
@@ -57,6 +58,8 @@ export function FreshieItems({
   onOpenBox: (kind: BoxKind) => Promise<BoxReward | null>;
   /** Shows a "Sample data" label while the page is not on live data. */
   sample?: boolean;
+  /** Leave out the game status row: the page header (GroupHeader) shows it. */
+  hideStatus?: boolean;
 }) {
   const theme = themeFromColor(groupColor);
   const themeVars = {
@@ -97,6 +100,7 @@ export function FreshieItems({
       </div>
 
       <header className="fi-top">
+        <p className="fh-eyebrow fh-mono">Games</p>
         <div className="fi-top-row">
           <h1 className="fh-slab">Items</h1>
           <button type="button" className="fi-activity-btn" onClick={() => setActivityOpen(true)}>
@@ -104,13 +108,15 @@ export function FreshieItems({
             Activity
           </button>
         </div>
+        {(!hideStatus || sample) && (
         <div className="fi-game-status" data-phase={data.phase}>
           <span>
             {PHASE_LABEL[data.phase]}
-            {sample && <span className="fi-sample">Sample data</span>}
+            {sample && <span className="fi-sample">Sample Data</span>}
           </span>
           <GameClock fallback={data.timeLeft} sample={sample} />
         </div>
+        )}
       </header>
 
       <ProjectorKeys data={data} arrivals={arrivals} onSelect={selectLocation} />
@@ -125,7 +131,7 @@ export function FreshieItems({
 
       <ItemShelf data={data} onSelect={selectShelf} />
 
-      <Sheet open={keyFor !== null} onClose={() => setKeyFor(null)} themeVars={themeVars} title={keyFor ? `${CODE_NAMES[keyFor]} key unlocked` : ""}>
+      <Sheet open={keyFor !== null} onClose={() => setKeyFor(null)} themeVars={themeVars} title={keyFor ? `${CODE_NAMES[keyFor]} Key Unlocked` : ""}>
         {keyFor && <KeySheet data={data} loc={keyFor} />}
       </Sheet>
 
@@ -259,7 +265,7 @@ function KeySheet({ data, loc }: { data: ItemsData; loc: ProjectorLocation }) {
   return (
     <div className="fi-key">
       <span className="fi-eb fh-mono">{name.long}</span>
-      <h2 className="fi-key-title">{CODE_NAMES[loc]} key unlocked</h2>
+      <h2 className="fi-key-title">{CODE_NAMES[loc]} Key Unlocked</h2>
       <p className="fi-key-sub">All 5 pieces are in. Your {KEY_NAMES[loc]} is ready.</p>
 
       <KeyEmblem className="fi-key-big" loc={loc} owned={data.pieces[loc]} blade />
@@ -292,11 +298,11 @@ function KeySheet({ data, loc }: { data: ItemsData; loc: ProjectorLocation }) {
       <div className="fi-key-actions">
         {data.mapUnlocked && (
           <Link href={`/map?focus=${loc}`} className="fh-btn fh-btn-ghost">
-            <MapPin size={16} aria-hidden /> Show on map
+            <MapPin size={16} aria-hidden /> Show on Map
           </Link>
         )}
         <button type="button" className="fh-btn fh-btn-primary" disabled>
-          <Nfc size={16} aria-hidden /> Scan part card
+          <Nfc size={16} aria-hidden /> Scan Part Card
         </button>
         {demo.enabled && (
           <button
@@ -305,7 +311,7 @@ function KeySheet({ data, loc }: { data: ItemsData; loc: ProjectorLocation }) {
             onClick={demo.scan}
             disabled={demo.busy || demo.result?.ok}
           >
-            <Nfc size={16} aria-hidden /> {demo.busy ? "Scanning…" : "Demo scan"}
+            <Nfc size={16} aria-hidden /> {demo.busy ? "Scanning…" : "Demo Scan"}
           </button>
         )}
       </div>
@@ -315,7 +321,7 @@ function KeySheet({ data, loc }: { data: ItemsData; loc: ProjectorLocation }) {
             <>
               Demo: {name.short} is {demo.result.text.toLowerCase()}{" "}
               <Link href="/map?layer=bulbs" className="underline">
-                See it on the map
+                See It on the Map
               </Link>
             </>
           ) : (

@@ -73,7 +73,7 @@ export default function FreshieLoginPage() {
           </select>
         </label>
         <label>
-          4-digit password
+          4-Digit Password
           <input
             className="vx-login-code"
             inputMode="numeric"

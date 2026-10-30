@@ -184,7 +184,7 @@ export function GameToggles({
       )}
       <div className="text-xs leading-5 text-ink-faint">
         <p className="font-semibold">
-          {game.state === "active" ? "Running" : game.state === "paused" ? "Paused" : game.state === "ended" ? "Ended" : "Not started"}
+          {game.state === "active" ? "Running" : game.state === "paused" ? "Paused" : game.state === "ended" ? "Ended" : "Not Started"}
           {blocker && ` / end ${blocker.name} first`}
         </p>
         <button
