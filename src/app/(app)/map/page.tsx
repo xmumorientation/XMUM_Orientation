@@ -32,10 +32,9 @@ export default function MapPage() {
         <header className="gc-top">
           <p className="gc-eyebrow">Campus</p>
           <h1 className="gc-title">Map</h1>
-          <p className="gc-muted">
-            Tap the map for a full-screen view. Tap a station for details.
-            {profile.role === "admin" && " Select a building on the map to add or edit its stations."}
-          </p>
+          {profile.role === "admin" && (
+            <p className="gc-muted">Select a building on the map to add or edit its stations.</p>
+          )}
         </header>
         <PersistentCampusMap showGroupPins={showPins} canManageStations={profile.role === "admin"} />
       </div>
