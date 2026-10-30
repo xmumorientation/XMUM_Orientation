@@ -60,8 +60,8 @@ function gamePhase(phases: Phase[]): GamePhase {
     return current.key === "day2" ? "day2" : "day1";
   }
   const state = (key: string) => phases.find((p) => p.key === key)?.state;
-  if (state("endgame") === "ended") return "done";
-  if (state("day2") === "ended") return "day2";
+  // Done once Day 2 ends: the Endgame phase is gone (0102).
+  if (state("day2") === "ended") return "done";
   return "day1";
 }
 
