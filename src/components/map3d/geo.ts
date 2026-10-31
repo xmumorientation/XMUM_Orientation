@@ -525,11 +525,20 @@ const A_FORECOURTS_M: { block: string; side: number; across: [number, number]; o
 ];
 
 /**
+ * Half the width of A3's porches, in metres (buildings.tsx: one on each long side, alike, from Ben's photos). The steps
+ * down from them are as wide.
+ */
+export const A3_PORCH_HALF_M = 11.8;
+
+/**
  * Steps behind every block (Ben's photos): out of the block's back, from the top of its plinth down over the bank
- * (PLATEAU) to the lower ground on the north, `width` metres wide on its back axis and `run` metres long, then a paved
- * landing on to the walk behind it.
+ * (PLATEAU) to the lower ground on the north, `width` metres wide on its back axis (A3's as wide as its porch) and
+ * `run` metres long, then a paved landing on to the walk behind it.
  */
 const NORTH_STAIRS_M = { blocks: ["A1", "A2", "A3", "A4", "A5"], width: 18, run: 10 };
+
+/** How wide (metres) a block's back steps are. */
+const backStairsWidth = (name: string) => (name === "A3" ? 2 * A3_PORCH_HALF_M : NORTH_STAIRS_M.width);
 
 /**
  * A block's half sizes as drawn (buildings.tsx), out to its plinth's edge, in metres: through its back, and along it.
@@ -607,9 +616,10 @@ export const A_FRONT: { courts: World[][]; strips: { width: number; line: World[
   const walkOf = (l: { width: number; line: EN[] }) => ({ width: l.width * UNITS_PER_M, line: l.line.map(([e, n]) => at(e, n)) });
 
   const courts = A_FORECOURTS_M.map(({ block, side, across, out }) => blockRect(block, side, across, [0, out]));
-  const { blocks, width, run } = NORTH_STAIRS_M;
+  const { blocks, run } = NORTH_STAIRS_M;
   for (const name of blocks) {
     const top = backEdge(name);
+    const width = backStairsWidth(name);
     const span = [-width / 2 - 2, width / 2 + 2];
     courts.push(blockRect(name, A_FRONT_SIDE[name] + 180, span, [top, top + run + landingTo(name)]));
   }
@@ -812,7 +822,7 @@ export const NORTH_STAIRS = NORTH_STAIRS_M.blocks.map((name) => {
     top,
     down: unit(blockPoint(name, back, 0, edge + 1)),
     across: unit(blockPoint(name, back, 1, edge)),
-    half: (NORTH_STAIRS_M.width / 2) * UNITS_PER_M,
+    half: (backStairsWidth(name) / 2) * UNITS_PER_M,
     run: NORTH_STAIRS_M.run * UNITS_PER_M,
   };
 });

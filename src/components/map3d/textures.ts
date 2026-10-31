@@ -163,6 +163,237 @@ export function makeGridFacade(seed: number, { rows, cols, wall, glass, repeat }
   return { map, emissiveMap };
 }
 
+/**
+ * A3's walls (Ben's photos and street view), as shares of their height from the ground: an arcade, a band of tall
+ * windows, four floors, then arched windows under the eaves, with a string course under the tall windows and under the
+ * floors. buildings.tsx stops the lower wings and the porches on these lines.
+ */
+export const A3_ROWS = { arcade: 0.25, tall: [0.27, 0.45], floors: [0.47, 0.89], storeys: 4 } as const;
+
+const A3_WALL = "#e8dcc6";
+const A3_TRIM = "#f3ecdd";
+const A3_GLASS = "#3a4552";
+const A3_FRAME = "#8c3a2b";
+const LIT = ["#ffc875", "#fff0c8"];
+
+/** A window's outline with a round head: `x`, `w` across, from `bottom` up to `top`; the head is `ry` high. */
+function headPath(ctx: CanvasRenderingContext2D, x: number, w: number, bottom: number, top: number, ry: number) {
+  ctx.beginPath();
+  ctx.moveTo(x, bottom);
+  ctx.lineTo(x, top + ry);
+  ctx.ellipse(x + w / 2, top + ry, w / 2, ry, 0, Math.PI, 0);
+  ctx.lineTo(x + w, bottom);
+  ctx.closePath();
+}
+
+/** Dark glass in a red frame (photos), with `mullions` upright bars and, if given, a transom that far down. */
+function framed(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  mullions: number,
+  transom?: number,
+) {
+  ctx.fillStyle = A3_GLASS;
+  ctx.fillRect(x, y, w, h);
+  ctx.strokeStyle = A3_FRAME;
+  ctx.lineWidth = 2.5;
+  ctx.strokeRect(x, y, w, h);
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  for (let k = 1; k <= mullions; k++) {
+    ctx.moveTo(x + (w * k) / (mullions + 1), y);
+    ctx.lineTo(x + (w * k) / (mullions + 1), y + h);
+  }
+  if (transom !== undefined) {
+    ctx.moveTo(x, y + h * transom);
+    ctx.lineTo(x + w, y + h * transom);
+  }
+  ctx.stroke();
+}
+
+/**
+ * A3's long walls: one tile is four `bay`s wide (world units) and the whole wall `height` high, so it repeats across
+ * only. Each bay has an arch on the ground floor, a tall window, four windows over pale panels and an arched window
+ * under the eaves, in red frames; its edges are a shade paler (the pilasters, where buildings.tsx draws none). The
+ * emissive map lights only some windows, as in makeFacade.
+ */
+export function makeA3Facade(seed: number, bay: number, height: number) {
+  const B = 64;
+  const W = 4 * B;
+  const S = 512;
+  const [c, ctx] = canvas(W, S);
+  const [e, ectx] = canvas(W, S);
+  const r = rng(seed);
+  const y = (f: number) => S * (1 - f);
+  // a round head's height on the canvas for a half width `rx`, so it is round on the wall
+  const ry = (rx: number) => (rx * S * bay) / (B * height);
+  const { arcade, tall, floors, storeys } = A3_ROWS;
+  ctx.fillStyle = A3_WALL;
+  ctx.fillRect(0, 0, W, S);
+  ectx.fillStyle = "#000";
+  ectx.fillRect(0, 0, W, S);
+  ctx.fillStyle = A3_TRIM;
+  for (const [a, b] of [
+    [arcade, tall[0]],
+    [tall[1], floors[0]],
+    [0.985, 1],
+  ])
+    ctx.fillRect(0, y(b), W, y(a) - y(b));
+  ctx.fillStyle = "#d3cab9";
+  ctx.fillRect(0, y(0.02), W, y(0) - y(0.02));
+  const light = (draw: () => void, chance: number, colours = LIT) => {
+    if (r() >= chance) return;
+    draw();
+    ectx.fillStyle = colours[r() < 0.7 ? 0 : 1];
+    ectx.fill();
+  };
+  const fh = (floors[1] - floors[0]) / storeys;
+  for (let k = 0; k < 4; k++) {
+    const bx = k * B;
+    const cx = bx + B / 2;
+    ctx.fillStyle = "#efe6d4";
+    ctx.fillRect(bx, 0, 5, S);
+    ctx.fillRect(bx + B - 5, 0, 5, S);
+    // the arcade
+    const aw = B * 0.6;
+    headPath(ctx, cx - aw / 2, aw, y(0.02), y(0.22), ry(aw / 2));
+    ctx.fillStyle = "#3b3631";
+    ctx.fill();
+    ctx.strokeStyle = "#f4eee2";
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    light(() => headPath(ectx, cx - aw / 2 + 2, aw - 4, y(0.02), y(0.22) + 2, ry(aw / 2 - 2)), 0.75);
+    // the tall windows
+    const tw = B * 0.58;
+    framed(ctx, cx - tw / 2, y(0.44), tw, y(0.285) - y(0.44), 1, 0.3);
+    light(() => {
+      ectx.beginPath();
+      ectx.rect(cx - tw / 2 + 2, y(0.44) + 2, tw - 4, y(0.285) - y(0.44) - 4);
+    }, 0.6);
+    // the floors: a pale panel under each window
+    const ww = B * 0.56;
+    for (let i = 0; i < storeys; i++) {
+      const f0 = floors[0] + i * fh;
+      ctx.fillStyle = "#efe6d6";
+      ctx.fillRect(cx - ww / 2, y(f0 + 0.16 * fh), ww, y(f0 + 0.04 * fh) - y(f0 + 0.16 * fh));
+      framed(ctx, cx - ww / 2, y(f0 + 0.82 * fh), ww, y(f0 + 0.2 * fh) - y(f0 + 0.82 * fh), 1, 0.3);
+      light(() => {
+        ectx.beginPath();
+        ectx.rect(cx - ww / 2 + 2, y(f0 + 0.82 * fh) + 2, ww - 4, y(f0 + 0.2 * fh) - y(f0 + 0.82 * fh) - 4);
+      }, 0.55);
+    }
+    // arched windows under the eaves
+    const hw = B * 0.5;
+    headPath(ctx, cx - hw / 2, hw, y(0.905), y(0.975), ry(hw / 2));
+    ctx.fillStyle = A3_GLASS;
+    ctx.fill();
+    ctx.strokeStyle = A3_FRAME;
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+    const orange = ["#ffb35c", "#ffd08a"];
+    light(() => headPath(ectx, cx - hw / 2 + 2, hw - 4, y(0.905), y(0.975) + 2, ry(hw / 2 - 2)), 0.6, orange);
+  }
+  const map = texture(c);
+  const emissiveMap = texture(e);
+  for (const t of [map, emissiveMap]) t.wrapS = THREE.RepeatWrapping;
+  return { map, emissiveMap };
+}
+
+/**
+ * The middle of A3's long walls, between its two thick pilasters (`width` x `height`, world units): glass doors and
+ * the tall windows behind the porch, a big arched window over three floors, the emblem over it, a wide window, and
+ * three arched windows under the eaves (street view). The arch and the doors are lit at night.
+ */
+export function makeA3Centre(width: number, height: number) {
+  const W = 128;
+  const S = 512;
+  const [c, ctx] = canvas(W, S);
+  const [e, ectx] = canvas(W, S);
+  const y = (f: number) => S * (1 - f);
+  const ry = (rx: number) => (rx * S * width) / (W * height);
+  const { tall, floors } = A3_ROWS;
+  ctx.fillStyle = A3_WALL;
+  ctx.fillRect(0, 0, W, S);
+  ectx.fillStyle = "#000";
+  ectx.fillRect(0, 0, W, S);
+  ctx.fillStyle = A3_TRIM;
+  for (const [a, b] of [
+    [tall[1], floors[0]],
+    [0.985, 1],
+  ])
+    ctx.fillRect(0, y(b), W, y(a) - y(b));
+  const glow = (x: number, top: number, w: number, bottom: number, colour = "#ffd9a0") => {
+    ectx.fillStyle = colour;
+    ectx.fillRect(x + 2, top + 2, w - 4, bottom - top - 4);
+  };
+  // glass doors and the tall windows above them
+  const gx = W * 0.08;
+  const gw = W * 0.84;
+  framed(ctx, gx, y(0.24), gw, y(0.02) - y(0.24), 3, 0.3);
+  glow(gx, y(0.24), gw, y(0.02));
+  framed(ctx, gx, y(0.44), gw, y(0.285) - y(0.44), 3, 0.5);
+  glow(gx, y(0.44), gw, y(0.285));
+  // the big arch over three floors, a grid of red bars
+  const ax = W * 0.1;
+  const aw = W * 0.8;
+  const [bottom, top] = [y(floors[0] + 0.025), y(0.755)];
+  const head = ry(aw / 2);
+  headPath(ctx, ax, aw, bottom, top, head);
+  ctx.fillStyle = A3_GLASS;
+  ctx.fill();
+  ctx.save();
+  ctx.clip();
+  ctx.strokeStyle = A3_FRAME;
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  for (let k = 1; k < 6; k++) {
+    ctx.moveTo(ax + (aw * k) / 6, top);
+    ctx.lineTo(ax + (aw * k) / 6, bottom);
+  }
+  for (let yy = bottom - 16; yy > top; yy -= 16) {
+    ctx.moveTo(ax, yy);
+    ctx.lineTo(ax + aw, yy);
+  }
+  ctx.stroke();
+  ctx.restore();
+  headPath(ctx, ax, aw, bottom, top, head);
+  ctx.strokeStyle = A3_FRAME;
+  ctx.lineWidth = 3;
+  ctx.stroke();
+  headPath(ectx, ax + 3, aw - 6, bottom, top + 3, head - 3);
+  ectx.fillStyle = "#ffd9a0";
+  ectx.fill();
+  // the emblem, a gold ring, and a wide window over it
+  const er = W * 0.11;
+  ctx.beginPath();
+  ctx.ellipse(W / 2, y(0.785), er, ry(er), 0, 0, Math.PI * 2);
+  ctx.fillStyle = "#f4eee2";
+  ctx.fill();
+  ctx.strokeStyle = "#b8923f";
+  ctx.lineWidth = 3;
+  ctx.stroke();
+  framed(ctx, gx, y(0.875), gw, y(0.812) - y(0.875), 3);
+  glow(gx, y(0.875), gw, y(0.812), "#ffc875");
+  // three arched windows under the eaves
+  const hw = W * 0.22;
+  for (const k of [-1, 0, 1]) {
+    const x = W / 2 + k * W * 0.29 - hw / 2;
+    headPath(ctx, x, hw, y(0.905), y(0.975), ry(hw / 2));
+    ctx.fillStyle = A3_GLASS;
+    ctx.fill();
+    ctx.strokeStyle = A3_FRAME;
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+    headPath(ectx, x + 2, hw - 4, y(0.905), y(0.975) + 2, ry(hw / 2 - 2));
+    ectx.fillStyle = "#ffb35c";
+    ectx.fill();
+  }
+  return { map: texture(c), emissiveMap: texture(e) };
+}
+
 /** B1's wall textures: one tile is this many metres wide and as high as the walls (their roof). */
 export const B1_WALL_W = 12;
 

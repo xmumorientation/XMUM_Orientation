@@ -6,6 +6,7 @@ import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 
 import {
+  A3_PORCH_HALF_M,
   BLOCK_PLINTH,
   BLOCKS,
   BRIDGE,
@@ -21,7 +22,15 @@ import {
   type World,
 } from "./geo";
 import { TanKahKeeStatue } from "./statue";
-import { makeFacade, makeGridFacade, makeRoofTiles, makeXmumFlag } from "./textures";
+import {
+  A3_ROWS,
+  makeA3Centre,
+  makeA3Facade,
+  makeFacade,
+  makeGridFacade,
+  makeRoofTiles,
+  makeXmumFlag,
+} from "./textures";
 
 // DRAFT: the buildings and landmarks. A1–A5 follow the Jiageng style of
 // Xiamen University (cream walls, red brick, curved red-tile roofs with
@@ -467,56 +476,260 @@ function HipRoof({ hx, hz, h, y, top = 0.35 }: { hx: number; hz: number; h: numb
   );
 }
 
+type V3 = [number, number, number];
+
 /**
- * A3: the big 9-level block (photo): white walls with square windows, a tall glass bay over a columned
- * entrance, and a two-tier Chinese roof: wide red eaves with upturned corners and white hips, a set-back
- * storey, and a smaller upper tier with a flat top inside a white ridge frame.
+ * A3's walls: their height above the plinth, and their bays between pilasters each side of a double one in the middle
+ * (photos): six along the long walls, four along the end walls.
+ */
+const A3_H = 7.4;
+const A3_BAYS = 6;
+const A3_END_BAYS = 4;
+/** How far A3's long walls stand inside its footprint: the plinth in front of them is the porches' terrace. */
+const A3_RECESS = 0.55;
+/**
+ * A3's corners (aerial photo, street view): the long and the end walls stop `w` short of each corner, where a lower
+ * block stands `back` behind both, `floors` floors over the tall windows, under a small red roof.
+ */
+const A3_CORNER = { w: 0.75, back: 0.2, floors: 3 };
+/**
+ * A3's porches (photos), alike on both long sides: six round columns `r` round and `h` tall, three each side of the
+ * doors at `cols` of the porch's half width, under a beam `beam` high and `t` deep whose front bows out `bow` at the
+ * middle; the porch's ends stand `depth` out from the wall.
+ */
+const A3_PORCH = { depth: 0.5, bow: 0.18, cols: [0.3, 0.6, 0.9], r: 0.12, h: 2.2, beam: 0.45, t: 0.26 };
+/** Steps down from the front porch's terrace to the paving: as many as A5's, a little deeper. */
+const A3_STEPS = { n: 5, run: 0.12, cheek: 0.18 };
+
+/**
+ * A box of A3's walls from corner `a` to corner `b` (the smaller coordinates first), UV'd for makeA3Facade: u counts
+ * the texture's tiles (four bays: whole bays of about `bayX` across the sides facing ±z, `bayZ` across those facing
+ * ±x), v the share of the walls' height above the plinth, so floors line up from box to box.
+ */
+function a3WallBox(a: V3, b: V3, bayX: number, bayZ: number) {
+  const g = boxAt(b[0] - a[0], b[1] - a[1], b[2] - a[2], (a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2);
+  const uv = g.getAttribute("uv") as THREE.BufferAttribute;
+  // BoxGeometry's faces, four corners each: +x, -x, +y, -y, +z, -z
+  const bays = [(b[2] - a[2]) / bayZ, (b[2] - a[2]) / bayZ, 0, 0, (b[0] - a[0]) / bayX, (b[0] - a[0]) / bayX];
+  for (let i = 0; i < uv.count; i++) {
+    const n = bays[Math.floor(i / 4)];
+    const v = (a[1] - PLINTH + uv.getY(i) * (b[1] - a[1])) / A3_H;
+    // the top and bottom take plain wall
+    if (!n) uv.setXY(i, 0.01, 0.26);
+    else uv.setXY(i, (uv.getX(i) * Math.max(1, Math.round(n))) / 4, v);
+  }
+  return g;
+}
+
+/**
+ * A hipped roof `rh` high on y = 0 over a 2rx x 2rz rectangle, its ridge `ridge` of the width and along z; the
+ * hipped ends are as steep as the long sides.
+ */
+function hipGeometry(rx: number, rz: number, rh: number, ridge: number) {
+  const g = new THREE.CylinderGeometry(Math.SQRT2, Math.SQRT2, rh, 4, 1).rotateY(Math.PI / 4);
+  const p = g.getAttribute("position") as THREE.BufferAttribute;
+  const inset = rx * (1 - ridge);
+  for (let i = 0; i < p.count; i++) {
+    const top = p.getY(i) > 0;
+    p.setXYZ(i, p.getX(i) * (top ? rx * ridge : rx), p.getY(i) + rh / 2, p.getZ(i) * (top ? rz - inset : rz));
+  }
+  g.computeVertexNormals();
+  return g;
+}
+
+/**
+ * One of A3's porches, on its +Z wall at `wz`, `half` wide each way (local units): the columns on bases and under
+ * capitals, the bowed beam with a cornice along its top, a beam back to the wall at each end, and a flat deck.
+ */
+function a3Porch(wz: number, half: number) {
+  const { depth, bow, cols, r, h, beam, t } = A3_PORCH;
+  const top = PLINTH + h + beam;
+  // the beam's front: an arc through its ends and its middle
+  const R = (half * half + bow * bow) / (2 * bow);
+  const zc = wz + depth + bow - R;
+  const front = (x: number) => zc + Math.sqrt(R * R - x * x);
+  const xs = Array.from({ length: 17 }, (_, i) => -half + (half * i) / 8);
+  /** A band in plan across the porch, from `back(x)` to `fwd(x)`, `thick` deep under `y`. */
+  const band = (back: (x: number) => number, fwd: (x: number) => number, thick: number, y: number) => {
+    const outline = [
+      ...xs.map((x) => new THREE.Vector2(x, back(x))),
+      ...[...xs].reverse().map((x) => new THREE.Vector2(x, fwd(x))),
+    ];
+    return new THREE.ExtrudeGeometry(new THREE.Shape(outline), { depth: thick, bevelEnabled: false })
+      .rotateX(Math.PI / 2)
+      .translate(0, y, 0);
+  };
+  const inner = front(half) - t;
+  const parts: THREE.BufferGeometry[] = [
+    band((x) => front(x) - t, front, beam, top),
+    band((x) => front(x) - t - 0.04, (x) => front(x) + 0.05, 0.08, top + 0.04),
+    band(() => wz, (x) => front(x) - t, 0.1, top - 0.08),
+    ...[-1, 1].map((sx) => boxAt(t, beam, inner - wz, sx * (half - t / 2), top - beam / 2, (wz + inner) / 2)),
+  ];
+  for (const f of cols) {
+    for (const sx of [-1, 1]) {
+      const x = sx * f * half;
+      const z = front(x) - t / 2;
+      parts.push(
+        new THREE.CylinderGeometry(r, r * 1.06, h - 0.2, 12).translate(x, PLINTH + h / 2, z),
+        boxAt(2 * r + 0.08, 0.1, 2 * r + 0.08, x, PLINTH + 0.05, z),
+        boxAt(2 * r + 0.08, 0.1, 2 * r + 0.08, x, PLINTH + h - 0.05, z),
+      );
+    }
+  }
+  return parts;
+}
+
+/**
+ * A3's walls, corners, porches and plinth (local units, half sizes `hx` x `hz` of its footprint): `walls` wear
+ * makeA3Facade, `centre` (the middle bay of each wall) makeA3Centre; `trim` is the cream stone (pilasters, porches,
+ * ridges), `stone` the plinth with the front steps, `roofs` the corners' red roofs. `wz` is where the long walls
+ * stand, `bay` their bays' width, `centreW` their middle bay's.
+ */
+function a3Geometry(hx: number, hz: number) {
+  const H = A3_H;
+  const { w: cw, back, floors: cf } = A3_CORNER;
+  const wz = hz - A3_RECESS;
+  // the long walls run to mx, the end walls to mz, either side of the middle
+  const mx = hx - cw;
+  const mz = wz - cw;
+  const bay = mx / A3_BAYS;
+  const endBay = mz / A3_END_BAYS;
+  const half = A3_PORCH_HALF_M * UNITS_PER_M;
+  const { floors, storeys } = A3_ROWS;
+  const floorY = (n: number) => PLINTH + H * (floors[0] + (n * (floors[1] - floors[0])) / storeys);
+
+  // two crossed blocks up to the eaves: the long walls' and the end walls'
+  const walls = [
+    a3WallBox([-mx, PLINTH, -wz], [mx, PLINTH + H, wz], bay, endBay),
+    a3WallBox([-hx, PLINTH, -mz], [hx, PLINTH + H, mz], bay, endBay),
+  ];
+  const trim: THREE.BufferGeometry[] = [];
+  const roofs: THREE.BufferGeometry[] = [];
+  // a lower block in each corner, set back from both walls, under a small red roof with a white ridge
+  const y = floorY(cf);
+  const [x0, x1, z0, z1] = [mx, hx - back, mz, wz - back];
+  const rx = (x1 - x0) / 2 + 0.12;
+  const rz = (z1 - z0) / 2 + 0.12;
+  const [rh, ridge] = [0.28, 0.3];
+  for (const sx of [-1, 1]) {
+    for (const sz of [-1, 1]) {
+      const [cx, cz] = [(sx * (x0 + x1)) / 2, (sz * (z0 + z1)) / 2];
+      const [ax, bx] = sx > 0 ? [x0, x1] : [-x1, -x0];
+      const [az, bz] = sz > 0 ? [z0, z1] : [-z1, -z0];
+      walls.push(a3WallBox([ax, PLINTH, az], [bx, y, bz], bay, endBay));
+      roofs.push(hipGeometry(rx, rz, rh, ridge).translate(cx, y, cz));
+      trim.push(boxAt(2 * rx * ridge + 0.1, 0.08, 2 * (rz - rx * (1 - ridge)) + 0.1, cx, y + rh + 0.04, cz));
+    }
+  }
+
+  // pilasters from the ground to the eaves: thicker either side of the middle, flush with the walls' ends
+  const pilasters = (n: number, b: number, end: number, out: number, along: "x" | "z") => {
+    for (let k = 1; k <= n; k++) {
+      const [w, d] = k === 1 ? [0.3, 0.16] : [0.2, 0.12];
+      const p = k === n ? end - w / 2 : k * b;
+      for (const s of [-1, 1]) {
+        for (const o of [-1, 1]) {
+          trim.push(
+            along === "x"
+              ? boxAt(w, H, d, s * p, PLINTH + H / 2, o * (out + d / 2))
+              : boxAt(d, H, w, o * (out + d / 2), PLINTH + H / 2, s * p),
+          );
+        }
+      }
+    }
+  };
+  pilasters(A3_BAYS, bay, mx, wz, "x");
+  pilasters(A3_END_BAYS, endBay, mz, hx, "z");
+  // the porches: the front's (+Z, the statue), and the same turned round for the back (the lake)
+  const porch = a3Porch(wz, half);
+  trim.push(...porch, ...porch.map((g) => g.clone().rotateY(Math.PI)));
+
+  // the plinth, and steps down from the front porch's terrace to the paving between two low cheek walls (the back's
+  // are geo.ts NORTH_STAIRS, as wide)
+  const { n, run, cheek } = A3_STEPS;
+  const edge = hz + BLOCK_PLINTH.out;
+  const ch = PLINTH + 0.1;
+  const stone = [
+    boxAt(2 * (hx + BLOCK_PLINTH.out), PLINTH, 2 * edge, 0, PLINTH / 2, 0),
+    ...Array.from({ length: n }, (_, k) => {
+      const h = (PLINTH * (n - k)) / (n + 1);
+      return boxAt(2 * half, h, run, 0, h / 2, edge + (k + 0.5) * run);
+    }),
+    ...[-1, 1].map((sx) => boxAt(cheek, ch, n * run, sx * (half + cheek / 2), ch / 2, edge + (n * run) / 2)),
+  ];
+
+  // the middle bay of each wall between its thick pilasters, just proud of the wall
+  const centreW = 2 * bay - 0.3;
+  const long = new THREE.PlaneGeometry(centreW, H).translate(0, PLINTH + H / 2, wz + 0.03);
+  const end = new THREE.PlaneGeometry(2 * endBay - 0.3, H).translate(0, PLINTH + H / 2, hx + 0.03).rotateY(Math.PI / 2);
+  const centre = [long, end].flatMap((g) => [g, g.clone().rotateY(Math.PI)]);
+  return {
+    walls: merge(walls),
+    centre: merge(centre),
+    trim: merge(trim),
+    stone: merge(stone),
+    roofs: merge(roofs),
+    wz,
+    bay,
+    centreW,
+  };
+}
+
+/**
+ * A3, the big 9-level block (Ben's photos, street view and aerial photos): on all four sides, cream walls between
+ * tall pilasters, an arcade on the ground floor, red window frames, arched windows under the eaves and an arched
+ * window over three floors in the middle; a lower block under a small red roof in each corner; a porch on each long
+ * side, alike (the front faces the statue, the back the lake); and a two-tier Chinese roof all round: a narrow skirt
+ * of red eaves with upturned corners and white hips, a short set-back storey of red posts, and a big upper roof with
+ * a flat top inside a white ridge frame. The long walls stand A3_RECESS inside the footprint, so the porches stand on
+ * the plinth and the back's steps (geo.ts NORTH_STAIRS) still fit before the walk behind.
  */
 function FlatBlock({ position, rotY, hx, hz, seed, glow }: BlockProps & { hx: number; hz: number }) {
-  const H = 7.4;
-  const eave = H + 0.3;
-  // the set-back storey stands on the lower tier's inner edge
-  const cx = hx - 1.3;
-  const cz = hz - 1.3;
+  const eave = A3_H + PLINTH;
+  const geo = useMemo(() => a3Geometry(hx, hz), [hx, hz]);
+  // the skirt reaches a little past the walls; the storey stands on its inner edge, the upper roof just past that
+  const [ox, oz] = [hx + 0.3, geo.wz + 0.5];
+  const skirt = 1.2;
+  const cx = ox - skirt;
+  const cz = oz - skirt;
   // Only the windows glow at night (emissive map), as on the other A-blocks.
-  const [wall, storey] = useMemo(() => {
-    const lit = (maps: ReturnType<typeof makeGridFacade>) =>
+  const [wall, centre, storey] = useMemo(() => {
+    const lit = (maps: Facade) =>
       new THREE.MeshStandardMaterial({ ...maps, roughness: 0.8, emissive: new THREE.Color("#ffffff") });
-    const across = (half: number) => Math.max(1, Math.round(half * 0.55));
     return [
-      lit(makeGridFacade(seed, { rows: 6, cols: 4, wall: "#f1eee7", glass: "#56677a", repeat: [across(hx), 1.5] })),
-      lit(makeGridFacade(seed + 7, { rows: 1, cols: 4, wall: "#5d6a78", glass: "#46525f", repeat: [across(cx), 1] })),
+      lit(makeA3Facade(seed, geo.bay, A3_H)),
+      lit(makeA3Centre(geo.centreW, A3_H)),
+      lit(
+        makeGridFacade(seed + 7, {
+          rows: 1,
+          cols: 4,
+          wall: "#9a3b2a",
+          glass: "#38434e",
+          repeat: [Math.max(1, Math.round(cx * 0.55)), 1],
+        }),
+      ),
     ];
-  }, [seed, hx, cx]);
+  }, [seed, geo, cx]);
   wall.emissiveIntensity = glow;
+  centre.emissiveIntensity = glow;
   storey.emissiveIntensity = glow;
-  // The front (local +Z) faces the statue and the main road.
-  const cols = [-1.2, -0.4, 0.4, 1.2];
   return (
     <group position={position} rotation-y={rotY}>
-      <Box
-        size={[2 * (hx + BLOCK_PLINTH.out), BLOCK_PLINTH.h, 2 * (hz + BLOCK_PLINTH.out)]}
-        pos={[0, BLOCK_PLINTH.h / 2, 0]}
-        color="#d3cab9"
-      />
-      <mesh position={[0, H / 2 + 0.3, 0]} material={wall} castShadow receiveShadow>
-        <boxGeometry args={[2 * hx, H, 2 * hz]} />
+      <mesh geometry={geo.stone} castShadow receiveShadow>
+        <meshStandardMaterial color="#d3cab9" roughness={0.9} />
       </mesh>
-      <Box
-        size={[1.8, H - 3.3, 0.12]}
-        pos={[0, 3.4 + (H - 3.3) / 2, hz + 0.04]}
-        color="#4d5d70"
-        emissive={{ color: "#ffcf86", intensity: glow * 0.6 }}
-      />
-      <Box size={[3.4, 2.4, 1.2]} pos={[0, 1.5, hz + 0.6]} color="#f4f1ea" />
-      {cols.map((x) => (
-        <Box key={x} size={[0.22, 2.2, 0.22]} pos={[x, 1.4, hz + 1.35]} color="#ffffff" />
-      ))}
-      <Box size={[3.8, 0.25, 1.8]} pos={[0, 2.6, hz + 0.75]} color="#f4f1ea" />
-      <HipRoof hx={1.9} hz={0.95} h={0.6} y={2.7} top={0.25} />
-      <RoofTier ox={hx + 0.9} oz={hz + 0.9} w={2.2} h={1.3} lift={0.45} y={eave} />
-      <Box size={[2 * cx, 1.1, 2 * cz]} pos={[0, eave + 1.2 + 0.55, 0]} material={storey} />
-      <RoofTier ox={cx + 0.6} oz={cz + 0.6} w={1.7} h={1.0} lift={0.35} y={eave + 2.3} top />
+      <mesh geometry={geo.walls} material={wall} castShadow receiveShadow />
+      <mesh geometry={geo.centre} material={centre} receiveShadow />
+      <mesh geometry={geo.trim} castShadow receiveShadow>
+        <meshStandardMaterial color="#f4efe4" roughness={0.8} />
+      </mesh>
+      <mesh geometry={geo.roofs} castShadow receiveShadow>
+        <meshStandardMaterial color="#c8452c" roughness={0.6} flatShading />
+      </mesh>
+      <RoofTier ox={ox} oz={oz} w={skirt} h={0.6} lift={0.3} y={eave} />
+      <Box size={[2 * cx, 0.8, 2 * cz]} pos={[0, eave + 0.5 + 0.4, 0]} material={storey} />
+      <RoofTier ox={cx + 0.25} oz={cz + 0.25} w={1.7} h={1.1} lift={0.35} y={eave + 1.3} top />
     </group>
   );
 }
