@@ -266,9 +266,9 @@ function gableGeometry(s: number, front: number, east: boolean) {
   const H = H_BLOCK;
   const eave = PLINTH + H;
   const tw = GABLE_PLAN.tower * s;
-  // three and a half bays from the middle to each tower: half the one in the middle, then three between pilasters
-  // (Ben: windows sparser than the photos)
-  const bay = (s - tw) / 3.5;
+  // two and a half bays from the middle to each tower: half the one in the middle, then two either side of a
+  // pilaster (Ben: windows sparser than the photos)
+  const bay = (s - tw) / 2.5;
   const R = GABLE_PLAN.ridge * s;
   const r1 = s - GABLE_PLAN.gable * s;
   const { apex, ridge, glass, dome } = GABLE_RISE;
@@ -302,7 +302,7 @@ function gableGeometry(s: number, front: number, east: boolean) {
     gable,
     boxAt(0.2, 0.3, 0.2, 0, eave + apex + 0.05, s - 0.03),
     new THREE.TubeGeometry(new THREE.CatmullRomCurve3(arc), 16, 0.05, 5),
-    ...[1.5, 2.5].flatMap((m) => [-1, 1].map((sx) => boxAt(0.09, H, 0.05, sx * m * bay, PLINTH + H / 2, s + 0.025))),
+    ...[-1, 1].map((sx) => boxAt(0.09, H, 0.05, sx * 1.5 * bay, PLINTH + H / 2, s + 0.025)),
   ];
   const towerRoof = hipGeometry(tw / 2 + 0.09, tw / 2 + 0.09, 0.4, 0.25).translate(
     s - tw / 2 + 0.03,
@@ -422,13 +422,12 @@ function RoofTier(p: { ox: number; oz: number; w: number; h: number; lift: numbe
 type V3 = [number, number, number];
 
 /**
- * A3's walls: their height above the plinth, and how many bays each half of a wall has between pilasters, counting
- * half the double one in the middle: five along the long walls, three along the end walls (Ben: windows sparser than
- * the photos).
+ * A3's walls: their height above the plinth, and how many bays of windows each half of a wall has between pilasters,
+ * past the bay in the middle: three along the long walls, two along the end walls (Ben: sparser than the photos).
  */
 const A3_H = 7.4;
-const A3_BAYS = 5;
-const A3_END_BAYS = 3;
+const A3_BAYS = 3;
+const A3_END_BAYS = 2;
 /** How far A3's long walls stand inside its footprint: the plinth in front of them is the porches' terrace. */
 const A3_RECESS = 0.55;
 /**
@@ -537,8 +536,9 @@ function a3Geometry(hx: number, hz: number) {
   // the long walls run to mx, the end walls to mz, either side of the middle
   const mx = hx - cw;
   const mz = wz - cw;
-  const bay = mx / A3_BAYS;
-  const endBay = mz / A3_END_BAYS;
+  // the bay in the middle of each wall is as wide as the others
+  const bay = mx / (A3_BAYS + 0.5);
+  const endBay = mz / (A3_END_BAYS + 0.5);
   const half = A3_PORCH_HALF_M * UNITS_PER_M;
   const { floors, storeys } = A3_ROWS;
   const floorY = (n: number) => PLINTH + H * (floors[0] + (n * (floors[1] - floors[0])) / storeys);
@@ -567,11 +567,12 @@ function a3Geometry(hx: number, hz: number) {
     }
   }
 
-  // pilasters from the ground to the eaves: thicker either side of the middle, flush with the walls' ends
+  // pilasters from the ground to the eaves: thicker either side of the middle bay, then between the `n` bays each
+  // side, the last flush with the wall's end
   const pilasters = (n: number, b: number, end: number, out: number, along: "x" | "z") => {
-    for (let k = 1; k <= n; k++) {
-      const [w, d] = k === 1 ? [0.3, 0.16] : [0.2, 0.12];
-      const p = k === n ? end - w / 2 : k * b;
+    for (let k = 0; k <= n; k++) {
+      const [w, d] = k === 0 ? [0.3, 0.16] : [0.2, 0.12];
+      const p = k === n ? end - w / 2 : b / 2 + k * b;
       for (const s of [-1, 1]) {
         for (const o of [-1, 1]) {
           trim.push(
@@ -604,11 +605,11 @@ function a3Geometry(hx: number, hz: number) {
   ];
 
   // the middle bay of each wall between its thick pilasters, just proud of the wall
-  const centreW = 2 * bay - 0.3;
-  const endW = 2 * endBay - 0.3;
+  const centreW = bay - 0.3;
+  const endW = endBay - 0.3;
   const long = new THREE.PlaneGeometry(centreW, H).translate(0, PLINTH + H / 2, wz + 0.03);
   const end = new THREE.PlaneGeometry(endW, H);
-  // the end walls' is wider: the texture keeps its shape, and its plain edges (clamped) fill the rest
+  // the end walls' differs a little: the texture keeps its shape, and its plain edges (clamped) fill any gap
   const euv = end.getAttribute("uv") as THREE.BufferAttribute;
   for (let i = 0; i < euv.count; i++) euv.setX(i, 0.5 + ((euv.getX(i) - 0.5) * endW) / centreW);
   end.translate(0, PLINTH + H / 2, hx + 0.03).rotateY(Math.PI / 2);

@@ -177,7 +177,7 @@ export function makeA3Facade(seed: number, bay: number, height: number) {
     ctx.fillRect(bx, 0, 5, S);
     ctx.fillRect(bx + B - 5, 0, 5, S);
     // the arcade
-    const aw = B * 0.46;
+    const aw = B * 0.36;
     headPath(ctx, cx - aw / 2, aw, y(0.02), y(0.22), ry(aw / 2));
     ctx.fillStyle = "#3b3631";
     ctx.fill();
@@ -186,14 +186,14 @@ export function makeA3Facade(seed: number, bay: number, height: number) {
     ctx.stroke();
     light(() => headPath(ectx, cx - aw / 2 + 2, aw - 4, y(0.02), y(0.22) + 2, ry(aw / 2 - 2)), 0.75);
     // the tall windows
-    const tw = B * 0.44;
+    const tw = B * 0.34;
     framed(ctx, cx - tw / 2, y(0.44), tw, y(0.285) - y(0.44), 1, 0.3);
     light(() => {
       ectx.beginPath();
       ectx.rect(cx - tw / 2 + 2, y(0.44) + 2, tw - 4, y(0.285) - y(0.44) - 4);
     }, 0.6);
     // the floors: a pale panel under each window
-    const ww = B * 0.42;
+    const ww = B * 0.32;
     for (let i = 0; i < storeys; i++) {
       const f0 = floors[0] + i * fh;
       ctx.fillStyle = "#efe6d6";
@@ -205,7 +205,7 @@ export function makeA3Facade(seed: number, bay: number, height: number) {
       }, 0.55);
     }
     // arched windows under the eaves
-    const hw = B * 0.38;
+    const hw = B * 0.28;
     headPath(ctx, cx - hw / 2, hw, y(0.905), y(0.975), ry(hw / 2));
     ctx.fillStyle = A3_GLASS;
     ctx.fill();
@@ -374,8 +374,8 @@ export function makeGableFacade(seed: number, width: number, height: number) {
     wall.ctx.fillStyle = "#efe6d4";
     wall.ctx.fillRect(bx, 0, 4, S);
     wall.ctx.fillRect(bx + B - 4, 0, 4, S);
-    opening(wall.ctx, wall.ectx, bx, B, B * 0.55);
-    const ww = B * 0.3;
+    opening(wall.ctx, wall.ectx, bx, B, B * 0.45);
+    const ww = B * 0.24;
     const wx = bx + (B - ww) / 2;
     for (let i = 0; i < storeys; i++) {
       const f0 = floor(i);
