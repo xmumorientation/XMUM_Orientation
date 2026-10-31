@@ -328,6 +328,37 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 
 ## Done
 
+### Map: A1, A2, A4 and A5 modelled on the real buildings, 2026-10-31 (Ben, branch `feat/a3-entrance`)
+No migration. From Ben's photos: the row from the south, a satellite view and an aerial view at sunset. All four are alike (Ben); A5 has one more porch, on its east side toward the track.
+- **Roof:**
+  - a white gable on each side, up past the roof, with a finial on its apex;
+  - round each corner, a red tiled roof that sweeps up from its eaves to a white curved ridge (from above, a quarter ring round the corner);
+  - in the middle, the atrium's glass: star-shaped, round a skylight;
+  - a small red roof on each corner tower.
+  - The ring roof round an open courtyard (with its garden and tree), the swallowtail ends and A5's curved Dutch gable are gone.
+- **Walls**, in A3's colours (Ben; `makeGableFacade` in `textures.ts`): cream with tall pilasters, a colonnade on the ground floor, five floors of slim windows in red frames, a corner tower with balconies at each corner, and a framed bay in the middle of each side with an arched window on the top floor. The brick-red pilasters and arched windows are gone.
+- **Sparser windows on all five blocks** (Ben, twice: fewer than in the photos): A1, A2, A4 and A5 have two bays of windows each side of the middle bay; A3 has three each side on its long walls and two on its end walls (`A3_BAYS`, `A3_END_BAYS`). On every block the middle bay is as wide as the others. The windows are narrower too, so more wall shows between them.
+- **Porches:** a white canopy with a dark flat top on four square columns, the same on the front (toward the lawn) and the back (toward the lake). At the front, four steps go down to the forecourt. A5's east porch has steps that fan out.
+- **Back steps** (Ben: the porch at the top, the steps as wide as before): a landing 3.4 m deep and as wide as the steps now comes between the plinth and the top step, and carries the back porch (`A_PORCH_OUT_M` in `geo.ts`, drawn in `plateau.tsx`). The walk behind each block is still at least 3.6 m past the foot of its steps (A4 is the closest).
+- **Code:** `GableBlock` replaces `JiagengBlock`, `A5Block` and `Courtyard` in `buildings.tsx`; `makeFacade`, the old brick texture, is gone.
+- Cost, measured with `?stats=1` on the row from the south: desktop 607 → 508 draw calls and +0.8k triangles; lite 138 → 111 calls and +0.5k triangles.
+- Checked on `/map3d` (the row from the south, a front, a back with its landing, A5 from the south-east, from above against the satellite view, at night), at phone size in lite mode, and on `/map3d/preview` (markers still on their buildings). `tsc` and `eslint` clean. `vitest`: every suite passes except the four that start an embedded Postgres. Those failed with `EBUSY` and hook timeouts because worker processes from an earlier run were left behind; they do not touch the map.
+
+### Map: A3 modelled on the real building, 2026-10-31 (Ben, branch `feat/a3-entrance`)
+No migration. From Ben's photos: the lake side from above, the front at night, street view from the main gate, and two aerial photos. Ben checked the front and the back, then pointed out that the ends were wrong (fixed: see Corners).
+- **Porches:** one on each long side, alike (the front faces the statue, the back the lake): six round columns, three each side of the doors, under a beam that bows out at the middle, with a flat deck. The old front porch (four square posts under a small red hipped roof) is gone.
+  - The long walls now stand 0.55 units (about 3.7 m) inside the footprint, so each porch stands on the plinth and the back steps still fit before the walk behind (`A3_RECESS` in `buildings.tsx`).
+- **Steps:** at the front, five steps down from the porch's terrace to the paving, between low cheek walls. At the back, the steps down the bank are as wide as the porch: 23.6 m instead of 18 m (`A3_PORCH_HALF_M` in `geo.ts`).
+- **Walls, the same on all four sides** (`makeA3Facade` in `textures.ts`):
+  - warm cream, with tall pilasters from the ground to the eaves (thicker either side of the middle);
+  - an arcade on the ground floor, a band of tall windows, four floors, and arched windows under the eaves, all in red frames;
+  - in the middle of each wall, an arched window over three floors with the emblem above it (`makeA3Centre`).
+  - At night only the windows glow, as before.
+- **Corners:** each corner is a lower block, set back from both walls, under a small red hipped roof (aerial photo). The first try had lower wings along the whole of each end. That was wrong (Ben), so the ends are now full-height walls like the others.
+- **Roof:** the same two tiers, re-proportioned from the photos: a narrow skirt of eaves, a short storey of red posts, and a big upper roof with a flat top.
+- Cost, measured with `?stats=1` looking at A3: desktop 480 → 469 draw calls (the walls, trim and stone are merged meshes now) and +4.7k triangles; lite 109 → 110 calls, the same triangles.
+- Checked on `/map3d` (front, back, both ends, a corner, day and night), at phone size in lite mode, and on `/map3d/preview` (markers still on their buildings). `tsc`, `eslint` and `vitest` (277 tests) clean.
+
 ### GM Day 1: Start Game, one group or two head to head, 2026-10-30 (Ben)
 - The GM's Station page (`gm/page.tsx`) runs Day 1 like Day 2: Pick (one group, or two for a head-to-head), Start Game (station In Progress, groups checked in for the maps), then Win or Participation for each group (both may win), one confirm sheet, Available and checked out again. Tokens can only be given after Start.
 - Each group is paid by its own `fn_gm_day1_reward` with a key made at Start, so a failed group can be retried alone and a retry never pays twice. The game is kept on the phone (`gm-day1-game:<id>`) across reloads.

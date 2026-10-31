@@ -63,12 +63,22 @@ Ben may continue this work in a new Claude conversation. This file says where ev
   - `plateauSurface()` is a grid mesh of the top and slopes with the flat ground's UVs, so the ground's canvas and `GroundMarks` lie on it.
   - `Plateau` draws the steps: the terrace (`TERRACE`, seat-like tiers with stairs cut through them) and the steps behind the blocks (`NORTH_STAIRS`). It also draws the pale stone walls and a stone base under each block.
 - The slopes ease out at their foot (a square in `groundY`), so the mesh stays under the steps laid over it. Keep that if you change the slopes, or the grass pokes through the lowest steps.
-- A1, A2, A4 and A5 are drawn square and 4–6 m smaller than their OSM footprint (`courtyardWall` in `geo.ts`, used by `buildings.tsx`), on a plinth (`BLOCK_PLINTH`). Attach anything to the block as drawn, not to the OSM footprint: the back steps first stood 6–8 m off the wall (Ben). They now start at the plinth's edge and climb to its top.
+- A1, A2, A4 and A5 are drawn square and 4–6 m smaller than their OSM footprint (`courtyardWall` in `geo.ts`, used by `buildings.tsx`), on a plinth (`BLOCK_PLINTH`). Attach anything to the block as drawn, not to the OSM footprint: the back steps first stood 6–8 m off the wall (Ben). They now start at the plinth's edge and climb to its top; behind A1, A2, A4 and A5 a landing comes first (below).
+- **A1, A2, A4 and A5 are one design** (2026-10-31, branch `feat/a3-entrance`): `GableBlock` and `gableGeometry` in `buildings.tsx`, wall textures `makeGableFacade` in `textures.ts`, in A3's colours (Ben).
+  - Roof (aerial and satellite photos): a gable on each side, a red roof round each corner (a quarter ring from above), the atrium's star-shaped glass round a skylight, and a small red roof on each corner tower.
+  - Porches: front and back alike (Ben), built once by `gablePorch` and turned to each side (`A_FRONT_SIDE` in `geo.ts`); A5 has one more on its east side (local +Z), toward the track.
+  - The back porch stands on a landing before the back steps (Ben: porch at the top, steps as wide as before). The landing is `A_PORCH_OUT_M` deep, drawn with the steps in `plateau.tsx` (NORTH_STAIRS `landing`).
+  - Views: from above `cam=-24,34,-4,-22.5,0,-3.6`; A5 from the south-east `cam=-41,12,13,-23.4,3.5,1.74`; the row from the south `cam=-78,24,-20,-22,1.5,-20`.
 - **A3 is not at OSM's position:** it is moved 15 m toward the statue (`A3_M`, Ben), so its back steps fit before the walk behind it. `BLOCKS` and the block helpers in `geo.ts` read it through `blockM()`. Don't read `BUILDINGS_M.A3` directly.
+- **A3 is modelled on Ben's photos** (2026-10-31, branch `feat/a3-entrance`): `FlatBlock` and `a3Geometry` in `buildings.tsx`, wall textures `makeA3Facade` and `makeA3Centre` in `textures.ts`.
+  - The front (statue) and the back (lake) are alike, each with a porch (Ben: they must stay the same). Change both through `a3Porch`, which builds the front one and turns a copy round.
+  - The long walls stand `A3_RECESS` inside the footprint, so the porches stand on the plinth and the back steps still fit before the walk behind. The back steps are as wide as the porch (`A3_PORCH_HALF_M` in `geo.ts`).
+  - The end walls look like the long walls, without a porch. Only the four corners are lower, under small red roofs (Ben: not the whole end).
+  - Views: front `cam=-52.2,6,-28.1,-22.85,4.2,-21.87`; back `cam=-1.1,12,-24.9,-22.85,3,-21.87`; front and east end from above `cam=-42.9,20,0.4,-22.85,4,-21.87`.
 - Views: like Ben's aerial `/map3d?cam=-72,26,-48,-34,1,-18`; from the statue `cam=-50,3.2,-21.4,-36,2.2,-21.6`; behind A4 `cam=0,9,-2,-20,1,-12`.
 - The statue stands where the imagery shows its round bed (`STATUE`), not at the team's GPS point.
 - Planting along the walk is `A_FRONT_PLANTS` (palms, shrubs, low lamps); plants.ts drops what falls on paving.
-- **Later:** the south gate's guard houses and fence (Ben); the blocks' walls as in the photos; palms in planters; up-lights on the terrace.
+- **Later:** the south gate's guard houses and fence (Ben); palms in planters; up-lights on the terrace.
 
 ### Grey paving in front of the A-row (2026-10-21, branch `map3d-b1`)
 

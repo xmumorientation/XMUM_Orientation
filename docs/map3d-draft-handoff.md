@@ -22,13 +22,11 @@ The dev page is `/map3d`: development only, no login (one condition in `src/midd
   - Hoops, goals, nets, fences and floodlights are in place. The colours come from Ben's aerial photo.
   - Court labels only show when the camera is close (within 95 units).
 - **Around the courts:** B1's service road with parking and cars, a footpath south of basketball, a pad at the north curve, an outdoor gym and a tree belt. Trees, bushes and lamps are kept off all of these (`inKeepOut`).
-- **A5 (Ben's photos)** (`A5Block` in `buildings.tsx`):
-  - white walls with square windows, and a corner tower with a small hipped roof at each corner;
-  - the main entrance on the side facing the track: a bay under a curved Dutch gable, a porch on columns over glass doors, then steps and two ramps;
-  - trees and bushes are kept off the entrance (`A5_ENTRANCE` in `geo.ts`).
-
-  A1, A2 and A4 share the `Courtyard` shell with A5.
-- **Night windows:** `makeGridFacade` and `makeFacade` in `textures.ts` draw emissive maps that light about half the windows. A3's glass bay over the entrance glows as a whole, on purpose.
+- **A1, A2, A4 and A5 (Ben's photos, redone 2026-10-31)** (`GableBlock` in `buildings.tsx`):
+  - all four alike, in A3's colours: a white gable on each side, red roofs round the corners, the atrium's glass in the middle, and a corner tower with a small red roof at each corner;
+  - a porch on the front and the back, alike; A5 has one more on the side facing the track, with steps that fan out;
+  - trees and bushes are kept off that porch (`A5_ENTRANCE` in `geo.ts`).
+- **Night windows:** `makeA3Facade`, `makeGableFacade` and `makeGridFacade` in `textures.ts` draw emissive maps that light about half the windows. A3's big arched windows and the blocks' glass doors glow as a whole, on purpose.
 - **XMUM hedge letters:** removed (Ben, 2026-10-16). The lake stage's amphitheatre stands where they were.
 
 ## True scale (Ben approved 2026-10-15)

@@ -481,8 +481,11 @@ const A_FRONT_M = {
   eastLink: { width: 4, line: [[-170, -18], [-158, -8], [-145, -4], [-130, 0]] as EN[] },
 };
 
-/** Each block's front, the side toward the lawn, in degrees from its long side's bearing (as `side` below). */
-const A_FRONT_SIDE: Record<string, number> = { A1: 90, A2: 0, A3: 90, A4: 180, A5: 180 };
+/**
+ * Each block's front, the side toward the lawn, in degrees from its long side's bearing (as `side` below): 0 is the
+ * block's local +X (buildings.tsx), 90 its local +Z.
+ */
+export const A_FRONT_SIDE: Record<string, number> = { A1: 90, A2: 0, A3: 90, A4: 180, A5: 180 };
 
 /** A block's half sizes in metres: out through its `side`, and along that side. */
 function blockHalf(name: string, side: number): [number, number] {
@@ -525,11 +528,32 @@ const A_FORECOURTS_M: { block: string; side: number; across: [number, number]; o
 ];
 
 /**
+ * Half the width of A3's porches, in metres (buildings.tsx: one on each long side, alike, from Ben's photos). The steps
+ * down from them are as wide.
+ */
+export const A3_PORCH_HALF_M = 11.8;
+
+/**
  * Steps behind every block (Ben's photos): out of the block's back, from the top of its plinth down over the bank
- * (PLATEAU) to the lower ground on the north, `width` metres wide on its back axis and `run` metres long, then a paved
- * landing on to the walk behind it.
+ * (PLATEAU) to the lower ground on the north, `width` metres wide on its back axis (A3's as wide as its porch) and
+ * `run` metres long, then a paved landing on to the walk behind it.
  */
 const NORTH_STAIRS_M = { blocks: ["A1", "A2", "A3", "A4", "A5"], width: 18, run: 10 };
+
+/** How wide (metres) a block's back steps are. */
+const backStairsWidth = (name: string) => (name === "A3" ? 2 * A3_PORCH_HALF_M : NORTH_STAIRS_M.width);
+
+/**
+ * How far (metres) the porches of A1, A2, A4 and A5 stand out past their plinth (buildings.tsx GableBlock), front and
+ * back, and on A5's east side.
+ */
+export const A_PORCH_OUT_M = 3.4;
+
+/**
+ * How far (metres) past its plinth a block's back steps start: a landing as wide as the steps carries the back porch
+ * (Ben). A3's porch stands on its own plinth.
+ */
+const backLanding = (name: string) => (name === "A3" ? 0 : A_PORCH_OUT_M);
 
 /**
  * A block's half sizes as drawn (buildings.tsx), out to its plinth's edge, in metres: through its back, and along it.
@@ -549,7 +573,7 @@ const backEdge = (name: string) => drawnHalf(name)[0];
 /** How deep (metres) the landing at the foot of a block's back steps is: on to the walk behind it, or 8 m. */
 function landingTo(name: string): number {
   const back = A_FRONT_SIDE[name] + 180;
-  const foot = backEdge(name) + NORTH_STAIRS_M.run;
+  const foot = backEdge(name) + backLanding(name) + NORTH_STAIRS_M.run;
   for (let d = 0; d <= 20; d += 0.5) {
     const [x, z] = fromReal(...blockPoint(name, back, 0, foot + d));
     if (FOOTPATHS.some((p) => nearLine(p, x, z, FOOTPATH_W / 2))) return d + 0.5;
@@ -607,11 +631,12 @@ export const A_FRONT: { courts: World[][]; strips: { width: number; line: World[
   const walkOf = (l: { width: number; line: EN[] }) => ({ width: l.width * UNITS_PER_M, line: l.line.map(([e, n]) => at(e, n)) });
 
   const courts = A_FORECOURTS_M.map(({ block, side, across, out }) => blockRect(block, side, across, [0, out]));
-  const { blocks, width, run } = NORTH_STAIRS_M;
+  const { blocks, run } = NORTH_STAIRS_M;
   for (const name of blocks) {
     const top = backEdge(name);
+    const width = backStairsWidth(name);
     const span = [-width / 2 - 2, width / 2 + 2];
-    courts.push(blockRect(name, A_FRONT_SIDE[name] + 180, span, [top, top + run + landingTo(name)]));
+    courts.push(blockRect(name, A_FRONT_SIDE[name] + 180, span, [top, top + backLanding(name) + run + landingTo(name)]));
   }
   const { v, len } = A3_AXIS;
   const u: World = [-v[1], v[0]];
@@ -797,12 +822,12 @@ export const TERRACE = (() => {
 })();
 
 /**
- * The steps behind the blocks in the world (NORTH_STAIRS_M): the middle of their top edge (at the block's plinth), unit
- * directions down them and across them, half their width and their run.
+ * The steps behind the blocks in the world (NORTH_STAIRS_M): the middle of their top edge, unit directions down them
+ * and across them, half their width, their run, and the landing between the block's plinth and their top edge.
  */
 export const NORTH_STAIRS = NORTH_STAIRS_M.blocks.map((name) => {
   const back = A_FRONT_SIDE[name] + 180;
-  const edge = backEdge(name);
+  const edge = backEdge(name) + backLanding(name);
   const top = fromReal(...blockPoint(name, back, 0, edge));
   const unit = (p: EN): World => {
     const [x, z] = fromReal(...p);
@@ -812,8 +837,9 @@ export const NORTH_STAIRS = NORTH_STAIRS_M.blocks.map((name) => {
     top,
     down: unit(blockPoint(name, back, 0, edge + 1)),
     across: unit(blockPoint(name, back, 1, edge)),
-    half: (NORTH_STAIRS_M.width / 2) * UNITS_PER_M,
+    half: (backStairsWidth(name) / 2) * UNITS_PER_M,
     run: NORTH_STAIRS_M.run * UNITS_PER_M,
+    landing: backLanding(name) * UNITS_PER_M,
   };
 });
 
@@ -995,8 +1021,8 @@ function nearLine(pts: readonly World[], x: number, z: number, d: number, closed
 
 /** Buildings, the lake, footpaths, courts, service road, track and grandstand: no trees, bushes or lamps here. */
 /**
- * A5's entrance (bay, porch, steps and ramps: A5Block in buildings.tsx) stands on its local +Z side, up to about
- * 2.75 units past the walls, so it reaches beyond the footprint.
+ * A5's east porch and the steps that fan out below it (GableBlock in buildings.tsx) stand on its local +Z side, about
+ * 1.2 units past the walls, so they reach beyond the footprint; trees keep further off still.
  */
 const A5_ENTRANCE: Placed[] = BLOCKS.filter((b) => b.name === "A5").map((b) => {
   const lz = (b.hx + b.hz) / 2 - 0.7 + 1.4;
