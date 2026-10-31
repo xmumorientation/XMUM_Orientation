@@ -328,6 +328,22 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 
 ## Done
 
+### Map: A1, A2, A4 and A5 modelled on the real buildings, 2026-10-31 (Ben, branch `feat/a3-entrance`)
+No migration. From Ben's photos: the row from the south, a satellite view and an aerial view at sunset. All four are alike (Ben); A5 has one more porch, on its east side toward the track.
+- **Roof:**
+  - a white gable on each side, up past the roof, with a finial on its apex;
+  - round each corner, a red tiled roof that sweeps up from its eaves to a white curved ridge (from above, a quarter ring round the corner);
+  - in the middle, the atrium's glass: star-shaped, round a skylight;
+  - a small red roof on each corner tower.
+  - The ring roof round an open courtyard (with its garden and tree), the swallowtail ends and A5's curved Dutch gable are gone.
+- **Walls**, in A3's colours (Ben; `makeGableFacade` in `textures.ts`): cream with tall pilasters, a colonnade on the ground floor, five floors of slim windows in red frames, a corner tower with balconies at each corner, and a framed bay in the middle of each side with an arched window on the top floor. The brick-red pilasters and arched windows are gone.
+- **Sparser windows on all five blocks** (Ben: fewer than in the photos): A1, A2, A4 and A5 have three bays of windows each side of the middle bay; A3 has four each side on its long walls and two on its end walls (`A3_BAYS`, `A3_END_BAYS`). The windows are narrower too, so more wall shows between them.
+- **Porches:** a white canopy with a dark flat top on four square columns, the same on the front (toward the lawn) and the back (toward the lake). At the front, four steps go down to the forecourt. A5's east porch has steps that fan out.
+- **Back steps** (Ben: the porch at the top, the steps as wide as before): a landing 3.4 m deep and as wide as the steps now comes between the plinth and the top step, and carries the back porch (`A_PORCH_OUT_M` in `geo.ts`, drawn in `plateau.tsx`). The walk behind each block is still at least 3.6 m past the foot of its steps (A4 is the closest).
+- **Code:** `GableBlock` replaces `JiagengBlock`, `A5Block` and `Courtyard` in `buildings.tsx`; `makeFacade`, the old brick texture, is gone.
+- Cost, measured with `?stats=1` on the row from the south: desktop 607 → 510 draw calls and +1.7k triangles; lite 138 → 111 calls and +0.7k triangles.
+- Checked on `/map3d` (the row from the south, a front, a back with its landing, A5 from the south-east, from above against the satellite view, at night), at phone size in lite mode, and on `/map3d/preview` (markers still on their buildings). `tsc` and `eslint` clean. `vitest`: every suite passes except the four that start an embedded Postgres. Those failed with `EBUSY` and hook timeouts because worker processes from an earlier run were left behind; they do not touch the map.
+
 ### Map: A3 modelled on the real building, 2026-10-31 (Ben, branch `feat/a3-entrance`)
 No migration. From Ben's photos: the lake side from above, the front at night, street view from the main gate, and two aerial photos. Ben checked the front and the back, then pointed out that the ends were wrong (fixed: see Corners).
 - **Porches:** one on each long side, alike (the front faces the statue, the back the lake): six round columns, three each side of the doors, under a beam that bows out at the middle, with a flat deck. The old front porch (four square posts under a small red hipped roof) is gone.
