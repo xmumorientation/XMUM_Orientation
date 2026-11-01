@@ -1,0 +1,103 @@
+// @vitest-environment jsdom
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import { fakeSupabase, type FakeSupabase } from "./fakes";
+
+// PRD-001 AC-9: Day 2 Schedule and Game Master keep their RPCs, confirms,
+// review steps and Undo. Neither component file is restyled in Slice 1; these
+// tests pin their behaviour so the surrounding restyle cannot change it.
+
+const h = vi.hoisted(() => ({ client: null as unknown, day2: {} as Record<string, unknown> }));
+vi.mock("@/lib/supabase/client", () => ({ supabaseBrowser: () => h.client }));
+vi.mock("@/components/useConfig", () => ({
+  useConfig: () => ({ config: {}, brand: {}, loaded: true }),
+  useProjectorPlaces: () => ({ B1: { name: "B1" }, A3: { name: "A3" }, TF: { name: "TF" } }),
+}));
+vi.mock("@/components/useDay2State", () => ({ useDay2State: () => h.day2 }));
+vi.mock("@/components/ChallengeBanner", () => ({ ChallengeBanner: () => null }));
+vi.mock("@/components/admin/FunfairLightGroup", () => ({ FunfairLightGroup: () => null }));
+vi.mock("@/components/admin/FunfairZones", () => ({ FunfairZones: () => null }));
+
+import { Day2Schedule } from "@/components/admin/Day2Schedule";
+import { GameMaster } from "@/components/admin/GameMaster";
+
+let fake: FakeSupabase;
+const confirm = vi.fn(() => true);
+const noop = () => {};
+const rpcCalls = (name: string) => fake.rpc.mock.calls.filter((c) => c[0] === name).map((c) => c[1]);
+
+beforeEach(() => {
+  fake = fakeSupabase({ groups: [{ id: 1, name: "Falcons", color: null, token_balance: 10 }] });
+  h.client = fake;
+  confirm.mockReset();
+  confirm.mockReturnValue(true);
+  window.confirm = confirm;
+  h.day2 = {
+    state: { challenge_start_min: 60, challenge_end_min: 90, funfair_start_min: 120, game_on: false, game_started_at: null, game_ends_at: null },
+    segment: "off",
+    manual: false,
+    switches: { station: false, blindbox: false, funfair: false },
+    flipped: {},
+    starts: null,
+    reload: vi.fn(),
+  };
+});
+afterEach(cleanup);
+
+describe("Day 2 Schedule", () => {
+  it("AC-9: Start now asks first, then holds that segment", async () => {
+    render(<Day2Schedule onError={noop} onNotice={noop} />);
+    confirm.mockReturnValueOnce(false);
+    await userEvent.click(screen.getAllByRole("button", { name: /start now/i })[0]);
+    expect(confirm).toHaveBeenCalledWith("Start normal now? It holds until Back to Auto.");
+    expect(rpcCalls("fn_day2_control")).toHaveLength(0);
+    await userEvent.click(screen.getAllByRole("button", { name: /start now/i })[0]);
+    await waitFor(() => expect(rpcCalls("fn_day2_control")).toEqual([{ p_action: "start_segment", p_segment: "normal1" }]));
+  });
+
+  it("AC-9: Back to auto shows while a segment is held", async () => {
+    h.day2 = { ...h.day2, segment: "challenge", manual: true };
+    render(<Day2Schedule onError={noop} onNotice={noop} />);
+    await userEvent.click(screen.getByRole("button", { name: /back to auto/i }));
+    await waitFor(() => expect(rpcCalls("fn_day2_control")).toEqual([{ p_action: "auto" }]));
+  });
+
+  it("AC-9: the three slider handles and the original heading stay", () => {
+    render(<Day2Schedule onError={noop} onNotice={noop} />);
+    expect(screen.getByRole("heading", { name: "Day 2 Inner Schedule" })).toBeTruthy();
+    expect(screen.getAllByRole("slider").map((s) => s.getAttribute("aria-label"))).toEqual(["Challenge mode starts", "Challenge mode ends", "Funfair starts"]);
+  });
+});
+
+describe("Game Master", () => {
+  async function openAndReview() {
+    render(<GameMaster onError={noop} onNotice={noop} />);
+    await userEvent.click(screen.getByRole("button", { name: /game master/i }));
+    await screen.findByText("Falcons", { selector: "b" });
+    await userEvent.click(screen.getByRole("button", { name: /review change/i }));
+  }
+
+  it("AC-9: tokens go through a review step, then Confirm calls fn_admin_token_adjust", async () => {
+    await openAndReview();
+    expect(rpcCalls("fn_admin_token_adjust")).toHaveLength(0);
+    await userEvent.click(screen.getByRole("button", { name: /confirm/i }));
+    await waitFor(() => expect(rpcCalls("fn_admin_token_adjust")).toHaveLength(1));
+    expect(rpcCalls("fn_admin_token_adjust")[0]).toMatchObject({ p_group_id: 1, p_delta: 2, p_reason: "" });
+  });
+
+  it("AC-9: Cancel in the review step calls nothing", async () => {
+    await openAndReview();
+    await userEvent.click(screen.getByRole("button", { name: /cancel/i }));
+    expect(rpcCalls("fn_admin_token_adjust")).toHaveLength(0);
+  });
+
+  it("AC-9: the Undo toast reverses the change", async () => {
+    await openAndReview();
+    await userEvent.click(screen.getByRole("button", { name: /confirm/i }));
+    await userEvent.click(await screen.findByRole("button", { name: "Undo" }));
+    await waitFor(() => expect(rpcCalls("fn_admin_token_adjust")).toHaveLength(2));
+    expect(rpcCalls("fn_admin_token_adjust")[1]).toMatchObject({ p_group_id: 1, p_delta: -2, p_reason: "Undo: adjustment" });
+  });
+});

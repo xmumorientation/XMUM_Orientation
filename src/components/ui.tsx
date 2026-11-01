@@ -39,14 +39,18 @@ export function PageTitle({
   );
 }
 
+// `variant` only adds a class the admin theme (.av in admin-vortexa.css) styles;
+// without it, and outside .av, a Card looks exactly as before.
 export function Card({
   children,
   className,
+  variant,
 }: {
   children: React.ReactNode;
   className?: string;
+  variant?: "raised" | "danger";
 }) {
-  return <div className={cn("card p-4", className)}>{children}</div>;
+  return <div className={cn("card p-4", variant && `av-card-${variant}`, className)}>{children}</div>;
 }
 
 export function EmptyState({
@@ -70,8 +74,17 @@ export function EmptyState({
 export function ErrorBanner({ message }: { message: string | null }) {
   if (!message) return null;
   return (
-    <div className="mb-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+    <div className="av-banner mb-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700" data-tone="error">
       {message}
+    </div>
+  );
+}
+
+/** A caution that is not an error, e.g. "2 overrides ON". */
+export function WarningBanner({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="av-banner rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-800" data-tone="warning">
+      {children}
     </div>
   );
 }
@@ -79,7 +92,7 @@ export function ErrorBanner({ message }: { message: string | null }) {
 export function SuccessBanner({ message }: { message: string | null }) {
   if (!message) return null;
   return (
-    <div className="mb-3 rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">
+    <div className="av-banner mb-3 rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700" data-tone="success">
       {message}
     </div>
   );
@@ -119,7 +132,7 @@ const STATION_STATUS_META: Record<
 export function StationStatusChip({ status }: { status: StationStatus }) {
   const meta = STATION_STATUS_META[status];
   return (
-    <span className={cn("chip", meta.chip)}>
+    <span className={cn("chip", meta.chip)} data-status={status}>
       <span className={cn("h-2 w-2 rounded-full", meta.dot)} />
       {meta.label}
     </span>

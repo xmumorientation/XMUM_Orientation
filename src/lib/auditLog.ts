@@ -468,6 +468,21 @@ export function describeAudit(e: AuditEntry, n: AuditNames): AuditRow {
   }
 }
 
+/**
+ * One plain sentence for Admin → Audit (display only; built from describeAudit()):
+ * "Added 5 tokens to Group 7 (bonus)", "Status changed: Egg and Spoon (now Closed)".
+ * A reason the admin typed goes inside the brackets.
+ */
+export function auditSentence(row: AuditRow, e: AuditEntry): string {
+  if ((e.action === "tokens.adjust" || e.action === "tokens.admin_adjust") && row.tokens) {
+    const reason = str(e.detail?.reason).trim();
+    const gain = row.tokens > 0;
+    return `${gain ? "Added" : "Took"} ${plural(Math.abs(row.tokens), "token")} ${gain ? "to" : "from"} ${row.object}${reason ? ` (${reason})` : ""}`;
+  }
+  const head = row.object ? `${row.action}: ${row.object}` : row.action;
+  return row.detail ? `${head} (${row.detail})` : head;
+}
+
 function describeConfig(key: string, value: unknown, phase: (key: string) => string): AuditRow {
   if (SWITCHES[key]) return { object: SWITCHES[key], action: value === true || value === "true" ? "Turned on" : "Turned off", detail: "" };
   if (key.startsWith("puzzle_image_")) return { object: projectorName(key.slice(13)), action: "New puzzle picture", detail: "" };
