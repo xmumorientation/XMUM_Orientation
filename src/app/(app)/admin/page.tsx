@@ -2,11 +2,14 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { TriangleAlert } from "lucide-react";
+
 import {
   Card,
   ErrorBanner,
   PageTitle,
   SuccessBanner,
+  WarningBanner,
 } from "@/components/ui";
 import { Day2Schedule } from "@/components/admin/Day2Schedule";
 import { GameMaster } from "@/components/admin/GameMaster";
@@ -20,7 +23,7 @@ import {
 } from "@/lib/adminDayFilter";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { resetGames } from "@/lib/gameLength";
-import { cn, friendlyError } from "@/lib/utils";
+import { friendlyError } from "@/lib/utils";
 
 interface LiveOps {
   tokens_in_circulation: number;
@@ -110,41 +113,42 @@ export default function AdminControlRoomPage() {
       <PageTitle
         title="Live control"
         titleAside={
-          <div className="flex flex-wrap items-center gap-3">
-            <select
-              aria-label="Day"
-              value={shownDay}
-              onChange={(e) => {
-                const next = e.target.value as AdminDayFilter;
-                setDay(next);
-                saveAdminDayFilter(next);
-              }}
-              className="input min-h-[52px] w-auto py-2 pl-4 pr-10 text-xl font-bold"
-            >
-              <option value="all">All</option>
-              <option value="Day 1">Day 1</option>
-              <option value="Day 2">Day 2</option>
-            </select>
-            {(shownDay === "all" ? (["Day 1", "Day 2"] as const) : [shownDay]).map((d) => (
-              <GameToggles key={d} day={d} onError={setError} onNotice={flashNotice} />
-            ))}
-          </div>
+          <select
+            aria-label="Day"
+            value={shownDay}
+            onChange={(e) => {
+              const next = e.target.value as AdminDayFilter;
+              setDay(next);
+              saveAdminDayFilter(next);
+            }}
+            className="input av-day w-auto py-2 pl-4 pr-10 text-xl font-bold"
+          >
+            <option value="all">All</option>
+            <option value="Day 1">Day 1</option>
+            <option value="Day 2">Day 2</option>
+          </select>
         }
         subtitle={`${shownDay === "all" ? "Both days" : shownDay}: start and end the game. The Welcome page follows the planned schedule times.`}
       />
-      <NowOnWelcome onError={setError} onNotice={flashNotice} />
       <ErrorBanner message={error} />
       <SuccessBanner message={notice} />
 
       {onSwitches.length > 0 && (
-        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-800">
+        <WarningBanner>
           <strong>{onSwitches.length} override{onSwitches.length > 1 ? "s" : ""} ON:</strong>{" "}
           {onSwitches.map((s) => s.label).join(" & ")}
-        </div>
+        </WarningBanner>
       )}
 
-      {ops && (
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-7">
+      <div className="av-games">
+        {(shownDay === "all" ? (["Day 1", "Day 2"] as const) : [shownDay]).map((d) => (
+          <GameToggles key={d} day={d} onError={setError} onNotice={flashNotice} />
+        ))}
+      </div>
+      <NowOnWelcome onError={setError} onNotice={flashNotice} />
+
+      {ops ? (
+        <div className="av-tiles">
           {[
             ["Tokens in circulation", ops.tokens_in_circulation],
             ["Transactions", ops.transactions_count],
@@ -154,10 +158,16 @@ export default function AdminControlRoomPage() {
             ["Sets redeemed", ops.sets_redeemed],
             ["Projectors lit", `${ops.projectors_activated}/3`],
           ].map(([label, value]) => (
-            <Card key={String(label)} className="p-3 text-center">
-              <p className="text-xl font-bold tabular-nums">{String(value)}</p>
-              <p className="text-xs text-ink-faint">{label}</p>
+            <Card key={String(label)} variant="raised" className="av-tile">
+              <p className="av-tile-value tabular-nums">{String(value)}</p>
+              <p className="av-tile-label">{label}</p>
             </Card>
+          ))}
+        </div>
+      ) : (
+        <div className="av-tiles" aria-hidden>
+          {Array.from({ length: 7 }, (_, i) => (
+            <div key={i} className="av-skel av-tile" />
           ))}
         </div>
       )}
@@ -165,66 +175,65 @@ export default function AdminControlRoomPage() {
       <div className="grid items-start gap-4">
         {shownDay !== "Day 1" && <Day2Schedule onError={setError} onNotice={flashNotice} />}
         <GameMaster onError={setError} onNotice={flashNotice} />
-        <section>
-          <h2 className="mb-2 font-semibold">Safety switches & testing overrides</h2>
-          <Card className="divide-y divide-paper-200 p-0">
-            {SWITCHES.map((s) => {
-              const on = boolOf(s.key);
-              return (
-                <div key={s.key} className="flex items-center gap-3 px-4 py-3">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold">{s.label}</p>
-                    <p className="text-xs text-ink-faint">{s.danger}</p>
-                  </div>
-                  <button
-                    type="button"
-                    role="switch"
-                    aria-checked={on}
-                    aria-label={s.label}
-                    disabled={busy}
-                    onClick={() => toggleConfig(s.key, on)}
-                    className={cn(
-                      "relative h-7 w-12 shrink-0 rounded-full transition disabled:opacity-60",
-                      on ? "bg-red-600" : "bg-paper-300"
-                    )}
-                  >
-                    <span
-                      className={cn(
-                        "absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-all",
-                        on ? "left-6" : "left-1"
-                      )}
-                    />
-                  </button>
+
+        {/* Danger zone: the six kill-switches and overrides, and Reset games. Nothing safe lives here. */}
+        <section aria-labelledby="av-danger-title" className="av-danger">
+          <header className="av-danger-head">
+            <TriangleAlert size={22} aria-hidden />
+            <h2 id="av-danger-title">Danger zone</h2>
+            <span>{onSwitches.length} of {SWITCHES.length} ON</span>
+          </header>
+          {SWITCHES.map((s) => {
+            const on = boolOf(s.key);
+            return (
+              <div key={s.key} className="av-danger-row">
+                <div className="min-w-0 flex-1">
+                  <p className="av-danger-label">{s.label}</p>
+                  <p className="av-danger-why">{s.danger}</p>
                 </div>
-              );
-            })}
-            {/* Rehearsal only: every game back to Not started (lib/gameLength resetGames). */}
-            <div className="flex items-center gap-3 px-4 py-3">
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold">Reset games</p>
-                <p className="text-xs text-ink-faint">
-                  {boolOf("rehearsal_mode")
-                    ? "Day 1, Day 2 and the endgame back to Not started. Every GM moves back to their Day 1 station."
-                    : "Locked until Rehearsal mode is on."}
-                </p>
+                <span className="av-state" data-on={on}>{on ? "ON" : "OFF"}</span>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={on}
+                  aria-label={s.label}
+                  disabled={busy}
+                  onClick={() => toggleConfig(s.key, on)}
+                  className="av-switch"
+                >
+                  <i />
+                </button>
               </div>
-              <button
-                type="button"
-                disabled={busy || !boolOf("rehearsal_mode") || phases.every((p) => p.state === "pending")}
-                onClick={async () => {
-                  if (!window.confirm("Reset every game to Not started? Timers clear and every GM moves back to their Day 1 station. Tokens and pieces are not changed.")) return;
-                  setBusy(true);
-                  const err = await resetGames(supabase, phases);
-                  setBusy(false);
-                  if (err) setError(err);
-                  else flashNotice("Games reset. Every GM is back on their Day 1 station.");
-                }}
-                className="btn-secondary min-h-[40px] shrink-0 border-red-300 px-3 text-xs font-semibold text-red-700 disabled:opacity-50"
-              >
-                Reset
-              </button>
+            );
+          })}
+          {/* Rehearsal only: every game back to Not started (lib/gameLength resetGames). */}
+          <div className="av-danger-row av-danger-reset">
+            <div className="min-w-0 flex-1">
+              <p className="av-danger-label">Reset games</p>
+              <p className="av-danger-why">
+                {!boolOf("rehearsal_mode")
+                  ? "Locked until Rehearsal mode is on."
+                  : phases.every((p) => p.state === "pending")
+                    ? "Every game is already Not started."
+                    : "Day 1, Day 2 and the endgame back to Not started. Every GM moves back to their Day 1 station."}
+              </p>
             </div>
-          </Card>
+            <button
+              type="button"
+              disabled={busy || !boolOf("rehearsal_mode") || phases.every((p) => p.state === "pending")}
+              onClick={async () => {
+                if (!window.confirm("Reset every game to Not started? Timers clear and every GM moves back to their Day 1 station. Tokens and pieces are not changed.")) return;
+                setBusy(true);
+                const err = await resetGames(supabase, phases);
+                setBusy(false);
+                if (err) setError(err);
+                else flashNotice("Games reset. Every GM is back on their Day 1 station.");
+              }}
+              className="av-btn-danger"
+            >
+              Reset games
+            </button>
+          </div>
         </section>
       </div>
     </div>

@@ -4,7 +4,7 @@ import { ChevronDown } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { usePhaseTimer } from "@/components/PhaseTimerProvider";
-import { StationStatusChip } from "@/components/ui";
+import { Card, StationStatusChip } from "@/components/ui";
 import { useConfig } from "@/components/useConfig";
 import { gameLength, otherGameRunning, saveGameLength } from "@/lib/gameLength";
 import { supabaseBrowser } from "@/lib/supabase/client";
@@ -137,86 +137,88 @@ export function GameToggles({
   const blocker = on ? undefined : otherGameRunning(phases, game);
 
   return (
-    <div className="relative flex flex-wrap items-center gap-3">
-      <button
-        type="button"
-        aria-pressed={on}
-        aria-label={`${on ? "End" : "Start"} ${game.name}`}
-        disabled={busy || !!blocker}
-        title={blocker ? `End ${blocker.name} first` : undefined}
-        onClick={() => control(game, on ? "end" : "start")}
-        className="min-h-[52px] shrink-0 rounded-xl px-5 text-base font-bold disabled:opacity-60"
-        // green to start, red while running (set inline: the admin theme restyles buttons)
-        style={{ backgroundColor: on ? "#dc2626" : "#16a34a", color: "#fff" }}
-      >
-        {on ? `■ End ${game.name}` : `▶ Start ${game.name}`}
-      </button>
-      {left !== null ? (
-        <div className="flex flex-wrap items-center gap-1.5">
-          <span className="font-mono text-2xl font-black tabular-nums" role="timer" aria-label={`${game.name} time left`}>
-            {formatCountdown(left)}
-          </span>
-          {/* No Pause (removed 0102); Resume only frees a game paused before then. */}
-          {game.state === "paused" && (
-            <button disabled={busy} onClick={() => control(game, "resume")} className="btn-secondary min-h-[36px] px-3 text-xs">
-              ⏵ Resume
-            </button>
-          )}
-          <button disabled={busy} onClick={() => control(game, "extend", 5)} className="btn-secondary min-h-[36px] px-3 text-xs">
-            +5
-          </button>
-        </div>
-      ) : (
-        !on && (
-          <form
-            className="flex items-center gap-1.5 text-xs"
-            onSubmit={(e) => {
-              e.preventDefault();
-              saveLength(game);
-            }}
-          >
-            <span className="text-ink-faint">Length</span>
-            <input
-              type="number"
-              min={1}
-              className="input min-h-[36px] w-20 text-sm"
-              aria-label={`${game.name} length in minutes`}
-              value={lengthDraft || String(length)}
-              onChange={(e) => setLengthDraft(e.target.value)}
-            />
-            <span className="text-ink-faint">min</span>
-            {lengthDraft && lengthDraft !== String(length) && (
-              <button disabled={busy} className="btn-secondary min-h-[36px] px-2.5 text-xs">
-                Save
+    <Card className="av-game">
+      <div className="av-game-main">
+        <div className="av-game-info">
+          <p className="av-game-state" data-state={game.state}>
+            {game.state === "active" ? "Running" : game.state === "paused" ? "Paused" : game.state === "ended" ? "Ended" : "Not started"}
+            {blocker && ` / end ${blocker.name} first`}
+          </p>
+          {left !== null ? (
+            <div className="av-game-clock">
+              <span className="av-clock" role="timer" aria-label={`${game.name} time left`}>
+                {formatCountdown(left)}
+              </span>
+              {/* No Pause (removed 0102); Resume only frees a game paused before then. */}
+              {game.state === "paused" && (
+                <button disabled={busy} onClick={() => control(game, "resume")} className="btn-secondary px-3 text-xs">
+                  ⏵ Resume
+                </button>
+              )}
+              <button disabled={busy} onClick={() => control(game, "extend", 5)} className="btn-secondary px-3 text-xs">
+                +5
               </button>
-            )}
-          </form>
-        )
-      )}
-      <div className="text-xs leading-5 text-ink-faint">
-        <p className="font-semibold">
-          {game.state === "active" ? "Running" : game.state === "paused" ? "Paused" : game.state === "ended" ? "Ended" : "Not started"}
-          {blocker && ` / end ${blocker.name} first`}
-        </p>
+            </div>
+          ) : (
+            !on && (
+              <form
+                className="av-game-length"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  saveLength(game);
+                }}
+              >
+                <span className="text-ink-faint">Length</span>
+                <input
+                  type="number"
+                  min={1}
+                  className="input w-20 text-sm"
+                  aria-label={`${game.name} length in minutes`}
+                  value={lengthDraft || String(length)}
+                  onChange={(e) => setLengthDraft(e.target.value)}
+                />
+                <span className="text-ink-faint">min</span>
+                {lengthDraft && lengthDraft !== String(length) && (
+                  <button disabled={busy} className="btn-secondary px-2.5 text-xs">
+                    Save
+                  </button>
+                )}
+              </form>
+            )
+          )}
+        </div>
         <button
           type="button"
-          onClick={() => setOpen(open ? null : game.key)}
-          className="inline-flex min-h-0 items-center gap-0.5 font-semibold underline-offset-2 hover:underline"
-          aria-expanded={!!open}
+          aria-pressed={on}
+          aria-label={`${on ? "End" : "Start"} ${game.name}`}
+          disabled={busy || !!blocker}
+          title={blocker ? `End ${blocker.name} first` : undefined}
+          onClick={() => control(game, on ? "end" : "start")}
+          className="av-go"
+          data-on={on}
         >
-          {openCount}/{dayStations.length} stations open
-          <ChevronDown size={12} className={cn("transition", open && "rotate-180")} />
+          {on ? `■ End ${game.name}` : `▶ Start ${game.name}`}
         </button>
       </div>
 
+      <button
+        type="button"
+        onClick={() => setOpen(open ? null : game.key)}
+        className="av-disclosure"
+        aria-expanded={!!open}
+      >
+        {openCount}/{dayStations.length} stations open
+        <ChevronDown size={14} className={cn("transition", open && "rotate-180")} />
+      </button>
+
       {open && (
-        <div className="absolute left-0 top-full z-30 mt-2 w-80 max-w-[calc(100vw-2rem)] divide-y divide-paper-200 rounded-xl border border-paper-200 bg-white shadow-overlay">
+        <div className="av-stations">
           {dayStations.map((s) => (
-            <div key={s.id} className="flex items-center gap-2 px-3 py-1.5 text-sm">
+            <div key={s.id} className="av-station">
               <span className="min-w-0 flex-1 truncate">{s.name}</span>
               <StationStatusChip status={s.status} />
               <select
-                className="input min-h-[30px] w-28 text-xs"
+                className="input w-32 text-sm"
                 aria-label={`${s.name} status`}
                 value={s.status}
                 onChange={(e) => setStationStatus(s.id, e.target.value as StationStatus)}
@@ -232,6 +234,6 @@ export function GameToggles({
           )}
         </div>
       )}
-    </div>
+    </Card>
   );
 }

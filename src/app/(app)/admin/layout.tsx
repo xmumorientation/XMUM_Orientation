@@ -1,5 +1,6 @@
 "use client";
 
+import { Gamepad2, Radio, Settings, Users, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { nexusBody, vxDisplay } from "@/components/home/fonts";
 import "@/components/staff/staff-dashboard.css";
@@ -7,7 +8,6 @@ import "./admin-vortexa.css";
 import { usePathname } from "next/navigation";
 
 import { useProfile } from "@/components/ProfileProvider";
-import { cn } from "@/lib/utils";
 
 interface Tab {
   href: string;
@@ -17,15 +17,18 @@ interface Tab {
 interface Section {
   key: string;
   label: string;
+  icon: LucideIcon;
   tabs: Tab[];
 }
 
 // Grouped by when an admin needs them: Live during the event, Freshies for
-// group setup, Game for the game pieces, Settings for rarely changed things.
+// group setup (one page; its Headcount page stays reachable at its URL), Game
+// for the game pieces, Settings for rarely changed things.
 const SECTIONS: Section[] = [
   {
     key: "live",
     label: "Live",
+    icon: Radio,
     tabs: [
       { href: "/admin", label: "Live control" },
       { href: "/admin/audit", label: "Audit" },
@@ -34,25 +37,26 @@ const SECTIONS: Section[] = [
   {
     key: "freshies",
     label: "Freshies",
-    tabs: [
-      { href: "/admin/freshies", label: "Groups" },
-      { href: "/admin/freshies/headcount", label: "Headcount and location" },
-    ],
+    icon: Users,
+    tabs: [{ href: "/admin/freshies", label: "Groups" }],
   },
   {
     key: "game",
     label: "Game",
+    icon: Gamepad2,
     tabs: [
       { href: "/admin/token", label: "Tokens" },
       { href: "/admin/stations", label: "Stations" },
       { href: "/admin/puzzles", label: "Puzzles" },
       { href: "/admin/blindbox", label: "Blind box" },
       { href: "/admin/nfc", label: "NFC" },
+      { href: "/admin/funfair", label: "Funfair" },
     ],
   },
   {
     key: "settings",
     label: "Settings",
+    icon: Settings,
     tabs: [
       { href: "/admin/users", label: "Users" },
       { href: "/admin/faq", label: "FAQ" },
@@ -61,10 +65,10 @@ const SECTIONS: Section[] = [
   },
 ];
 
-// "/admin" and "/admin/freshies" are prefixes of other tabs, so they match
-// exactly; every other tab also owns its sub-paths.
+// "/admin" is a prefix of every other tab, so it matches exactly; every other
+// tab also owns its sub-paths (so /admin/freshies/headcount stays in Freshies).
 function isActive(pathname: string, href: string) {
-  if (href === "/admin" || href === "/admin/freshies") return pathname === href;
+  if (href === "/admin") return pathname === href;
   return pathname === href || pathname.startsWith(href + "/");
 }
 
@@ -90,46 +94,41 @@ export default function AdminLayout({
 
   return (
     <div className={`av ${nexusBody.variable} ${vxDisplay.variable}`}>
-      <nav aria-label="Admin sections" className="mb-4 space-y-2">
-        <div className="-mx-3 flex gap-1 overflow-x-auto px-3 pb-1 sm:-mx-5 sm:px-5 lg:mx-0 lg:px-0">
-          {SECTIONS.map((s) => (
-            <Link
-              key={s.key}
-              href={s.tabs[0].href}
-              aria-current={s.key === section.key ? "page" : undefined}
-              className={cn(
-                "whitespace-nowrap rounded-full px-4 py-2 text-sm font-bold",
-                s.key === section.key
-                  ? "bg-ink text-white"
-                  : "bg-white text-ink-soft shadow-card hover:text-ink"
-              )}
-            >
-              {s.label}
-            </Link>
-          ))}
-        </div>
-        <div className="-mx-3 flex gap-1 overflow-x-auto border-b border-paper-200 px-3 sm:-mx-5 sm:px-5 lg:mx-0 lg:px-0">
-          {section.tabs.map((t) => {
-            const active = isActive(pathname, t.href);
+      <div className="av-shell">
+        {/* Laptop: left sidebar. Phone: floating dock at the bottom. */}
+        <nav aria-label="Admin sections" className="av-side">
+          {SECTIONS.map((s) => {
+            const Icon = s.icon;
             return (
               <Link
-                key={t.href}
-                href={t.href}
-                aria-current={active ? "page" : undefined}
-                className={cn(
-                  "-mb-px whitespace-nowrap border-b-2 px-3 py-2 text-sm font-semibold",
-                  active
-                    ? "border-ink text-ink"
-                    : "border-transparent text-ink-faint hover:text-ink"
-                )}
+                key={s.key}
+                href={s.tabs[0].href}
+                aria-current={s.key === section.key ? "page" : undefined}
               >
-                {t.label}
+                <Icon size={20} strokeWidth={1.75} aria-hidden />
+                <span>{s.label}</span>
               </Link>
             );
           })}
+        </nav>
+        <div className="av-main">
+          {section.tabs.length > 1 && (
+            <nav aria-label="Admin pages" className="av-tabs">
+              {section.tabs.map((t) => (
+                <Link
+                  key={t.href}
+                  href={t.href}
+                  aria-current={isActive(pathname, t.href) ? "page" : undefined}
+                  className="av-tab"
+                >
+                  {t.label}
+                </Link>
+              ))}
+            </nav>
+          )}
+          <div className="min-w-0">{children}</div>
         </div>
-      </nav>
-      <div className="min-w-0">{children}</div>
+      </div>
     </div>
   );
 }
