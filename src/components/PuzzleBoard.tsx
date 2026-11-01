@@ -30,7 +30,7 @@ export function PuzzleBoard({
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={imageUrl} alt="Completed puzzle" className="block w-full" />
         <div className="absolute right-2 top-2">
-          <StampBadge state="complete" icon={Puzzle} label="Set complete" />
+          <StampBadge state="complete" icon={Puzzle} label="Set Complete" />
         </div>
         <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-3 text-center">
           <p className="text-sm font-bold text-white">

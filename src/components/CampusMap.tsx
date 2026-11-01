@@ -1,7 +1,7 @@
 "use client";
 
 import { StaffLocationSwitch } from "@/components/StaffLocationSharing";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Building2, CircleHelp, CircleDot, LayoutGrid, Trophy } from "lucide-react";
 import { MAP_BUILDINGS } from "@/lib/mapBuildings";
 import "@/components/campus-map/campus-map-controls.css";
@@ -13,7 +13,9 @@ import {
   MapToolbar,
 } from "@/components/campus-map/CampusMapPanels";
 import { CampusMapView, useMapView } from "@/components/campus-map/CampusMapView";
+import { useMapActive } from "@/components/campus-map/mapActive";
 import { useCampusMapData } from "@/components/campus-map/useCampusMapData";
+import { useTennisSettings } from "@/components/map3d/tennis/settings";
 import type { Station } from "@/lib/types";
 
 // FR-4.1: campus map. Data and state live in useCampusMapData, the controls
@@ -35,16 +37,25 @@ export function CampusMap({
   hasSelection?: boolean;
 }) {
   const [view, fallBack] = useMapView();
+  // False while parked off-screen between visits (PersistentCampusMap).
+  const live = useMapActive();
   // The Lightbulbs layer is on the 2D map only; the 3D map lists the bulbs under it.
   const data = useCampusMapData({
     showGroupPins,
     canManageStations,
     bulbLayer: view === "2d",
     loadFunfair: view === "3d",
+    live,
   });
   // Full-screen viewer. The inline map stays still so the page can scroll.
   const [fullscreen, setFullscreen] = useState(false);
+  // Leaving the page (e.g. the back button) closes full screen, which is a portal over every page.
+  useEffect(() => {
+    if (!live) setFullscreen(false);
+  }, [live]);
   const panelView = view ?? "3d";
+  // The tennis game on the 3D map's courts, while Admin has it open (Live control).
+  const tennis = useTennisSettings();
   const areas = [...new Set(data.mapStations.map((station) => station.area))].sort((a, b) => {
     const rank = (area: string) => {
       const index = MAP_BUILDINGS.findIndex((building) => building.area === area);
@@ -69,7 +80,7 @@ export function CampusMap({
       )}
       <MapToolbar data={data} canManageStations={canManageStations} view={panelView} />
       {view === "2d" && <nav aria-label={`Day ${data.day} map buildings`} className="campus-map-buildings">
-        <p className="campus-map-buildings-title">Day {data.day} / Find a station</p>
+        <p className="campus-map-buildings-title">Day {data.day} / Find a Station</p>
         <div className="campus-map-building-options">
           <button type="button" className="campus-map-building" aria-pressed={data.layer === "stations" && data.clusterArea === null}
             onClick={() => selectArea(null)}>
@@ -91,6 +102,7 @@ export function CampusMap({
       <CampusMapView
         view={view}
         onFail={fallBack}
+        scene={{ tennis }}
         data={data}
         showGroupPins={showGroupPins}
         canManageStations={canManageStations}
@@ -98,6 +110,7 @@ export function CampusMap({
         onStationTap={onStationTap}
         fullscreen={fullscreen}
         onFullscreenChange={setFullscreen}
+        paused={!live}
         legend={<MapLegend layer={data.layer} showGroupPins={showGroupPins} />}
       />
       <CampusMapPanels

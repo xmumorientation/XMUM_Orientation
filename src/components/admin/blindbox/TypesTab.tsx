@@ -91,7 +91,7 @@ export function TypesTab({ data, onError, onNotice, goTo }: TabProps) {
   return (
     <div className="grid items-start gap-4 lg:grid-cols-[22rem_minmax(0,1fr)]">
       <Card className="space-y-3">
-        <h2 className="font-semibold">{editingId ? "Edit box type" : "New box type"}</h2>
+        <h2 className="font-semibold">{editingId ? "Edit Box Type" : "New Box Type"}</h2>
         <form onSubmit={save} className="space-y-3">
           <div>
             <label className="label text-xs" htmlFor="bb-name">
@@ -109,7 +109,7 @@ export function TypesTab({ data, onError, onNotice, goTo }: TabProps) {
           <div className="grid grid-cols-2 gap-2">
             <div>
               <label className="label text-xs" htmlFor="bb-min">
-                Min tokens
+                Min Tokens
               </label>
               <input
                 id="bb-min"
@@ -123,7 +123,7 @@ export function TypesTab({ data, onError, onNotice, goTo }: TabProps) {
             </div>
             <div>
               <label className="label text-xs" htmlFor="bb-max">
-                Max tokens
+                Max Tokens
               </label>
               <input
                 id="bb-max"
@@ -151,7 +151,7 @@ export function TypesTab({ data, onError, onNotice, goTo }: TabProps) {
             </div>
             <div>
               <label className="label text-xs" htmlFor="bb-stock">
-                Total stock
+                Total Stock
               </label>
               <input
                 id="bb-stock"
@@ -170,7 +170,7 @@ export function TypesTab({ data, onError, onNotice, goTo }: TabProps) {
               checked={form.special}
               onChange={(e) => set("special", e.target.checked)}
             />
-            Special box (gold reveal)
+            Special Box (Gold Reveal)
           </label>
           <p className="text-xs text-ink-faint">
             Price 0 = free reward box. Stock is how many boxes of this type
@@ -180,7 +180,7 @@ export function TypesTab({ data, onError, onNotice, goTo }: TabProps) {
           </p>
           <div className="flex gap-2">
             <button disabled={busy} type="submit" className="btn-primary flex-1">
-              {editingId ? "Save changes" : "Create type"}
+              {editingId ? "Save Changes" : "Create Type"}
             </button>
             {editingId && (
               <button type="button" onClick={reset} className="btn-secondary">

@@ -1,6 +1,6 @@
 "use client";
 
-import { CampusMap } from "@/components/CampusMap";
+import { PersistentCampusMap } from "@/components/campus-map/PersistentCampusMap";
 import { FaciTrackingPanel } from "@/components/FaciTrackingPanel";
 import { vxDisplay, vxSlab } from "@/components/home/fonts";
 import { useGroup } from "@/components/useGroup";
@@ -36,11 +36,10 @@ export function FreshieMap({ showGroupPins }: { showGroupPins: boolean }) {
       <header className="fh-map-top">
         <p className="fh-eyebrow fh-mono">Campus</p>
         <h1 className="fh-h2">Map</h1>
-        <p className="fh-map-sub">Live game stations. Tap the map for a full-screen view. Tap a station or a building&apos;s badge for details.</p>
       </header>
 
       <FaciTrackingPanel />
-      <CampusMap showGroupPins={showGroupPins} />
+      <PersistentCampusMap showGroupPins={showGroupPins} />
     </div>
   );
 }

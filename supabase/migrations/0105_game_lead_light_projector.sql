@@ -1,5 +1,5 @@
 -- ═══════════════════════════════════════════════════════════════════════
--- Migration 0105: light a key (projector) for a chosen group (run after 0103).
+-- Migration 0105: light a key (projector) for a chosen group (run after 0104).
 --
 -- Funfair backup for D-day: HOGM and Admin pick a group and light one of the
 -- three keys for it, with no card tap, no Guardian check of the puzzle set,

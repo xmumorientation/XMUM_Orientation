@@ -11,7 +11,7 @@ import "@/components/freshie/freshie.css";
 // The opening clip (public/blind-box-fast.mp4: the original blind-box.mp4 at
 // 2.5x, about 4 seconds) and the frame shown while it loads.
 export const BOX_REVEAL_VIDEO = "/blind-box-fast.mp4";
-const POSTER = "/blind-box-poster.jpg";
+const POSTER = "/blind-box-poster.webp";
 
 // If the clip neither ends nor errors (stalled network), show the result
 // anyway: a Freshie has already paid, so the prize must never be stuck behind

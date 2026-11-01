@@ -1,6 +1,6 @@
 "use client";
 
-import { CampusMap } from "@/components/CampusMap";
+import { PersistentCampusMap } from "@/components/campus-map/PersistentCampusMap";
 import { FreshieMap } from "@/components/freshie/FreshieMap";
 import { vxDisplay, vxSlab } from "@/components/home/fonts";
 import { useProfile } from "@/components/ProfileProvider";
@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 export default function MapPage() {
   const profile = useProfile();
 
-  // Every role sees every group's pin (0101; Ben: the group locations are
+  // Every role sees every group's pin (0108; Ben: the group locations are
   // open to everyone in the app). The flag just requests pins.
   const showPins =
     COMMITTEE_TIER.includes(profile.role) ||
@@ -32,12 +32,11 @@ export default function MapPage() {
         <header className="gc-top">
           <p className="gc-eyebrow">Campus</p>
           <h1 className="gc-title">Map</h1>
-          <p className="gc-muted">
-            Tap the map for a full-screen view. Tap a station for details.
-            {profile.role === "admin" && " Select a building on the map to add or edit its stations."}
-          </p>
+          {profile.role === "admin" && (
+            <p className="gc-muted">Select a building on the map to add or edit its stations.</p>
+          )}
         </header>
-        <CampusMap showGroupPins={showPins} canManageStations={profile.role === "admin"} />
+        <PersistentCampusMap showGroupPins={showPins} canManageStations={profile.role === "admin"} />
       </div>
     );
   }
@@ -51,11 +50,11 @@ export default function MapPage() {
   return (
     <div className="space-y-4">
       <PageTitle
-        title="Campus map"
+        title="Campus Map"
         subtitle="Live game stations. Tap the map for a full-screen view. Tap a station or a building's badge for details."
       />
 
-      <CampusMap showGroupPins={showPins} />
+      <PersistentCampusMap showGroupPins={showPins} />
     </div>
   );
 }

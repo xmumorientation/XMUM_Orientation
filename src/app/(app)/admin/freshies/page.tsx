@@ -220,7 +220,7 @@ export default function FreshieControlPage() {
   return (
     <div className="space-y-4">
       <PageTitle
-        title="Freshie control"
+        title="Freshie Control"
         subtitle="Set how many groups exist, and one color for each. That color replaces blue on every Freshie screen. Each group gets a 4-digit password, a scan link, and a QR to download."
       />
       <ErrorBanner message={error} />
@@ -271,14 +271,14 @@ export default function FreshieControlPage() {
               Group QRs never change. New passwords sign out every Freshie phone; they scan their QR again.
             </p>
             <button type="button" className="btn-secondary px-4" disabled={busy} onClick={newPasswords}>
-              New passwords for all groups
+              New Passwords for All Groups
             </button>
           </div>
           <table className="av-groups w-full min-w-[860px] text-left text-sm">
             <thead>
               <tr className="border-b border-paper-200 text-xs font-bold uppercase tracking-wide text-ink-faint">
                 <th className="w-16 px-4 py-3 text-center">No.</th>
-                <th className="px-4 py-3">Name &amp; slogan</th>
+                <th className="px-4 py-3">Name &amp; Slogan</th>
                 <th className="w-56 px-4 py-3">Facilitators</th>
                 <th className="w-32 px-4 py-3">Password</th>
                 <th className="w-40 px-4 py-3">Color</th>
@@ -479,7 +479,7 @@ export default function FreshieControlPage() {
         }}
       >
         <DialogContent className="av-dialog"
-          title="Delete all groups?"
+          title="Delete All Groups?"
           description="This deletes all groups with their tokens, puzzles, headcounts and passwords. Printed group QRs work again once the groups are set up again. Facilitators and Freshies lose their group. This cannot be undone."
         >
           <form
@@ -490,7 +490,7 @@ export default function FreshieControlPage() {
             }}
           >
             <label className="label" htmlFor="reset-confirm">
-              Type RESET to confirm
+              Type RESET to Confirm
             </label>
             <input
               id="reset-confirm"
@@ -504,7 +504,7 @@ export default function FreshieControlPage() {
               className="btn-danger w-full"
               disabled={busy || resetText !== "RESET"}
             >
-              {busy ? "Deleting…" : "Delete all groups"}
+              {busy ? "Deleting…" : "Delete All Groups"}
             </button>
           </form>
         </DialogContent>

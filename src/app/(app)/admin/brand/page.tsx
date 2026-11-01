@@ -57,7 +57,7 @@ export default function AdminBrandPage() {
   return (
     <div className="space-y-4">
       <PageTitle
-        title="Event branding"
+        title="Event Branding"
         subtitle="Rename & recolour for each year's orientation — no redeploy"
       />
       <ErrorBanner message={error} />
@@ -67,7 +67,7 @@ export default function AdminBrandPage() {
         <form onSubmit={save} className="space-y-3">
           <div>
             <label className="label" htmlFor="name">
-              Event name
+              Event Name
             </label>
             <input
               id="name"
@@ -93,7 +93,7 @@ export default function AdminBrandPage() {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="label" htmlFor="c1">
-                Accent colour 1
+                Accent Colour 1
               </label>
               <input
                 id="c1"
@@ -107,7 +107,7 @@ export default function AdminBrandPage() {
             </div>
             <div>
               <label className="label" htmlFor="c2">
-                Accent colour 2
+                Accent Colour 2
               </label>
               <input
                 id="c2"
@@ -132,7 +132,7 @@ export default function AdminBrandPage() {
           </div>
 
           <button disabled={busy} type="submit" className="btn-primary w-full">
-            Save branding
+            Save Branding
           </button>
         </form>
       </Card>

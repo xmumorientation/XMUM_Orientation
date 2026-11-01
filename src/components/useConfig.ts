@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { projectorPlaces } from "@/lib/projectorPlaces";
+import { useSharedFeed, type FeedSource } from "@/lib/sharedFeed";
 
 export interface BrandConfig {
   eventName: string;
@@ -17,41 +18,38 @@ function unquote(v: unknown, fallback: string): string {
   return fallback;
 }
 
-// Runtime event branding + game config (Admin-editable so future
-// orientations rebrand without code changes).
-export function useConfig() {
-  const supabase = useMemo(() => supabaseBrowser(), []);
-  const [config, setConfig] = useState<Record<string, unknown>>({});
-  const [loaded, setLoaded] = useState(false);
-
-  useEffect(() => {
-    let active = true;
-    async function load() {
+// game_config as a key → value map, shared by every caller on the page (one
+// query and one realtime channel; see src/lib/sharedFeed.ts).
+function configSource(): FeedSource<Record<string, unknown>> {
+  const supabase = supabaseBrowser();
+  return {
+    async load() {
       const { data } = await supabase.from("game_config").select("key, value");
-      if (!active || !data) return;
+      if (!data) return undefined;
       const map: Record<string, unknown> = {};
       for (const row of data) {
         map[(row as { key: string }).key] = (row as { value: unknown }).value;
       }
-      setConfig(map);
-      setLoaded(true);
-    }
-    load();
-    // AppShell and the page can both call useConfig. Supabase rejects a second
-    // subscription on the same channel name, so each caller gets its own.
-    const channel = supabase
-      .channel(`config-live-${crypto.randomUUID()}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "game_config" },
-        load
-      )
-      .subscribe();
-    return () => {
-      active = false;
-      supabase.removeChannel(channel);
-    };
-  }, [supabase]);
+      return map;
+    },
+    listen(reload) {
+      const channel = supabase
+        .channel(`config-live-${crypto.randomUUID()}`)
+        .on("postgres_changes", { event: "*", schema: "public", table: "game_config" }, reload)
+        .subscribe();
+      return () => void supabase.removeChannel(channel);
+    },
+  };
+}
+
+const EMPTY: Record<string, unknown> = {};
+
+// Runtime event branding + game config (Admin-editable so future
+// orientations rebrand without code changes).
+export function useConfig() {
+  const shared = useSharedFeed("game_config", configSource);
+  const config = shared ?? EMPTY;
+  const loaded = shared !== undefined;
 
   const brand: BrandConfig = {
     eventName: unquote(config["event_name"], "Orientation"),

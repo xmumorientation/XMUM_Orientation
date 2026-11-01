@@ -25,17 +25,17 @@ export default function AppError({
       <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-red-100 text-xs font-black tracking-tight text-red-700">
         VX
       </span>
-      <p className="font-semibold">This screen ran into a problem</p>
+      <p className="font-semibold">This Screen Ran Into a Problem</p>
       <p className="max-w-[32ch] text-sm leading-5 text-ink-faint">
         Try again — the rest of the app is still running.
       </p>
       <button onClick={reset} className="btn-primary mt-3">
-        Try again
+        Try Again
       </button>
       {pathname === "/admin" && <button className="btn-secondary min-h-[44px]" onClick={() => {
         saveAdminDayFilter("Day 1");
         window.location.assign("/admin");
-      }}>Reopen Live control on Day 1</button>}
+      }}>Reopen Live Control on Day 1</button>}
     </Card>
   );
 }

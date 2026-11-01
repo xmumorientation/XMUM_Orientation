@@ -85,7 +85,9 @@
 .sd-top-menu nav + button { border-radius: 10px; margin-top: 12px; }
 
 .staff-dashboard-shell { font-family: var(--font-nexus-body), Outfit, sans-serif; }
-.staff-dashboard-shell > .min-w-0 > header { background: var(--sp-header); border-color: var(--sp-line-3); color: var(--sp-text); }
+/* Not GroupHeader (.fa-head) or OpsHeader (.ops-head): they keep their
+   Home's fade (freshie.css, staff-home.css). */
+.staff-dashboard-shell > .min-w-0 > header:not(.fa-head, .ops-head) { background: var(--sp-header); border-color: var(--sp-line-3); color: var(--sp-text); }
 .staff-dashboard-shell > .min-w-0 > header button { background: transparent; color: var(--sp-text-2); border-color: var(--sp-line); box-shadow: none; }
 .staff-dashboard-shell > .min-w-0 > header .text-ink-faint { color: var(--sp-faint); }
 .staff-dashboard-shell > .min-w-0 > header .chip { background: transparent; border: 0; color: var(--sp-text-2); }
@@ -112,5 +114,3 @@
    readable on navy (red #e6001b alone is about 4.1:1). The checklist lines up
    with the other dashboard blocks instead of sitting 11px further in. */
 .sd .sd-intro .sd-group { color: color-mix(in srgb, var(--fh-accent) 55%, #fff); }
-.sd .fh-check-no { color: color-mix(in srgb, var(--fh-accent) 55%, #fff); font-size: 13px; }
-.sd .fh-check-stop { width: 100%; max-width: none; margin-inline: 0; }

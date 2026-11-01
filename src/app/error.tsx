@@ -22,17 +22,17 @@ export default function Error({
         <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-red-100 text-sm font-black tracking-tight text-red-700">
           VX
         </span>
-        <h1 className="mt-3 text-xl font-bold text-ink">Something went wrong</h1>
+        <h1 className="mt-3 text-xl font-bold text-ink">Something Went Wrong</h1>
         <p className="mx-auto mt-2 max-w-[34ch] text-sm leading-5 text-ink-faint">
           An unexpected error interrupted this screen. You can try again — your
           progress is saved on the server.
         </p>
         <div className="mt-5 flex items-center justify-center gap-3">
           <button onClick={reset} className="btn-primary">
-            Try again
+            Try Again
           </button>
           <a href="/dashboard" className="btn-secondary">
-            Go home
+            Go Home
           </a>
         </div>
       </div>

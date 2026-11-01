@@ -114,15 +114,16 @@
 /* iOS 26 Safari ignores theme-color. It paints the status bar and the floating
    toolbar from the document background, and a blurred fixed bar is not sampled,
    so these bands show whatever html/body are. Dark pages set that to their own
-   ink. Light pages keep the paper canvas above. */
+   ink. Light pages keep the paper canvas above. The Freshie / Faci page
+   header (.fa-head) is .fh too but does not make its page dark. */
 html:is(:has(.vx), :has(.sl)),
 body:is(:has(.vx), :has(.sl)) {
   background-color: #07060b;
   background-image: none;
   color-scheme: dark;
 }
-html:is(:has(.fh), :has(.staff-dashboard-shell)),
-body:is(:has(.fh), :has(.staff-dashboard-shell)) {
+html:is(:has(.fh:not(.fa-head)), :has(.staff-dashboard-shell)),
+body:is(:has(.fh:not(.fa-head)), :has(.staff-dashboard-shell)) {
   background-color: #030b1c;
   background-image: none;
   color-scheme: dark;

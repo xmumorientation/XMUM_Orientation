@@ -49,6 +49,19 @@ export function timeAgo(iso: string, nowMs?: number): string {
   return `${Math.floor(hr / 24)}d ago`;
 }
 
+/** "Last seen" to the second: "8s ago", "3m 05s ago", "1h 02m 05s ago", "2d 4h ago". */
+export function timeAgoExact(iso: string, nowMs?: number): string {
+  const then = new Date(iso).getTime();
+  const sec = Math.floor(Math.max(0, (nowMs ?? Date.now()) - then) / 1000);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  if (sec < 60) return `${sec}s ago`;
+  const min = Math.floor(sec / 60);
+  if (min < 60) return `${min}m ${pad(sec % 60)}s ago`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr}h ${pad(min % 60)}m ${pad(sec % 60)}s ago`;
+  return `${Math.floor(hr / 24)}d ${hr % 24}h ago`;
+}
+
 // FR-3.3: data older than 10 min is stale
 export function isStale(iso: string, nowMs?: number): boolean {
   return (nowMs ?? Date.now()) - new Date(iso).getTime() > 10 * 60 * 1000;
@@ -82,13 +95,13 @@ const ERROR_MESSAGES: Record<string, string> = {
   NOT_IN_GROUP: "Your account isn't assigned to a group yet.",
   NOT_ENDGAME: "Projectors can only be lit during the Funfair.",
   // Day 2 inner schedule (0102)
-  BB_NOT_YET: "Blind boxes open in challenge mode. Nothing was charged.",
+  BB_NOT_YET: "Blind boxes open when the Day 2 game starts. Nothing was charged.",
   BB_OFF_BY_ADMIN: "Blind boxes are switched off by Admin. Nothing was charged.",
   FUNFAIR_NOT_YET: "The map can be lit only in the Funfair.",
   FUNFAIR_OFF_BY_ADMIN: "Lighting the map is switched off by Admin.",
   STATION_GAME_OFF: "Station games are switched off by Admin in Live control.",
   NO_PAUSE: "Pause has been removed. Use +5 / −5 or End.",
-  // Admin Game master (0103)
+  // Admin Game master (0107)
   INVALID_QUANTITY: "Give 1 to 5 boxes at a time.",
   GIFT_ALREADY_OPENED: "The group has already opened that box, so it can't be taken back.",
   TOKEN_UNKNOWN: "This NFC code isn't recognised.",

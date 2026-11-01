@@ -113,7 +113,7 @@ export function CodesTab({ data, onError, onNotice, goTo }: TabProps) {
         <p className="font-semibold">Nobody holds boxes yet</p>
         <p className="text-ink-faint">Hand boxes to people in step 2. Each person gets one QR per box type they hold.</p>
         <button type="button" onClick={() => goTo("assign")} className="btn-primary px-4">
-          Go to step 2
+          Go to Step 2
         </button>
       </Card>
     );
@@ -135,7 +135,7 @@ export function CodesTab({ data, onError, onNotice, goTo }: TabProps) {
           value={typeFilter}
           onChange={(e) => setTypeFilter(e.target.value)}
         >
-          <option value="">All box types</option>
+          <option value="">All Box Types</option>
           {data.types.map((t) => (
             <option key={t.id} value={t.id}>
               {t.name}
@@ -153,7 +153,7 @@ export function CodesTab({ data, onError, onNotice, goTo }: TabProps) {
             <div key={s.id} className="grid gap-4 p-4 sm:grid-cols-[5.5rem_minmax(0,1fr)]">
               {many ? (
                 <div className="grid h-[5.5rem] w-[5.5rem] place-items-center rounded-xl border border-dashed border-paper-300 p-2 text-center text-[11px] leading-tight text-ink-faint">
-                  One QR per box type
+                  One QR per Box Type
                 </div>
               ) : (
                 <button
@@ -189,7 +189,7 @@ export function CodesTab({ data, onError, onNotice, goTo }: TabProps) {
                         className="btn-secondary min-h-[36px] gap-1 px-3 text-xs"
                       >
                         {copied === `s${s.id}` ? <Check size={14} strokeWidth={2} /> : <Copy size={14} strokeWidth={1.75} />}
-                        {copied === `s${s.id}` ? "Copied" : "Copy link"}
+                        {copied === `s${s.id}` ? "Copied" : "Copy Link"}
                       </button>
                     )}
                     <button type="button" onClick={() => regenerate(s)} className="btn-secondary min-h-[36px] gap-1 px-3 text-xs">

@@ -98,7 +98,7 @@ export default function AdminFaqPage() {
     [items]
   );
   const roleOptions = [
-    { value: "all", label: "All roles", count: items.length },
+    { value: "all", label: "All Roles", count: items.length },
     ...ROLES.map((r) => ({
       value: r,
       label: ROLE_LABELS[r],
@@ -123,7 +123,7 @@ export default function AdminFaqPage() {
   return (
     <div className="space-y-4">
       <PageTitle
-        title="FAQ editor"
+        title="FAQ Editor"
         subtitle="What each role sees on /faq"
         action={
           <button type="button" className="btn-primary px-5" onClick={openAdd}>
@@ -203,7 +203,7 @@ export default function AdminFaqPage() {
       )}
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent title={editId === null ? "Add FAQ entry" : "Edit FAQ entry"}>
+        <DialogContent title={editId === null ? "Add FAQ Entry" : "Edit FAQ Entry"}>
           <form onSubmit={save} className="space-y-2">
             <input
               className="input text-sm"
@@ -234,7 +234,7 @@ export default function AdminFaqPage() {
             />
             <fieldset>
               <legend className="mb-1 text-xs font-semibold text-ink-soft">
-                Who sees it?{" "}
+                Who Sees It?{" "}
                 <span className="font-normal text-ink-faint">
                   {form.roles.length === 0 ? "Everyone" : `${form.roles.length} role(s)`}
                 </span>

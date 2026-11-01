@@ -43,13 +43,13 @@ describe("Admin shell", () => {
   it("AC-1: Live has Live control and Audit; the current section and page are marked", () => {
     show("/admin/audit");
     expect(tabs().getAllByRole("link").map((a) => [a.textContent, hrefOf(a)])).toEqual([
-      ["Live control", "/admin"],
+      ["Live Control", "/admin"],
       ["Audit", "/admin/audit"],
     ]);
     expect(sections().getByRole("link", { name: "Live" }).getAttribute("aria-current")).toBe("page");
     expect(sections().getByRole("link", { name: "Game" }).getAttribute("aria-current")).toBeNull();
     expect(tabs().getByRole("link", { name: "Audit" }).getAttribute("aria-current")).toBe("page");
-    expect(tabs().getByRole("link", { name: "Live control" }).getAttribute("aria-current")).toBeNull();
+    expect(tabs().getByRole("link", { name: "Live Control" }).getAttribute("aria-current")).toBeNull();
   });
 
   it("AC-1: Game has Tokens, Stations, Puzzles, Blind box, NFC and Funfair", () => {
@@ -58,7 +58,7 @@ describe("Admin shell", () => {
       ["Tokens", "/admin/token"],
       ["Stations", "/admin/stations"],
       ["Puzzles", "/admin/puzzles"],
-      ["Blind box", "/admin/blindbox"],
+      ["Blind Box", "/admin/blindbox"],
       ["NFC", "/admin/nfc"],
       ["Funfair", "/admin/funfair"],
     ]);

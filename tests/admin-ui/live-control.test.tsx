@@ -17,7 +17,34 @@ const h = vi.hoisted(() => ({
 }));
 
 vi.mock("@/lib/supabase/client", () => ({ supabaseBrowser: () => h.client }));
-vi.mock("@/components/PhaseTimerProvider", () => ({ usePhaseTimer: () => h.timer }));
+vi.mock("@/components/PhaseTimerProvider", () => ({ usePhaseTimer: () => h.timer, usePhases: () => ({ phases: h.timer.phases }) }));
+// The real shared feed keeps one module-wide cache whose source is fixed by the first reader, so a
+// fresh fake client per test would never be read. This stand-in loads from each test's own client
+// and polls at the source's own pollMs, which keeps "refreshes every 10 seconds" checkable.
+vi.mock("@/lib/sharedFeed", async () => {
+  const { useEffect, useState } = await import("react");
+  return {
+    reloadSharedFeed: () => {},
+    setSharedFeed: () => {},
+    useSharedFeed: (key: string | null, makeSource: () => { load: (c: unknown) => Promise<unknown>; pollMs?: number }) => {
+      const [value, setValue] = useState<unknown>(undefined);
+      useEffect(() => {
+        if (!key) return;
+        const source = makeSource();
+        let live = true;
+        const reload = () => void source.load(undefined).then((v) => live && v !== undefined && setValue(v));
+        reload();
+        const timer = source.pollMs ? setInterval(reload, source.pollMs) : null;
+        return () => {
+          live = false;
+          if (timer) clearInterval(timer);
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+      }, [key]);
+      return value;
+    },
+  };
+});
 vi.mock("@/components/useConfig", () => ({ useConfig: () => ({ config: h.config, brand: {}, loaded: true }) }));
 vi.mock("@/components/useEventCountdown", async (orig) => ({
   ...(await orig<typeof import("@/components/useEventCountdown")>()),
@@ -79,11 +106,11 @@ describe("Live control page", () => {
   it("AC-3: game, Now on Welcome, live numbers, Day 2 schedule, Game Master, then the danger zone", async () => {
     setup({ phases: [phase("day1", "Day 1 game", "ended"), phase("day2", "Day 2 game", "pending")] });
     render(<AdminControlRoomPage />);
-    await screen.findByText("Tokens in circulation");
+    await screen.findByText("Tokens in Circulation");
     const order = [
       screen.getByRole("button", { name: "Start Day 2 game" }),
       screen.getByRole("region", { name: "Now on the Welcome page" }),
-      screen.getByText("Tokens in circulation"),
+      screen.getByText("Tokens in Circulation"),
       screen.getByTestId("day2"),
       screen.getByTestId("gm"),
       screen.getByRole("region", { name: /danger zone/i }),
@@ -95,61 +122,79 @@ describe("Live control page", () => {
 
   it("AC-3: Day 2 Schedule is not shown for Day 1", async () => {
     render(<AdminControlRoomPage />);
-    await screen.findByText("Tokens in circulation");
+    await screen.findByText("Tokens in Circulation");
     expect(screen.queryByTestId("day2")).toBeNull();
   });
 
   it("AC-4: the six switches and Reset games sit together in the danger zone, with no safe control", async () => {
     render(<AdminControlRoomPage />);
-    await screen.findByText("Tokens in circulation");
+    await screen.findByText("Tokens in Circulation");
     const zone = screen.getByRole("region", { name: /danger zone/i });
     const names = within(zone).getAllByRole("switch").map((s) => s.getAttribute("aria-label"));
     expect(names).toEqual([
-      "Freeze token mutations",
-      "Pause blind box buying",
-      "Disable NFC activation",
-      "Rehearsal mode",
-      "Day 2 map layer",
-      "NFC demo mode",
+      "Freeze Token Mutations",
+      "Pause Blind Box Buying",
+      "Disable NFC Activation",
+      "Rehearsal Mode",
+      "Day 2 Map Layer",
+      "NFC Demo Mode",
     ]);
     expect(within(zone).getByRole("button", { name: /reset games/i })).toBeTruthy();
-    expect(screen.getAllByRole("switch")).toHaveLength(6);
+    expect(within(zone).getAllByRole("switch")).toHaveLength(6);
+    // the tennis mini game is a safe control (on means open), so it sits outside the zone
+    expect(zone.contains(screen.getByRole("switch", { name: "Tennis on the map" }))).toBe(false);
     // no safe control inside the zone
     expect(within(zone).queryByRole("combobox", { name: "Day" })).toBeNull();
     expect(within(zone).queryByRole("button", { name: /start day/i })).toBeNull();
-    expect(within(zone).queryByText("Tokens in circulation")).toBeNull();
+    expect(within(zone).queryByText("Tokens in Circulation")).toBeNull();
     expect(zone.contains(screen.getByRole("region", { name: "Now on the Welcome page" }))).toBe(false);
   });
 
   it("AC-5: each switch shows ON or OFF as text, and the banner names every switch that is on", async () => {
     setup({ config: { rehearsal_mode: true, tokens_frozen: "true" } });
     render(<AdminControlRoomPage />);
-    await screen.findByText("Tokens in circulation");
+    await screen.findByText("Tokens in Circulation");
     const zone = screen.getByRole("region", { name: /danger zone/i });
     expect(within(zone).getAllByText(/^ON$/)).toHaveLength(2);
     expect(within(zone).getAllByText(/^OFF$/)).toHaveLength(4);
     const banner = screen.getByText(/2 overrides ON/).parentElement!;
-    expect(banner.textContent).toContain("Freeze token mutations");
-    expect(banner.textContent).toContain("Rehearsal mode");
+    expect(banner.textContent).toContain("Freeze Token Mutations");
+    expect(banner.textContent).toContain("Rehearsal Mode");
   });
 
   it("AC-5: no override banner when every switch is off", async () => {
     render(<AdminControlRoomPage />);
-    await screen.findByText("Tokens in circulation");
+    await screen.findByText("Tokens in Circulation");
     expect(screen.queryByText(/overrides? ON/)).toBeNull();
   });
 
   it("AC-6: a switch calls fn_set_config with the same key and the inverted value", async () => {
     setup({ config: { rehearsal_mode: true } });
     render(<AdminControlRoomPage />);
-    await screen.findByText("Tokens in circulation");
-    await userEvent.click(screen.getByRole("switch", { name: "Freeze token mutations" }));
-    await userEvent.click(screen.getByRole("switch", { name: "Rehearsal mode" }));
+    await screen.findByText("Tokens in Circulation");
+    await userEvent.click(screen.getByRole("switch", { name: "Freeze Token Mutations" }));
+    await userEvent.click(screen.getByRole("switch", { name: "Rehearsal Mode" }));
     await waitFor(() => expect(rpcCalls("fn_set_config")).toHaveLength(2));
     expect(rpcCalls("fn_set_config")).toEqual([
       { p_key: "tokens_frozen", p_value: true },
       { p_key: "rehearsal_mode", p_value: false },
     ]);
+  });
+
+  it("Tennis on the map: opening calls fn_set_config; closing asks first", async () => {
+    setup({ config: {} });
+    render(<AdminControlRoomPage />);
+    await screen.findByText("Tokens in Circulation");
+    await userEvent.click(screen.getByRole("switch", { name: "Tennis on the map" }));
+    await waitFor(() => expect(rpcCalls("fn_set_config")).toEqual([{ p_key: "tennis_open", p_value: true }]));
+    cleanup();
+    setup({ config: { tennis_open: true } });
+    render(<AdminControlRoomPage />);
+    await screen.findByText("Tokens in Circulation");
+    confirm.mockReturnValueOnce(false);
+    await userEvent.click(screen.getByRole("switch", { name: "Tennis on the map" }));
+    expect(confirm).toHaveBeenCalledWith("Close tennis? Matches being played end at once, and the queue empties.");
+    expect(rpcCalls("fn_set_config")).toHaveLength(0);
   });
 
   it("AC-6: Reset games asks first, and resets only after OK", async () => {
@@ -158,7 +203,7 @@ describe("Live control page", () => {
       phases: [phase("day1", "Day 1 game", "ended"), phase("day2", "Day 2 game", "pending"), phase("endgame", "Endgame", "active")],
     });
     render(<AdminControlRoomPage />);
-    await screen.findByText("Tokens in circulation");
+    await screen.findByText("Tokens in Circulation");
     const reset = screen.getByRole("button", { name: /reset games/i });
     confirm.mockReturnValueOnce(false);
     await userEvent.click(reset);
@@ -177,18 +222,18 @@ describe("Live control page", () => {
 
   it("AC-6: Reset games stays disabled outside Rehearsal mode and when every phase is pending", async () => {
     const { unmount } = render(<AdminControlRoomPage />);
-    await screen.findByText("Tokens in circulation");
+    await screen.findByText("Tokens in Circulation");
     expect((screen.getByRole("button", { name: /reset games/i }) as HTMLButtonElement).disabled).toBe(true);
     unmount();
     setup({ config: { rehearsal_mode: true } });
     render(<AdminControlRoomPage />);
-    await screen.findByText("Tokens in circulation");
+    await screen.findByText("Tokens in Circulation");
     expect((screen.getByRole("button", { name: /reset games/i }) as HTMLButtonElement).disabled).toBe(true);
   });
 
   it("AC-7: the Day select saves the filter and shows both days' games for All", async () => {
     render(<AdminControlRoomPage />);
-    await screen.findByText("Tokens in circulation");
+    await screen.findByText("Tokens in Circulation");
     expect(screen.queryByRole("button", { name: "Start Day 2 game" })).toBeNull();
     await userEvent.selectOptions(screen.getByRole("combobox", { name: "Day" }), "all");
     expect(window.localStorage.getItem("admin-day-filter")).toBe("all");
@@ -200,13 +245,13 @@ describe("Live control page", () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     render(<AdminControlRoomPage />);
     for (const [label, value] of [
-      ["Tokens in circulation", "1234"],
+      ["Tokens in Circulation", "1234"],
       ["Transactions", "56"],
-      ["Blind boxes sold", "7"],
-      ["Box tokens paid in", "89"],
-      ["Pieces granted", "10"],
-      ["Sets redeemed", "2"],
-      ["Projectors lit", "1/3"],
+      ["Blind Boxes Sold", "7"],
+      ["Box Tokens Paid In", "89"],
+      ["Pieces Granted", "10"],
+      ["Sets Redeemed", "2"],
+      ["Projectors Lit", "1/3"],
     ]) {
       const tile = (await screen.findByText(label)).parentElement!;
       expect(tile.textContent).toContain(value);
@@ -280,7 +325,7 @@ describe("Game start/end (GameToggles)", () => {
 describe("Now on the Welcome page (NowOnWelcome)", () => {
   const noop = () => {};
   async function renderNow(over: Partial<typeof h.countdown> = {}) {
-    setup({ tables: { schedule_items: [{ title: "Day 1 Game" }] } });
+    setup({ tables: { schedule_items: [{ id: 7, title: "Day 1 Game" }] } });
     h.countdown = { label: "DAY 1 GAME ENDS IN", seconds: 600, live: true, paused: false, itemId: 7, nowId: 7, ...over };
     render(<NowOnWelcome onError={noop} onNotice={noop} />);
     await act(async () => {});

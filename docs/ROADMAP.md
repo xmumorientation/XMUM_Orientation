@@ -3,9 +3,11 @@
 This file lists work we have agreed on or are still discussing, but have not built yet.
 Read it before starting a new round of development. When a decision changes, update the item.
 
+For everything already merged, day by day since the first commit, see [CHANGELOG.md](CHANGELOG.md).
+
 > **From Ben:** when you finish your work, write down what you completed in the "Done" section at the end of this file, so the next teammate can see it. Do this for partly finished items too: say which parts are done and which are left.
 
-Last updated: 2026-10-22
+Last updated: 2026-10-27
 
 ## Status key
 
@@ -19,9 +21,9 @@ Last updated: 2026-10-22
 |---|---|---|
 | David | **Priority:** bring the important `bonding-session` features into the current code | [Read before merging `bonding-session`](#read-before-merging-bonding-session) |
 | David | Port or delete the branches not merged into `main` | [4](#4-branches-not-merged-into-main-ready) |
-| Jiamin | HOF sees every group's name and slogan | [6](#6-hof-sees-every-groups-name-and-slogan-ready) |
+| Jiamin | HOF sees every group's name and slogan (done) | [6](#6-hof-sees-every-groups-name-and-slogan-done-ops--freshies-shows-them-read-only) |
 | Zichien | Everything on the map: Figma design, game station status, and so on | [5](#5-map-ready) |
-| _To assign_ | Backend for Faci profiles (the UI is built) | [7](#7-faci-profiles-backend-ready) |
+| _To assign_ | Faci profiles: confirm `0069` is on the live database, then test | [7](#7-faci-profiles-backend-built-needs-0069-run-and-tested) |
 | _To assign_ | Take GM out of the database's blind box holders | [8](#8-gm-blind-boxes-bring-the-database-in-line-with-the-app-later) |
 | Ben | Tennis game on the 3D map's tennis courts | [9](#9-3d-map-a-tennis-game-on-the-tennis-courts-later) |
 
@@ -151,7 +153,7 @@ The design branches are merged. These remote branches are still not in `main` (c
 **Scope:**
 - Build the map to match the Figma design.
 - Game station status on the map (for example open, busy, closed).
-- Group locations on the map: every role sees every group (0101, Ben, 2026-10-22; replaces 0094, which had limited Faci and Freshie to their own group).
+- Group locations on the map: every role sees every group (0108, Ben, 2026-10-22; replaces 0094, which had limited Faci and Freshie to their own group).
 - Anything else on the map page.
 
 **Figma:** [XMUM campus map](https://www.figma.com/design/3dcEv45KenmKcoTcbaZmQ0/Untitled?node-id=24-2) (frame `XMUM Block Cube_XMUM Map 1`).
@@ -159,7 +161,7 @@ The design branches are merged. These remote branches are still not in `main` (c
 **Current state:**
 - Pages: `/map` ([map/page.tsx](../src/app/(app)/map/page.tsx)), `/checkin` and `/committee`, all through [CampusMap.tsx](../src/components/CampusMap.tsx) and `campus-map/CampusMapView.tsx`.
 - The map is **3D** (`src/components/map3d/`, `CampusScene`): A1–A5 and B1 at true scale from OpenStreetMap, the track and courts, the lake and its park, the statue, the Vortexa Funfair on the dorm land, and the LakeFront Café as the lake stage.
-- The **2D art** (`CampusMap2DView`, `public/campus-map.png`) is only the fallback: devices without WebGL2, devices too slow for 3D, or `?map=2d`.
+- The **2D art** (`CampusMap2DView`, `public/campus-map.webp`) is only the fallback: devices without WebGL2, devices too slow for 3D, or `?map=2d`.
 - Where things stand and how to work on the 3D map: [map3d-session-handoff.md](map3d-session-handoff.md).
 - Labels: A1–A5, B1, Track & Field, the Tan Kah Kee Statue, the LakeFront Café and the Vortexa Funfair (game zone). The courts are labelled when the camera is close, and so are the rides (with their dorm name, such as "LY3 · Vortexa Eye").
 - Station dots and badges show available / in progress / closed, and update from the `stations` table without a refresh. Group pins follow the permission rules below.
@@ -187,14 +189,13 @@ The design branches are merged. These remote branches are still not in `main` (c
 
 ## 7. Faci profiles backend (Built, needs `0069` run and tested)
 
-**Owner:** to assign. The UI is built and in `main` (Ben); this item is the backend only.
+**Owner:** to assign. The UI (Ben), migration `0069_faci_profiles.sql` and the frontend wiring are all in `main` (see Done, 2026-10-13). What is left: confirm `0069` has run on the live database, then run the tests at the end of this item. The steps below are kept as the record of what `0069` does.
 
 **Goal:** a Faci edits their own profile (photo, name, Instagram, programme, languages, intro). Their partner Faci and the Freshies in their group see it.
 
-**Current state (frontend, already built):**
-- Faci Home "You & Your Partner" lists the group's real Facis by reading `profiles` directly (allowed by the "faci reads own group members" policy), live on `profiles` changes for that group.
-- Freshie Home "Your Facilitator" calls `fn_group_facis()`. It does not exist yet, so the page falls back to sample profiles marked "Sample".
-- Edit Profile sheet ([ProfileEditor.tsx](../src/components/freshie/ProfileEditor.tsx)): **name already saves** (`profiles.full_name`). Photo, Instagram, programme, languages and intro show as "Soon" (disabled).
+**Current state (frontend, built):**
+- Faci Home "You & Your Partner" and Freshie Home "Your Facilitator" both call `fn_group_facis()` through one `useGroupFacis()` in [FreshieHome.tsx](../src/components/freshie/FreshieHome.tsx), and reload on `profiles` / `faci_profiles` changes. The sample profiles are removed.
+- Edit Profile sheet ([ProfileEditor.tsx](../src/components/freshie/ProfileEditor.tsx)) saves name, Instagram, programme, languages, intro and photo through `fn_set_my_faci_profile`; the photo goes to `faci-avatars/<user id>/`.
 - Instagram chip: grey and inactive with no handle; with a real handle it links to instagram.com.
 - **No WhatsApp or phone number anywhere** (decision 2026-10-13). Do not add one.
 
@@ -203,7 +204,7 @@ The design branches are merged. These remote branches are still not in `main` (c
 - Freshies never read the table directly. They go through `fn_group_facis()`, so the backend decides which fields they get.
 - Photos are not reviewed before they show. Admin can clear a bad photo or intro afterwards.
 
-**To do (one migration, `0069_faci_profiles.sql`; tell Jiamin the number first so it does not collide):**
+**What `0069_faci_profiles.sql` does (written):**
 1. Table `faci_profiles`: `user_id` (PK, references `profiles.id`, cascade delete), `instagram` text (handle without @; letters, digits, `.` and `_`, at most 30), `programme` text (≤ 80), `languages` text[] (≤ 6 items), `intro` text (≤ 160), `avatar_path` text, `updated_at`. Put the format and length rules in `check` constraints.
 2. RLS on `faci_profiles`, select only: the row's owner; a Faci whose `my_group_id()` equals the owner's group; Committee and Admin. No insert, update or delete policies (writes go through the RPC).
 3. `fn_set_my_faci_profile(p_instagram, p_programme, p_languages, p_intro, p_avatar_path)`: security definer; caller must be `faci`; upserts the caller's own row only; validates again; `audit('faci_profile.set', ...)`.
@@ -213,7 +214,7 @@ The design branches are merged. These remote branches are still not in `main` (c
 7. Add `faci_profiles` to the `supabase_realtime` publication so a partner's edits show live on Faci Home.
 8. `revoke all ... from public; grant execute ... to authenticated` on each new function.
 
-**Frontend step after the migration (small):**
+**Frontend step after the migration (done 2026-10-13):**
 - [faciProfiles.ts](../src/components/freshie/faciProfiles.ts) `faciFromProfile()`: map `programme`, `languages`, `intro`, `avatar_url`.
 - `useGroupFacis()` in [FreshieHome.tsx](../src/components/freshie/FreshieHome.tsx): switch to `fn_group_facis()` and also listen to `faci_profiles` changes.
 - `ProfileEditor.tsx`: enable the "Soon" fields and the photo button; save through `fn_set_my_faci_profile`; resize the photo on the phone (square, 512 px, webp) before uploading to `faci-avatars/<user id>/`.
@@ -222,7 +223,7 @@ The design branches are merged. These remote branches are still not in `main` (c
 
 **Test before running it on the live project** (on a test Supabase project): a Faci cannot change another Faci's row; a Freshie cannot select from `faci_profiles`; another group's members get nothing from `fn_group_facis()`; a Faci can upload only into their own avatar folder; Admin can clear a profile.
 
-**Release order:** run `0069` in Supabase first, then deploy the frontend. The other order calls functions that do not exist yet. Then add the new table and functions to [permission-matrix.md](permission-matrix.md). (done)
+**Release order:** run `0069` in Supabase first, then deploy the frontend. The other order calls functions that do not exist yet. [permission-matrix.md](permission-matrix.md) already lists the new table and functions.
 
 ## 8. GM blind boxes: bring the database in line with the app (Later)
 
@@ -233,13 +234,13 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 - Assigning to stations (one station, By station, All stations) checks no role. Only a station's GMs could show those boxes, so they cannot be sold now. Ben will change Admin's assign modes himself.
 
 **How to fix:**
-1. Add a new migration (the next free number after `0089`; do not edit 0054). Redefine `bb_holder_role()` as `p_role in ('committee', 'hof', 'hogm', 'admin')`, the same as `BLINDBOX_HOLDER_ROLES`.
+1. Add a new migration (the next free number; `0106` is the last one used on 2026-10-26; do not edit 0054). Redefine `bb_holder_role()` as `p_role in ('committee', 'hof', 'hogm', 'admin')`, the same as `BLINDBOX_HOLDER_ROLES`.
 2. Decide what to do with station pools: reject the station modes in the assign function, or leave them if a station seller comes back later.
 3. Before applying, check the live database for boxes already held by GMs or stations (on 2026-10-20 there were none) and revoke them first.
 
 ## 9. 3D map: a tennis game on the tennis courts (Later)
 
-**Owner:** Ben. T1a is built (2026-10-22, see "Done"); the rest is not. Ben is not sure his Claude usage covers it, so it is split into small batches that each fit one conversation.
+**Owner:** Ben. T1a (2026-10-22), T1b, T2a and T2b (2026-10-26, merged into `main` as PR #63), T3a and T3b (2026-10-27, PRs #64 and #65) and T1c (2026-10-27, branch `tennis-t1c`) are built, see "Done". Ben is not sure his Claude usage covers it, so it is split into small batches that each fit one conversation. Ben (2026-10-26): keep the load on Supabase, Vercel and phones low.
 
 **Goal:** the 3D map is more fun. Two people play tennis against each other on the map's tennis courts, and everyone who opens the map sees the match being played.
 
@@ -252,39 +253,73 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 - **Plain points, short matches:** the first to 5 points wins, with no tennis scoring (15–30–40) and no deuce. The winner's and loser's screens then ask "Rematch?"; if both say yes, a new match starts on the same court.
 - The Supabase project will move to **Pro**.
 
+**Decisions (Ben, 2026-10-27, for T3a):**
+- The Supabase project is still on **Free**; it moves to Pro later.
+- About **150 people** have the map open at once.
+- **From afar, a busy court shows only "● LIVE"**: no names and no score.
+- **Up close, the real match**, for at most **5 watchers a court**.
+
+**Decisions (Ben, 2026-10-27, for T3b):**
+- **An on/off switch says when the mini game is open, and Admin has it.** It stops everything, so it is Admin only, like the other kill-switches (AGENTS.md); HOGM gets it only if Ben asks.
+- **Off closes the game at once:** matches being played end, the queue empties, and Play is hidden.
+- The name and shirt of a player who is not a Freshie (Faci, staff) do not matter: use the simplest (for example the role's name and the default blue).
+- **Ben merges `tennis-game` into `main` himself**, so T3b does not open a PR.
+
 **Design (proposed; change it here if Ben decides otherwise):**
 - **Where:** the three courts of the tennis block (`SPORTS` in [geo.ts](../src/components/map3d/geo.ts), laid out by [courts.ts](../src/components/map3d/courts.ts), drawn in [sports.tsx](../src/components/map3d/sports.tsx); the net is `Equipment`). The players are low-poly figures (`tennis/player.ts`) in the player's group colour.
 - **The view (Ben, 2026-10-22: like a TV broadcast, with clear court lines):** from behind the near baseline, as `courtView()` in `tennis/court.ts` works it out for the screen's shape. Wide screens get a low camera and a long lens (18°). An upright phone's camera is higher (45°), so its narrow screen holds the court's width. Up close the courts are drawn crisp (`tennis/surface.tsx`), and the fence side between the camera and the court is hidden (`useFenceCutaway` in `sports.tsx`).
-- **Controls:** drag left and right to move along the baseline; tap to swing. Swinging early hits cross-court and late hits down the line. Tap to serve.
+- **Controls (built in T1b):** drag left and right to move along the baseline (or ← →); tap (click, Space) to swing, and to serve. A tap counts from 0.5 s to 0.06 s before the ball reaches the racket: early pulls the ball cross-court, late pushes it down the line, the middle hits deep and fast through the middle. A ring on the court shows where to meet the ball. A touch that turns into a drag drops its swing.
 - **Who is who:** Freshies share one login per group, so a player is a random ID per phone, not the account. A player's tag shows their group's name. Read group names and colours with `fn_scoreboard()`, which every role may call (a GM cannot select `groups`).
-- **Sync, with no new tables:**
-  - Supabase Realtime **Presence** holds the queue and which courts are busy, with the score.
-  - One Realtime **Broadcast** channel per court carries the match:
-    - one message per shot (time, direction, speed); both phones work out the same ball path from it;
-    - each player's position, about 8 times a second.
-  - The phone receiving the ball judges hit or miss and broadcasts the result, so a player's own swing never lags.
-  - A player who drops out: the match pauses for 10 s, then the other player wins.
-- **Spectators:**
-  - With the camera far away, a busy court shows two figures playing a looping rally drawn on the phone, with the real names and score from Presence. This costs no traffic.
-  - With the camera close to the courts, the phone joins that court's channel and replays the real shots.
-  - The figures move only while the courts are on screen. The map draws on demand, so ask for frames the way `usePowerRamp` does.
+- **Sync, with no new tables (built: `BroadcastChannel` between tabs in T2a, Supabase Realtime between phones in T2b; `tennis/net.ts`, `tennis/realtime.ts`):**
+  - **Presence** in one room holds the queue and which courts are busy. Each phone works out the same pairs from it (`lobby.ts`): the queue's first two on the first free court (the middle one first), and a pair starts once both have asked for it.
+  - One **Broadcast** room per match carries it (`link.ts`):
+    - one message per shot: its whole flight (time, start, speed). Both phones work out the same ball path from it;
+    - each player's position and speed, sent only when the other phone's guess from the last one is 15 cm out (at most 8 a second, at least 1);
+    - the score, the server and the match's end ride along with the positions, so a lost message is noticed and set right (the host's word wins).
+  - The phone receiving the ball judges hit or miss and calls the point, so a player's own swing never lags. Out and net follow from the shot, so both phones call those at once.
+  - The host (the first of the two in the queue) keeps the clock; the guest measures the difference with pings.
+  - A player who drops out: after 4 s of silence (or at once, when they drop out of the match room's presence) the match pauses, and 10 s later the other player wins. Back in time, the point is played again. A player who taps Leave loses at once. One who closes the page usually loses by the silence: on the live project, neither the "bye" a closing page sends nor its presence leave arrived in time (2026-10-26).
+  - A phone joins the queue's room only on Play, and leaves it when it goes back to idle: Presence goes to every member, so a room everyone with the map open were in would cost the most.
+- **Spectators (built in T3a):**
+  - **Which courts are busy** (`board.ts`): a Presence room, `tennis:courts`. Only each match's host tracks in it (its court, the match's key and both shirts), from the countdown until the match closes. Everyone else is in it without a presence, so a phone that opens the map learns the busy courts at once and then hears only a match starting or ending (about 150 messages each, with 150 watchers).
+  - **From afar** (`TennisLive.tsx`): a busy court shows two figures in the players' shirts playing the looping rally (`rally.ts`), and the map's "Tennis Court" label says "● LIVE" from any distance. No names or score.
+  - **Up close** (`watch.ts`): within about 110 m of a busy court, with it on screen, for 0.6 s, the phone joins that match's room and replays what the players send. It sends nothing but its presence; the first 5 watchers stay and later ones leave at once and try again 30 s later. Each costs about 8 messages a second. It leaves 1.5 s after the camera moves away (beyond 140 m) and while its tab is hidden.
+  - The figures move only while their court is on screen and within 350 m; the map draws on demand, so only then does the rally ask for frames.
+- **On the map pages (built in T3b):**
+  - `/map` for every role (`CampusMap` → `CampusMap3DView`). While Admin has the game open, the map loads it (`tennis/TennisMap.tsx`) and joins the courts' board. The switch is Live control → Mini game (`game_config` `tennis_open`), and it reaches every phone through `game_config`'s Realtime (`useConfig`).
+  - A tap on the tennis court opens its card: Play, then where the phone stands in the queue (Cancel). Admin's card also has Stations, the building panel the court opened before.
+  - A match takes the screen in a layer of its own, and the scene moves into it. The camera glides onto the broadcast view; the map's controls, names and markers go. "Back to map" on the end card (or Off) brings the camera back out over the courts. Closing full screen leaves the queue, or the match.
+  - The court's label says "● LIVE" while a match is on, even with the names hidden (the map pages hide them at first).
+  - Who plays: a Freshie or Faci in their group's chosen name (else "Group n") and colour; anyone else in their role's name and the default blue (`settings.ts`).
+  - Off: every phone closes at once: the match ends, the queue empties, Play goes, and the phone says "Tennis is closed". A phone that missed Off sees "… left · You win". Nothing on the server stops a phone that ignores Off: the Realtime rooms are open, and no tokens are involved.
+  - No migration: the switch is a `game_config` key set with `fn_set_config` (Admin only and audited, like the other switches). A missing key means closed.
+  - **Play with Bot (added 2026-10-27, Ben):** the card also has a Play with Bot button next to Matchmaking. It starts at once, no queue, on the first free court (so it still counts against the 3; disabled when all three are busy). The match itself plays only on that phone, but it is said on the courts' board like a real match, so it shows "● LIVE" and the busy count to everyone else, and (since 2026-10-27, Ben: "bot也要实时") watchers up close see the real bot match, relayed from that phone (`relay.ts`). Off ends it too, the same as a real match.
 - **Phones:** check lite mode on a phone size. The map draws every frame during a match.
-- **Limits:** Realtime counts each message delivered to each phone, and the Supabase plan caps messages per second (Free about 100, Pro about 500; check the project's plan). The two-layer spectator view above keeps traffic low however many people have the map open.
+- **Limits:** Realtime counts each message delivered to each phone, and the Supabase plan caps messages per second (Free about 100, Pro about 500). With 150 people on the map: 3 matches send about 24 a second, the board about 5, and 15 watchers up close (5 a court) about 120: about 150 a second, more than Free allows. **Move to Pro before the event**, or until then set `WATCH_MAX` (`watch.ts`) to 1 (about 55 a second). Free also allows only 200 connections at once, which 150 map viewers and the rest of the app's users could pass.
 
-**Testing:** the Supabase project in `.env.local` is the live one. Batches T1 to T2a send no messages to it: the game talks over the browser's `BroadcastChannel` between two tabs on the one dev server (:3000). T2b sends Realtime messages to the live project. It writes nothing to the database, but it needs Ben's OK first.
+**Testing:** the Supabase project in `.env.local` is the live one. Batches T1 to T2a send no messages to it: the game talks over the browser's `BroadcastChannel` between two tabs on the one dev server (:3000). `?net=realtime` (T2b) sends Realtime messages to the live project and writes nothing to the database; Ben OK'd it on 2026-10-26 (the T2b checks sent under a thousand messages). Keep live checks short.
 
 **Batches** (each in a new conversation; show Ben the results and wait for his go before the next):
 
 | Batch | Work | Size |
 |---|---|---|
 | T1a | **Done.** Players on the courts: the figures, the swing, a looping rally on all three courts, the broadcast view with crisp courts (`/map3d?tennis=demo`). No game yet. | Small |
-| T1b | The game on one phone against a bot: ball flight with bounce and net, hit or miss, scoring, touch controls. | Medium |
-| T2a | Two players over `BroadcastChannel` (two tabs): queue, pairing, the 3 courts, shot messages, score, drop-outs. Keep the transport behind one interface so T2b only swaps it. | Medium |
-| T2b | The Supabase Realtime transport (Presence and Broadcast). | Small |
-| T3a | Spectators: the looping rally from afar (`tennis/rally.ts`, built in T1a), the real shots up close. The players are too small to see from the map's usual distance, so a busy court also needs a tag over it (names and score, like the lake stage's "● LIVE"). | Medium |
-| T3b | In the real map pages: tap the tennis court, then Play; an Admin on/off switch; end-of-match card; phone check. | Small |
+| T1b | **Done.** The game on one phone against a bot (`/map3d?tennis=bot`): ball flight with bounce and net, hit or miss, scoring, touch controls, with the TV score bug and calls and the hit effects (trail, racket blur, rings, flash). | Medium |
+| T2a | **Done.** Two players over `BroadcastChannel` (two tabs, `/map3d?tennis=online`): queue, pairing, the 3 courts, shot messages, score, drop-outs, rematch. The transport is behind one interface (`tennis/net.ts`), so T2b only swaps it. | Medium |
+| T2b | **Done.** The Supabase Realtime transport (Presence and Broadcast), `/map3d?tennis=online&net=realtime`. The queue's Presence is joined only on Play, so T3a must read the courts some cheaper way than joining it. Load: about 470 messages a minute per match (both phones), so 3 matches send about 24 a second. | Small |
+| T3a | **Done.** Spectators (`/map3d?tennis=watch`): the busy courts' board, the looping rally from afar with "● LIVE" on the Tennis Court label, the real match up close for 5 watchers a court. | Medium |
+| T3b | **Done.** In the real map pages: tap the tennis court, then Play; the Admin on/off switch; the end card's Back to map; phone size checked headless (real phones not yet). | Small |
+| T1c | **Done.** The look, after T3b: each player one `SkinnedMesh` (1 draw call, not 5) with elbows and knees, a run cycle, a split-step, win and lose poses; a shadow in the player's shape on phones too (planar projected, no shadow map); no tilt-shift (the map's miniature blur) in the tennis view; a new toy-like look (Ben found the boxy figure ugly). The ball stays its old size (life size was too small). | Medium |
 
-**Later (polish):** the far fence fills the top of the broadcast view with big diamonds (its mesh is sized for map distances); a finer mesh up close, or a backdrop like a stadium wall, would look more like TV. Each player is 5 meshes, so draw only the busy courts' players (the demo draws all three courts: about 43 draw calls).
+**Next session (start here; written 2026-10-27, after T1c):**
+- T1b to T3b and Play with Bot are in `main` (PRs #63, #64 and #65). T1c is on branch `tennis-t1c`, made from `fix/tennis-parked-map`, so merging it brings that fix too. [CHANGELOG.md](CHANGELOG.md) still lacks lines for T3a, T3b, Play with Bot and T1c.
+- Every planned batch is built. What is left is the playtest on real phones (below) and the "Later" polish.
+- To try it: Admin → Live control → Mini game → Tennis on the map, then `/map` on two phones: tap the tennis court, then Play. A third phone zooms in on the court to watch. Without the live project: `/map3d/preview?tennis=1&full=1` in two tabs of one browser (`&role=staff`, `&name=`); the checkbox under the map is Admin's switch.
+- Not checked yet: real phones over Realtime (T2b, T3a, T3b): the feel, lite mode in a match, a phone that sleeps mid-match, Off reaching phones.
+- Before the event: Supabase Pro (see "Limits"), or `WATCH_MAX` lowered. The switch starts closed: turn it on when the game should open.
+- Tunables, if the playtest says so: the tap window (`LEAD_MAX`, `LEAD_MIN`) and reach (`LUNGE`) in `match.ts`; the bot (`BOT_SPREAD`, `BOT_RUN`); drag speed (`DRAG_M`, `TennisGame.tsx`); the online timings (`QUIET_S`, `GONE_S`, `link.ts`); the spectators' distances (`NEAR_M`, `LEAVE_M`, `ANIMATE_M`, `TennisLive.tsx`) and buffer (`BUFFER_S`, `watch.ts`); the camera's glide onto a match (`ENTER_S`, `TennisGame.tsx`); the look (T1c): the poses' keyframes and `KICK`, `SPLIT_S`, `END_S` (`player.ts`), the shadows' darkness and `SHADOW_LONG`, and the figure's shapes and colours (`player.ts`: `HEAD_R`, the `*Geometry()` functions).
+
+**Later (polish):** the far fence fills the top of the broadcast view with big diamonds (its mesh is sized for map distances); a finer mesh up close, or a backdrop like a stadium wall, would look more like TV. Each player is now 2 draw calls (its figure and its shadow), so the demo's three courts cost about 12 for the players.
 
 
 ---
@@ -293,20 +328,212 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 
 ## Done
 
+### Map: A1, A2, A4 and A5 modelled on the real buildings, 2026-10-31 (Ben, branch `feat/a3-entrance`)
+No migration. From Ben's photos: the row from the south, a satellite view and an aerial view at sunset. All four are alike (Ben); A5 has one more porch, on its east side toward the track.
+- **Roof:**
+  - a white gable on each side, up past the roof, with a finial on its apex;
+  - round each corner, a red tiled roof that sweeps up from its eaves to a white curved ridge (from above, a quarter ring round the corner);
+  - in the middle, the atrium's glass: star-shaped, round a skylight;
+  - a small red roof on each corner tower.
+  - The ring roof round an open courtyard (with its garden and tree), the swallowtail ends and A5's curved Dutch gable are gone.
+- **Walls**, in A3's colours (Ben; `makeGableFacade` in `textures.ts`): cream with tall pilasters, a colonnade on the ground floor, five floors of slim windows in red frames, a corner tower with balconies at each corner, and a framed bay in the middle of each side with an arched window on the top floor. The brick-red pilasters and arched windows are gone.
+- **Sparser windows on all five blocks** (Ben, twice: fewer than in the photos): A1, A2, A4 and A5 have two bays of windows each side of the middle bay; A3 has three each side on its long walls and two on its end walls (`A3_BAYS`, `A3_END_BAYS`). On every block the middle bay is as wide as the others. The windows are narrower too, so more wall shows between them.
+- **Porches:** a white canopy with a dark flat top on four square columns, the same on the front (toward the lawn) and the back (toward the lake). At the front, four steps go down to the forecourt. A5's east porch has steps that fan out.
+- **Back steps** (Ben: the porch at the top, the steps as wide as before): a landing 3.4 m deep and as wide as the steps now comes between the plinth and the top step, and carries the back porch (`A_PORCH_OUT_M` in `geo.ts`, drawn in `plateau.tsx`). The walk behind each block is still at least 3.6 m past the foot of its steps (A4 is the closest).
+- **Code:** `GableBlock` replaces `JiagengBlock`, `A5Block` and `Courtyard` in `buildings.tsx`; `makeFacade`, the old brick texture, is gone.
+- Cost, measured with `?stats=1` on the row from the south: desktop 607 → 508 draw calls and +0.8k triangles; lite 138 → 111 calls and +0.5k triangles.
+- Checked on `/map3d` (the row from the south, a front, a back with its landing, A5 from the south-east, from above against the satellite view, at night), at phone size in lite mode, and on `/map3d/preview` (markers still on their buildings). `tsc` and `eslint` clean. `vitest`: every suite passes except the four that start an embedded Postgres. Those failed with `EBUSY` and hook timeouts because worker processes from an earlier run were left behind; they do not touch the map.
+
+### Map: A3 modelled on the real building, 2026-10-31 (Ben, branch `feat/a3-entrance`)
+No migration. From Ben's photos: the lake side from above, the front at night, street view from the main gate, and two aerial photos. Ben checked the front and the back, then pointed out that the ends were wrong (fixed: see Corners).
+- **Porches:** one on each long side, alike (the front faces the statue, the back the lake): six round columns, three each side of the doors, under a beam that bows out at the middle, with a flat deck. The old front porch (four square posts under a small red hipped roof) is gone.
+  - The long walls now stand 0.55 units (about 3.7 m) inside the footprint, so each porch stands on the plinth and the back steps still fit before the walk behind (`A3_RECESS` in `buildings.tsx`).
+- **Steps:** at the front, five steps down from the porch's terrace to the paving, between low cheek walls. At the back, the steps down the bank are as wide as the porch: 23.6 m instead of 18 m (`A3_PORCH_HALF_M` in `geo.ts`).
+- **Walls, the same on all four sides** (`makeA3Facade` in `textures.ts`):
+  - warm cream, with tall pilasters from the ground to the eaves (thicker either side of the middle);
+  - an arcade on the ground floor, a band of tall windows, four floors, and arched windows under the eaves, all in red frames;
+  - in the middle of each wall, an arched window over three floors with the emblem above it (`makeA3Centre`).
+  - At night only the windows glow, as before.
+- **Corners:** each corner is a lower block, set back from both walls, under a small red hipped roof (aerial photo). The first try had lower wings along the whole of each end. That was wrong (Ben), so the ends are now full-height walls like the others.
+- **Roof:** the same two tiers, re-proportioned from the photos: a narrow skirt of eaves, a short storey of red posts, and a big upper roof with a flat top.
+- Cost, measured with `?stats=1` looking at A3: desktop 480 → 469 draw calls (the walls, trim and stone are merged meshes now) and +4.7k triangles; lite 109 → 110 calls, the same triangles.
+- Checked on `/map3d` (front, back, both ends, a corner, day and night), at phone size in lite mode, and on `/map3d/preview` (markers still on their buildings). `tsc`, `eslint` and `vitest` (277 tests) clean.
+
+### GM Day 1: Start Game, one group or two head to head, 2026-10-30 (Ben)
+- The GM's Station page (`gm/page.tsx`) runs Day 1 like Day 2: Pick (one group, or two for a head-to-head), Start Game (station In Progress, groups checked in for the maps), then Win or Participation for each group (both may win), one confirm sheet, Available and checked out again. Tokens can only be given after Start.
+- Each group is paid by its own `fn_gm_day1_reward` with a key made at Start, so a failed group can be retried alone and a retry never pays twice. The game is kept on the phone (`gm-day1-game:<id>`) across reloads.
+- Frontend only. The server does not check that a game was started; a GM could still call `fn_gm_day1_reward` directly. Undo still reverses only the last transaction (one group).
+- Checked in the browser against requests faked in Playwright (no live writes). `tsc` and `eslint` clean.
+
+### GAME OVER once Day 2 ends, 2026-10-30 (Ben)
+- The header pill (`GameStatus.tsx`) shows GAME OVER when the Day 2 game has ended. It used to wait for the Endgame phase, which nothing starts or ends since 0102, so the pill stayed on "BREAK · Next: Endgame".
+- GAME OVER shows for 30 minutes from Day 2's end (`ends_at`, set by the timer or by Admin's End), then the pill is hidden (`GAME_OVER_SHOW_MS`). With no `ends_at` it stays.
+- The Items page (`useItemsData.ts`) moves to Game Over at the same time, which also unlocks Show on map there.
+- Frontend only. `tsc` and `eslint` clean. Not checked in the browser.
+
+### Day 2: blind boxes open from Normal 1, 2026-10-30 (Ben)
+- `0111_day2_blindbox_normal1.sql` (after 0102) has been run on Supabase. Safe to run again.
+- The Blind box switch now defaults to on in every Day 2 segment (Normal 1, Challenge Mode, Normal 2, Funfair). It stays off when no Day 2 game is running and no segment is held by hand. Admin's flips and the kill-switches are unchanged. Only `fn_day2_off_reason` is replaced; the guards from 0102 stay.
+- Frontend: `SEGMENT_DEFAULTS.normal1.blindbox` is on; the closed reason reads "Opens when the Day 2 game starts" (Staff Home QR, scan page, `BB_NOT_YET`).
+- Challenge Mode now differs from Normal only by its red banner.
+
+### Tennis game T1c: the look, 2026-10-27 (Ben)
+Roadmap item 9, batch T1c. To see it: `/map3d?tennis=bot&auto=1&t=1.8` (the serve), `&t=142.9` (the winner's jump), `/map3d?tennis=demo` (the rally), with `&lite=1` for the phone path.
+- `player.ts`:
+  - The joints are bones, with new knees and elbows. The figure is one `SkinnedMesh`, so 1 draw call (5 before).
+  - A new look (Ben, 2026-10-27: the boxy figure was ugly). The figure is toy-like and smooth-shaded (`playerMaterial`):
+    - a big round head (`HEAD_R`) with two eyes, hair, and a headband in the shirt's colour;
+    - a rounded shirt with round shoulders;
+    - round tubes for arms and legs, with a ball at each elbow and knee so a bend shows no gap;
+    - white wristbands and socks, and round shoes.
+  - The bones are where they were, so the racket and the game are unchanged.
+  - Its shadow is the same mesh flattened onto the court, away from the scene's sun (`playerShadowMaterial`, `aimShadows`). It costs 1 more draw call and needs no shadow map, so phones in lite mode get it too. It replaces the players' round shadows; the ball keeps its round one.
+  - The shadow is even: where its parts overlap, every layer gets the court's depth at that pixel, worked out from the pixel itself. The second layer then always fails the depth test. Interpolated depths differ a little between triangles, which made the shadow blotchy.
+  - The knees bend so the feet stay on the court in a crouch (`legBend`).
+  - `runLegs()` is the run cycle: a leg swinging through bends its knee. `rally.ts` and `match.ts` used to each work out the legs; both now call it.
+  - `splitStep()`: a small hop as the other player hits, landing wide and low.
+  - `endPose()`, `toEndPose()`: the winner raises the racket, jumps twice and pumps the other fist; the loser's head and racket drop.
+  - The serve's trophy pose now holds the racket up behind the head, using a new forearm `roll`.
+  - The racket arm is straight with no roll at every contact, so the racket meets the ball where it did before (`racketAtContact` is unchanged).
+- `match.ts`: the split-step after the other player's hit (not once this player's swing has started), and the end poses from when the match ends (`overAt`). `posing()` keeps the map drawing for the `END_S` the poses take.
+- The ball stays its size from before (`BALL_R`). The plan was to draw it life size up close, but Ben found it too small (2026-10-27), so that was taken out again.
+- No tilt-shift in the tennis view: `Effects` and `CampusScene` take `tiltShift`. It is off on the map pages while this phone plays (`CampusMap3DView`) and on the `/map3d?tennis=demo|bot|online` pages.
+- Tests: `tests/tennis/player.test.ts` (new):
+  - one skinned mesh, plus one for the shadow;
+  - the racket as drawn sits on the rig's sweet spot in five poses;
+  - the soles stay on the court when crouched;
+  - one knee at a time bends in the run;
+  - the split-step's hop and landing.
+- Tests: one more in `match.test.ts`: the end poses (the racket over the winner's head, the loser bowed, `posing()` ends after `END_S`).
+- Typecheck and lint clean; all 277 tests pass.
+- Checked in headless Chrome (SwiftShader) at 1280×800 and 390×844 (lite):
+  - the new figure from the front and from behind, with no headband showing through the hair;
+  - the trophy pose and the swing up to the serve;
+  - the run with the knee kicked up;
+  - the winner mid-jump and holding the racket up, the loser with the racket down;
+  - even shadows in the players' shapes (sunset and day).
+  - No console errors from the game.
+- Not yet: real phones (frame rate with skinning, how the shadows read in sunlight).
+
+### Tennis game: a parked map leaves the tennis rooms, 2026-10-27 (Ben)
+Since the /map page's map stays parked off-screen between visits (`PersistentCampusMap`), a phone that left /map stayed in the courts' board (`tennis:courts`) until the parked map was dropped, 10 minutes later. (The queue and a match were already left: leaving the page closes full screen, and that leaves them.)
+- `useTennisOnMap.ts`: a third argument, `active` (default true). While it is false the game is closed, as if Admin had turned it off: every room is left and the code unloads. Parking does not show "Tennis is closed" (only Admin's Off does).
+- `CampusMap3DView.tsx`: passes `!paused`.
+- `PersistentCampusMap.tsx`: `EVICT_MS` 10 minutes to 2, so a parked map frees the phone's memory sooner.
+- Typecheck clean; all 271 tests pass. Not checked in a browser or on a phone yet.
+
+### Tennis game: watching a match against the bot for real, 2026-10-27 (Ben)
+Before, a watcher near a Play with Bot court joined its room, heard nothing (the match plays on one phone, with no room) and kept the looping rally. Now the bot match is watched like any match.
+- `relay.ts` (new, `Relay`): sends the bot match to its room (`match:<key>`) as a hosted match would (link.ts): the player as the host (side 0), the bot as the guest (turned round), notes and positions with `h` and `r`, the host's positions with the score. `watch.ts` is unchanged. It sends only while someone is in the room's presence (no load for an unwatched bot match), and while watched the match keeps drawing (`busy`). Play again starts a new round (`Match.rounds`), so watchers start over at 0–0.
+- `match.ts`: `relay` keeps notes with no other phone; notes are kept with their side (`takeSided()`; `takeNotes()` unchanged for link.ts).
+- `onMap.ts`: the `BotSeat` joins the match's room, and `leave()` / `close()` leave it. `TennisMap.tsx` `botGame()` ticks the relay after each step.
+- Tests: one more in `tests/tennis/watch.test.ts` (nothing sent while unwatched; a watcher joining mid-match replays every hit on the same path and the same final score; Play again starts over). All tennis tests pass.
+- Checked in headless Chrome on `/map3d/preview?tennis=1&full=1` (two tabs): A played with Bot to 2–5; V, zoomed in on the courts, joined the match's room and heard both sides' positions (88 and 98), 15 swings, 9 shots and 7 points, with the same final score; both figures on the middle court in their shirts. No errors.
+- Not yet: real phones over Realtime. A bot match's tab hidden freezes its clock, so its watchers see it stall until it is shown again.
+
+### Tennis game: Play with Bot on the map pages, 2026-10-27 (Ben)
+Roadmap item 9, an ad hoc add-on to T3b (not a planned batch). `/map`, tap the tennis court: the card now offers Matchmaking or Play with Bot. Without the live project: `/map3d/preview?tennis=1&full=1`.
+- `src/components/map3d/tennis/`:
+  - `onMap.ts` (`TennisOnMap`): `playBot(who)` takes the first free court (busiest-first, like the queue would), fakes a board key (`0:bot:<id>:<time>`) and says it on the board, same as a real match's host — so it counts against the 3 courts and shows "● LIVE". `play()` and `playBot()` each refuse while the other is on; `leave()`, `close()` free the court either way. Kept free of React and the game's own simulation (`BotSeat` only carries the court, key and profile), so its tests (and `online.ts`'s unrelated two-bot auto-play mode) stay untouched.
+  - `TennisMap.tsx`: `botGame()` builds the local `Match` (`["player", "bot"]`, no network) the first time a phone's `BotSeat` is seen, the same shape as the demo's bot mode (`createGame`). `TennisCard` gets a second button, disabled once `busy >= 3`.
+  - `TennisGame.tsx`: `Clock` exported for `botGame()` to reuse; `Game` gets an optional `leave` (the bot end card's "Back to map", next to Play again — unset on the demo pages, so they are unchanged).
+  - `useTennisOnMap.ts`: `playBot()`, alongside `play()`.
+  - `CampusMap3DView.tsx`: passes `onPlayBot` to `TennisCard`.
+- Tests: two more in `tests/tennis/onmap.test.ts` (a practice match takes a court on the board and Leave frees it, blocking Play and a second Play with Bot meanwhile; all three courts taken refuses a fourth Play with Bot). All 268 tests pass.
+- Checked in headless Chrome on `/map3d/preview?tennis=1&full=1&role=staff`: the card showed both buttons, Play with Bot entered a full-screen match at once (no queue), serving and a rally scored a point against the bot ("TOO FAR"), the score bug read "Committee 0 / Bot 1". No console errors.
+- Not yet: a Realtime collision if two phones tap Play with Bot in the same instant could claim the same court on the board for a moment (as two real pairs already can); not worth guarding given how rarely two people would do this at once.
+
+### Tennis game T3b: on the map pages, 2026-10-27 (Ben)
+Roadmap item 9, batch T3b. Admin → Live control → Mini game turns it on; then `/map`, tap the tennis court, Play. Without the live project: `/map3d/preview?tennis=1&full=1` in two tabs.
+- `src/components/map3d/tennis/`:
+  - `onMap.ts`: the page's courts (`TennisOnMap`): one transport and one courts board, which the host also says its match on (`hostOnBoard` now takes the board: a phone may be in a room only once); the seat in the queue from the first Play; `close()` leaves every room.
+  - `TennisMap.tsx`, loaded only while the game is open: the courts in the scene (`TennisScene`: the crisp courts, every busy court as a spectator sees it, this phone's match), the court's card (`TennisCard`) and the match's HUD (`TennisMatchHud`, with "Back to map").
+  - `useTennisOnMap.ts`: the hook `CampusMap3DView` calls. It loads the game while it is open, closes it at once on Off ("Tennis is closed"), and leaves the queue when full screen closes. `settings.ts`: the switch (`tennis_open`) and who plays. `shirts.ts`: names (cut at 20 characters) and shirts.
+  - `TennisGame.tsx`: a match's camera glides onto the broadcast view and its lens over 1.2 s, and stops a flight or the opening swoop. `TennisCourt` and `LiveCourts` can leave the crisp courts and the camera to the page. `LiveCourts` leaves out this phone's own match and watches nothing while it plays.
+  - `realtime.ts`: a room joined again just after it was left (Play again, or Cancel and Play) waits until its old channel has gone. supabase-js handed the old channel back, then removed it under the new room, so the phone waited in a queue nobody saw.
+- The map (`CampusMap3DView`): the court's tap and card, the match's layer, no names or markers over a match, and the camera backing out after it. `CampusScene`: a "● LIVE" label shows even while names are hidden (the lake stage's during the concert too).
+- Admin: Live control → Mini game → "Tennis on the map" (green when open; it asks before closing). The audit log names it. [permission-matrix.md](permission-matrix.md): two rows.
+- No migration: `game_config` key `tennis_open`, set with `fn_set_config` (Admin only, audited). Missing means closed.
+- Tests: `tests/tennis/onmap.test.ts` (one courts room per phone; the queue, Cancel and Back to map; Off leaves every room; the court frees when the players' phones close) and one more in `realtime.test.ts` (joining a room just left). All 266 tests pass.
+- Checked in headless Chrome on `/map3d/preview?tennis=1`, two players (phone and wide sizes) and a viewer: court tap, card, Play, queue, the match (Space serves; the score on both), the viewer up close in the match's room, LIVE from afar with names hidden, Off ("Tennis is closed", every room left), the other player's "Ana left · You win", Back to map, and the camera backing out. No errors.
+- Not yet: real phones over Realtime.
+
+### Tennis game T3a: spectators, 2026-10-27 (Ben)
+Roadmap item 9, batch T3a. Open `/map3d?tennis=watch` while a match is played (two tabs of `/map3d?tennis=online&auto=1`, or with `&net=realtime` on other phones), then move the camera in and out.
+- `src/components/map3d/tennis/`:
+  - `board.ts`: which courts are busy, a Presence room (`tennis:courts`) where only hosts track. `hostOnBoard()` puts a host's match on it from its countdown until it closes. Presences from other phones are checked (the key's shape, the court, the colours) before they name a channel or a colour.
+  - `watch.ts`: one watcher of one match. Its `Match` has both sides remote (side 0 the host); it plays each position and note at its own moment in the match, 0.3 s behind the quickest message, with no clock pings. The host's next position gives the score when it joins mid-match; a score that stays different for 1.5 s is taken from the host. At most `WATCH_MAX` (5) watchers, the first by presence.
+  - `TennisLive.tsx`: the busy courts in the scene (`LiveCourts`): the rally from afar, the real match (`Play`, on the map's own camera) up close.
+  - `link.ts`: notes and positions say whether the host sent them (`h`) and in which round (`r`); resume says its moment in the match (`t`). `match.ts`: `receive()` and `receivePosition()` take the side a note is from. `net.ts`: `Room.untrack()`.
+  - `TennisGame.tsx`: `Play` draws a watcher's match too (`watch`: no lens, no camera moves, no marker); `openTransport()`.
+- The map: `CampusScene` takes `tennisLive`, and the Tennis Court label says "● LIVE" from any distance while a match is on (like the lake stage's).
+- Tests: `tests/tennis/watch.test.ts`: the board from countdown to close, a presence that is not a court, a watcher who joins mid-match (every hit at the same time and place as on the host, the same final score, nothing sent), a rematch from 0–0, and the 6th and 7th watchers leaving.
+- Checked in headless Chrome with two bot tabs and watcher tabs: up close the real match (the watcher heard 28 notes and 164 positions in 35 s and sent only its presence); at about 130 m the rally in the players' shirts; at about 260 m the "● LIVE" label; no errors. Headless Chrome hides every tab but the newest, so turn on focus emulation (`Emulation.setFocusEmulationEnabled`) for each tab, or hidden tabs pause (players) or stop watching.
+- Not yet: real phones over Realtime, and the real map pages (T3b).
+
+### Tennis game T2b: two phones over Supabase Realtime, 2026-10-26 (Ben)
+Roadmap item 9, batch T2b. `/map3d?tennis=online&net=realtime` on two phones (or two browsers), then Play on both. Nothing is written to the database.
+- `src/components/map3d/tennis/realtime.ts`: the T2a `Transport` over Supabase Realtime: a channel per room (`tennis:lobby`, `tennis:match:<key>`), Broadcast for messages (`self: false`), Presence keyed by the player's id. Messages wait until the channel has joined (realtime-js sends them over HTTP before that), and the player's presence is said again after a rejoin. It uses the app's `supabaseBrowser()` client, and is loaded only with `?net=realtime`, so the game against the bot and between tabs never downloads supabase-js.
+- `online.ts`: a phone joins the queue's room only on Play and leaves it when it goes back to idle (Cancel, Leave, the end of a match). Its finished matches are kept across its turns in the queue.
+- `link.ts`: each player is also in the match room's presence; dropping out of it pauses the match at once (the 10 s to a forfeit still apply).
+- Tests: `tests/tennis/realtime.test.ts` (the transport on a stand-in for a Realtime channel: waiting for the join, presence, rejoin, leave) and two more in `online.test.ts` (no room before Play; a phone that drops out of presence).
+- Checked live on the project's Realtime with two headless tabs: two bots stayed in step (the same score on both at every look); two players paired, served, saw the point on both, and when one tab closed the other won after the pause. Under a thousand messages in all.
+- Not yet: two real phones on mobile data, and the real map pages (T3b).
+
+### Tennis game T2a: two players over BroadcastChannel, 2026-10-26 (Ben)
+Roadmap item 9, batch T2a. Open `/map3d?tennis=online` in two tabs of one browser and tap Play in both (`&name=` sets the player's name, `&auto=1` lets a bot play for that tab). No Supabase: the tabs talk over the browser's `BroadcastChannel`.
+- `src/components/map3d/tennis/`:
+  - `net.ts`: a room with messages and presence, behind one interface (`Transport`, `Room`), and the `BroadcastChannel` version of it (`tabTransport()`). T2b adds the Supabase Realtime one, with the same shape.
+  - `lobby.ts`: the queue. Presence says who waits and who plays where; `pairings()` gives every phone the same pairs (first two in the queue on the first free court, the middle court first, at most 3 matches). A court two pairs claim at once goes to the pair that queued first (`ownsCourt()`).
+  - `link.ts`: one match between two phones. The host keeps the clock (pings), the countdown, the messages (see "Sync" above), pauses and forfeits, rematch (both must say yes), and setting a lost message right.
+  - `online.ts`: this phone's seat in the queue and its match, for the HUD.
+  - `match.ts`: a side can now be "remote" (the other phone's player). This phone tells the other its player's swings and shots and the points it calls (`takeNotes()`), takes in the other's (`receive()`), follows their position, and holds the ball at their racket until they answer.
+  - `TennisGame.tsx`: the online HUD: the queue panel (Play, Cancel, how many play and wait), "vs Name · Court n" with the countdown, the pause ("Waiting for Name… 8 s, then you win"), and the end card (Rematch, Play again, Leave). Each effect's shader is compiled when the court shows, so the first hit does not stall the phone.
+- Tests: `tests/tennis/online.test.ts` over an in-memory network with latency, clocks that disagree and phones that drop out (`tests/tennis/hub.ts`): pairing, whole matches between two bots (the same score and every shot on the same path on both phones), message counts, a phone gone for good, one back in time, 30 cases of lost messages, rematch and decline. Also run by hand: 200 drop-out cases and 20 matches at 0–150 ms latency all agreed.
+- Checked in headless Chrome with two tabs: the bots play in sync; and two players: Play, the countdown, a serve by key, the point on both tabs, the next serve on the other tab, and "Ben left · You win" when one tab leaves. Headless Chrome draws both tabs in software at a few frames a second, so use `&lite=1` and small windows, and do not take screenshots mid-match (each stalls both tabs for seconds).
+- Not yet: real phones, and Supabase (T2b).
+
+### Tennis game T1b: the game against a bot, 2026-10-26 (Ben)
+Roadmap item 9, batch T1b. Play it at `/map3d?tennis=bot`. No network: the bot plays on the phone, and the game's code loads only on that URL.
+- `src/components/map3d/tennis/`:
+  - `ball.ts`: the ball's flight from a shot (when and where it left the racket, how fast). The net, the bounces, the roll and the back fence follow from it, so two phones that share shots draw the same path (T2). `aim()` sends the ball to a bounce point with a chosen margin over the net; `meetPoint()` is where the receiver meets it: coming down through racket height after the bounce, at most 2.4 m behind the baseline.
+  - `match.ts`: the rules: first to 5, the serve changes every point. A tap counts from 0.5 s to 0.06 s before the ball reaches the racket (see "Controls" above); past 90% of that window, the earliest go into the net and the latest go wide. The swing then meets the ball itself: the feet slide up to 0.6 m out (further when stepping away from a ball at the body, given time) and the arm reaches up or down to the ball's height, so the ball always meets the racket as drawn. The receiver judges hit or miss. The bot aims cross-court, through the middle or down the line, and misses its timing by a random share (more when it leads, so matches stay close).
+  - `effects.ts`: the ball's trail in the hitter's colour, the racket's blur, a ring where the ball lands (red when out) or meets the net, a flash at each hit (a clean hit also jolts the camera a little), and the ring that shows the player where to meet the ball (in their colour once they can reach it, pulsing while a tap would meet it).
+  - `TennisGame.tsx`, `tennis.css`: the match in the scene (the broadcast view, following the play a little, less on an upright phone) and the HUD: a TV score bug with the server's ball, the calls (OUT, NET, WINNER, MISS; TOO EARLY, TOO LATE or TOO FAR for the player's own misses), MATCH POINT, hints, and an end card with Play again.
+  - `player.ts`: the serve (toss and overhead), `swingPose(rel, hand, lift)` reaching for high and low balls, `racketAt()` and `handAt()`, and points for the racket's tip and throat and the other hand.
+- `CampusMap3D.tsx`: `?tennis=bot` (`&auto=1` two bots, `&color=%23rrggbb` the player's shirt); `?t=<seconds>` holds the T1a rally or the two bots' match at that moment, for screenshots. In the game the map's controls are off, and the map draws only while something moves.
+- Load: no Supabase or Vercel calls (no network code, no API route). Phone size (lite) in the game: 71 draw calls, the same as the T1a demo; desktop 427 (demo 412).
+- Balance, two bots over 40 matches: about 8.5 shots a point, 2.3 minutes a match, close scores. To tune: `LEAD_MAX` / `LEAD_MIN` (the window), `LUNGE` (reach), `BOT_SPREAD` and `BOT_RUN` (the bot), `DRAG_M` in `TennisGame.tsx` (drag speed).
+- Tests: `tests/tennis/match.test.ts` (the flight and aim, the tap window, whole bot matches, the ball meeting the racket at every hit). Checked in headless Chrome at desktop and phone size, including tap to serve and drag to move. Not yet on a real phone; the feel (window, drag speed, bot strength) needs Ben's hands on it.
+### Performance: fewer round trips and duplicate feeds, 2026-10-27
+- Middleware ([src/middleware.ts](../src/middleware.ts)) checks the session with `getClaims()` instead of `getUser()`. It is verified locally when the project uses asymmetric JWT signing keys; with the legacy shared secret it still calls Auth. It skips its `profiles.approved` query on routes under `src/app/(app)`, because that layout already checks `approved` (`APP_LAYOUT_ROOTS`; keep it in step with the `(app)` folders). Every other route keeps the check.
+- **Run `0110_group_locations_per_faci_idx.sql` on Supabase.** It adds an index for "newest GPS fix per Faci phone" and rewrites the `per_faci` step of `fn_group_positions()` to skip through it. Same rows out (`tests/group-positions/db.test.ts`). On an hour of fixes from 90 phones it went from 43 to 4 ms per call; `fn_group_faci_status` went from 16 to 0.6 ms.
+- `useConfig`, `useGroup`, `useDay2State` and the schedule feeds (`useScheduleFeed.ts`, used by the event countdown and the Welcome page's Schedule) now share one query, one realtime channel and one poll per page through [src/lib/sharedFeed.ts](../src/lib/sharedFeed.ts), instead of one per component. The Welcome page makes 3 Supabase requests on load instead of 6. The phases poll (10 s) stays as the field fix of 2026-10-22 set it.
+- The phase timer's context is split in two ([PhaseTimerProvider.tsx](../src/components/PhaseTimerProvider.tsx)): `usePhases()` gives the phases and clock offset and re-renders only when they change; `usePhaseTimer()` adds the 1 s tick, for live countdowns only (PhaseTimer, PhaseCard, GameToggles). The GM page, Admin control room, Staff Home and Dashboard, Ops Stations and the map data hook no longer re-render every second. The GM page re-renders once at the Day 2 phase's end instead (so `phaseOn` turns off on time). `useDay2State` checks its segment every second but re-renders only when it changes. Items' "time left" is its own `GameClock`, so `useItemsData` (Items and Freshie Home) no longer recomputes every second.
+- Images: the blind box poster (2.8 MB JPEG, used raw as the reveal video's poster) is now `blind-box-poster.webp` (166 kB, 1280 px); the 2D map is `campus-map.webp` (166 kB, same 3203×1776 size, so the overlay is unchanged); the 3D flag badge is `xmum-logo-badge.webp` (80 kB, 512 px; it is drawn at 340 px). The old files were removed. The reveal clip was left alone: re-encoding saved only 6%.
+- The /map page's campus map stays alive between visits ([PersistentCampusMap.tsx](../src/components/campus-map/PersistentCampusMap.tsx)). It is rendered once in AppShell (`PersistentMapProvider`, loaded on first use) and moved into the page's slot; leaving parks it off-screen, closes full screen, stops drawing (`frameloop="never"`) and stops its polling and realtime (`useMapActive()`, the `live` option of `useCampusMapData`). Coming back shows the same scene at once and reloads the data. A visit with `?arrival`, `?funfair_preview`, `?map`, `?layer` or `?perf` gets a fresh map (they are read on mount), and a map unused for 2 minutes (10 before 2026-10-27) is dropped to free memory. Checked on a dev harness: same canvas after leaving and returning, no map requests while parked.
+- Page switches (measured as Admin on the dev server): a Supabase query takes 200–700 ms (round trip ~170 ms), and pages fired 4–16 on every visit, several twice, with requests queueing about six at a time. More data now goes through the cached shared feeds, so a revisited page shows its last data at once and refreshes in the background: `useStations()` (the two Live control GameToggles shared one), `useScoreboard()` (Staff Home and Freshie Home's Tokens; the GM page keeps its own, its Day 2 check needs a fresh read), Admin's `fn_live_ops` (10 s poll) and `game_config` (through `useConfig`), the schedule (`useScheduleItems`/`useScheduleDays` in the staff Schedule page, FreshieSchedule and NowOnWelcome; edits reload the feed, drag-to-reorder uses `setSharedFeed`) and `useItemsData` (per group, Items and Freshie Home). Feed polls skip while the tab is hidden. `/token` is a client page: it reads the role from the profile instead of re-reading the session and profile on the server each visit. Revisits: Schedule ~0.9 s → 0.34 s to content, Admin 1.1–3.5 s → 0.57 s, Map ~0.8 s → 0.28 s. The JWT signing key is ES256, so the middleware's `getClaims()` makes no Auth call.
+- Signed-in pages checked as Admin only. Check on a Freshie, Faci and GM account: Freshie Home, Items (time left counts down, pieces update after a scan), Map (leave and come back: no reload; the activation arrival still plays), the GM Station page (Day 2 Check/Play) and Admin → Brand.
+
+### Duplicate migration numbers fixed, 2026-10-26 (Ben)
+- Two migration numbers were used twice. Renamed the files, with no change to their SQL: `0103_admin_game_master.sql` is now `0107_admin_game_master.sql`, and `0101_group_positions_everyone.sql` is now `0108_group_positions_everyone.sql`. Comments and docs that named them follow.
+- `0101_game_autostart` and `0103_staff_location_sharing` keep their numbers. `0102` runs after the first, and the live database's migration history records the second as `0103` (David, 2026-10-23).
+- Nothing to run on Supabase: both files were already applied through the SQL Editor, and no later migration depends on them. Older notes below may still use the old numbers.
+
 ### One blind box QR per box type, 2026-10-25 (Jiamin)
 - No migration. A seller with **two or more live box types** now gets one QR per type (token `bb4`: seller, QR version, assignment). Scanning it shows only that box, so the Freshie just buys; nothing to choose. A seller with one type, and the Spot, keep the seller-wide `bb3` code that is already printed. An old seller-wide code of a seller who now holds several types shows "Scan the box's own code".
 - Where: `lib/blindbox.ts`, `/api/blindbox/links` (decides per seller), `/blindbox` page (shows only the code's assignment), Staff Home "My Blind Box" (a QR for each type), Admin → Blind box → Codes (a QR and copy button for each type). Tests: `tests/blindbox/links-route.test.ts`.
 - Unchanged: one box per group per seller, so a group that bought one type from a seller sees "already bought" on that seller's other code. The page limits the choice; the buy RPC still takes the assignment id from the client.
 
 ### Light a key for a group (Admin and HOGM), 2026-10-25 (Jiamin)
-- **Run on Supabase:** `0105_game_lead_light_projector.sql`. Admin → Live control → Game master → Funfair and HOGM → Game control → Funfair have **Light a key for a group** (`FunfairLightGroup`, `fn_game_lead_light_projector`): pick a group, light B1, A3 or TF for it. No card tap, no Guardian check, no Day 2 Funfair switch. One group per key and one key per group; only Admin can take a key over. Audit action `projector.game_lead_light` (also registered: the 0103 Game master actions).
+- **Run on Supabase:** `0105_game_lead_light_projector.sql`. Admin → Live control → Game master → Funfair and HOGM → Game control → Funfair have **Light a key for a group** (`FunfairLightGroup`, `fn_game_lead_light_projector`): pick a group, light B1, A3 or TF for it. No card tap, no Guardian check, no Day 2 Funfair switch. One group per key and one key per group; only Admin can take a key over. Audit action `projector.game_lead_light` (also registered: the 0107 Game master actions).
 
 ### Admin Game master (Live control), 2026-10-25 (Jiamin)
-- **Run on Supabase:** `0103_admin_game_master.sql` after 0102, before deploying the frontend (Admin → Blind box now reads `blind_box_claims.gift`). Plan and preview: [docs/plans/admin-game-master.md](plans/admin-game-master.md).
+- **Run on Supabase:** `0107_admin_game_master.sql` after 0102, before deploying the frontend (Admin → Blind box now reads `blind_box_claims.gift`). Plan and preview: [docs/plans/admin-game-master.md](plans/admin-game-master.md).
 - Live control → **Game master** (`GameMaster`, Admin only, folded by default): pick a group, then Tokens (Add uses the Day 1 rules, Deduct the Day 2 Easy / Medium / Hard fees, Custom 1 to 50, reason, Undo), Puzzle (give a missing piece), Blind box (gift 1 to 5 unopened boxes; they show on the group's Items page) and Funfair (the zone card).
 - Always live: no phase, schedule or Day 2 switch check. The token freeze still blocks Tokens. A gift is free, uses no stock, is not counted as sold and does not count toward the group cap (`gift` flag; `fn_bb_buy` and `fn_bb_seller_preview` patched, `fn_live_ops` leaves gifts out).
 - The Funfair (3D map) tab is gone from Admin → Game; `/admin/funfair` redirects to Live control. HOGM's Game control → Funfair is unchanged.
-- Not tested against a database yet: run 0103, then try each tab.
+- Not tested against a database yet: run 0107, then try each tab.
 
 ### Day 2 game inner schedule; no more Pause, 2026-10-25 (Jiamin)
 - **Run on Supabase:** `0102_day2_inner_schedule.sql` after 0101, before deploying the frontend. Safe to run again (each guard is added once). Plan: [docs/plans/day2-inner-schedule.md](plans/day2-inner-schedule.md).
@@ -337,6 +564,20 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 - Verification: typecheck and production build passed; lint passed with the existing map `<img>` warning; 197 tests passed, including 9 new real-Postgres Committee permission tests. Browser fixture checks used real components and dummy data at 1024 × 768 and 820 × 1180: save/cancel returned focus, navigation stayed visible, Committee had history without Edit, and HOF retained Edit. Physical iPad keyboard reproduction remains pending. David confirmed that migration 0104 ran successfully in Supabase; production frontend release is in progress through the existing GitHub → Vercel integration.
 
 
+### David, 2026-10-24 — Projector activation transition alignment
+- Centred the gathering-magic focal point in the activation takeover viewport. The result screen, map hand-off and reduced-motion behaviour are unchanged.
+
+### David, 2026-10-24 — Funfair-facing map view
+- Default 3D view now looks from the A-row toward the Funfair, a 180° rotation from the PR #59 heading. The extra building-button row is limited to the 2D fallback.
+- Fullscreen building badges return to the page with that building's station list selected. Inline roof taps continue to select stations or building lists.
+- Checked desktop and 390 × 844 mock previews, inline A5/A3 roof taps and fullscreen A5 badge selection. Physical-phone touch testing remains pending.
+
+### David, 2026-10-23 (staff sharing migration number correction)
+- PR #56 merged as `f98c17e`; production deployment is in progress.
+- Found the initial branch-number check missed `fix/log-audit-gaps`'s `0102_admin_token_log_audit.sql`. Staff sharing moves to **0103**, with identical SQL; only its own migration-history version is repaired, without rerunning DDL or changing event/location rows. Do not reuse teammate's 0102.
+
+- **Confirmed:** live history now identifies staff sharing as 0103. Production release `f98c17e` reached Ready at [xmum-orientation.vercel.app](https://xmum-orientation.vercel.app); 184 tests passed again after the filename correction. Physical-phone GPS and multi-device checks remain outstanding.
+
 ### Admin campus map aligned with HOF / HOGM, 2026-10-23 (David)
 - Admin `/map` now uses the same staff map frame, night palette, title, mobile header and content width as HOF / HOGM. Admin station editing and accuracy checks remain Admin-only; no data or permission changes.
 - Building selectors now share icons, labels, station counts, an All option, campus ordering, selected states and keyboard focus treatment. Freshie / Faci use their group theme; staff use the Ops theme. Accuracy check has a 44px touch target.
@@ -347,6 +588,25 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 - Removed the password → join-link → image waterfall: the QR request starts as soon as the group is known, independently of the password RPC, and each section renders independently. Password fetch failures now end the loading state and show an error.
 - Stable QR links use a 60-second in-memory cache scoped to account and group, including in-flight deduplication; failures are evicted. Passwords are not cached. Existing PNG reuse remains in place; no API permissions, printed QR links or database data changed.
 - The isolated QR-only release passed all 188 tests, production build (including type and lint checks), and diff checks. David tested the Faci Group Code page and confirmed it opens noticeably faster; no numerical timing was measured. The existing 2D map image advisory remains.
+
+### David, 2026-10-22 (field-fix release preparation)
+- Integrated latest main (`3b4365d`) with the local field fixes; preserved teammate Faci, group QR, GM and map work. Kept the once-per-tab intro and the activation exemption.
+- Renamed staff sharing from 0089 to **0102** because main already owns 0089 and has migrations through 0101; database tests follow the new filename.
+- Adapted the QR cache to the static signed group-link API and restored Group locations' dark expanded surface with the animated fold. Fixed merged funfair zone title separators; regression added.
+- Final checks: **184 tests / 18 files**, production build, typecheck and lint. **Still pending:** live 0102 application, deployment, real-phone GPS and simultaneous device checks. Platform access is being resolved; no live NFC or event data was reset or deleted. See [release notes](testing/orientation-field-fixes-2026-10-22.md).
+
+- **Live follow-up:** 0102 was applied transactionally to `orientation-2612` and registered in migration history; RLS, direct-read denial, anonymous RPC denial and the three function definitions were verified. No location rows were created. Vercel preview for `c8ce19d` is Ready; production release and physical-phone checks remain pending.
+
+### David, 2026-10-22 — website punctuation
+- Replaced visible middle-dot separators throughout the website with context-appropriate slashes, ampersands, colons or parentheses. Updated the funfair arrival title split to match the new separator; existing database zone/phase labels are formatted at display time. No database migration or live-data edit. Source changes only, not deployed.
+
+### David, 2026-10-22 — field fixes (source ready; not deployed)
+- Map follows the live Day 1/Day 2 phase, with foreground refresh and polling; added large building buttons for phones and restricted transparent 3D marker hit areas. Expanded group Faci details inherit the dark surface.
+- Live control All uses independent realtime subscriptions; original crash reproduced and fixed in the browser.
+- Current-device sign-out avoids invalidating other phones on shared group accounts. Auth redirects retain refreshed cookies and transient service errors do not redirect users as signed out.
+- Group QR cards draw directly to canvas, use a bounded in-memory cache, and no longer regenerate on unrelated group balance updates.
+- HOF/HOGM opt-in GPS sharing added (0102), including Stop, role-restricted visibility, no position history and two-minute expiry. HOF Faci-assignment edits were excluded because David confirmed a teammate has fixed them.
+- Validated: 142 tests across 13 suites, typecheck, production build, local browser regressions. Pending: apply 0102, deploy, and check real-phone GPS/multi-device sessions. See [field-fix test and release notes](testing/orientation-field-fixes-2026-10-22.md).
 
 ### Tennis game T1a: players, the swing and the broadcast view, 2026-10-22 (Ben)
 Roadmap item 9, batch T1a. See it at `/map3d?tennis=demo` (desktop and a phone size). No game and no network yet.
@@ -359,6 +619,15 @@ Roadmap item 9, batch T1a. See it at `/map3d?tennis=demo` (desktop and a phone s
 - `courts.ts` (new): the court sizes, their height `LIFT` and `courtCells()` moved out of `sports.tsx`, so tests can import them without JSX.
 - `sports.tsx`: a fence side between the camera and its target is hidden when the camera is within 15 units of it and lower than 12 units (`useFenceCutaway`).
 - `CampusMap3D.tsx`: `?tennis=demo` starts at the middle court's broadcast view with names off. With `?cam`, it keeps the map's own lens.
+
+### Log fixes from testing HOGM's Log: Admin token edits are audited, game start/end shows, 2026-10-22
+Found by clicking through the Log as HOGM, Admin and a GM against the live project. Run `0109_admin_token_log_audit.sql` (was `0102`; renamed on merge because main already uses 0102) **before** deploying the frontend: Admin → Token now calls it.
+- **Admin editing or deleting a token transaction was not audited, and could leave the balance and the ledger apart.** [token-api.ts](../src/lib/token-api.ts) changed `token_logs` and `groups` from the browser and never checked the result (a refused log update still moved the balance). `fn_admin_update_token_log` and `fn_admin_delete_token_log` (0109, Admin only) now change the row, the balances and the audit row in one transaction and refuse a negative balance. Audit actions `tokens.log_edit` and `tokens.log_delete`, shown as "Transaction edited" / "Transaction deleted" with the amount and the balance after.
+- **The edit dialog retyped a reversal.** `TOKEN_REVERSAL` (a GM's undo) was not in its list, so saving turned it into `DAY1_GAME`. It stays selectable now and the function keeps the log's own type.
+- **Game start, pause, resume, end, extend and reset were missing from the Log.** The live database runs `bonding-session`'s `fn_phase_control`, which writes `session.*`; `AUDIT_ACTIONS` only had `phase.*` and `game.*`. Both are listed now, with the same words.
+- Old `gm_blindbox_*` settings read "GM blind box (old setting)" instead of the raw key.
+- Tests: `tests/token-log/db.test.ts` (the two functions on a real Postgres: balance, log row, audit row, group move, negative balance, Admin only) and `tests/auditLog.test.ts`. `npm test`: 187 pass; `tsc` clean.
+- **Still open:** the table policies still let the browser write `token_logs` and `groups` directly (see the lock-down item above). Blind box rows say "A seller's boxes" without the seller's name (the assignment id is all the row has). A GM's "Token change undone" shows only the transaction number. `blindbox.regenerate` left no row when tried from Admin; not confirmed whether the QR changed.
 
 ### Migrations to run on Supabase for the 2026-10-22 work (Jiamin)
 Numbered after main's `0093`-`0098` (renamed from 0097 / 0098 when merging main, whose projector migrations took those numbers). Run both **before** deploying the frontend: Admin → Blind boxes calls the new `fn_bb_assign` (no station arguments) and `fn_bb_spot_save`.
@@ -386,13 +655,13 @@ No migration. With the GM's Day 2 Start checking the group in, the map's check-i
 ### One "Group locations" list under the map, 2026-10-22
 - `GroupStatusList` is one list, Group 1 to 10 in order, each with where it was last seen ("Last seen at A1 · 13 min ago", "No location yet", "· rough" for a rough GPS fix) and its Facis button. It replaces "Not seen for 10+ min" (red, listed first) and "Groups on the map" (Ben). `isNotSeen()` went with it.
 
-### Everyone sees every group on the map (0101), 2026-10-22
-Migration `0101_group_positions_everyone.sql` (**applied** on the live database 2026-10-22: `gm.test`, `freshie.test`, `faci.test`, `hof.test` and `hogm.test` each get all 10 groups; do not run 0094 after it). Ben: the group locations are open to everyone in the app, GMs included.
+### Everyone sees every group on the map (0108), 2026-10-22
+Migration `0108_group_positions_everyone.sql` (**applied** on the live database 2026-10-22: `gm.test`, `freshie.test`, `faci.test`, `hof.test` and `hogm.test` each get all 10 groups; do not run 0094 after it). Ben: the group locations are open to everyone in the app, GMs included.
 - `fn_group_positions()` returns every group to every signed-in account (Freshie, Faci, GM, Guardian GM, Committee tier). `fn_group_faci_status()` the same: a group's Facis' names and last report; phone numbers stay Committee tier only. This is 0089's rule plus GMs, and replaces 0094 (own group only for Freshie and Faci, nothing for GMs).
 - `/map` asks for group pins for GMs too (`showPins`), so every role gets the pins, "Not seen for 10+ min" and "Groups on the map".
 - The station lists still name the groups only for Committee tier; Freshie, Faci and GM see "1 group here" (`whoIsHere`).
-- **Live database, checked 2026-10-22 (read only):** 0094 has not run there; `freshie.test` and `faci.test` already get all 10 groups (0089), `gm.test` none. After 0101, GMs get all 10 too.
-- Not checked: 0101 against a database (no local Postgres here); its bodies are 0094's and 0082's with the visibility condition changed.
+- **Live database, checked 2026-10-22 (read only):** 0094 has not run there; `freshie.test` and `faci.test` already get all 10 groups (0089), `gm.test` none. After 0108, GMs get all 10 too.
+- Not checked: 0108 against a database (no local Postgres here); its bodies are 0094's and 0082's with the visibility condition changed.
 
 ### A Day 2 game shows on the maps: Busy and which group, 2026-10-22
 No migration. Ben's flow: the GM picks the group and the funfair places, starts the game, the station turns Busy; Freshies and Facis see it busy with a group there, Committee tier sees which group.
@@ -500,7 +769,7 @@ Migration `0095_gm_station_checkin.sql` (**needs running**):
 - `/checkin` cleanly redirects all users to `/map`.
 
 ### Faci and Freshie see only their own group on the map, 2026-10-19
-(Superseded by 0101: do not run 0094; everyone sees every group.) Migration `0094_group_positions_own_group.sql` reversed `0089`: `fn_group_positions()` returns every group only to Committee tier; a Faci or Freshie gets just the group on their profile, so the "Not seen for 10+ min" and "Groups on the map" lists show one group. No frontend change beyond a comment. The 2026-10-19 note under the Freshie/Faci map section saying every group is public is superseded.
+(Superseded by 0108: do not run 0094; everyone sees every group.) Migration `0094_group_positions_own_group.sql` reversed `0089`: `fn_group_positions()` returns every group only to Committee tier; a Faci or Freshie gets just the group on their profile, so the "Not seen for 10+ min" and "Groups on the map" lists show one group. No frontend change beyond a comment. The 2026-10-19 note under the Freshie/Faci map section saying every group is public is superseded.
 
 ### David, 2026-10-19 (NFC success → 3D funfair)
 - Connected ordinary activation and Guardian verification to the live v2 handover contract; preserved explicit Admin test stickers and missing-function-only legacy fallback. Guardian now reads and refreshes persisted state.
@@ -665,7 +934,7 @@ Migration `0089` (applied). Freshie's and Faci's `/map` dropped the white page a
 - CampusMap's markup is unchanged; `.fh-map` in `freshie.css` recolours its cards, lists, chips, the inline map buttons and the 2D Stations / Lightbulbs tabs. The full-screen map keeps its own look, as on the ops crew's map.
 - AppShell treats `/map` as a night page for Freshie and Faci, so the light mobile header is hidden there.
 - Admin's `/map` and Faci's `/checkin` keep the light design.
-- (0094 limited this to their own group; 0101 opens it again, GMs included.) Freshies and Facis see every group's location on the map (Ben: the group pins are public to them). Migration `0089_freshie_group_positions.sql` (applied on the project; Ben, 2026-10-19) lets `fn_group_positions()` return every group to a Freshie or Faci. This also applies to Faci's `/checkin` map.
+- (0094 limited this to their own group; 0108 opens it again, GMs included.) Freshies and Facis see every group's location on the map (Ben: the group pins are public to them). Migration `0089_freshie_group_positions.sql` (applied on the project; Ben, 2026-10-19) lets `fn_group_positions()` return every group to a Freshie or Faci. This also applies to Faci's `/checkin` map.
 
 ### Map: East funfair rides on their dorms' real middles, and the midway, 2026-10-17 (Ben, branch `funfair-east-layout`)
 No migration. Built on `map3d-footpaths` (the lawn round the funfair's land), so merge that first.
@@ -690,9 +959,6 @@ No migration.
 - OSM draws the walk along that lawn's east edge about 11 m into the trees. It is traced again, and `emit_phase1.py` leaves the OSM way out.
 - Not drawn: OSM's sidewalks outside the outer road, car roads, and walks on the funfair's land.
 - To check on site: the imagery suggests a walk between A3 and A4, under trees. It is not drawn.
-
-### David, 2026-10-19 (logo intro frequency)
-- The global Vortexa logo intro now plays once per browser tab session. Refreshes and login redirects in the same tab skip it, with no overlay flash while checking session storage. Activation and its preview keep their existing exemption. If storage is disabled, repeat full-page loads cannot retain the seen flag.
 
 ### Map: LakeFront Café as the lake stage, 2026-10-16 to 10-17 (Ben, branch `funfair-central`; partly done)
 No migration. Design and batches: [map3d-lakefront-design.md](map3d-lakefront-design.md).
@@ -1164,37 +1430,3 @@ Branch `jiamin-blind-box-integration`. Migration `0070_blindbox_buy_flow.sql` (t
 - Admin redesign step A: Admin nav is now 4 sections (Live, Freshies, Game, Settings) with sub-tabs; Freshie control moved to `/admin/freshies` (old `/freshie-control` redirects); admin sidebar can collapse to icons. UI only. Step B done: Users (role chips, group filter, table, CSV import in a pop-up), Audit (action and role chips, table), Control room (phase rows, switches). Step C done: Stations (table, add in pop-up), Blind box (two tabs, table), NFC, Puzzles, FAQ (grouped, add in pop-up), Brand, Tokens (full width, layout only). Admin redesign complete.
 - Removed Interview Booking (`/booking`) and Practice Reservations (`/reservations`) for every role: pages, nav, dashboard cards. Migration `0039` drops any leftover booking tables, functions and types.
 - Facilitators set a group name and slogan on the home checklist. "Group 1" stays the number. HOF still cannot see the list.
-
-
-### David, 2026-10-22 — field fixes (source ready; not deployed)
-- Map follows the live Day 1/Day 2 phase, with foreground refresh and polling; added large building buttons for phones and restricted transparent 3D marker hit areas. Expanded group Faci details inherit the dark surface.
-- Live control All uses independent realtime subscriptions; original crash reproduced and fixed in the browser.
-- Current-device sign-out avoids invalidating other phones on shared group accounts. Auth redirects retain refreshed cookies and transient service errors do not redirect users as signed out.
-- Group QR cards draw directly to canvas, use a bounded in-memory cache, and no longer regenerate on unrelated group balance updates.
-- HOF/HOGM opt-in GPS sharing added (0102), including Stop, role-restricted visibility, no position history and two-minute expiry. HOF Faci-assignment edits were excluded because David confirmed a teammate has fixed them.
-- Validated: 142 tests across 13 suites, typecheck, production build, local browser regressions. Pending: apply 0102, deploy, and check real-phone GPS/multi-device sessions. See [field-fix test and release notes](testing/orientation-field-fixes-2026-10-22.md).
-
-### David, 2026-10-22 — website punctuation
-- Replaced visible middle-dot separators throughout the website with context-appropriate slashes, ampersands, colons or parentheses. Updated the funfair arrival title split to match the new separator; existing database zone/phase labels are formatted at display time. No database migration or live-data edit. Source changes only, not deployed.
-
-### David, 2026-10-22 (field-fix release preparation)
-- Integrated latest main (`3b4365d`) with the local field fixes; preserved teammate Faci, group QR, GM and map work. Kept the once-per-tab intro and the activation exemption.
-- Renamed staff sharing from 0089 to **0102** because main already owns 0089 and has migrations through 0101; database tests follow the new filename.
-- Adapted the QR cache to the static signed group-link API and restored Group locations' dark expanded surface with the animated fold. Fixed merged funfair zone title separators; regression added.
-- Final checks: **184 tests / 18 files**, production build, typecheck and lint. **Still pending:** live 0102 application, deployment, real-phone GPS and simultaneous device checks. Platform access is being resolved; no live NFC or event data was reset or deleted. See [release notes](testing/orientation-field-fixes-2026-10-22.md).
-
-- **Live follow-up:** 0102 was applied transactionally to `orientation-2612` and registered in migration history; RLS, direct-read denial, anonymous RPC denial and the three function definitions were verified. No location rows were created. Vercel preview for `c8ce19d` is Ready; production release and physical-phone checks remain pending.
-
-### David, 2026-10-23 (staff sharing migration number correction)
-- PR #56 merged as `f98c17e`; production deployment is in progress.
-- Found the initial branch-number check missed `fix/log-audit-gaps`'s `0102_admin_token_log_audit.sql`. Staff sharing moves to **0103**, with identical SQL; only its own migration-history version is repaired, without rerunning DDL or changing event/location rows. Do not reuse teammate's 0102.
-
-- **Confirmed:** live history now identifies staff sharing as 0103. Production release `f98c17e` reached Ready at [xmum-orientation.vercel.app](https://xmum-orientation.vercel.app); 184 tests passed again after the filename correction. Physical-phone GPS and multi-device checks remain outstanding.
-
-### David, 2026-10-24 — Funfair-facing map view
-- Default 3D view now looks from the A-row toward the Funfair, a 180° rotation from the PR #59 heading. The extra building-button row is limited to the 2D fallback.
-- Fullscreen building badges return to the page with that building's station list selected. Inline roof taps continue to select stations or building lists.
-- Checked desktop and 390 × 844 mock previews, inline A5/A3 roof taps and fullscreen A5 badge selection. Physical-phone touch testing remains pending.
-
-### David, 2026-10-24 — Projector activation transition alignment
-- Centred the gathering-magic focal point in the activation takeover viewport. The result screen, map hand-off and reduced-motion behaviour are unchanged.

@@ -133,6 +133,10 @@
 .av .av-switch { position: relative; flex: none; width: 52px; height: 32px; min-height: 32px; border-radius: 999px; background: var(--c-border-strong); transition: background var(--motion-base); }
 .av .av-switch::after { content: ""; position: absolute; inset: -8px -4px; }
 .av .av-switch[aria-checked="true"] { background: var(--c-red-600); }
+.av .av-switch[data-safe][aria-checked="true"] { background: var(--c-start); }
+.av .av-state[data-ok="true"] { background: var(--c-start); color: var(--c-text); }
+.av .av-mini { background: var(--c-card); border: 1px solid var(--c-border); border-radius: 16px; padding: 12px 16px; display: grid; gap: 8px; }
+.av .av-mini-row { display: flex; align-items: center; gap: 12px; }
 .av .av-switch i { position: absolute; top: 4px; left: 4px; width: 24px; height: 24px; border-radius: 50%; background: var(--c-text); transition: transform var(--motion-base); }
 .av .av-switch[aria-checked="true"] i { transform: translateX(20px); }
 

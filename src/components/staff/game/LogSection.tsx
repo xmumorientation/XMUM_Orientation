@@ -21,8 +21,8 @@ const KINDS: { key: AuditKind | "all"; label: string }[] = [
   { key: "stations", label: "Stations" },
   { key: "puzzles", label: "Puzzles" },
   { key: "projectors", label: "Projectors" },
-  { key: "blindbox", label: "Blind box" },
-  { key: "game", label: "Games & settings" },
+  { key: "blindbox", label: "Blind Box" },
+  { key: "game", label: "Games & Settings" },
 ];
 
 type Who = "all" | "gm" | "hogm" | "admin" | "groups" | "system";
@@ -67,7 +67,7 @@ export function LogSection() {
             value={groupId ?? ""}
             onChange={(e) => setGroupId(e.target.value ? Number(e.target.value) : null)}
           >
-            <option value="">All groups</option>
+            <option value="">All Groups</option>
             {Object.entries(lookups.groups).map(([id, g]) => (
               <option key={id} value={id}>
                 {g.name}
@@ -93,7 +93,7 @@ export function LogSection() {
 
       {log.hasMore && (
         <button type="button" className="gc-btn" disabled={log.loading} onClick={log.loadMore}>
-          Load more
+          Load More
         </button>
       )}
     </div>

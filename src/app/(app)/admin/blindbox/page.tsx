@@ -14,10 +14,10 @@ import { cn } from "@/lib/utils";
 
 // The flow, in order. Rules & reset sits apart: it is not a step.
 const STEPS: [Step, string][] = [
-  ["types", "Box types"],
+  ["types", "Box Types"],
   ["assign", "Assign"],
-  ["codes", "Codes & stock"],
-  ["spot", "Spot box"],
+  ["codes", "Codes & Stock"],
+  ["spot", "Spot Box"],
 ];
 
 // Admin blind boxes, as the steps of the job:
@@ -53,17 +53,17 @@ export default function AdminBlindBoxPage() {
   const current: Step = step ?? (data.types.some((t) => !t.archived) ? "codes" : "types");
 
   const stats: [string, number][] = [
-    ["left with sellers", o.left],
-    ["sold", o.opened],
-    ["unassigned", o.unassigned],
-    [`groups at the limit of ${data.cap}`, o.groupsAtCap],
+    ["Left with Sellers", o.left],
+    ["Sold", o.opened],
+    ["Unassigned", o.unassigned],
+    [`Groups at the Limit of ${data.cap}`, o.groupsAtCap],
   ];
 
   const tabProps = { data, onError, onNotice, goTo: setStep };
 
   return (
     <div className="space-y-5">
-      <PageTitle title="Blind boxes" subtitle="Create box types, hand them out, then give out the codes" />
+      <PageTitle title="Blind Boxes" subtitle="Create box types, hand them out, then give out the codes" />
       <ErrorBanner message={error} />
       <SuccessBanner message={notice} />
 
@@ -117,7 +117,7 @@ export default function AdminBlindBoxPage() {
           )}
         >
           <Settings2 size={16} strokeWidth={1.75} aria-hidden />
-          Rules & reset
+          Rules & Reset
         </button>
       </nav>
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { Activity, CalendarDays, Coins, Flag, Home, KeyRound, Map, Package, ScanLine, type LucideIcon } from "lucide-react";
+import { Activity, CalendarDays, Coins, Flag, Home, ListChecks, Map, Package, ScanLine, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -12,7 +12,8 @@ import "./freshie.css";
 type Tab = { href: string; label: string; Icon: LucideIcon };
 
 // Phone tab bar for Freshies, facilitators and the ops crew (HOF, HOGM,
-// Committee). Freshies get Scan in the center. Facilitators get Code.
+// Committee). Freshies get Scan in the center. Facilitators get Checklist
+// (the group code is on their Home).
 // The ops crew gets Ops (/committee) in the center,
 // in yellow (data-variant="ops"), with Scores in place of Items. A GM gets the
 // same tabs and colours, with Station (/gm) as the yellow center button.
@@ -44,7 +45,7 @@ export function FreshieTabBar() {
     : isGm
       ? { href: "/gm", label: "Station", aria: "Station panel", Icon: Flag }
       : isFaci
-        ? { href: "/code", label: "Code", aria: "Group code", Icon: KeyRound }
+        ? { href: "/checklist", label: "Checklist", aria: "Checklist", Icon: ListChecks }
         : { href: "/scan", label: "Scan", aria: "Scan a QR code", Icon: ScanLine };
 
   const tab = ({ href, label, Icon }: Tab) => (

@@ -78,7 +78,7 @@ export default function AdminAuditPage() {
 
   const activePrefix = prefixes.find((p) => action === `${p}.`) ?? (action ? "custom" : "all");
   const typeOptions = [
-    { value: "all", label: "All actions" },
+    { value: "all", label: "All Actions" },
     ...prefixes.map((p) => ({ value: p, label: p })),
   ];
   const roleOptions = [
@@ -91,7 +91,7 @@ export default function AdminAuditPage() {
 
   return (
     <div className="space-y-4">
-      <PageTitle title="Audit log" subtitle="Every state change, attributed (NFR-7)" />
+      <PageTitle title="Audit Log" subtitle="Every state change, attributed (NFR-7)" />
 
       <Card className="space-y-3">
         <div className="space-y-1.5">
@@ -176,7 +176,7 @@ export default function AdminAuditPage() {
             onClick={() => setLimit((l) => l + PAGE_SIZE)}
             className="btn-secondary"
           >
-            Load more
+            Load More
           </button>
         </div>
       )}

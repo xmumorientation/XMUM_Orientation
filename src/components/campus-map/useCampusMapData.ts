@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { readingText, useAccuracyCheck, useCheckLog } from "@/components/AccuracyCheck";
-import { usePhaseTimer } from "@/components/PhaseTimerProvider";
+import { usePhases } from "@/components/PhaseTimerProvider";
 import { activeMapDay } from "@/lib/mapDay";
 import { bulbTitle } from "@/components/LightbulbList";
 import { useProfile } from "@/components/ProfileProvider";
@@ -157,6 +157,7 @@ export function useCampusMapData({
   canManageStations,
   bulbLayer = true,
   loadFunfair = false,
+  live = true,
 }: {
   showGroupPins: boolean;
   canManageStations: boolean;
@@ -164,6 +165,11 @@ export function useCampusMapData({
   bulbLayer?: boolean;
   /** Ask which funfair zones are on (the 3D map draws the funfair). */
   loadFunfair?: boolean;
+  /**
+   * False while the map is parked off-screen (PersistentCampusMap): no polling and no realtime. Back to true,
+   * the effects start again, which reloads everything.
+   */
+  live?: boolean;
 }) {
   const supabase = useMemo(() => supabaseBrowser(), []);
   const profile = useProfile();
@@ -217,7 +223,7 @@ export function useCampusMapData({
     : null;
 
   useEffect(() => {
-    if (!canSeeStaff) return;
+    if (!canSeeStaff || !live) return;
     let active = true;
     let request = 0;
     async function loadStaff() {
@@ -231,7 +237,7 @@ export function useCampusMapData({
     window.addEventListener("staff-location-change", loadStaff);
     document.addEventListener("visibilitychange", onVisible);
     return () => { active = false; clearInterval(timer); window.removeEventListener("staff-location-change", loadStaff); document.removeEventListener("visibilitychange", onVisible); };
-  }, [supabase, canSeeStaff]);
+  }, [supabase, canSeeStaff, live]);
 
   const loadStations = useCallback(async () => {
     const { data } = await supabase.from("stations").select("*").order("id");
@@ -347,7 +353,7 @@ export function useCampusMapData({
     .sort()
     .join(",");
   useEffect(() => {
-    if (!loadFunfair) return;
+    if (!loadFunfair || !live) return;
     let active = true;
     let missing = false;
     async function load() {
@@ -378,7 +384,7 @@ export function useCampusMapData({
       window.clearInterval(id);
       document.removeEventListener("visibilitychange", onVisible);
     };
-  }, [supabase, loadFunfair, litKey]);
+  }, [supabase, loadFunfair, litKey, live]);
   const funfair = useMemo(() => funfairState ?? funfairFromBulbs(bulbs), [funfairState, bulbs]);
 
   useEffect(() => {
@@ -446,6 +452,7 @@ export function useCampusMapData({
   }
 
   useEffect(() => {
+    if (!live) return;
     let active = true;
 
     async function loadStationsLive() {
@@ -560,9 +567,9 @@ export function useCampusMapData({
       document.removeEventListener("visibilitychange", onVisible);
       supabase.removeChannel(channel);
     };
-  }, [supabase, showGroupPins, player]);
+  }, [supabase, showGroupPins, player, live]);
 
-  const { phases } = usePhaseTimer();
+  const { phases } = usePhases();
   const day = activeMapDay(phases);
   const mapStations = useMemo(() => stations.filter((s) => s.day === day), [stations, day]);
   useEffect(() => {

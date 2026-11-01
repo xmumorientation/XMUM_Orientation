@@ -17,6 +17,8 @@ import { clusterStatus, type CampusMapData } from "./useCampusMapData";
 /** What a map view (2D or 3D) gets from CampusMap. */
 export type CampusMapViewProps = {
   data: CampusMapData;
+  /** Parked off-screen between visits (PersistentCampusMap): the 3D view stops drawing. */
+  paused?: boolean;
   showGroupPins: boolean;
   canManageStations: boolean;
   highlightStationId?: number | null;
@@ -30,7 +32,7 @@ export type CampusMapViewProps = {
 
 // Illustrated campus map exported from the Figma frame
 // "XMUM Block Cube_XMUM Map 1". Coordinates below are percentages of that image.
-const MAP_SRC = "/campus-map.png";
+const MAP_SRC = "/campus-map.webp";
 const MAP_W = 3203;
 const MAP_H = 1776;
 
@@ -940,7 +942,7 @@ export function CampusMap2DView({
             aria-pressed={showNames}
             onClick={() => data.setShowNames((current) => !current)}
           >
-            {showNames ? "Hide names" : "Show names"}
+            {showNames ? "Hide Names" : "Show Names"}
           </button>
           <button
             type="button"
@@ -948,7 +950,7 @@ export function CampusMap2DView({
             onClick={openFullscreen}
           >
             <Maximize2 className="h-3.5 w-3.5" />
-            Full screen
+            Full Screen
           </button>
         </div>
         {legend}
@@ -1008,7 +1010,7 @@ export function CampusMap2DView({
                 aria-pressed={showNames}
                 onClick={() => data.setShowNames((current) => !current)}
               >
-                {showNames ? "Hide names" : "Show names"}
+                {showNames ? "Hide Names" : "Show Names"}
               </button>
             </div>
             <div

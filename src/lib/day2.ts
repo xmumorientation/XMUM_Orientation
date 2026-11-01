@@ -26,20 +26,20 @@ export interface Day2State {
 
 export const SEGMENTS: { key: Day2Segment; label: string }[] = [
   { key: "normal1", label: "Normal" },
-  { key: "challenge", label: "Challenge mode" },
+  { key: "challenge", label: "Challenge Mode" },
   { key: "normal2", label: "Normal" },
   { key: "funfair", label: "Funfair" },
 ];
 
 export const SWITCHES: { key: Day2Switch; label: string }[] = [
-  { key: "station", label: "Station game" },
-  { key: "blindbox", label: "Blind box" },
+  { key: "station", label: "Station Game" },
+  { key: "blindbox", label: "Blind Box" },
   { key: "funfair", label: "Funfair" },
 ];
 
 export const SEGMENT_DEFAULTS: Record<Day2Segment | "off", Record<Day2Switch, boolean>> = {
   off: { station: true, blindbox: false, funfair: false },
-  normal1: { station: true, blindbox: false, funfair: false },
+  normal1: { station: true, blindbox: true, funfair: false },
   challenge: { station: true, blindbox: true, funfair: false },
   normal2: { station: true, blindbox: true, funfair: false },
   funfair: { station: true, blindbox: true, funfair: true },
@@ -83,5 +83,5 @@ export function day2Now(s: Day2State | null, nowMs: number): Day2Now {
 /** Why the blind box QR is grey, or null when it is open. */
 export function blindBoxReason(n: Day2Now): string | null {
   if (n.switches.blindbox) return null;
-  return n.flipped.blindbox === false ? "Switched off by Admin" : "Opens in challenge mode";
+  return n.flipped.blindbox === false ? "Switched off by Admin" : "Opens when the Day 2 game starts";
 }

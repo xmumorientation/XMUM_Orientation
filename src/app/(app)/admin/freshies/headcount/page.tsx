@@ -15,7 +15,7 @@ export default function HeadcountAndLocationPage() {
   return (
     <div className="space-y-8">
       <PageTitle
-        title="Headcount and location"
+        title="Headcount and Location"
         subtitle="How many people each group has, and where its Facilitators say the group is."
       />
 

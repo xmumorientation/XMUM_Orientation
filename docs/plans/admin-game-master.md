@@ -28,7 +28,7 @@ A section on Admin → Live control for D-day backup. Admin picks a group once, 
 - A blind box claim has `status = 'owned'` (bought, not opened) and the Freshie Items page already lists it (`useBlindBoxes`). A gift is an owned claim with price 0. The seller check `bb_claim_one_seller` needs a `gift` kind (as `spot` was added in 0100), and gifts must not hit the one-box-per-seller unique indexes.
 - `FunfairZones` and `useFunfairZones` are reused as they are.
 
-## Server (migration 0103, Admin only through `is_admin()`)
+## Server (migration 0107, Admin only through `is_admin()`)
 
 - `fn_admin_token_adjust(p_group_id, p_delta, p_reason, p_idempotency_key)`: limit ±50, ledger row with reason `ADMIN BACKUP: …`, keeps `groups.current_tokens` equal to `token_balance` (as 0046 does), audit entry.
 - `fn_admin_give_piece(p_group_id, p_location, p_index, p_idempotency_key)`: inserts the inventory row with source `admin_grant`; a duplicate piece is refused.

@@ -72,17 +72,17 @@ describe("Audit page query", () => {
     await waitFor(() => expect(lastOps()).toContainEqual(["ilike", ["action", "%blindbox.%"]]));
   });
 
-  it("AC-11: Load more asks for 200 more rows", async () => {
+  it("AC-11: Load More asks for 200 more rows", async () => {
     setup(Array.from({ length: 201 }, (_, i) => row(i + 1)));
     render(<AdminAuditPage />);
-    await userEvent.click(await screen.findByRole("button", { name: "Load more" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Load More" }));
     await waitFor(() => expect(lastOps()).toContainEqual(["limit", [401]]));
   });
 
-  it("AC-11: no Load more when there is nothing more", async () => {
+  it("AC-11: no Load More when there is nothing more", async () => {
     render(<AdminAuditPage />);
     await screen.findByText("Added 5 tokens to Group 7 (bonus)");
-    expect(screen.queryByRole("button", { name: "Load more" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Load More" })).toBeNull();
   });
 });
 

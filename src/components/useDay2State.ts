@@ -2,54 +2,67 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import { usePhaseTimerOptional } from "@/components/PhaseTimerProvider";
 import { day2Now, type Day2Now, type Day2State } from "@/lib/day2";
+import { reloadSharedFeed, useSharedFeed, type FeedSource } from "@/lib/sharedFeed";
 import { supabaseBrowser } from "@/lib/supabase/client";
+
+interface Day2Feed {
+  state: Day2State;
+  offsetMs: number;
+}
+
+// One query, one channel and one 15 s poll per page, however many components
+// read it (src/lib/sharedFeed.ts).
+function day2Source(): FeedSource<Day2Feed> {
+  const supabase = supabaseBrowser();
+  return {
+    async load() {
+      const { data, error } = await supabase.rpc("fn_day2_state");
+      // Missing before migration 0102: behave as "no Day 2 game".
+      if (error || !data) return undefined;
+      const state = data as Day2State;
+      return { state, offsetMs: new Date(state.server_now).getTime() - Date.now() };
+    },
+    listen(reload) {
+      const channel = supabase
+        .channel(`day2-state-${crypto.randomUUID()}`)
+        .on("postgres_changes", { event: "*", schema: "public", table: "day2_schedule" }, reload)
+        .on("postgres_changes", { event: "*", schema: "public", table: "phases" }, reload)
+        .subscribe();
+      return () => void supabase.removeChannel(channel);
+    },
+    pollMs: 15_000,
+    // Kept as before: the poll and realtime cover it.
+    reloadOnVisible: false,
+  };
+}
 
 // The Day 2 inner schedule for any page, logged in or not (fn_day2_state,
 // 0102). Reloads on a change to day2_schedule or phases and every 15 s; the
 // segment moves on by itself at each boundary, on the server's clock.
 export function useDay2State(): Day2Now & { state: Day2State | null; reload: () => void } {
-  const supabase = useMemo(() => supabaseBrowser(), []);
-  const shared = usePhaseTimerOptional();
-  const [state, setState] = useState<Day2State | null>(null);
-  const [offsetMs, setOffsetMs] = useState(0);
-  const [now, setNow] = useState(() => Date.now());
+  const feed = useSharedFeed("day2_state", day2Source);
+  const state = feed?.state ?? null;
+  const offsetMs = feed?.offsetMs ?? 0;
 
-  const reload = useCallback(async () => {
-    const { data, error } = await supabase.rpc("fn_day2_state");
-    // Missing before migration 0102: behave as "no Day 2 game".
-    if (error || !data) return;
-    const s = data as Day2State;
-    setState(s);
-    setOffsetMs(new Date(s.server_now).getTime() - Date.now());
-  }, [supabase]);
+  // An explicit reload (e.g. after an Admin change) updates every reader.
+  const reload = useCallback(() => reloadSharedFeed("day2_state"), []);
 
+  // The segment moves on at its start time. Check every second, but only
+  // re-render when the answer changes: Day2Now has no countdown, so a page
+  // using this hook does not re-render every second.
+  const compute = useCallback(() => day2Now(state, Date.now() + offsetMs), [state, offsetMs]);
+  const [n, setN] = useState(compute);
   useEffect(() => {
-    reload();
-    const every = setInterval(reload, 15_000);
-    const channel = supabase
-      .channel(`day2-state-${Math.random().toString(36).slice(2)}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "day2_schedule" }, reload)
-      .on("postgres_changes", { event: "*", schema: "public", table: "phases" }, reload)
-      .subscribe();
-    return () => {
-      clearInterval(every);
-      supabase.removeChannel(channel);
-    };
-  }, [reload, supabase]);
-
-  // Own 1 s tick only when there is no provider; the provider already ticks.
-  useEffect(() => {
-    if (shared) return;
-    const i = setInterval(() => setNow(Date.now()), 1000);
+    const update = () =>
+      setN((prev) => {
+        const next = compute();
+        return JSON.stringify(next) === JSON.stringify(prev) ? prev : next;
+      });
+    update();
+    const i = setInterval(update, 1000);
     return () => clearInterval(i);
-  }, [shared]);
+  }, [compute]);
 
-  const tick = shared?.tick;
-  const n = useMemo(
-    () => day2Now(state, (shared ? Date.now() : now) + offsetMs),
-    [state, now, tick, offsetMs, shared] // eslint-disable-line react-hooks/exhaustive-deps
-  );
-  return { ...n, state, reload };
+  return useMemo(() => ({ ...n, state, reload }), [n, state, reload]);
 }

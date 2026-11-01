@@ -26,10 +26,18 @@ Ben may continue this work in a new Claude conversation. This file says where ev
 
 ## Where things stand
 
-### Tennis game on the tennis courts (2026-10-22, T1a done, committed on `main`)
+### Tennis game on the tennis courts (T1a done 2026-10-22; T1b, T2a and T2b done 2026-10-26, in `main`; T3a and T3b done 2026-10-27, branch `tennis-game`)
 
-- Plan, Ben's decisions and batches T1a–T3b: [ROADMAP.md](ROADMAP.md), item 9. What T1a built: its "Done".
-- Code: `src/components/map3d/tennis/`. It meets the map in `CampusMap3D.tsx` (`?tennis=demo`) and in `sports.tsx` (the fence cutaway). Court sizes: `courts.ts`.
+- Plan, Ben's decisions and batches T1a–T3b and T1c: [ROADMAP.md](ROADMAP.md), item 9. What each batch built: its "Done". Where to pick up: item 9's "Next session".
+- Code: `src/components/map3d/tennis/`. It meets the map in `CampusMap3D.tsx` (`?tennis=demo`, `?tennis=bot`, `?tennis=online`, `?tennis=watch`), in `CampusScene.tsx` (the label's "● LIVE", `tennisLive`) and in `sports.tsx` (the fence cutaway). Court sizes: `courts.ts`.
+- Spectators (T3a): `board.ts` (which courts are busy), `watch.ts` (one watcher's replay of a match), `TennisLive.tsx` (the courts in the scene). Headless checks need focus emulation on every tab (see the roadmap's Done).
+- The map pages (T3b): `CampusMap3DView` calls `useTennisOnMap` (the switch comes from `CampusMap`'s `useTennisSettings`, `settings.ts`, as the `tennis` scene option). While Admin has the game open, it loads `TennisMap.tsx` (the scene part, the court's card and the match's HUD) and `onMap.ts` (`TennisOnMap`: the page's one transport and courts board, and its seat). A match moves the scene's element into a layer of its own (`matchSlot`), as full screen does.
+- Try the map pages without the live project: `/map3d/preview?tennis=1&full=1&cam=-34,18,42,-10.98,0,24.54` in two tabs of one browser (`&role=staff`, `&name=`): the tabs talk over `BroadcastChannel`, and the checkbox under the map is Admin's switch. In headless Chrome, retry the tap on the court: two tabs share one software GPU, and a tap during a stall can be lost.
+- The game (T1b): `match.ts` is the rules, pure and stepped by time (`step(t)` takes events in time order); `ball.ts` the flight; `TennisGame.tsx` draws it (`TennisCourt`, in the scene) and lays the HUD over the page (`TennisHud`). `CampusMap3D` imports `TennisGame` only when the URL asks for the game, so the map's own chunk does not grow.
+- Online (T2a, T2b): `net.ts` (the transport, and its `BroadcastChannel` version), `realtime.ts` (the Supabase Realtime version, `?net=realtime`), `lobby.ts` (the queue), `link.ts` (one match between two phones), `online.ts` (this phone's seat and match). Each phone runs its own `Match` with its own player as side 0; messages go in the sender's frame and the receiver turns them round. Tests run two (or more) phones on `tests/tennis/hub.ts`, a fake network with latency, clock skew and cut-offs.
+- `?net=realtime` talks to the live project (`.env.local`): it writes nothing, but keep checks short. Over Realtime the pairing and the start take a second or two longer than between tabs.
+- Shots of a game: `?tennis=bot&auto=1&t=<seconds>` holds the two bots' match (seed 17) at that moment, the same every time. Event times for picking moments: step a `new Match(17, ["bot", "bot"])` in a test and print `drain()`.
+- Two tabs in headless Chrome (one profile, so `BroadcastChannel` reaches both): open both, then act and read the DOM; `&lite=1` and small windows. Both tabs share one software GPU, so they stall together for seconds at first draws and at every screenshot; take screenshots at the end, not mid-match.
 - **The view is Ben's:** like a TV broadcast (his reference: an Australian Open broadcast), with clear court lines. `courtView()` blends a wide-screen preset (low, 18° lens) and an upright-phone preset (45°, 30° lens). The wide pitch is already as low as `maxPolarAngle` allows.
 - The crisp courts (`surface.tsx`) write no depth and use a polygon offset; they fade out beyond 25–45 units, so far views keep the painted courts.
 - Views: `/map3d?tennis=demo` (desktop and `390x844m`); night `&mode=night`; mid-distance `&cam=-34,18,42,-10.98,0,24.54`.
@@ -55,12 +63,22 @@ Ben may continue this work in a new Claude conversation. This file says where ev
   - `plateauSurface()` is a grid mesh of the top and slopes with the flat ground's UVs, so the ground's canvas and `GroundMarks` lie on it.
   - `Plateau` draws the steps: the terrace (`TERRACE`, seat-like tiers with stairs cut through them) and the steps behind the blocks (`NORTH_STAIRS`). It also draws the pale stone walls and a stone base under each block.
 - The slopes ease out at their foot (a square in `groundY`), so the mesh stays under the steps laid over it. Keep that if you change the slopes, or the grass pokes through the lowest steps.
-- A1, A2, A4 and A5 are drawn square and 4–6 m smaller than their OSM footprint (`courtyardWall` in `geo.ts`, used by `buildings.tsx`), on a plinth (`BLOCK_PLINTH`). Attach anything to the block as drawn, not to the OSM footprint: the back steps first stood 6–8 m off the wall (Ben). They now start at the plinth's edge and climb to its top.
+- A1, A2, A4 and A5 are drawn square and 4–6 m smaller than their OSM footprint (`courtyardWall` in `geo.ts`, used by `buildings.tsx`), on a plinth (`BLOCK_PLINTH`). Attach anything to the block as drawn, not to the OSM footprint: the back steps first stood 6–8 m off the wall (Ben). They now start at the plinth's edge and climb to its top; behind A1, A2, A4 and A5 a landing comes first (below).
+- **A1, A2, A4 and A5 are one design** (2026-10-31, branch `feat/a3-entrance`): `GableBlock` and `gableGeometry` in `buildings.tsx`, wall textures `makeGableFacade` in `textures.ts`, in A3's colours (Ben).
+  - Roof (aerial and satellite photos): a gable on each side, a red roof round each corner (a quarter ring from above), the atrium's star-shaped glass round a skylight, and a small red roof on each corner tower.
+  - Porches: front and back alike (Ben), built once by `gablePorch` and turned to each side (`A_FRONT_SIDE` in `geo.ts`); A5 has one more on its east side (local +Z), toward the track.
+  - The back porch stands on a landing before the back steps (Ben: porch at the top, steps as wide as before). The landing is `A_PORCH_OUT_M` deep, drawn with the steps in `plateau.tsx` (NORTH_STAIRS `landing`).
+  - Views: from above `cam=-24,34,-4,-22.5,0,-3.6`; A5 from the south-east `cam=-41,12,13,-23.4,3.5,1.74`; the row from the south `cam=-78,24,-20,-22,1.5,-20`.
 - **A3 is not at OSM's position:** it is moved 15 m toward the statue (`A3_M`, Ben), so its back steps fit before the walk behind it. `BLOCKS` and the block helpers in `geo.ts` read it through `blockM()`. Don't read `BUILDINGS_M.A3` directly.
+- **A3 is modelled on Ben's photos** (2026-10-31, branch `feat/a3-entrance`): `FlatBlock` and `a3Geometry` in `buildings.tsx`, wall textures `makeA3Facade` and `makeA3Centre` in `textures.ts`.
+  - The front (statue) and the back (lake) are alike, each with a porch (Ben: they must stay the same). Change both through `a3Porch`, which builds the front one and turns a copy round.
+  - The long walls stand `A3_RECESS` inside the footprint, so the porches stand on the plinth and the back steps still fit before the walk behind. The back steps are as wide as the porch (`A3_PORCH_HALF_M` in `geo.ts`).
+  - The end walls look like the long walls, without a porch. Only the four corners are lower, under small red roofs (Ben: not the whole end).
+  - Views: front `cam=-52.2,6,-28.1,-22.85,4.2,-21.87`; back `cam=-1.1,12,-24.9,-22.85,3,-21.87`; front and east end from above `cam=-42.9,20,0.4,-22.85,4,-21.87`.
 - Views: like Ben's aerial `/map3d?cam=-72,26,-48,-34,1,-18`; from the statue `cam=-50,3.2,-21.4,-36,2.2,-21.6`; behind A4 `cam=0,9,-2,-20,1,-12`.
 - The statue stands where the imagery shows its round bed (`STATUE`), not at the team's GPS point.
 - Planting along the walk is `A_FRONT_PLANTS` (palms, shrubs, low lamps); plants.ts drops what falls on paving.
-- **Later:** the south gate's guard houses and fence (Ben); the blocks' walls as in the photos; palms in planters; up-lights on the terrace.
+- **Later:** the south gate's guard houses and fence (Ben); palms in planters; up-lights on the terrace.
 
 ### Grey paving in front of the A-row (2026-10-21, branch `map3d-b1`)
 
@@ -192,12 +210,13 @@ Ben may continue this work in a new Claude conversation. This file says where ev
 
 ## Useful facts
 
-- **Dev server:** `npx next dev -p 3000`. If nothing is listening on port 3000, start it.
+- **Dev server:** `npx next dev -p 3000`. If nothing is listening on port 3000, start it. A `next build` while it runs breaks it (pages load, but `main-app.js` and `layout.css` give 404 and nothing runs): restart it.
 - **Screenshots:** headless Chrome over the DevTools protocol.
   - Start Chrome with `--headless=new --remote-debugging-port=9222 --user-data-dir=<a temp folder>`.
   - A small script (written in each session's scratchpad, since it does not carry over) opens a tab per shot, emulates the size (phones: touch, DPR 2), waits, saves a PNG, and prints the console's errors and warnings.
   - `/map3d` URL parameters: `?intro=0`, `?mode=day|sunset|night`, `?cam=x,y,z,tx,ty,tz`, `?lite=0|1`, `?perf=0`. In development, `?stats=1` logs draw calls and triangles.
   - **Always use `?perf=0` for headless shots.** Without it, SwiftShader is slow enough that the 3D map gives up and shows 2D.
+  - When the dev server can't be used, a Vite preview of `/map3d` works (2026-10-26): Vite ships with vitest. A config in the scratchpad with `root` the repo, `@` aliased to `src`, `process.env.NODE_ENV` defined, `cacheDir` and `envDir` in the scratchpad, and a middleware that serves an HTML page mounting `CampusMap3D`. The map code imports nothing from Next.
 - **Checks:**
   - `npx tsc --noEmit -p .` (clean, tests included);
   - `npx eslint <changed files>`;

@@ -78,7 +78,7 @@ export function TokensSection() {
         {([1, 2] as const).map((day) => (
           <section key={day} className="gc-card gc-rules" aria-labelledby={`gc-rules-${day}`}>
             <h3 id={`gc-rules-${day}`} className="gc-eyebrow">
-              {day === 1 ? "Day 1 · rewards" : "Day 2 · entry fee"}
+              {day === 1 ? "Day 1 · Rewards" : "Day 2 · Entry Fee"}
             </h3>
             {TOKEN_RULES.filter((r) => r.day === day).map((r) => {
               const value = draft[r.key] ?? rules[r.key];
@@ -108,13 +108,13 @@ export function TokensSection() {
         ))}
       </div>
       <button type="button" className="gc-btn gc-btn-primary" disabled={busy || dirty.length === 0} onClick={save}>
-        {dirty.length ? `Save ${dirty.length} change${dirty.length > 1 ? "s" : ""}` : "Saved"}
+        {dirty.length ? `Save ${dirty.length} Change${dirty.length > 1 ? "s" : ""}` : "Saved"}
       </button>
       <StatusLine error={error} notice={notice} />
 
       <section className="gc-card gc-danger" aria-labelledby="gc-reset">
         <div>
-          <h3 id="gc-reset" className="gc-h4">Reset tokens and puzzles</h3>
+          <h3 id="gc-reset" className="gc-h4">Reset Tokens and Puzzles</h3>
           <p>{rehearsal ? "Every group to 0, all pieces removed." : "Locked until Admin turns on Rehearsal mode."}</p>
         </div>
         <button type="button" className="gc-btn gc-btn-danger" disabled={!rehearsal || busy} onClick={() => setResetting(true)}>
@@ -129,8 +129,8 @@ export function TokensSection() {
         busy={busy}
         danger
         typeToConfirm="RESET"
-        title="Reset tokens and puzzles?"
-        confirmLabel="Reset everything"
+        title="Reset Tokens and Puzzles?"
+        confirmLabel="Reset Everything"
         body="Every group goes to 0 tokens and loses every puzzle piece. The token log is cleared."
       />
     </div>

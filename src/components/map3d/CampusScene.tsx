@@ -112,12 +112,13 @@ function DepthRange() {
 /** Minor labels fade in within this distance of the camera. */
 const MINOR_LABEL_DISTANCE = 95;
 
-function Label({ name, pos, y, minor, stage, live }: (typeof LABELS)[number] & { live?: boolean }) {
+/** `live`: the place has something on (the concert, a tennis match), so the label says "● LIVE", from any distance. */
+function Label({ name, pos, y, minor, live }: (typeof LABELS)[number] & { live?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
   const at = useMemo(() => new THREE.Vector3(pos[0], y, pos[1]), [pos, y]);
   useFrame(({ camera }) => {
     if (!minor || !ref.current) return;
-    const opacity = camera.position.distanceTo(at) < MINOR_LABEL_DISTANCE ? "1" : "0";
+    const opacity = live || camera.position.distanceTo(at) < MINOR_LABEL_DISTANCE ? "1" : "0";
     if (ref.current.style.opacity !== opacity) ref.current.style.opacity = opacity;
   });
   return (
@@ -136,12 +137,12 @@ function Label({ name, pos, y, minor, stage, live }: (typeof LABELS)[number] & {
           borderRadius: 999,
           padding: "3px 8px",
           boxShadow: "0 2px 8px rgba(0,0,0,0.3)",
-          opacity: minor ? 0 : 1,
+          opacity: minor && !live ? 0 : 1,
           transition: "opacity 0.25s",
         }}
       >
         {name}
-        {stage && live && (
+        {live && (
           <span
             style={{
               marginLeft: 6,
@@ -160,15 +161,19 @@ function Label({ name, pos, y, minor, stage, live }: (typeof LABELS)[number] & {
   );
 }
 
-const ALL_LABELS = [...LABELS, FUNFAIR_LABEL];
+const ALL_LABELS: (typeof LABELS)[number][] = [...LABELS, FUNFAIR_LABEL];
 
-/** `live`: the lake stage's concert is playing, so its label gets a "● LIVE" tag. */
-const Labels = memo(function Labels({ live }: { live: boolean }) {
+/**
+ * `names`: every place's label. `concert`: the lake stage's concert is playing; `tennis`: a match is on the tennis
+ * courts. Their labels say LIVE, and show even while the names are hidden (the map pages hide them at first).
+ */
+const Labels = memo(function Labels({ names, concert, tennis }: { names: boolean; concert: boolean; tennis: boolean }) {
   return (
     <>
-      {ALL_LABELS.map((l) => (
-        <Label key={l.name} {...l} live={live} />
-      ))}
+      {ALL_LABELS.map((l) => {
+        const live = (!!l.stage && concert) || (!!l.tennis && tennis);
+        return names || live ? <Label key={l.name} {...l} live={live} /> : null;
+      })}
     </>
   );
 });
@@ -290,11 +295,13 @@ export type CampusSceneProps = {
   camera?: CameraView;
   /** Swoop in at the start (default true). */
   intro?: boolean;
-  /** Place-name labels (default true). */
+  /** Place-name labels (default true). A place with something on (`concert`, `tennisLive`) keeps its label. */
   labels?: boolean;
   controlsRef?: Ref<MapControlsImpl>;
   /** Camera controls on (default true). Off, the view stays still and touches scroll the page. */
   interactive?: boolean;
+  /** Draw nothing (the map is parked off-screen between visits). The last frame stays on the canvas. */
+  paused?: boolean;
   /** The funfair's zones: which are powered (default all off). A change plays the power-up. */
   funfair?: FunfairPower;
   /**
@@ -302,6 +309,10 @@ export type CampusSceneProps = {
    * finale). True or false forces it on or off (Admin's preview, dev pages). Turning it on plays the opening.
    */
   concert?: boolean;
+  /** A match is on the tennis courts (tennis/board.ts): their label says LIVE. */
+  tennisLive?: boolean;
+  /** The miniature look's blur (default true); off for the tennis game's broadcast view. */
+  tiltShift?: boolean;
   /** Rendered inside the Canvas, in the scene (depth-tested, post-processed): ground overlays, hit areas. */
   children?: ReactNode;
   /**
@@ -326,8 +337,11 @@ export default function CampusScene({
   labels = true,
   controlsRef,
   interactive = true,
+  paused = false,
   funfair = FUNFAIR_OFF,
   concert: concertProp,
+  tennisLive = false,
+  tiltShift = true,
   children,
   overlay,
   onFail,
@@ -388,7 +402,9 @@ export default function CampusScene({
           // Full screen keeps drawing every frame on a fast device (the water, duck, flag and clouds move), and
           // on any device while a funfair zone is on, so its rides keep turning, at night, so the lake stage's
           // beams sweep, and while its concert plays.
-          frameloop={interactive && (!isLite || anyZoneOn(funfair) || mode === "night" || concert) ? "always" : "demand"}
+          frameloop={
+            paused ? "never" : interactive && (!isLite || anyZoneOn(funfair) || mode === "night" || concert) ? "always" : "demand"
+          }
           dpr={isLite ? [1, 1.5] : [1, 1.75]}
           camera={{ fov: 30, near: 1, far: 1600, position: start.position }}
           gl={(defaults) => {
@@ -406,7 +422,7 @@ export default function CampusScene({
           <Campus mode={mode} lite={isLite} />
           <Funfair power={funfair} night={mode === "night"} dusk={mode === "sunset"} lite={isLite} />
           <LakefrontStage night={mode === "night"} dusk={mode === "sunset"} lite={isLite} live={concert} />
-          {labels && <Labels live={concert} />}
+          <Labels names={labels} concert={concert} tennis={tennisLive} />
           {children}
           <MapControls
             ref={controlsRef}
@@ -423,7 +439,7 @@ export default function CampusScene({
           <Intro start={start} />
           {/* Measured once, and once more in lite after a step down. */}
           <FrameRateProbe key={stepDown ? "lite" : "first"} onResult={onFrameRate} />
-          {!isLite && <Effects look={look} />}
+          {!isLite && <Effects look={look} tiltShift={tiltShift} />}
           {/* After the effects' pass (priority 1); in lite mode the Hud draws the scene itself first. */}
           {overlay && <Hud renderPriority={isLite ? 1 : 2}>{overlay}</Hud>}
         </Canvas>

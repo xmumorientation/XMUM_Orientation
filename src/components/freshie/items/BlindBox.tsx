@@ -131,7 +131,7 @@ function BoxFlow({
           <span className="bb-holo" aria-hidden />
           <div className="bb-ask-art" aria-hidden>
             <span className="bb-ask-light" />
-            <Image src="/blind-box-poster.jpg" alt="" width={640} height={640} sizes="210px" priority className="bb-ask-box" />
+            <Image src="/blind-box-poster.webp" alt="" width={640} height={640} sizes="210px" priority className="bb-ask-box" />
             <i className="bb-star" data-c="pink" />
             <i className="bb-star" data-c="cyan" />
             <i className="bb-star" data-c="yellow" />
@@ -160,7 +160,7 @@ function BoxFlow({
             <>
               <button type="button" className="fh-btn fh-btn-primary fh-btn-block bb-go" disabled={stock.unopened === 0 || busy} onClick={unlock}>
                 {stock.unopened === 0 ? (
-                  "No boxes to open"
+                  "No Boxes to Open"
                 ) : busy ? (
                   "Unlocking…"
                 ) : (
@@ -172,7 +172,7 @@ function BoxFlow({
               {failed && <p className="bb-error">Could not open the box. Try again.</p>}
               <Dialog.Close asChild>
                 <button type="button" className="bb-later">
-                  Not now
+                  Not Now
                 </button>
               </Dialog.Close>
             </>
@@ -228,7 +228,7 @@ function Box3D({ group }: { group: BoxGroup }) {
         <span className="bb-foot fh-mono">{info.range ?? HIDDEN_RANGE}</span>
       </span>
       <span className="bb-face bb-side bb-right">
-        <span className="bb-side-title fh-slab">Could be</span>
+        <span className="bb-side-title fh-slab">Could Be</span>
         <span className="bb-dots">
           <i data-c="coin">
             <Coins size={14} strokeWidth={2.4} />
@@ -349,7 +349,7 @@ function Reveal({
       <div className="bb-ractions">
         {canOpenAnother && (
           <button type="button" className="fh-btn fh-btn-primary" disabled={busy} onClick={onOpenAnother}>
-            {busy ? "Unlocking…" : "Open another"}
+            {busy ? "Unlocking…" : "Open Another"}
           </button>
         )}
         <Dialog.Close asChild>

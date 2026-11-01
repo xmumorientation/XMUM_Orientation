@@ -27,7 +27,7 @@ function ErrorScreen({ title, message }: { title: string; message: string }) {
       <h1 className="mt-6 text-2xl font-bold text-white">{title}</h1>
       <p className="mt-3 text-white/70">{message}</p>
       <a href="/dashboard" className="btn-primary mt-10 min-w-[180px]">
-        Back to home
+        Back to Home
       </a>
     </main>
   );
@@ -36,44 +36,44 @@ function ErrorScreen({ title, message }: { title: string; message: string }) {
 // FR-9.4: clear, non-technical error copy
 const ERROR_SCREENS: Record<string, { title: string; message: string }> = {
   TOKEN_USED: {
-    title: "Code already used",
+    title: "Code Already Used",
     message: "This activation card has already been tapped.",
   },
   TEST_RUN_RESET: {
-    title: "Test link expired",
+    title: "Test Link Expired",
     message: "This NFC test has ended. Ask an Admin to prepare a new test sticker.",
   },
   ALREADY_ACTIVATED: {
-    title: "Already lit!",
+    title: "Already Lit!",
     message: "This projector has already been lit by another group.",
   },
   SET_NOT_REDEEMED: {
-    title: "Not verified yet",
+    title: "Not Verified Yet",
     message:
       "Your group's puzzle set hasn't been verified by the Guardian at this projector. Find the Guardian first!",
   },
   NOT_ENDGAME: {
-    title: "Too early!",
+    title: "Too Early!",
     message: "Activation is not open yet. Hold on to your card and follow the committee’s instructions!",
   },
   GROUP_ALREADY_ACTIVATED_ONE: {
-    title: "One projector per group",
+    title: "One Projector per Group",
     message: "Your group has already lit a projector. Amazing work!",
   },
   NFC_DISABLED: {
-    title: "Activation paused",
+    title: "Activation Paused",
     message: "Activation is temporarily paused by the committee. Try again shortly.",
   },
   NOT_IN_GROUP: {
-    title: "No group yet",
+    title: "No Group Yet",
     message: "Your account isn't assigned to a group. See the committee for help.",
   },
 };
 
 ERROR_SCREENS.NFC_HANDOVER_NOT_VERIFIED = ERROR_SCREENS.SET_NOT_REDEEMED;
 ERROR_SCREENS.GROUP_NOT_ASSIGNED = ERROR_SCREENS.NOT_IN_GROUP;
-ERROR_SCREENS.NFC_PUZZLES_INCOMPLETE = { title: "Key incomplete", message: "Your group needs every piece of this key before activating. Check your Items and return to the Guardian." };
-ERROR_SCREENS.PERMISSION_DENIED = { title: "Facilitator account needed", message: "Ask your group's assigned Facilitator to sign in and tap this sticker." };
+ERROR_SCREENS.NFC_PUZZLES_INCOMPLETE = { title: "Key Incomplete", message: "Your group needs every piece of this key before activating. Check your Items and return to the Guardian." };
+ERROR_SCREENS.PERMISSION_DENIED = { title: "Facilitator Account Needed", message: "Ask your group's assigned Facilitator to sign in and tap this sticker." };
 
 export default async function ActivatePage({
   searchParams,
@@ -85,7 +85,7 @@ export default async function ActivatePage({
   if (!t) {
     return (
       <ErrorScreen
-        title="Invalid NFC link"
+        title="Invalid NFC Link"
         message="This link is missing its NFC code."
       />
     );
@@ -95,7 +95,7 @@ export default async function ActivatePage({
   if (!verified.valid) {
     return (
       <ErrorScreen
-        title="Invalid NFC code"
+        title="Invalid NFC Code"
         message="This code isn't recognised. Copied or forwarded links don't work — tap the real sticker!"
       />
     );
@@ -130,7 +130,7 @@ export default async function ActivatePage({
   // so the service client cannot bypass role, group or inventory checks.
   const { data: card, error: cardError } = await supabaseAdmin()
     .from("nfc_tokens").select("test_run_id, location").eq("token_hash", tokenHash).maybeSingle();
-  if (cardError || !card || card.location !== location) return <ErrorScreen title="Can't light this projector" message="Ask the Guardian to check this sticker, then try again." />;
+  if (cardError || !card || card.location !== location) return <ErrorScreen title="Can't Light This Projector" message="Ask the Guardian to check this sticker, then try again." />;
 
   async function parkPower(): Promise<FunfairPower | null> {
     const result = await supabase.rpc("fn_funfair_state");
@@ -151,7 +151,7 @@ export default async function ActivatePage({
     const screen = code
       ? ERROR_SCREENS[code]
       : {
-          title: "Lighting failed",
+          title: "Lighting Failed",
           message: `Something went wrong lighting ${await placeName()}. Find a committee member.`,
         };
     return <ErrorScreen title={screen.title} message={screen.message} />;

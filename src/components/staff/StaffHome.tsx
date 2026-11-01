@@ -18,7 +18,8 @@ import { groupSwatch, VORTEXA_THEME } from "@/components/freshie/groupTheme";
 import { nexusBody, vxDisplay, vxSlab } from "@/components/home/fonts";
 import { priceText, useMyBlindBoxes, type MyBlindBoxSeller } from "@/components/BlindBoxCard";
 import { GroupBadge } from "@/components/GroupBadge";
-import { usePhaseTimer } from "@/components/PhaseTimerProvider";
+import { usePhases } from "@/components/PhaseTimerProvider";
+import { useScoreboard } from "@/components/useScoreboard";
 import { useProfile } from "@/components/ProfileProvider";
 import { OPS_CHIP } from "@/components/staff/OpsHeader";
 import { supabaseBrowser } from "@/lib/supabase/client";
@@ -38,7 +39,7 @@ import "./staff-home.css";
 
 const STOPS = [
   { id: "sh-welcome", label: "Welcome" },
-  { id: "sh-bb", label: "Blind box" },
+  { id: "sh-bb", label: "Blind Box" },
   { id: "sh-scores", label: "Scores" },
   { id: "sh-tools", label: "Tools" },
 ] as const;
@@ -50,43 +51,13 @@ type HomeGroup = { id: number; name: string; color: string | null; token_balance
 /** Groups and their tokens, live: the scoreboard and the sky's cabins. Reads
  *  fn_scoreboard() because a GM may not select the groups table (0002 RLS); the
  *  30-second refresh covers the realtime events RLS does not send to a GM. */
-function useGroups() {
-  const supabase = useMemo(() => supabaseBrowser(), []);
-  const [groups, setGroups] = useState<HomeGroup[] | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    async function load() {
-      const { data: gs } = await supabase.rpc("fn_scoreboard");
-      if (!active || !gs) return;
-      setGroups(
-        (gs as HomeGroup[])
-          .map((g) => ({ ...g, token_balance: g.token_balance ?? 0 }))
-          .sort((a, b) => a.id - b.id)
-      );
-    }
-    load();
-    const refreshVisible = () => { if (document.visibilityState === "visible") void load(); };
-    const timer = window.setInterval(refreshVisible, 30000);
-    document.addEventListener("visibilitychange", refreshVisible);
-    const channel = supabase
-      .channel(`sh-groups-${crypto.randomUUID()}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "groups" }, load)
-      .subscribe();
-    return () => {
-      active = false;
-      window.clearInterval(timer);
-      document.removeEventListener("visibilitychange", refreshVisible);
-      supabase.removeChannel(channel);
-    };
-  }, [supabase]);
-
-  return groups;
+function useGroups(): HomeGroup[] | null {
+  return useScoreboard() ?? null;
 }
 
 /** Shown instead of the PhaseCard while no game phase runs, so the crew knows the game is not on. */
 function GameIdle() {
-  const { phases } = usePhaseTimer();
+  const { phases } = usePhases();
   const next = phases.find((p) => p.state === "pending");
   return (
     <div className="sh-idle" role="status">
@@ -100,7 +71,7 @@ function GameIdle() {
 }
 
 function WelcomeStop({ name, role }: { name: string; role: UserRole }) {
-  const { phases } = usePhaseTimer();
+  const { phases } = usePhases();
   const live = phases.some((p) => p.state === "active" || p.state === "paused");
   return (
     <section id="sh-welcome" className="fh-stop fh-center" aria-labelledby="sh-welcome-title">
@@ -215,7 +186,7 @@ function SellerBox({
   const copyId = row ? row.id : s.id;
   return (
     <li className="sh-bb">
-      <span className="sh-bb-who fh-mono">Your own boxes</span>
+      <span className="sh-bb-who fh-mono">Your Own Boxes</span>
       {status ? (
         <p className="sh-bb-state" data-tone={status.off ? "off" : undefined}>{status.text}</p>
       ) : (
@@ -258,7 +229,7 @@ function SellerBox({
               {shown && !sold && (
                 <button type="button" className="fh-btn fh-btn-ghost sh-bb-copy" onClick={() => copy(copyId, shown.url)}>
                   {copied === copyId ? <Check size={16} aria-hidden /> : <Copy size={16} aria-hidden />}
-                  {copied === copyId ? "Copied" : "Copy link"}
+                  {copied === copyId ? "Copied" : "Copy Link"}
                 </button>
               )}
             </>
@@ -324,14 +295,14 @@ function ScoresStop({ groups }: { groups: HomeGroup[] | null }) {
 }
 
 const TOOLS = [
-  { href: "/map", Icon: Map, title: "Campus map", text: "Stations and group locations" },
+  { href: "/map", Icon: Map, title: "Campus Map", text: "Stations and group locations" },
   { href: "/schedule", Icon: CalendarDays, title: "Schedule", text: "The two-day programme" },
   { href: "/token", Icon: Coins, title: "Scoreboard", text: "Live tokens and puzzle pieces" },
 ];
 
 const GM_TOOLS = [
-  { href: "/gm", Icon: Flag, title: "Station panel", text: "Results, rewards and station status" },
-  { href: "/map", Icon: Map, title: "Campus map", text: "Every station and its status" },
+  { href: "/gm", Icon: Flag, title: "Station Panel", text: "Results, rewards and station status" },
+  { href: "/map", Icon: Map, title: "Campus Map", text: "Every station and its status" },
   { href: "/schedule", Icon: CalendarDays, title: "Schedule", text: "The two-day programme" },
   { href: "/token", Icon: Coins, title: "Scoreboard", text: "Live tokens and puzzle counts" },
 ];

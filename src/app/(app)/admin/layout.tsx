@@ -30,7 +30,7 @@ const SECTIONS: Section[] = [
     label: "Live",
     icon: Radio,
     tabs: [
-      { href: "/admin", label: "Live control" },
+      { href: "/admin", label: "Live Control" },
       { href: "/admin/audit", label: "Audit" },
     ],
   },
@@ -48,7 +48,7 @@ const SECTIONS: Section[] = [
       { href: "/admin/token", label: "Tokens" },
       { href: "/admin/stations", label: "Stations" },
       { href: "/admin/puzzles", label: "Puzzles" },
-      { href: "/admin/blindbox", label: "Blind box" },
+      { href: "/admin/blindbox", label: "Blind Box" },
       { href: "/admin/nfc", label: "NFC" },
       { href: "/admin/funfair", label: "Funfair" },
     ],

@@ -1,5 +1,5 @@
 -- ═══════════════════════════════════════════════════════════════════════
--- Migration 0103: Admin → Live control → Game master (run after 0102).
+-- Migration 0107: Admin → Live control → Game master (run after 0102).
 -- Plan: docs/plans/admin-game-master.md
 --
 -- D-day backup tools for Admin only (is_admin()). They do not look at the

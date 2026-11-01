@@ -56,7 +56,7 @@ function optionNote(o: BlindBoxOption, balance: number): string {
 }
 
 // Scan page for a signed-in Freshie group, in the group's own colour. The box
-// is the blind box poster art (public/blind-box-poster.jpg), its dark edges
+// is the blind box poster art (public/blind-box-poster.webp), its dark edges
 // faded into the page. It shows
 // which group is buying and what the seller has; the price is charged and a
 // box taken only when BUY is tapped. The box then waits in the group's Items,
@@ -142,7 +142,7 @@ export function BlindBoxBuy({
           <div className="bbuy-scene" data-stage="sealed" key={bought ? "bought" : "shown"}>
             <span className="bbuy-light" aria-hidden />
             <Image
-              src="/blind-box-poster.jpg"
+              src="/blind-box-poster.webp"
               alt=""
               width={640}
               height={640}
@@ -190,10 +190,10 @@ export function BlindBoxBuy({
             </p>
             <div className="bbuy-actions">
               <Link href="/inventory" className="fh-btn fh-btn-primary fh-btn-block">
-                Open it in Items <ArrowRight size={18} aria-hidden />
+                Open It in Items <ArrowRight size={18} aria-hidden />
               </Link>
               <Link href="/scan" className="fh-btn fh-btn-ghost fh-btn-block">
-                Scan another QR
+                Scan Another QR
               </Link>
             </div>
           </section>
@@ -240,7 +240,7 @@ export function BlindBoxBuy({
                     disabled={busyId !== null || o.status !== "ok"}
                     className="fh-btn fh-btn-primary bbuy-btn"
                   >
-                    {busyId === o.assignment_id ? "…" : spot ? "Claim it" : "Buy"}
+                    {busyId === o.assignment_id ? "…" : spot ? "Claim It" : "Buy"}
                   </button>
                 </li>
               ))}

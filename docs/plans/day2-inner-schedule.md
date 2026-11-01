@@ -6,7 +6,7 @@ Measured from the Day 2 game's real start (manual Start or autostart 0101).
 
 | Segment | Default (min) | Station game (fee + piece) | Blind box | Funfair (light the map) |
 |---|---|---|---|---|
-| Normal 1 | 0 – 60 | on | off | off |
+| Normal 1 | 0 – 60 | on | on (off until 0111) | off |
 | CHALLENGE MODE | 60 – 90 | on | on | off |
 | Normal 2 | 90 – 120 | on | on | off |
 | Funfair | 120 – end | on | on | on |
@@ -25,7 +25,7 @@ Remove Pause/Resume: Day 1 and Day 2 games (GameToggles), schedule items (NowOnW
 ## What each switch blocks (server enforced)
 
 - **Station game off**: `fn_day2_challenge` refused (no fee, no piece). GM Station Check step shows the reason.
-- **Blind box off**: `fn_bb_buy`, `fn_bb_buy_at`, `fn_bb_seller_preview` refused, nothing charged. `fn_bb_open` allowed. HOF/HOGM/Committee QR greyed with reason "Opens in challenge mode" or "Switched off by Admin". Freshie scan shows the reason.
+- **Blind box off**: `fn_bb_buy`, `fn_bb_buy_at`, `fn_bb_seller_preview` refused, nothing charged. `fn_bb_open` allowed. HOF/HOGM/Committee QR greyed with reason "Opens when the Day 2 game starts" (before 0111: "Opens in challenge mode") or "Switched off by Admin". Freshie scan shows the reason.
 - **Funfair off**: every lighting path refused: real NFC (live `fn_nfc_v2_redeem_nfc_card`), `fn_activate_projector`, `fn_activate_projector_manual`, test cards, demo `fn_demo_activate_projector`. Replaces `phase_active('endgame')` checks (also dropped from `fn_day2_challenge`).
 
 ## CHALLENGE MODE display

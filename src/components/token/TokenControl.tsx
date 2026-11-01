@@ -484,7 +484,7 @@ export default function TokenControl({ scoreboardOnly = false }: { scoreboardOnl
               )}
             >
               <CheckCircle2 size={15} />
-              {dirtyRuleKeys.length > 0 ? `Save ${dirtyRuleKeys.length} change${dirtyRuleKeys.length > 1 ? "s" : ""}` : "Saved"}
+              {dirtyRuleKeys.length > 0 ? `Save ${dirtyRuleKeys.length} Change${dirtyRuleKeys.length > 1 ? "s" : ""}` : "Saved"}
             </button>
           )}
         </div>
@@ -500,7 +500,7 @@ export default function TokenControl({ scoreboardOnly = false }: { scoreboardOnl
             >
               <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-300">
                 {day === 1 ? <Trophy size={14} className="text-emerald-400" /> : <Swords size={14} className="text-rose-400" />}
-                {day === 1 ? "Day 1 rewards" : "Day 2 entry fee (per station tier)"}
+                {day === 1 ? "Day 1 Rewards" : "Day 2 Entry Fee (per Station Tier)"}
               </span>
               <div className={cn("grid gap-2", day === 1 ? "grid-cols-2" : "grid-cols-3")}>
                 {TOKEN_RULES.filter((r) => r.day === day).map((rule) => {
@@ -858,6 +858,10 @@ export default function TokenControl({ scoreboardOnly = false }: { scoreboardOnl
                   <option value="DAY2_ENTRY">DAY2_ENTRY</option>
                   <option value="MANUAL_ADMIN_ADJUST">MANUAL_ADMIN_ADJUST</option>
                   <option value="MANUAL_GM_ADJUST">MANUAL_GM_ADJUST</option>
+                  {/* A type outside the list (a GM's undo is TOKEN_REVERSAL) stays selectable, so saving does not retype it. */}
+                  {!["DAY1_GAME", "DAY2_ENTRY", "MANUAL_ADMIN_ADJUST", "MANUAL_GM_ADJUST"].includes(editLogForm.transactionType) && (
+                    <option value={editLogForm.transactionType}>{editLogForm.transactionType}</option>
+                  )}
                 </select>
               </div>
 

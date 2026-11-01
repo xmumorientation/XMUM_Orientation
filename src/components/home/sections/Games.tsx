@@ -24,7 +24,7 @@ export function Games() {
     <section id="games" className="vx-sec" aria-labelledby="games-title">
       <div className="vx-inner">
         <div className="vx-games-head vx-rise">
-          <h2 id="games-title" className="vx-h2">How the game works</h2>
+          <h2 id="games-title" className="vx-h2">How the Game Works</h2>
           <p className="vx-lead">Four steps. One team.</p>
         </div>
 

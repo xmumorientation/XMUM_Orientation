@@ -35,7 +35,7 @@ export function Committees() {
     <section id="committees" className="vx-sec" aria-labelledby="committees-title">
       <div className="vx-inner">
         <div className="vx-comm-head vx-rise">
-          <h2 id="committees-title" className="vx-h2">Meet the crew</h2>
+          <h2 id="committees-title" className="vx-h2">Meet the Crew</h2>
           <p className="vx-lead">Ten committees running the park. Tap one to see what they do.</p>
         </div>
 
@@ -75,7 +75,7 @@ export function Committees() {
                 <dl>
                   {activeCommittee.head && (
                     <div>
-                      <dt className="vx-mono">Committee head</dt>
+                      <dt className="vx-mono">Committee Head</dt>
                       <dd>{activeCommittee.head}</dd>
                     </div>
                   )}

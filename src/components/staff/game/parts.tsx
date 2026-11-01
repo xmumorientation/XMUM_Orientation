@@ -132,7 +132,7 @@ export function ConfirmSheet({
         <div className="gc-sheet-body">{body}</div>
         {typeToConfirm && (
           <label className="gc-field">
-            <span>Type {typeToConfirm} to confirm</span>
+            <span>Type {typeToConfirm} to Confirm</span>
             <input
               className="gc-input gc-input-danger"
               value={typed}

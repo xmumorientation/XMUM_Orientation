@@ -86,11 +86,11 @@ export function FunfairLightGroup({
   return (
     <div className="fl">
       <div className="fl-head">
-        <b>Light a key for a group</b>
+        <b>Light a Key for a Group</b>
         <span>{group ? group.name : "Pick a group"} · no card tap or Guardian check</span>
         {canReplace && (
           <button type="button" className="fl-btn fl-reset" data-kind="warn" disabled={busy || !states?.some((s) => s.activated_at)} onClick={() => void resetAll()}>
-            Reset all keys
+            Reset All Keys
           </button>
         )}
       </div>
@@ -121,14 +121,14 @@ export function FunfairLightGroup({
                 {lit ? (by ? `Lit by ${nameOf(by)}` : "Lit") : blockedByOwn ? `${group!.name} already lit ${places[own!.location].name}` : "Not lit yet"}
               </p>
               {mine ? (
-                <button type="button" className="fl-btn" disabled>Lit by this group</button>
+                <button type="button" className="fl-btn" disabled>Lit by This Group</button>
               ) : lit || blockedByOwn ? (
                 canReplace ? (
                   <button type="button" className="fl-btn" data-kind="warn" disabled={busy || !group} onClick={() => void light(loc, true)}>
-                    Take over for {group?.name ?? "group"}
+                    Take Over for {group?.name ?? "group"}
                   </button>
                 ) : (
-                  <button type="button" className="fl-btn" disabled>{lit ? "Already lit" : "Group has a key"}</button>
+                  <button type="button" className="fl-btn" disabled>{lit ? "Already Lit" : "Group Has a Key"}</button>
                 )
               ) : (
                 <button type="button" className="fl-btn" data-kind="go" disabled={busy || !group || !states} onClick={() => void light(loc, false)}>

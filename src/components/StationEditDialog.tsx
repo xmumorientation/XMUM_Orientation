@@ -104,7 +104,7 @@ export function StationEditDialog({
 
   return (
     <Dialog open={station !== null} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className={className} title={station ? `Edit ${station.code}` : "Edit station"}>
+      <DialogContent className={className} title={station ? `Edit ${station.code}` : "Edit Station"}>
         <form onSubmit={save} className="space-y-3">
           <ErrorBanner message={error} />
           <label className="block text-sm">
@@ -117,7 +117,7 @@ export function StationEditDialog({
             />
           </label>
           <label className="block text-sm">
-            <span className="mb-1 block font-semibold">Game or purpose</span>
+            <span className="mb-1 block font-semibold">Game or Purpose</span>
             <input
               className="input text-sm"
               list="station-edit-games"
@@ -133,7 +133,7 @@ export function StationEditDialog({
           </label>
           <div className="grid grid-cols-2 gap-2">
             <label className="block text-sm">
-              <span className="mb-1 block font-semibold">Groups at once</span>
+              <span className="mb-1 block font-semibold">Groups at Once</span>
               <input
                 type="number"
                 min="1"
@@ -190,7 +190,7 @@ export function StationEditDialog({
             </label>
           </div>
           <button type="submit" disabled={saving} className="btn-primary w-full">
-            {saving ? "Saving…" : "Save station"}
+            {saving ? "Saving…" : "Save Station"}
           </button>
         </form>
       </DialogContent>

@@ -60,7 +60,7 @@ export default function AdminPuzzlesPage() {
   return (
     <div className="space-y-4">
       <PageTitle
-        title="Projectors and puzzle pictures"
+        title="Projectors and Puzzle Pictures"
         subtitle="Each projector's place, and a picture of where its NFC card is. A group sees them once it has all 5 pieces and taps the key."
       />
       <ErrorBanner message={error} />
@@ -74,7 +74,7 @@ export default function AdminPuzzlesPage() {
             <div className="flex items-center justify-between">
               <h2 className="font-semibold">{PROJECTOR_CODE_NAMES[loc]} / {places[loc].name}</h2>
               <label className="btn-secondary cursor-pointer text-sm">
-                {busyLoc === loc ? "Uploading…" : url ? "Replace image" : "Upload image"}
+                {busyLoc === loc ? "Uploading…" : url ? "Replace Image" : "Upload Image"}
                 <input
                   type="file"
                   accept="image/*"

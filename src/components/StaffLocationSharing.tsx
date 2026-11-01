@@ -132,8 +132,8 @@ export function StaffLocationSwitch() {
   const on = state === "waiting" || state === "sharing" || state === "stopping" || state === "stopFailed";
   return <section className="card mb-3 p-3">
     <div className="flex items-center justify-between gap-3">
-      <div><p className="font-semibold">Share my location</p><p className="text-xs text-ink-faint">{state === "off" ? "Off / Your location is private" : state === "sharing" ? "Sharing while this app is open" : state === "stopFailed" ? "Phone tracking stopped / Pin removal pending" : state === "stopping" ? "Removing your location…" : "Waiting for your phone’s location…"}</p></div>
-      <button type="button" role="switch" aria-checked={on} aria-label="Share my location" className="btn-secondary min-h-[44px] px-4" disabled={state === "starting" || state === "stopping"} onClick={() => void toggle()}>{on ? "Stop sharing" : "Share location"}</button>
+      <div><p className="font-semibold">Share My Location</p><p className="text-xs text-ink-faint">{state === "off" ? "Off / Your location is private" : state === "sharing" ? "Sharing while this app is open" : state === "stopFailed" ? "Phone tracking stopped / Pin removal pending" : state === "stopping" ? "Removing your location…" : "Waiting for your phone’s location…"}</p></div>
+      <button type="button" role="switch" aria-checked={on} aria-label="Share my location" className="btn-secondary min-h-[44px] px-4" disabled={state === "starting" || state === "stopping"} onClick={() => void toggle()}>{on ? "Stop Sharing" : "Share Location"}</button>
     </div>
     {error && <p role="alert" className="mt-2 text-sm">{error}</p>}
     <p className="mt-2 text-xs text-ink-faint">Staff and Facilitators can see your pin. Locked or inactive phones may stop updating; pins disappear after 2 minutes without an update.</p>

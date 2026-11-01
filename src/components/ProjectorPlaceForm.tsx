@@ -57,7 +57,7 @@ export function ProjectorPlaceForm({
         />
       </label>
       <label className={dark ? "gc-field" : "block"}>
-        <span className={dark ? undefined : "label"}>Short name (on small cards)</span>
+        <span className={dark ? undefined : "label"}>Short Name (on Small Cards)</span>
         <input
           className={input}
           value={short}
@@ -71,7 +71,7 @@ export function ProjectorPlaceForm({
         className={dark ? "gc-btn gc-btn-primary" : "btn-secondary px-4 text-sm"}
         disabled={busy || !changed}
       >
-        {busy ? "Saving…" : "Save place"}
+        {busy ? "Saving…" : "Save Place"}
       </button>
     </form>
   );

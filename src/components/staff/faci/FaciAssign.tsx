@@ -124,7 +124,7 @@ export function FaciAssign({ readOnly = false }: { readOnly?: boolean }) {
       <Sheet
         open={historyOf !== null}
         onClose={() => setHistoryOf(null)}
-        title={historyOf ? `Recent changes / ${historyOf.display_name?.trim() || historyOf.name}` : "Recent changes"}
+        title={historyOf ? `Recent Changes / ${historyOf.display_name?.trim() || historyOf.name}` : "Recent Changes"}
         wide
       >
         {historyOf && <GroupLog groupId={historyOf.id} />}

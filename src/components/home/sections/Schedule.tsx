@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { EVENTS } from "../data";
 import { Star, Gamepad2, Info, UtensilsCrossed } from "lucide-react";
 
-import { supabaseBrowser } from "@/lib/supabase/client";
+import { useScheduleDays, useScheduleItems } from "@/components/useScheduleFeed";
 import type { ScheduleItem } from "@/lib/types";
 
 // The tag an Admin types in an entry's description (same rule as the
@@ -51,39 +51,15 @@ function whenLabel(item: ScheduleItem) {
 // Days and dates come from EVENTS (they are fixed). The entries for each day
 // come from schedule_items, which Admin edits; an edit shows up here live.
 export function Schedule() {
-  const supabase = useMemo(() => supabaseBrowser(), []);
   const [activeDayIdx, setActiveDayIdx] = useState(0);
   // null while loading. A failed load counts as "no entries yet".
-  const [items, setItems] = useState<ScheduleItem[] | null>(null);
-  const [dates, setDates] = useState<Record<string, string>>({});
+  const items = useScheduleItems() ?? null;
+  const days = useScheduleDays();
+  const dates = useMemo<Record<string, string>>(
+    () => Object.fromEntries((days ?? []).map((d) => [d.day_label, d.day_date])),
+    [days]
+  );
   const currentDay = EVENTS[activeDayIdx] ?? EVENTS[0];
-
-  useEffect(() => {
-    let active = true;
-    async function load() {
-      const { data } = await supabase
-        .from("schedule_items")
-        .select("*")
-        .order("sort_order")
-        .order("id");
-      if (active) setItems((data as ScheduleItem[]) ?? []);
-    }
-    async function loadDates() {
-      const { data } = await supabase.from("schedule_days").select("day_label, day_date");
-      if (active && data) setDates(Object.fromEntries(data.map((d) => [d.day_label, d.day_date as string])));
-    }
-    load();
-    loadDates();
-    const channel = supabase
-      .channel("vx-schedule")
-      .on("postgres_changes", { event: "*", schema: "public", table: "schedule_items" }, load)
-      .on("postgres_changes", { event: "*", schema: "public", table: "schedule_days" }, loadDates)
-      .subscribe();
-    return () => {
-      active = false;
-      supabase.removeChannel(channel);
-    };
-  }, [supabase]);
 
   const dayItems = (items ?? []).filter((item) => item.day_label === currentDay.day);
   const dateLine = dayDateLine(currentDay, items, dates);

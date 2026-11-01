@@ -51,7 +51,7 @@ describe("Day 2 Schedule", () => {
     render(<Day2Schedule onError={noop} onNotice={noop} />);
     confirm.mockReturnValueOnce(false);
     await userEvent.click(screen.getAllByRole("button", { name: /start now/i })[0]);
-    expect(confirm).toHaveBeenCalledWith("Start normal now? It holds until Back to auto.");
+    expect(confirm).toHaveBeenCalledWith("Start normal now? It holds until Back to Auto.");
     expect(rpcCalls("fn_day2_control")).toHaveLength(0);
     await userEvent.click(screen.getAllByRole("button", { name: /start now/i })[0]);
     await waitFor(() => expect(rpcCalls("fn_day2_control")).toEqual([{ p_action: "start_segment", p_segment: "normal1" }]));
@@ -66,7 +66,7 @@ describe("Day 2 Schedule", () => {
 
   it("AC-9: the three slider handles and the original heading stay", () => {
     render(<Day2Schedule onError={noop} onNotice={noop} />);
-    expect(screen.getByRole("heading", { name: "Day 2 inner schedule" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Day 2 Inner Schedule" })).toBeTruthy();
     expect(screen.getAllByRole("slider").map((s) => s.getAttribute("aria-label"))).toEqual(["Challenge mode starts", "Challenge mode ends", "Funfair starts"]);
   });
 });

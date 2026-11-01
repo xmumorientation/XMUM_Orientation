@@ -20,7 +20,8 @@ import {
 
 // The raised ground under the A-row (geo.ts PLATEAU): a mesh of its top and slopes that wears the ground's canvas like
 // the flat ground does, and the stone on it: the terrace's steps down to the lawn with stairs cut through them, the
-// steps down behind the blocks, the walls beside them, and a stone base under each block.
+// steps down behind the blocks and the landings before them (they carry the back porches), the walls beside them, and a
+// stone base under each block.
 
 type V3 = [number, number, number];
 
@@ -28,7 +29,7 @@ type V3 = [number, number, number];
 const TIERS = 14;
 const STEPS = 28;
 const BACK_STEPS = 28;
-/** The steps behind the blocks start at the top of the block's plinth. */
+/** The steps behind the blocks, and the landings before them, start at the top of the block's plinth. */
 const BACK_TOP = PLATEAU_H + BLOCK_PLINTH.h;
 /** Walls beside the steps: how far they stand above them, and how thick they are (world units). */
 const PARAPET = 0.6 * UNITS_PER_M;
@@ -135,14 +136,15 @@ function stepsGeometry() {
     }
   }
 
-  // from the top of the block's plinth, right at it, down to the lower ground
-  for (const { top, down, across, half, run } of NORTH_STAIRS) {
+  // from the top of the block's plinth, or the landing past it, down to the lower ground
+  for (const { top, down, across, half, run, landing } of NORTH_STAIRS) {
     const pt = (s: number, a: number, y: number): V3 => [
       top[0] + down[0] * s + across[0] * a,
       y,
       top[1] + down[1] * s + across[1] * a,
     ];
     const facing: V3 = [down[0], 0, down[1]];
+    if (landing) quad(pt(-landing, -half, BACK_TOP), pt(-landing, half, BACK_TOP), pt(0, half, BACK_TOP), pt(0, -half, BACK_TOP), up);
     for (let k = 0; k < BACK_STEPS; k++) {
       const [s0, s1] = [(run * k) / BACK_STEPS, (run * (k + 1)) / BACK_STEPS];
       const [y, below] = [BACK_TOP * (1 - k / BACK_STEPS), BACK_TOP * (1 - (k + 1) / BACK_STEPS)];
@@ -182,12 +184,15 @@ function stoneGeometry() {
   radial(from, WALL);
   radial(to, WALL);
 
-  for (const { top, down, across, half, run } of NORTH_STAIRS) {
+  for (const { top, down, across, half, run, landing } of NORTH_STAIRS) {
+    const at = (s: number, a: number): World => [top[0] + down[0] * s + across[0] * a, top[1] + down[1] * s + across[1] * a];
     for (const side of [-1, 1]) {
-      const a = side * (half + WALL / 2);
-      const pt = (s: number): World => [top[0] + down[0] * s + across[0] * a, top[1] + down[1] * s + across[1] * a];
+      const pt = (s: number) => at(s, side * (half + WALL / 2));
       parts.push(wall(pt(0), pt(run + 0.4 * UNITS_PER_M), WALL, BACK_TOP + PARAPET, PARAPET));
+      if (landing) parts.push(wall(pt(-landing), pt(0), WALL, BACK_TOP + PARAPET, BACK_TOP + PARAPET));
     }
+    // the landing's stone base, down to the lower ground (the bank falls away under it)
+    if (landing) parts.push(wall(at(-landing, 0), at(0, 0), 2 * (half + WALL), BACK_TOP - 0.02, BACK_TOP - 0.02));
   }
 
   // under each block's plinth, as drawn: the courtyard blocks are smaller than their footprint, A3 fills its own

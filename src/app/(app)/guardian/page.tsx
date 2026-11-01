@@ -147,7 +147,7 @@ export default function GuardianPage() {
   return (
     <div className="space-y-4">
       <PageTitle
-        title="Guardian verification"
+        title="Guardian Verification"
         subtitle="Verify puzzle sets and issue NFC cards"
       />
       <ErrorBanner message={error} />
@@ -155,7 +155,7 @@ export default function GuardianPage() {
 
       <Card className="space-y-3">
         <div>
-          <label className="label">Projector location</label>
+          <label className="label">Projector Location</label>
           <div className="grid grid-cols-3 gap-2">
             {PROJECTOR_LOCATIONS.map((loc) => (
               <button
@@ -199,7 +199,7 @@ export default function GuardianPage() {
         <Card className="space-y-3">
           <div className="flex items-center justify-between">
             <span className="font-semibold">
-              {places[location].name} set
+              {places[location].name} Set
             </span>
             <span
               className={cn(
@@ -225,7 +225,7 @@ export default function GuardianPage() {
             <>
               <div>
                 <label className="label" htmlFor="nfcNote">
-                  Which physical NFC card are you handing over?
+                  Which Physical NFC Card Are You Handing Over?
                 </label>
                 <input
                   id="nfcNote"
@@ -240,7 +240,7 @@ export default function GuardianPage() {
                 onClick={redeem}
                 className="btn-primary w-full"
               >
-                Confirm set and verify card handover
+                Confirm Set and Verify Card Handover
               </button>
             </>
           ) : (
@@ -258,14 +258,14 @@ export default function GuardianPage() {
               className="btn-danger w-full"
             >
               <TriangleAlert size={20} strokeWidth={1.75} />
-              Light manually (sticker damaged)
+              Light Manually (Sticker Damaged)
             </button>
           )}
         </Card>
       )}
 
       <Card>
-        <h2 className="mb-2 font-semibold">Projector states</h2>
+        <h2 className="mb-2 font-semibold">Projector States</h2>
         <ul className="space-y-1 text-sm">
           {projectors.map((p) => (
             <li key={p.location} className="flex justify-between">
@@ -277,8 +277,8 @@ export default function GuardianPage() {
               >
                 {/* Which group: Admin and HOGM only (0096). */}
                 {p.activated_at
-                  ? p.activated_by_group != null ? `Lit by group ${p.activated_by_group}` : "Lit"
-                  : "Not lit yet"}
+                  ? p.activated_by_group != null ? `Lit by Group ${p.activated_by_group}` : "Lit"
+                  : "Not Lit Yet"}
               </span>
             </li>
           ))}

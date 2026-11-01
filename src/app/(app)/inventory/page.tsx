@@ -93,9 +93,10 @@ function LiveItems() {
         canOpenBoxes={demo === null && profile.role === "freshie"}
         onOpenBox={blind.openBox}
         sample={demo !== null}
+        hideStatus
       />
       <button type="button" className="fi-replay" onClick={replay}>
-        Replay demo
+        Replay Demo
       </button>
     </>
   );
@@ -167,7 +168,7 @@ function ItemsPreview() {
       />
       {scenario === "complete" && (
         <button type="button" className="fi-replay" onClick={() => setRun((n) => n + 1)}>
-          Replay demo
+          Replay Demo
         </button>
       )}
     </>

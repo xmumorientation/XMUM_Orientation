@@ -2,7 +2,7 @@
 
 import { Html } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { MapControls as MapControlsImpl } from "three-stdlib";
 
 import { parseFunfair, type FunfairPower } from "@/lib/funfair";
@@ -11,8 +11,11 @@ import { MODES, type Mode } from "./atmosphere";
 import CampusScene, { type CameraView } from "./CampusScene";
 
 import { GPS_MARKERS } from "./geo";
+import type { LiveCourt } from "./tennis/board";
 import { courtView, TENNIS_COURTS } from "./tennis/court";
 import { TennisDemo } from "./tennis/TennisDemo";
+import type { Game, TennisOptions } from "./tennis/TennisGame";
+import type { Spectator } from "./tennis/TennisLive";
 import { prefersLite } from "./webgl";
 
 // DRAFT (map-3d-draft branch, not for main): the /map3d demo page. Wraps
@@ -31,8 +34,12 @@ type Demo = {
    * the funfair, like the real map (on while all three zones are on).
    */
   concert: boolean | "flip" | undefined;
-  /** The tennis courts' looping rally (the tennis game's batch T1a), with the broadcast view's lens. */
-  tennis: { fov: number } | null;
+  /** The tennis courts' looping rally (the tennis game's batch T1a), with the broadcast view's lens; `at` holds it. */
+  tennis: { fov: number; at: number | null } | null;
+  /** The tennis game: against a bot (batch T1b), or against another tab (batch T2a). */
+  game: TennisOptions | null;
+  /** The tennis courts as everyone with the map open sees them (batch T3a): busy courts, and a match up close. */
+  watch: { net: TennisOptions["net"] } | null;
 };
 
 /**
@@ -41,7 +48,12 @@ type Demo = {
  * ?funfair=1,0,1 which funfair zones are on (west, central, east; default all on), ?concert=0|1|flip the lake
  * stage's concert (default: on while all three zones are on; flip: on 4 s after load), ?showt=<seconds>
  * (development) hold the concert at that moment, ?tennis=demo a rally on each tennis court, seen from behind the
- * middle court (unless ?cam is given).
+ * middle court (unless ?cam is given), ?tennis=bot the tennis game against a bot on the middle court (?auto=1 two
+ * bots, ?color=%23rrggbb the player's shirt), ?t=<seconds> hold the rally or the two bots' match at that moment,
+ * ?tennis=online the game against another tab of this browser (open two; ?name= the player's name, ?auto=1 a bot
+ * plays for this tab), and with ?net=realtime against any other phone, over the Supabase project's Realtime.
+ * ?tennis=watch the courts as a spectator sees them (the matches being played in other tabs, or with ?net=realtime
+ * on other phones), starting near the middle court: move the camera in and out.
  */
 function readDemo(): { demo: Demo; mode: Mode | null } {
   const q = new URLSearchParams(window.location.search);
@@ -50,7 +62,12 @@ function readDemo(): { demo: Demo; mode: Mode | null } {
   const m = q.get("mode");
   const lite = q.get("lite");
   const concert = q.get("concert");
-  const tennis = q.get("tennis") === "demo" ? courtView(TENNIS_COURTS[1], window.innerWidth / window.innerHeight) : null;
+  const tq = q.get("tennis");
+  const play = tq === "bot" || tq === "online" ? tq : null;
+  const net = q.get("net") === "realtime" ? "realtime" : "tabs";
+  const tennis = tq === "demo" || tq === "watch" || play ? courtView(TENNIS_COURTS[1], window.innerWidth / window.innerHeight) : null;
+  const held = q.get("t") === null ? NaN : Number(q.get("t"));
+  const at = Number.isFinite(held) ? held : null;
   return {
     demo: {
       camera: cam
@@ -65,7 +82,16 @@ function readDemo(): { demo: Demo; mode: Mode | null } {
       touch: window.matchMedia("(max-width: 768px)").matches,
       funfair: parseFunfair(q.get("funfair")) ?? { west: 1, central: 1, east: 1 },
       concert: concert === "1" ? true : concert === "0" ? false : concert === "flip" ? "flip" : undefined,
-      tennis: tennis && { fov: cam ? 30 : tennis.fov },
+      tennis: tq === "demo" && tennis ? { fov: cam ? 30 : tennis.fov, at } : null,
+      game: play && {
+        mode: play,
+        color: q.get("color") ?? "",
+        name: q.get("name") ?? "",
+        auto: q.get("auto") === "1",
+        at,
+        net,
+      },
+      watch: tq === "watch" ? { net } : null,
     },
     mode: m === "day" || m === "sunset" || m === "night" ? m : null,
   };
@@ -154,6 +180,10 @@ const glass: React.CSSProperties = {
   WebkitBackdropFilter: "blur(10px)",
 };
 
+const noSubscribe = () => () => {};
+const NO_COURTS: LiveCourt[] = [];
+const noCourts = () => NO_COURTS;
+
 export default function CampusMap3D() {
   const controls = useRef<MapControlsImpl>(null);
   const [demo, setDemo] = useState<Demo | null>(null);
@@ -164,8 +194,43 @@ export default function CampusMap3D() {
     setDemo(r.demo);
     if (r.mode) setMode(r.mode);
     // the names sit over the courts in the broadcast view
-    if (r.demo.tennis) setLabels(false);
+    if (r.demo.tennis || r.demo.game) setLabels(false);
   }, []);
+  // the game's code loads only when the page asks for it
+  const [tennis, setTennis] = useState<{ mod: typeof import("./tennis/TennisGame"); game: Game } | null>(null);
+  const gameOptions = demo?.game;
+  useEffect(() => {
+    if (!gameOptions) return;
+    let live = true;
+    import("./tennis/TennisGame").then((mod) => {
+      if (live) mod.createGame(gameOptions).then((game) => live && setTennis({ mod, game }));
+    });
+    return () => {
+      live = false;
+    };
+  }, [gameOptions]);
+  // the courts as a spectator sees them, loaded only when asked for too
+  const [live, setLive] = useState<{ mod: typeof import("./tennis/TennisLive"); spectator: Spectator } | null>(null);
+  const watchNet = demo?.watch?.net;
+  useEffect(() => {
+    if (!watchNet) return;
+    let on = true;
+    let made: Spectator | null = null;
+    import("./tennis/TennisLive").then((mod) =>
+      mod.createSpectator(watchNet).then((spectator) => {
+        if (!on) return spectator.board.close();
+        made = spectator;
+        setLive({ mod, spectator });
+      }),
+    );
+    return () => {
+      on = false;
+      made?.board.close();
+      setLive(null);
+    };
+  }, [watchNet]);
+  const board = live?.spectator.board;
+  const courts = useSyncExternalStore(board?.subscribe ?? noSubscribe, board?.getView ?? noCourts, board?.getView ?? noCourts);
   const touch = demo?.touch ?? false;
   const [flipped, setFlipped] = useState(false);
   useEffect(() => {
@@ -184,22 +249,30 @@ export default function CampusMap3D() {
           intro={demo.intro}
           labels={labels}
           controlsRef={controls}
+          // the game owns the camera and every touch
+          interactive={!demo.game}
           funfair={demo.funfair}
           concert={demo.concert === "flip" ? flipped : demo.concert}
+          tennisLive={courts.length > 0}
+          tiltShift={!demo.tennis && !demo.game}
         >
           {demo.gps && <GpsMarkers />}
-          {demo.tennis && <TennisDemo fov={demo.tennis.fov} />}
+          {demo.tennis && <TennisDemo fov={demo.tennis.fov} at={demo.tennis.at} />}
+          {tennis && <tennis.mod.TennisCourt game={tennis.game} />}
+          {live && <live.mod.LiveCourts spectator={live.spectator} />}
           {demo.stats && <RenderStats lite={demo.lite} />}
         </CampusScene>
       )}
+      {tennis && <tennis.mod.TennisHud game={tennis.game} />}
 
+      {/* the game has its own HUD instead */}
       <div
         style={{
           position: "absolute",
           top: 16,
           left: 16,
           right: 16,
-          display: "flex",
+          display: demo?.game ? "none" : "flex",
           justifyContent: "space-between",
           alignItems: "flex-start",
           gap: 12,
@@ -211,7 +284,7 @@ export default function CampusMap3D() {
         }}
       >
         <div style={{ minWidth: 0 }}>
-          <div style={{ fontWeight: 800, fontSize: 18 }}>XMUM campus / 3D draft</div>
+          <div style={{ fontWeight: 800, fontSize: 18 }}>XMUM Campus / 3D Draft</div>
           <div style={{ fontSize: 12, opacity: 0.75, marginTop: 4 }}>
             {touch ? "1 finger: move / 2 fingers: rotate and zoom" : "Drag: move / Right-drag: rotate / Scroll: zoom"}
           </div>
@@ -221,7 +294,7 @@ export default function CampusMap3D() {
           onClick={() => controls.current?.reset()}
           style={{ ...pill(false), ...glass, flexShrink: 0, padding: "8px 14px" }}
         >
-          Reset view
+          Reset View
         </button>
       </div>
 
@@ -231,7 +304,7 @@ export default function CampusMap3D() {
           left: 16,
           right: 16,
           bottom: "calc(20px + env(safe-area-inset-bottom))",
-          display: "flex",
+          display: demo?.game ? "none" : "flex",
           justifyContent: "center",
           gap: 8,
           flexWrap: "wrap",
