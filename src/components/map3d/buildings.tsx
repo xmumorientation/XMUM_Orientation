@@ -26,7 +26,6 @@ import {
 import { TanKahKeeStatue } from "./statue";
 import {
   A3_ROWS,
-  GABLE_ROWS,
   makeA3Centre,
   makeA3Facade,
   makeGableFacade,
@@ -152,6 +151,13 @@ const GABLE_RISE = { apex: 2.4, ridge: 2.0 };
 /** The courtyard's paving: one tile of makePaving (four slabs each way) is this wide (world units). */
 const PAVING_TILE = 0.7;
 /**
+ * The courtyard's shade (vertex colours, 1 is full light): its walls from `ground` at the plinth to `high` under the
+ * ridge, its paving, and the darker square in the paving.
+ */
+const COURT_SHADE = { ground: 0.15, high: 0.6, paving: 0.3, square: 0.2 };
+/** A texel of plain wall on makeGableFacade's wall (a pilaster; dark in the emissive map), for walls with no windows. */
+const PLAIN_WALL = [0.01, 0.235] as const;
+/**
  * The porches of A1, A2, A4 and A5 (photos), alike front and back (and on A5's east side): `half` wide each way, a
  * white canopy `canopy` thick on four square columns `col` thick and `h` tall, standing geo.ts A_PORCH_OUT_M out past
  * the plinth; `steps` steps `run` deep down from the front and east ones (the back's are geo.ts NORTH_STAIRS).
@@ -218,60 +224,44 @@ function courtyardArcs(s: number, R: number, m: number): CourtPoint[][] {
 }
 
 /**
- * The courtyard's walls, facing into it: windows from the plinth to the eaves as on the outer walls (makeGableFacade's
- * wall, `bay` wide bays), and on up to the red roofs' ridge `ridge` over the eaves, more floors and the cornice under
- * the ridge. Smooth round the arcs; the straight runs behind the gables stop at the eaves (the gable's back stands
- * over them, gableGeometry). Little light reaches the bottom of so deep a courtyard: a vertex colour darkens the walls
- * toward the ground.
+ * The courtyard's walls, facing into it, from the plinth up to the red roofs' ridge `ridge` over the eaves: plain wall
+ * (Ben: no windows), smooth round the arcs. Little light reaches the bottom of so deep a courtyard (Ben: darker), so
+ * vertex colours shade the walls, darkest at the ground (COURT_SHADE).
  */
-function courtyardWalls(arcs: CourtPoint[][], bay: number, eave: number, ridge: number) {
-  const H = H_BLOCK;
-  const { band, storeys } = GABLE_ROWS;
-  const fh = (1 - band[1]) / storeys;
-  // the floors over the eaves: whole floors as the second-highest one, then the top of the wall with its cornice
-  const floorH = fh * H;
-  const whole = Math.floor(ridge / floorH);
-  const upper: [number, number, number, number][] = [
-    [PLINTH, eave, 0, 1],
-    ...Array.from({ length: whole }, (_, k): [number, number, number, number] => [
-      eave + k * floorH,
-      eave + (k + 1) * floorH,
-      1 - 2 * fh,
-      1 - fh,
-    ]),
-    [eave + whole * floorH, eave + ridge, 1 - (ridge - whole * floorH) / H, 1],
-  ];
-  const shade = (y: number) => 0.45 + 0.55 * Math.pow((y - PLINTH) / (eave + ridge - PLINTH), 0.8);
+function courtyardWalls(arcs: CourtPoint[][], eave: number, ridge: number) {
+  const top = eave + ridge;
+  // rows up the wall, so the shade can curve
+  const rows = 8;
+  const ys = Array.from({ length: rows + 1 }, (_, k) => PLINTH + ((top - PLINTH) * k) / rows);
+  const { ground, high } = COURT_SHADE;
+  const shade = (y: number) => ground + (high - ground) * Math.pow((y - PLINTH) / (top - PLINTH), 1.3);
   const pos: number[] = [];
   const nor: number[] = [];
   const uv: number[] = [];
   const col: number[] = [];
-  let u = 0;
   arcs.forEach((arc, q) => {
     const next = arcs[(q + 1) % arcs.length][0];
-    const edges = arc.map((a, i) => [a, arc[i + 1] ?? next] as const);
-    edges.forEach(([a, b], i) => {
+    arc.forEach((a, i) => {
+      const b = arc[i + 1] ?? next;
       const len = Math.hypot(b.x - a.x, b.z - a.z);
-      const [ua, ub] = [u / (4 * bay), (u + len) / (4 * bay)];
-      u += len;
-      // the straight run takes its own normal, the arcs their points'
-      const straight = i === edges.length - 1;
+      // the straight run behind a gable takes its own normal, the arcs their points'
       const own = { nx: (b.z - a.z) / len, nz: (a.x - b.x) / len };
-      const [na, nb] = straight ? [own, own] : [a, b];
-      for (const [y0, y1, v0, v1] of straight ? upper.slice(0, 1) : upper) {
+      const [na, nb] = i === arc.length - 1 ? [own, own] : [a, b];
+      for (let k = 0; k < rows; k++) {
+        const [y0, y1] = [ys[k], ys[k + 1]];
         // two triangles, wound to face the normal
         const quad = [
-          [a.x, y0, a.z, na, ua, v0],
-          [b.x, y1, b.z, nb, ub, v1],
-          [b.x, y0, b.z, nb, ub, v0],
-          [a.x, y0, a.z, na, ua, v0],
-          [a.x, y1, a.z, na, ua, v1],
-          [b.x, y1, b.z, nb, ub, v1],
+          [a, na, y0],
+          [b, nb, y1],
+          [b, nb, y0],
+          [a, na, y0],
+          [a, na, y1],
+          [b, nb, y1],
         ] as const;
-        for (const [x, y, z, n, uu, vv] of quad) {
-          pos.push(x, y, z);
+        for (const [p, n, y] of quad) {
+          pos.push(p.x, y, p.z);
           nor.push(n.nx, 0, n.nz);
-          uv.push(uu, vv);
+          uv.push(...PLAIN_WALL);
           col.push(shade(y), shade(y), shade(y));
         }
       }
@@ -357,9 +347,13 @@ function gableGeometry(s: number, front: number, east: boolean) {
   const arcs = courtyardArcs(s, R, m);
   const outline = arcs.flat().map((p): [number, number] => [p.x, p.z]);
   const squareOf = (h: number): [number, number][] => [[-h, -h], [h, -h], [h, h], [-h, h]];
-  const deck = flatShape(squareOf(s), eave, outline);
+  // the deck's hole a little wider than the courtyard, so its edge stays behind the walls (on them, it showed through)
+  const behind = courtyardArcs(s, R - 0.02, m - 0.02)
+    .flat()
+    .map((p): [number, number] => [p.x, p.z]);
+  const deck = flatShape(squareOf(s), eave, behind);
   const duv = deck.getAttribute("uv") as THREE.BufferAttribute;
-  for (let i = 0; i < duv.count; i++) duv.setXY(i, 0.01, 0.235);
+  for (let i = 0; i < duv.count; i++) duv.setXY(i, ...PLAIN_WALL);
   const paved = (g: THREE.BufferGeometry) => {
     const puv = g.getAttribute("uv") as THREE.BufferAttribute;
     for (let i = 0; i < puv.count; i++) puv.setXY(i, puv.getX(i) / PAVING_TILE, puv.getY(i) / PAVING_TILE);
@@ -373,9 +367,10 @@ function gableGeometry(s: number, front: number, east: boolean) {
     g.setAttribute("color", new THREE.Float32BufferAttribute(new Array(n * 3).fill(c), 3));
     return g;
   };
-  // behind each gable, its back up to the ridge, over the courtyard's point (white stone, with the gable)
+  // behind each gable, its back up to the ridge, just behind the courtyard's wall at its point (white stone, with the
+  // gable)
   const back = s - Math.sqrt(R * R - m * m);
-  const gableBack = boxAt(2 * back, ridge, m - 0.1, 0, eave + ridge / 2, s - (m + 0.1) / 2);
+  const gableBack = boxAt(2 * back, ridge, m - 0.12, 0, eave + ridge / 2, s - (m + 0.08) / 2);
 
   // a tower at each corner, a little proud of both walls and past the eaves, its floors in line with the walls'
   const th = H + 0.3;
@@ -416,14 +411,14 @@ function gableGeometry(s: number, front: number, east: boolean) {
     porches.flatMap((p) => p[key].map((g) => g.rotateY(toSide(p.at))));
 
   return {
-    walls: merge([shaded(walls, 1), shaded(deck, 1), courtyardWalls(arcs, bay, eave, ridge)]),
+    walls: merge([shaded(walls, 1), shaded(deck, 1), courtyardWalls(arcs, eave, ridge)]),
     towers: merge(fourSides([tower])),
     centre: merge(fourSides([centre])),
     trim: merge([...fourSides(side), ...turned("trim")]),
     roofs: merge(fourSides([cornerRoofGeometry(s, r1 - 0.15, r1, R, eave, ridge), towerRoof])),
     decks: merge(turned("deck")),
     stone: merge([boxAt(2 * (s + BLOCK_PLINTH.out), PLINTH, 2 * (s + BLOCK_PLINTH.out), 0, PLINTH / 2, 0), ...turned("stone")]),
-    floor: merge([shaded(floor, 1), shaded(square, 0.68)]),
+    floor: merge([shaded(floor, COURT_SHADE.paving), shaded(square, COURT_SHADE.square)]),
     bay,
   };
 }
@@ -433,8 +428,9 @@ function gableGeometry(s: number, front: number, east: boolean) {
  * colonnade, tall pilasters, slim windows in red frames, a tower with a small red roof at each corner and a framed bay
  * in the middle of each side; on each side a white gable up past the roof; between the gables, round each corner, a
  * red tiled roof that sweeps up from its eaves to a white ridge; in the middle an open courtyard, star-shaped, down to
- * the ground and paved in stone. A porch on the front (`front`, toward the lawn) and on the back (on the landing
- * before geo.ts NORTH_STAIRS), alike, and on A5 one more on the east side, toward the track (`east`).
+ * the ground, plain-walled, in deep shade and paved in stone. A porch on the front (`front`, toward the lawn) and on
+ * the back (on the landing before geo.ts NORTH_STAIRS), alike, and on A5 one more on the east side, toward the track
+ * (`east`).
  */
 function GableBlock({ position, rotY, s, seed, glow, front, east }: BlockProps & { s: number; front: number; east: boolean }) {
   const geo = useMemo(() => gableGeometry(s, front, east), [s, front, east]);

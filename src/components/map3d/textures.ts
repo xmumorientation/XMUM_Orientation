@@ -317,7 +317,7 @@ export function makeA3Centre(width: number, height: number) {
  * A1, A2, A4 and A5's walls (Ben's photos; all four alike), as shares of their height from the ground: a colonnade
  * under a band, then five floors.
  */
-export const GABLE_ROWS = { colonnade: 0.205, band: [0.22, 0.25], storeys: 5 } as const;
+const GABLE_ROWS = { colonnade: 0.205, band: [0.22, 0.25], storeys: 5 } as const;
 
 /**
  * A1, A2, A4 and A5's walls in A3's colours (photos), for walls `height` high (world units). `wall`: one tile four
