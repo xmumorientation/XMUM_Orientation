@@ -14,7 +14,7 @@ import {
   TERRACE,
   UNITS_PER_M,
   courtyardWall,
-  groundY,
+  plateauY,
   type World,
 } from "./geo";
 
@@ -61,7 +61,7 @@ export function plateauSurface(lite: boolean, minY = 0): THREE.BufferGeometry {
       const k = j * nx + i;
       const x = x0 + i * cell;
       const z = z0 + j * cell;
-      ys[k] = groundY(x, z);
+      ys[k] = plateauY(x, z);
       pos.set([x, ys[k], z], k * 3);
       uv.set([(x + EXTENT.x) / (2 * EXTENT.x), (EXTENT.z - z) / (2 * EXTENT.z)], k * 2);
     }

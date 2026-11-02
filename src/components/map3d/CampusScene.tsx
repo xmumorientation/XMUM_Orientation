@@ -10,12 +10,14 @@ import { allZonesOn, anyZoneOn, FUNFAIR_OFF, type FunfairPower } from "@/lib/fun
 
 import { Atmosphere, Effects, MODES, type Mode } from "./atmosphere";
 import { B1Building } from "./b1";
-import { Blocks, Bridge, Flag, Grandstand, Statue } from "./buildings";
+import { Blocks, Flag, Grandstand, Statue } from "./buildings";
+import { Bridge } from "./footbridge";
 import { Funfair } from "./funfair/Funfair";
 import { FUNFAIR_LABEL } from "./funfair/labels";
 import { LABELS } from "./geo";
 import { Ground, Slab } from "./ground";
 import { LakefrontStage } from "./lakefront/LakefrontStage";
+import { MainGate } from "./maingate";
 import { Plateau } from "./plateau";
 import { SportsCourts, TrackFixtures } from "./sports";
 import { Lamps, Vegetation } from "./vegetation";
@@ -218,6 +220,7 @@ const Campus = memo(function Campus({ mode, lite }: { mode: Mode; lite: boolean 
       <Statue />
       <Flag />
       <Bridge />
+      <MainGate glow={look.windows} />
       <Vegetation lite={lite} />
       <Lamps glow={look.lamps} />
     </>

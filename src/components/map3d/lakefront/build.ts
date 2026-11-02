@@ -3,15 +3,17 @@ import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js
 
 import { Bake, G, mat, type V3 } from "../funfair/central/kit";
 import { LITE_LIGHT_SCALE } from "../funfair/common";
+import { UNITS_PER_M } from "../geo";
+import { basinY } from "../terrain";
 import {
   AISLE_HW,
   AISLES,
-  BANK_W,
   beams,
   BRIDGE_A,
   BRIDGE_HW,
   DECK_Y,
   DEG,
+  FLOOR_Y,
   KERB,
   MOAT_R,
   polar,
@@ -28,6 +30,7 @@ import {
   TERRACE_D,
   TERRACE_H,
   TERRACES,
+  toWorld3,
   WALL,
   WILLOWS,
 } from "./layout";
@@ -101,17 +104,6 @@ function band(bk: Bake, c: string, r: number, y0: number, y1: number, a0: number
   }
 }
 
-/** A sloping band from (r0, y0) out to (r1, y1), facing up and outwards. */
-function slope(bk: Bake, c: string, r0: number, y0: number, r1: number, y1: number, a0: number, a1: number) {
-  const n = steps(r1, a0, a1);
-  for (let i = 0; i < n; i++) {
-    const p = a0 + ((a1 - a0) * i) / n;
-    const q = a0 + ((a1 - a0) * (i + 1)) / n;
-    const m = radial((p + q) / 2);
-    face(bk, c, polar(r0, p, y0), polar(r0, q, y0), polar(r1, q, y1), polar(r1, p, y1), [m[0], 1, m[2]]);
-  }
-}
-
 /** The end wall of a block at angle a, from r0 to r1 and up to y; `side` -1 faces back along the arc, 1 forward. */
 function cap(bk: Bake, c: string, a: number, r0: number, r1: number, y: number, side: 1 | -1, y0 = 0) {
   const t = tangent(a).map((v) => v * side) as V3;
@@ -158,21 +150,9 @@ function bakeAmphitheatre(bk: Bake) {
       radialBox(bk, PAINT.brick, r0 + (3 * TERRACE_D) / 4, a, 2 * AISLE_HW, TERRACE_D / 2, 0, y);
     }
   }
-  // the bank behind the top terrace, down to the lawn
-  const rTop = RING_R + TERRACES * TERRACE_D;
-  const yTop = terraceTop(TERRACES - 1);
-  slope(bk, PAINT.grassDark, rTop, yTop, rTop + BANK_W, 0, SEATS_ARC[0], SEATS_ARC[1]);
-  for (const [a, side] of [
-    [SEATS_ARC[0], -1],
-    [SEATS_ARC[1], 1],
-  ] as const) {
-    const t = tangent(a).map((v) => v * side) as V3;
-    const p = polar(rTop, a, 0);
-    const q = polar(rTop + BANK_W, a, 0);
-    const top = polar(rTop, a, yTop);
-    if (dot(cross(sub(q, p), sub(top, p)), t) >= 0) bk.tri(PAINT.grassDark, p, q, top);
-    else bk.tri(PAINT.grassDark, p, top, q);
-  }
+  // Behind the top terrace the ground climbs on (terrain.ts) from its back edge. A grass wall down to the floor
+  // closes the terraces wherever the ground's mesh dips below that edge.
+  band(bk, PAINT.grassDark, RING_R + TERRACES * TERRACE_D, 0, terraceTop(TERRACES - 1), SEATS_ARC[0], SEATS_ARC[1], 1);
 }
 
 function bakeWalkway(bk: Bake) {
@@ -271,10 +251,13 @@ function bakeBridge(bk: Bake) {
 /** Weeping willows: a leaning trunk, a soft crown, and long strands hanging from its rim nearly to the ground. */
 function bakeWillows(bk: Bake) {
   WILLOWS.forEach(([x, z, s], w) => {
-    const top: V3 = [x + 0.4 * s, 6.2 * s, z - 0.3 * s];
-    bk.seg(PAINT.trunk, [x, 0, z], top, 0.5 * s, G.cyl6);
-    bk.ball(PAINT.willow, [top[0], 7 * s, top[2]], [2.6 * s, 1.5 * s, 2.6 * s], G.ball);
-    bk.ball(PAINT.willowDark, [top[0] - 0.8 * s, 6.5 * s, top[2] + 0.6 * s], [1.9 * s, 1.2 * s, 1.9 * s], G.ball);
+    // each stands on the lake's bank, a little above the stage's floor
+    const [wx, , wz] = toWorld3([x, 0, z]);
+    const y = (basinY(wx, wz) - FLOOR_Y) / UNITS_PER_M;
+    const top: V3 = [x + 0.4 * s, y + 6.2 * s, z - 0.3 * s];
+    bk.seg(PAINT.trunk, [x, y, z], top, 0.5 * s, G.cyl6);
+    bk.ball(PAINT.willow, [top[0], y + 7 * s, top[2]], [2.6 * s, 1.5 * s, 2.6 * s], G.ball);
+    bk.ball(PAINT.willowDark, [top[0] - 0.8 * s, y + 6.5 * s, top[2] + 0.6 * s], [1.9 * s, 1.2 * s, 1.9 * s], G.ball);
     const n = 13;
     for (let i = 0; i < n; i++) {
       const a = (i / n) * Math.PI * 2 + w;
@@ -283,7 +266,7 @@ function bakeWillows(bk: Bake) {
       const cx = top[0] + Math.cos(a) * r;
       const cz = top[2] - Math.sin(a) * r;
       // a strand: a thin cone hanging point down (turned over, not mirrored, so its faces still look out)
-      const strand = mat(cx + Math.cos(a) * 0.4 * s, 6.6 * s - len / 2, cz - Math.sin(a) * 0.4 * s, 0.75 * s, len, 0.75 * s, 0, Math.PI);
+      const strand = mat(cx + Math.cos(a) * 0.4 * s, y + 6.6 * s - len / 2, cz - Math.sin(a) * 0.4 * s, 0.75 * s, len, 0.75 * s, 0, Math.PI);
       bk.add(G.cone8, strand, i % 2 ? PAINT.willow : PAINT.willowDark);
     }
   });

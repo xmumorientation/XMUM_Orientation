@@ -18,7 +18,7 @@ Status: built in batches on branch `funfair-central`. All four are done: L1 (the
 - **Shell:** seven red tube ribs, all springing from two feet on the stage's north and south sides, fanned back like a scallop shell. The front arch is the tallest and thickest; the last rib lies low over the back wall. Thin red slats run between the ribs over a white membrane; six cross tubes tie the ribs.
 - **Stage:** a round dark wooden deck (22 m across) with a white balustrade round the front, and a white back wall with a door under the shell.
 - **Moat and walkway:** a water ring round the stage, a beige walkway round the moat, and a low kerb closing the moat on the lake side. A white footbridge crosses the moat on the north-west.
-- **Amphitheatre:** seven grass terraces with grey stone strips, four red-brick aisles, and a grass bank down to the lawn. It sits inside the park's ring footpath.
+- **Amphitheatre:** seven grass terraces with grey stone strips and four red-brick aisles, cut into the lake's bank: the venue stands in the lake's low ground, and past the top terrace the ground climbs gently to the campus's level (Ben, 2026-11-02; `terrain.ts`, see the session handoff). It sits inside the park's ring footpath.
 - **Willows:** six weeping willows along the shore, as in the photos.
 - **Orientation:** the opening faces west, towards the amphitheatre; the lake is behind (east). This follows the OSM footprint (31 m north-south) and the ring footpath round the west side. Not yet checked against satellite imagery.
 

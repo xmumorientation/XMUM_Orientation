@@ -12,7 +12,7 @@ import { bakeLights, bakeVenue, moatGeometry, shellGeometry, steelGeometry } fro
 import { crowdGeometry, crowdMaterial, makeCrowdUniforms } from "./crowd";
 import { fxGeometry, GROUP } from "./fx";
 import { applyLook, CONCERT, disposeKit, makeKit } from "./kit";
-import { GLOW, ORIGIN, POOLS, ROT_Y, WATER_Y } from "./layout";
+import { FLOOR_Y, GLOW, ORIGIN, POOLS, ROT_Y, WATER_Y } from "./layout";
 import { confettiGeometry, confettiMaterial, fireworkGeometry, fireworkMaterial, makeParticleUniforms, SHELL_SLOTS } from "./particles";
 import { CONFETTI_LIFE, SHELL_LIFE, showAt } from "./show";
 
@@ -257,7 +257,7 @@ export const LakefrontStage = memo(function LakefrontStage({
   }, [gl, kit]);
 
   return (
-    <group position={[ORIGIN[0], 0, ORIGIN[1]]} rotation-y={ROT_Y} scale={UNITS_PER_M}>
+    <group position={[ORIGIN[0], FLOOR_Y, ORIGIN[1]]} rotation-y={ROT_Y} scale={UNITS_PER_M}>
       <mesh geometry={geo.venue} material={kit.venue} castShadow receiveShadow />
       <mesh geometry={geo.steel} material={kit.steel} castShadow receiveShadow />
       <mesh geometry={geo.shell} material={kit.shell} castShadow receiveShadow />

@@ -13,6 +13,7 @@ import type { Vec3 } from "./CampusScene";
 import { EXTENT, type Placed } from "./geo";
 import { RIDE_TAGS, ZONE_CENTERS } from "./funfair/labels";
 import { localToWorld } from "./places";
+import { basinMask, basinSurface } from "./basin";
 import { plateauSurface } from "./plateau";
 
 // DRAFT (map-3d-draft branch): map markers for the 3D campus. Markers are
@@ -447,17 +448,22 @@ export function GroundMarks({ circles, outlines, lite }: { circles: GroundCircle
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key, canvas, tex, pxPerUnit, invalidate]);
 
-  // over the raised ground under the A-row, the same canvas lies on its surface
+  // over the raised ground under the A-row and the lake's low ground, the same canvas lies on their surfaces (the flat
+  // plane is cut away over the low ground)
   const raised = useMemo(() => plateauSurface(lite, 0.12), [lite]);
+  const low = useMemo(() => basinSurface(lite), [lite]);
+  const cut = useMemo(() => basinMask(lite), [lite]);
   return (
     <>
       <mesh rotation-x={-Math.PI / 2} position-y={0.14} renderOrder={1}>
         <planeGeometry args={[EXTENT.x * 2, EXTENT.z * 2]} />
-        <meshBasicMaterial map={tex} transparent depthWrite={false} toneMapped={false} />
+        <meshBasicMaterial map={tex} alphaMap={cut} transparent depthWrite={false} toneMapped={false} />
       </mesh>
-      <mesh geometry={raised} position-y={0.14} renderOrder={1} visible={circles.length + outlines.length > 0}>
-        <meshBasicMaterial map={tex} transparent depthWrite={false} toneMapped={false} />
-      </mesh>
+      {[raised, low].map((g) => (
+        <mesh key={g.uuid} geometry={g} position-y={0.14} renderOrder={1} visible={circles.length + outlines.length > 0}>
+          <meshBasicMaterial map={tex} transparent depthWrite={false} toneMapped={false} />
+        </mesh>
+      ))}
     </>
   );
 }
