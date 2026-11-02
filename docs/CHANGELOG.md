@@ -235,3 +235,5 @@ PR numbers are in brackets. Migration numbers are the files in `supabase/migrati
 - Added the OC role with HOF-equivalent operations and blind-box access, independent OC identity, and account-management support. UI labels show OC only.
 - Centered desktop navigation and reduced map rendering load with intent preloading and adaptive resolution, preserving persistent-map pause/resume and the current campus models.
 - Added safe, idempotent OC enum/permission migrations 0113 and 0114; the database change and requested test account were verified through the Orientation project's existing connection.
+
+- Follow-up: Restore map sharpness up to DPR 2 and remove camera-motion downscaling; fix invisible Admin account initials caused by shared avatar CSS overriding the TopNav background. No migration.

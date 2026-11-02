@@ -40,26 +40,8 @@ const START_NARROW: CameraView = {
 };
 /** Containers this wide or narrower start from the closer, narrow view. */
 const NARROW_PX = 768;
-const FULL_DPR: [number, number] = [1, 1.5];
-const LITE_DPR: [number, number] = [1, 1.25];
-
-/** Spend fewer pixels while the camera moves, restoring sharpness after it settles. */
-function MapResolution({ lite, interactive }: { lite: boolean; interactive: boolean }) {
-  const controls = useThree((s) => s.controls) as MapControlsImpl | null;
-  const regress = useThree((s) => s.performance.regress);
-  const current = useThree((s) => s.performance.current);
-  const setDpr = useThree((s) => s.setDpr);
-  useEffect(() => {
-    if (!controls) return;
-    controls.addEventListener("change", regress);
-    return () => controls.removeEventListener("change", regress);
-  }, [controls, regress]);
-  useEffect(() => {
-    const cap = lite || !interactive ? 1.25 : 1.5;
-    setDpr(Math.min(window.devicePixelRatio || 1, cap) * current);
-  }, [current, lite, interactive, setDpr]);
-  return null;
-}
+// Keep the preview and interactive map sharp on Retina displays.
+const MAP_DPR: [number, number] = [1, 2];
 
 type Start = CameraView & { intro: boolean };
 
@@ -428,8 +410,7 @@ export default function CampusScene({
           frameloop={
             paused ? "never" : interactive && (!isLite || anyZoneOn(funfair) || mode === "night" || concert) ? "always" : "demand"
           }
-          dpr={isLite || !interactive ? LITE_DPR : FULL_DPR}
-          performance={{ min: 0.67, debounce: 180 }}
+          dpr={MAP_DPR}
           camera={{ fov: 30, near: 1, far: 1600, position: start.position }}
           gl={(defaults) => {
             try {
@@ -459,7 +440,6 @@ export default function CampusScene({
             screenSpacePanning={false}
           />
           <TouchPolicy interactive={interactive} />
-          <MapResolution lite={isLite} interactive={interactive} />
           <DepthRange />
           <Intro start={start} />
           {/* Measured once, and once more in lite after a step down. */}

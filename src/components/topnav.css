@@ -70,7 +70,8 @@
 .vx-topnav-avatar:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: 2px; }
 /* FaciAvatar plain: initials on the accent. */
 .vx-topnav .fh-faci-avatar { display: block; border-radius: 50%; }
-.vx-topnav .fh-faci-avatar > span {
+/* Override the shared plain-avatar background, including roles with no group theme. */
+.vx-topnav .fh-faci-avatar.fh-faci-avatar-plain > span {
   display: grid; place-items: center; width: 100%; height: 100%; border-radius: 50%;
   background: var(--tn-accent); color: var(--fh-on-blue, #001629); font-family: var(--font-vx-slab), Georgia, serif;
 }

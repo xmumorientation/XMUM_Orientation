@@ -328,6 +328,12 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 
 ## Done
 
+### David, 2026-11-02 — Restore Map Sharpness and Admin Avatar
+
+- Removed reduced preview/full-screen DPR caps and camera-motion resolution reduction after user visual feedback. All map views use screen pixel density up to DPR 2; preloading, parked-map behavior and the drawing-buffer optimization remain. This supersedes the lower-resolution settings recorded below.
+- Fixed the desktop plain-avatar selector so the TopNav accent background overrides shared Faci styles even when Admin has no group theme.
+- Local browser verification confirmed a DPR-2 preview at 1916×1040 for a 958×520 area and full-screen at 2048×1536 for 1024×768, including zoom. Admin initials and account menu are visible. Release checks run in an isolated checkout; deployment is verified after push. No database migration.
+
 ### David, 2026-11-02 — OC Role, Centered Navigation and Map Responsiveness
 
 - Added independent `oc` (Organising Chairperson), displayed only as OC, using HOF's shared pages, operations permissions and blind-box holder flow. Account creation/import/editing, local demo definitions and role-scoped staff locations include OC. Added visible account form labels, OC guidance, creating feedback, a landscape-safe Add User dialog and larger blind-box picker targets.
