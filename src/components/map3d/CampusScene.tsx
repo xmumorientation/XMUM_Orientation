@@ -17,6 +17,7 @@ import { FUNFAIR_LABEL } from "./funfair/labels";
 import { LABELS } from "./geo";
 import { Ground, Slab } from "./ground";
 import { LakefrontStage } from "./lakefront/LakefrontStage";
+import { MainGate } from "./maingate";
 import { Plateau } from "./plateau";
 import { SportsCourts, TrackFixtures } from "./sports";
 import { Lamps, Vegetation } from "./vegetation";
@@ -219,6 +220,7 @@ const Campus = memo(function Campus({ mode, lite }: { mode: Mode; lite: boolean 
       <Statue />
       <Flag />
       <Bridge />
+      <MainGate glow={look.windows} />
       <Vegetation lite={lite} />
       <Lamps glow={look.lamps} />
     </>

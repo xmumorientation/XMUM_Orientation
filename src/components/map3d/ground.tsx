@@ -11,10 +11,13 @@ import {
   BLOCKS,
   COLORS,
   DOME,
+  EAST_GATE,
+  EAST_ROAD,
   EXTENT,
   FOOTPATH_W,
   FOOTPATHS,
   FUNFAIR_LAND,
+  GATE_ROAD,
   GROUND,
   LAKE,
   LANDMARK_SCALE,
@@ -156,6 +159,63 @@ function makeGroundTexture(lite: boolean): THREE.CanvasTexture {
   // The walkways (OSM): every outline first, then every fill, so walks that meet join into one, as in the art.
   for (const p of FOOTPATHS) stroke(p, FOOTPATH_W + 2 * PATH_EDGE, COLORS.pathEdge);
   for (const p of FOOTPATHS) stroke(p, FOOTPATH_W, COLORS.path);
+  ctx.restore();
+  // The campus road behind the main gate, over the walks. On the east it runs over the east road's inner edge, so a
+  // grass verge goes there first. The notch road is painted again over their junction, and the statue's plaza and
+  // A1's forecourt over the road.
+  poly(GATE_ROAD.verge, COLORS.lawn);
+  ctx.save();
+  trace(GATE_ROAD.verge);
+  ctx.clip();
+  {
+    const [x0, z0, x1, z1] = bounds(GATE_ROAD.verge);
+    speckle(Math.round((x1 - x0) * (z1 - z0) * 2.4), x0, z0, x1, z1, "rgba(200,210,120,0.14)", "rgba(70,90,30,0.13)");
+  }
+  ctx.restore();
+  stroke(GATE_ROAD.line, GATE_ROAD.width + 2 * KERB, COLORS.kerb);
+  stroke(GATE_ROAD.line, GATE_ROAD.width, COLORS.road);
+  ctx.setLineDash([0.8, 0.7]);
+  stroke(GATE_ROAD.line, 0.08, COLORS.roadLine);
+  ctx.setLineDash([]);
+  {
+    const notch = img(GROUND.roadNotch);
+    const [, z0, , z1] = bounds(notch);
+    const zm = (z0 + z1) / 2;
+    const [x] = GATE_ROAD.line.reduce((a, b) => (Math.abs(b[1] - zm) < Math.abs(a[1] - zm) ? b : a));
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(x - 1, z0, 2, z1 - z0);
+    ctx.clip();
+    poly(notch, COLORS.road);
+    ctx.restore();
+  }
+  // the east gate: its entrance over the verge, and the guard house's island (paving, then a lawn at its outer end)
+  {
+    const { x, half, z, island } = EAST_GATE;
+    ctx.fillStyle = COLORS.road;
+    ctx.fillRect(x - half, z[0], 2 * half, z[1] - z[0]);
+    const rounded = (x0: number, z0: number, x1: number, z1: number, r: number) => {
+      ctx.beginPath();
+      ctx.moveTo(x0 + r, z0);
+      ctx.arcTo(x1, z0, x1, z1, r);
+      ctx.arcTo(x1, z1, x0, z1, r);
+      ctx.arcTo(x0, z1, x0, z0, r);
+      ctx.arcTo(x0, z0, x1, z0, r);
+      ctx.closePath();
+    };
+    rounded(x - island.half, island.z[0], x + island.half, island.z[1], 0.25);
+    ctx.fillStyle = COLORS.plaza;
+    ctx.fill();
+    ctx.lineWidth = 2 * KERB;
+    ctx.strokeStyle = COLORS.kerb;
+    ctx.stroke();
+    rounded(x - island.half + KERB, island.lawn, x + island.half - KERB, island.z[1] - KERB, 0.18);
+    ctx.fillStyle = COLORS.lawn;
+    ctx.fill();
+  }
+  ctx.save();
+  trace(base);
+  ctx.clip();
   drawAFront(ctx);
   ctx.restore();
 
@@ -171,8 +231,10 @@ function makeGroundTexture(lite: boolean): THREE.CanvasTexture {
   ctx.restore();
   drawB1Grounds(ctx);
 
-  // dashed centre line around the outer road
+  // dashed centre line around the outer road; on the east its inner side is the campus road's verge, so the line
+  // moves out to the middle of what is left (the ring's south-east and north-east corners)
   const ring = img(GROUND.road.map((p, i) => [(p[0] + GROUND.base[i][0]) / 2, (p[1] + GROUND.base[i][1]) / 2] as const));
+  for (const i of [0, 3]) ring[i][1] += EAST_ROAD.verge / 2;
   ctx.setLineDash([1.6, 1.4]);
   stroke([...ring, ring[0]], 0.18, COLORS.roadLine);
   ctx.setLineDash([]);

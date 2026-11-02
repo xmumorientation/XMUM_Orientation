@@ -26,7 +26,7 @@ const FASCIA = "#b01e27";
 const STONE = "#d9d1c3";
 
 /** A flat-coloured, non-indexed copy of `g` with no uv or normals (the merged mesh gets its own), ready to merge. */
-function paint(g: THREE.BufferGeometry, color: string) {
+export function paint(g: THREE.BufferGeometry, color: string) {
   const out = g.index ? g.toNonIndexed() : g;
   for (const name of ["uv", "normal"]) if (out.getAttribute(name)) out.deleteAttribute(name);
   const c = new THREE.Color(color);
@@ -38,7 +38,7 @@ function paint(g: THREE.BufferGeometry, color: string) {
 }
 
 /** A square bar `t` thick from p to q. */
-function bar(p: THREE.Vector3, q: THREE.Vector3, t: number, color: string) {
+export function bar(p: THREE.Vector3, q: THREE.Vector3, t: number, color: string) {
   const d = new THREE.Vector3().subVectors(q, p);
   const g = new THREE.BoxGeometry(d.length(), t, t);
   g.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(1, 0, 0), d.normalize()));

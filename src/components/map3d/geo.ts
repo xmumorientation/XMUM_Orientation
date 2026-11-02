@@ -592,6 +592,16 @@ function landingTo(name: string): number {
 }
 
 /**
+ * The main gate on Jalan Sunsuria, where the statue looks (Ben's photos and Esri imagery, 2026-11-02): two guard
+ * houses either side of an iron gate, and a fountain with the university's name in front. Its middle is on A3's axis,
+ * `v` metres from the statue (south, toward the road): about where OSM's link from the campus road ends, and far
+ * enough south that the campus road (GATE_ROAD) passes inside the fence. Its model (maingate.tsx, real metres) is drawn
+ * `scale` times larger, like the buildings' heights; `end` is where its fence meets each guard house (model metres
+ * from the middle).
+ */
+export const MAIN_GATE_M = { v: -46.5, scale: 1.5, end: 21.3 } as const;
+
+/**
  * A3 and the statue share one axis (imagery): A3's `steps` down to the walk, the paving on from there across the
  * terrace (`crossing`), two `walks` down the lawn either side of the statue, and the `plaza` round the statue's bed and
  * south to the road. Laid out from the statue: `u` is metres across (east +), `v` metres from the statue toward A3.
@@ -603,13 +613,100 @@ const A_AXIS_M = {
   crossing: { u: [-10.5, 10.5] },
   walks: { u: [-10, 10], width: 4.5, from: 6 },
   plaza: { u: [-12.25, 12.25], v: [-200, 9] },
+  // the main gate's forecourt, from the road to just behind the gate; a whole number of paving joints wider than the
+  // plaza, so the joints run on from it
+  gate: { u: [-36.46, 36.46], v: [-200, MAIN_GATE_M.v + 8] },
 } as const;
+
 
 /** A3's axis: the unit world direction from the statue toward A3's centre, and that distance in metres. */
 const A3_AXIS = (() => {
   const a3 = BLOCKS.find((b) => b.name === "A3")!.pos;
   const len = Math.hypot(a3[0] - STATUE[0], a3[1] - STATUE[1]);
   return { v: [(a3[0] - STATUE[0]) / len, (a3[1] - STATUE[1]) / len] as World, len: len / UNITS_PER_M };
+})();
+
+/** The main gate in the world: its middle, its turn (local +Z faces the road, as the statue does) and its scale. */
+export const MAIN_GATE = {
+  pos: [
+    STATUE[0] + A3_AXIS.v[0] * MAIN_GATE_M.v * UNITS_PER_M,
+    STATUE[1] + A3_AXIS.v[1] * MAIN_GATE_M.v * UNITS_PER_M,
+  ] as World,
+  rotY: STATUE_ROT_Y,
+  scale: MAIN_GATE_M.scale * UNITS_PER_M,
+};
+
+/** A line with its corners rounded (Chaikin's corner cutting, twice); its ends stay put. */
+function rounded(pts: World[]): World[] {
+  let out = pts;
+  for (let k = 0; k < 2; k++) {
+    const next: World[] = [out[0]];
+    for (let i = 1; i < out.length; i++) {
+      const [a, b] = [out[i - 1], out[i]];
+      next.push([0.75 * a[0] + 0.25 * b[0], 0.75 * a[1] + 0.25 * b[1]], [0.25 * a[0] + 0.75 * b[0], 0.25 * a[1] + 0.75 * b[1]]);
+    }
+    next.push(out[out.length - 1]);
+    out = next;
+  }
+  return out;
+}
+
+/**
+ * The campus road just inside the fence (Ben's blue line on OSM, 2026-11-02; OSM ways 1180134071 and 793404004), in
+ * metres east / north: from the campus's south-east corner west past the road east of the statue (the art's notch,
+ * which stands in for OSM's) and behind the main gate, round the lawn's south-west corner and up its west side to A1's
+ * forecourt (Ben's choice). The statue's plaza is paved across it, and A1's forecourt covers its end.
+ */
+const GATE_ROAD_M: EN[] = [
+  [79, -86], [70, -91], [59, -94], [32, -98], [4, -100], [-120, -100], [-240, -95], [-249, -93], [-265, -89],
+  [-285, -80], [-292, -78], [-317, -80], [-337, -85], [-356, -92], [-382, -96], [-395, -97], [-440, -96], [-519, -84],
+  [-519, -78], [-516, -64], [-513, -54], [-508, -47], [-500, -39], [-490, -32], [-476, -24], [-467, -20],
+];
+
+/** How far the campus road's middle stands out from the art's east road's inner edge (world units), and its verge. */
+export const EAST_ROAD = { mid: 0.55, verge: 2.4 };
+
+/**
+ * The campus road in the world: its line and width (8 m, imagery). On the east it runs north (Ben: as far as B1)
+ * along the art's east road's inner edge, where OSM has it, to B1's north road; it starts there. That edge of the east
+ * road is lawn (`verge`, its strip from the south fence to the north side), with the fence in it.
+ */
+export const GATE_ROAD = (() => {
+  const [r0, r1] = B1_ROADS_M.north.road.map((z) => b1Point(B1_NORTH_EAST_X, z));
+  const east: World[] = [];
+  for (let x = (r0[0] + r1[0]) / 2; x > -46; x -= 4) east.push([x, eastRoadZ(x) + EAST_ROAD.mid]);
+  east.push([-46, eastRoadZ(-46) + EAST_ROAD.mid]);
+  const line = rounded([...east, ...realPts(GATE_ROAD_M)]);
+  const [xs, xn] = [MAIN_GATE.pos[0] - 0.3, toWorld(GROUND.base[3])[0]];
+  const verge: World[] = [
+    [xs, eastRoadZ(xs)],
+    [xn, eastRoadZ(xn)],
+    [xn, eastRoadZ(xn) + EAST_ROAD.verge],
+    [xs, eastRoadZ(xs) + EAST_ROAD.verge],
+  ];
+  return { line, width: 8 * UNITS_PER_M, verge };
+})();
+
+/**
+ * The east gate (Ben's photos, 2026-11-02): where B1's north road (the palm avenue) meets the public road on the east,
+ * a small guard house with a tiled hip roof on an island between the lanes in and out, with barrier arms. `x` is the
+ * avenue's middle (from B1's drive to its north road); the entrance is `half` units either side of it, from the campus
+ * road's middle out to `z[1]`. The island (from `island.z[0]` to `[1]`, `island.half` either side) is paved where the
+ * house (maingate.tsx) stands and lawn from `island.lawn` on.
+ */
+export const EAST_GATE = (() => {
+  const { drive, road } = B1_ROADS_M.north;
+  const [d, r] = [drive[1], road[0]].map((z) => b1Point(B1_NORTH_EAST_X, z)[0]);
+  const x = (d + r) / 2;
+  const mid = eastRoadZ(x) + EAST_ROAD.mid;
+  const z0 = mid + 4 * UNITS_PER_M + 0.15;
+  const z1 = z0 + 18.5 * UNITS_PER_M;
+  return {
+    x,
+    half: 11 * UNITS_PER_M,
+    z: [mid, z1 + 0.3] as [number, number],
+    island: { half: 5 * UNITS_PER_M, z: [z0, z1] as [number, number], lawn: z0 + 13 * UNITS_PER_M },
+  };
 })();
 
 /** Metres up A3's axis from the statue to where it meets the arc `r` metres round A_FRONT_M.centre. */
@@ -664,8 +761,8 @@ export const A_FRONT: { courts: World[][]; strips: { width: number; line: World[
   const { terrace, walk } = A_FRONT_M;
   const foot = upAxisTo(terrace.r - terrace.width / 2);
   const mid = upAxisTo(walk.r);
-  const { steps, crossing, walks, plaza } = A_AXIS_M;
-  courts.push(axis(steps.u, [mid - 1, len]), axis(plaza.u, plaza.v));
+  const { steps, crossing, walks, plaza, gate } = A_AXIS_M;
+  courts.push(axis(steps.u, [mid - 1, len]), axis(plaza.u, plaza.v), axis(gate.u, gate.v));
   const strips = [
     arc(terrace),
     arc(walk),
@@ -906,7 +1003,7 @@ export const B1_SIZE = { x: 2 * B1_PLACE.hz, z: 2 * B1_PLACE.hx };
 /**
  * The service road between the north row of courts and B1 (real gap 18 m),
  * with a row of parking bays along B1 (`z`). The road itself (`road`), red
- * brick in the imagery, runs from under B1's west road to the east road.
+ * brick in the imagery, runs from under B1's west road to the campus road on the east (GATE_ROAD).
  */
 export const CARPARK = (() => {
   const [bx, bz] = B1_PLACE.pos;
@@ -915,7 +1012,7 @@ export const CARPARK = (() => {
   return {
     x,
     z: [bz - B1_SIZE.z / 2, bz + B1_SIZE.z / 2] as [number, number],
-    road: [b1Point(b1StairsFoot((bx - x[1]) / UNITS_PER_M) - 1, 0)[1], eastRoadZ((x[0] + x[1]) / 2) + 0.3] as [
+    road: [b1Point(b1StairsFoot((bx - x[1]) / UNITS_PER_M) - 1, 0)[1], eastRoadZ((x[0] + x[1]) / 2) - 0.05] as [
       number,
       number,
     ],
@@ -942,7 +1039,8 @@ export const TRACK_NORTH = {
   footpath: (() => {
     const [x0, z0] = fromReal(13, 96.5);
     const [x1] = fromReal(13, 99.5);
-    return { x: [x0, x1] as [number, number], z: [z0, 40] as [number, number] };
+    // to the campus road on the east (GATE_ROAD)
+    return { x: [x0, x1] as [number, number], z: [z0, eastRoadZ(x0) - 0.05] as [number, number] };
   })(),
   pad: realRect(13, 93, 10, 7),
   gym: (() => {
@@ -952,6 +1050,106 @@ export const TRACK_NORTH = {
     return { x: [r.x[0] + dx, r.x[1] + dx] as [number, number], z: [r.z[0] + dz, r.z[1] + dz] as [number, number] };
   })(),
 };
+
+/** How far inside the outer road the campus fence stands on the west and north (world units, 2 m). */
+const FENCE_IN = 0.3;
+/** On the east it stands this far out over the east road, past the campus road (GATE_ROAD), in its verge. */
+const FENCE_EAST_OUT = 2;
+
+/**
+ * The campus fence (Ben, 2026-11-02): black railings round the campus, drawn by maingate.tsx. Along Jalan Sunsuria
+ * (the south side) it runs in line with the main gate, as in the imagery, so the palms and street lamps along the
+ * road stand outside it; on the east it stands past the campus road; on the west and north just inside the outer
+ * road. Runs of world points from guard house to guard house, broken where a road or a walk goes through.
+ */
+export const CAMPUS_FENCE: World[][] = (() => {
+  type Line = { p: World; d: World };
+  // GROUND.base's corners are SE, SW, NW, NE (counter-clockwise from above), so side i runs from corner i to i + 1
+  const base = GROUND.base.map(toWorld);
+  const [gx, gz] = MAIN_GATE.pos;
+  const sides: Line[] = base.map((a, i) => {
+    const b = base[(i + 1) % base.length];
+    const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
+    const d: World = [(b[0] - a[0]) / len, (b[1] - a[1]) / len];
+    const n: World = [-d[1], d[0]];
+    const off = i === 0 ? (gx - a[0]) * n[0] + (gz - a[1]) * n[1] : i === 3 ? -FENCE_EAST_OUT : FENCE_IN;
+    return { p: [a[0] + n[0] * off, a[1] + n[1] * off], d };
+  });
+  const meet = (l: Line, m: Line): World => {
+    const t = ((m.p[0] - l.p[0]) * m.d[1] - (m.p[1] - l.p[1]) * m.d[0]) / (l.d[0] * m.d[1] - l.d[1] * m.d[0]);
+    return [l.p[0] + l.d[0] * t, l.p[1] + l.d[1] * t];
+  };
+  const corner = (i: number) => meet(sides[(i + 3) % 4], sides[i]);
+  // where the south side meets each guard house: MAIN_GATE_M.end along the gate's own x (east)
+  const south = sides[0].d;
+  const ex = Math.cos(MAIN_GATE.rotY) * south[0] - Math.sin(MAIN_GATE.rotY) * south[1];
+  const reach = (MAIN_GATE_M.end * MAIN_GATE.scale) / Math.abs(ex);
+  const loop: World[] = [
+    [gx - south[0] * reach, gz - south[1] * reach],
+    corner(0),
+    corner(3),
+    corner(2),
+    corner(1),
+    [gx + south[0] * reach, gz + south[1] * reach],
+  ];
+
+  // gaps: the road east of the statue (the art's notch) and the east gate, each a point on the fence and half its
+  // width (the other roads on the east side meet the campus road inside the fence)
+  const nz = GROUND.roadNotch.map((p) => toWorld(p)[1]);
+  const gaps: { at: World; half: number }[] = [
+    { at: [gx, (Math.min(...nz) + Math.max(...nz)) / 2], half: (Math.max(...nz) - Math.min(...nz)) / 2 + 0.2 },
+    { at: [EAST_GATE.x, eastRoadZ(EAST_GATE.x) + FENCE_EAST_OUT], half: EAST_GATE.half },
+  ];
+  // and every walk that runs out through it
+  for (const walk of FOOTPATHS) {
+    for (let i = 1; i < walk.length; i++) {
+      for (let j = 1; j < loop.length; j++) {
+        const l = { p: walk[i - 1], d: [walk[i][0] - walk[i - 1][0], walk[i][1] - walk[i - 1][1]] as World };
+        const m = { p: loop[j - 1], d: [loop[j][0] - loop[j - 1][0], loop[j][1] - loop[j - 1][1]] as World };
+        const den = l.d[0] * m.d[1] - l.d[1] * m.d[0];
+        if (!den) continue;
+        const [qx, qz] = [m.p[0] - l.p[0], m.p[1] - l.p[1]];
+        const t = (qx * m.d[1] - qz * m.d[0]) / den;
+        const u = (qx * l.d[1] - qz * l.d[0]) / den;
+        if (t >= 0 && t <= 1 && u >= 0 && u <= 1) {
+          gaps.push({ at: [l.p[0] + l.d[0] * t, l.p[1] + l.d[1] * t], half: FOOTPATH_W * 0.75 });
+        }
+      }
+    }
+  }
+
+  // cut the gaps out, by distance along the loop
+  const along = [0];
+  for (let i = 1; i < loop.length; i++) {
+    along.push(along[i - 1] + Math.hypot(loop[i][0] - loop[i - 1][0], loop[i][1] - loop[i - 1][1]));
+  }
+  const pointAt = (s: number): World => {
+    let i = 1;
+    while (i < loop.length - 1 && along[i] < s) i++;
+    const t = (s - along[i - 1]) / (along[i] - along[i - 1]);
+    return [loop[i - 1][0] + (loop[i][0] - loop[i - 1][0]) * t, loop[i - 1][1] + (loop[i][1] - loop[i - 1][1]) * t];
+  };
+  const sOf = ([x, z]: World) => {
+    let best = { d: Infinity, s: 0 };
+    for (let i = 1; i < loop.length; i++) {
+      const [ax, az] = loop[i - 1];
+      const [dx, dz] = [loop[i][0] - ax, loop[i][1] - az];
+      const t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz)));
+      const d = Math.hypot(x - ax - dx * t, z - az - dz * t);
+      if (d < best.d) best = { d, s: along[i - 1] + t * (along[i] - along[i - 1]) };
+    }
+    return best.s;
+  };
+  const cuts = gaps.map(({ at, half }) => [sOf(at) - half, sOf(at) + half]).sort((a, b) => a[0] - b[0]);
+  const runs: World[][] = [];
+  let from = 0;
+  for (const [a, b] of [...cuts, [along[along.length - 1], Infinity]]) {
+    const run = [pointAt(from), ...loop.filter((_, i) => along[i] > from && along[i] < a), pointAt(a)];
+    runs.push(run);
+    from = b;
+  }
+  return runs;
+})();
 
 /**
  * Map labels. `minor` ones (the courts) only show when the camera is close. `stage`: the lake stage's, which
@@ -1054,6 +1252,9 @@ export function inKeepOut(x: number, z: number, margin: number): boolean {
   if (Math.hypot(x - STATUE[0], z - STATUE[1]) < 2.6 + margin) return true;
   if (inPolygon(LAKE, x, z) || nearLine(LAKE, x, z, 0.6 + margin, true)) return true;
   if (nearLine(BRIDGE, x, z, 0.8 + margin)) return true;
+  if (CAMPUS_FENCE.some((r) => nearLine(r, x, z, 0.25 + margin))) return true;
+  if (nearLine(GATE_ROAD.line, x, z, GATE_ROAD.width / 2 + margin)) return true;
+  if (inRect([EAST_GATE.x - EAST_GATE.half, EAST_GATE.x + EAST_GATE.half], EAST_GATE.z)) return true;
   if (FOOTPATHS.some((p) => nearLine(p, x, z, FOOTPATH_W / 2 + margin))) return true;
   const { courts, strips, crossing } = A_FRONT;
   if ([...courts, crossing].some((c) => inPolygon(c, x, z) || nearLine(c, x, z, margin, true))) return true;

@@ -7,6 +7,7 @@ import {
   FOOTPATH_W,
   FOOTPATHS,
   FUNFAIR_LAND,
+  GATE_ROAD,
   GROUND,
   LAKE,
   TREE_ROWS,
@@ -172,7 +173,10 @@ export function bushes(): Bush[] {
 /** `s`: size, 1 for the street lamps. */
 export type Lamp = { x: number; z: number; s: number };
 let lampCache: Lamp[] | null = null;
-/** Street lamps just inside the outer road, low lamps along the A-row's walk, and park lamps along the walkways. */
+/**
+ * Street lamps just inside the outer road and along the campus road, low lamps along the A-row's walk, and park lamps
+ * along the walkways.
+ */
 export function lamps(): Lamp[] {
   if (lampCache) return lampCache;
   const out: Lamp[] = [];
@@ -196,6 +200,24 @@ export function lamps(): Lamp[] {
   );
   for (let i = 0; i < ring.length; i++) {
     for (const [x, z] of along([ring[i], ring[(i + 1) % ring.length]], 9)) out.push({ x, z, s: 1 });
+  }
+  // along the campus road behind the main gate, on its campus side (it runs from B1 round to A1, campus on its left)
+  {
+    const road = GATE_ROAD.line;
+    const off = GATE_ROAD.width / 2 + 0.4;
+    let next = 2;
+    let run = 0;
+    for (let i = 1; i < road.length; i++) {
+      const [ax, az] = road[i - 1];
+      const [bx, bz] = road[i];
+      const len = Math.hypot(bx - ax, bz - az);
+      const [dx, dz] = [(bx - ax) / len, (bz - az) / len];
+      for (; next < run + len; next += 5.5) {
+        const t = next - run;
+        out.push({ x: ax + dx * t - dz * off, z: az + dz * t + dx * off, s: 0.55 });
+      }
+      run += len;
+    }
   }
   lampCache = out.filter((l) => !inKeepOut(l.x, l.z, 0.3));
   for (const [x, z] of A_FRONT_PLANTS.lamps) if (!inKeepOut(x, z, 0.05)) lampCache.push({ x, z, s: 0.35 });
