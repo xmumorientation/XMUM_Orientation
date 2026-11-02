@@ -10,7 +10,7 @@ const SharingContext = createContext<{ state: SharingState; error: string | null
 
 export function StaffLocationProvider({ children }: { children: React.ReactNode }) {
   const profile = useProfile();
-  const allowed = profile.role === "hof" || profile.role === "hogm";
+  const allowed = profile.role === "hof" || profile.role === "oc" || profile.role === "hogm";
   const supabase = useMemo(() => supabaseBrowser(), []);
   const [state, setState] = useState<SharingState>(allowed ? "starting" : "off");
   const [error, setError] = useState<string | null>(null);
@@ -127,7 +127,7 @@ export function StaffLocationProvider({ children }: { children: React.ReactNode 
 export function StaffLocationSwitch() {
   const profile = useProfile();
   const value = useContext(SharingContext);
-  if (!value || (profile.role !== "hof" && profile.role !== "hogm")) return null;
+  if (!value || (profile.role !== "hof" && profile.role !== "oc" && profile.role !== "hogm")) return null;
   const { state, error, toggle } = value;
   const on = state === "waiting" || state === "sharing" || state === "stopping" || state === "stopFailed";
   return <section className="card mb-3 p-3">

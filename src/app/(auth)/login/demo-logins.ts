@@ -10,6 +10,7 @@ const DEMO_LOGINS: DemoLogin[] = [
   { label: "Faci", email: "faci.test@xmu.edu.my", pass: "TestPass123!" },
   { label: "GM", email: "gm.test@xmu.edu.my", pass: "TestPass123!" },
   { label: "HOF", email: "hof.test@xmu.edu.my", pass: "TestPass123!" },
+  { label: "OC", email: "oc.test@xmu.edu.my", pass: "TestPass123!" },
   { label: "HOGM", email: "hogm.test@xmu.edu.my", pass: "TestPass123!" },
 ];
 

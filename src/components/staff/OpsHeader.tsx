@@ -23,7 +23,7 @@ import "./staff-home.css";
 // Landscape tablets and desktops use TopNav instead.
 
 /** Short role name for the header chip. */
-export const OPS_CHIP: Partial<Record<UserRole, string>> = { hof: "HOF", hogm: "HOGM", committee: "Committee", gm: "GM" };
+export const OPS_CHIP: Partial<Record<UserRole, string>> = { hof: "HOF", oc: "OC", hogm: "HOGM", committee: "Committee", gm: "GM" };
 
 export function OpsHeader({ onOpenMenu }: { onOpenMenu?: () => void }) {
   const profile = useProfile();

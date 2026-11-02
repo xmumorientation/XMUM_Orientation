@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 // FR-1.1 + FR-11.1: bulk staff import via CSV with dry-run preview.
 // CSV columns: name,email,role,group,station
-//   role   ∈ faci|gm|guardian_gm|hof|hogm|committee|admin
+//   role   ∈ faci|gm|guardian_gm|hof|oc|hogm|committee|admin
 //   group  = group id (optional, facis)
 //   station= station id (optional, GMs)
 // Returns generated credentials so Admin can distribute them centrally.
@@ -19,6 +19,7 @@ const STAFF_ROLES: UserRole[] = [
   "gm",
   "guardian_gm",
   "hof",
+  "oc",
   "hogm",
   "committee",
   "admin",

@@ -16,6 +16,7 @@ const TEST_ACCOUNTS = [
   { email: "admin.test@xmu.edu.my", role: "admin", name: "Test Admin", password: "TestPass123!" },
   { email: "freshie.test@xmu.edu.my", role: "freshie", name: "Test Freshie", group_id: 1, password: "TestPass123!" },
   { email: "hof.test@xmu.edu.my", role: "hof", name: "Test HOF", password: "TestPass123!" },
+  { email: "oc.test@xmu.edu.my", role: "oc", name: "Test OC", password: "TestPass123!" },
   { email: "hogm.test@xmu.edu.my", role: "hogm", name: "Test HOGM", password: "TestPass123!" },
   { email: "faci.test@xmu.edu.my", role: "faci", name: "Test Facilitator", group_id: 1, password: "TestPass123!" },
   { email: "gm.test@xmu.edu.my", role: "gm", name: "Test GameMaster", station_id: 1, password: "TestPass123!" },

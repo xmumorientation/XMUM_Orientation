@@ -32,7 +32,7 @@ export default function SchedulePage() {
   const profile = useProfile();
   if (profile.role === "freshie" || profile.role === "faci") return <FreshieSchedule />;
   // HOGM, HOF and GM: the same night schedule in the Welcome page colours, read only.
-  if (profile.role === "hogm" || profile.role === "hof" || profile.role === "gm") return <FreshieSchedule vortexa />;
+  if (profile.role === "hogm" || profile.role === "hof" || profile.role === "oc" || profile.role === "gm") return <FreshieSchedule vortexa />;
   return <StaffSchedule />;
 }
 

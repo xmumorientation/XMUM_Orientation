@@ -227,3 +227,11 @@ PR numbers are in brackets. Migration numbers are the files in `supabase/migrati
 
 ### 2026-10-26
 - 3D map tennis T1b, T2a and T2b: the game against a bot (`?tennis=bot`), two players between tabs (`?tennis=online`) and between phones over Supabase Realtime (`&net=realtime`): queue, 3 courts, rematch (Ben). [#63]
+
+
+## November 2026
+
+### 2026-11-02
+- Added the OC role with HOF-equivalent operations and blind-box access, independent OC identity, and account-management support. UI labels show OC only.
+- Centered desktop navigation and reduced map rendering load with intent preloading and adaptive resolution, preserving persistent-map pause/resume and the current campus models.
+- Added safe, idempotent OC enum/permission migrations 0113 and 0114; the database change and requested test account were verified through the Orientation project's existing connection.

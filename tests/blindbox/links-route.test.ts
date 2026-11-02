@@ -51,7 +51,7 @@ describe("/api/blindbox/links", () => {
   });
 
   it("lets every seller role ask", async () => {
-    for (const role of ["committee", "hof", "hogm", "admin"]) {
+    for (const role of ["committee", "hof", "oc", "hogm", "admin"]) {
       state.role = role;
       expect((await call({})).status).toBe(200);
     }

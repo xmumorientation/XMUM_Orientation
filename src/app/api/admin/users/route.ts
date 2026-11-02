@@ -17,6 +17,7 @@ const STAFF_ROLES: UserRole[] = [
   "gm",
   "guardian_gm",
   "hof",
+  "oc",
   "hogm",
   "committee",
   "admin",

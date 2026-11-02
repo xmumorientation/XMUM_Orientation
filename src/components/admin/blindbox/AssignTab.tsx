@@ -25,7 +25,7 @@ export function AssignTab({ data, onError, onNotice, goTo }: TabProps) {
   const [who, setWho] = useState<Who>("accounts");
   const [picked, setPicked] = useState<string[]>([]);
   const [search, setSearch] = useState("");
-  const [role, setRole] = useState<UserRole>("gm");
+  const [role, setRole] = useState<UserRole>("committee");
   const [qty, setQty] = useState("1");
 
   const type = liveTypes.find((t) => String(t.id) === typeId);
@@ -107,7 +107,7 @@ export function AssignTab({ data, onError, onNotice, goTo }: TabProps) {
                 aria-pressed={who === k}
                 onClick={() => setWho(k)}
                 className={cn(
-                  "rounded-[0.9rem] px-3 py-2 text-sm font-bold",
+                  "min-h-[44px] rounded-[0.9rem] px-3 py-2 text-sm font-bold",
                   who === k ? "bg-white text-ink shadow-card" : "text-ink-faint"
                 )}
               >
@@ -118,19 +118,22 @@ export function AssignTab({ data, onError, onNotice, goTo }: TabProps) {
 
           {who === "role" ? (
             <>
+              <label className="label" htmlFor="bb-assign-role">Recipient Role</label>
               <select
+                id="bb-assign-role"
                 className="input"
-                aria-label="Role"
+                aria-describedby="bb-assign-role-help"
                 value={role}
                 onChange={(e) => setRole(e.target.value as UserRole)}
               >
                 {BLINDBOX_HOLDER_ROLES.map((r) => (
                   <option key={r} value={r}>
-                    Every {ROLE_LABELS[r]} ({data.staff.filter((s) => s.role === r).length})
+                    Every {r === "oc" ? "OC" : ROLE_LABELS[r]} ({data.staff.filter((s) => s.role === r).length})
                   </option>
                 ))}
               </select>
-              <p className="text-xs text-ink-faint">
+              <p id="bb-assign-role-help" className="text-sm leading-relaxed text-ink-faint">
+                {role === "oc" && "Each OC holds their own boxes and shows their QR on Home. "}
                 Covers today&apos;s accounts only. Run it again for accounts added later.
               </p>
             </>
@@ -138,7 +141,7 @@ export function AssignTab({ data, onError, onNotice, goTo }: TabProps) {
             <div className="rounded-xl border border-paper-200">
               <div className="flex items-center gap-2 border-b border-paper-200 p-2">
                 <input
-                  className="input min-h-[36px] flex-1 py-1 text-sm"
+                  className="input min-h-[44px] min-w-0 flex-1 py-1 text-sm"
                   placeholder="Search people…"
                   aria-label="Search people"
                   value={search}
@@ -146,7 +149,7 @@ export function AssignTab({ data, onError, onNotice, goTo }: TabProps) {
                 />
                 <span className="shrink-0 px-1 text-xs font-semibold">{picked.length} picked</span>
                 {picked.length > 0 && (
-                  <button type="button" className="text-xs underline" onClick={() => setPicked([])}>
+                  <button type="button" className="min-h-[44px] px-2 text-sm underline" onClick={() => setPicked([])}>
                     Clear
                   </button>
                 )}
@@ -154,7 +157,7 @@ export function AssignTab({ data, onError, onNotice, goTo }: TabProps) {
               <ul className="max-h-60 divide-y divide-paper-200 overflow-y-auto">
                 {shown.map((s) => (
                   <li key={s.id}>
-                    <label className="flex cursor-pointer items-center gap-3 px-3 py-2 text-sm hover:bg-paper-100">
+                    <label className="flex min-h-[44px] cursor-pointer items-center gap-3 px-3 py-2 text-sm hover:bg-paper-100">
                       <input
                         type="checkbox"
                         checked={picked.includes(s.id)}
@@ -162,8 +165,8 @@ export function AssignTab({ data, onError, onNotice, goTo }: TabProps) {
                           setPicked((cur) => (e.target.checked ? [...cur, s.id] : cur.filter((x) => x !== s.id)))
                         }
                       />
-                      <span className="flex-1 truncate">{s.full_name || s.id.slice(0, 8)}</span>
-                      <span className="text-xs text-ink-faint">{ROLE_LABELS[s.role]}</span>
+                      <span className="min-w-0 flex-1 break-words">{s.full_name || s.id.slice(0, 8)}</span>
+                      <span className="max-w-[45%] text-right text-xs text-ink-faint">{ROLE_LABELS[s.role]}</span>
                     </label>
                   </li>
                 ))}

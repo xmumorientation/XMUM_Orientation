@@ -8,6 +8,7 @@ import { canUseWebGL } from "@/components/map3d/webgl";
 import { CampusMap2DView, type CampusMapViewProps } from "./CampusMap2DView";
 import type { CampusMap3DViewProps } from "./CampusMap3DView";
 import type { MapView } from "./useCampusMapData";
+import { preloadCampusMap } from "./preload";
 
 // Picks the map view: the 3D campus, or the 2D art when the device can't run
 // 3D (no WebGL, or the 3D view fails) or the URL asks for it with ?map=2d.
@@ -24,7 +25,7 @@ function MapLoading() {
   );
 }
 
-const CampusMap3DView = dynamic(() => import("./CampusMap3DView").then((m) => m.CampusMap3DView), {
+const CampusMap3DView = dynamic(() => preloadCampusMap().then((m) => m.CampusMap3DView), {
   ssr: false,
   loading: MapLoading,
 });

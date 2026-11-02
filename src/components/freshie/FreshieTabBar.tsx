@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 
 import { useProfile } from "@/components/ProfileProvider";
 import { OPS_ROLES } from "@/lib/types";
+import { prefetchCampusMap } from "@/components/campus-map/preload";
 
 import "./freshie.css";
 
@@ -49,7 +50,9 @@ export function FreshieTabBar() {
         : { href: "/scan", label: "Scan", aria: "Scan a QR code", Icon: ScanLine };
 
   const tab = ({ href, label, Icon }: Tab) => (
-    <Link key={href} href={href} className="fh-tab" aria-current={isActive(href) ? "page" : undefined}>
+    <Link key={href} href={href} className="fh-tab" aria-current={isActive(href) ? "page" : undefined}
+      onPointerEnter={() => prefetchCampusMap(href)} onFocus={() => prefetchCampusMap(href)}
+      onPointerDown={() => prefetchCampusMap(href)}>
       <Icon size={22} strokeWidth={1.9} aria-hidden />
       {label}
     </Link>

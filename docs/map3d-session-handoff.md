@@ -280,6 +280,7 @@ Fixed (the review's findings and Ben's additions):
   - The scene draws on demand (`frameloop="demand"`), so a still card costs nothing. Anything that animates asks for frames (`Intro`, `CameraRig`, `GroundMarks`, the flag's badge image, power-ups).
   - Full screen draws every frame on a fast device. Phones draw every frame in full screen while a funfair zone is on, at night (the lake stage's beams sweep), and during the concert.
   - Lite mode has no shadow pass.
+  - Local follow-up (2026-11-02): card DPR is capped at 1.25, full-screen at 1.5 (lite 1.25). `MapResolution` reduces DPR during camera changes and restores it after 180 ms without a change. `preserveDrawingBuffer` is false; no map code exports the canvas. Navigation intent starts the lazy chunk through `campus-map/preload.ts`. Models/effects and the existing demand/continuous-frame decisions are unchanged. See the roadmap Done entry for the browser measurement limits.
   - `FrameRateProbe` measures the frame rate once, 0.5–2.5 s after start. Below 24 fps the full scene steps down to lite, and lite below 10 fps falls back to 2D (`onFail`). `?perf=0` turns the probe off.
 - Accuracy check:
   - A roof or wall tap measures at the building (hit areas stay on during the check), not the ground behind it. "You" is a blue dot.

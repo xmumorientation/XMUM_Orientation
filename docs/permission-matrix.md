@@ -5,6 +5,8 @@ This reflects only the migration files in the repo. Any manual changes made to t
 
 General **Committee is read-only** (migration `0104_committee_read_only.sql`): the same Ops overview and Faci & Status history as HOF, with no assignment editor. A statement trigger on every current public table rejects Committee INSERT/UPDATE/DELETE/TRUNCATE, including writes through legacy SECURITY DEFINER RPCs or permissive RLS. Existing HOF/Admin permissions are unchanged. Add the same guard to future event tables. The migration must be applied before claiming this restriction is live.
 
+OC (`oc`, migrations `0113` + `0114`) is a separate role with the same pages and database permissions as HOF, including Faci assignment and blind-box holding. Admin can create/import OC accounts and assign boxes to all OC accounts or selected people. OC identity is preserved in profiles, staff location pins and audit logs. General Committee remains read-only. Apply `0113` and commit it before applying `0114`; then deploy the app. Applied through the SQL Editor on 2026-11-02 to `orientation-2612` (`yshlczowotyoewzjtdcz`), preserving installed function/policy/constraint changes and legacy HOF permission entries. The database change is already applied; the same idempotent SQL is checked in as 0113/0114 because 0110–0112 are used by other work. Frontend release verification is recorded in ROADMAP.md.
+
 ## Legend
 
 - ✓ = available / visible

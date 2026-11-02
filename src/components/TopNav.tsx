@@ -8,6 +8,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { FaciAvatar } from "@/components/freshie/ProfileEditor";
 import { PhaseTimer } from "@/components/PhaseTimer";
+import { prefetchCampusMap } from "@/components/campus-map/preload";
 
 import "./topnav.css";
 
@@ -79,6 +80,9 @@ export function TopNav({
           <Link
             key={item.href}
             href={item.href}
+            onPointerEnter={() => prefetchCampusMap(item.href)}
+            onFocus={() => prefetchCampusMap(item.href)}
+            onPointerDown={() => prefetchCampusMap(item.href)}
             className={item.href === primaryHref ? "vx-topnav-link vx-topnav-link-primary" : "vx-topnav-link"}
             aria-current={isActive(item.href) ? "page" : undefined}
           >
@@ -89,7 +93,7 @@ export function TopNav({
 
       <div className="vx-topnav-end">
         <PhaseTimer compact />
-        <span className="vx-topnav-role">{roleLabel}</span>
+        <span className="vx-topnav-role" title={roleLabel}>{roleLabel}</span>
         <div ref={ref} className="vx-topnav-account">
           <button
             type="button"

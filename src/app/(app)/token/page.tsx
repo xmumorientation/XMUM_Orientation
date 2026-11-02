@@ -22,7 +22,7 @@ export default function TokenPage() {
 
   if (isFaci) return null;
   // HOGM and HOF: tokens and puzzle keys per group (the Scores tab).
-  if (profile.role === "hogm" || profile.role === "hof") return <GroupScores />;
+  if (profile.role === "hogm" || profile.role === "hof" || profile.role === "oc") return <GroupScores />;
   // GM: the same list. A GM cannot read other groups' pieces (0002 RLS), so it
   // shows each key's piece count (fn_puzzle_status), not which pieces.
   if (profile.role === "gm") return <GroupScores countsOnly />;

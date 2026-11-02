@@ -26,7 +26,7 @@ type Headcount = {
 export default function CommitteePage() {
   const profile = useProfile();
   if (profile.role === "hogm") return <GameControl />;
-  return <OpsOverview canAssignFacis={profile.role === "hof" || profile.role === "admin"} />;
+  return <OpsOverview canAssignFacis={profile.role === "hof" || profile.role === "oc" || profile.role === "admin"} />;
 }
 
 // HOF, Committee and Admin: one row per group (its number on its colour) in

@@ -8,7 +8,7 @@
   .vx-topnav {
     --tn-accent: var(--fh-accent, #0dfcfd);
     position: sticky; top: 0; z-index: 40; flex: none;
-    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 16px;
     height: 60px; padding: 0 24px;
     padding-top: env(safe-area-inset-top, 0px);
     background: #030b1c; border-bottom: 1px solid rgba(255, 255, 255, 0.08);
@@ -54,7 +54,7 @@
 .staff-vx .vx-topnav-menu span { color: #8d87a0; }
 .staff-vx .vx-topnav-menu button { border-color: #3a3448; color: #f3f0fa; }
 
-.vx-topnav-end { display: flex; align-items: center; gap: 10px; flex: none; }
+.vx-topnav-end { display: flex; align-items: center; justify-self: end; gap: 10px; min-width: 0; max-width: 100%; }
 /* The live phase as a small pill (PhaseTimer compact). */
 .vx-topnav .app-phase-timer { border-radius: 999px; padding: 6px 12px; font-size: 13px; white-space: nowrap; }
 .vx-topnav .app-phase-timer:not(.is-endgame) { background: #0b2246; color: #eef5ff; }
@@ -62,9 +62,10 @@
 .vx-topnav-role {
   font-family: var(--font-mono), "JetBrains Mono", monospace; font-size: 10.5px; letter-spacing: 0.16em; text-transform: uppercase;
   padding: 5px 10px; border-radius: 999px; border: 1px solid var(--tn-accent); color: var(--tn-accent); white-space: nowrap;
+  min-width: 0; overflow: hidden; text-overflow: ellipsis;
 }
 
-.vx-topnav-account { position: relative; }
+.vx-topnav-account { position: relative; flex: none; }
 .vx-topnav-avatar { display: block; padding: 0; border: 0; background: none; border-radius: 50%; cursor: pointer; }
 .vx-topnav-avatar:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: 2px; }
 /* FaciAvatar plain: initials on the accent. */

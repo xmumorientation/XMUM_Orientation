@@ -478,6 +478,7 @@ export default function AdminUsersPage() {
         }}
       >
         <DialogContent
+          className="max-h-[calc(100dvh-2rem)] overflow-y-auto"
           title={created ? "Account Created" : "Add User"}
           description={
             created
@@ -496,15 +497,21 @@ export default function AdminUsersPage() {
               </button>
             </div>
           ) : (
-            <form onSubmit={createUser} className="space-y-2">
+            <form onSubmit={createUser} className="space-y-3">
+              <label className="label" htmlFor="new-user-name">Full Name</label>
               <input
+                id="new-user-name"
+                autoComplete="name"
                 className="input"
                 placeholder="Full name"
                 required
                 value={newUser.name}
                 onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
               />
+              <label className="label" htmlFor="new-user-email">Email</label>
               <input
+                id="new-user-email"
+                autoComplete="email"
                 className="input"
                 type="email"
                 placeholder="Email"
@@ -512,9 +519,11 @@ export default function AdminUsersPage() {
                 value={newUser.email}
                 onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
               />
+              <label className="label" htmlFor="new-user-role">Role</label>
               <select
+                id="new-user-role"
                 className="input"
-                aria-label="Role"
+                aria-describedby={newUser.role === "oc" ? "new-user-role-help" : undefined}
                 value={newUser.role}
                 onChange={(e) => setNewUser({ ...newUser, role: e.target.value as UserRole })}
               >
@@ -524,6 +533,12 @@ export default function AdminUsersPage() {
                   </option>
                 ))}
               </select>
+              {newUser.role === "oc" && (
+                <p id="new-user-role-help" className="text-sm leading-relaxed text-ink-faint">
+                  OC has the same access as HOF and can hold blind boxes.
+                  After creating the account, assign boxes in Blind boxes.
+                </p>
+              )}
               {HAS_GROUP.includes(newUser.role) && (
                 <select
                   className="input"
@@ -555,7 +570,7 @@ export default function AdminUsersPage() {
                 </select>
               )}
               <button type="submit" disabled={busy} className="btn-primary w-full">
-                Create Account
+                {busy ? "Creating Account…" : "Create Account"}
               </button>
             </form>
           )}
@@ -622,7 +637,7 @@ export default function AdminUsersPage() {
           <div className="space-y-2">
             <p className="text-xs text-ink-faint">
               Columns: <code>name,email,role,group,station</code> — role ∈{" "}
-              faci/gm/guardian_gm/hof/hogm/committee/admin.
+              faci/gm/guardian_gm/hof/oc/hogm/committee/admin.
             </p>
             <label className="btn-secondary inline-flex cursor-pointer items-center">
               Choose CSV File…
