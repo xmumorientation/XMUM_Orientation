@@ -10,7 +10,8 @@ import { allZonesOn, anyZoneOn, FUNFAIR_OFF, type FunfairPower } from "@/lib/fun
 
 import { Atmosphere, Effects, MODES, type Mode } from "./atmosphere";
 import { B1Building } from "./b1";
-import { Blocks, Bridge, Flag, Grandstand, Statue } from "./buildings";
+import { Blocks, Flag, Grandstand, Statue } from "./buildings";
+import { Bridge } from "./footbridge";
 import { Funfair } from "./funfair/Funfair";
 import { FUNFAIR_LABEL } from "./funfair/labels";
 import { LABELS } from "./geo";

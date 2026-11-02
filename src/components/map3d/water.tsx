@@ -4,13 +4,14 @@ import { useFrame } from "@react-three/fiber";
 import { useLayoutEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 
-import { BRIDGE, COLORS, DOME, DUCK, LAKE, type World } from "./geo";
+import { BASIN_D, BRIDGE, COLORS, DOME, DUCK, LAKE, LAKE_WATER_Y, type World } from "./geo";
 import { makeWaterNormals } from "./textures";
 
 // DRAFT: the lake (OSM outline). Clear water with moving ripples over the painted
-// lakebed, lotus pads near the shore, and the crowned duck.
+// lakebed, lotus pads near the shore, and the crowned duck. The lake lies in the low
+// ground round it, BASIN_D below the campus (terrain.ts); heights here are above its bed.
 
-const WATER_Y = 0.08;
+const WATER_Y = LAKE_WATER_Y;
 
 function lakeShape(pts: readonly World[]) {
   // same smoothing as the lakebed on the ground texture; shape y = -world z
@@ -41,7 +42,7 @@ export function Lakes() {
     normals.offset.y += dt * 0.007;
   });
   return (
-    <>
+    <group position-y={-BASIN_D}>
       {geos.map((g, i) => (
         <mesh key={i} geometry={g} position-y={WATER_Y} receiveShadow>
           <meshStandardMaterial
@@ -57,7 +58,7 @@ export function Lakes() {
         </mesh>
       ))}
       <Lotus />
-    </>
+    </group>
   );
 }
 
@@ -167,7 +168,7 @@ export function Duck() {
   const white = { color: COLORS.duck, roughness: 0.55 };
   const [dx, dz] = DUCK.pos;
   return (
-    <group position={[dx, 0, dz]} rotation-y={Math.PI / 4} scale={DUCK.scale}>
+    <group position={[dx, -BASIN_D, dz]} rotation-y={Math.PI / 4} scale={DUCK.scale}>
       {[0, 1, 2].map((i) => (
         <mesh key={i} ref={(m) => void (ripples.current[i] = m)} geometry={ringGeo} position={[0.6, WATER_Y + 0.02, 0]}>
           <meshBasicMaterial color="#ffffff" transparent opacity={0} depthWrite={false} />

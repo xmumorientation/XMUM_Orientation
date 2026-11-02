@@ -1,16 +1,18 @@
 "use client";
 
-import { useLayoutEffect, useMemo, useRef } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 
-import { groundY } from "./geo";
-import { bushes, campusTrees, lamps, plantation, thinForLite, type Plant } from "./plants";
+import { groundY } from "./terrain";
+import { bushes, campusTrees, lamps, plantation, thinForLite, walkPlanting, type HedgeRun, type Plant } from "./plants";
 import { makeGlow } from "./textures";
 
-// DRAFT: tropical planting. Rain trees and coconut palms on campus, oil
-// palms in the estate around it, bougainvillea along the paths, and street
-// lamps. Each kind is one instanced mesh.
+// DRAFT: tropical planting. Rain trees and coconut palms on campus, pink
+// trumpet trees along the walkways, oil palms in the estate around it,
+// bougainvillea along the paths, clipped hedges along the walkways, and
+// street lamps. Each kind is one instanced
+// mesh (the hedges are one plain mesh).
 
 /** Non-indexed copy with a flat vertex colour and no uv, ready to merge. */
 function colored(geo: THREE.BufferGeometry, color: string) {
@@ -82,6 +84,20 @@ function rainTreeGeometry() {
   ])!;
 }
 
+/** A pink trumpet tree in bloom: a slimmer trunk and a rounded crown, mostly flowers with some leaves. */
+function trumpetTreeGeometry() {
+  const trunk = colored(new THREE.CylinderGeometry(0.1, 0.16, 1.5, 6).translate(0, 0.75, 0), "#6e5241");
+  const blob = (r: number, x: number, y: number, z: number, sy: number, color: string) =>
+    colored(jitter(new THREE.IcosahedronGeometry(r, 1).scale(1.15, sy, 1.15).translate(x, y, z), 0.11), color);
+  return mergeGeometries([
+    trunk,
+    blob(0.9, 0, 2.05, 0, 0.75, "#ec8fbf"),
+    blob(0.62, 0.55, 1.85, 0.3, 0.8, "#f4b3d2"),
+    blob(0.58, -0.5, 1.9, -0.35, 0.8, "#5f9a45"),
+    blob(0.5, -0.1, 2.45, 0.45, 0.8, "#e07aae"),
+  ])!;
+}
+
 function palmGeometry(kind: "palm" | "oil") {
   const parts: THREE.BufferGeometry[] = [];
   let top: THREE.Vector3;
@@ -149,18 +165,100 @@ export function Vegetation({ lite = false }: { lite?: boolean }) {
   const trees = useMemo(() => (lite ? thinForLite(campusTrees()) : campusTrees()), [lite]);
   const broad = useMemo(() => trees.filter((t) => t.kind === "broad"), [trees]);
   const palms = useMemo(() => trees.filter((t) => t.kind === "palm"), [trees]);
+  const trumpets = useMemo(() => trees.filter((t) => t.kind === "trumpet"), [trees]);
   const oil = useMemo(() => (lite ? thinForLite(plantation()) : plantation()), [lite]);
   const shadows = !lite;
   const rainGeo = useMemo(rainTreeGeometry, []);
   const palmGeo = useMemo(() => palmGeometry("palm"), []);
+  const trumpetGeo = useMemo(trumpetTreeGeometry, []);
   const oilGeo = useMemo(() => palmGeometry("oil"), []);
   return (
     <>
       <PlantInstances items={broad} geometry={rainGeo} castShadow={shadows} />
       <PlantInstances items={palms} geometry={palmGeo} castShadow={shadows} />
+      <PlantInstances items={trumpets} geometry={trumpetGeo} castShadow={shadows} />
       <PlantInstances items={oil} geometry={oilGeo} castShadow={shadows} />
       <Bushes />
+      <Hedges castShadow={shadows} />
     </>
+  );
+}
+
+/** A clipped hedge's cross-section (world units): half widths at its foot and top, and its height (about 0.9 m). */
+const HEDGE = { foot: 0.11, top: 0.075, h: 0.13 };
+
+/**
+ * The walkways' hedges (plants.ts walkPlanting) as one mesh: each run a low ribbon, wider at its foot, standing on
+ * the ground (the lake's banks included), with closed ends.
+ */
+function hedgeGeometry(runs: HedgeRun[]) {
+  const pos: number[] = [];
+  const col: number[] = [];
+  const c = new THREE.Color();
+  const v = new THREE.Vector3();
+  const w = new THREE.Vector3();
+  const quad = (a: THREE.Vector3, b: THREE.Vector3, cc: THREE.Vector3, d: THREE.Vector3, facing: THREE.Vector3, tint: THREE.Color) => {
+    v.subVectors(b, a);
+    w.subVectors(cc, a);
+    const flip = v.cross(w).dot(facing) < 0;
+    for (const p of flip ? [a, cc, b, a, d, cc] : [a, b, cc, a, cc, d]) {
+      pos.push(p.x, p.y, p.z);
+      col.push(tint.r, tint.g, tint.b);
+    }
+  };
+  const up = new THREE.Vector3(0, 1, 0);
+  for (const run of runs) {
+    // corners at each point: foot and top on the left, top and foot on the right
+    const rings = run.map(([x, z], i) => {
+      const [ax, az] = run[Math.max(0, i - 1)];
+      const [bx, bz] = run[Math.min(run.length - 1, i + 1)];
+      const len = Math.hypot(bx - ax, bz - az) || 1;
+      const nx = -(bz - az) / len;
+      const nz = (bx - ax) / len;
+      const y = groundY(x, z) - 0.02;
+      const h = HEDGE.h * (0.9 + 0.2 * Math.abs(Math.sin(x * 7.1 + z * 3.7)));
+      return [
+        new THREE.Vector3(x + nx * HEDGE.foot, y, z + nz * HEDGE.foot),
+        new THREE.Vector3(x + nx * HEDGE.top, y + h, z + nz * HEDGE.top),
+        new THREE.Vector3(x - nx * HEDGE.top, y + h, z - nz * HEDGE.top),
+        new THREE.Vector3(x - nx * HEDGE.foot, y, z - nz * HEDGE.foot),
+        new THREE.Vector3(nx, 0, nz),
+      ];
+    });
+    for (let i = 0; i < rings.length - 1; i++) {
+      const [a0, a1, a2, a3, n] = rings[i];
+      const [b0, b1, b2, b3] = rings[i + 1];
+      const shade = 0.85 + 0.3 * Math.abs(Math.sin(i * 1.7 + run[0][0] * 5));
+      c.set("#2f6e2c").multiplyScalar(shade);
+      quad(a0, b0, b1, a1, n, c);
+      quad(a3, b3, b2, a2, n.clone().negate(), c);
+      quad(a1, b1, b2, a2, up, c.clone().offsetHSL(0, 0, 0.04));
+    }
+    // the ends
+    for (const [k, out] of [
+      [0, -1],
+      [rings.length - 1, 1],
+    ] as const) {
+      const [a0, a1, a2, a3] = rings[k];
+      const [p, q] = [run[Math.max(0, k - 1)], run[Math.min(run.length - 1, k + 1)]];
+      const facing = new THREE.Vector3(q[0] - p[0], 0, q[1] - p[1]).multiplyScalar(out);
+      quad(a0, a1, a2, a3, facing, c.set("#2f6e2c"));
+    }
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute("color", new THREE.Float32BufferAttribute(col, 3));
+  g.computeVertexNormals();
+  return g;
+}
+
+function Hedges({ castShadow }: { castShadow: boolean }) {
+  const geo = useMemo(() => hedgeGeometry(walkPlanting().hedges), []);
+  useEffect(() => () => geo.dispose(), [geo]);
+  return (
+    <mesh geometry={geo} castShadow={castShadow} receiveShadow>
+      <meshStandardMaterial vertexColors flatShading roughness={0.9} />
+    </mesh>
   );
 }
 
@@ -206,10 +304,19 @@ export function Lamps({ glow }: { glow: number }) {
   );
   useLayoutEffect(() => {
     const m = new THREE.Matrix4();
+    const q = new THREE.Quaternion();
+    const up = new THREE.Vector3(0, 1, 0);
+    const n = new THREE.Vector3();
+    const e = 0.2;
     items.forEach((l, i) => {
-      m.makeScale(l.s, l.s, l.s).setPosition(l.x, groundY(l.x, l.z), l.z);
+      const y = groundY(l.x, l.z);
+      m.makeScale(l.s, l.s, l.s).setPosition(l.x, y, l.z);
       poles.current!.setMatrixAt(i, m);
       heads.current!.setMatrixAt(i, m);
+      // the light's pool lies on the ground, sloping with it on banks; small lamps light a little more than their size
+      n.set(groundY(l.x - e, l.z) - groundY(l.x + e, l.z), 2 * e, groundY(l.x, l.z - e) - groundY(l.x, l.z + e)).normalize();
+      const pool = Math.max(l.s, 0.5);
+      m.compose(new THREE.Vector3(l.x, y, l.z), q.setFromUnitVectors(up, n), new THREE.Vector3(pool, pool, pool));
       pools.current!.setMatrixAt(i, m);
     });
     for (const r of [poles, heads, pools]) r.current!.instanceMatrix.needsUpdate = true;

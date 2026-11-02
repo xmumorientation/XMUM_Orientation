@@ -56,9 +56,42 @@ Ben may continue this work in a new Claude conversation. This file says where ev
   - OSM's lake walk ends at `B1_WALK_END`, and one walk (`B1_NORTH_WALK`) sweeps from there to the west road; the walk along the lake is whole. Two stub walks are dropped (`DROPPED_WALKS`). Walks are generated data (`campusData.ts`), so they are trimmed and dropped in `geo.ts`.
 - **Later:** check the north and east sides against photos (none yet); railings between the brick pillars; the stairs' south end is straight (the imagery shows a curved wall).
 
+### The lake's low ground (2026-11-02, branch `map3d-lake-basin`)
+
+- Ben: the lake, its shore and the LakeFront Café lie lower than the campus. The stage is about as low as the lake, the amphitheatre's terraces are cut into the bank, and past the top terrace the ground still climbs gently to the campus's level. Round the lake, the walks are lower the closer they are to the water.
+- **Depth:** `BASIN_D` in `geo.ts`, 4.8 m (true height): the top terrace is 3.3 m above the stage's floor, so the ground behind it climbs about 1.5 m more.
+- **Shape:** `terrain.ts`.
+  - `basinY` is the low ground's height. The shore meets the water at its level (`LAKE_WATER_Y`, 0.54 m above the floor; Ben, 2026-11-02: no step at the water's edge, banks like his photo of the lake). Under the water the bed goes down to the floor over 4 m (`BED_W`). From the shore and the stage's walkway the bank climbs over up to 40 m (`BASIN_W`) on `bank()`: it leaves the water at a gentle slope and flattens into the campus's level. It stops 1 m before the funfair's land, the A-row's slopes and B1's west road and stairs (`flatDist`), so the bank is narrower and steeper where they come close. The steepest spot is the lake's north lobe, about 18 m from the funfair.
+  - The amphitheatre (`bowlRise`): under the terraces the ground keeps 0.25 m below each front edge and meets the top terrace at its back edge. Behind it, the ground climbs to the campus's level over 20 m (`BOWL_W`). Past the terraces' ends it blends into the plain basin over 25 m (`BOWL_FADE`).
+  - Near the lake the amphitheatre's ground climbs no faster than a bank 32 m wide (`SHORE_W`). Ben (2026-11-02): the ground between the terraces' north end and the lake's north-west tip (12 m apart) stood up as a hump; it must climb gently from the water. So the north end of the terraces stands up to about 1 m above the bank there, and a short grass bank (`BERM_K`, 0.35 m per m) leans against the terraces' outer edge and ends instead of a bare wall. Under the terraces the ground keeps up with them (nothing shows there), so the coarse mesh meets their edge cleanly.
+  - `groundY` is `plateauY + basinY` (the two never overlap). `groundHit` (taps) is here too.
+- **Paint:** round the stage (within 7 units of `DOME`, fading back by 12) the lake's sand band is see-through, so the grass runs down to the water (Ben's photo); elsewhere it is the 2D art's sand band.
+- **Drawing:** `basin.ts`. `basinSurface` is a grid mesh of the low ground with the flat ground's UVs (like `plateauSurface`), drawn by `Ground` and `GroundMarks`. `basinMask` is an alpha map that cuts the flat ground's plane (and GroundMarks' flat overlay) away over it. A cell is cut only if its neighbours are low ground too, so the cut edge stays over the mesh.
+- **What moved down `BASIN_D`:** the lake's water, lotus and duck (`water.tsx`), the footbridge (`Bridge`), the lake stage's group (`FLOOR_Y` in `lakefront/layout.ts`; `toWorld3` includes it, so `stageView` follows) and its label. The willows stand on the bank (`bakeWillows` reads `basinY`). The old 2.6 m grass bank behind the top terrace is gone; a grass wall at the top terrace's back edge, down to the floor, closes the terraces wherever the mesh dips below that edge.
+- Cost: desktop +34k triangles, lite +8.7k (one draw call; one more for GroundMarks while it shows marks). Building the grid takes about 140 ms on a desktop (lite 30 ms), once.
+- Check: `tests/lakefront/terrain.test.ts`. Views: `/map3d?cam=7.5,0.55,-47,9,-0.5,-34` (eye level, from behind the amphitheatre), `cam=4,0.9,-40.5,13.5,-0.2,-38` (the terraces cut into the slope), `cam=-4,3.2,-47,11,-0.3,-34`.
+
+### Planting and lamps along the walkways (2026-11-02, branch `map3d-lake-basin`)
+
+- Ben: the walks should look greener, and the park was dark at night. He left the design to us (no need to follow the imagery's planting).
+- Every walkway (`FOOTPATHS`; nearly all are in the lake park) gets, from `walkPlanting()` in `plants.ts`:
+  - **park lamps** (`s` 0.3, about 5 m) in a zigzag about every 22 m, between the path and the hedge. A lamp keeps 1.8 units from the next, so junctions don't bunch them. Their light pools are drawn at least at size 0.5 and lie on the ground's slope (`Lamps` in `vegetation.tsx`);
+  - **a low clipped hedge** along each side (`Hedges`, one mesh, about 0.9 m tall) with bougainvillea in it (in `bushes()`). It breaks at junctions and every few metres, and there is none on the side that faces the lake within `LAKE_VIEW`, so the walks look out over the water;
+  - **shade trees** behind the hedges, staggered on both sides: rain trees, a quarter of them pink trumpet trees in bloom (`kind: "trumpet"`, Tabebuia rosea, common on Malaysian campuses), and coconut palms by the water. They keep 1.7 units from other trees and join `campusTrees()`, so the ground's shade, lite thinning and `groundY` work as for the rest.
+- Nothing goes on the funfair's land, within 3 m of the lake stage's terraces (`STAGE_R`), on the paths or anywhere else `inKeepOut` covers.
+- Counts: 134 trees (100 rain trees, 29 trumpet trees, 5 palms), 111 lamps, 426 bougainvillea, 177 hedge runs. Draw calls: +2 (the trumpet trees and the hedges), each also in the desktop shadow pass.
+- Views: `/map3d?cam=-14,14,-46,4,-0.5,-18` (by day and `&mode=night`), from above `cam=-38,40,-14,0,-0.5,-12`.
+
+### The footbridge (2026-11-02, branch `map3d-lake-basin`)
+
+- Rebuilt from Ben's photo (`footbridge.tsx`, `Bridge`; it was a flat red box in `buildings.tsx`). On OSM's line across the lake's waist (54.6 m; about 35 m of it over water), its ends rest on the banks, and the deck arches about 2 m above the line between them (`SPAN`), about 3 m over the water at the top.
+- The deck is paved like the walks (`COLORS.path`) with a red fascia. The red lattice railings have posts, a handrail, a bottom rail and an X in each bay, and the handrail sweeps down over the last 0.8 units at each end. Two stone piers stand under the arch, on the lakebed. One mesh.
+- A park lamp stands on the bank at each end, on opposite sides (`walkPlanting`), as in the photo.
+- Views: side-on `/map3d?cam=11.4,0.35,-12.6,7.46,-0.2,-8.83`; along the deck `cam=2.6,0.9,-14.5,7.46,-0.2,-8.83`.
+
 ### The A-row on raised ground (2026-10-21, branch `map3d-b1`)
 
-- The five blocks stand on raised ground, 4 m above the statue's lawn (Ben: true height). Its flat top is `PLATEAU` in `geo.ts`, and `groundY(x, z)` gives the ground's height anywhere (0 off the A-row). **Anything placed on the A-row must take its height from `groundY`** (vegetation, pins and tags already do). The blocks, their labels and tap areas add `PLATEAU_H`.
+- The five blocks stand on raised ground, 4 m above the statue's lawn (Ben: true height). Its flat top is `PLATEAU` in `geo.ts`, and `plateauY(x, z)` gives its height (0 off the A-row). `groundY(x, z)` in `terrain.ts` gives the ground's height anywhere, the lake's low ground included. **Anything placed on the A-row or in the lake park must take its height from `terrain.ts` `groundY`** (vegetation, pins and tags already do). The blocks, their labels and tap areas add `PLATEAU_H`.
 - `plateau.tsx` draws it:
   - `plateauSurface()` is a grid mesh of the top and slopes with the flat ground's UVs, so the ground's canvas and `GroundMarks` lie on it.
   - `Plateau` draws the steps: the terrace (`TERRACE`, seat-like tiers with stairs cut through them) and the steps behind the blocks (`NORTH_STAIRS`). It also draws the pale stone walls and a stone base under each block.

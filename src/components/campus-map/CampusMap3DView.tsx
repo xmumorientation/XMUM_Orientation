@@ -9,7 +9,8 @@ import type { MapControls as MapControlsImpl } from "three-stdlib";
 
 import { MODES, type Mode } from "@/components/map3d/atmosphere";
 import CampusScene, { type CameraView, type Vec3 } from "@/components/map3d/CampusScene";
-import { EXTENT, UNITS_PER_M, gpsToWorld, groundHit, groundY } from "@/components/map3d/geo";
+import { EXTENT, UNITS_PER_M, gpsToWorld } from "@/components/map3d/geo";
+import { groundHit, groundY } from "@/components/map3d/terrain";
 import {
   CameraRig,
   GroundMarks,

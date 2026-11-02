@@ -1,12 +1,13 @@
-import { DOME_PLACE, UNITS_PER_M } from "../geo";
+import { BASIN_D, DOME_PLACE, UNITS_PER_M } from "../geo";
 
 import type { V3 } from "../funfair/central/kit";
 
 // The LakeFront Café venue (docs/map3d-lakefront-design.md), from Ben's photos: an open-air stage under a
 // red ribbed shell, in a moat at the lake's west tip, with a grass amphitheatre on the west.
 //
-// Modelled in metres round the stage's centre: x north, y up, z east (the venue's group stands on DOME_PLACE,
-// turned to the OSM footprint's bearing and scaled by UNITS_PER_M). The audience is on -z, the lake on +z.
+// Modelled in metres round the stage's centre: x north, y up, z east (the venue's group stands on DOME_PLACE, down in
+// the lake's low ground (BASIN_D below the campus; terrain.ts), turned to the OSM footprint's bearing and scaled by
+// UNITS_PER_M). The audience is on -z, the lake on +z.
 // Angles `a` are measured from the audience axis (-z, west), turning towards north (+x).
 
 export const DEG = Math.PI / 180;
@@ -18,11 +19,18 @@ export const ROT_Y = DOME_PLACE.rotY;
 /** The point at radius r and angle a (see above), at height y. */
 export const polar = (r: number, a: number, y = 0): V3 => [r * Math.sin(a), y, -r * Math.cos(a)];
 
-/** A venue point (metres) in world units: turned like the venue's group, scaled, and moved onto ORIGIN. */
+/** The venue's floor in the world: the lake's low ground. */
+export const FLOOR_Y = -BASIN_D;
+
+/** A venue point (metres) in world units: turned like the venue's group, scaled, and moved onto ORIGIN and FLOOR_Y. */
 export function toWorld3([x, y, z]: V3): V3 {
   const c = Math.cos(ROT_Y);
   const s = Math.sin(ROT_Y);
-  return [ORIGIN[0] + (x * c + z * s) * UNITS_PER_M, y * UNITS_PER_M, ORIGIN[1] + (z * c - x * s) * UNITS_PER_M];
+  return [
+    ORIGIN[0] + (x * c + z * s) * UNITS_PER_M,
+    FLOOR_Y + y * UNITS_PER_M,
+    ORIGIN[1] + (z * c - x * s) * UNITS_PER_M,
+  ];
 }
 
 /**
@@ -49,14 +57,15 @@ export const RING_R = 18.5;
 export const RING_Y = 0.95;
 export const RING_ARC = 132 * DEG;
 
-/** The amphitheatre: grass terraces from the walkway outwards, each one step higher, with a stone strip along its front. */
+/**
+ * The amphitheatre: grass terraces from the walkway outwards, each one step higher, with a stone strip along its front.
+ * They are cut into the lake's bank: behind the top terrace the ground climbs on to the campus's level (terrain.ts).
+ */
 export const TERRACES = 7;
 export const TERRACE_D = 2.0;
 export const TERRACE_H = 0.34;
 export const STONE_W = 0.5;
 export const SEATS_ARC: [number, number] = [-102 * DEG, 102 * DEG];
-/** The bank behind the top terrace, down to the lawn. */
-export const BANK_W = 2.6;
 /** Red-brick aisles through the terraces: their angles and half width. */
 export const AISLES = [-64 * DEG, -22 * DEG, 22 * DEG, 64 * DEG];
 export const AISLE_HW = 0.85;

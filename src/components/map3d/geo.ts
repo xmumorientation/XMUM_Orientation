@@ -406,6 +406,16 @@ const TRACED_PATHS_M: EN[][] = [
 export const LAKE: World[] = realPts(LAKE_M);
 export const PARK: World[] = realPts(PARK_M);
 export const GRASS: World[][] = GRASS_M.map(realPts);
+
+/**
+ * The lake, its shore and the lake stage lie this far below the campus's ground (Ben, 2026-11-02: the stage is as low
+ * as the lake, and past the amphitheatre's top terrace the ground still climbs, about 1.5 m, to the campus's level).
+ * The ground's shape is in terrain.ts.
+ */
+export const BASIN_D = 4.8 * UNITS_PER_M;
+
+/** The lake's water stands this far (world units, 0.54 m) above the low ground's floor; its shore meets it there. */
+export const LAKE_WATER_Y = 0.08;
 /**
  * OSM's walk along the lake's north-east shore carries on from this point (where a walk crosses it) down B1's west
  * road. Ben (2026-10-21): it ends here, and B1_NORTH_WALK takes it on to the west road in one sweep.
@@ -738,14 +748,25 @@ const PLATEAU_BOX = (() => {
 })();
 
 /**
- * The ground's height at a world point: PLATEAU_H on the raised ground's top, coming down over each edge's slope. The
- * slope eases out at its foot (a square), so a mesh of the ground stays under the steps laid over it.
+ * The raised ground's height at a world point: PLATEAU_H on its top, coming down over each edge's slope (0 off the
+ * A-row). The slope eases out at its foot (a square), so a mesh of the ground stays under the steps laid over it. The
+ * ground's height anywhere, the lake's low ground included, is terrain.ts groundY.
  */
-export function groundY(x: number, z: number): number {
+export function plateauY(x: number, z: number): number {
   const [x0, z0, x1, z1] = PLATEAU_BOX;
   if (x < x0 || x > x1 || z < z0 || z > z1) return 0;
+  const { d, w } = plateauEdge(x, z);
+  const k = d === 0 ? 1 : Math.max(0, 1 - d / w);
+  return PLATEAU_H * k * k;
+}
+
+/**
+ * How far a world point is from the raised ground's outline (0 on its top), and how wide the slope down from the
+ * nearest edge is there: the slope reaches `d - w` past its foot.
+ */
+export function plateauEdge(x: number, z: number): { d: number; w: number } {
   const { outline, slope } = PLATEAU;
-  if (inPolygon(outline, x, z)) return PLATEAU_H;
+  if (inPolygon(outline, x, z)) return { d: 0, w: 0 };
   let best = Infinity;
   let w = 0;
   for (let i = 0; i < outline.length; i++) {
@@ -760,34 +781,7 @@ export function groundY(x: number, z: number): number {
       w = slope[i] + (slope[j] - slope[i]) * t;
     }
   }
-  const k = Math.max(0, 1 - best / w);
-  return PLATEAU_H * k * k;
-}
-
-type XYZ = { x: number; y: number; z: number };
-
-/** Where a ray from `o` along `d` (world) first meets the ground, raised ground included: for taps on the map. */
-export function groundHit(o: XYZ, d: XYZ): World {
-  if (d.y > -1e-6) return [o.x, o.z];
-  const below = (t: number) => o.y + d.y * t <= groundY(o.x + d.x * t, o.z + d.z * t);
-  const end = o.y / -d.y;
-  let a = Math.max(0, (o.y - PLATEAU_H) / -d.y);
-  let hit = end;
-  const step = (end - a) / 48;
-  for (let t = a + step; t < end; t += step) {
-    if (below(t)) {
-      hit = t;
-      break;
-    }
-    a = t;
-  }
-  // close in on the edge between the last point above the ground and the first one on it
-  for (let k = 0; k < 12 && hit < end; k++) {
-    const m = (a + hit) / 2;
-    if (below(m)) hit = m;
-    else a = m;
-  }
-  return [o.x + d.x * hit, o.z + d.z * hit];
+  return { d: best, w };
 }
 
 /**
@@ -974,7 +968,8 @@ export const LABELS: { name: string; pos: World; y: number; minor?: boolean; sta
     minor: true,
     tennis: b.sport === "tennis",
   })),
-  { name: "LakeFront Café", pos: DOME, y: 4, stage: true },
+  // the stage stands in the lake's low ground
+  { name: "LakeFront Café", pos: DOME, y: 4 - BASIN_D, stage: true },
   { name: "Tan Kah Kee Statue", pos: STATUE, y: 6.6 * UNITS_PER_M * LANDMARK_SCALE },
 ];
 

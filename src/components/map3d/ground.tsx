@@ -4,11 +4,13 @@ import { useEffect, useMemo } from "react";
 import * as THREE from "three";
 
 import { drawB1Crossing, drawB1Grounds } from "./b1";
+import { basinMask, basinSurface } from "./basin";
 import {
   A_FRONT,
   B1_PLACE,
   BLOCKS,
   COLORS,
+  DOME,
   EXTENT,
   FOOTPATH_W,
   FOOTPATHS,
@@ -175,11 +177,15 @@ function makeGroundTexture(lite: boolean): THREE.CanvasTexture {
   stroke([...ring, ring[0]], 0.18, COLORS.roadLine);
   ctx.setLineDash([]);
 
-  // the lake (OSM): sandy shore, then a lakebed that gets deeper toward the middle
+  // the lake (OSM): sandy shore, then a lakebed that gets deeper toward the middle. Round the lake stage the grass
+  // runs down to the water instead (Ben's photo of the lake), fading into the sand further along the shore.
   {
     blob(LAKE);
     ctx.lineWidth = 0.7;
-    ctx.strokeStyle = COLORS.shore;
+    const sand = ctx.createRadialGradient(DOME[0], DOME[1], 7, DOME[0], DOME[1], 12);
+    sand.addColorStop(0, `${COLORS.shore}00`);
+    sand.addColorStop(1, COLORS.shore);
+    ctx.strokeStyle = sand;
     ctx.stroke();
     const cx = LAKE.reduce((s, p) => s + p[0], 0) / LAKE.length;
     const cz = LAKE.reduce((s, p) => s + p[1], 0) / LAKE.length;
@@ -380,18 +386,23 @@ function drawTrack(ctx: CanvasRenderingContext2D) {
 export function Ground({ lite = false }: { lite?: boolean }) {
   const tex = useMemo(() => makeGroundTexture(lite), [lite]);
   const raised = useMemo(() => plateauSurface(lite), [lite]);
+  const low = useMemo(() => basinSurface(lite), [lite]);
+  const cut = useMemo(() => basinMask(lite), [lite]);
   useEffect(() => () => tex.dispose(), [tex]);
   return (
     <>
+      {/* the flat ground, cut away over the lake's low ground */}
       <mesh rotation-x={-Math.PI / 2} receiveShadow>
         <planeGeometry args={[EXTENT.x * 2, EXTENT.z * 2]} />
-        <meshStandardMaterial map={tex} roughness={1} />
+        <meshStandardMaterial map={tex} roughness={1} alphaMap={cut} alphaTest={0.5} />
       </mesh>
-      {/* the raised ground under the A-row wears the same canvas, and wins where its slopes meet the flat ground (its
-       steps cast the shadows) */}
-      <mesh geometry={raised} receiveShadow>
-        <meshStandardMaterial map={tex} roughness={1} polygonOffset polygonOffsetFactor={-1} polygonOffsetUnits={-1} />
-      </mesh>
+      {/* the raised ground under the A-row and the low ground round the lake wear the same canvas, and win where they
+       meet the flat ground (the A-row's steps cast the shadows) */}
+      {[raised, low].map((g) => (
+        <mesh key={g.uuid} geometry={g} receiveShadow>
+          <meshStandardMaterial map={tex} roughness={1} polygonOffset polygonOffsetFactor={-1} polygonOffsetUnits={-1} />
+        </mesh>
+      ))}
     </>
   );
 }

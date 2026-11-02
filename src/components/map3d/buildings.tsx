@@ -11,7 +11,6 @@ import {
   A_PORCH_OUT_M,
   BLOCK_PLINTH,
   BLOCKS,
-  BRIDGE,
   COLORS,
   FLAG,
   grandstandRect,
@@ -900,26 +899,3 @@ export function Flag() {
   );
 }
 
-// ── Red footbridge across the lake (OSM) ─────────────────────────────────
-export function Bridge() {
-  const [[ax, az], [bx, bz]] = BRIDGE;
-  const len = Math.hypot(bx - ax, bz - az);
-  const rot = -Math.atan2(bz - az, bx - ax);
-  const posts = Array.from({ length: 9 }, (_, i) => -len / 2 + (i * len) / 8);
-  return (
-    <group position={[(ax + bx) / 2, 0, (az + bz) / 2]} rotation-y={rot}>
-      <Box size={[len, 0.3, 1.1]} pos={[0, 0.5, 0]} color={COLORS.red} />
-      {[-0.5, 0.5].map((z) => (
-        <Box key={z} size={[len, 0.1, 0.1]} pos={[0, 1.25, z]} color={COLORS.red} />
-      ))}
-      {posts.map((x) =>
-        [-0.5, 0.5].map((z) => (
-          <Box key={`${x}${z}`} size={[0.1, 0.6, 0.1]} pos={[x, 0.95, z]} color={COLORS.red} />
-        )),
-      )}
-      {[-len / 3, 0, len / 3].map((x) => (
-        <Box key={x} size={[0.4, 0.45, 0.8]} pos={[x, 0.2, 0]} color="#a3000a" />
-      ))}
-    </group>
-  );
-}
