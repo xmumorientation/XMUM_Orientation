@@ -538,6 +538,33 @@ export function makeRoofTiles() {
   return t;
 }
 
+/**
+ * Stone paving (the courtyards of A1, A2, A4 and A5): one tile of four by four square slabs in pale granite, each a
+ * shade apart and flecked, with darker joints.
+ */
+export function makePaving() {
+  const S = 256;
+  const n = 4;
+  const w = S / n;
+  const [c, ctx] = canvas(S, S);
+  const r = rng(11);
+  ctx.fillStyle = "#9d9486";
+  ctx.fillRect(0, 0, S, S);
+  for (let i = 0; i < n; i++)
+    for (let j = 0; j < n; j++) {
+      const l = 200 + Math.floor(r() * 22);
+      ctx.fillStyle = `rgb(${l},${l - 7},${l - 20})`;
+      ctx.fillRect(i * w + 1.5, j * w + 1.5, w - 3, w - 3);
+    }
+  for (let i = 0; i < 900; i++) {
+    ctx.fillStyle = `rgba(${r() < 0.5 ? "255,250,240" : "60,52,44"},${0.06 + r() * 0.1})`;
+    ctx.fillRect(r() * S, r() * S, 1 + r() * 1.5, 1 + r() * 1.5);
+  }
+  const t = texture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  return t;
+}
+
 /** Side of the slab: grass, then layers of soil. */
 export function makeSoil() {
   const [c, ctx] = canvas(512, 128);

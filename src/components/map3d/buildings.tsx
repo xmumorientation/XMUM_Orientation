@@ -30,6 +30,7 @@ import {
   makeA3Facade,
   makeGableFacade,
   makeGridFacade,
+  makePaving,
   makeRoofTiles,
   makeXmumFlag,
 } from "./textures";
@@ -140,11 +141,22 @@ const toSide = (side: number) => ((90 - side) * Math.PI) / 180;
 /**
  * A1, A2, A4 and A5 (Ben's photos; all four alike), as shares of the walls' half width `s`: a corner tower `tower`
  * wide at each corner, a gable on each side `gable` wide each way from the middle, and round each corner a red roof
- * that rises from its eaves (where the gables start) to its ridge, `ridge` out from the corner.
+ * that rises from its eaves (where the gables start) to its ridge, `ridge` out from the corner. The courtyard's points
+ * stop `point` inside the walls, and a darker square `square` each way from the middle (satellite photo) is set in its
+ * paving.
  */
-const GABLE_PLAN = { tower: 0.26, gable: 0.54, ridge: 0.95 };
-/** Heights over the eaves (world units): the gables' apex, the red roofs' ridge, the atrium's glass and its roof. */
-const GABLE_RISE = { apex: 2.4, ridge: 2.0, glass: 0.2, dome: 0.2 };
+const GABLE_PLAN = { tower: 0.26, gable: 0.54, ridge: 0.95, point: 0.06, square: 0.13 };
+/** Heights over the eaves (world units): the gables' apex and the red roofs' ridge. */
+const GABLE_RISE = { apex: 2.4, ridge: 2.0 };
+/** The courtyard's paving: one tile of makePaving (four slabs each way) is this wide (world units). */
+const PAVING_TILE = 0.7;
+/**
+ * The courtyard's shade (vertex colours, 1 is full light): its walls from `ground` at the plinth to `high` under the
+ * ridge, its paving, and the darker square in the paving.
+ */
+const COURT_SHADE = { ground: 0.15, high: 0.6, paving: 0.3, square: 0.2 };
+/** A texel of plain wall on makeGableFacade's wall (a pilaster; dark in the emissive map), for walls with no windows. */
+const PLAIN_WALL = [0.01, 0.235] as const;
 /**
  * The porches of A1, A2, A4 and A5 (photos), alike front and back (and on A5's east side): `half` wide each way, a
  * white canopy `canopy` thick on four square columns `col` thick and `h` tall, standing geo.ts A_PORCH_OUT_M out past
@@ -186,43 +198,89 @@ function cornerRoofGeometry(s: number, r0: number, r1: number, R: number, eave: 
   return g;
 }
 
+/** A point on the courtyard's outline (local units), with the normal there into the courtyard. */
+type CourtPoint = { x: number; z: number; nx: number; nz: number };
+
 /**
- * The atrium's glass (photos): in plan a four-pointed star, the square less a circle `R` round each corner (where the
- * red roofs stop), its points on the sides behind the gables. A band of glass stands from the eaves to `top`, under a
- * low roof up to `peak` in the middle, round a skylight.
+ * The open courtyard in the middle of A1, A2, A4 and A5 (Ben: open to the sky, down to the ground; aerial and
+ * satellite photos), in plan: the square less a circle `R` round each corner (under the red roofs' ridges), a
+ * four-pointed star whose points reach behind the gables and stop `m` inside the walls. One arc round each corner;
+ * a short straight run joins each arc to the next, behind a gable.
  */
-function atriumGeometry(s: number, R: number, eave: number, top: number, peak: number) {
-  const a = s - R;
-  const quarter: [number, number][] = [[-a, s]];
-  for (let i = 0; i < 12; i++) {
-    const t = ((Math.PI / 2) * i) / 12;
-    quarter.push([s - R * Math.cos(t), s - R * Math.sin(t)]);
-  }
-  // the same for the other three sides, each turned a quarter on from the last
-  const outline = [0, 1, 2, 3].flatMap((q) =>
-    quarter.map(([x, z]) => {
-      let p: [number, number] = [x, z];
-      for (let k = 0; k < q; k++) p = [p[1], -p[0]];
-      return p;
+function courtyardArcs(s: number, R: number, m: number): CourtPoint[][] {
+  const t0 = Math.asin(m / R);
+  const quarter = Array.from({ length: 13 }, (_, i) => {
+    const t = t0 + ((Math.PI / 2 - 2 * t0) * i) / 12;
+    return { x: s - R * Math.cos(t), z: s - R * Math.sin(t), nx: -Math.cos(t), nz: -Math.sin(t) };
+  });
+  // the same round the other three corners, each turned a quarter on from the last
+  return [0, 1, 2, 3].map((q) =>
+    quarter.map((p) => {
+      let { x, z, nx, nz } = p;
+      for (let k = 0; k < q; k++) [x, z, nx, nz] = [z, -x, nz, -nx];
+      return { x, z, nx, nz };
     }),
   );
-  const band = new THREE.ExtrudeGeometry(new THREE.Shape(outline.map(([x, z]) => new THREE.Vector2(x, z))), {
-    depth: top - eave,
-    bevelEnabled: false,
-  })
-    .rotateX(Math.PI / 2)
-    .translate(0, top, 0);
+}
+
+/**
+ * The courtyard's walls, facing into it, from the plinth up to the red roofs' ridge `ridge` over the eaves: plain wall
+ * (Ben: no windows), smooth round the arcs. Little light reaches the bottom of so deep a courtyard (Ben: darker), so
+ * vertex colours shade the walls, darkest at the ground (COURT_SHADE).
+ */
+function courtyardWalls(arcs: CourtPoint[][], eave: number, ridge: number) {
+  const top = eave + ridge;
+  // rows up the wall, so the shade can curve
+  const rows = 8;
+  const ys = Array.from({ length: rows + 1 }, (_, k) => PLINTH + ((top - PLINTH) * k) / rows);
+  const { ground, high } = COURT_SHADE;
+  const shade = (y: number) => ground + (high - ground) * Math.pow((y - PLINTH) / (top - PLINTH), 1.3);
   const pos: number[] = [];
-  outline.forEach(([x, z], i) => {
-    const [x2, z2] = outline[(i + 1) % outline.length];
-    pos.push(0, peak, 0, x, top, z, x2, top, z2);
+  const nor: number[] = [];
+  const uv: number[] = [];
+  const col: number[] = [];
+  arcs.forEach((arc, q) => {
+    const next = arcs[(q + 1) % arcs.length][0];
+    arc.forEach((a, i) => {
+      const b = arc[i + 1] ?? next;
+      const len = Math.hypot(b.x - a.x, b.z - a.z);
+      // the straight run behind a gable takes its own normal, the arcs their points'
+      const own = { nx: (b.z - a.z) / len, nz: (a.x - b.x) / len };
+      const [na, nb] = i === arc.length - 1 ? [own, own] : [a, b];
+      for (let k = 0; k < rows; k++) {
+        const [y0, y1] = [ys[k], ys[k + 1]];
+        // two triangles, wound to face the normal
+        const quad = [
+          [a, na, y0],
+          [b, nb, y1],
+          [b, nb, y0],
+          [a, na, y0],
+          [a, na, y1],
+          [b, nb, y1],
+        ] as const;
+        for (const [p, n, y] of quad) {
+          pos.push(p.x, y, p.z);
+          nor.push(n.nx, 0, n.nz);
+          uv.push(...PLAIN_WALL);
+          col.push(shade(y), shade(y), shade(y));
+        }
+      }
+    });
   });
-  const roof = new THREE.BufferGeometry();
-  roof.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
-  roof.setAttribute("uv", new THREE.Float32BufferAttribute(new Array((pos.length / 3) * 2).fill(0), 2));
-  roof.computeVertexNormals();
-  const skylight = new THREE.CylinderGeometry(0.2 * s, 0.2 * s, 0.12, 20).translate(0, peak - 0.03, 0);
-  return [band, roof, skylight];
+  const g = new THREE.BufferGeometry();
+  g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute("normal", new THREE.Float32BufferAttribute(nor, 3));
+  g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
+  g.setAttribute("color", new THREE.Float32BufferAttribute(col, 3));
+  return g;
+}
+
+/** A flat shape in the x-z plane at height `y` (`outer`, less `hole`), facing up, its uv in local units. */
+function flatShape(outer: [number, number][], y: number, hole?: [number, number][]) {
+  const shape = new THREE.Shape(outer.map(([x, z]) => new THREE.Vector2(x, z)));
+  if (hole) shape.holes.push(new THREE.Path(hole.map(([x, z]) => new THREE.Vector2(x, z))));
+  // rotating -90° about x takes the shape's y to -z; every shape here is symmetric under z -> -z
+  return new THREE.ShapeGeometry(shape).rotateX(-Math.PI / 2).translate(0, y, 0);
 }
 
 /**
@@ -258,9 +316,11 @@ function gablePorch(s: number, steps: "straight" | "fan" | null) {
 /**
  * A1, A2, A4 and A5's walls, roofs, porches and plinth (local units, walls `s` each way from the middle), with porches
  * on the `front` side (degrees, as geo.ts A_FRONT_SIDE) and the back, and on the east side (local +Z) if `east`.
- * `walls`, `towers` and `centre` (the middle bay of each side) wear makeGableFacade's wall, balcony and centre; `trim`
- * is the white stone (pilasters, gables, ridges, porches), `roofs` the red tiles, `glass` the atrium and the porches'
- * decks, `stone` the plinth and the steps. `bay` is the bays' width.
+ * `walls`, `towers` and `centre` (the middle bay of each side) wear makeGableFacade's wall, balcony and centre (the
+ * courtyard's walls and the roof deck round it are in `walls`); `trim` is the white stone (pilasters, gables, ridges,
+ * porches), `roofs` the red tiles, `decks` the porches' flat tops, `stone` the plinth and the steps, `floor` the
+ * courtyard's paving with the darker square in it. `walls` and `floor` carry vertex colours (the shade of the
+ * courtyard). `bay` is the bays' width.
  */
 function gableGeometry(s: number, front: number, east: boolean) {
   const H = H_BLOCK;
@@ -271,16 +331,46 @@ function gableGeometry(s: number, front: number, east: boolean) {
   const bay = (s - tw) / 2.5;
   const R = GABLE_PLAN.ridge * s;
   const r1 = s - GABLE_PLAN.gable * s;
-  const { apex, ridge, glass, dome } = GABLE_RISE;
+  const m = GABLE_PLAN.point * s;
+  const { apex, ridge } = GABLE_RISE;
 
   // the walls: the texture's bays fall between the pilasters, half a bay and then whole bays out from the middle
   const walls = boxAt(2 * s, H, 2 * s, 0, PLINTH + H / 2, 0);
   const uv = walls.getAttribute("uv") as THREE.BufferAttribute;
-  for (let i = 0; i < uv.count; i++) {
-    // BoxGeometry's faces, four corners each: +x, -x, +y, -y, +z, -z; the top and bottom take plain wall
-    if (Math.floor(i / 4) === 2 || Math.floor(i / 4) === 3) uv.setXY(i, 0.01, 0.235);
-    else uv.setX(i, (((2 * uv.getX(i) - 1) * s) / bay + 0.5) / 4);
-  }
+  for (let i = 0; i < uv.count; i++) uv.setX(i, (((2 * uv.getX(i) - 1) * s) / bay + 0.5) / 4);
+  // BoxGeometry's faces, six indices each: +x, -x, +y, -y, +z, -z. The courtyard is open to the sky (Ben), so the top
+  // goes (the roof deck below closes the rest), and the bottom, which nothing sees.
+  const idx = Array.from(walls.getIndex()!.array);
+  walls.setIndex([...idx.slice(0, 12), ...idx.slice(24)]);
+
+  // the courtyard: its walls, the roof deck round it at the eaves (plain wall), its paving and the square in the middle
+  const arcs = courtyardArcs(s, R, m);
+  const outline = arcs.flat().map((p): [number, number] => [p.x, p.z]);
+  const squareOf = (h: number): [number, number][] => [[-h, -h], [h, -h], [h, h], [-h, h]];
+  // the deck's hole a little wider than the courtyard, so its edge stays behind the walls (on them, it showed through)
+  const behind = courtyardArcs(s, R - 0.02, m - 0.02)
+    .flat()
+    .map((p): [number, number] => [p.x, p.z]);
+  const deck = flatShape(squareOf(s), eave, behind);
+  const duv = deck.getAttribute("uv") as THREE.BufferAttribute;
+  for (let i = 0; i < duv.count; i++) duv.setXY(i, ...PLAIN_WALL);
+  const paved = (g: THREE.BufferGeometry) => {
+    const puv = g.getAttribute("uv") as THREE.BufferAttribute;
+    for (let i = 0; i < puv.count; i++) puv.setXY(i, puv.getX(i) / PAVING_TILE, puv.getY(i) / PAVING_TILE);
+    return g;
+  };
+  const floor = paved(flatShape(outline, PLINTH + 0.01));
+  const square = paved(flatShape(squareOf(GABLE_PLAN.square * s), PLINTH + 0.02));
+  // one shade for every point of `g` (vertex colours: 1 leaves the material's colour as it is)
+  const shaded = (g: THREE.BufferGeometry, c: number) => {
+    const n = g.getAttribute("position").count;
+    g.setAttribute("color", new THREE.Float32BufferAttribute(new Array(n * 3).fill(c), 3));
+    return g;
+  };
+  // behind each gable, its back up to the ridge, just behind the courtyard's wall at its point (white stone, with the
+  // gable)
+  const back = s - Math.sqrt(R * R - m * m);
+  const gableBack = boxAt(2 * back, ridge, m - 0.12, 0, eave + ridge / 2, s - (m + 0.08) / 2);
 
   // a tower at each corner, a little proud of both walls and past the eaves, its floors in line with the walls'
   const th = H + 0.3;
@@ -302,6 +392,7 @@ function gableGeometry(s: number, front: number, east: boolean) {
     gable,
     boxAt(0.2, 0.3, 0.2, 0, eave + apex + 0.05, s - 0.03),
     new THREE.TubeGeometry(new THREE.CatmullRomCurve3(arc), 16, 0.05, 5),
+    gableBack,
     ...[-1, 1].map((sx) => boxAt(0.09, H, 0.05, sx * 1.5 * bay, PLINTH + H / 2, s + 0.025)),
   ];
   const towerRoof = hipGeometry(tw / 2 + 0.09, tw / 2 + 0.09, 0.4, 0.25).translate(
@@ -320,13 +411,14 @@ function gableGeometry(s: number, front: number, east: boolean) {
     porches.flatMap((p) => p[key].map((g) => g.rotateY(toSide(p.at))));
 
   return {
-    walls: merge([walls]),
+    walls: merge([shaded(walls, 1), shaded(deck, 1), courtyardWalls(arcs, eave, ridge)]),
     towers: merge(fourSides([tower])),
     centre: merge(fourSides([centre])),
     trim: merge([...fourSides(side), ...turned("trim")]),
     roofs: merge(fourSides([cornerRoofGeometry(s, r1 - 0.15, r1, R, eave, ridge), towerRoof])),
-    glass: merge([...atriumGeometry(s, R, eave, eave + ridge + glass, eave + ridge + glass + dome), ...turned("deck")]),
+    decks: merge(turned("deck")),
     stone: merge([boxAt(2 * (s + BLOCK_PLINTH.out), PLINTH, 2 * (s + BLOCK_PLINTH.out), 0, PLINTH / 2, 0), ...turned("stone")]),
+    floor: merge([shaded(floor, COURT_SHADE.paving), shaded(square, COURT_SHADE.square)]),
     bay,
   };
 }
@@ -335,18 +427,27 @@ function gableGeometry(s: number, front: number, east: boolean) {
  * A1, A2, A4 and A5, all alike (Ben's photos, aerial and satellite views), in A3's colours: square, six floors over a
  * colonnade, tall pilasters, slim windows in red frames, a tower with a small red roof at each corner and a framed bay
  * in the middle of each side; on each side a white gable up past the roof; between the gables, round each corner, a
- * red tiled roof that sweeps up from its eaves to a white ridge; in the middle the atrium's glass, star-shaped, round a
- * skylight. A porch on the front (`front`, toward the lawn) and on the back (on the landing before geo.ts
- * NORTH_STAIRS), alike, and on A5 one more on the east side, toward the track (`east`).
+ * red tiled roof that sweeps up from its eaves to a white ridge; in the middle an open courtyard, star-shaped, down to
+ * the ground, plain-walled, in deep shade and paved in stone. A porch on the front (`front`, toward the lawn) and on
+ * the back (on the landing before geo.ts NORTH_STAIRS), alike, and on A5 one more on the east side, toward the track
+ * (`east`).
  */
 function GableBlock({ position, rotY, s, seed, glow, front, east }: BlockProps & { s: number; front: number; east: boolean }) {
   const geo = useMemo(() => gableGeometry(s, front, east), [s, front, east]);
   const tiles = useMemo(makeRoofTiles, []);
-  // Only the windows glow at night (emissive map), as on A3.
+  const paving = useMemo(makePaving, []);
+  // Only the windows glow at night (emissive map), as on A3. The wall's vertex colours darken the courtyard toward the
+  // ground (courtyardWalls).
   const [wall, tower, centre] = useMemo(() => {
     const f = makeGableFacade(seed, geo.bay, H_BLOCK);
     return [f.wall, f.balcony, f.centre].map(
-      (maps) => new THREE.MeshStandardMaterial({ ...maps, roughness: 0.8, emissive: new THREE.Color("#ffffff") }),
+      (maps, i) =>
+        new THREE.MeshStandardMaterial({
+          ...maps,
+          roughness: 0.8,
+          emissive: new THREE.Color("#ffffff"),
+          vertexColors: i === 0,
+        }),
     );
   }, [seed, geo]);
   for (const m of [wall, tower, centre]) m.emissiveIntensity = glow;
@@ -364,8 +465,11 @@ function GableBlock({ position, rotY, s, seed, glow, front, east }: BlockProps &
       <mesh geometry={geo.roofs} castShadow receiveShadow>
         <meshStandardMaterial map={tiles} roughness={0.55} metalness={0.05} side={THREE.DoubleSide} />
       </mesh>
-      <mesh geometry={geo.glass} castShadow receiveShadow>
+      <mesh geometry={geo.decks} castShadow receiveShadow>
         <meshStandardMaterial color="#7f8d9b" roughness={0.35} metalness={0.25} side={THREE.DoubleSide} />
+      </mesh>
+      <mesh geometry={geo.floor} receiveShadow>
+        <meshStandardMaterial map={paving} color="#a39d94" roughness={0.9} vertexColors />
       </mesh>
     </group>
   );
