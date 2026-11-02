@@ -7,7 +7,7 @@ For everything already merged, day by day since the first commit, see [CHANGELOG
 
 > **From Ben:** when you finish your work, write down what you completed in the "Done" section at the end of this file, so the next teammate can see it. Do this for partly finished items too: say which parts are done and which are left.
 
-Last updated: 2026-10-27
+Last updated: 2026-11-02
 
 ## Status key
 
@@ -327,6 +327,31 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 ---
 
 ## Done
+
+### Map: the main gate, the east gate, the campus fence and road, 2026-11-02 (Ben, branch `map3d-lake-basin`)
+No migration. From Ben's photos and Esri imagery: on Jalan Sunsuria where the statue looks, two guard houses (a flat stone roof on round columns, a glazed booth in the two outer bays) either side of a black iron gate under a gold arch, and an oval fountain with "XIAMEN UNIVERSITY MALAYSIA / 厦門大學馬來西亞分校" on a granite wall in front, on a paved forecourt. Black railings on a stone plinth run round the campus: in line with the gate along Jalan Sunsuria, on a grass verge past the campus road on the east, just inside the outer road on the west and north, with gaps for the road east of the statue and for walks. Booth windows and the name light up at dusk and night. The campus road just inside the fence (Ben's blue line on OSM, then on to B1) is drawn from OSM, with street lamps on its campus side: from B1's north road south along the east side (over the art's east road's inner edge), round the south-east corner, south of the track, past the road east of the statue, behind the gate (the statue's plaza is paved across it), round the lawn's south-west corner and up its west side to A1's forecourt (Ben chose this end). B1's red brick service road and the walk from the track now end at it. The east gate by B1 (Ben's photos): where B1's palm avenue meets the public road, a small white guard house with a terracotta hip roof and the name with the crest on a navy panel, on a paved island with a lawn in front, a red and white barrier arm across each lane, and a gap in the fence; the east road's dashed line moved to the middle of what is left of it. Code: `maingate.tsx`; `MAIN_GATE`, `EAST_GATE`, `CAMPUS_FENCE`, `GATE_ROAD` and the forecourt (`A_AXIS_M.gate`) in `geo.ts`; the road is painted in `ground.tsx`. Checked on `/map3d` from the road, from above, at night, from afar, both ends of the road, and at phone size in lite mode; `tsc` and `eslint` clean.
+
+### Map: the footbridge rebuilt, 2026-11-02 (Ben, branch `map3d-lake-basin`)
+No migration. From Ben's photo of the red bridge across the lake's waist: a gentle arch paved in red brick like the walks, with red lattice railings whose handrails sweep down at the ends, on two stone piers, and a park lamp on the bank at each end. Its ends rest on the banks. Code: `footbridge.tsx` (the old flat box in `buildings.tsx` is gone). Checked on `/map3d` side-on, along the deck and at night.
+
+### Map: planting and lamps along the walkways, 2026-11-02 (Ben, branch `map3d-lake-basin`)
+No migration. Ben: make the walks greener, and add lamps because the park is dark at night; the planting can be our own design.
+- Every walkway (nearly all are in the lake park) now has park lamps in a zigzag about every 22 m, with warm light pools at dusk and night that lie on the slopes.
+- A low clipped hedge with bougainvillea runs along each side. It breaks at junctions, and there is none on the side facing the lake, so the walks look out over the water.
+- Shade trees stand behind the hedges: rain trees, pink trumpet trees in bloom and coconut palms by the water.
+- Nothing on the funfair's land, the lake stage's terraces or the paths.
+- Code: `walkPlanting()` in `plants.ts`; `Hedges`, the trumpet tree and the sloping light pools in `vegetation.tsx`. Details: the session handoff, "Planting and lamps along the walkways".
+- 134 trees, 111 lamps, 426 bougainvillea, 177 hedge runs; +2 draw calls. Checked on `/map3d` by day and at night, from above and close up, and at phone size in lite mode.
+
+### Map: the lake and the lake stage in low ground, 2026-11-02 (Ben, branch `map3d-lake-basin`)
+No migration. Ben: the lake, its shore and the LakeFront Café lie lower than the campus. The amphitheatre used to rise from the flat lawn and drop straight back to it behind the top terrace.
+- The lake and the stage lie 4.8 m below the campus (`BASIN_D`). Round the lake the ground climbs gently back to the campus's level, lower the closer it is to the water, and stops before the funfair's land, the A-row's slopes and B1's west road.
+- The amphitheatre is cut into the bank: the terraces climb from the stage's walkway, and past the top terrace the ground keeps climbing, about 1.5 m over 20 m, to the campus's level. The old steep bank behind it is gone.
+- Ben's first look: the ground between the terraces' north end and the lake stood up as a hump, and the shore was a hard edge. Now the shore meets the water at its level and climbs gently from it (his photo of the lake: grass banks down to the water), the lakebed slopes away under the water, and round the stage the sand band gives way to grass. The terraces' north end stands a little above the bank there, with a short grass bank against it.
+- The water, lotus, duck, footbridge, the stage (with its concert and preview camera) and its label moved down with it. Trees, lamps, pins and tags follow the ground (`terrain.ts` `groundY`), and so do taps on the map.
+- Code: `terrain.ts` (the shape), `basin.ts` (the mesh and the cut in the flat ground). Details: the session handoff, "The lake's low ground".
+- Cost: desktop +34k triangles, lite +8.7k, one draw call. Checked on `/map3d` (desktop and lite phone, by day and at sunset, eye level and from above) and `/map3d/preview`; `tests/lakefront/terrain.test.ts`; `tsc` and `eslint` clean for the map.
+- **Open:** the slope is gentle and true to height, so from high up it barely shows; Ben has not seen it yet. If it should read more strongly, deepen `BASIN_D` or narrow `BASIN_W`.
 
 ### Map: an open courtyard in A1, A2, A4 and A5, 2026-11-02 (Ben, branch `map3d-a-courtyard`)
 No migration. Ben: the dark star in the middle of these roofs is an open courtyard, not a dark metal roof. Checked against the Esri satellite view.
