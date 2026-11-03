@@ -1,0 +1,62 @@
+.app-neon.users-dialog {
+  background: #081a30;
+  border: 1px solid #274565;
+  color: #eef5ff;
+}
+
+.users-dialog h2 { color: #f2f7ff; }
+.users-dialog .text-ink-faint,
+.users-dialog .label { color: #c0d1e6; }
+.users-dialog .input {
+  background: #061426;
+  border-color: #42617f;
+  color: #f2f7ff;
+  color-scheme: dark;
+}
+.users-dialog .input::placeholder { color: #a7bad0; opacity: 1; }
+.users-dialog .input:focus {
+  border-color: #0dfcfd;
+  box-shadow: 0 0 0 2px rgb(13 252 253 / 30%);
+}
+.users-dialog .btn-primary {
+  background: #f2ff0b;
+  color: #111;
+}
+.users-dialog .btn-secondary {
+  background: transparent;
+  border-color: #42617f;
+  color: #f2f7ff;
+}
+.users-dialog button[aria-label="Close"] { color: #c0d1e6; }
+.users-dialog button[aria-label="Close"]:hover { background: #1a3552; color: #fff; }
+.users-dialog .border-paper-200 { border-color: #274565; }
+
+.users-dialog[data-state="open"] {
+  animation: users-dialog-in 180ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.users-dialog[data-state="closed"] {
+  animation: users-dialog-out 120ms ease-in both;
+}
+
+.users-dialog-overlay {
+  background: rgb(1 8 18 / 70%);
+}
+
+.users-dialog-overlay[data-state="open"] { animation: users-overlay-in 160ms ease-out both; }
+.users-dialog-overlay[data-state="closed"] { animation: users-overlay-out 120ms ease-in both; }
+
+@keyframes users-dialog-in {
+  from { opacity: 0; transform: translate(-50%, calc(-50% + 8px)); }
+  to { opacity: 1; transform: translate(-50%, -50%); }
+}
+@keyframes users-dialog-out {
+  from { opacity: 1; transform: translate(-50%, -50%); }
+  to { opacity: 0; transform: translate(-50%, calc(-50% + 4px)); }
+}
+@keyframes users-overlay-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes users-overlay-out { from { opacity: 1; } to { opacity: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .users-dialog[data-state], .users-dialog-overlay[data-state] { animation-duration: 1ms; }
+}

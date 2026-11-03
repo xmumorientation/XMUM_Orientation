@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { requireAdmin } from "@/lib/auth";
 import { generatePassword } from "@/lib/password";
-import { supabaseAdmin } from "@/lib/supabase/server";
+import { supabaseAdmin, supabaseServer } from "@/lib/supabase/server";
 import type { UserRole } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -116,8 +116,22 @@ export async function PATCH(req: NextRequest) {
     name?: string;
     email?: string;
     resetPassword?: boolean;
+    approveRole?: string;
   };
   if (!body.id) return fail("Missing id");
+  if (body.approveRole !== undefined) {
+    if (![...STAFF_ROLES, "freshie"].includes(body.approveRole as UserRole)) return fail("Choose a role");
+    const service = supabaseAdmin();
+    const { data: pending, error } = await service.from("profiles")
+      .update({ requested_role: body.approveRole })
+      .eq("id", body.id).eq("approved", false).select("id").maybeSingle();
+    if (error) return fail(error.message, 500);
+    if (!pending) return fail("Account is no longer waiting for approval", 409);
+    const supabase = await supabaseServer();
+    const { error: approvalError } = await supabase.rpc("fn_approve_account", { p_user_id: body.id });
+    if (approvalError) return fail(approvalError.message, 500);
+    return NextResponse.json({ ok: true });
+  }
   const name = body.name?.trim();
   const email = body.email?.trim().toLowerCase();
   if (name !== undefined && !name) return fail("Name is required");

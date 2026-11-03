@@ -328,6 +328,11 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 
 ## Done
 
+### David, 2026-11-03 — Users dialogs and approval
+
+- Updated Add user and Edit account dialogs for the Admin night theme, with clearer labels, role selection and reduced-motion-aware transitions. Admin can select a role for pending accounts before approval.
+- Verify the deployed approval flow and dialogs with an authorized Admin account.
+
 ### David, 2026-11-02 — Restore Map Sharpness and Admin Avatar
 
 - Removed reduced preview/full-screen DPR caps and camera-motion resolution reduction after user visual feedback. All map views use screen pixel density up to DPR 2; preloading, parked-map behavior and the drawing-buffer optimization remain. This supersedes the lower-resolution settings recorded below.

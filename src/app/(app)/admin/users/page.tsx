@@ -12,8 +12,9 @@ import {
   SuccessBanner,
 } from "@/components/ui";
 import { Dialog, DialogContent } from "@/components/ui/Dialog";
+import { Select } from "@/components/ui/Select";
+import "./users-dialog.css";
 import { supabaseBrowser } from "@/lib/supabase/client";
-import { friendlyError } from "@/lib/utils";
 import {
   ROLE_LABELS,
   type Group,
@@ -74,6 +75,8 @@ export default function AdminUsersPage() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [approvalRoles, setApprovalRoles] = useState<Record<string, UserRole>>({});
+  const [approving, setApproving] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
@@ -214,13 +217,17 @@ export default function AdminUsersPage() {
 
   async function approveUser(u: Profile) {
     setError(null);
-    const { error: rpcError } = await supabase.rpc("fn_approve_account", { p_user_id: u.id });
-    if (rpcError) {
-      setError(friendlyError(rpcError));
-      return;
+    const role = approvalRoles[u.id] ?? u.requested_role;
+    if (!role) return;
+    setApproving(u.id);
+    try {
+      await api("PATCH", { id: u.id, approveRole: role });
+      flash(`${u.full_name || u.email} can sign in as ${ROLE_LABELS[role]}.`);
+      await load();
+    } catch (err) {
+      setError((err as Error).message);
     }
-    flash(`${u.full_name || u.email} can sign in as ${ROLE_LABELS[u.requested_role ?? u.role]}.`);
-    load();
+    setApproving(null);
   }
 
   async function deleteUser(u: Profile) {
@@ -286,7 +293,7 @@ export default function AdminUsersPage() {
                 setAddOpen(true);
               }}
             >
-              + Add User
+              + Add user
             </button>
           </div>
         }
@@ -296,7 +303,7 @@ export default function AdminUsersPage() {
 
       {pending.length > 0 && (
         <Card className="space-y-3">
-          <h2 className="font-semibold">Waiting for Approval</h2>
+          <h2 className="font-semibold">Waiting for approval</h2>
           <ul className="divide-y divide-paper-200">
             {pending.map((u) => (
               <li key={u.id} className="flex flex-wrap items-center gap-3 py-3">
@@ -307,13 +314,22 @@ export default function AdminUsersPage() {
                     {u.requested_role ? ` / ${ROLE_LABELS[u.requested_role]}` : " / No role chosen yet"}
                   </p>
                 </div>
+                <select
+                  className="input w-full sm:w-auto"
+                  aria-label={`Role for ${u.full_name || u.email}`}
+                  value={approvalRoles[u.id] ?? u.requested_role ?? ""}
+                  onChange={(e) => setApprovalRoles((roles) => ({ ...roles, [u.id]: e.target.value as UserRole }))}
+                >
+                  <option value="">Choose a role</option>
+                  {ALL_ROLES.map((role) => <option key={role} value={role}>{ROLE_LABELS[role]}</option>)}
+                </select>
                 <button
                   type="button"
                   className="btn-primary px-4"
-                  disabled={!u.requested_role}
+                  disabled={approving !== null || !(approvalRoles[u.id] ?? u.requested_role)}
                   onClick={() => approveUser(u)}
                 >
-                  Approve
+                  {approving === u.id ? "Approving…" : "Approve"}
                 </button>
                 <button type="button" className="btn-secondary px-4" onClick={() => deleteUser(u)}>
                   Reject
@@ -478,8 +494,9 @@ export default function AdminUsersPage() {
         }}
       >
         <DialogContent
-          className="max-h-[calc(100dvh-2rem)] overflow-y-auto"
-          title={created ? "Account Created" : "Add User"}
+          className="app-neon users-dialog max-h-[calc(100dvh-2rem)] overflow-y-auto"
+          overlayClassName="users-dialog-overlay"
+          title={created ? "Account created" : "Add user"}
           description={
             created
               ? "Copy the password now. It is not shown again."
@@ -498,7 +515,7 @@ export default function AdminUsersPage() {
             </div>
           ) : (
             <form onSubmit={createUser} className="space-y-3">
-              <label className="label" htmlFor="new-user-name">Full Name</label>
+              <label className="label" htmlFor="new-user-name">Full name</label>
               <input
                 id="new-user-name"
                 autoComplete="name"
@@ -520,10 +537,9 @@ export default function AdminUsersPage() {
                 onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
               />
               <label className="label" htmlFor="new-user-role">Role</label>
-              <select
+              <Select
                 id="new-user-role"
-                className="input"
-                aria-describedby={newUser.role === "oc" ? "new-user-role-help" : undefined}
+                aria-describedby="new-user-role-help"
                 value={newUser.role}
                 onChange={(e) => setNewUser({ ...newUser, role: e.target.value as UserRole })}
               >
@@ -532,16 +548,16 @@ export default function AdminUsersPage() {
                     {ROLE_LABELS[r]}
                   </option>
                 ))}
-              </select>
-              {newUser.role === "oc" && (
-                <p id="new-user-role-help" className="text-sm leading-relaxed text-ink-faint">
-                  OC has the same access as HOF and can hold blind boxes.
-                  After creating the account, assign boxes in Blind boxes.
-                </p>
-              )}
+              </Select>
+              <p id="new-user-role-help" className="text-sm leading-relaxed text-ink-faint">
+                {newUser.role === "oc"
+                  ? "OC has the same access as HOF and can hold blind boxes. Assign boxes after creating the account."
+                  : newUser.role === "committee"
+                    ? "Committee can view operations but cannot make changes."
+                    : "Choose the role that matches this person's responsibilities."}
+              </p>
               {HAS_GROUP.includes(newUser.role) && (
-                <select
-                  className="input"
+                <Select
                   aria-label="Group"
                   value={newUser.group}
                   onChange={(e) => setNewUser({ ...newUser, group: e.target.value })}
@@ -552,11 +568,10 @@ export default function AdminUsersPage() {
                       {groupLabel(g)}
                     </option>
                   ))}
-                </select>
+                </Select>
               )}
               {HAS_STATION.includes(newUser.role) && (
-                <select
-                  className="input"
+                <Select
                   aria-label="Station"
                   value={newUser.station}
                   onChange={(e) => setNewUser({ ...newUser, station: e.target.value })}
@@ -567,10 +582,10 @@ export default function AdminUsersPage() {
                       {s.name} / Day {s.day} / {s.code}
                     </option>
                   ))}
-                </select>
+                </Select>
               )}
               <button type="submit" disabled={busy} className="btn-primary w-full">
-                {busy ? "Creating Account…" : "Create Account"}
+                {busy ? "Creating account…" : "Create account"}
               </button>
             </form>
           )}
@@ -579,11 +594,10 @@ export default function AdminUsersPage() {
 
       {/* Edit user */}
       <Dialog open={editing != null} onOpenChange={(open) => !open && setEditing(null)}>
-        {editing && (
-          <DialogContent title="Edit Account" description={ROLE_LABELS[editing.role]}>
+          <DialogContent className="app-neon users-dialog max-h-[calc(100dvh-2rem)] overflow-y-auto" overlayClassName="users-dialog-overlay" title="Edit account" description={editing ? ROLE_LABELS[editing.role] : undefined}>
             <form onSubmit={saveEdit} className="space-y-2">
               <label className="label" htmlFor="edit-name">
-                Full Name
+                Full name
               </label>
               <input
                 id="edit-name"
@@ -593,7 +607,7 @@ export default function AdminUsersPage() {
                 onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
               />
               <label className="label" htmlFor="edit-email">
-                Email (Also Their Login)
+                Email (also their login)
               </label>
               <input
                 id="edit-email"
@@ -604,7 +618,7 @@ export default function AdminUsersPage() {
                 onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
               />
               <button type="submit" disabled={busy} className="btn-primary w-full">
-                Save Changes
+                Save changes
               </button>
             </form>
             <div className="mt-4 space-y-2 border-t border-paper-200 pt-3">
@@ -614,7 +628,7 @@ export default function AdminUsersPage() {
                 onClick={resetPassword}
                 className="btn-secondary w-full"
               >
-                Reset Password
+                Reset password
               </button>
               {resetPw && (
                 <div className="rounded-xl bg-night-900 p-3 text-sm text-green-300">
@@ -624,7 +638,6 @@ export default function AdminUsersPage() {
               )}
             </div>
           </DialogContent>
-        )}
       </Dialog>
 
       {/* CSV import */}
@@ -640,7 +653,7 @@ export default function AdminUsersPage() {
               faci/gm/guardian_gm/hof/oc/hogm/committee/admin.
             </p>
             <label className="btn-secondary inline-flex cursor-pointer items-center">
-              Choose CSV File…
+              Choose CSV file…
               <input
                 type="file"
                 accept=".csv,text/csv"
@@ -667,7 +680,7 @@ export default function AdminUsersPage() {
                 onClick={() => runImport(true)}
                 className="btn-secondary flex-1"
               >
-                Dry Run
+                Dry run
               </button>
               <button
                 disabled={busy || !csv.trim() || !result?.dryRun || (result?.errors?.length ?? 0) > 0}
