@@ -328,6 +328,11 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 
 ## Done
 
+### David, 2026-11-03 — Tennis mobile exit and court taps
+- A persistent Back to map button sits above the match input layer during serving, rallies and match completion; it reuses the existing leave/room cleanup for bot and online matches. Safe-area spacing and the narrow-screen icon keep it clear of the score.
+- Court station markers use the same Tennis entry as the existing full-court hit area while the game is enabled. Closed-game station management is unchanged. The court availability sentence uses periods instead of a middle dot.
+- Verified at 390px browser width: serve in a bot match, exit to the map, all three courts free, and entry from the left/middle/right courts and station marker. 54 map/tennis tests, source TypeScript and changed-file ESLint passed. Physical-phone confirmation remains pending.
+
 ### David, 2026-11-03 — Map loading, fullscreen locations and Tennis controls (local)
 - Split desktop post-processing into a lazy chunk; lite phones no longer request it through the map. Map cards start without the 2.6-second intro; explicit previews may still opt in. Retained the restored DPR/sharpness settings.
 - Building and cluster taps keep the fullscreen map and camera in place. A scrollable station panel appears inside the viewer; Admin explicitly chooses Manage stations to return to editing. Tennis and location panels dismiss each other.
