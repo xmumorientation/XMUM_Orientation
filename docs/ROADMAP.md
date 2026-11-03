@@ -344,6 +344,12 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 - Updated Add user and Edit account dialogs for the Admin night theme, with clearer labels, role selection and reduced-motion-aware transitions. Admin can select a role for pending accounts before approval.
 - Verify the deployed approval flow and dialogs with an authorized Admin account.
 
+### Zichien, 2026-11-03 — Action Plan Cards on Home
+
+- Home shows two expandable cards, Day 1 Action Plan and Day 2 Action Plan, to every role except Freshie: an **Action Plan** stop on Faci Home and `StaffHome` (HOF, OC, HOGM, Committee, GM), and a section on `StaffDashboard` (Admin, Guardian GM). Code: [ActionPlan.tsx](../src/components/ActionPlan.tsx), [action-plan.css](../src/components/action-plan.css), list in [actionPlans.ts](../src/lib/actionPlans.ts).
+- The plans are static files in `public/action-plans/` (`day-1.png`, `day-2.png`, dummy images for now). Replace a file to update the plan; for a PDF, add the file and change `file` in `actionPlans.ts`. PNG, JPG and WebP show inline, PDF shows in an embed, and both have an Open Full Size link. No database, no upload UI, no migration.
+- Checked with `tsc` and `eslint`. Not checked in a browser (no staff login available in this session).
+
 ### David, 2026-11-02 — Restore Map Sharpness and Admin Avatar
 
 - Removed reduced preview/full-screen DPR caps and camera-motion resolution reduction after user visual feedback. All map views use screen pixel density up to DPR 2; preloading, parked-map behavior and the drawing-buffer optimization remain. This supersedes the lower-resolution settings recorded below.

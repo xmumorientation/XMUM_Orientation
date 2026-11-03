@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { CSSProperties } from "react";
 
+import { ActionPlanCards } from "@/components/ActionPlan";
 import { Countdown, PhaseCard } from "@/components/freshie/FreshieHome";
 import { themeFromColor } from "@/components/freshie/groupTheme";
 import { nexusBody, vxDisplay, vxSlab } from "@/components/home/fonts";
@@ -73,6 +74,10 @@ export function StaffDashboard() {
           <span><strong>{tool.title}</strong><small>{tool.description}</small></span>
           <ArrowRight size={18} aria-hidden />
         </Link>)}</div>
+      </section>
+      <section className="sd-plan" aria-labelledby="sd-plan-title">
+        <h2 id="sd-plan-title">Action Plan</h2>
+        <ActionPlanCards />
       </section>
       <p className="sd-footer">XMUM 26/12 Orientation</p>
     </div>

@@ -1,0 +1,39 @@
+/* Action plan cards (ActionPlan.tsx). Colours follow --fh-*, with fallbacks. */
+.ap-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.ap-card {
+  border-radius: 16px; border: 1px solid var(--fh-line, #16305a); background: rgba(21, 18, 30, 0.85);
+  color: var(--fh-text, #eef5ff); transition: border-color 0.15s ease; overflow: hidden;
+}
+.ap-card:hover, .ap-card[data-open] { border-color: var(--fh-accent, #008cff); }
+.ap-head {
+  display: flex; align-items: center; gap: 12px; width: 100%; min-height: 76px; padding: 14px;
+  background: none; border: 0; color: inherit; font: inherit; text-align: left; cursor: pointer;
+}
+.ap-head:focus-visible { outline: 2px solid var(--fh-accent, #008cff); outline-offset: -2px; }
+.ap-ic { display: grid; place-items: center; width: 38px; height: 38px; flex: none; border-radius: 11px; background: rgba(13, 252, 253, 0.1); color: var(--fh-accent, #008cff); }
+.ap-card:nth-child(2) .ap-ic { background: rgba(254, 6, 171, 0.12); color: var(--fh-pink, #fe06ab); }
+.ap-text { display: grid; gap: 2px; min-width: 0; flex: 1; }
+.ap-text b { font-size: 15px; font-weight: 600; }
+.ap-text small { font-size: 12.5px; line-height: 1.35; color: var(--fh-mute, #8ba3c4); }
+.ap-chev { flex: none; color: var(--fh-mute, #8ba3c4); transition: transform 0.2s ease; }
+.ap-card[data-open] .ap-chev { transform: rotate(180deg); }
+.ap-body { display: grid; gap: 12px; padding: 0 14px 14px; animation: ap-in 0.2s ease; }
+.ap-img { display: block; width: 100%; height: auto; border-radius: 10px; background: #fff; }
+.ap-pdf { display: block; width: 100%; height: min(70vh, 720px); border-radius: 10px; background: #fff; }
+.ap-open {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 16px;
+  border-radius: 999px; border: 1px solid var(--fh-accent, #008cff); color: var(--fh-accent, #008cff);
+  font-size: 14px; font-weight: 600; text-decoration: none; justify-self: start;
+}
+.ap-open:hover { background: var(--fh-accent, #008cff); color: var(--fh-on-blue, #001629); }
+.ap-empty { margin: 0; font-size: 13.5px; color: var(--fh-mute, #8ba3c4); }
+@keyframes ap-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .ap-body { animation: none; }
+  .ap-chev { transition: none; }
+}
+/* The stop is one screen tall by default; an open plan is taller, so let it grow. */
+#ap-plan { justify-content: flex-start; }
+/* Staff dashboard (admin, Guardian GM): not a snap stop. */
+.sd-plan { padding-top: 30px; }
+.sd-plan h2 { font-family: var(--font-nexus-body), Outfit, sans-serif; font-size: 21px; font-weight: 600; margin: 0 0 16px; }

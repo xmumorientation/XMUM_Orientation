@@ -13,6 +13,7 @@ import {
   PhaseCard,
   StopBar,
 } from "@/components/freshie/FreshieHome";
+import { ACTION_PLAN_STOP, ActionPlanStop } from "@/components/ActionPlan";
 import { FreshieSky, type SkyCabin } from "@/components/freshie/FreshieSky";
 import { groupSwatch, VORTEXA_THEME } from "@/components/freshie/groupTheme";
 import { nexusBody, vxDisplay, vxSlab } from "@/components/home/fonts";
@@ -39,6 +40,7 @@ import "./staff-home.css";
 
 const STOPS = [
   { id: "sh-welcome", label: "Welcome" },
+  ACTION_PLAN_STOP,
   { id: "sh-bb", label: "Blind Box" },
   { id: "sh-scores", label: "Scores" },
   { id: "sh-tools", label: "Tools" },
@@ -386,6 +388,7 @@ export function StaffHome() {
       </header>
 
       <WelcomeStop name={profile.full_name ?? ""} role={profile.role} />
+      <ActionPlanStop />
       {!isGm && <BlindBoxStop />}
       <ScoresStop groups={groups} />
       <ToolsStop role={profile.role} />

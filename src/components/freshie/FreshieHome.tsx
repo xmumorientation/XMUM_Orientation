@@ -21,6 +21,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { ACTION_PLAN_STOP, ActionPlanStop } from "@/components/ActionPlan";
 import { GAME_PHASES, SPONSORS, SPONSORS_ARE_EXAMPLES } from "@/components/home/data";
 import { vxDisplay, vxSlab } from "@/components/home/fonts";
 import { ChallengeBanner } from "@/components/ChallengeBanner";
@@ -79,8 +80,8 @@ const CODE_STOP = { id: "fh-code", label: "Code" };
 
 function homeStops(isFaci: boolean) {
   if (!isFaci) return [...STOPS];
-  // A Faci gets the group code first, then their own card and their partner's.
-  return [STOPS[0], CODE_STOP, { id: "fh-faci", label: "Partner" }, ...STOPS.slice(2)];
+  // A Faci gets the action plans, then the group code, then their own card and their partner's.
+  return [STOPS[0], ACTION_PLAN_STOP, CODE_STOP, { id: "fh-faci", label: "Partner" }, ...STOPS.slice(2)];
 }
 
 /** The name a Faci chose for the group, else its number name ("Group 1"). */
@@ -801,6 +802,7 @@ export function FreshieHome() {
       </header>
 
       <WelcomeStop name={isFaci ? myName : (profile.full_name ?? "")} group={group} isFaci={isFaci} />
+      {isFaci && <ActionPlanStop />}
       {isFaci && <GroupCodeStop group={group} />}
       <FaciStop
         groupId={profile.group_id}
