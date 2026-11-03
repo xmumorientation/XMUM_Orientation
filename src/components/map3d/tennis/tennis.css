@@ -12,6 +12,33 @@
   user-select: none;
 }
 
+/* Above the match input layer, including during serving and rallies. */
+.tn-map-exit {
+  position: absolute;
+  top: calc(12px + env(safe-area-inset-top));
+  right: calc(12px + env(safe-area-inset-right));
+  z-index: 21;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid #3a3448;
+  border-radius: 12px;
+  background: #0e0c15;
+  color: #f3f0fa;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  touch-action: manipulation;
+  cursor: pointer;
+}
+.tn-map-exit:hover { background: #1a1624; }
+.tn-map-exit:focus-visible { outline: 2px solid #0dfcfd; outline-offset: 3px; }
+@media (max-width: 360px) { .tn-map-exit span { display: none; } }
+
 /* Takes every touch on the map: drag to move, tap to swing. */
 .tn-input {
   position: absolute;

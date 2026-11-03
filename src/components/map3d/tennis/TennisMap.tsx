@@ -107,7 +107,15 @@ export function TennisScene({ courts, fullscreen }: { courts: TennisOnMap; fulls
 /** This phone's match over the map: the broadcast's score, the calls, the controls and the end card. */
 export function TennisMatchHud({ courts }: { courts: TennisOnMap }) {
   const game = gameOf(courts);
-  return game ? <TennisHud game={game} exit="Back to Map" /> : null;
+  return game ? (
+    <>
+      <TennisHud game={game} exit="Back to Map" />
+      <button type="button" className="tn-map-exit" aria-label="Exit tennis and return to map" onClick={() => courts.leave()}>
+        <X aria-hidden="true" size={20} />
+        <span>Back to map</span>
+      </button>
+    </>
+  ) : null;
 }
 
 /**
@@ -147,7 +155,7 @@ export function TennisCard({
           <div className="map-tennis-status" aria-live="polite">
             {queued && view.lobby
               ? queueStatus(view.lobby)
-              : `${busy > 0 ? `${busy} of 3 courts in play` : "All 3 courts are free"} · First to 5 points`}
+              : `${busy > 0 ? `${busy} of 3 courts in play` : "All 3 courts are free"}. First to 5 points.`}
           </div>
         </div>
         {!queued && (

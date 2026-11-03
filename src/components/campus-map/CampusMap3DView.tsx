@@ -664,13 +664,26 @@ export function CampusMap3DView({
     return place ? [{ place, color: accent }] : [];
   });
 
+  // The court footprint and markers all open the same card while tennis is enabled.
+  function openTennis(area: string) {
+    if (area !== TENNIS_AREA || !tennis.loaded) return false;
+    data.setOpenBuilding(null);
+    data.setClusterArea(null);
+    data.setSelected(null);
+    tennis.showCard();
+    if (!fullscreen) openFullscreen();
+    return true;
+  }
+
   const taps: Taps = {
     used: (e) => (usedAt.current = e.nativeEvent.timeStamp),
     station: (s) => {
+      if (openTennis(s.area)) return;
       data.setSelected((current) => (current?.id === s.id ? null : s));
       onStationTap?.(s);
     },
     badge: (area) => {
+      if (openTennis(area)) return;
       tennis.hideCard();
       data.setSelected(null);
       if (canManageStations) {
@@ -678,20 +691,12 @@ export function CampusMap3DView({
         return;
       }
       data.setClusterArea((current) => (!fullscreen && current === area ? null : area));
-
     },
     // A building or court itself: the same as its marker, or Admin's building panel. False when the tap does
     // nothing here (the card then opens full screen, as a tap on the 2D map's picture does). While the tennis game
     // is open, the tennis court opens its card (Play), in full screen.
     building: (area) => {
-      if (area === TENNIS_AREA && tennis.loaded) {
-        data.setOpenBuilding(null);
-        data.setClusterArea(null);
-        data.setSelected(null);
-        tennis.showCard();
-        if (!fullscreen) openFullscreen();
-        return true;
-      }
+      if (openTennis(area)) return true;
       if (canManageStations) {
         toggleBuilding(area);
         return true;
