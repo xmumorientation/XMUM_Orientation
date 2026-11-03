@@ -63,6 +63,14 @@ export const AREA_PLACES: AreaPlace[] = [
   courtPlace("Volleyball Court", "volleyball"),
 ];
 
+/** Lower sports blocks open Tennis; `area` links each entry to the station court above it.
+ * These are click targets only, deliberately separate from station locations and the match geometry.
+ */
+export const TENNIS_PLAY_AREAS: AreaPlace[] = [
+  courtPlace("Tennis Court", "futsal"),
+  courtPlace("Volleyball Court", "basketball"),
+];
+
 export function areaPlace(area: string): AreaPlace | null {
   return AREA_PLACES.find((p) => p.area === area) ?? null;
 }

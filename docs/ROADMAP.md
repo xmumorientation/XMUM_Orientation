@@ -328,6 +328,11 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 
 ## Done
 
+### David, 2026-11-03 — Separate court station and Tennis entry areas (local)
+- Per the annotated screenshot: both upper court blocks and their markers show the corresponding stations; both lower sports blocks open Tennis. The lower blocks are additional invisible hit areas, separate from station positions and the match geometry. No model, game rule or station location moved.
+- The Tennis card's Stations button remembers which side opened it, returning to the matching upper court's station list. The unrelated two-finger twist draft remains separate.
+- Validation: 57 court/map/tennis tests, source TypeScript and changed-file ESLint passed. Local browser checks covered both upper areas, both lower entries, both markers and the right-side card-to-stations link. Not deployed.
+
 ### David, 2026-11-03 — Tennis mobile exit and court taps
 - A persistent Back to map button sits above the match input layer during serving, rallies and match completion; it reuses the existing leave/room cleanup for bot and online matches. Safe-area spacing and the narrow-screen icon keep it clear of the score.
 - Court station markers use the same Tennis entry as the existing full-court hit area while the game is enabled. Closed-game station management is unchanged. The court availability sentence uses periods instead of a middle dot.
