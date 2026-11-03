@@ -328,6 +328,11 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 
 ## Done
 
+### David, 2026-11-03 — Two-finger map twist (local)
+- Added finger-angle rotation to the existing fullscreen 3D controls. Native one-finger pan, pinch zoom and two-finger drag/tilt keep their existing handlers; tennis play and the static card do not accept the new gesture.
+- Tracks exactly two touch pointers, wraps angle changes across -PI/PI, and rebases after lift/cancel/third-finger changes. Effect cleanup removes listeners when the viewer changes.
+- Six tests exercise actual Three.js camera rotation with damping, unchanged distance/tilt/target, pinching/translation isolation, angle wrapping, cancellation, cleanup, disabled controls and a third finger. Local preview renders, but the in-app browser rejects multi-touch dispatch, so browser gesture and physical-phone feel are pending. Not deployed.
+
 ### David, 2026-11-03 — Tennis mobile exit and court taps
 - A persistent Back to map button sits above the match input layer during serving, rallies and match completion; it reuses the existing leave/room cleanup for bot and online matches. Safe-area spacing and the narrow-screen icon keep it clear of the score.
 - Court station markers use the same Tennis entry as the existing full-court hit area while the game is enabled. Closed-game station management is unchanged. The court availability sentence uses periods instead of a middle dot.
