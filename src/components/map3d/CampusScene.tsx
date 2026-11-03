@@ -23,6 +23,7 @@ import { SportsCourts, TrackFixtures } from "./sports";
 import { Lamps, Vegetation } from "./vegetation";
 import { Duck, Lakes } from "./water";
 import { prefersLite } from "./webgl";
+import { bindTouchTwist } from "./touchTwist";
 
 // Phones never download desktop post-processing.
 const Effects = lazy(() => import("./Effects"));
@@ -268,6 +269,7 @@ function TouchPolicy({ interactive }: { interactive: boolean }) {
     controls.enabled = interactive;
     const el = controls.domElement as HTMLElement | undefined;
     if (el) el.style.touchAction = interactive ? "none" : "";
+    if (el && interactive) return bindTouchTwist(el, el.ownerDocument, controls);
   }, [controls, interactive]);
   return null;
 }
