@@ -332,7 +332,7 @@ export function CampusMap3DView({
   tennis: tennisSettings,
   mode,
   lite,
-  intro = true,
+  intro = false,
   camera,
   onFail,
   paused = false,
@@ -535,8 +535,9 @@ export function CampusMap3DView({
 
   function toggleBuilding(area: string) {
     data.setOpenBuilding((current) => (current === area ? null : area));
-    // The building panel sits on the page, under this overlay.
-    if (fullscreen) closeFullscreen();
+    data.setClusterArea(null);
+    data.setSelected(null);
+    tennis.hideCard();
   }
 
   // The current game day’s stations by area, for the areas the 3D map places (TBD has no place yet).
@@ -670,19 +671,23 @@ export function CampusMap3DView({
       onStationTap?.(s);
     },
     badge: (area) => {
+      tennis.hideCard();
       data.setSelected(null);
       if (canManageStations) {
         toggleBuilding(area);
         return;
       }
       data.setClusterArea((current) => (!fullscreen && current === area ? null : area));
-      if (fullscreen) closeFullscreen();
+
     },
     // A building or court itself: the same as its marker, or Admin's building panel. False when the tap does
     // nothing here (the card then opens full screen, as a tap on the 2D map's picture does). While the tennis game
     // is open, the tennis court opens its card (Play), in full screen.
     building: (area) => {
       if (area === TENNIS_AREA && tennis.loaded) {
+        data.setOpenBuilding(null);
+        data.setClusterArea(null);
+        data.setSelected(null);
         tennis.showCard();
         if (!fullscreen) openFullscreen();
         return true;
@@ -837,7 +842,7 @@ export function CampusMap3DView({
             role="dialog"
             aria-modal="true"
             aria-label="Campus map"
-            className="fixed left-0 top-0 z-[80] h-dvh w-full touch-none select-none overflow-hidden overscroll-none"
+            className="campus-map-viewer fixed left-0 top-0 z-[80] h-dvh w-full touch-none select-none overflow-hidden overscroll-none"
             style={{ background: sky, touchAction: "none" }}
             onContextMenu={(e) => e.preventDefault()}
           >
@@ -894,7 +899,7 @@ export function CampusMap3DView({
             </div>
 
             <div
-              className="pointer-events-none absolute inset-x-0 bottom-0 z-30 flex items-end justify-between gap-3 px-3"
+              className="map-viewer-bottom pointer-events-none absolute inset-x-0 bottom-0 z-30 flex items-end justify-between gap-3 px-3"
               style={{
                 // Clear of the map data credit in the bottom right corner.
                 paddingBottom:
@@ -939,10 +944,26 @@ export function CampusMap3DView({
                             }
                           : undefined
                       }
-                      accent={accent}
-                      onAccent={onAccent}
                     />
                   )
+                )}
+                {(openBuilding || clusterArea) && (
+                  <div className="map-location-panel pointer-events-auto" aria-label="Location stations">
+                    <div className="flex items-center justify-between gap-2">
+                      <h2 className="font-bold">{openBuilding || clusterArea}</h2>
+                      <button type="button" aria-label="Close location details" className="flex h-11 w-11 items-center justify-center" onClick={() => { data.setOpenBuilding(null); data.setClusterArea(null); }}><X className="h-5 w-5" /></button>
+                    </div>
+                    <div className="map-location-list">
+                      {(byArea.get(openBuilding || clusterArea || "") ?? []).map(station => (
+                        <button key={station.id} type="button" aria-pressed={activeSelected?.id === station.id} className="map-location-row" onClick={() => data.setSelected(station)}>
+                          <span><strong>{station.code} / {station.name}</strong><span className="block text-xs">{station.purpose}</span></span>
+                          <span className="shrink-0 text-xs">{station.status === "available" ? "Available" : station.status === "in_progress" ? "In progress" : "Closed"}</span>
+                        </button>
+                      ))}
+                      {!(byArea.get(openBuilding || clusterArea || "")?.length) && <p className="py-3 text-sm">No stations here for this game day.</p>}
+                    </div>
+                    {canManageStations && openBuilding && <button type="button" className="map-manage-stations" onClick={closeFullscreen}>Manage stations</button>}
+                  </div>
                 )}
                 <MapInfoCard
                   data={data}

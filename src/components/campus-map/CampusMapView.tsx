@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import "./map-viewer.css";
 import { Component, useCallback, useEffect, useState, type ReactNode } from "react";
 
 import { canUseWebGL } from "@/components/map3d/webgl";

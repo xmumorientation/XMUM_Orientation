@@ -328,6 +328,12 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 
 ## Done
 
+### David, 2026-11-03 — Map loading, fullscreen locations and Tennis controls (local)
+- Split desktop post-processing into a lazy chunk; lite phones no longer request it through the map. Map cards start without the 2.6-second intro; explicit previews may still opt in. Retained the restored DPR/sharpness settings.
+- Building and cluster taps keep the fullscreen map and camera in place. A scrollable station panel appears inside the viewer; Admin explicitly chooses Manage stations to return to editing. Tennis and location panels dismiss each other.
+- Tennis card and fullscreen tools use the Vortexa dark surface, yellow primary actions and 44px controls. On phones the actions wrap and zoom tools sit above the panel.
+- Validation: 54 map/tennis tests; source-only TypeScript and changed-file ESLint; local browser at desktop and 390×844, including A3 selection and Tennis → Stations. Full repository typecheck is blocked by missing Testing Library packages in the reused dependencies. Production cold-load timing, deployment and physical-phone testing remain pending.
+
 ### David, 2026-11-03 — Users dialogs and approval
 
 - Updated Add user and Edit account dialogs for the Admin night theme, with clearer labels, role selection and reduced-motion-aware transitions. Admin can select a role for pending accounts before approval.

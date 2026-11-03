@@ -2,13 +2,13 @@
 
 import { Html, Hud, MapControls } from "@react-three/drei";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { memo, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode, type Ref } from "react";
+import { lazy, Suspense, memo, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode, type Ref } from "react";
 import * as THREE from "three";
 import type { MapControls as MapControlsImpl } from "three-stdlib";
 
 import { allZonesOn, anyZoneOn, FUNFAIR_OFF, type FunfairPower } from "@/lib/funfair";
 
-import { Atmosphere, Effects, MODES, type Mode } from "./atmosphere";
+import { Atmosphere, MODES, type Mode } from "./atmosphere";
 import { B1Building } from "./b1";
 import { Blocks, Flag, Grandstand, Statue } from "./buildings";
 import { Bridge } from "./footbridge";
@@ -23,6 +23,9 @@ import { SportsCourts, TrackFixtures } from "./sports";
 import { Lamps, Vegetation } from "./vegetation";
 import { Duck, Lakes } from "./water";
 import { prefersLite } from "./webgl";
+
+// Phones never download desktop post-processing.
+const Effects = lazy(() => import("./Effects"));
 
 // The 3D campus, sized to its parent (a card or fullscreen). No page
 // chrome: callers add their own controls around it, and 3D overlays as
@@ -444,7 +447,7 @@ export default function CampusScene({
           <Intro start={start} />
           {/* Measured once, and once more in lite after a step down. */}
           <FrameRateProbe key={stepDown ? "lite" : "first"} onResult={onFrameRate} />
-          {!isLite && <Effects look={look} tiltShift={tiltShift} />}
+          {!isLite && <Suspense fallback={null}><Effects look={look} tiltShift={tiltShift} /></Suspense>}
           {/* After the effects' pass (priority 1); in lite mode the Hud draws the scene itself first. */}
           {overlay && <Hud renderPriority={isLite ? 1 : 2}>{overlay}</Hud>}
         </Canvas>
