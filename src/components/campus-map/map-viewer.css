@@ -1,0 +1,27 @@
+.campus-map-viewer {
+  --mv-surface: #0e0c15; --mv-raised: #1a1624; --mv-line: #3a3448;
+  --mv-text: #f3f0fa; --mv-muted: #cfc9dc; --mv-primary: #f2ff0b; --mv-selected: #0dfcfd;
+  color: var(--mv-text);
+}
+.campus-map-viewer button:focus-visible { outline: 2px solid var(--mv-selected); outline-offset: 3px; }
+.campus-map-viewer .bg-white, .campus-map-viewer .bg-white\/95 { background: var(--mv-surface); color: var(--mv-text); }
+.campus-map-viewer .text-stone-900, .campus-map-viewer .text-stone-700 { color: var(--mv-text); }
+.campus-map-viewer .text-ink-faint { color: var(--mv-muted); }
+.map-tennis-card, .map-location-panel { padding: 12px 16px; border-radius: 16px; background: var(--mv-surface); color: var(--mv-text); box-shadow: 0 12px 32px #0006; font-size: 14px; }
+.map-tennis-status { color: var(--mv-muted); font-size: 14px; line-height: 1.5; }
+.map-tennis-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+.map-tennis-actions button, .map-manage-stations { min-height: 44px; padding: 10px 14px; border-radius: 12px; font: inherit; font-weight: 700; }
+.map-tennis-primary, .map-manage-stations { background: var(--mv-primary); color: #07060b; }
+.map-tennis-secondary, .map-tennis-stations { background: var(--mv-raised); color: var(--mv-text); }
+.map-tennis-stations { grid-column: 1 / -1; }
+.map-tennis-actions button:disabled { opacity: .45; cursor: not-allowed; }
+.map-tennis-actions button:not(:disabled):hover, .map-manage-stations:hover { filter: brightness(1.12); }
+.map-location-list { max-height: min(26dvh, 240px); overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; scrollbar-color: var(--mv-line) var(--mv-surface); }
+.map-location-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 52px; padding: 10px 4px; text-align: left; border-top: 1px solid var(--mv-line); }
+.map-location-row[aria-pressed="true"] { color: var(--mv-selected); }
+.map-location-row:hover { background: var(--mv-raised); }
+.map-manage-stations { width: 100%; margin-top: 10px; }
+@media (max-width: 480px) {
+  .map-viewer-bottom { display: block; padding-right: 12px; }
+  .map-viewer-bottom > .pointer-events-auto { position: absolute; right: 12px; bottom: calc(100% + 12px); }
+}

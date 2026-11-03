@@ -112,7 +112,7 @@ export function TennisMatchHud({ courts }: { courts: TennisOnMap }) {
 
 /**
  * The tennis court's card, after a tap on the court: Matchmaking or Play with Bot, then where this phone stands in
- * the queue. `accent` and `onAccent`: the page's colour (the group's, or the Welcome cyan) and the text on it.
+ * the queue. The viewer supplies the Vortexa control colours.
  * `onStations`: Admin's building panel for the court, which a tap on the court opens while the game is closed.
  */
 export function TennisCard({
@@ -121,23 +121,19 @@ export function TennisCard({
   onPlayBot,
   onClose,
   onStations,
-  accent,
-  onAccent,
 }: {
   courts: TennisOnMap;
   onPlay: () => void;
   onPlayBot: () => void;
   onClose: () => void;
   onStations?: () => void;
-  accent: string;
-  onAccent: string;
 }) {
   const view = useSyncExternalStore(courts.subscribe, courts.getView, courts.getView);
   const busy = useSyncExternalStore(courts.board.subscribe, courts.board.getView, courts.board.getView).length;
   const queued = view.phase === "queue";
   const full = busy >= 3;
   return (
-    <div className="pointer-events-auto rounded-2xl bg-white px-3 py-2.5 text-sm text-stone-900 shadow-lg">
+    <div className="map-tennis-card pointer-events-auto">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2 font-semibold">
@@ -148,7 +144,7 @@ export function TennisCard({
               </span>
             )}
           </div>
-          <div className="text-xs text-ink-faint" aria-live="polite">
+          <div className="map-tennis-status" aria-live="polite">
             {queued && view.lobby
               ? queueStatus(view.lobby)
               : `${busy > 0 ? `${busy} of 3 courts in play` : "All 3 courts are free"} · First to 5 points`}
@@ -165,11 +161,11 @@ export function TennisCard({
           </button>
         )}
       </div>
-      <div className="mt-2 flex flex-wrap gap-2">
+      <div className="map-tennis-actions">
         {queued ? (
           <button
             type="button"
-            className="h-11 flex-1 rounded-full font-bold text-stone-900 ring-1 ring-black/15"
+            className="map-tennis-secondary"
             onClick={() => courts.cancel()}
           >
             Cancel
@@ -178,15 +174,14 @@ export function TennisCard({
           <>
             <button
               type="button"
-              className="h-11 flex-1 rounded-full font-bold"
-              style={{ background: accent, color: onAccent }}
+              className="map-tennis-primary"
               onClick={onPlay}
             >
               Matchmaking
             </button>
             <button
               type="button"
-              className="h-11 flex-1 rounded-full font-bold text-stone-900 ring-1 ring-black/15 disabled:opacity-40"
+              className="map-tennis-secondary"
               onClick={onPlayBot}
               disabled={full}
             >
@@ -195,7 +190,7 @@ export function TennisCard({
             {onStations && (
               <button
                 type="button"
-                className="h-11 rounded-full px-4 font-semibold text-stone-900 ring-1 ring-black/15"
+                className="map-tennis-stations"
                 onClick={onStations}
               >
                 Stations
