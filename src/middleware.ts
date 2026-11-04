@@ -74,6 +74,8 @@ export async function middleware(request: NextRequest) {
   // not grant access to /group/* (redeem issues the pass, draw does not).
   if (
     path === "/" ||
+    path === "/meeting-nfc" ||
+    path === "/meeting-nfc/map" ||
     path.startsWith("/park") ||
     path === "/check-in/draw" ||
     path.startsWith("/check-in/draw/") ||
