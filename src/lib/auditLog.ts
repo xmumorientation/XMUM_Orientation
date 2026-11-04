@@ -63,6 +63,8 @@ export const AUDIT_ACTIONS: Record<string, AuditKind> = {
   "nfc.test.start": "projectors",
   "nfc.test.finish": "projectors",
   "nfc.test.reset": "projectors",
+  "nfc.test.reset_all": "projectors",
+  "nfc.stickers.clear_all": "projectors",
   "blindbox.buy": "blindbox",
   "blindbox.open": "blindbox",
   "blindbox.admin_gift": "blindbox",
@@ -345,6 +347,10 @@ export function describeAudit(e: AuditEntry, n: AuditNames): AuditRow {
       };
     case "nfc.test.reset":
       return { object: "NFC test", action: "Test reset", detail: "" };
+    case "nfc.test.reset_all":
+      return { object: "NFC test mode", action: "Test data cleared", detail: `${num(d.stickers_deleted)} sticker${num(d.stickers_deleted) === 1 ? "" : "s"}, ${num(d.runs_deleted)} run${num(d.runs_deleted) === 1 ? "" : "s"}` };
+    case "nfc.stickers.clear_all":
+      return { object: "NFC stickers", action: "All stickers cleared", detail: `${num(d.stickers_deleted)} sticker${num(d.stickers_deleted) === 1 ? "" : "s"}, ${num(d.test_runs_deleted)} test run${num(d.test_runs_deleted) === 1 ? "" : "s"}` };
     case "blindbox.buy": {
       const price = num(d.price);
       return { ...G, action: "Bought a blind box", tokens: -price, detail: join(boxType(d.type), `from ${str(d.seller)}`, price === 0 && "free") };

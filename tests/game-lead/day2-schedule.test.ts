@@ -21,7 +21,7 @@ const tryAsGm = (fn: string) => fails(as(GM, `select public.${fn}`));
 
 const SEED = [
   { id: "s1", label: "Opening", start_min: 0, easy: true, medium: true, hard: false, blindbox: true, funfair: false },
-  { id: "s2", label: "Hard Stations Open", start_min: 60, easy: true, medium: true, hard: true, blindbox: true, funfair: false },
+  { id: "s2", label: "Hard Stations Open", start_min: 45, easy: true, medium: true, hard: true, blindbox: true, funfair: false },
   { id: "s3", label: "Funfair", start_min: 105, easy: true, medium: true, hard: true, blindbox: true, funfair: true },
 ];
 /** The segments the migration left (before any test changes them). */
@@ -68,6 +68,7 @@ beforeAll(async () => {
   await q(sql("supabase/migrations/0102_day2_inner_schedule.sql"));
   await q(sql("supabase/migrations/0111_day2_blindbox_normal1.sql"));
   await q(sql("supabase/migrations/0115_day2_flexible_segments.sql"));
+  await q(sql("supabase/migrations/0122_day2_hard_open_and_capacity.sql"));
   // run twice: each guard is added once
   await q(sql("supabase/migrations/0115_day2_flexible_segments.sql"));
   migrated = (await q("select segments from day2_schedule"))[0].segments as typeof SEED;
@@ -85,8 +86,8 @@ beforeEach(async () => {
 });
 
 describe("Day 2 inner schedule (0102 + 0115)", () => {
-  it("seeds the new plan: Hard opens after an hour, Funfair in the last 45 min", async () => {
-    expect(migrated.map((g) => [g.start_min, g.hard, g.funfair])).toEqual([[0, false, false], [60, true, false], [105, true, true]]);
+  it("opens Hard stations after 45 minutes", async () => {
+    expect(migrated.map((g) => [g.start_min, g.hard, g.funfair])).toEqual([[0, false, false], [45, true, false], [105, true, true]]);
   });
 
   it("no game: blind box and funfair closed, every station tier open", async () => {

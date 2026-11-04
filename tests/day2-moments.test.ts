@@ -3,10 +3,10 @@ import { describe, expect, it } from "vitest";
 import { day2Now, type Day2SegmentDef, type Day2State } from "../src/lib/day2";
 import { heartbeatLevel, isFinalStretch, momentBetween, momentOnLoad, newlyLit } from "../src/lib/day2Moments";
 
-// 0115's seed: Opening 0-60 (Hard off), Hard Stations Open 60-105, Funfair 105-end.
+// Current Day 2 plan: Opening 0-45 (Hard off), Hard Stations Open 45-105, Funfair 105-end.
 const SEED: Day2SegmentDef[] = [
   { id: "s1", label: "Opening", start_min: 0, easy: true, medium: true, hard: false, blindbox: true, funfair: false },
-  { id: "s2", label: "Hard Stations Open", start_min: 60, easy: true, medium: true, hard: true, blindbox: true, funfair: false },
+  { id: "s2", label: "Hard Stations Open", start_min: 45, easy: true, medium: true, hard: true, blindbox: true, funfair: false },
   { id: "s3", label: "Funfair", start_min: 105, easy: true, medium: true, hard: true, blindbox: true, funfair: true },
 ];
 const T0 = Date.parse("2026-11-28T09:00:00Z");
@@ -28,11 +28,11 @@ function state(over: Partial<Day2State> = {}): Day2State {
 const at = (min: number, s: Day2State | null = state()) => day2Now(s, T0 + min * MIN);
 
 describe("Day 2 moments on a page that is open", () => {
-  it("shows Challenge when the game starts, Hard at 60 min and the funfair at 105 min", () => {
+  it("shows Challenge when the game starts, Hard at 45 min and the funfair at 105 min", () => {
     const off = at(0, state({ game_on: false, game_started_at: null }));
     expect(momentBetween(off, at(0), state())).toBe("challenge");
-    expect(momentBetween(at(30), at(59.9), state())).toBeNull();
-    expect(momentBetween(at(59.9), at(60), state())).toBe("hard");
+    expect(momentBetween(at(30), at(44.9), state())).toBeNull();
+    expect(momentBetween(at(44.9), at(45), state())).toBe("hard");
     expect(momentBetween(at(104.9), at(105), state())).toBe("funfair");
     expect(momentBetween(at(105), at(120), state())).toBeNull();
   });

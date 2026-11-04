@@ -134,7 +134,7 @@ export type Committee = {
 };
 
 export const COMMITTEES: Committee[] = [
-  { id: "tech", name: "Tech", fullName: "Technology & Development", icon: "Code", color: "#12e6ff", head: null, members: null, desc: "Builds and maintains the Vortexa digital platform, game systems, and technical infrastructure." },
+  { id: "tech", name: "Tech", fullName: "Technical Development", icon: "Code", color: "#12e6ff", head: null, members: null, desc: "Builds and maintains the Vortexa digital platform, game systems, and technical infrastructure." },
   { id: "ep", name: "EP", fullName: "Event Planning", icon: "Calendar", color: "#a437ff", head: null, members: null, desc: "Plans and coordinates the overall event flow, ceremonies, and programme scheduling." },
   { id: "ga", name: "GA", fullName: "General Affairs", icon: "Briefcase", color: "#f9d342", head: null, members: null, desc: "Handles logistics, materials, venue setup, food, and all operational support." },
   { id: "hof", name: "HOF", fullName: "Head of Facilitators", icon: "Users", color: "#39ff14", head: null, members: null, desc: "Leads and coordinates all facilitators who guide freshies throughout the orientation." },

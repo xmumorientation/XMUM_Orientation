@@ -148,7 +148,7 @@ export function StationsSection() {
       floor: floorOf(s),
       risk: s.risk_tier,
       purpose: s.purpose ?? "",
-      max_groups: s.max_groups != null ? String(s.max_groups) : "",
+      max_groups: s.day === 2 ? "1" : s.max_groups != null ? String(s.max_groups) : "",
     });
     setEditing(s);
   }
@@ -164,7 +164,7 @@ export function StationsSection() {
       // Day 1 has no entry fee; keep the column at its default
       risk_tier: form.day === 2 ? form.risk : "low",
       purpose: form.purpose.trim(),
-      max_groups: form.max_groups ? parseInt(form.max_groups, 10) : null,
+      max_groups: form.day === 2 ? 1 : form.max_groups ? parseInt(form.max_groups, 10) : null,
     };
     const old = editing !== "new" ? editing : null;
     // Keep an existing code that doesn't follow block-floor unless the location changed
@@ -395,7 +395,7 @@ export function StationsSection() {
             <span>Day</span>
             <div className="gc-seg">
               {([1, 2] as const).map((d) => (
-                <button key={d} type="button" aria-pressed={form.day === d} onClick={() => setForm({ ...form, day: d })}>
+                <button key={d} type="button" aria-pressed={form.day === d} onClick={() => setForm({ ...form, day: d, max_groups: d === 2 ? "1" : form.max_groups })}>
                   Day {d}
                 </button>
               ))}
@@ -435,8 +435,10 @@ export function StationsSection() {
               inputMode="numeric"
               min="1"
               value={form.max_groups}
+              disabled={form.day === 2}
               onChange={(e) => setForm({ ...form, max_groups: e.target.value })}
             />
+            {form.day === 2 && <small>Day 2 game stations always allow 1 group.</small>}
           </label>
           {form.day === 2 && (
             <div className="gc-field">

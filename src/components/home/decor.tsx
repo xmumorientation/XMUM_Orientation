@@ -82,8 +82,8 @@ export function MarqueeBanner() {
     "★ ONE TICKET, ONE RIDE ★",
     "28–29 NOV 2026",
     "2 DAYS",
-    "TEAMS TBA",
-    "10 COMMITTEES",
+    "10 TEAMS",
+    "49 COMMITTEES",
     "★ DISCOVER ADVENTURE INSIDE ★",
   ];
   const doubled = [...items, ...items];

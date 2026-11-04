@@ -3,6 +3,8 @@
 
 # next.js
 /.next/
+/.next-oc-map-review/
+/.next-ascent*/
 /out/
 
 # production
@@ -40,3 +42,6 @@ supabase/.temp
 # local preview / playwright artifacts
 .preview-shots/
 test-results/
+
+# Registration imports contain Student IDs and stay local.
+.private/
