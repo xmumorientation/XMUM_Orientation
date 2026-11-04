@@ -30,6 +30,9 @@
 .users-dialog button[aria-label="Close"] { color: #c0d1e6; }
 .users-dialog button[aria-label="Close"]:hover { background: #1a3552; color: #fff; }
 .users-dialog .border-paper-200 { border-color: #274565; }
+.users-import-dialog .users-import-result { background: #122b46; color: #f2f7ff; }
+.users-import-dialog .users-import-errors { color: #ffb4bd; overflow-wrap: anywhere; }
+.users-import-dialog .btn-primary:disabled { opacity: .45; }
 
 .users-dialog[data-state="open"] {
   animation: users-dialog-in 180ms cubic-bezier(0.22, 1, 0.36, 1) both;

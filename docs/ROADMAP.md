@@ -328,6 +328,10 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 
 ## Done
 
+### David, 2026-11-04 — CSV Import Dialog (Local)
+
+- Matched the Users CSV import dialog to the dark Admin account dialogs, including validation results and errors. Editing CSV clears the dry-run result so the changed input must be checked again. Deployment remains pending.
+
 ### Zichien, 2026-11-04 — Home Sections (replaces the static Action Plan list)
 
 - HOF, OC, HOGM and Admin add, change and remove files (PDF or image) shown on Home to the roles they pick. Three inputs: the file, the title and who sees it (Freshies, Facilitators, Game Masters or Committee; Game Masters include Guardian GM, Committee includes HOF, OC, HOGM and Admin; stored as the individual roles, so no migration change). Shown as expandable cards in a **Documents** stop on Freshie/Faci Home and `StaffHome`, and a section on `StaffDashboard` (Admin, Guardian GM); a role with none sees no stop.

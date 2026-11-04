@@ -643,9 +643,10 @@ export default function AdminUsersPage() {
       {/* CSV import */}
       <Dialog open={importOpen} onOpenChange={setImportOpen}>
         <DialogContent
-          title="Import Committee, Faci, GM from CSV"
+          title="Import Users from CSV"
           description="Choose a file or paste the rows. Always dry-run first. Passwords are shown once after a real import."
-          className="max-h-[90dvh] max-w-2xl"
+          className="app-neon users-dialog users-import-dialog max-h-[calc(100dvh-2rem)] max-w-2xl"
+          overlayClassName="users-dialog-overlay"
         >
           <div className="space-y-2">
             <p className="text-xs text-ink-faint">
@@ -653,7 +654,7 @@ export default function AdminUsersPage() {
               faci/gm/guardian_gm/hof/oc/hogm/committee/admin.
             </p>
             <label className="btn-secondary inline-flex cursor-pointer items-center">
-              Choose CSV file…
+              Choose CSV File…
               <input
                 type="file"
                 accept=".csv,text/csv"
@@ -670,9 +671,10 @@ export default function AdminUsersPage() {
             </label>
             <textarea
               className="input min-h-[120px] py-2 font-mono text-xs"
+              aria-label="CSV rows"
               placeholder={"name,email,role,group,station\nAlice Tan,alice@xmu.edu.my,faci,1,\nBob Lim,bob@xmu.edu.my,gm,,3"}
               value={csv}
-              onChange={(e) => setCsv(e.target.value)}
+              onChange={(e) => { setCsv(e.target.value); setResult(null); }}
             />
             <div className="flex gap-2">
               <button
@@ -680,7 +682,7 @@ export default function AdminUsersPage() {
                 onClick={() => runImport(true)}
                 className="btn-secondary flex-1"
               >
-                Dry run
+                Dry Run
               </button>
               <button
                 disabled={busy || !csv.trim() || !result?.dryRun || (result?.errors?.length ?? 0) > 0}
@@ -695,12 +697,12 @@ export default function AdminUsersPage() {
             )}
 
             {result?.dryRun && (
-              <div className="rounded-xl bg-paper-100 p-3 text-sm">
+              <div className="users-import-result rounded-xl p-3 text-sm" role="status">
                 <p>
                   {result.valid}/{result.total} rows valid.
                 </p>
                 {(result.errors?.length ?? 0) > 0 && (
-                  <ul className="mt-1 list-inside list-disc text-red-600">
+                  <ul className="users-import-errors mt-1 list-inside list-disc">
                     {result.errors!.map((e, i) => (
                       <li key={i}>
                         Line {e.line}: {e.error}
@@ -724,7 +726,7 @@ export default function AdminUsersPage() {
               </div>
             )}
             {result?.failed && result.failed.length > 0 && (
-              <div className="text-sm text-red-600">
+              <div className="users-import-errors text-sm" role="alert">
                 {result.failed.map((f, i) => (
                   <p key={i}>
                     {f.email}: {f.error}
