@@ -40,7 +40,7 @@ function day2Source(): FeedSource<Day2Feed> {
 // The Day 2 inner schedule for any page, logged in or not (fn_day2_state,
 // 0102). Reloads on a change to day2_schedule or phases and every 15 s; the
 // segment moves on by itself at each boundary, on the server's clock.
-export function useDay2State(): Day2Now & { state: Day2State | null; reload: () => void } {
+export function useDay2State(): Day2Now & { state: Day2State | null; offsetMs: number; reload: () => void } {
   const feed = useSharedFeed("day2_state", day2Source);
   const state = feed?.state ?? null;
   const offsetMs = feed?.offsetMs ?? 0;
@@ -64,5 +64,5 @@ export function useDay2State(): Day2Now & { state: Day2State | null; reload: () 
     return () => clearInterval(i);
   }, [compute]);
 
-  return useMemo(() => ({ ...n, state, reload }), [n, state, reload]);
+  return useMemo(() => ({ ...n, state, offsetMs, reload }), [n, state, offsetMs, reload]);
 }

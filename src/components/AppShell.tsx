@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import { nexusBody, vxDisplay } from "@/components/home/fonts";
 import { FreshieTabBar } from "@/components/freshie/FreshieTabBar";
 import { ROLE_COLOR, roleVars, themeFromColor, VORTEXA_THEME } from "@/components/freshie/groupTheme";
+import { Day2Alerts, FunfairTicker } from "@/components/day2/Day2Alerts";
 import { ShellMenuProvider } from "@/components/ShellMenu";
 import { PersistentMapProvider } from "@/components/campus-map/PersistentCampusMap";
 import { NavIcon } from "@/components/NavIcon";
@@ -230,6 +231,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       }
     >
 
+      {/* Day 2 toasts, the funfair card and the final stretch heartbeat, on every page. */}
+      <Day2Alerts>
       {/* Freshie / Faci: one screen-high column, header, scroller (.app-scroll),
           then the tab bar in normal flow. The document never scrolls and the
           tab bar is not position: fixed, so iOS Safari cannot leave it mid-screen
@@ -290,6 +293,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <PhaseTimer />
       </header>
       )}
+      {/* The funfair's red ticker under the header (Home on a phone has its own, in its fixed header). */}
+      <FunfairTicker place={pathname === "/dashboard" ? "shell-home" : "shell"} />
 
       {!isFreshie && (
         <Dialog open={menuOpen} onOpenChange={setMenuOpen}>
@@ -369,6 +374,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <NewItemToast />
       <FaciLocationBanner />
       </div>
+      </Day2Alerts>
     </div>
   );
 }
