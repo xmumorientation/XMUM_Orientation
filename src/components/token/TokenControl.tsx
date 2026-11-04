@@ -102,6 +102,7 @@ export default function TokenControl({ scoreboardOnly = false }: { scoreboardOnl
   const [tokenChange, setTokenChange] = useState(0);
   const [tokenReason, setTokenReason] = useState("");
   const [adjustmentReady, setAdjustmentReady] = useState(false);
+  const [adjustmentError, setAdjustmentError] = useState<string | null>(null);
 
   // ── Audit Log Filters ─────────────────────────────────────────────────────
   const [auditGroupFilter, setAuditGroupFilter] = useState<string>("all");
@@ -389,18 +390,20 @@ export default function TokenControl({ scoreboardOnly = false }: { scoreboardOnl
     setTokenChange(0);
     setTokenReason("");
     setAdjustmentReady(false);
+    setAdjustmentError(null);
   }
 
   function reviewTokenAdjustment() {
     if (!adjustingGroup) return;
-    if (!Number.isInteger(tokenChange) || tokenChange === 0) {
-      notifyError("Enter a whole-number token change other than 0.");
+    if (!Number.isInteger(tokenChange) || tokenChange === 0 || Math.abs(tokenChange) > 50) {
+      setAdjustmentError("Enter a whole-number token change from -50 to +50, other than 0.");
       return;
     }
     if (adjustingGroup.current_tokens + tokenChange < 0) {
-      notifyError(`${adjustingGroup.group_name} cannot have a negative token balance.`);
+      setAdjustmentError(`${adjustingGroup.group_name} cannot have a negative token balance.`);
       return;
     }
+    setAdjustmentError(null);
     setAdjustmentReady(true);
   }
 
@@ -408,6 +411,7 @@ export default function TokenControl({ scoreboardOnly = false }: { scoreboardOnl
     if (!adjustingGroup || !adjustmentReady) return;
     setBusy(true);
     setErrorMsg(null);
+    setAdjustmentError(null);
     const { error } = await supabase.rpc("fn_admin_token_adjust", {
       p_group_id: adjustingGroup.group_id,
       p_delta: tokenChange,
@@ -416,7 +420,9 @@ export default function TokenControl({ scoreboardOnly = false }: { scoreboardOnl
     });
     setBusy(false);
     if (error) {
-      notifyError(error.message);
+      setAdjustmentError(error.message.includes("INVALID_DELTA")
+        ? "Enter a whole-number token change from -50 to +50, other than 0."
+        : error.message);
       return;
     }
     const change = tokenChange > 0 ? `+${tokenChange}` : String(tokenChange);
@@ -952,19 +958,20 @@ export default function TokenControl({ scoreboardOnly = false }: { scoreboardOnl
             </div>
             <label>
               Token Change
-              <input type="number" inputMode="numeric" aria-label="Token change" value={tokenChange} onChange={(e) => { setTokenChange(Number(e.target.value)); setAdjustmentReady(false); }} />
+              <input type="number" inputMode="numeric" min={-50} max={50} aria-label="Token change" aria-describedby={adjustmentError ? "token-adjustment-error" : undefined} value={tokenChange} onChange={(e) => { setTokenChange(Number(e.target.value)); setAdjustmentReady(false); setAdjustmentError(null); }} />
             </label>
             <label>
               Reason
-              <input type="text" maxLength={160} aria-label="Reason" placeholder="e.g. Correcting a station result" value={tokenReason} onChange={(e) => { setTokenReason(e.target.value); setAdjustmentReady(false); }} />
+              <input type="text" maxLength={160} aria-label="Reason" placeholder="e.g. Correcting a station result" value={tokenReason} onChange={(e) => { setTokenReason(e.target.value); setAdjustmentReady(false); setAdjustmentError(null); }} />
             </label>
+            {adjustmentError && <p id="token-adjustment-error" role="alert" className="rounded-xl border border-red-400/35 bg-red-950/40 px-3 py-2 text-sm font-medium text-red-100">{adjustmentError}</p>}
             {adjustmentReady && (
               <p className="tk-adjust-review">
                 {adjustingGroup.current_tokens} {tokenChange > 0 ? `+ ${tokenChange}` : `− ${Math.abs(tokenChange)}`} = <b>{adjustingGroup.current_tokens + tokenChange}</b> tokens
               </p>
             )}
             <div className="tk-adjust-actions">
-              <button type="button" className="btn-secondary" disabled={busy} onClick={() => setAdjustingGroup(null)}>Cancel</button>
+              <button type="button" className="btn-secondary" disabled={busy} onClick={() => { setAdjustingGroup(null); setAdjustmentError(null); }}>Cancel</button>
               {adjustmentReady ? (
                 <button type="button" className="btn-primary" disabled={busy} onClick={confirmTokenAdjustment}>Confirm Adjustment</button>
               ) : (

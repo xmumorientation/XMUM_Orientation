@@ -51,4 +51,18 @@ describe("TokenControl", () => {
       p_reason: "Score correction",
     })));
   });
+
+  it("rejects an adjustment outside the server's ±50-token limit before the confirmation step", async () => {
+    render(<TokenControl />);
+
+    await screen.findAllByText("Group 1");
+    await userEvent.click(await screen.findByRole("button", { name: "Adjust Tokens for Group 1" }));
+    await userEvent.clear(screen.getByLabelText("Token change"));
+    await userEvent.type(screen.getByLabelText("Token change"), "100");
+    await userEvent.click(screen.getByRole("button", { name: "Review Adjustment" }));
+
+    expect(fake.rpc).not.toHaveBeenCalledWith("fn_admin_token_adjust", expect.anything());
+    expect(screen.getByText("Enter a whole-number token change from -50 to +50, other than 0.")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Confirm Adjustment" })).toBeNull();
+  });
 });
