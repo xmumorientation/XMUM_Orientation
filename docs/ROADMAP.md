@@ -328,6 +328,14 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 
 ## Done
 
+### Zichien, 2026-11-04 — Home Sections (replaces the static Action Plan list)
+
+- HOF, OC, HOGM and Admin add, change and remove files (PDF or image) shown on Home to the roles they pick. Three inputs: the file, the title and who sees it (Freshies, Facilitators, Game Masters or Committee; Game Masters include Guardian GM, Committee includes HOF, OC, HOGM and Admin; stored as the individual roles, so no migration change). Shown as expandable cards in a **Documents** stop on Freshie/Faci Home and `StaffHome`, and a section on `StaffDashboard` (Admin, Guardian GM); a role with none sees no stop.
+- Where to manage: Admin → Settings → Home Sections (`/admin/home-sections`), Ops → **Home** for HOGM (Game control) and for HOF/OC (Overview). Committee cannot (read only). One component: [HomeSectionsManager.tsx](../src/components/staff/HomeSectionsManager.tsx). Display: [HomeSections.tsx](../src/components/HomeSections.tsx), loaded by `useHomeSections()`.
+- Migration `0115_home_sections.sql` (**run it before using this**): table `home_sections`, `is_home_editor()` (HOF, OC, HOGM, Admin), RLS (a role reads only sections listing it; editors read all), private bucket `home-files` (10 MB, PDF/PNG/JPG/WebP/GIF) with matching storage policies. Files are shown through 4-hour signed links, refreshed when the tab comes back. Day 1 and Day 2 Action Plan are seeded as ordinary rows pointing at `public/action-plans/`, for every role except Freshie, so they are edited or removed in the same place. `src/lib/actionPlans.ts` is gone.
+- Not included: reordering (cards sort by creation), a subtitle (the card shows PDF or Image), and audit-log entries for changes.
+- Tests: `tests/home-sections/db.test.ts` (RLS and storage policies on embedded Postgres), `tests/home-sections.test.ts`. Not checked in a browser: the migration is not applied to the live project yet and no staff login was available.
+
 ### David, 2026-11-03 — Tennis mobile exit and court taps
 - A persistent Back to map button sits above the match input layer during serving, rallies and match completion; it reuses the existing leave/room cleanup for bot and online matches. Safe-area spacing and the narrow-screen icon keep it clear of the score.
 - Court station markers use the same Tennis entry as the existing full-court hit area while the game is enabled. Closed-game station management is unchanged. The court availability sentence uses periods instead of a middle dot.
@@ -344,7 +352,7 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 - Updated Add user and Edit account dialogs for the Admin night theme, with clearer labels, role selection and reduced-motion-aware transitions. Admin can select a role for pending accounts before approval.
 - Verify the deployed approval flow and dialogs with an authorized Admin account.
 
-### Zichien, 2026-11-03 — Action Plan Cards on Home
+### Zichien, 2026-11-03 — Action Plan Cards on Home (superseded by Home Sections above)
 
 - Home shows two expandable cards, Day 1 Action Plan and Day 2 Action Plan, to every role except Freshie: an **Action Plan** stop on Faci Home and `StaffHome` (HOF, OC, HOGM, Committee, GM), and a section on `StaffDashboard` (Admin, Guardian GM). Code: [ActionPlan.tsx](../src/components/ActionPlan.tsx), [action-plan.css](../src/components/action-plan.css), list in [actionPlans.ts](../src/lib/actionPlans.ts).
 - The plans are static files in `public/action-plans/` (`day-1.png`, `day-2.png`, dummy images for now). Replace a file to update the plan; for a PDF, add the file and change `file` in `actionPlans.ts`. PNG, JPG and WebP show inline, PDF shows in an embed, and both have an Open Full Size link. No database, no upload UI, no migration.

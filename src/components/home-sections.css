@@ -1,0 +1,39 @@
+/* Home section cards (HomeSections.tsx). Colours follow --fh-*, with fallbacks. */
+.hs-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.hs-card {
+  border-radius: 16px; border: 1px solid var(--fh-line, #16305a); background: rgba(21, 18, 30, 0.85);
+  color: var(--fh-text, #eef5ff); transition: border-color 0.15s ease; overflow: hidden;
+}
+.hs-card:hover, .hs-card[data-open] { border-color: var(--fh-accent, #008cff); }
+.hs-head {
+  display: flex; align-items: center; gap: 12px; width: 100%; min-height: 76px; padding: 14px;
+  background: none; border: 0; color: inherit; font: inherit; text-align: left; cursor: pointer;
+}
+.hs-head:focus-visible { outline: 2px solid var(--fh-accent, #008cff); outline-offset: -2px; }
+.hs-ic { display: grid; place-items: center; width: 38px; height: 38px; flex: none; border-radius: 11px; background: rgba(13, 252, 253, 0.1); color: var(--fh-accent, #008cff); }
+.hs-card:nth-child(2n) .hs-ic { background: rgba(254, 6, 171, 0.12); color: var(--fh-pink, #fe06ab); }
+.hs-text { display: grid; gap: 2px; min-width: 0; flex: 1; }
+.hs-text b { font-size: 15px; font-weight: 600; }
+.hs-text small { font-size: 12.5px; line-height: 1.35; color: var(--fh-mute, #8ba3c4); }
+.hs-chev { flex: none; color: var(--fh-mute, #8ba3c4); transition: transform 0.2s ease; }
+.hs-card[data-open] .hs-chev { transform: rotate(180deg); }
+.hs-body { display: grid; gap: 12px; padding: 0 14px 14px; animation: hs-in 0.2s ease; }
+.hs-img { display: block; width: 100%; height: auto; border-radius: 10px; background: #fff; }
+.hs-pdf { display: block; width: 100%; height: min(70vh, 720px); border-radius: 10px; background: #fff; }
+.hs-open {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 16px;
+  border-radius: 999px; border: 1px solid var(--fh-accent, #008cff); color: var(--fh-accent, #008cff);
+  font-size: 14px; font-weight: 600; text-decoration: none; justify-self: start;
+}
+.hs-open:hover { background: var(--fh-accent, #008cff); color: var(--fh-on-blue, #001629); }
+.hs-empty { margin: 0; font-size: 13.5px; color: var(--fh-mute, #8ba3c4); }
+@keyframes hs-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .hs-body { animation: none; }
+  .hs-chev { transition: none; }
+}
+/* The stop is one screen tall by default; an open plan is taller, so let it grow. */
+#hs-docs { justify-content: flex-start; }
+/* Staff dashboard (admin, Guardian GM): not a snap stop. */
+.sd-docs { padding-top: 30px; }
+.sd-docs h2 { font-family: var(--font-nexus-body), Outfit, sans-serif; font-size: 21px; font-weight: 600; margin: 0 0 16px; }

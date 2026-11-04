@@ -677,6 +677,13 @@ div.fi-lamp:active { transform: none; }
 .fh-team[data-me] { border-color: var(--fh-accent); background: color-mix(in srgb, var(--fh-accent) 14%, var(--fh-ink-2)); }
 .fh-team b { flex: 1; font-weight: 600; font-size: 15px; display: flex; align-items: center; gap: 8px; }
 .fh-you { font-size: 9.5px; letter-spacing: 0.14em; padding: 3px 7px; border-radius: 999px; background: var(--fh-accent); color: var(--fh-on-blue); font-weight: 700; }
+.fh-day-seg { display: flex; gap: 4px; padding: 4px; margin-bottom: 10px; border-radius: 14px; background: var(--fh-ink-2); border: 1px solid var(--fh-line); }
+.fh-day-seg button {
+  flex: 1; min-height: 40px; border: 0; border-radius: 10px; background: transparent; cursor: pointer;
+  color: var(--fh-mute); font: inherit; font-weight: 600; font-size: 14px;
+}
+.fh-day-seg button[aria-selected="true"] { background: var(--fh-ink); color: #fff; box-shadow: inset 0 0 0 1.5px var(--fh-accent); }
+.fh-team-pz { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; letter-spacing: 0.04em; color: var(--fh-blue-light); font-variant-numeric: tabular-nums; }
 .fh-team-sc { font-size: 18px; color: var(--fh-mute); font-variant-numeric: tabular-nums; }
 
 /* ── Freshie schedule page (welcome schedule layout) ─────────────────────── */

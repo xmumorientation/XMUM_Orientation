@@ -40,3 +40,30 @@ function scoreboardSource(): FeedSource<ScoreboardRow[]> {
 export function useScoreboard(): ScoreboardRow[] | undefined {
   return useSharedFeed("scoreboard", scoreboardSource);
 }
+
+/** Puzzle pieces held per group id (a count, not which pieces); undefined until the first load. */
+function piecesSource(): FeedSource<Record<number, number>> {
+  const supabase = supabaseBrowser();
+  return {
+    async load() {
+      const { data } = await supabase.rpc("fn_scoreboard_pieces");
+      if (!data) return undefined;
+      const out: Record<number, number> = {};
+      for (const row of data as { group_id: number; pieces: number }[]) out[row.group_id] = row.pieces ?? 0;
+      return out;
+    },
+    // Realtime sends a player only their own group's inventory, so the poll does the rest.
+    listen(reload) {
+      const channel = supabase
+        .channel(`scoreboard-pieces-${crypto.randomUUID()}`)
+        .on("postgres_changes", { event: "*", schema: "public", table: "inventory" }, reload)
+        .subscribe();
+      return () => void supabase.removeChannel(channel);
+    },
+    pollMs: 30_000,
+  };
+}
+
+export function useScoreboardPieces(): Record<number, number> | undefined {
+  return useSharedFeed("scoreboard-pieces", piecesSource);
+}

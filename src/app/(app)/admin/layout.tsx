@@ -60,6 +60,7 @@ const SECTIONS: Section[] = [
     tabs: [
       { href: "/admin/users", label: "Users" },
       { href: "/admin/faq", label: "FAQ" },
+      { href: "/admin/home-sections", label: "Home Sections" },
       { href: "/admin/brand", label: "Brand" },
     ],
   },

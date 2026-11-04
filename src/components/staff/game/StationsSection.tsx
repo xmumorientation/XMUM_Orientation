@@ -4,6 +4,7 @@ import { Check, ChevronDown, Pencil, Plus, Trash2, Users } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { usePhases } from "@/components/PhaseTimerProvider";
+import { useConfig } from "@/components/useConfig";
 import { useStationOccupants, type Occupant } from "@/components/staff/useStationOccupants";
 import { MAP_BUILDINGS, stationPosition } from "@/lib/mapBuildings";
 import { supabaseBrowser } from "@/lib/supabase/client";
@@ -67,7 +68,10 @@ export function StationsSection() {
   const [gmStation, setGmStation] = useState<Station | null>(null);
   const [picked, setPicked] = useState<string[]>([]);
   const [gmSearch, setGmSearch] = useState("");
-  const [deleting, setDeleting] = useState<{ station: Station; hasHistory: boolean } | null>(null);
+  // force: Rehearsal mode only, delete a station that has token history (fn_delete_station_with_history).
+  const [deleting, setDeleting] = useState<{ station: Station; hasHistory: boolean; force: boolean } | null>(null);
+  const { config } = useConfig();
+  const rehearsal = config["rehearsal_mode"] === true || config["rehearsal_mode"] === "true";
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
@@ -201,15 +205,24 @@ export function StationsSection() {
       supabase.from("token_transactions").select("id", { count: "exact", head: true }).eq("station_id", s.id),
       supabase.from("token_logs").select("log_id", { count: "exact", head: true }).eq("station_id", s.id),
     ]);
-    setDeleting({ station: s, hasHistory: (tx ?? 0) + (logs ?? 0) > 0 });
+    setDeleting({ station: s, hasHistory: (tx ?? 0) + (logs ?? 0) > 0, force: false });
   }
 
   async function confirmDelete() {
     if (!deleting) return;
-    const { station: s, hasHistory } = deleting;
+    const { station: s, hasHistory, force } = deleting;
     setBusy(true);
-    if (hasHistory) {
-      await setStatus(s, "closed");
+    if (force) {
+      const { error } = await supabase.rpc("fn_delete_station_with_history", { p_station_id: s.id });
+      if (error) setError(friendlyError(error));
+      else {
+        flash(`${s.name} deleted`);
+        setOpenId(null);
+        load();
+      }
+    } else if (hasHistory) {
+      // Already closed: nothing to change, the sheet only explains why it stays.
+      if (s.status !== "closed") await setStatus(s, "closed");
     } else {
       const { error } = await supabase.from("stations").delete().eq("id", s.id);
       if (error) setError(friendlyError(error));
@@ -222,6 +235,57 @@ export function StationsSection() {
     setBusy(false);
     setDeleting(null);
   }
+
+  // What the delete sheet says. A station with token history can only be closed;
+  // in Rehearsal mode it can also be deleted anyway (history stays, minus the station).
+  const deleteSheet = (() => {
+    if (!deleting) return { title: "Delete Station?", confirmLabel: "Delete", body: null as React.ReactNode };
+    const { station: s, hasHistory, force } = deleting;
+    if (force) {
+      return {
+        title: `Delete ${s.name} Anyway?`,
+        confirmLabel: "Delete Anyway",
+        body: "Every token record stays and no group's tokens change, but the records stop naming this station. Groups checked in here lose that check-in.",
+      };
+    }
+    if (!hasHistory) {
+      const gms = gmsOf(s.id).map((g) => g.name).join(", ");
+      return {
+        title: `Delete ${s.name}?`,
+        confirmLabel: "Delete",
+        body: `Groups checked in here lose that check-in.${gms ? ` ${gms} will have no station.` : ""}`,
+      };
+    }
+    const closed = s.status === "closed";
+    const anyway = rehearsal ? (
+      <button
+        type="button"
+        className="gc-btn gc-btn-danger"
+        style={{ marginTop: 12 }}
+        onClick={() => setDeleting({ station: s, hasHistory, force: true })}
+      >
+        <Trash2 size={15} aria-hidden /> Delete Anyway
+      </button>
+    ) : null;
+    return {
+      title: closed ? `${s.name} Stays Closed` : `Close ${s.name}?`,
+      confirmLabel: closed ? "Got It" : "Close Station",
+      body: (
+        <>
+          <p>
+            {closed
+              ? "It has token history, so it can't be deleted. It is already closed, and the records stay."
+              : "It has token history, so it can't be deleted. Closing keeps the records."}
+          </p>
+          {rehearsal ? (
+            anyway
+          ) : (
+            <p>To remove it for good, Admin turns on Rehearsal mode in Live control first.</p>
+          )}
+        </>
+      ),
+    };
+  })();
 
   return (
     <div className="gc-stack">
@@ -451,18 +515,11 @@ export function StationsSection() {
         onClose={() => setDeleting(null)}
         onConfirm={confirmDelete}
         busy={busy}
-        danger
-        title={deleting?.hasHistory ? `Close ${deleting.station.name}?` : `Delete ${deleting?.station.name ?? ""}?`}
-        confirmLabel={deleting?.hasHistory ? "Close Station" : "Delete"}
-        body={
-          deleting?.hasHistory
-            ? "It has token history, so it can't be deleted. Closing keeps the records."
-            : `Groups checked in here lose that check-in.${
-                deleting && gmsOf(deleting.station.id).length
-                  ? ` ${gmsOf(deleting.station.id).map((g) => g.name).join(", ")} will have no station.`
-                  : ""
-              }`
-        }
+        danger={!deleting?.hasHistory || deleting.force || deleting.station.status !== "closed"}
+        typeToConfirm={deleting?.force ? "DELETE" : undefined}
+        title={deleteSheet.title}
+        confirmLabel={deleteSheet.confirmLabel}
+        body={deleteSheet.body}
       />
     </div>
   );

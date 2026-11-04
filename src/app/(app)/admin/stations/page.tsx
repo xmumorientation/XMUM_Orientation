@@ -13,6 +13,7 @@ import {
 } from "@/components/ui";
 import { useStationOccupants, type Occupant } from "@/components/staff/useStationOccupants";
 import { Dialog, DialogContent } from "@/components/ui/Dialog";
+import { useConfig } from "@/components/useConfig";
 import { readAdminDayFilter } from "@/lib/adminDayFilter";
 import {
   MAP_BUILDINGS,
@@ -87,6 +88,8 @@ function codeFloor(code: string, area: string) {
 // the Token page (/admin/token).
 export default function AdminStationsPage() {
   const supabase = useMemo(() => supabaseBrowser(), []);
+  const { config } = useConfig();
+  const rehearsal = config["rehearsal_mode"] === true || config["rehearsal_mode"] === "true";
   const [stations, setStations] = useState<Station[]>([]);
   const [gmUsers, setGmUsers] = useState<GmUser[]>([]);
   const [assignments, setAssignments] = useState<GmAssignment[]>([]);
@@ -303,6 +306,21 @@ export default function AdminStationsPage() {
         .eq("station_id", s.id),
     ]);
     if ((txCount ?? 0) + (logCount ?? 0) > 0) {
+      // Rehearsal mode: delete anyway (fn_delete_station_with_history, 0116).
+      if (
+        rehearsal &&
+        window.confirm(
+          `${s.name} has token history, so it can't be deleted normally.\n\nRehearsal mode is on, so you can delete it anyway. Every token record stays and no group's tokens change, but the records stop naming this station.\n\nDelete it anyway?`
+        )
+      ) {
+        const { error } = await supabase.rpc("fn_delete_station_with_history", { p_station_id: s.id });
+        if (error) setError(friendlyError(error));
+        else {
+          flash("Station deleted.");
+          load();
+        }
+        return;
+      }
       if (
         s.status !== "closed" &&
         window.confirm(

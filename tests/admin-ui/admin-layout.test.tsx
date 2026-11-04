@@ -66,9 +66,9 @@ describe("Admin shell", () => {
     expect(tabs().getByRole("link", { name: "Funfair" }).getAttribute("aria-current")).toBe("page");
   });
 
-  it("AC-1: Settings has Users, FAQ and Brand", () => {
+  it("AC-1: Settings has Users, FAQ, Home Sections and Brand", () => {
     show("/admin/brand");
-    expect(tabs().getAllByRole("link").map((a) => a.textContent)).toEqual(["Users", "FAQ", "Brand"]);
+    expect(tabs().getAllByRole("link").map((a) => a.textContent)).toEqual(["Users", "FAQ", "Home Sections", "Brand"]);
     expect(sections().getByRole("link", { name: "Settings" }).getAttribute("aria-current")).toBe("page");
   });
 

@@ -152,6 +152,8 @@ const ERROR_MESSAGES: Record<string, string> = {
   BB_NO_TARGETS: "Nobody matches that choice yet.",
   TOKEN_RESET_LOCKED:
     "Reset is locked. Turn on Rehearsal mode in Live control first; it only works while testing.",
+  STATION_DELETE_LOCKED:
+    "A station with token history can only be deleted while Rehearsal mode is on. Turn it on in Live control first.",
   BB_RESET_LOCKED: "Turn on Rehearsal mode in Live control first. The reset only works while testing.",
   BB_RESET_CONFIRM: "Type RESET (capitals) to confirm.",
   BB_RESET_SCOPE: "Pick what to reset.",
