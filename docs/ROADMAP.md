@@ -7,7 +7,7 @@ For everything already merged, day by day since the first commit, see [CHANGELOG
 
 > **From Ben:** when you finish your work, write down what you completed in the "Done" section at the end of this file, so the next teammate can see it. Do this for partly finished items too: say which parts are done and which are left.
 
-Last updated: 2026-11-02
+Last updated: 2026-11-04
 
 ## Status key
 
@@ -327,6 +327,14 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 ---
 
 ## Done
+
+### Day 2 alerts: toasts, the funfair card and the final stretch, 2026-11-04 (Ben, branch `day2-alerts`)
+- Freshie and Faci get a toast at the top of the screen when the Day 2 game starts with blind boxes on ("Challenge OC, HOF and HOGM", in place of the red CHALLENGE MODE banner on the phase card) and when the Hard stations open. When the funfair opens they get the funfair card: a marquee sign with the group's three keys (`KeyEmblem`, the Items page's states), its next step (key ready, closest set, or done) and Open Map / Later. The card reads "Light Up the Funfair": the funfair stays dark until groups light their projectors, so it never says "open". Everyone else gets a plain "The Funfair Race Is On" toast.
+- The moments follow the switches, not minutes (`src/lib/day2Moments.ts`): Hard when the Hard switch turns on, the funfair when the Funfair switch does, Challenge when the game starts or blind boxes come back on. So Admin's segment times, holds and live flips move them too. An open page shows each moment once; a page that loads mid-game shows the latest one, so a reload shows it again (nothing is stored).
+- While the funfair is open: a red ticker under the header on every page for Freshie, Faci, the ops crew and GM ("Light Up the Funfair" for players, "Funfair Race" for staff, projectors lit, time left; a player's tap brings the card back, anyone else's opens the map); "Final Stretch", a red card and the three projectors on the phase card (Freshie Home and Staff Home); a dot on the Map tab. Players also get a heartbeat on the screen edges: very faint, stronger once a projector is lit, stronger again at two, gone when all three are.
+- Each projector lit gives players a toast ("Wheel Is Lit. Neon Pier is on. 2 projectors left."), with code names only and never which group, unless it is their own ("Your Group Lit Wheel").
+- Code: `src/components/day2/` (`Day2Alerts.tsx`, `useDay2Live.ts`, `day2-alerts.css`), mounted once in AppShell; `useDay2State` also returns `offsetMs`. The projector states load only while the Day 2 game runs. No migration. The GM page, Admin's Day 2 schedule and the public page still show CHALLENGE MODE.
+- Tests: `tests/day2-moments.test.ts`. `tsc` and `eslint` clean. Not checked in the browser.
 
 ### Role colours and GM tier colours, 2026-11-04 (Ben, branch `gm-role-tier-colours`)
 - Each ops role has its own colour (`ROLE_COLOR` in `groupTheme.ts`): HOF orange, OC blue, HOGM pink, Committee lilac, Admin navy with white accents. AppShell sets it on every page of those roles (Home, Ops, Map, Scores, Schedule): the role chip and account avatar, the eyebrows, the main sky light on Home and Schedule, and on Ops, Map and Scores a big top-right light, a haze from the top, role-tinted card edges and a line under the OPS title. Cyan and yellow keep their jobs.

@@ -14,6 +14,7 @@ import {
   StopBar,
 } from "@/components/freshie/FreshieHome";
 import { ACTION_PLAN_STOP, ActionPlanStop } from "@/components/ActionPlan";
+import { FunfairTicker, useTickerOn } from "@/components/day2/Day2Alerts";
 import { FreshieSky, type SkyCabin } from "@/components/freshie/FreshieSky";
 import { groupSwatch, staffTheme } from "@/components/freshie/groupTheme";
 import { nexusBody, vxDisplay, vxSlab } from "@/components/home/fonts";
@@ -349,10 +350,13 @@ export function StaffHome() {
   const cabins: SkyCabin[] = useMemo(() => (groups ?? []).map(({ id, color }) => ({ id, color })), [groups]);
   // The role's own colour (ROLE_COLOR) is the main sky light; AppShell sets --fh-role for the chip and role name. GM has none.
   const theme = staffTheme(profile.role);
+  // The funfair's ticker sits in the fixed header, so the stops start lower (day2-alerts.css).
+  const tickerOn = useTickerOn();
 
   return (
     <div
       className={`fh fh-vx sh ${nexusBody.variable} ${vxDisplay.variable} ${vxSlab.variable}`}
+      data-ticker={tickerOn || undefined}
       style={
         {
           "--fh-accent": theme.accent,
@@ -385,6 +389,7 @@ export function StaffHome() {
             />
           </div>
         </div>
+        <FunfairTicker place="home" />
         <StopBar stops={isGm ? GM_STOPS : STOPS} />
       </header>
 

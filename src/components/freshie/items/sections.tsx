@@ -40,7 +40,7 @@ export function keyMode(state: CardState): KeyMode {
   return "normal";
 }
 
-const RING_LABEL: Record<CardState, (data: ItemsData, loc: ProjectorLocation) => string> = {
+export const RING_LABEL: Record<CardState, (data: ItemsData, loc: ProjectorLocation) => string> = {
   locked: () => "Day 2",
   collecting: (data, loc) => `${data.pieces[loc].length}/${PIECES_PER_SET}`,
   key: () => "Key Ready",
