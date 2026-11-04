@@ -22,7 +22,8 @@ import { FoldBody } from "./parts";
 // countsOnly (GM's /token): a GM may not read the groups or inventory tables
 // (0002 RLS), so tokens come from fn_scoreboard() and each key's piece count
 // from fn_puzzle_status() (one call per group and key), refreshed every 30 s.
-// It is a count, not which pieces, so the open row shows numbers, not key art.
+// It is a count, not which pieces, so the key art fills the first N slices: the
+// picture shows how many, never which.
 // Nor which group lit a projector: that is Committee only (0096).
 
 type GroupRow = { id: number; name: string; color: string | null; token_balance: number };
@@ -158,29 +159,23 @@ export function GroupScores({ countsOnly = false }: { countsOnly?: boolean }) {
                       const full = n >= PIECES_PER_SET;
                       return (
                         <li key={loc} className="gc-key" data-lit={ours || undefined}>
-                          {countsOnly ? (
-                            <b className="gc-key-count">
-                              {n}
-                              <small>/{PIECES_PER_SET}</small>
-                            </b>
-                          ) : (
-                            <KeyEmblem className="gc-key-art" loc={loc} owned={own[loc]} mode={ours ? "lit" : "normal"} />
-                          )}
+                          <KeyEmblem
+                            className="gc-key-art"
+                            loc={loc}
+                            owned={countsOnly ? Array.from({ length: n }, (_, k) => k + 1) : own[loc]}
+                            mode={ours ? "lit" : "normal"}
+                          />
                           <b>{KEY_NAMES[loc]}</b>
                           <small>{places[loc].name}</small>
-                          {(!countsOnly || ours || full) && (
-                            <span className="gc-chip" data-tone={ours ? "live" : full ? "ok" : "off"}>
-                              {ours ? (
-                                <>
-                                  <Lightbulb size={11} aria-hidden /> Lit
-                                </>
-                              ) : countsOnly ? (
-                                "Full Set"
-                              ) : (
-                                `${n}/${PIECES_PER_SET}`
-                              )}
-                            </span>
-                          )}
+                          <span className="gc-chip" data-tone={ours ? "live" : full ? "ok" : "off"}>
+                            {ours ? (
+                              <>
+                                <Lightbulb size={11} aria-hidden /> Lit
+                              </>
+                            ) : (
+                              `${n}/${PIECES_PER_SET}`
+                            )}
+                          </span>
                         </li>
                       );
                     })}
