@@ -2,6 +2,10 @@
 // blue used on Freshie screens (buttons, glow, scan frame, brand accents).
 // The night layout stays. A missing or invalid value uses the default blue.
 
+import type { CSSProperties } from "react";
+
+import type { RiskTier, UserRole } from "@/lib/types";
+
 export const DEFAULT_GROUP_COLOR = "#008CFF";
 
 const HEX = /^#[0-9A-Fa-f]{6}$/;
@@ -111,6 +115,49 @@ export const VORTEXA_THEME: GroupTheme = {
   glowSpread: 1,
   partner: "#FE06AB",
 };
+
+/**
+ * Each ops role's own colour, on top of the Welcome colours: eyebrows, card
+ * edges and the line under the OPS title (`accent`), and the background lights
+ * (`light`). Admin is navy with white accents. GM has none: its pages
+ * keep the Welcome colours, and only its Station page follows the station's
+ * tier (TIER_COLOR). Cyan ("you are here") and yellow (primary action) are
+ * never a role's colour.
+ */
+export const ROLE_COLOR: Partial<Record<UserRole, { accent: string; light: string }>> = {
+  hof: { accent: "#fc9e3d", light: "#fc9e3d" },
+  oc: { accent: "#5b8cff", light: "#5b8cff" },
+  hogm: { accent: "#fe06ab", light: "#fe06ab" },
+  committee: { accent: "#e0b4fc", light: "#e0b4fc" },
+  admin: { accent: "#f3f0fa", light: "#063a65" },
+};
+
+/** Staff Home for a role: the Welcome colours, with the role's colour as the main sky light. Cyan stays the accent. */
+export function staffTheme(role: UserRole): GroupTheme {
+  const c = ROLE_COLOR[role];
+  if (!c) return VORTEXA_THEME;
+  const t = themeFromColor(c.light);
+  return { ...VORTEXA_THEME, glow: t.glow, glowStrength: t.glowStrength, glowSpread: t.glowSpread };
+}
+
+/** --role-accent and --role-light for a role with a colour, else nothing (the defaults stay). */
+export function roleVars(role: UserRole): CSSProperties {
+  const c = ROLE_COLOR[role];
+  return c ? ({ "--role-accent": c.accent, "--role-light": c.light } as CSSProperties) : {};
+}
+
+/** A Day 2 station's tier colour on the GM's Station page: Easy lilac, Medium orange, Hard pink. */
+export const TIER_COLOR: Record<RiskTier, string> = {
+  low: "#e0b4fc",
+  medium: "#fc9e3d",
+  high: "#fe06ab",
+};
+
+/** --st-accent and --st-glow (the accent at 45%) for a Day 2 station's tier. */
+export function tierVars(tier: RiskTier): CSSProperties {
+  const c = TIER_COLOR[tier];
+  return { "--st-accent": c, "--st-glow": `${c}73` } as CSSProperties;
+}
 
 /** Number of Freshie groups shown on the Home scoreboard placeholder. */
 export const GROUP_COUNT = 10;
