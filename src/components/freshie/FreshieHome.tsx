@@ -9,7 +9,6 @@ import {
   Compass,
   Gamepad2,
   GraduationCap,
-  HelpCircle,
   Languages,
   ListChecks,
   Pencil,
@@ -22,7 +21,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { HOME_SECTIONS_STOP, HomeSectionsStop } from "@/components/HomeSections";
-import { GAME_PHASES, SPONSORS, SPONSORS_ARE_EXAMPLES } from "@/components/home/data";
+import { GAME_PHASES, SPONSORS } from "@/components/home/data";
 import { vxDisplay, vxSlab } from "@/components/home/fonts";
 import { useHomeSections } from "@/components/useHomeSections";
 import { ChallengeBanner } from "@/components/ChallengeBanner";
@@ -59,7 +58,7 @@ import { groupSwatch, themeFromColor } from "./groupTheme";
 //      center tab, /checklist)
 //   03 Your Facilitator (Freshie) or You & Your Partner (Faci; own card has
 //      an edit pencil). Real profiles from fn_group_facis().
-//   03 Your Progress (tokens, puzzle pieces per key, FAQ)
+//   03 Your Progress (tokens and puzzle pieces per key)
 //   04 Scoreboard (own group highlighted)
 //   05 How the game works
 // The day's programme is on the Schedule page, not here.
@@ -461,14 +460,6 @@ function ProgressStop({ group, loading }: { group: Group | null; loading: boolea
             </div>
           </div>
 
-          <Link href="/faq" className="fh-tile fh-prog-faq">
-            <span className="fh-tile-ic" style={{ background: "#FE06AB24", color: "#FE06AB" }} aria-hidden>
-              <HelpCircle size={20} />
-            </span>
-            <b className="fh-prog-title">FAQ</b>
-            <small>Rules, help and contacts</small>
-            <ArrowRight size={18} aria-hidden />
-          </Link>
         </div>
       )}
     </section>
@@ -544,7 +535,7 @@ function ScoresStop({ groupId, onRows }: { groupId: number | null; onRows?: (row
 /** Organiser + sponsors, under the Welcome buttons. Same list as the public homepage. */
 export function Credits() {
   return (
-    <div className="fh-credits" data-example-sponsors={SPONSORS_ARE_EXAMPLES || undefined}>
+    <div className="fh-credits">
       <div className="fh-credits-col">
         <span className="fh-credits-label fh-mono">Organised by</span>
         <Image
@@ -557,13 +548,11 @@ export function Credits() {
       </div>
       <span className="fh-credits-sep" aria-hidden />
       <div className="fh-credits-col">
-        <span className="fh-credits-label fh-mono">
-          Supported by{SPONSORS_ARE_EXAMPLES && <span className="fh-credits-example"> (Example)</span>}
-        </span>
+        <span className="fh-credits-label fh-mono">Supported by</span>
         <ul className="fh-credits-sponsors">
           {SPONSORS.map((s, i) => {
             const body = s.logo ? (
-              <Image src={s.logo} alt={s.name} width={240} height={102} className="fh-sponsor-logo" />
+              <Image src={s.logo} alt={s.name} width={240} height={102} className={`fh-sponsor-logo fh-sponsor-logo--${s.id}`} />
             ) : (
               <span className="fh-sponsor-ph">{s.name}</span>
             );

@@ -408,6 +408,7 @@ html.vx-snap { scroll-snap-type: y mandatory; }
 }
 @keyframes vx-shimmer { to { background-position: 200% 0; } }
 .vx-welcome-slogan { font-family: var(--font-vx-slab), Georgia, serif; font-size: clamp(16px, 2vw, 20px); color: #fff; margin: 0; }
+.vx-slogan-line { white-space: nowrap; }
 .vx-welcome .vx-welcome-slogan { margin-top: -8px; line-height: 1.5; }
 .vx-welcome-actions { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; margin-top: 6px; }
 .vx-welcome-strip { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 28px; margin-top: 18px; font-size: 12px; color: var(--vx-mute); letter-spacing: 0.08em; }
@@ -427,17 +428,16 @@ html.vx-snap { scroll-snap-type: y mandatory; }
 }
 .vx-credits-sep { width: 1px; background: var(--vx-line-2); flex: none; }
 .vx-credits-label { font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--vx-mute); white-space: nowrap; }
-.vx-credits-example { text-transform: none; letter-spacing: 0.08em; }
-@media (max-width: 479px) { .vx-credits-example { display: block; margin-top: 2px; } }
 /* White-on-transparent copy of public/xmum-logo-horizontal.png (which is navy on white). */
 .vx-credits-xmum { height: clamp(24px, 6.5vw, 42px); width: auto; max-width: 100%; object-fit: contain; opacity: 0.92; }
-.vx-credits-sponsors ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px 16px; }
+.vx-credits-sponsors ul { list-style: none; width: min(208px, 100%); margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: center; gap: 8px 12px; }
+.vx-credits-sponsors li { min-width: 0; display: flex; justify-content: center; align-items: center; }
 .vx-sponsor-ph { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; font-size: 14px; color: var(--vx-mute); }
 .vx-sponsor-ph i { width: 12px; height: 12px; border-radius: 50%; background: var(--vx-line-2); }
 /* Sponsor logos keep their own colours, as supplied. */
 .vx-sponsor-logo {
-  height: clamp(32px, 8.5vw, 48px); width: auto; max-width: 180px; object-fit: contain;
-  border-radius: 7px; transition: transform 0.15s;
+  display: block; height: clamp(30px, 6.5vw, 46px); width: auto; max-width: 100%; object-fit: contain;
+  transition: transform 0.15s;
 }
 .vx-credits a:hover .vx-sponsor-logo { transform: translateY(-1px); }
 @media (max-width: 1023px) {

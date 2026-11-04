@@ -123,13 +123,12 @@ html.fh-snap { overflow-x: hidden; }
 }
 .fh-credits-sep { width: 1px; flex: none; background: var(--fh-line-2); }
 .fh-credits-label { font-size: clamp(9px, 2.4vw, 10.5px); letter-spacing: 0.24em; text-transform: uppercase; color: var(--fh-mute); white-space: nowrap; }
-.fh-credits-example { text-transform: none; letter-spacing: 0.08em; }
-@media (max-width: 479px) { .fh-credits-example { display: block; margin-top: 2px; } }
 /* White-on-transparent copy of public/xmum-logo-horizontal.png. */
 .fh-credits-xmum { height: clamp(24px, 6.5vw, 38px); width: auto; max-width: 100%; object-fit: contain; opacity: 0.92; }
-.fh-credits-sponsors { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px 16px; }
+.fh-credits-sponsors { list-style: none; width: min(208px, 100%); margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: center; gap: 8px 12px; }
+.fh-credits-sponsors li { min-width: 0; display: flex; justify-content: center; align-items: center; }
 /* Sponsor logos keep their own colours, as supplied. */
-.fh-sponsor-logo { height: clamp(32px, 8.5vw, 46px); width: auto; max-width: 180px; object-fit: contain; border-radius: 7px; }
+.fh-sponsor-logo { display: block; height: clamp(30px, 6.5vw, 44px); width: auto; max-width: 100%; object-fit: contain; }
 .fh-sponsor-ph { font-weight: 600; font-size: 14px; color: var(--fh-mute); }
 /* Leave room under the last stop so its content sits above the city. */
 .fh > .fh-stop:last-of-type { padding-bottom: clamp(270px, 26vw, 340px); }
@@ -433,7 +432,7 @@ html.fh-snap { overflow-x: hidden; }
 
 /* ── 03 Your progress ────────────────────────────────────────────────────── */
 .fh-prog { display: grid; gap: 12px; }
-/* One heading style for Tokens, Puzzle pieces and FAQ. Scoped to .fh-prog so
+/* One heading style for Tokens and Puzzle Pieces. Scoped to .fh-prog so
    the .fh-next / .fh-tile defaults (20px / 14.5px b) do not win. */
 .fh-prog .fh-prog-title { display: block; margin: 0; font-family: inherit; font-size: 15px; font-weight: 700; line-height: 1.3; color: var(--fh-text); }
 .fh-prog .fh-prog-num { display: block; font-size: clamp(40px, 12vw, 56px); line-height: 1; margin: 4px 0 0; font-variant-numeric: tabular-nums; }
@@ -450,9 +449,6 @@ div.fi-lamp:active { transform: none; }
 .fh-prog-tokens:active { transform: none; }
 .fh-prog-keys .fi-sec { margin-top: 0; }
 .fh-prog-keys .fi-grid { border: 0; background: transparent; padding: 4px 0 0; }
-.fh-prog-faq { display: grid; grid-template-columns: auto auto 1fr auto; }
-.fh-prog-faq small { font-size: 13px; color: var(--fh-mute); }
-.fh-prog-faq > svg { color: var(--fh-text-2); }
 
 @keyframes fh-pulse { 50% { opacity: 0.35; } }
 
@@ -579,7 +575,8 @@ div.fi-lamp:active { transform: none; }
 .fh-cl-switch input:focus-visible + span { outline: 2px solid var(--fh-accent); outline-offset: 2px; }
 .fh-cl-gps-note { padding-left: 52px; font-size: 12px; color: var(--fh-mute); }
 @media (max-width: 420px) {
-  .fh-cl-body, .fh-cl-gps-err, .fh-cl-gps-actions, .fh-cl-gps-note { padding-left: 0; }
+  .fh-cl-body { padding-left: 16px; }
+  .fh-cl-gps-err, .fh-cl-gps-actions, .fh-cl-gps-note { padding-left: 0; }
 }
 .fh-input {
   width: 100%; min-height: 44px; border-radius: 12px; border: 1px solid var(--fh-line-2);
@@ -1139,8 +1136,7 @@ div.fi-lamp:active { transform: none; }
   .fi-key-actions { grid-template-columns: 1fr 1fr; }
 }
 .fi-key-actions .fh-btn { white-space: nowrap; }
-/* Demo scan (NFC demo mode only) takes the full row under the two main buttons. */
-.fi-key-actions .fi-key-demo { grid-column: 1 / -1; }
+.fi-key-instruction { display: flex; grid-column: 1 / -1; align-items: center; justify-content: center; gap: 8px; min-height: 44px; margin: 0; padding: 10px 14px; border: 1px solid var(--fh-line-2); border-radius: 12px; color: var(--fh-text-2); font-size: 13px; font-weight: 700; text-align: center; }
 .fi-key-foot { margin: 8px 2px 0; font-size: 12px; color: var(--fh-mute); text-align: center; }
 
 /* Blind box (BlindBox.tsx): ask → sealed → opening → reveal. Full screen

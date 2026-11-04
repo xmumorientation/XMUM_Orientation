@@ -328,6 +328,9 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 
 ## Done
 
+### David, 2026-11-04 — Checklist Mobile Spacing
+- Restored the left inset for expanded checklist forms on narrow screens, including Manual Location Update and Take Attendance.
+
 ### David, 2026-11-04 — CSV Import Dialog (Local)
 
 - Matched the Users CSV import dialog to the dark Admin account dialogs, including validation results and errors. Editing CSV clears the dry-run result so the changed input must be checked again. Deployment remains pending.

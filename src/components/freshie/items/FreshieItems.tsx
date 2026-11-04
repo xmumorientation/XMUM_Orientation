@@ -1,16 +1,14 @@
 "use client";
 
 import * as Dialog from "@radix-ui/react-dialog";
-import { Clock3, History, Info, KeyRound, Lock, MapPin, Nfc, X } from "lucide-react";
+import { Clock3, History, KeyRound, Lock, MapPin, Nfc, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 
 import { BOX_REVEAL_VIDEO, BoxReveal } from "@/components/BoxReveal";
 import { vxSlab, vxDisplay, nexusBody } from "@/components/home/fonts";
-import { supabaseBrowser } from "@/lib/supabase/client";
 import type { ProjectorLocation } from "@/lib/types";
-import { friendlyError } from "@/lib/utils";
 
 import "../freshie.css";
 import { themeFromColor } from "../groupTheme";
@@ -220,46 +218,7 @@ function Sheet({
   );
 }
 
-/**
- * Demo scan for testing the map's Lightbulbs view without the NFC cards.
- * Shown only while Admin has "NFC demo mode" on (Live control); it lights the
- * bulb for real through fn_demo_activate_projector.
- */
-function useNfcDemo(loc: ProjectorLocation) {
-  const supabase = useMemo(() => supabaseBrowser(), []);
-  const [enabled, setEnabled] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    supabase
-      .from("game_config")
-      .select("value")
-      .eq("key", "nfc_demo_mode")
-      .maybeSingle()
-      .then(({ data }) => {
-        if (active) setEnabled(data?.value === true || data?.value === "true");
-      });
-    return () => {
-      active = false;
-    };
-  }, [supabase]);
-
-  async function scan() {
-    setBusy(true);
-    setResult(null);
-    const { error } = await supabase.rpc("fn_demo_activate_projector", { p_location: loc });
-    setBusy(false);
-    setResult(error ? { ok: false, text: friendlyError(error) } : { ok: true, text: "Lit for your group." });
-  }
-
-  return { enabled, busy, result, scan };
-}
-
 function KeySheet({ data, loc }: { data: ItemsData; loc: ProjectorLocation }) {
-  const demo = useNfcDemo(loc);
-  const endgame = data.phase === "endgame";
   const name = zoneNames(data)[loc];
   const place = data.places[loc];
   return (
@@ -285,58 +244,16 @@ function KeySheet({ data, loc }: { data: ItemsData; loc: ProjectorLocation }) {
 
       <NfcSpot data={data} loc={loc} />
 
-      {!endgame && (
-        <p className="fi-warn">
-          <Info size={16} aria-hidden />
-          <span>
-            The Guardian arrives in the final 30 minutes. If another group lights {name.short} first, this key stops
-            working.
-          </span>
-        </p>
-      )}
-
       <div className="fi-key-actions">
         {data.mapUnlocked && (
           <Link href={`/map?focus=${loc}`} className="fh-btn fh-btn-ghost">
             <MapPin size={16} aria-hidden /> Show on Map
           </Link>
         )}
-        <button type="button" className="fh-btn fh-btn-primary" disabled>
-          <Nfc size={16} aria-hidden /> Scan Part Card
-        </button>
-        {demo.enabled && (
-          <button
-            type="button"
-            className="fh-btn fh-btn-ghost fi-key-demo"
-            onClick={demo.scan}
-            disabled={demo.busy || demo.result?.ok}
-          >
-            <Nfc size={16} aria-hidden /> {demo.busy ? "Scanning…" : "Demo Scan"}
-          </button>
-        )}
-      </div>
-      {demo.result && (
-        <p className="fi-key-foot" role="status">
-          {demo.result.ok ? (
-            <>
-              Demo: {name.short} is {demo.result.text.toLowerCase()}{" "}
-              <Link href="/map?layer=bulbs" className="underline">
-                See It on the Map
-              </Link>
-            </>
-          ) : (
-            demo.result.text
-          )}
+        <p className="fi-key-instruction">
+          <Nfc size={16} aria-hidden /> Find a Guardian Game Master to Scan the NFC Sticker.
         </p>
-      )}
-      {demo.enabled && !demo.result && (
-        <p className="fi-key-foot">Demo mode: lights this projector without the card, for testing the map.</p>
-      )}
-      <p className="fi-key-foot">
-        {endgame
-          ? "Part-card scanning is added in the NFC step. For now, show this screen to the Guardian."
-          : "Scanning opens in the final 30 minutes."}
-      </p>
+      </div>
     </div>
   );
 }

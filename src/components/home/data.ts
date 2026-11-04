@@ -140,7 +140,7 @@ export const COMMITTEES: Committee[] = [
   { id: "hof", name: "HOF", fullName: "Head of Facilitators", icon: "Users", color: "#39ff14", head: null, members: null, desc: "Leads and coordinates all facilitators who guide freshies throughout the orientation." },
   { id: "hogm", name: "HOGM", fullName: "Head of Game Masters", icon: "Gamepad2", color: "#ff2e8b", head: null, members: null, desc: "Oversees all game stations, challenges, and the competitive game experience." },
   { id: "pr", name: "PR", fullName: "Public Relations", icon: "Megaphone", color: "#ff6b35", head: null, members: null, desc: "Manages external communications, social media presence, and promotional campaigns." },
-  { id: "trea", name: "Trea", fullName: "Treasury", icon: "Wallet", color: "#ffb454", head: null, members: null, desc: "Manages the orientation budget, sponsorships, and financial planning." },
+  { id: "trea", name: "Trea", fullName: "Treasurer", icon: "Wallet", color: "#ffb454", head: null, members: null, desc: "Manages the orientation budget, sponsorships, and financial planning." },
   { id: "sec", name: "Sec", fullName: "Secretary", icon: "FileText", color: "#d966ff", head: null, members: null, desc: "Handles documentation, meeting records, and internal communications." },
   { id: "design", name: "Design", fullName: "Design & Multimedia", icon: "Palette", color: "#ff3cac", head: null, members: null, desc: "Creates the visual identity, promotional materials, and multimedia content for Vortexa." },
   { id: "pgvg", name: "PGVG", fullName: "Photography & Videography", icon: "Camera", color: "#00cfff", head: null, members: null, desc: "Documents the orientation through photography, videography, and live coverage." },
@@ -151,18 +151,17 @@ export const COMMITTEES: Committee[] = [
 // ---------------------------------------------------------------------------
 
 export type Sponsor = {
+  id: string;
   name: string;
   /** Logo in /public. Without one, the name shows as a placeholder chip. */
   logo?: string;
   href?: string;
 };
 
-// TODO(sponsors): list confirmed sponsors here. Logos are shown in their own
-// colours, as supplied.
-export const SPONSORS: Sponsor[] = [{ name: "Coca-Cola", logo: "/sponsor-cocacola.png" }];
-
-/** True while SPONSORS holds sample logos, not real sponsors. Adds "(Example)" to the label. */
-export const SPONSORS_ARE_EXAMPLES = true;
+export const SPONSORS: Sponsor[] = [
+  { id: "taobao", name: "Taobao", logo: "/sponsor-taobao.webp" },
+  { id: "jack-n-jill", name: "Jack 'n Jill", logo: "/sponsor-jack-n-jill.png" },
+];
 
 // ---------------------------------------------------------------------------
 // Scroll navigation

@@ -145,7 +145,7 @@ export function GameToggles({
                 </button>
               )}
               <button disabled={busy} onClick={() => control(game, "extend", 5)} className="btn-secondary px-3 text-xs">
-                +5
+                +5mins
               </button>
             </div>
           ) : (
