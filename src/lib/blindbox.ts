@@ -21,12 +21,31 @@ export function blindBoxToken(sellerId: number, version: number, assignmentId?: 
     : signPayloadStable({ k: "bb4", s: sellerId, v: version, a: assignmentId });
 }
 
-export function verifyBlindBoxToken(
-  token: string
-): { valid: true; sellerId: number; version: number; assignmentId?: number } | { valid: false } {
+/**
+ * One Spot (hidden) box = one code (migration 0116): { k: "bb5", c: code }.
+ * `code` is the random string stored in blind_box_spot_codes, so the token is
+ * stable: Admin prints each once, and later settings never change it.
+ */
+export function blindBoxSpotToken(code: string): string {
+  return signPayloadStable({ k: "bb5", c: code });
+}
+
+export function blindBoxSpotUrl(code: string): string {
+  return blindBoxUrl(blindBoxSpotToken(code));
+}
+
+export type BlindBoxTokenResult =
+  | { valid: true; sellerId: number; version: number; assignmentId?: number; spotCode?: undefined }
+  | { valid: true; spotCode: string; sellerId?: undefined; version?: undefined; assignmentId?: undefined }
+  | { valid: false };
+
+export function verifyBlindBoxToken(token: string): BlindBoxTokenResult {
   const res = verifyToken(token);
   if (!res.valid) return { valid: false };
-  const { k, s, v, a } = res.payload as { k?: string; s?: unknown; v?: unknown; a?: unknown };
+  const { k, s, v, a, c } = res.payload as { k?: string; s?: unknown; v?: unknown; a?: unknown; c?: unknown };
+  if (k === "bb5") {
+    return typeof c === "string" && /^[0-9a-f]{32}$/.test(c) ? { valid: true, spotCode: c } : { valid: false };
+  }
   if ((k !== "bb3" && k !== "bb4") || !Number.isInteger(s) || !Number.isInteger(v)) {
     return { valid: false };
   }

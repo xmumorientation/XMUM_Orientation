@@ -5,6 +5,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { usePhases } from "@/components/PhaseTimerProvider";
 import { useStationOccupants, type Occupant } from "@/components/staff/useStationOccupants";
+import { useDay2State } from "@/components/useDay2State";
+import { tierClosedText } from "@/lib/day2";
 import { MAP_BUILDINGS, stationPosition } from "@/lib/mapBuildings";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { RISK_TIER_META, type RiskTier, type Station, type StationStatus } from "@/lib/types";
@@ -52,6 +54,7 @@ export function StationsSection() {
   const supabase = useMemo(() => supabaseBrowser(), []);
   const { error, setError, notice, flash } = useStatus();
   const occupants = useStationOccupants();
+  const day2 = useDay2State();
   const [clearing, setClearing] = useState<{ station: Station; occupant: Occupant } | null>(null);
   const [stations, setStations] = useState<Station[]>([]);
   const [gmUsers, setGmUsers] = useState<GmUser[]>([]);
@@ -268,7 +271,10 @@ export function StationsSection() {
                     <div><dt>Game</dt><dd>{s.purpose || "—"}</dd></div>
                     <div><dt>Groups at Once</dt><dd>{s.max_groups ?? "—"}</dd></div>
                     {s.day === 2 && (
-                      <div><dt>Risk &amp; Entry</dt><dd>{RISK_TIER_META[s.risk_tier].label} / −{s.entry_cost}</dd></div>
+                      <div><dt>Risk &amp; Entry</dt><dd>
+                        {RISK_TIER_META[s.risk_tier].label} / −{s.entry_cost}
+                        {s.day === 2 && tierClosedText(day2, s.risk_tier, day2.state) && ` / ${tierClosedText(day2, s.risk_tier, day2.state)}`}
+                      </dd></div>
                     )}
                   </dl>
                   <div className="gc-seg gc-seg-status" role="group" aria-label={`${s.name} status`}>

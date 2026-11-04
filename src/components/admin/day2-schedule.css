@@ -162,6 +162,18 @@
 .d2s-stepper:focus-within { border-color: var(--d2-cyan); }
 .d2s-fixed { font-size: 14px; font-weight: 700; color: var(--d2-faint); font-variant-numeric: tabular-nums; padding-right: 4px; }
 
+/* name */
+.d2s-labelrow { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--d2-mute); }
+.d2s-labelrow input {
+  flex: 1; min-width: 0; padding: 6px 10px; border-radius: 10px; border: 1px solid var(--d2-line); background: var(--d2-bg);
+  color: var(--d2-text); font-size: 13px;
+}
+.d2s-labelrow input:focus { outline: none; border-color: var(--d2-cyan); }
+.d2s-ask { display: flex; flex-wrap: wrap; gap: 6px; padding-bottom: 8px; }
+.d2s-ask .d2s-btn { min-height: 32px; padding: 4px 12px; }
+.d2s-sw-wrap + .d2s-sw-wrap { border-top: 1px solid color-mix(in srgb, var(--d2-line) 60%, transparent); }
+.d2s-sw-wrap > .d2s-sw + .d2s-sw { border-top: 0; }
+
 /* switches */
 .d2s-switches { display: grid; border-top: 1px solid var(--d2-line); }
 .d2s-sw { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 0; }

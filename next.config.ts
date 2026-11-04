@@ -11,6 +11,8 @@ const supabaseHost = (() => {
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // Dev server opened from another device or VM (e.g. 192.168.56.1).
+  allowedDevOrigins: ["192.168.56.1"],
   images: {
     remotePatterns: supabaseHost
       ? [{ protocol: "https", hostname: supabaseHost, pathname: "/storage/v1/object/public/faci-avatars/**" }]

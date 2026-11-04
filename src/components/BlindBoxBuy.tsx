@@ -31,9 +31,11 @@ function blockedText(status: Blocked, p: BlindBoxPreview): { title: string; mess
       return p.spot
         ? { Icon: Ban, title: "All Found!", message: "Every hidden box has been claimed already." }
         : { Icon: Ban, title: "All Gone!", message: `${p.seller_name} has sold all their blind boxes.` };
+    case "code_used":
+      return { Icon: Ban, title: "Already Found", message: "Another group already claimed this hidden box. Look for another one!" };
     case "already_from_seller":
       return p.spot
-        ? { Icon: Check, title: "Already Yours", message: `${p.group_name} already claimed a hidden box. Find it in My Items.` }
+        ? { Icon: Check, title: "Already Yours", message: `${p.group_name} already claimed this hidden box. Find it in My Items.` }
         : {
             Icon: Check,
             title: "Already Bought",
@@ -64,11 +66,14 @@ function optionNote(o: BlindBoxOption, balance: number): string {
 export function BlindBoxBuy({
   sellerId,
   version,
+  spotCode,
   preview,
   color,
 }: {
   sellerId: number;
   version: number;
+  /** A hidden (Spot) box's own code: claimed with fn_bb_spot_claim (0116). */
+  spotCode?: string;
   preview: BlindBoxPreview;
   color: string | null;
 }) {
@@ -95,9 +100,11 @@ export function BlindBoxBuy({
       p_assignment_id: option.assignment_id,
       p_idempotency_key: key,
     };
-    let { data, error: err } = await supabase.rpc("fn_bb_buy_at", { ...args, p_expected_price: option.price });
+    let { data, error: err } = spotCode
+      ? await supabase.rpc("fn_bb_spot_claim", { p_code: spotCode, p_idempotency_key: key })
+      : await supabase.rpc("fn_bb_buy_at", { ...args, p_expected_price: option.price });
     // Migration 0091 not run yet: buy without the price check.
-    if (err?.code === "PGRST202") ({ data, error: err } = await supabase.rpc("fn_bb_buy", args));
+    if (!spotCode && err?.code === "PGRST202") ({ data, error: err } = await supabase.rpc("fn_bb_buy", args));
     setBusyId(null);
     if (err) {
       setError(friendlyError(err));

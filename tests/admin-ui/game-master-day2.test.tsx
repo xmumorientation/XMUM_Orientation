@@ -34,11 +34,17 @@ beforeEach(() => {
   confirm.mockReset();
   confirm.mockReturnValue(true);
   window.confirm = confirm;
+  const seg = (id: string, label: string, start_min: number, hard = true, funfair = false) => ({
+    id, label, start_min, easy: true, medium: true, hard, blindbox: true, funfair,
+  });
+  const segments = [seg("s1", "Opening", 0, false), seg("s2", "Hard Stations Open", 60), seg("s3", "Funfair", 105, true, true)];
   h.day2 = {
-    state: { challenge_start_min: 60, challenge_end_min: 90, funfair_start_min: 120, game_on: false, game_started_at: null, game_ends_at: null },
+    state: { segments, manual_segment: null, overrides: {}, override_segment: null, game_on: false, game_started_at: null, game_ends_at: null },
     segment: "off",
+    index: -1,
+    label: "",
     manual: false,
-    switches: { station: false, blindbox: false, funfair: false },
+    switches: { easy: true, medium: true, hard: true, blindbox: false, funfair: false },
     flipped: {},
     starts: null,
     reload: vi.fn(),
@@ -47,27 +53,74 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe("Day 2 Schedule", () => {
-  it("AC-9: Start now asks first, then holds that segment", async () => {
+  it("Start now asks first, then holds that segment by id", async () => {
     render(<Day2Schedule onError={noop} onNotice={noop} />);
     confirm.mockReturnValueOnce(false);
     await userEvent.click(screen.getAllByRole("button", { name: /start now/i })[0]);
-    expect(confirm).toHaveBeenCalledWith("Start normal now? It holds until Back to Auto.");
+    expect(confirm).toHaveBeenCalledWith("Start opening now? It holds until Back to Auto.");
     expect(rpcCalls("fn_day2_control")).toHaveLength(0);
     await userEvent.click(screen.getAllByRole("button", { name: /start now/i })[0]);
-    await waitFor(() => expect(rpcCalls("fn_day2_control")).toEqual([{ p_action: "start_segment", p_segment: "normal1" }]));
+    await waitFor(() => expect(rpcCalls("fn_day2_control")).toEqual([{ p_action: "start_segment", p_segment: "s1" }]));
   });
 
-  it("AC-9: Back to auto shows while a segment is held", async () => {
-    h.day2 = { ...h.day2, segment: "challenge", manual: true };
+  it("Back to auto shows while a segment is held", async () => {
+    h.day2 = { ...h.day2, segment: "s2", index: 1, label: "Hard Stations Open", manual: true };
     render(<Day2Schedule onError={noop} onNotice={noop} />);
     await userEvent.click(screen.getByRole("button", { name: /back to auto/i }));
     await waitFor(() => expect(rpcCalls("fn_day2_control")).toEqual([{ p_action: "auto" }]));
   });
 
-  it("AC-9: the three slider handles and the original heading stay", () => {
+  it("one slider handle per segment after the first, and the heading stays", () => {
     render(<Day2Schedule onError={noop} onNotice={noop} />);
     expect(screen.getByRole("heading", { name: "Day 2 Inner Schedule" })).toBeTruthy();
-    expect(screen.getAllByRole("slider").map((s) => s.getAttribute("aria-label"))).toEqual(["Challenge mode starts", "Challenge mode ends", "Funfair starts"]);
+    expect(screen.getAllByRole("slider").map((s) => s.getAttribute("aria-label"))).toEqual(["Hard Stations Open starts", "Funfair starts"]);
+  });
+
+  it("each card has Easy, Medium and Hard station switches and no Station Game switch", () => {
+    render(<Day2Schedule onError={noop} onNotice={noop} />);
+    expect(screen.getAllByRole("switch", { name: /^Hard Station, /i })).toHaveLength(3);
+    expect(screen.queryByRole("switch", { name: /^Station Game/i })).toBeNull();
+  });
+
+  it("a switch on a card that is not running edits its saved default", async () => {
+    render(<Day2Schedule onError={noop} onNotice={noop} />);
+    await userEvent.click(screen.getByRole("switch", { name: "Hard Station, Hard Stations Open" }));
+    await waitFor(() => expect(rpcCalls("fn_day2_control")).toHaveLength(1));
+    const [call] = rpcCalls("fn_day2_control") as { p_action: string; p_segments: { id: string; hard: boolean }[] }[];
+    expect(call.p_action).toBe("set_segments");
+    expect(call.p_segments.find((g) => g.id === "s2")?.hard).toBe(false);
+  });
+
+  it("a switch on the running card asks: Change Default or Just Now", async () => {
+    h.day2 = { ...h.day2, segment: "s2", index: 1, label: "Hard Stations Open" };
+    render(<Day2Schedule onError={noop} onNotice={noop} />);
+    await userEvent.click(screen.getByRole("switch", { name: "Hard Station, Hard Stations Open" }));
+    expect(rpcCalls("fn_day2_control")).toHaveLength(0);
+    await userEvent.click(screen.getByRole("button", { name: "Just Now" }));
+    await waitFor(() => expect(rpcCalls("fn_day2_control")).toEqual([{ p_action: "set_switch", p_switch: "hard", p_on: false }]));
+  });
+
+  it("Add Segment After splits at the midpoint and copies the switches", async () => {
+    render(<Day2Schedule onError={noop} onNotice={noop} />);
+    await userEvent.click(screen.getAllByRole("button", { name: /add segment after/i })[0]);
+    await waitFor(() => expect(rpcCalls("fn_day2_control")).toHaveLength(1));
+    const [call] = rpcCalls("fn_day2_control") as { p_segments: { id: string; start_min: number; hard: boolean }[] }[];
+    expect(call.p_segments.map((g) => g.start_min)).toEqual([0, 30, 60, 105]);
+    expect(call.p_segments[1].hard).toBe(false);
+  });
+
+  it("Remove asks first, then sends the list without it", async () => {
+    render(<Day2Schedule onError={noop} onNotice={noop} />);
+    await userEvent.click(screen.getAllByRole("button", { name: /^remove/i })[0]);
+    await waitFor(() => expect(rpcCalls("fn_day2_control")).toHaveLength(1));
+    const [call] = rpcCalls("fn_day2_control") as { p_segments: { id: string }[] }[];
+    expect(call.p_segments.map((g) => g.id)).toEqual(["s1", "s3"]);
+  });
+
+  it("add and remove are off while a segment is held", () => {
+    h.day2 = { ...h.day2, segment: "s2", index: 1, label: "Hard Stations Open", manual: true };
+    render(<Day2Schedule onError={noop} onNotice={noop} />);
+    for (const b of screen.getAllByRole("button", { name: /add segment after|^remove/i })) expect((b as HTMLButtonElement).disabled).toBe(true);
   });
 });
 
