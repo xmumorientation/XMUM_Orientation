@@ -43,7 +43,7 @@ begin
   delete from public.nfc_tokens where test_run_id is not null;
   get diagnostics v_stickers = row_count;
 
-  delete from public.nfc_test_runs;
+  delete from public.nfc_test_runs where id is not null;
   get diagnostics v_runs = row_count;
 
   perform public.audit('nfc.test.reset_all', 'nfc-test-mode',
@@ -105,7 +105,7 @@ begin
   delete from public.nfc_tokens;
   get diagnostics v_stickers = row_count;
 
-  delete from public.nfc_test_runs;
+  delete from public.nfc_test_runs where id is not null;
   get diagnostics v_runs = row_count;
 
   perform public.audit('nfc.stickers.clear_all', 'nfc-stickers',
