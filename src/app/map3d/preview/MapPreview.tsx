@@ -18,6 +18,8 @@ import { PROJECTOR_CODE_NAMES, PROJECTOR_LOCATIONS, type ProjectorLocation, type
 import { cn } from "@/lib/utils";
 
 import { FACI_GROUP, useMockMapData, type MockOptions } from "./mockData";
+import "@/components/freshie/freshie.css";
+import "@/app/meeting-nfc/map/meeting-map.css";
 
 // DRAFT (map-3d-draft branch): the campus map on mock data, as each role's
 // page shows it. Development only; nothing here talks to Supabase.
@@ -119,10 +121,10 @@ function PreviewState({ data, pending, hasSelection }: { data: CampusMapData; pe
   );
 }
 
-function Preview({ opts }: { opts: Opts }) {
+function Preview({ opts, meeting = false }: { opts: Opts; meeting?: boolean }) {
   const [view, fallBack] = useMapView();
   const data = useMockMapData({ ...opts, bulbLayer: view === "2d" });
-  const [fullscreen, setFullscreen] = useState(opts.full);
+  const [fullscreen, setFullscreen] = useState(meeting || opts.full);
   const [pending, setPending] = useState<Station | null>(null);
   const { role } = opts;
   const showGroupPins = role !== "freshie";
@@ -171,7 +173,7 @@ function Preview({ opts }: { opts: Opts }) {
           Tennis Open (Admin&apos;s Switch in Live Control)
         </label>
       )}
-      <PreviewState data={data} pending={pending} hasSelection={hasSelection} />
+      {!meeting && <PreviewState data={data} pending={pending} hasSelection={hasSelection} />}
       {showGroupPins && (
         <GroupStatusList
           positions={data.positions}
@@ -182,6 +184,20 @@ function Preview({ opts }: { opts: Opts }) {
     </div>
   );
   const main = "mx-auto w-full px-3 pb-8 pt-3 sm:px-5 sm:pt-5 lg:px-8 lg:py-6";
+
+  if (meeting) {
+    return (
+      <div className={cn("fh fh-map meeting-map", vxDisplay.variable, vxSlab.variable)} style={themeVars(themeFromColor(opts.color), true)}>
+        <div className="fh-bg" aria-hidden />
+        {fullscreen && <p className="meeting-map-badge">Demo Map</p>}
+        <main className={main}>
+          <header className="fh-map-top"><p className="fh-eyebrow fh-mono">Campus</p><h1 className="fh-h2">Map</h1></header>
+          <p className="meeting-map-label">Meeting demo · simulated map</p>
+          {map}
+        </main>
+      </div>
+    );
+  }
 
   if (role === "staff") {
     // HOF, HOGM, Committee on /map: the dark staff shell in the Welcome page colours, and the Ops map design.
@@ -244,8 +260,8 @@ function Preview({ opts }: { opts: Opts }) {
   );
 }
 
-export default function MapPreview() {
+export default function MapPreview({ meeting = false }: { meeting?: boolean }) {
   const [opts, setOpts] = useState<Opts | null>(null);
   useEffect(() => setOpts(readOpts()), []);
-  return opts ? <Preview opts={opts} /> : null;
+  return opts ? <Preview opts={opts} meeting={meeting} /> : meeting ? <div className="meeting-map-loading" role="status">Opening the funfair…</div> : null;
 }

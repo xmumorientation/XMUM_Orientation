@@ -1,0 +1,6 @@
+.meeting-map{max-width:none;min-height:100dvh;background:#080c20;color:#fff}
+.meeting-map main{position:relative;max-width:980px}
+.meeting-map-label{margin:0 0 16px;color:#c8c2df;font-size:12px}
+.meeting-map-badge{position:fixed;z-index:90;top:max(18px,env(safe-area-inset-top));left:50%;transform:translateX(-50%);margin:0;padding:5px 8px;border-radius:999px;background:#080c20d9;color:#ded7f3;font-size:10px;white-space:nowrap;pointer-events:none}
+.meeting-map .card > .bg-paper-100{background:#080c20;color:#d4cde8}
+.meeting-map-loading{display:grid;min-height:100dvh;place-items:center;background:#080c20;color:#ded7f3;font-size:14px}
