@@ -1,10 +1,11 @@
 "use client";
 
-import { IdCard, MapPin, UserCheck, Users } from "lucide-react";
+import { FolderOpen, IdCard, MapPin, UserCheck, Users } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { GroupBadge } from "@/components/GroupBadge";
 import { useProfile } from "@/components/ProfileProvider";
+import { HomeSectionsManager } from "@/components/staff/HomeSectionsManager";
 import { FaciAssign } from "@/components/staff/faci/FaciAssign";
 import { GameControl } from "@/components/staff/game/GameControl";
 import { OpsShell, type OpsSection } from "@/components/staff/game/OpsShell";
@@ -12,7 +13,7 @@ import { clock, describeLocation, roomOf, type FaciLocation } from "@/lib/faciLo
 import { supabaseBrowser } from "@/lib/supabase/client";
 import type { Group } from "@/lib/types";
 
-type OpsView = "headcount" | "location" | "freshies" | "facis";
+type OpsView = "headcount" | "location" | "freshies" | "facis" | "home";
 
 type Headcount = {
   group_id: number;
@@ -54,6 +55,7 @@ function OpsOverview({ canAssignFacis }: { canAssignFacis: boolean }) {
     const v = new URLSearchParams(window.location.search).get("view");
     if (v === "headcount" || v === "location" || v === "freshies") setView(v);
     else if (v === "facis") setView(v);
+    else if (v === "home" && canAssignFacis) setView(v);
     else if (v === "attendance") setView("headcount"); // older links
   }, [canAssignFacis]);
 
@@ -107,6 +109,8 @@ function OpsOverview({ canAssignFacis }: { canAssignFacis: boolean }) {
     { key: "location", label: "Location", Icon: MapPin },
     { key: "freshies", label: "Freshies", Icon: IdCard },
     { key: "facis", label: "Faci & Status", Icon: UserCheck },
+    // Committee reads Ops but does not edit what is on Home (migration 0117).
+    ...(canAssignFacis ? [{ key: "home" as const, label: "Home", Icon: FolderOpen }] : []),
   ];
 
   const name = (g: Group) => g.display_name?.trim() || g.name;
@@ -194,6 +198,7 @@ function OpsOverview({ canAssignFacis }: { canAssignFacis: boolean }) {
       )}
 
       {view === "facis" && <FaciAssign readOnly={!canAssignFacis} />}
+      {view === "home" && canAssignFacis && <HomeSectionsManager />}
     </OpsShell>
   );
 }

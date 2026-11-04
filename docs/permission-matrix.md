@@ -117,6 +117,8 @@ OC (`oc`, migrations `0113` + `0114`) is a separate role with the same pages and
 | See a projector's picture and place (`fn_my_projector_clues`, 0098; Freshie and Faci cannot read those config keys) | Own Group: completed key or lit | Own Group: completed key or lit | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | DB |
 | Attendance Sessions open / close | — | — | — | — | — | — | — | ✓ | DB |
 | Schedule / FAQ management | — | — | — | — | — | — | — | ✓ | DB |
+| Home Sections: add, change and remove the files on Home, and choose which roles see each (`home_sections`, bucket `home-files`, `is_home_editor()`, 0117; OC has HOF's access) | — | — | — | — | — | ✓ | ✓ | ✓ | DB |
+| Home Sections: see a section's file on Home (only if the section lists your role; HOF, OC, HOGM and Admin read all in Settings) | Listed | Listed | Listed | Listed | Listed | Listed | Listed | Listed | DB |
 | Brand config | — | — | — | — | — | — | — | ✓ | DB |
 | NFC Token generation | — | — | — | — | — | — | § | ✓ | API + DB |
 | Seed Test Accounts | Any logged-in user | Any logged-in user | Any logged-in user | Any logged-in user | Any logged-in user | Any logged-in user | Any logged-in user | Any logged-in user | ⚠ No check |

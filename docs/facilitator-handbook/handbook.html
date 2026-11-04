@@ -1,0 +1,601 @@
+<!doctype html><html lang='en'><head><meta charset='utf-8'><title>Facilitator Handbook</title><style>@page { size: A4; margin: 0; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: #e5e7eb; }
+body { font-family: "Inter", "Noto Sans", "DejaVu Sans", sans-serif; color: #12203F; font-size: 9.6pt; line-height: 1.42; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+@media screen { body { padding: 8mm 0; } .page { margin: 0 auto 8mm; box-shadow: 0 2mm 8mm rgba(0,0,0,.2); } }
+
+.page { width: 210mm; height: 297mm; position: relative; overflow: hidden; background: #fff; page-break-after: always; break-after: page; padding: 13mm 15mm 17mm; }
+.page:last-of-type { page-break-after: auto; break-after: auto; }
+
+/* header + footer */
+header.top { display: flex; justify-content: space-between; align-items: center; height: 8mm; margin-bottom: 4mm; }
+header.top .tag { background: var(--c); color: #fff; font-weight: 700; font-size: 7.6pt; letter-spacing: .08em; text-transform: uppercase; padding: 1.2mm 3.2mm; border-radius: 10mm; }
+header.top .doc { color: #8a93a6; font-size: 7.6pt; letter-spacing: .06em; text-transform: uppercase; }
+footer { position: absolute; left: 15mm; right: 15mm; bottom: 7mm; display: flex; justify-content: space-between; color: #8a93a6; font-size: 7.4pt; border-top: .25mm solid #e1e5ee; padding-top: 2mm; }
+footer span:last-child { font-weight: 700; color: var(--c); }
+
+/* type */
+h1 { font-size: 21pt; line-height: 1.1; font-weight: 800; letter-spacing: -.01em; padding-left: 4mm; border-left: 1.8mm solid var(--c); margin-bottom: 2.6mm; }
+h1 .cont { font-size: 10pt; font-weight: 600; color: #8a93a6; letter-spacing: 0; margin-left: 2mm; }
+h2 { font-size: 13pt; font-weight: 800; margin: 7mm 0 3mm; }
+h3 { font-size: 10.6pt; font-weight: 800; margin: 3mm 0 1.6mm; color: var(--c); }
+h4 { font-size: 9.4pt; font-weight: 800; margin-bottom: 1mm; }
+.lead { font-size: 10.6pt; color: #3d4965; margin: 0 0 5mm 5.8mm; max-width: 165mm; }
+p { margin-bottom: 2mm; }
+.small { font-size: 8.4pt; color: #5b667f; }
+.mono { font-family: "DejaVu Sans Mono", monospace; font-size: 8.6pt; background: #eef1f7; padding: .3mm 1.2mm; border-radius: 1mm; }
+b { font-weight: 700; }
+
+/* layout */
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 8mm; }
+.three { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5mm; }
+.col { min-width: 0; }
+.three .col { font-size: 8.7pt; }
+
+/* phone screenshots */
+.phone { margin: 0 auto 4mm; width: 66mm; text-align: center; }
+.phone img { display: block; width: 100%; border: 1.5mm solid #0a1124; border-radius: 7.5mm; box-shadow: 0 1.4mm 4mm rgba(10,17,36,.35); }
+.phone figcaption { margin-top: 2mm; font-size: 7.8pt; color: #5b667f; font-style: italic; }
+.phone.sm { width: 50mm; }
+.phone.xs { width: 34mm; margin: 0; }
+.phone.xs img { border-width: 1mm; border-radius: 5mm; }
+.mini { display: flex; gap: 4mm; align-items: flex-start; }
+
+/* numbered steps: circle matches the red circles in the screenshots */
+.steps { list-style: none; margin: 0 0 2mm; }
+.steps li { display: flex; gap: 2.4mm; margin-bottom: 1.9mm; align-items: flex-start; }
+.steps .n { flex: none; width: 5.2mm; height: 5.2mm; border-radius: 50%; background: #FF2D55; color: #fff; font-weight: 800; font-size: 8.2pt; line-height: 5.2mm; text-align: center; border: .5mm solid #fff; box-shadow: 0 0 0 .3mm #FF2D55; margin-top: .2mm; }
+.steps li > div { flex: 1; min-width: 0; }
+.three .steps .n { width: 4.8mm; height: 4.8mm; line-height: 4.8mm; font-size: 7.6pt; }
+
+/* callouts */
+.note { border-radius: 2mm; padding: 2.4mm 3.2mm; margin: 2.6mm 0; border-left: 1.2mm solid; font-size: 9pt; }
+.note b { display: block; font-size: 7.4pt; letter-spacing: .08em; text-transform: uppercase; margin-bottom: .6mm; }
+.note p { margin: 0; }
+.note.tip { background: #e8f8ee; border-color: #12A150; } .note.tip b { color: #0b7a3b; }
+.note.warn { background: #fff3e0; border-color: #F59E0B; } .note.warn b { color: #b45309; }
+.note.info { background: #e9f0ff; border-color: #2F6BFF; } .note.info b { color: #1d4fd8; }
+.note > b + p b { display: inline; font-size: inherit; letter-spacing: 0; text-transform: none; margin: 0; color: inherit; }
+
+/* tables */
+table { width: 100%; border-collapse: collapse; margin: 1mm 0 3mm; }
+th, td { text-align: left; padding: 2mm 2.6mm; vertical-align: top; border-bottom: .25mm solid #e1e5ee; }
+th { background: #f1f4fa; font-size: 8.2pt; text-transform: uppercase; letter-spacing: .05em; color: #3d4965; }
+.job th { width: 33mm; background: var(--c); color: #fff; border-bottom: .5mm solid #fff; font-size: 8.4pt; }
+.job td { background: #f6f8fc; border-bottom: .5mm solid #fff; }
+.states td:first-child { width: 24mm; }
+.trouble td:first-child { width: 66mm; }
+.trouble td, .quick td { font-size: 8.8pt; }
+.quick tr:nth-child(even) td { background: #f6f8fc; }
+.can th.y { background: #12A150; color: #fff; } .can th.n { background: #DC2626; color: #fff; }
+.can td { font-size: 9pt; }
+.can td:first-child { background: #f0faf4; } .can td:last-child { background: #fdf2f2; }
+
+/* pills + tags (the colours used in the app) */
+.pill { display: inline-block; border-radius: 10mm; padding: .6mm 2.6mm; font-size: 8pt; font-weight: 700; font-family: "DejaVu Sans Mono", monospace; }
+.pill.amber { background: #4a3a1c; color: #ffb74d; } .pill.blue { background: #16345f; color: #6cb2ff; } .pill.tick { background: #12A150; color: #fff; padding: .6mm 2mm; }
+.tag { display: inline-block; }
+.tag.info, .tag.cer, .tag.game, .tag.food { border: .4mm solid; border-radius: 10mm; padding: .5mm 2.6mm; font-size: 7.8pt; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.tag.info { color: #0aa5c0; border-color: #0aa5c0; } .tag.cer { color: #b8a400; border-color: #d9c400; } .tag.game { color: #e0187f; border-color: #e0187f; } .tag.food { color: #e8890c; border-color: #e8890c; }
+
+/* contents page */
+.toc { list-style: none; margin: 4mm 0 0; }
+.toc li { display: grid; grid-template-columns: 9mm 1fr 10mm; align-items: center; gap: 3mm; padding: 2.4mm 0; border-bottom: .25mm solid #e1e5ee; }
+.toc .pn { width: 8mm; height: 8mm; border-radius: 2mm; background: var(--c); color: #fff; font-weight: 800; text-align: center; line-height: 8mm; }
+.toc b { display: block; font-size: 11pt; } .toc small { color: #5b667f; font-size: 8.6pt; }
+.toc .pg { text-align: right; font-weight: 800; color: var(--c); font-size: 11pt; }
+.legend { display: grid; grid-template-columns: 52mm 1fr; gap: 6mm; align-items: center; background: #f6f8fc; border-radius: 3mm; padding: 5mm; }
+.legend p { margin-bottom: 1.6mm; }
+.legend-demo { background: #0a1630; border-radius: 3mm; height: 28mm; display: flex; align-items: center; justify-content: center; }
+.demo-btn { position: relative; background: #0A84FF; color: #fff; font-weight: 800; padding: 2.4mm 8mm; border-radius: 10mm; }
+.demo-ring { position: absolute; inset: -1.6mm; border: .9mm solid #FF2D55; border-radius: 10mm; box-shadow: 0 0 0 .5mm #fff; }
+.demo-badge { position: absolute; left: -3.6mm; top: -4.2mm; width: 6mm; height: 6mm; border-radius: 50%; background: #FF2D55; border: .6mm solid #fff; color: #fff; font-weight: 800; font-size: 9pt; line-height: 5mm; text-align: center; }
+
+/* fix box (GPS permission) */
+.fix { background: #f6f8fc; border-radius: 3mm; padding: 3mm 4mm; margin-top: 2mm; font-size: 8.8pt; }
+.fixcols { display: grid; grid-template-columns: 1fr 1fr; gap: 6mm; margin-top: 1.4mm; }
+.fix p { margin: 0; }
+
+/* do / don't */
+.dd .col { border-radius: 3mm; padding: 4mm 5mm; }
+.dd .do { background: #f0faf4; } .dd .do h3 { color: #0b7a3b; }
+.dd .dont { background: #fdf2f2; } .dd .dont h3 { color: #b91c1c; }
+.dd ul { padding-left: 4.5mm; } .dd li { margin-bottom: 1.8mm; }
+
+/* quick reference */
+.timer { display: flex; align-items: center; gap: 3mm; background: #12203F; color: #fff; border-radius: 3mm; padding: 4mm 5mm; margin-top: 4mm; }
+.timer b { font-size: 12pt; margin-right: 3mm; color: #FFEB3B; }
+.timer span { background: rgba(255,255,255,.12); border-radius: 10mm; padding: 1.2mm 3.4mm; font-weight: 700; }
+.timer i { color: #8fb2ff; font-style: normal; font-weight: 800; }
+
+/* cover */
+.cover { background: radial-gradient(120% 70% at 50% 0%, #1c3d8f 0%, #0a1230 55%, #050914 100%); color: #fff; padding: 22mm 20mm; display: flex; flex-direction: column; justify-content: space-between; align-items: center; text-align: center; }
+.cover-glow { position: absolute; width: 150mm; height: 150mm; right: -60mm; bottom: -40mm; background: radial-gradient(circle, rgba(254,6,171,.45), transparent 65%); }
+.cover-xmum { width: 62mm; position: relative; }
+.cover-main { position: relative; }
+.cover .eyebrow { letter-spacing: .3em; text-transform: uppercase; color: #6cd9ff; font-size: 9.6pt; margin-bottom: 8mm; }
+.cover-logo { width: 120mm; height: auto; }
+.cover h1 { border: 0; padding: 0; font-size: 34pt; margin: 10mm 0 4mm; }
+.cover-sub { font-size: 12.4pt; color: #c9d6f5; max-width: 118mm; margin: 0 auto; }
+.cover-pills { position: relative; display: flex; gap: 4mm; }
+.cover-pills span { background: rgba(255,255,255,.1); border: .3mm solid rgba(255,255,255,.28); border-radius: 10mm; padding: 2.4mm 5mm; font-size: 10pt; }
+.cover-pills b { color: #FFEB3B; font-size: 12pt; margin-right: 1mm; }
+.cover-foot { position: relative; color: #8fa3d6; letter-spacing: .12em; font-size: 8.4pt; text-transform: uppercase; }
+</style></head><body>
+
+<section class="page cover">
+  <div class="cover-glow"></div>
+  <img class="cover-xmum" src="img/xmum-logo-white.png" alt="Xiamen University Malaysia">
+  <div class="cover-main">
+    <p class="eyebrow">XMUM 26/12 Orientation</p>
+    <img class="cover-logo" src="img/vortexa-logo.webp" alt="Vortexa">
+    <h1>Facilitator Handbook</h1>
+    <p class="cover-sub">How to use the Vortexa website with your Facilitator account, step by step.</p>
+  </div>
+  <div class="cover-pills">
+    <span><b>5</b> Tabs</span><span><b>4</b> Checklist Tasks</span><span><b>1</b> Phone Is Enough</span>
+  </div>
+  <p class="cover-foot">For Facilitators only&nbsp;&nbsp;/&nbsp;&nbsp;November 2026</p>
+</section>
+
+<section class="page" style="--c:#1B2B5E">
+  <header class="top"><span class="tag">Contents</span><span class="doc">Facilitator Handbook</span></header>
+  <main>
+<h1>What Is Inside</h1>
+<ol class="toc"><li style="--c:#0AA5C0"><span class="pn">1</span><div><b>Getting Started</b><small>Sign in, find your way around, sign out</small></div><span class="pg">3</span></li><li style="--c:#2F6BFF"><span class="pn">2</span><div><b>Home</b><small>Group code, partner, profile, progress and scores</small></div><span class="pg">5</span></li><li style="--c:#E0187F"><span class="pn">3</span><div><b>Checklist</b><small>Group name, location update, attendance, live GPS</small></div><span class="pg">9</span></li><li style="--c:#12A150"><span class="pn">4</span><div><b>Map</b><small>Your location sharing, stations, where every group is</small></div><span class="pg">15</span></li><li style="--c:#E8890C"><span class="pn">5</span><div><b>Items</b><small>Your group's tokens and puzzle keys</small></div><span class="pg">17</span></li><li style="--c:#7A4DE0"><span class="pn">6</span><div><b>Schedule</b><small>The programme for Day 1 and Day 2</small></div><span class="pg">18</span></li><li style="--c:#4B5563"><span class="pn">7</span><div><b>Help</b><small>Fixing problems, dos and don'ts, quick reference</small></div><span class="pg">19</span></li></ol>
+
+<h2>How to Read This Handbook</h2>
+<div class="legend">
+  <div class="legend-demo">
+    <div class="demo-btn"><span class="demo-ring"></span><span class="demo-badge">1</span>Save</div>
+  </div>
+  <div>
+    <p><b>A red circle</b> shows exactly where to tap or what to look at.</p>
+    <p><b>The number</b> on the circle is the same as the step number beside the picture. Do the steps in order.</p>
+    <p>All pictures use <b>sample data</b> (Group 1, a sample Facilitator and a made-up password). Your screen shows your own name and your own group.</p>
+  </div>
+</div>
+
+<h2>Your Job in One Minute</h2>
+<table class="job">
+  <tr><th>Once</th><td>Set your <b>Group Name and Slogan</b> and fill in your <b>Profile</b>.</td></tr>
+  <tr><th>Every 30 minutes</th><td>Send a <b>Manual Location Update</b> and <b>Take Attendance</b> on the Checklist. They turn amber and say <i>Due</i> when it is time.</td></tr>
+  <tr><th>All day</th><td>Keep <b>Live GPS</b> on and the site open on one phone in your group, so your group stays on the map.</td></tr>
+  <tr><th>When Freshies arrive</th><td>Show them the <b>Group Code</b> (QR or 4-digit password) on your Home page.</td></tr>
+</table>
+</main>
+  <footer><span>Vortexa / XMUM 26/12 Orientation</span><span>2</span></footer>
+</section>
+<section class="page" style="--c:#0AA5C0">
+  <header class="top"><span class="tag">Part 1 / Getting Started</span><span class="doc">Facilitator Handbook</span></header>
+  <main>
+<h1>1.1 Sign In</h1>
+<p class="lead">Open the Vortexa website on your phone and log in with the account the organisers gave you.</p>
+<div class="two">
+  <div class="col">
+    <figure class="phone "><img src="img/a1-login.jpg" alt=""><figcaption>Login page</figcaption></figure>
+    <ol class="steps"><li><span class="n">1</span><div>Type your <b>Campus Email</b> (<span class='mono'>you@xmu.edu.my</span>).</div></li><li><span class="n">2</span><div>Type your <b>Password</b>.</div></li><li><span class="n">3</span><div>Tap the <b>eye</b> to show the password and check for typing mistakes.</div></li><li><span class="n">4</span><div>Tap <b>Sign In</b>. You land on your Home page.</div></li><li><span class="n">5</span><div>Forgot your password? Tap <b>Forgot Password?</b> (see 1.2).</div></li><li><span class="n">6</span><div>Or tap <b>Continue with Google</b> if you use your Google account.</div></li></ol>
+  </div>
+  <div class="col">
+    <figure class="phone "><img src="img/a2-forgot.jpg" alt=""><figcaption>Reset Password page (1.2)</figcaption></figure>
+    <h3>1.2 Forgot Password</h3>
+    <ol class="steps"><li><span class="n">1</span><div>Type your <b>Campus Email</b>.</div></li><li><span class="n">2</span><div>Tap <b>Send Reset Link</b>. Open the email and follow the link to choose a new password.</div></li><li><span class="n">3</span><div>Tap <b>Back to Login</b> to return to the login page.</div></li></ol>
+  </div>
+</div>
+<div class="note info"><b>Good to Know</b><p>Your account is created and put in a group by Admin. If you sign in with Google for the first time, an Admin may need to approve you before the Home page opens.</p></div>
+</main>
+  <footer><span>Vortexa / XMUM 26/12 Orientation</span><span>3</span></footer>
+</section>
+<section class="page" style="--c:#0AA5C0">
+  <header class="top"><span class="tag">Part 1 / Getting Started</span><span class="doc">Facilitator Handbook</span></header>
+  <main>
+<h1>1.3 Find Your Way Around</h1>
+<p class="lead">Every page has the same tab bar at the bottom and your profile button at the top right.</p>
+<div class="three">
+  <div class="col">
+    <figure class="phone sm"><img src="img/h1-home.jpg" alt=""><figcaption>Home page</figcaption></figure>
+    <ol class="steps"><li><span class="n">1</span><div><b>Profile button</b> with your initials or photo. Tap it for the account menu.</div></li><li><span class="n">2</span><div><b>Countdown</b> to the next part of the event. During a game it shows the live phase and timer.</div></li><li><span class="n">3</span><div><b>Checklist</b> opens your daily tasks (Part 3).</div></li><li><span class="n">4</span><div><b>My Group</b> scrolls down to your Group Code.</div></li></ol>
+  </div>
+  <div class="col">
+    <figure class="phone sm"><img src="img/h1b-tabbar.jpg" alt=""><figcaption>The tab bar</figcaption></figure>
+    <ol class="steps"><li><span class="n">1</span><div><b>Home</b>: group code, partner, progress.</div></li><li><span class="n">2</span><div><b>Items</b>: your group's tokens and keys.</div></li><li><span class="n">3</span><div><b>Checklist</b>: the big round button in the middle. Your daily tasks.</div></li><li><span class="n">4</span><div><b>Map</b>: campus map and group locations.</div></li><li><span class="n">5</span><div><b>Schedule</b>: the programme.</div></li></ol>
+  </div>
+  <div class="col">
+    <figure class="phone sm"><img src="img/h2-account-menu.jpg" alt=""><figcaption>The account menu</figcaption></figure>
+    <ol class="steps"><li><span class="n">1</span><div>Tap your <b>profile button</b>.</div></li><li><span class="n">2</span><div><b>Edit Profile</b> changes your photo, Instagram and intro (see 2.4).</div></li><li><span class="n">3</span><div><b>Log Out</b> signs you out of this phone.</div></li></ol>
+  </div>
+</div>
+<div class="note tip"><b>Tip</b><p>Home is one long page. Swipe up to move through it: Welcome, Action Plan, Group Code, Partner, Progress, Scores and How It Works. The small bar at the top shows where you are.</p></div>
+</main>
+  <footer><span>Vortexa / XMUM 26/12 Orientation</span><span>4</span></footer>
+</section>
+<section class="page" style="--c:#2F6BFF">
+  <header class="top"><span class="tag">Part 2 / Home</span><span class="doc">Facilitator Handbook</span></header>
+  <main>
+<h1>2.1 Group Code</h1>
+<p class="lead">Freshies open your group's page by scanning your group's QR or typing its 4-digit password. Both are on your Home page.</p>
+<div class="two">
+  <div class="col">
+    <figure class="phone "><img src="img/h5-group-code.jpg" alt=""><figcaption>Home / Group Code</figcaption></figure>
+    <ol class="steps"><li><span class="n">1</span><div>The <b>QR code</b> for your group. Let Freshies scan it with their phone camera. It never changes.</div></li><li><span class="n">2</span><div>The <b>4-digit password</b>. Freshies can type it instead of scanning.</div></li><li><span class="n">3</span><div><b>Download QR</b> saves the QR card as a picture, so you can send or print it.</div></li></ol>
+  </div>
+  <div class="col">
+    <h3>How to Get Here</h3>
+    <p>On Home, tap <b>My Group</b> under the countdown, or swipe up to the <b>Group Code</b> section.</p>
+    <div class="note warn"><b>Important</b><p>Share the password only with the Freshies in your own group. Admin can give your group a new password at any time. The QR stays the same.</p></div>
+    <div class="note info"><b>Good to Know</b><p>The QR and password in this picture are samples. Yours are different.</p></div>
+    <h3>2.2 Action Plan</h3>
+    <div class="mini"><figure class="phone xs"><img src="img/h4-action-plan.jpg" alt=""></figure>
+    <div><ol class="steps"><li><span class="n">1</span><div><b>Day 1 Action Plan</b>: tap to open the crew timeline for Day 1.</div></li><li><span class="n">2</span><div><b>Day 2 Action Plan</b>: tap to open the crew timeline for Day 2.</div></li></ol><p class="small">Inside, tap <b>Open Full Size</b> to zoom in.</p></div></div>
+  </div>
+</div>
+</main>
+  <footer><span>Vortexa / XMUM 26/12 Orientation</span><span>5</span></footer>
+</section>
+<section class="page" style="--c:#2F6BFF">
+  <header class="top"><span class="tag">Part 2 / Home</span><span class="doc">Facilitator Handbook</span></header>
+  <main>
+<h1>2.3 You and Your Partner</h1>
+<p class="lead">Every group has Facilitators who work as a team. This section shows you and your partner, the way Freshies see you.</p>
+<div class="two">
+  <div class="col">
+    <figure class="phone "><img src="img/h6-partner.jpg" alt=""><figcaption>Home / You and Your Partner</figcaption></figure>
+    <ol class="steps"><li><span class="n">1</span><div><b>Your card</b>. It is marked <b>YOU</b>. Tap anywhere on it to open it.</div></li><li><span class="n">2</span><div><b>Your partner's card</b>. Tap it to read their programme, languages and intro.</div></li></ol>
+  </div>
+  <div class="col">
+    <figure class="phone "><img src="img/h6b-partner-open.jpg" alt=""><figcaption>Your card, opened</figcaption></figure>
+    <ol class="steps"><li><span class="n">1</span><div>Tap the <b>pencil</b> on your own card to edit your profile.</div></li></ol>
+    <div class="note info"><b>Good to Know</b><p>Freshies see the same cards under <b>Your Facilitator</b>. A clear photo and a friendly intro help them find you on the day.</p></div>
+  </div>
+</div>
+</main>
+  <footer><span>Vortexa / XMUM 26/12 Orientation</span><span>6</span></footer>
+</section>
+<section class="page" style="--c:#2F6BFF">
+  <header class="top"><span class="tag">Part 2 / Home</span><span class="doc">Facilitator Handbook</span></header>
+  <main>
+<h1>2.4 Edit Your Profile</h1>
+<p class="lead">Tell your group who you are. You can change this any time.</p>
+<div class="two">
+  <div class="col">
+    <figure class="phone "><img src="img/h3-edit-profile.jpg" alt=""><figcaption>Edit Profile</figcaption></figure>
+  </div>
+  <div class="col">
+    <h3>How to Open It</h3>
+    <p>Tap your <b>profile button</b>, then <b>Edit Profile</b>. Or tap the <b>pencil</b> on your card (2.3).</p>
+    <ol class="steps"><li><span class="n">1</span><div><b>Add Photo</b> (or <b>Change Photo</b>). Pick a clear photo of your face. The app crops it square and makes it smaller for you.</div></li><li><span class="n">2</span><div><b>Instagram</b>: your handle only, without the @. Leave it empty if you prefer.</div></li><li><span class="n">3</span><div><b>Programme</b>: for example <i>Computer Science / Year 3</i>.</div></li><li><span class="n">4</span><div><b>Languages</b>: separate with commas. Up to 6.</div></li><li><span class="n">5</span><div><b>Intro</b>: one or two lines to your group (up to 160 characters).</div></li></ol>
+    <p>Then tap <b>Save</b> at the bottom. Save turns on once you change something. Tap the <b>X</b> to close without saving.</p>
+    <div class="note tip"><b>Tip</b><p>Your <b>Name</b> sits above Instagram. Check that it is spelled the way you want Freshies to read it.</p></div>
+  </div>
+</div>
+</main>
+  <footer><span>Vortexa / XMUM 26/12 Orientation</span><span>7</span></footer>
+</section>
+<section class="page" style="--c:#2F6BFF">
+  <header class="top"><span class="tag">Part 2 / Home</span><span class="doc">Facilitator Handbook</span></header>
+  <main>
+<h1>2.5 Your Progress and Scores</h1>
+<p class="lead">Follow how your group is doing in the game. You can only look here. The games are played by the Freshies.</p>
+<div class="two">
+  <div class="col">
+    <figure class="phone "><img src="img/h7-progress.jpg" alt=""><figcaption>Home / Your Progress</figcaption></figure>
+    <ol class="steps"><li><span class="n">1</span><div><b>Tokens</b> your group owns right now.</div></li><li><span class="n">2</span><div><b>Puzzle Pieces</b> collected. Each of the three keys needs 5 pieces. When a key is complete, its lamp lights up.</div></li><li><span class="n">3</span><div><b>FAQ</b> opens the rules, help and contacts.</div></li><li><span class="n">4</span><div><b>Items</b> opens the full Items page (Part 5).</div></li></ol>
+  </div>
+  <div class="col">
+    <figure class="phone "><img src="img/h8-scores.jpg" alt=""><figcaption>Home / Tokens</figcaption></figure>
+    <ol class="steps"><li><span class="n">1</span><div>Your own group is highlighted and marked <b>YOU</b>. All groups are ranked by tokens.</div></li></ol>
+    <div class="note info"><b>Good to Know</b><p>The scoreboard goes live from 28 Nov. The numbers in this picture are samples.</p></div>
+  </div>
+</div>
+</main>
+  <footer><span>Vortexa / XMUM 26/12 Orientation</span><span>8</span></footer>
+</section>
+<section class="page" style="--c:#E0187F">
+  <header class="top"><span class="tag">Part 3 / Checklist</span><span class="doc">Facilitator Handbook</span></header>
+  <main>
+<h1>3.0 The Checklist</h1>
+<p class="lead">The Checklist is your daily work. Open it with the big round <b>Checklist</b> button in the middle of the tab bar.</p>
+<div class="two">
+  <div class="col">
+    <figure class="phone "><img src="img/c1-overview.jpg" alt=""><figcaption>Checklist</figcaption></figure>
+    <ol class="steps"><li><span class="n">1</span><div><b>Group Name and Slogan</b>. Set it once.</div></li><li><span class="n">2</span><div><b>Manual Location Update</b>. Tell Admin where your group is.</div></li><li><span class="n">3</span><div><b>Take Attendance</b>. Count the people at your gathering point.</div></li><li><span class="n">4</span><div><b>Live GPS</b>. Shows whether your phone is sending your group's position to the map.</div></li></ol>
+  </div>
+  <div class="col">
+    <h3>Tap a Task to Open It</h3>
+    <p>Tap the card (or the arrow on the right) to open its form. Only one task is open at a time.</p>
+    <h3>What the Colours Mean</h3>
+    <table class="states">
+      <tr><td><span class="pill amber">Due</span></td><td><b>Amber.</b> You have not sent it yet, or the last one is more than <b>30 minutes</b> old. Do it now.</td></tr>
+      <tr><td><span class="pill blue">just now</span></td><td><b>Not amber.</b> Up to date. It shows how long ago you sent it, for example <i>5 min ago</i>.</td></tr>
+      <tr><td><span class="pill tick">&#10003;</span></td><td><b>Tick.</b> A one-time task that is finished (Group Name and Slogan).</td></tr>
+    </table>
+    <div class="note warn"><b>Important</b><p>Location and attendance are <b>never finished for good</b>. Admin can ask for them at any time, so send a new one about every 30 minutes, and whenever your group moves.</p></div>
+    <div class="note info"><b>Good to Know</b><p>Your partner can send these updates too. The Checklist always shows the <b>latest</b> one sent by anyone in your group.</p></div>
+  </div>
+</div>
+</main>
+  <footer><span>Vortexa / XMUM 26/12 Orientation</span><span>9</span></footer>
+</section>
+<section class="page" style="--c:#E0187F">
+  <header class="top"><span class="tag">Part 3 / Checklist</span><span class="doc">Facilitator Handbook</span></header>
+  <main>
+<h1>3.1 Group Name and Slogan</h1>
+<p class="lead">Choose the name your group goes by. Do this once, with your partner, before the Freshies arrive.</p>
+<div class="two">
+  <div class="col">
+    <figure class="phone "><img src="img/c2-name.jpg" alt=""><figcaption>Group Name and Slogan, opened</figcaption></figure>
+    <ol class="steps"><li><span class="n">1</span><div>Type your group's <b>Name</b> (up to 40 characters).</div></li><li><span class="n">2</span><div>Type a short <b>Slogan</b> (up to 80 characters). This one is optional.</div></li><li><span class="n">3</span><div>Tap <b>Save</b>.</div></li></ol>
+  </div>
+  <div class="col">
+    <figure class="phone "><img src="img/c2b-name-saved.jpg" alt=""><figcaption>After tapping Save</figcaption></figure>
+    <ol class="steps"><li><span class="n">1</span><div><b>Saved.</b> appears under the button. Your group name is saved.</div></li></ol>
+    <div class="note info"><b>Good to Know</b><p>Your group <b>number</b> (for example Group 1) never changes. You are only choosing the name your group goes by.</p></div>
+    <div class="note tip"><b>Tip</b><p>Agree on the name with your partner first. You can change it later by saving again.</p></div>
+  </div>
+</div>
+</main>
+  <footer><span>Vortexa / XMUM 26/12 Orientation</span><span>10</span></footer>
+</section>
+<section class="page" style="--c:#E0187F">
+  <header class="top"><span class="tag">Part 3 / Checklist</span><span class="doc">Facilitator Handbook</span></header>
+  <main>
+<h1>3.2 Manual Location Update</h1>
+<p class="lead">A short written note of where your <b>group</b> is: heading to a building, or arrived at one. Admin and the organisers read it to know where everyone is.</p>
+<div class="two">
+  <div class="col">
+    <figure class="phone "><img src="img/c3-location.jpg" alt=""><figcaption>Manual Location Update, opened</figcaption></figure>
+    <ol class="steps"><li><span class="n">1</span><div><b>Status</b>: Heading to, Arrived, or Other.</div></li><li><span class="n">2</span><div><b>Building</b>: choose where you are going or where you are.</div></li><li><span class="n">3</span><div><b>Details (Optional)</b>: a room or a short comment, for example <i>#G07, Ground Floor Corridor</i>.</div></li><li><span class="n">4</span><div>Tap <b>Send Update</b>.</div></li></ol>
+  </div>
+  <div class="col">
+    <figure class="phone "><img src="img/c3b-location-other.jpg" alt=""><figcaption>When Status is Other</figcaption></figure>
+    <ol class="steps"><li><span class="n">1</span><div>Choose <b>Other</b> when neither fits. A new box appears.</div></li><li><span class="n">2</span><div>Type your own status in <b>Your Status</b>, for example <i>Taking photos</i>.</div></li></ol>
+    <div class="note tip"><b>Tip</b><p>Use <b>Heading to</b> when you leave, and <b>Arrived</b> when you get there. Two quick updates keep Admin informed without calls.</p></div>
+    <div class="note info"><b>Good to Know</b><p>This note is text only. It does not move your pin on the map. The map uses Live GPS (3.4).</p></div>
+  </div>
+</div>
+</main>
+  <footer><span>Vortexa / XMUM 26/12 Orientation</span><span>11</span></footer>
+</section>
+<section class="page" style="--c:#E0187F">
+  <header class="top"><span class="tag">Part 3 / Checklist</span><span class="doc">Facilitator Handbook</span></header>
+  <main>
+<h1>3.2 Manual Location Update <span class="cont">continued</span></h1>
+<p class="lead">After you send, check that it went through.</p>
+<div class="two">
+  <div class="col">
+    <figure class="phone "><img src="img/c3c-location-sent.jpg" alt=""><figcaption>Right after Send Update</figcaption></figure>
+    <ol class="steps"><li><span class="n">1</span><div><b>Saved. Admin can see it now.</b> appears under the button.</div></li></ol>
+  </div>
+  <div class="col">
+    <figure class="phone "><img src="img/c3d-location-fresh.jpg" alt=""><figcaption>The card on the Checklist</figcaption></figure>
+    <ol class="steps"><li><span class="n">1</span><div>The card shows your last update, for example <i>Arrived at A3</i>, with the time.</div></li><li><span class="n">2</span><div>The pill turns blue and says <b>just now</b>. It turns amber and says <b>Due</b> again after 30 minutes.</div></li></ol>
+  </div>
+</div>
+<div class="note info"><b>Good to Know</b><p>If Admin corrects an entry, the card says <b>(edited by Admin)</b>. You can always send a newer update.</p></div>
+</main>
+  <footer><span>Vortexa / XMUM 26/12 Orientation</span><span>12</span></footer>
+</section>
+<section class="page" style="--c:#E0187F">
+  <header class="top"><span class="tag">Part 3 / Checklist</span><span class="doc">Facilitator Handbook</span></header>
+  <main>
+<h1>3.3 Take Attendance</h1>
+<p class="lead">Count the people with your group and send the numbers. Count Local and International students separately. The total is worked out for you.</p>
+<div class="two">
+  <div class="col">
+    <figure class="phone "><img src="img/c4-attendance.jpg" alt=""><figcaption>Take Attendance, opened</figcaption></figure>
+    <ol class="steps"><li><span class="n">1</span><div><b>Local</b>: tap <b>+</b> or <b>&minus;</b>, or tap the number and type it.</div></li><li><span class="n">2</span><div><b>International</b>: the same way.</div></li><li><span class="n">3</span><div><b>Total</b> adds the two for you. Check that it is right.</div></li><li><span class="n">4</span><div>Tap <b>Save</b>.</div></li></ol>
+  </div>
+  <div class="col">
+    <figure class="phone "><img src="img/c4b-attendance-saved.jpg" alt=""><figcaption>After tapping Save</figcaption></figure>
+    <ol class="steps"><li><span class="n">1</span><div><b>Saved. Admin can see it now.</b> appears under the button.</div></li><li><span class="n">2</span><div>The card shows your count, for example <i>15 people / 12 Local / 3 International</i>, and the pill turns blue.</div></li></ol>
+    <div class="note warn"><b>Important</b><p>Count again about every <b>30 minutes</b>, and each time people join or leave. Save the new number. The card turns amber and says <b>Due</b> when it is time.</p></div>
+    <div class="note tip"><b>Tip</b><p>Count at your gathering point, before you start moving. Everyone in your group sees the same saved number.</p></div>
+  </div>
+</div>
+</main>
+  <footer><span>Vortexa / XMUM 26/12 Orientation</span><span>13</span></footer>
+</section>
+<section class="page" style="--c:#E0187F">
+  <header class="top"><span class="tag">Part 3 / Checklist</span><span class="doc">Facilitator Handbook</span></header>
+  <main>
+<h1>3.4 Live GPS</h1>
+<p class="lead">Your phone sends its position so your group appears on the campus map. This is separate from the Manual Location Update.</p>
+<div class="three">
+  <div class="col">
+    <figure class="phone sm"><img src="img/c5-gps.jpg" alt=""><figcaption>Live GPS is working</figcaption></figure>
+    <ol class="steps"><li><span class="n">1</span><div><b>Status</b>. <i>Live</i> (green) means your position is being sent.</div></li><li><span class="n">2</span><div><b>Refresh GPS</b> sends your position now. Use it after you move.</div></li><li><span class="n">3</span><div><b>Keep Tracking</b> keeps the screen on so the site keeps sending.</div></li></ol>
+  </div>
+  <div class="col">
+    <figure class="phone sm"><img src="img/c6-blocked-home.jpg" alt=""><figcaption>First time: Location Is Blocked</figcaption></figure>
+    <ol class="steps"><li><span class="n">1</span><div><b>Try Again</b> after you allow location in your phone settings.</div></li><li><span class="n">2</span><div><b>X</b> closes the message.</div></li></ol>
+  </div>
+  <div class="col">
+    <figure class="phone sm"><img src="img/c6b-blocked-checklist.jpg" alt=""><figcaption>On the Checklist: Blocked</figcaption></figure>
+    <ol class="steps"><li><span class="n">1</span><div>The status says <b>Blocked</b> (red). Allow location (below), then tap <b>Refresh GPS</b>.</div></li></ol>
+  </div>
+</div>
+<div class="fix">
+  <b>How to Allow Location</b>
+  <div class="fixcols">
+    <div><h4>iPhone (Safari)</h4><p>Tap <b>aA</b> in the address bar, then <b>Website Settings</b>, <b>Location</b>, <b>Allow</b>. Then tap Try Again.</p></div>
+    <div><h4>Android (Chrome)</h4><p>Tap the icon left of the web address, then <b>Permissions</b>, <b>Location</b>, <b>Allow</b>. Then tap Try Again.</p></div>
+  </div>
+</div>
+<div class="note warn"><b>Important</b><p>A web page <b>cannot</b> send GPS when the screen is locked or the browser is closed. On <b>one</b> phone in your group, switch on Keep Tracking and keep the site open. One phone is enough. The map uses the best recent position from any Facilitator in your group.</p></div>
+</main>
+  <footer><span>Vortexa / XMUM 26/12 Orientation</span><span>14</span></footer>
+</section>
+<section class="page" style="--c:#12A150">
+  <header class="top"><span class="tag">Part 4 / Map</span><span class="doc">Facilitator Handbook</span></header>
+  <main>
+<h1>4.1 The Map</h1>
+<p class="lead">See the campus, find stations, and check where each group is. Open it with the <b>Map</b> tab.</p>
+<div class="two">
+  <div class="col">
+    <figure class="phone "><img src="img/m1-map.jpg" alt=""><figcaption>Map</figcaption></figure>
+    <ol class="steps"><li><span class="n">1</span><div><b>Your Location Sharing</b>. A green dot means your phone is sending. Tap the card to open it.</div></li><li><span class="n">2</span><div><b>Stations / Projectors</b>. Switch what the map and the list show.</div></li><li><span class="n">3</span><div><b>Building chips</b>. Tap a building (A1, A3, B1 ...) to see only its stations. The number is how many stations it has.</div></li></ol>
+  </div>
+  <div class="col">
+    <figure class="phone "><img src="img/m2-sharing.jpg" alt=""><figcaption>Your Location Sharing, opened</figcaption></figure>
+    <ol class="steps"><li><span class="n">1</span><div>The status line: <i>Sharing / sent just now</i>.</div></li><li><span class="n">2</span><div><b>Keep Tracking</b>. Tick it to keep the screen on (same as 3.4).</div></li><li><span class="n">3</span><div><b>Your Group's Faci Phones</b>. Which Facilitator phones in your group sent a position recently.</div></li></ol>
+    <div class="note tip"><b>Tip</b><p>If your status says <i>Not sharing yet</i>, tap the <b>Share Location</b> button on this card and allow location when your phone asks.</p></div>
+  </div>
+</div>
+</main>
+  <footer><span>Vortexa / XMUM 26/12 Orientation</span><span>15</span></footer>
+</section>
+<section class="page" style="--c:#12A150">
+  <header class="top"><span class="tag">Part 4 / Map</span><span class="doc">Facilitator Handbook</span></header>
+  <main>
+<h1>4.2 Stations and Group Locations</h1>
+<p class="lead">Scroll down on the Map page to see the 3D campus, station details and every group's location.</p>
+<div class="two">
+  <div class="col">
+    <figure class="phone "><img src="img/m3-stations.jpg" alt=""><figcaption>Map / Stations</figcaption></figure>
+    <ol class="steps"><li><span class="n">1</span><div><b>Full Screen</b> opens the 3D map in full screen. <b>Show Names</b> labels the buildings.</div></li><li><span class="n">2</span><div><b>Station list</b> for the building you chose. Each row shows the station and its status: <i>Available</i>, <i>In Progress</i> or <i>Closed</i>.</div></li><li><span class="n">3</span><div><b>All Stations</b> clears the building filter.</div></li></ol>
+  </div>
+  <div class="col">
+    <figure class="phone "><img src="img/m4-group-locations.jpg" alt=""><figcaption>Map / Group Locations</figcaption></figure>
+    <ol class="steps"><li><span class="n">1</span><div><b>Group Locations</b>. Every group is listed with where it was last seen.</div></li><li><span class="n">2</span><div><b>Facis</b> shows the names of the Facilitators in that group.</div></li></ol>
+    <div class="note info"><b>Good to Know</b><p><i>No location yet</i> means that group has not sent a position. If this is <b>your</b> group, check Live GPS (3.4).</p></div>
+  </div>
+</div>
+</main>
+  <footer><span>Vortexa / XMUM 26/12 Orientation</span><span>16</span></footer>
+</section>
+<section class="page" style="--c:#E8890C">
+  <header class="top"><span class="tag">Part 5 / Items</span><span class="doc">Facilitator Handbook</span></header>
+  <main>
+<h1>5.1 Items</h1>
+<p class="lead">Your group's tokens and puzzle keys. Open it with the <b>Items</b> tab. Facilitators can look, but the Freshies play the games.</p>
+<div class="two">
+  <div class="col">
+    <figure class="phone "><img src="img/i1-items.jpg" alt=""><figcaption>Items</figcaption></figure>
+    <ol class="steps"><li><span class="n">1</span><div><b>The three keys</b>: Star, Wheel and Orbit. Each shows how many of its 5 pieces your group has. A lit lamp means that key is complete.</div></li><li><span class="n">2</span><div><b>Tokens</b> your group has now.</div></li><li><span class="n">3</span><div><b>Activity</b> opens the history of tokens and pieces.</div></li><li><span class="n">4</span><div><b>Replay Demo</b> plays a short sample animation (marked <i>Sample data</i>). It does not change anything.</div></li></ol>
+  </div>
+  <div class="col">
+    <figure class="phone "><img src="img/i2-activity.jpg" alt=""><figcaption>Items / Activity</figcaption></figure>
+    <p><b>Earned</b>, <b>Spent</b> and <b>Net</b> add up your group's tokens. Use the filters (<i>Tokens</i>, <i>Blind Boxes</i>, <i>Puzzle Pieces</i>, <i>Projectors</i>) to find one kind of entry. Tap the <b>X</b> to close.</p>
+    <div class="note info"><b>Good to Know</b><p>Blind boxes bought by your Freshies appear here too, but only the Freshies' login can open them. Facilitators cannot open or buy blind boxes.</p></div>
+  </div>
+</div>
+</main>
+  <footer><span>Vortexa / XMUM 26/12 Orientation</span><span>17</span></footer>
+</section>
+<section class="page" style="--c:#7A4DE0">
+  <header class="top"><span class="tag">Part 6 / Schedule</span><span class="doc">Facilitator Handbook</span></header>
+  <main>
+<h1>6.1 Schedule</h1>
+<p class="lead">The programme for both days. Open it with the <b>Schedule</b> tab.</p>
+<div class="two">
+  <div class="col">
+    <figure class="phone "><img src="img/s1-schedule.jpg" alt=""><figcaption>Schedule</figcaption></figure>
+    <ol class="steps"><li><span class="n">1</span><div><b>Day 1</b> (Sat, 28 Nov). Tap to show it.</div></li><li><span class="n">2</span><div><b>Day 2</b> (Sun, 29 Nov). Tap to switch.</div></li><li><span class="n">3</span><div><b>One programme item</b>: its name, time, and a label.</div></li></ol>
+  </div>
+  <div class="col">
+    <h3>The Labels</h3>
+    <table class="states">
+      <tr><td><span class="tag info">Info</span></td><td>A notice or a gathering.</td></tr>
+      <tr><td><span class="tag cer">Ceremony</span></td><td>A ceremony or a session on stage.</td></tr>
+      <tr><td><span class="tag game">Game</span></td><td>A game session.</td></tr>
+      <tr><td><span class="tag food">Food</span></td><td>A meal or a rest.</td></tr>
+    </table>
+    <div class="note tip"><b>Tip</b><p>Your own crew timeline is the <b>Action Plan</b> on Home (2.2). The Schedule is what the Freshies see.</p></div>
+    <div class="note info"><b>Good to Know</b><p>Times can change on the day. Check back here and on the countdown at the top of Home.</p></div>
+  </div>
+</div>
+</main>
+  <footer><span>Vortexa / XMUM 26/12 Orientation</span><span>18</span></footer>
+</section>
+<section class="page" style="--c:#4B5563">
+  <header class="top"><span class="tag">Part 7 / Help</span><span class="doc">Facilitator Handbook</span></header>
+  <main>
+<h1>7.1 Fixing Problems</h1>
+<table class="trouble">
+  <tr><th>What You See on Screen</th><th>Why It Happens, and What to Do</th></tr>
+  <tr><td>Home says <b>Group Pending</b>, or <i>No partner assigned yet</i>.</td><td>Admin has not put you in a group yet, so your Group Code and partner cannot show. Tell your Head of Facilitators or Admin. Nothing on your phone fixes this.</td></tr>
+  <tr><td>The Checklist says <i>You are not in a group yet</i>, or Save gives an error.</td><td>The same reason. Without a group you cannot save a name, a location update or attendance. Ask Admin to assign you.</td></tr>
+  <tr><td>Live GPS says <b>Not Allowed Yet</b>.</td><td>You have not given the site permission to use your location. Tap <b>Allow Location</b>, then tap <b>Allow</b> when your phone asks.</td></tr>
+  <tr><td>Live GPS says <b>Blocked</b> (red), or a box says <b>Location Is Blocked</b>.</td><td>Location was refused earlier, so the site cannot send your position. Allow Location for this site in your phone's settings (steps in 3.4), then tap <b>Try Again</b> or <b>Refresh GPS</b>.</td></tr>
+  <tr><td>Live GPS says <b>Approximate</b>.</td><td>Your phone is sending only a rough position, so your pin may sit in the wrong place. Turn on <b>Precise Location</b>, go outside or next to a window, then tap <b>Refresh GPS</b>.</td></tr>
+  <tr><td>Live GPS says <b>Not Sending</b>.</td><td>Your phone cannot find its position. Turn <b>Location</b> on in your phone's quick settings, and turn <b>Wi-Fi</b> on (it helps even if you do not connect). Then tap <b>Refresh GPS</b>.</td></tr>
+  <tr><td>The site opened inside Instagram, WhatsApp or another app, and location fails.</td><td>Apps like these use a built-in browser that often blocks location. Tap the &#8943; menu, choose <i>Open in browser</i> (Safari or Chrome), and log in again.</td></tr>
+  <tr><td>Your group is missing from the Map, or its pin is old.</td><td>The map uses GPS from your group's Facilitator phones. On <b>one</b> phone, switch on <b>Keep Tracking</b>, keep the site open with the screen on, then tap <b>Refresh GPS</b>.</td></tr>
+  <tr><td>An amber <b>Due</b> label is still showing after you sent an update.</td><td><b>Due</b> means the last update is more than 30 minutes old, or none was sent. After you tap <b>Send Update</b> or <b>Save</b>, wait for <b>Saved.</b> under the button. The label then turns blue and says <i>just now</i>. If <b>Saved.</b> never appears, your signal may be weak: check your connection and send it again.</td></tr>
+  <tr><td>You sent the wrong number or the wrong building.</td><td>Send a new update. Admin always sees the latest one. For a bigger mistake, ask Admin.</td></tr>
+  <tr><td>A Freshie says the password or QR does not work.</td><td>Admin may have given your group a new password. Reload your Home page to see the new one and tell the Freshie. The QR itself never changes.</td></tr>
+  <tr><td>You were logged out.</td><td>Sign in again (1.1). Everything you saved, such as your group name, profile and past updates, is still there.</td></tr>
+</table>
+<div class="note info"><b>Good to Know</b><p>Still stuck? Ask your <b>Head of Facilitators (HOF)</b> or a Committee member. Tell them what the screen says.</p></div>
+</main>
+  <footer><span>Vortexa / XMUM 26/12 Orientation</span><span>19</span></footer>
+</section>
+<section class="page" style="--c:#4B5563">
+  <header class="top"><span class="tag">Part 7 / Help</span><span class="doc">Facilitator Handbook</span></header>
+  <main>
+<h1>7.2 Dos and Don'ts</h1>
+<div class="two dd">
+  <div class="col do">
+    <h3>Do</h3>
+    <ul>
+      <li>Set your <b>Group Name and Slogan</b> and your <b>Profile</b> before the event.</li>
+      <li>Send a <b>Location Update</b> and <b>Attendance</b> about every 30 minutes, and when your group moves.</li>
+      <li>Keep <b>Live GPS</b> on and the site open on <b>one</b> phone in your group.</li>
+      <li>Charge your phone. Bring a power bank.</li>
+      <li>Wait for <b>Saved.</b> to appear under the button before you leave the form. It is your proof that it was sent.</li>
+      <li>Tell Admin early if something looks wrong, such as a wrong group or a missing partner. Small problems are easy to fix early.</li>
+    </ul>
+  </div>
+  <div class="col dont">
+    <h3>Don't</h3>
+    <ul>
+      <li>Don't share the <b>4-digit password</b> with other groups.</li>
+      <li>Don't lock the screen or close the browser if you are the tracking phone. GPS stops.</li>
+      <li>Don't share your login with anyone.</li>
+      <li>Don't wait for the amber <b>Due</b> label. Send your update a few minutes early, so Admin always has a recent one.</li>
+      <li>Don't try to open blind boxes or play the games for Freshies. Facilitators can only look.</li>
+      <li>Don't forget to <b>Log Out</b> if you used someone else's phone.</li>
+    </ul>
+  </div>
+</div>
+<h2>What Facilitators Can and Cannot Do</h2>
+<table class="can">
+  <tr><th class="y">You Can</th><th class="n">You Cannot</th></tr>
+  <tr><td>See the Home page, Map, Items and Schedule</td><td>Change tokens, puzzle pieces or scores</td></tr>
+  <tr><td>Set your group's name and slogan</td><td>Open or buy blind boxes</td></tr>
+  <tr><td>Send location updates and attendance for your group</td><td>Move Freshies between groups or assign Facilitators</td></tr>
+  <tr><td>Share your phone's GPS on the map</td><td>See other groups' passwords or QR codes</td></tr>
+  <tr><td>Show your group's QR and password to your Freshies</td><td>Start or stop game phases</td></tr>
+</table>
+</main>
+  <footer><span>Vortexa / XMUM 26/12 Orientation</span><span>20</span></footer>
+</section>
+<section class="page" style="--c:#4B5563">
+  <header class="top"><span class="tag">Part 7 / Help</span><span class="doc">Facilitator Handbook</span></header>
+  <main>
+<h1>Quick Reference</h1>
+<p class="lead">Keep this page on your phone or print it.</p>
+<table class="quick">
+  <tr><th>I Want To</th><th>Go To</th><th>Tap</th></tr>
+  <tr><td>Show Freshies how to join my group</td><td>Home</td><td><b>My Group</b>, then the QR or password</td></tr>
+  <tr><td>Change my photo or intro</td><td>Profile button</td><td><b>Edit Profile</b></td></tr>
+  <tr><td>Name my group</td><td>Checklist</td><td><b>Group Name and Slogan</b>, then <b>Save</b></td></tr>
+  <tr><td>Tell Admin where my group is</td><td>Checklist</td><td><b>Manual Location Update</b>, then <b>Send Update</b></td></tr>
+  <tr><td>Report how many people are here</td><td>Checklist</td><td><b>Take Attendance</b>, then <b>Save</b></td></tr>
+  <tr><td>Fix or refresh my GPS</td><td>Checklist</td><td><b>Refresh GPS</b></td></tr>
+  <tr><td>Keep my group on the map</td><td>Checklist or Map</td><td><b>Keep Tracking</b></td></tr>
+  <tr><td>Find a station</td><td>Map</td><td>A <b>building chip</b></td></tr>
+  <tr><td>See where other groups are</td><td>Map</td><td>Scroll to <b>Group Locations</b></td></tr>
+  <tr><td>See my group's tokens and keys</td><td>Items</td><td>(just look)</td></tr>
+  <tr><td>Check the programme</td><td>Schedule</td><td><b>Day 1</b> or <b>Day 2</b></td></tr>
+  <tr><td>Open my crew timeline</td><td>Home</td><td><b>Action Plan</b>, then the day</td></tr>
+  <tr><td>Sign out</td><td>Profile button</td><td><b>Log Out</b></td></tr>
+</table>
+<div class="timer">
+  <b>Every 30 Minutes</b>
+  <span>Location Update</span><i>+</i><span>Attendance</span><i>+</i><span>Check Live GPS</span>
+</div>
+</main>
+  <footer><span>Vortexa / XMUM 26/12 Orientation</span><span>21</span></footer>
+</section>
+</body></html>

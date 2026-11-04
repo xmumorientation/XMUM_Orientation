@@ -641,3 +641,13 @@
   .gc-ff-row { grid-template-columns: minmax(0, 1fr) auto; }
   .gc-ff-ctl, .gc-ff-finale .gc-muted { grid-column: 1 / -1; order: 3; }
 }
+
+/* ── Home Sections (HomeSectionsManager) ─────────────────────────────────── */
+.hsm-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.hsm-bar p { margin: 0; flex: 1 1 220px; }
+.hsm .hsm-ic { flex: none; margin-top: 2px; color: var(--gc-cyan); }
+.hsm .hsm-title { white-space: normal; overflow-wrap: anywhere; }
+.hsm .hsm-del { color: var(--gc-red); border-color: rgba(255, 77, 94, 0.4); }
+.gc-sheet .hsm-file { justify-content: flex-start; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+.gc-sheet .hsm-roles { border: 0; margin: 0; padding: 0; min-width: 0; }
+.gc-sheet .hsm-quick { display: flex; gap: 16px; }

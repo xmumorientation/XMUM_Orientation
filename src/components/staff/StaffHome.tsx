@@ -13,7 +13,8 @@ import {
   PhaseCard,
   StopBar,
 } from "@/components/freshie/FreshieHome";
-import { ACTION_PLAN_STOP, ActionPlanStop } from "@/components/ActionPlan";
+import { HOME_SECTIONS_STOP, HomeSectionsStop } from "@/components/HomeSections";
+import { useHomeSections } from "@/components/useHomeSections";
 import { FunfairTicker, useTickerOn } from "@/components/day2/Day2Alerts";
 import { FreshieSky, type SkyCabin } from "@/components/freshie/FreshieSky";
 import { groupSwatch, staffTheme } from "@/components/freshie/groupTheme";
@@ -21,6 +22,7 @@ import { nexusBody, vxDisplay, vxSlab } from "@/components/home/fonts";
 import { priceText, useMyBlindBoxes, type MyBlindBoxSeller } from "@/components/BlindBoxCard";
 import { GroupBadge } from "@/components/GroupBadge";
 import { usePhases } from "@/components/PhaseTimerProvider";
+import { TokenBoard } from "@/components/TokenBoard";
 import { useScoreboard } from "@/components/useScoreboard";
 import { useProfile } from "@/components/ProfileProvider";
 import { OPS_CHIP } from "@/components/staff/OpsHeader";
@@ -41,13 +43,17 @@ import "./staff-home.css";
 
 const STOPS = [
   { id: "sh-welcome", label: "Welcome" },
-  ACTION_PLAN_STOP,
   { id: "sh-bb", label: "Blind Box" },
   { id: "sh-scores", label: "Scores" },
   { id: "sh-tools", label: "Tools" },
 ] as const;
 
 const GM_STOPS = STOPS.filter((s) => s.id !== "sh-bb");
+
+/** Documents (Settings → Home Sections) sit right after Welcome, when this role has any. */
+function withDocs<T extends { id: string; label: string }>(stops: readonly T[], hasDocs: boolean) {
+  return hasDocs ? [stops[0], HOME_SECTIONS_STOP, ...stops.slice(1)] : stops;
+}
 
 type HomeGroup = { id: number; name: string; color: string | null; token_balance: number };
 
@@ -278,21 +284,15 @@ function QrLightbox({ qr, onClose }: { qr: { src: string; alt: string }; onClose
 function ScoresStop({ groups }: { groups: HomeGroup[] | null }) {
   return (
     <section id="sh-scores" className="fh-stop" aria-labelledby="sh-scores-title">
-      <div className="fh-stop-head fh-stop-head-row">
-        <h2 id="sh-scores-title" className="fh-h2 fh-slab">Tokens</h2>
-        <Link href="/token" className="sh-more">
-          Full scoreboard <ArrowRight size={15} aria-hidden />
-        </Link>
-      </div>
-      <ol className="fh-board">
-        {(groups ?? []).map((row) => (
-          <li key={row.id} className="fh-team">
-            <GroupBadge id={row.id} color={groupSwatch(row.id, row.color)} />
-            <b>{row.name}</b>
-            <span className="fh-team-sc fh-slab">{row.token_balance}</span>
-          </li>
-        ))}
-      </ol>
+      <TokenBoard
+        rows={groups ?? []}
+        titleId="sh-scores-title"
+        aside={
+          <Link href="/token" className="sh-more">
+            Full scoreboard <ArrowRight size={15} aria-hidden />
+          </Link>
+        }
+      />
     </section>
   );
 }
@@ -340,6 +340,9 @@ export function StaffHome() {
   const profile = useProfile();
   const groups = useGroups();
   const isGm = profile.role === "gm";
+  const homeSections = useHomeSections();
+  const hasDocs = homeSections.length > 0;
+  const stops = useMemo(() => withDocs(isGm ? GM_STOPS : STOPS, hasDocs), [isGm, hasDocs]);
 
   // Section-by-section snapping, this page only (same as Freshie Home).
   useEffect(() => {
@@ -394,7 +397,7 @@ export function StaffHome() {
       </header>
 
       <WelcomeStop name={profile.full_name ?? ""} role={profile.role} />
-      <ActionPlanStop />
+      {homeSections.length > 0 && <HomeSectionsStop sections={homeSections} />}
       {!isGm && <BlindBoxStop />}
       <ScoresStop groups={groups} />
       <ToolsStop role={profile.role} />

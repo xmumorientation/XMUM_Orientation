@@ -5,7 +5,8 @@ import Image from "next/image";
 import Link from "next/link";
 import type { CSSProperties } from "react";
 
-import { ActionPlanCards } from "@/components/ActionPlan";
+import { HomeSectionCards } from "@/components/HomeSections";
+import { useHomeSections } from "@/components/useHomeSections";
 import { Countdown, PhaseCard } from "@/components/freshie/FreshieHome";
 import { themeFromColor } from "@/components/freshie/groupTheme";
 import { nexusBody, vxDisplay, vxSlab } from "@/components/home/fonts";
@@ -37,6 +38,7 @@ export function StaffDashboard() {
   const profile = useProfile();
   const { group, loading } = useGroup();
   const openMenu = useOpenShellMenu();
+  const homeSections = useHomeSections();
   const workspace = workspaces[profile.role] ?? committee;
   const isFaci = profile.role === "faci";
   const { phases } = usePhases();
@@ -75,10 +77,12 @@ export function StaffDashboard() {
           <ArrowRight size={18} aria-hidden />
         </Link>)}</div>
       </section>
-      <section className="sd-plan" aria-labelledby="sd-plan-title">
-        <h2 id="sd-plan-title">Action Plan</h2>
-        <ActionPlanCards />
-      </section>
+      {homeSections.length > 0 && (
+        <section className="sd-docs" aria-labelledby="sd-docs-title">
+          <h2 id="sd-docs-title">Documents</h2>
+          <HomeSectionCards sections={homeSections} />
+        </section>
+      )}
       <p className="sd-footer">XMUM 26/12 Orientation</p>
     </div>
   );

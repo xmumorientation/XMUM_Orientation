@@ -21,9 +21,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { ACTION_PLAN_STOP, ActionPlanStop } from "@/components/ActionPlan";
+import { HOME_SECTIONS_STOP, HomeSectionsStop } from "@/components/HomeSections";
 import { GAME_PHASES, SPONSORS, SPONSORS_ARE_EXAMPLES } from "@/components/home/data";
 import { vxDisplay, vxSlab } from "@/components/home/fonts";
+import { useHomeSections } from "@/components/useHomeSections";
+import { ChallengeBanner } from "@/components/ChallengeBanner";
 import { FinalStretchBanner, FunfairTicker, ProjectorsLitRow, useTickerOn } from "@/components/day2/Day2Alerts";
 import { useFinalStretch } from "@/components/day2/useDay2Live";
 import { GroupBadge } from "@/components/GroupBadge";
@@ -31,6 +33,7 @@ import { usePhases, usePhaseTimer } from "@/components/PhaseTimerProvider";
 import { useProfile } from "@/components/ProfileProvider";
 import { EDIT_PROFILE_EVENT } from "@/components/TopNav";
 import { useGroup } from "@/components/useGroup";
+import { TokenBoard } from "@/components/TokenBoard";
 import { useScoreboard } from "@/components/useScoreboard";
 import { countdownParts, useEventCountdown } from "@/components/useEventCountdown";
 import { supabaseBrowser } from "@/lib/supabase/client";
@@ -79,10 +82,12 @@ const STOPS = [
 
 const CODE_STOP = { id: "fh-code", label: "Code" };
 
-function homeStops(isFaci: boolean) {
-  if (!isFaci) return [...STOPS];
-  // A Faci gets the action plans, then the group code, then their own card and their partner's.
-  return [STOPS[0], ACTION_PLAN_STOP, CODE_STOP, { id: "fh-faci", label: "Partner" }, ...STOPS.slice(2)];
+function homeStops(isFaci: boolean, hasDocs: boolean) {
+  // Documents (Settings → Home Sections) come right after Welcome, only when this role has any.
+  const docs = hasDocs ? [HOME_SECTIONS_STOP] : [];
+  if (!isFaci) return [STOPS[0], ...docs, ...STOPS.slice(1)];
+  // A Faci gets the group code, then their own card and their partner's.
+  return [STOPS[0], ...docs, CODE_STOP, { id: "fh-faci", label: "Partner" }, ...STOPS.slice(2)];
 }
 
 /** The name a Faci chose for the group, else its number name ("Group 1"). */
@@ -526,25 +531,12 @@ function ScoresStop({ groupId, onRows }: { groupId: number | null; onRows?: (row
 
   return (
     <section id="fh-scores" className="fh-stop" aria-labelledby="fh-scores-title">
-      <div className="fh-stop-head fh-stop-head-row">
-        <h2 id="fh-scores-title" className="fh-h2 fh-slab">Tokens</h2>
-        <span className="fh-pill fh-mono">● LIVE FROM 28 NOV</span>
-      </div>
-      <ol className="fh-board">
-        {rows.map((row) => {
-          const me = row.id === groupId;
-          return (
-            <li key={row.id} className="fh-team" data-me={me || undefined}>
-              <GroupBadge id={row.id} color={groupSwatch(row.id, row.color)} />
-              <b>
-                {row.name}
-                {me && <span className="fh-you fh-mono">YOU</span>}
-              </b>
-              <span className="fh-team-sc fh-slab">{row.token_balance}</span>
-            </li>
-          );
-        })}
-      </ol>
+      <TokenBoard
+        rows={rows}
+        groupId={groupId}
+        titleId="fh-scores-title"
+        aside={<span className="fh-pill fh-mono">● LIVE FROM 28 NOV</span>}
+      />
     </section>
   );
 }
@@ -721,7 +713,8 @@ export function FreshieHome() {
   const theme = themeFromColor(group?.color);
   const isFaci = profile.role === "faci";
   const roleLabel = isFaci ? "Facilitator" : "Freshie";
-  const stops = useMemo(() => homeStops(isFaci), [isFaci]);
+  const homeSections = useHomeSections();
+  const stops = useMemo(() => homeStops(isFaci, homeSections.length > 0), [isFaci, homeSections.length]);
   // A Faci's name and group, shared by the header avatar, Welcome, their card
   // and the profile editor, so an edit shows everywhere at once.
   const [myName, setMyName] = useState(profile.full_name ?? "");
@@ -810,7 +803,7 @@ export function FreshieHome() {
       </header>
 
       <WelcomeStop name={isFaci ? myName : (profile.full_name ?? "")} group={group} isFaci={isFaci} />
-      {isFaci && <ActionPlanStop />}
+      {homeSections.length > 0 && <HomeSectionsStop sections={homeSections} />}
       {isFaci && <GroupCodeStop group={group} />}
       <FaciStop
         groupId={profile.group_id}

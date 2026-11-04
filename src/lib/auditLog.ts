@@ -48,6 +48,7 @@ export const AUDIT_ACTIONS: Record<string, AuditKind> = {
   "station.gm_assign": "stations",
   "station.gm_unassign": "stations",
   "station.gm_set": "stations",
+  "station.delete": "stations",
   "inventory.grant": "puzzles",
   "inventory.admin_give_piece": "puzzles",
   "puzzle.redeem": "puzzles",
@@ -305,6 +306,12 @@ export function describeAudit(e: AuditEntry, n: AuditNames): AuditRow {
       const ids = Array.isArray(d.user_ids) ? (d.user_ids as string[]) : [];
       return { object: station(target("station")), action: "GMs set", detail: join(ids.length ? ids.map(person).join(", ") : "none", day) };
     }
+    case "station.delete":
+      return {
+        object: str(d.name) || station(target("station")),
+        action: "Station deleted",
+        detail: join(day, num(d.transactions_detached) + num(d.logs_detached) > 0 && "token history kept"),
+      };
     case "inventory.grant":
       return { ...G, action: "Piece given", detail: str(d.item_name) };
     case "inventory.admin_give_piece":

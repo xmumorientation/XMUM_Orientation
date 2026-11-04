@@ -1,8 +1,9 @@
 "use client";
 
-import { Coins, FerrisWheel, ImageIcon, MapPin, ScrollText } from "lucide-react";
+import { Coins, FerrisWheel, FolderOpen, ImageIcon, MapPin, ScrollText } from "lucide-react";
 import { useEffect, useState } from "react";
 
+import { HomeSectionsManager } from "../HomeSectionsManager";
 import { FunfairSection } from "./FunfairSection";
 import { LogSection } from "./LogSection";
 import { OpsShell, type OpsSection } from "./OpsShell";
@@ -17,14 +18,16 @@ import { TokensSection } from "./TokensSection";
 // (Live control, Admin → NFC). Each group's tokens and puzzles are on the
 // Scores tab (GroupScores); the HOGM's own blind-box QR is on Home
 // (StaffHome). Server permissions: migration 0071.
+// Home (the files on each role's Home page, migration 0117) is here too.
 
-type SectionKey = "stations" | "tokens" | "puzzles" | "funfair" | "log";
+type SectionKey = "stations" | "tokens" | "puzzles" | "funfair" | "home" | "log";
 
 const SECTIONS: OpsSection<SectionKey>[] = [
   { key: "stations", label: "Stations", Icon: MapPin },
   { key: "tokens", label: "Tokens", Icon: Coins },
   { key: "puzzles", label: "Puzzles", Icon: ImageIcon },
   { key: "funfair", label: "Funfair", Icon: FerrisWheel },
+  { key: "home", label: "Home", Icon: FolderOpen },
   { key: "log", label: "Log", Icon: ScrollText },
 ];
 
@@ -58,6 +61,7 @@ export function GameControl() {
       {section === "tokens" && <TokensSection />}
       {section === "puzzles" && <PuzzlesSection />}
       {section === "funfair" && <FunfairSection />}
+      {section === "home" && <HomeSectionsManager />}
       {section === "log" && <LogSection />}
     </OpsShell>
   );
