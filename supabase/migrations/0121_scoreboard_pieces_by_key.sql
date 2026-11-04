@@ -1,4 +1,4 @@
--- 0118 returned only a count per group. Home's Day 2 board now opens a group to
+-- 0120 returned only a count per group. Home's Day 2 board now opens a group to
 -- show its three keys with the pieces it holds (like HOGM's Scores), so this
 -- returns one row per piece held. A player still cannot read other groups'
 -- inventory; this is the same data the Scores page shows staff, one row per

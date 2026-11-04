@@ -27,6 +27,15 @@
 .fh-vx #fh-sky-fade stop { stop-color: #07060b; }
 .fh-vx .fh-head { background: linear-gradient(rgba(7, 6, 11, 0.94) 70%, rgba(7, 6, 11, 0)); }
 
+/* Ops crew ([data-role-color] and --fh-role from ROLE_COLOR, set by AppShell): the role name
+   under Home's title, the eyebrows, the role chip and the account avatar (Home and OpsHeader;
+   TopNav in topnav.css) in the role's own colour. The main sky light is the role colour too
+   (staffTheme). GM has none and keeps cyan. */
+.fh-vx .sh-role { color: var(--fh-role, inherit); font-weight: 600; }
+.fh-vx .fh-chip { border-color: var(--fh-role, var(--fh-accent)); color: var(--fh-role, var(--fh-accent)); }
+[data-role-color] .fh-vx .fh-eyebrow { color: var(--fh-role); }
+[data-role-color] .fh-vx .fh-faci-avatar.fh-faci-avatar-plain > span { background: var(--fh-role); color: #001629; }
+
 .fh-vx .fh-mark { filter: drop-shadow(0 0 18px rgba(13, 252, 253, 0.18)); }
 .fh-vx .fh-cell:first-child { border-color: var(--fh-accent); background: rgba(13, 252, 253, 0.07); }
 

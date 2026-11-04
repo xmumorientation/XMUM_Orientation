@@ -28,7 +28,7 @@ import "./game/game-control.css";
 // files (PDF or image) shown on Home to the groups they pick (Freshies, Facilitators,
 // Game Masters, Committee; stored as the roles in each), including the Day 1
 // and Day 2 action plans. One component for Admin → Settings and for Ops
-// (migration 0115 lets only those four write). Files go to the private
+// (migration 0117 lets only those four write). Files go to the private
 // home-files bucket and are opened through signed links.
 
 type Form = { id: string | null; title: string; audiences: HomeAudience[]; file: File | null };

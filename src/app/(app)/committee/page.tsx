@@ -109,7 +109,7 @@ function OpsOverview({ canAssignFacis }: { canAssignFacis: boolean }) {
     { key: "location", label: "Location", Icon: MapPin },
     { key: "freshies", label: "Freshies", Icon: IdCard },
     { key: "facis", label: "Faci & Status", Icon: UserCheck },
-    // Committee reads Ops but does not edit what is on Home (migration 0115).
+    // Committee reads Ops but does not edit what is on Home (migration 0117).
     ...(canAssignFacis ? [{ key: "home" as const, label: "Home", Icon: FolderOpen }] : []),
   ];
 

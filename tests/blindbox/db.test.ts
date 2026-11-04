@@ -740,3 +740,90 @@ describe("0100: the Spot box, no station boxes, Restore only", () => {
     expect((await preview(freshie(4), spot)).status).toBe("ok");
   });
 });
+
+describe("0116: one code per Spot box", () => {
+  let spot: { sellerId: number; version: number };
+  let codes: string[];
+  const claim = (user: string, code: string, key: string | null) => rpc(user, "fn_bb_spot_claim", [code, key]);
+  const list = async () => (await rpc(ADMIN, "fn_bb_spot_codes")) as unknown as { n: number; claimed: boolean; group_name: string | null }[];
+  const codeStrings = async () => (await q("select code from blind_box_spot_codes order by n")).map((r) => String(r.code));
+
+  beforeAll(async () => {
+    // the Day 2 schedule's guard is not in this test database
+    await admin.query("create or replace function public.fn_day2_guard(p_switch text) returns void language sql as $$ select $$");
+    await admin.query("grant execute on function public.fn_day2_guard(text) to authenticated");
+    await admin.query(sql("supabase/migrations/0116_spot_box_codes.sql"));
+    await admin.query(sql("supabase/migrations/0116_spot_box_codes.sql")); // safe to run again
+    const r = await q("select id, qr_version from blind_box_sellers where is_spot");
+    spot = { sellerId: Number(r[0].id), version: Number(r[0].qr_version) };
+    codes = await codeStrings();
+  }, 60_000);
+
+  it("gives every box in the pool its own random code, once", async () => {
+    expect(codes).toHaveLength(3);
+    expect(new Set(codes).size).toBe(3);
+    for (const c of codes) expect(c).toMatch(/^[0-9a-f]{32}$/);
+    expect(await list()).toHaveLength(3);
+    expect(await fails(rpc(GM, "fn_bb_spot_codes"))).toMatch(/PERMISSION_DENIED/);
+  });
+
+  it("the old shared QR no longer works", async () => {
+    expect(await fails(preview(freshie(4), spot))).toMatch(/BOX_UNKNOWN/);
+    const a = Number((await q("select id from blind_box_assignments where seller_id = $1", [spot.sellerId]))[0].id);
+    expect(await fails(buy(freshie(4), spot, a, "old-qr"))).toMatch(/BOX_UNKNOWN/);
+    expect(await fails(rpc(freshie(4), "fn_bb_seller_public", [spot.sellerId, spot.version]))).toMatch(/BOX_UNKNOWN/);
+  });
+
+  it("a code can be claimed once, by any group; the same group cannot claim it twice", async () => {
+    expect((await rpc(freshie(4), "fn_bb_spot_public", [codes[0]])).spot).toBe(true);
+    expect(await fails(rpc(freshie(4), "fn_bb_spot_public", ["0".repeat(32)]))).toMatch(/BOX_UNKNOWN/);
+    const p = await rpc(freshie(4), "fn_bb_spot_preview", [codes[0]]);
+    expect(p.status).toBe("ok");
+    const got = await claim(freshie(4), codes[0], "c1");
+    expect(got.price).toBe(0);
+    expect((await q("select spot from blind_box_claims where id = $1", [got.claim_id]))[0].spot).toBe(true);
+    expect((await rpc(freshie(4), "fn_bb_spot_preview", [codes[0]])).status).toBe("already_from_seller");
+    expect(await fails(claim(freshie(4), codes[0], "c1b"))).toMatch(/BB_ALREADY_FROM_SELLER/);
+    expect((await rpc(freshie(5), "fn_bb_spot_preview", [codes[0]])).status).toBe("code_used");
+    expect(await fails(claim(freshie(5), codes[0], "c1c"))).toMatch(/BB_CODE_USED/);
+    expect((await claim(freshie(4), codes[0], "c1")).duplicate).toBe(true); // a retry
+  });
+
+  it("a group can claim as many different codes as it finds, outside the cap", async () => {
+    await claim(freshie(4), codes[1], "c2");
+    await claim(freshie(4), codes[2], "c3");
+    const mine = await q("select count(*)::int as n from blind_box_claims where group_id = 4 and spot");
+    expect(mine[0].n).toBe(3);
+    const p = await rpc(freshie(4), "fn_bb_spot_preview", [codes[0]]);
+    expect(p.group_claims).toBe(0); // the cap counts bought boxes only
+    expect((await list()).filter((c) => c.claimed)).toHaveLength(3);
+    expect(await fails(rpc(freshie(4), "fn_bb_spot_preview", ["f".repeat(32)]))).toMatch(/BOX_UNKNOWN/);
+  });
+
+  it("only Freshie groups claim, and the Spot being off refuses every code", async () => {
+    expect(await fails(claim(GM, codes[2], null))).toMatch(/FRESHIE_ONLY/);
+    await rpc(ADMIN, "fn_bb_spot_save", [2, 3, 3, false]);
+    expect(await fails(rpc(freshie(6), "fn_bb_spot_preview", [codes[2]]))).toMatch(/BOX_UNKNOWN/);
+    await rpc(ADMIN, "fn_bb_spot_save", [2, 3, 3, true]);
+  });
+
+  it("the pool is the number of codes: growing adds, shrinking removes unclaimed ones, codes never change", async () => {
+    await rpc(ADMIN, "fn_bb_spot_save", [2, 3, 5, true]);
+    const grown = await codeStrings();
+    expect(grown).toHaveLength(5);
+    expect(grown.slice(0, 3)).toEqual(codes);
+    await rpc(ADMIN, "fn_bb_spot_save", [2, 3, 4, true]);
+    expect(await codeStrings()).toEqual(grown.slice(0, 4));
+    expect(await fails(rpc(ADMIN, "fn_bb_spot_save", [2, 3, 2, true]))).toMatch(/BB_QTY_BELOW_OPENED/);
+    expect(await codeStrings()).toHaveLength(4);
+  });
+
+  it("Restore boxes frees every code and keeps the codes", async () => {
+    await setConfig("rehearsal_mode", true);
+    await rpc(ADMIN, "fn_bb_reset", ["openings", "RESET", false]);
+    await setConfig("rehearsal_mode", false);
+    expect((await list()).filter((c) => c.claimed)).toHaveLength(0);
+    expect((await codeStrings()).slice(0, 3)).toEqual(codes);
+    expect((await rpc(freshie(5), "fn_bb_spot_preview", [codes[0]])).status).toBe("ok");
+  });
+});

@@ -12,6 +12,8 @@ import {
   SuccessBanner,
 } from "@/components/ui";
 import { useStationOccupants, type Occupant } from "@/components/staff/useStationOccupants";
+import { useDay2State } from "@/components/useDay2State";
+import { tierClosedText } from "@/lib/day2";
 import { Dialog, DialogContent } from "@/components/ui/Dialog";
 import { useConfig } from "@/components/useConfig";
 import { readAdminDayFilter } from "@/lib/adminDayFilter";
@@ -166,6 +168,7 @@ export default function AdminStationsPage() {
   // The group playing at each station (a GM's Day 2 Start checks it in). Clear
   // checks out a group a GM's phone could not (no battery, no network).
   const occupants = useStationOccupants();
+  const day2 = useDay2State();
   async function clearGroup(s: Station, o: Occupant) {
     if (!window.confirm(`Clear ${o.name} from ${s.name}? It leaves the station on every map. Set the status too if it still says In Progress.`)) return;
     setError(null);
@@ -306,7 +309,7 @@ export default function AdminStationsPage() {
         .eq("station_id", s.id),
     ]);
     if ((txCount ?? 0) + (logCount ?? 0) > 0) {
-      // Rehearsal mode: delete anyway (fn_delete_station_with_history, 0116).
+      // Rehearsal mode: delete anyway (fn_delete_station_with_history, 0118).
       if (
         rehearsal &&
         window.confirm(
@@ -458,6 +461,11 @@ Groups checked in here will lose that check-in.`)) return;
                     </td>
                     <td className="px-4 py-2.5">
                       {s.day === 2 ? RISK_TIER_META[s.risk_tier].label : "—"}
+                      {s.day === 2 && tierClosedText(day2, s.risk_tier, day2.state) && (
+                        <span className="ml-2 rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-700">
+                          {tierClosedText(day2, s.risk_tier, day2.state)}
+                        </span>
+                      )}
                     </td>
                     <td className="px-4 py-2.5 font-bold tabular-nums">
                       {s.day === 2 ? `−${s.entry_cost}` : "—"}

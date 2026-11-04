@@ -1,47 +1,56 @@
 "use client";
 
 import { Download } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { Card } from "@/components/ui";
-import { groupQrPng } from "@/lib/group-qr";
+import { spotCodeCard } from "@/lib/spot-card";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { cn, friendlyError } from "@/lib/utils";
 
 import type { TabProps } from "./TypesTab";
 
-const SPOT_COLOR = "#FE06AB"; // the Welcome page's pink
+type SpotCode = { n: number; claimed: boolean; group_name: string | null; claimed_at: string | null; url: string };
 
-// The Spot box: ONE QR that never changes. Print it as many times as you like
-// and hide the copies; a group that finds one gets one free box (once per
-// group, outside the group limit). Range, pool and on/off change here without
-// touching the QR (fn_bb_spot_save).
+// The Spot box: ONE CODE PER BOX (migration 0116). Each box in the pool has
+// its own QR, made once and never changed. Print the sheet once and hide the
+// codes; a box can be claimed once, by any group, and a group can claim as many
+// as it finds (free, outside the group limit). Range, pool size and on/off
+// change here without touching any code (fn_bb_spot_save); a bigger pool adds
+// codes, a smaller one removes unclaimed ones, highest number first.
 export function SpotTab({ data, onError, onNotice }: TabProps) {
   const supabase = useMemo(() => supabaseBrowser(), []);
   const spot = data.spot;
   const a = spot?.assignment;
-  const url = a ? data.links[a.id]?.url : undefined;
 
   const [form, setForm] = useState<{ min: string; max: string; pool: string; active: boolean } | null>(null);
   const [busy, setBusy] = useState(false);
-  const [png, setPng] = useState<string | null>(null);
+  const [codes, setCodes] = useState<SpotCode[] | null>(null);
+  const [printing, setPrinting] = useState(false);
 
   const f = form ?? {
     min: String(spot?.type.min_tokens ?? 1),
     max: String(spot?.type.max_tokens ?? 3),
-    pool: String(a?.quantity ?? 20),
+    pool: String(a?.quantity ?? 24),
     active: a?.active ?? true,
   };
   const set = (k: keyof typeof f, v: string | boolean) => setForm({ ...f, [k]: v });
 
+  const loadCodes = useCallback(async () => {
+    if (!spot) return setCodes([]);
+    try {
+      const res = await fetch("/api/blindbox/spot-links", { cache: "no-store" });
+      const json = (await res.json()) as { codes?: SpotCode[]; error?: string };
+      if (!res.ok || !json.codes) return onError(`Couldn't load the codes: ${json.error ?? `HTTP ${res.status}`}`);
+      setCodes(json.codes);
+    } catch (e) {
+      onError(`Couldn't load the codes: ${String(e)}`);
+    }
+  }, [spot, onError]);
+
   useEffect(() => {
-    if (!url) return;
-    let cancel = false;
-    groupQrPng("VORTEXA BLIND BOX", url, SPOT_COLOR).then((file) => !cancel && setPng(file));
-    return () => {
-      cancel = true;
-    };
-  }, [url]);
+    void loadCodes();
+  }, [loadCodes, a?.quantity, a?.opened]);
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
@@ -55,39 +64,84 @@ export function SpotTab({ data, onError, onNotice }: TabProps) {
     });
     setBusy(false);
     if (error) return onError(friendlyError(error));
-    onNotice(spot ? "Spot saved. The QR is the same." : "Spot set up. Download its QR to print.");
+    onNotice(spot ? "Spot saved. The codes are the same." : "Spot set up. Print its codes.");
     setForm(null);
     data.reload();
+    void loadCodes();
   }
 
-  function download() {
-    if (!png) return;
+  async function downloadOne(c: SpotCode) {
+    const png = await spotCodeCard(c.n, c.url);
     const link = document.createElement("a");
     link.href = png;
-    link.download = "blind-box-spot.png";
+    link.download = `hidden-blind-box-${String(c.n).padStart(2, "0")}.png`;
     link.click();
+  }
+
+  // Every code as its own PNG (hidden-blind-box-01.png, 02, ...), one after
+  // another. The browser may ask once to allow multiple downloads.
+  async function downloadAll() {
+    if (!codes?.length) return;
+    setPrinting(true);
+    try {
+      for (const c of codes) {
+        await downloadOne(c);
+        await new Promise((r) => setTimeout(r, 350));
+      }
+      onNotice(`Downloaded ${codes.length} codes.`);
+    } catch (e) {
+      onError(`Couldn't make the codes: ${String(e)}`);
+    } finally {
+      setPrinting(false);
+    }
   }
 
   const claimed = a?.opened ?? 0;
 
   return (
     <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)]">
-      <Card className="space-y-3 text-center">
-        {png ? (
-          // eslint-disable-next-line @next/next/no-img-element -- local data URL
-          <img src={png} alt="Spot box QR card" className="mx-auto w-full max-w-[16rem] rounded-[1.4rem]" />
-        ) : (
-          <div className="mx-auto grid aspect-[4/5] w-full max-w-[16rem] place-items-center rounded-[1.4rem] bg-paper-200 px-6 text-sm text-ink-faint">
-            {spot ? "Making the QR…" : "The QR appears once the Spot is set up."}
-          </div>
-        )}
-        <button type="button" disabled={!png} onClick={download} className="btn-primary w-full gap-1.5 active:scale-[0.98]">
+      <Card className="space-y-3">
+        <div>
+          <h2 className="font-semibold">Codes to Print</h2>
+          <p className="text-sm text-ink-faint">
+            One code for each box in the pool. Print them once and hide them: each code can be claimed once.
+          </p>
+        </div>
+        <button
+          type="button"
+          disabled={!codes?.length || printing}
+          onClick={downloadAll}
+          className="btn-primary w-full gap-1.5 active:scale-[0.98]"
+        >
           <Download size={16} strokeWidth={1.75} aria-hidden />
-          Download to Print
+          {printing ? "Downloading…" : `Download All ${codes?.length ?? ""} Codes`.replace("  ", " ")}
         </button>
         <p className="text-xs text-ink-faint">
-          This QR never changes. Print as many copies as you like and hide them around campus.
+          The codes never change. Each code downloads as its own PNG (hidden-blind-box-01.png and so on). If you lose one, download just that one again from the list.
         </p>
+
+        {codes === null ? (
+          <p className="text-sm text-ink-faint">{spot ? "Loading the codes…" : "The codes appear once the Spot is set up."}</p>
+        ) : (
+          <ul className="max-h-80 divide-y divide-paper-200 overflow-auto rounded-xl border border-paper-200 text-sm">
+            {codes.map((c) => (
+              <li key={c.n} className="flex items-center justify-between gap-2 px-3 py-2">
+                <span className="font-mono font-bold tabular-nums">#{String(c.n).padStart(2, "0")}</span>
+                <span className={cn("min-w-0 flex-1 truncate text-xs", c.claimed ? "font-semibold" : "text-ink-faint")}>
+                  {c.claimed ? `Claimed by ${c.group_name ?? "a group"}` : "Not found yet"}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => downloadOne(c)}
+                  className="rounded-lg p-1.5 text-ink-faint hover:bg-paper-100"
+                  aria-label={`Download code ${c.n}`}
+                >
+                  <Download size={16} strokeWidth={1.75} aria-hidden />
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
       </Card>
 
       <Card>
@@ -95,8 +149,8 @@ export function SpotTab({ data, onError, onNotice }: TabProps) {
           <div>
             <h2 className="font-semibold">{spot ? "Spot Box" : "Set Up the Spot Box"}</h2>
             <p className="text-sm text-ink-faint">
-              A group that finds a copy scans it and claims one free box. Each group gets at most one Spot box, and it
-              doesn&apos;t count toward their limit of {data.cap}.
+              A group that finds a code scans it and claims that free box. A group can claim as many as it finds, and they
+              don&apos;t count toward its limit of {data.cap}.
             </p>
           </div>
 
@@ -143,13 +197,14 @@ export function SpotTab({ data, onError, onNotice }: TabProps) {
           </div>
           <p className="text-xs text-ink-faint">
             A box opens for a random number of tokens from min to max. New numbers apply to boxes claimed from now on.
-            The pool can&apos;t go below what&apos;s already claimed ({claimed}).
+            The pool is the number of codes: a bigger pool adds codes, a smaller one removes unclaimed ones (it can&apos;t
+            go below what&apos;s already claimed: {claimed}).
           </p>
 
           <label className="flex items-center justify-between gap-3 rounded-xl bg-paper-100 px-3 py-2.5 text-sm">
             <span>
               <b>Spot Is On</b>
-              <span className="block text-xs text-ink-faint">Off: scanning a copy says the code isn&apos;t active.</span>
+              <span className="block text-xs text-ink-faint">Off: scanning a code says it isn&apos;t active.</span>
             </span>
             <button
               type="button"

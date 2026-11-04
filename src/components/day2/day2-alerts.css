@@ -1,0 +1,297 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   Day 2 alerts (Day2Alerts.tsx): toasts, the funfair card, the final stretch
+   ticker, the heartbeat on the screen edges, and the final stretch parts of
+   the phase card and the tab bar. Fixed event colours (the toast's --d2-accent,
+   a key's --d2-key); buttons that follow the group use --fh-blue / --fh-on-blue.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Toasts: one at a time, over the top of the screen ───────────────────── */
+.d2-toasts {
+  position: fixed; z-index: 60; left: 12px; right: 12px; top: calc(10px + env(safe-area-inset-top, 0px));
+  display: flex; justify-content: center; pointer-events: none;
+}
+.d2-toast {
+  --d2-accent: #fe06ab;
+  position: relative; pointer-events: auto; overflow: hidden; box-sizing: border-box;
+  width: 100%; max-width: 440px; display: flex; align-items: flex-start; gap: 12px;
+  padding: 14px 6px 16px 14px; border-radius: 20px; color: #eef5ff;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--d2-accent) 18%, #0b0a1e) 0%, #0b0a1e 60%, #070b1f 100%);
+  border: 1px solid color-mix(in srgb, var(--d2-accent) 55%, transparent);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55), 0 0 36px color-mix(in srgb, var(--d2-accent) 32%, transparent);
+  animation: d2-toast-in 0.6s cubic-bezier(0.2, 1.25, 0.35, 1) both;
+}
+.d2-toast[data-leaving] { animation: d2-toast-out 0.28s ease-in both; }
+@keyframes d2-toast-in { from { transform: translateY(-140%) scale(0.96); opacity: 0; } }
+@keyframes d2-toast-out { to { transform: translateY(-140%) scale(0.96); opacity: 0; } }
+/* A sheen sweeps across as it lands. */
+.d2-toast::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none; transform: translateX(-120%);
+  background: linear-gradient(105deg, transparent 30%, color-mix(in srgb, var(--d2-accent) 30%, transparent) 50%, transparent 70%);
+  animation: d2-sheen 1.1s 0.45s ease-out both;
+}
+@keyframes d2-sheen { to { transform: translateX(120%); } }
+.d2-toast-icon {
+  position: relative; flex: none; width: 48px; height: 48px; box-sizing: border-box; border-radius: 14px;
+  display: flex; align-items: center; justify-content: center; color: var(--d2-accent);
+  background: color-mix(in srgb, var(--d2-accent) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--d2-accent) 40%, transparent);
+}
+.d2-toast-body { position: relative; flex: 1; min-width: 0; }
+.d2-toast-eb {
+  display: block; font-family: var(--font-mono), "JetBrains Mono", ui-monospace, monospace;
+  font-size: 10.5px; letter-spacing: 0.2em; text-transform: uppercase;
+  color: color-mix(in srgb, var(--d2-accent) 70%, white);
+}
+.d2-toast-title {
+  display: block; margin-top: 4px; font-family: var(--font-vx-slab), Georgia, serif; font-weight: 400;
+  font-size: 20px; line-height: 1.1; color: #fff;
+}
+.d2-toast-text { margin: 4px 0 0; font-size: 13px; line-height: 1.4; color: #d9e4f5; }
+.d2-toast-crew { display: flex; gap: 6px; margin-top: 8px; }
+.d2-toast-crew span {
+  font-family: var(--font-mono), "JetBrains Mono", ui-monospace, monospace; font-size: 10.5px; font-weight: 700;
+  letter-spacing: 0.12em; padding: 3px 8px; border-radius: 999px; color: var(--chip);
+  border: 1px solid var(--chip); background: color-mix(in srgb, var(--chip) 14%, transparent);
+}
+.d2-toast-action {
+  display: inline-flex; align-items: center; min-height: 36px; margin-top: 10px; padding: 0 14px; border-radius: 999px;
+  font-weight: 700; font-size: 13px; text-decoration: none; color: #fff;
+  border: 1px solid color-mix(in srgb, var(--d2-accent) 60%, transparent);
+  background: color-mix(in srgb, var(--d2-accent) 16%, transparent);
+}
+.d2-toast-close {
+  position: relative; flex: none; width: 44px; height: 44px; margin-top: -8px; border: 0; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center; background: transparent; color: #c4d6ee; cursor: pointer;
+}
+.d2-toast-close:focus-visible, .d2-toast-action:focus-visible { outline: 2px solid var(--d2-accent); outline-offset: 2px; }
+/* Time left before it goes (Day2Alerts' TOAST_MS). */
+.d2-toast-bar {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 3px; transform-origin: left;
+  background: var(--d2-accent); animation: d2-bar 8s linear both;
+}
+@keyframes d2-bar { to { transform: scaleX(0); } }
+
+/* Hard stations: the 3-bar difficulty meter fills one bar at a time. */
+.d2-meter { display: flex; align-items: flex-end; gap: 4px; height: 24px; }
+.d2-meter i {
+  width: 7px; border-radius: 2px; background: color-mix(in srgb, var(--d2-accent) 22%, #1a1030);
+  animation: d2-meter 0.28s ease-out both;
+}
+.d2-meter i:nth-child(1) { height: 10px; animation-delay: 0.6s; }
+.d2-meter i:nth-child(2) { height: 17px; animation-delay: 0.8s; }
+.d2-meter i:nth-child(3) { height: 24px; animation-delay: 1s; }
+@keyframes d2-meter { to { background: var(--d2-accent); box-shadow: 0 0 10px var(--d2-accent); } }
+
+/* A projector lit: its lamp flickers on in its key's colour. */
+.d2-toast[data-kind="lit"] .d2-toast-icon svg {
+  fill: var(--d2-accent); filter: drop-shadow(0 0 8px var(--d2-accent)); animation: d2-flicker 1.2s 0.3s both;
+}
+@keyframes d2-flicker { 0% { opacity: 0.2; } 15% { opacity: 1; } 25% { opacity: 0.3; } 40% { opacity: 1; } 52% { opacity: 0.5; } 100% { opacity: 1; } }
+
+/* ── The funfair card: a marquee sign that drops in from the top ──────────── */
+.d2-card-overlay {
+  position: fixed; inset: 0; z-index: 50; background: rgba(2, 4, 12, 0.62);
+  -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); animation: d2-fade-in 0.35s ease-out both;
+}
+.d2-card-overlay[data-state="closed"] { animation: d2-fade-out 0.3s ease-in both; }
+@keyframes d2-fade-in { from { opacity: 0; } }
+@keyframes d2-fade-out { to { opacity: 0; } }
+.d2-card {
+  --bulb: #ffe39a;
+  --bulb-glow: rgba(255, 200, 80, 0.45);
+  position: fixed; z-index: 51; left: 50%; top: calc(14px + env(safe-area-inset-top, 0px));
+  width: min(362px, calc(100vw - 24px));
+  max-height: calc(100dvh - 28px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  box-sizing: border-box; display: flex; padding: 10px; border-radius: 12px; outline: none; color: #eef5ff;
+  background: #241005; border: 1px solid rgba(255, 205, 110, 0.55);
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6), 0 0 60px rgba(252, 158, 61, 0.35);
+  transform: translateX(-50%); transform-origin: 50% 0;
+  animation: d2-drop 0.95s cubic-bezier(0.2, 1, 0.3, 1) both;
+}
+.d2-card[data-state="closed"] { animation: d2-lift 0.4s ease-in both; }
+@keyframes d2-drop {
+  0% { transform: translateX(-50%) translateY(-112%) rotate(-3deg); }
+  55% { transform: translateX(-50%) translateY(3%) rotate(1.6deg); }
+  75% { transform: translateX(-50%) translateY(-1%) rotate(-0.7deg); }
+  100% { transform: translateX(-50%); }
+}
+/* Closing, it folds up into the ticker. */
+@keyframes d2-lift { to { transform: translateX(-50%) translateY(-4%) scale(0.25, 0.06); opacity: 0; } }
+
+/* The bulbs: two sets that power up, then flash in turn. */
+.d2-strip { position: absolute; pointer-events: none; }
+.d2-strip-t, .d2-strip-b { left: 10px; right: 10px; height: 10px; }
+.d2-strip-t { top: 0; }
+.d2-strip-b { bottom: 0; }
+.d2-strip-l, .d2-strip-r { top: 0; bottom: 0; width: 10px; }
+.d2-strip-l { left: 0; }
+.d2-strip-r { right: 0; }
+.d2-strip::before, .d2-strip::after {
+  content: ""; position: absolute; inset: 0; opacity: 0; background-repeat: space;
+  animation: d2-power 0.9s 0.55s both, d2-alt 1s 1.45s steps(1, end) infinite;
+}
+.d2-strip::after { animation-delay: 0.7s, 1.95s; }
+.d2-strip-t::before, .d2-strip-b::before {
+  background-image: radial-gradient(circle at 7px 5px, var(--bulb) 0 2.4px, var(--bulb-glow) 3px, transparent 5px);
+  background-size: 28px 10px;
+}
+.d2-strip-t::after, .d2-strip-b::after {
+  background-image: radial-gradient(circle at 21px 5px, var(--bulb) 0 2.4px, var(--bulb-glow) 3px, transparent 5px);
+  background-size: 28px 10px;
+}
+.d2-strip-l::before, .d2-strip-r::before {
+  background-image: radial-gradient(circle at 5px 7px, var(--bulb) 0 2.4px, var(--bulb-glow) 3px, transparent 5px);
+  background-size: 10px 28px;
+}
+.d2-strip-l::after, .d2-strip-r::after {
+  background-image: radial-gradient(circle at 5px 21px, var(--bulb) 0 2.4px, var(--bulb-glow) 3px, transparent 5px);
+  background-size: 10px 28px;
+}
+@keyframes d2-power { 0% { opacity: 0; } 18% { opacity: 1; } 30% { opacity: 0.15; } 46% { opacity: 1; } 58% { opacity: 0.35; } 100% { opacity: 1; } }
+@keyframes d2-alt { 0% { opacity: 1; } 50% { opacity: 0.16; } }
+
+.d2-card-in {
+  position: relative; flex: 1; min-height: 0; overflow-y: auto; box-sizing: border-box;
+  display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 16px 16px 14px;
+  border-radius: 6px; text-align: center;
+  background: radial-gradient(120% 60% at 50% 0%, rgba(252, 158, 61, 0.3), transparent 62%), linear-gradient(#1c0c22, #0d0718);
+  box-shadow: inset 0 0 0 1px rgba(255, 210, 120, 0.25);
+}
+.d2-card-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; }
+.d2-card-eb, .d2-card-left {
+  font-family: var(--font-mono), "JetBrains Mono", ui-monospace, monospace; text-transform: uppercase; white-space: nowrap;
+}
+.d2-card-eb { font-size: 10.5px; letter-spacing: 0.2em; color: #fcae5c; }
+.d2-card-left {
+  font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums; color: #ff7b88; padding: 4px 8px;
+  border-radius: 999px; border: 1px solid rgba(255, 59, 79, 0.5); background: rgba(255, 59, 79, 0.12);
+}
+.d2-card-title { margin: 0; display: flex; flex-direction: column; align-items: center; line-height: 1; font-weight: 400; }
+.d2-card-the {
+  font-family: var(--font-vx-slab), Georgia, serif; text-transform: uppercase;
+  font-size: 15px; letter-spacing: 0.24em; color: #ffd9a8;
+}
+.d2-card-mark {
+  font-family: var(--font-vx-display), Georgia, serif; font-size: 64px; line-height: 1.02; padding: 0 0.08em 0.1em;
+  background: linear-gradient(90deg, #ffe27a 0%, #fc9e3d 25%, #fe06ab 50%, #fc9e3d 75%, #ffe27a 100%);
+  background-size: 200% 100%; -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(0 6px 24px rgba(252, 158, 61, 0.45)); animation: d2-shimmer 4s linear infinite;
+}
+@keyframes d2-shimmer { to { background-position: 200% 0; } }
+.d2-card-desc { margin: 0; font-size: 13.5px; line-height: 1.45; color: #ead9ef; }
+
+.d2-tiles { list-style: none; margin: 0; padding: 0; width: 100%; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.d2-tile {
+  --d2-key: #ffd66b;
+  min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 10px 6px;
+  border-radius: 14px; border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(255, 255, 255, 0.04);
+}
+.d2-tile[data-focus] {
+  border-color: color-mix(in srgb, var(--d2-key) 70%, transparent);
+  background: color-mix(in srgb, var(--d2-key) 12%, transparent);
+}
+.d2-tile-key { width: 48px; height: 48px; margin-bottom: 4px; }
+.d2-tile-name {
+  max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-family: var(--font-vx-slab), Georgia, serif; font-weight: 400; font-size: 15px; color: var(--d2-key);
+}
+.d2-tile-zone { font-size: 10.5px; color: #c2b4d3; }
+.d2-tile-state {
+  margin-top: 4px; font-family: var(--font-mono), "JetBrains Mono", ui-monospace, monospace; font-size: 10px;
+  font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #a99cbc;
+}
+.d2-tile[data-focus] .d2-tile-state { color: color-mix(in srgb, var(--d2-key) 55%, white); }
+.d2-card-next {
+  --d2-key: #fc9e3d;
+  width: 100%; box-sizing: border-box; text-align: left; padding: 10px 12px; border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--d2-key) 45%, transparent);
+  background: color-mix(in srgb, var(--d2-key) 10%, transparent);
+}
+.d2-card-next b { display: block; font-size: 14px; color: #fff; }
+.d2-card-next span { display: block; margin-top: 2px; font-size: 12.5px; line-height: 1.35; color: #ecd9e8; }
+.d2-card-actions { display: flex; gap: 10px; width: 100%; margin-top: auto; padding-top: 4px; }
+.d2-card-actions .fh-btn-primary { flex: 1; }
+.d2-card-actions .fh-btn-ghost { color: #f6e7d2; border-color: rgba(255, 214, 160, 0.4); }
+
+/* ── The heartbeat on the screen edges (players, while the funfair is open) ─ */
+/* 1: very faint. 2: a projector is lit. 3: two are. Gone once all three are. */
+.d2-beat { position: fixed; inset: 0; z-index: 46; pointer-events: none; }
+.d2-beat[data-level="1"] {
+  box-shadow: inset 0 0 0 1px rgba(255, 59, 79, 0.2), inset 0 0 36px rgba(255, 40, 60, 0.18);
+  animation: d2-beat-soft 2.6s ease-in-out infinite;
+}
+.d2-beat[data-level="2"] {
+  box-shadow: inset 0 0 0 1.5px rgba(255, 59, 79, 0.5), inset 0 0 70px rgba(255, 40, 60, 0.42);
+  animation: d2-beat 1.5s ease-in-out infinite;
+}
+.d2-beat[data-level="3"] {
+  box-shadow: inset 0 0 0 2px rgba(255, 59, 79, 0.75), inset 0 0 110px rgba(255, 40, 60, 0.6);
+  animation: d2-beat 1.05s ease-in-out infinite;
+}
+@keyframes d2-beat-soft { 0%, 100% { opacity: 0.35; } 50% { opacity: 0.8; } }
+@keyframes d2-beat { 0%, 100% { opacity: 0.3; } 10% { opacity: 1; } 22% { opacity: 0.4; } 32% { opacity: 0.85; } 50% { opacity: 0.3; } }
+
+/* ── The final stretch ticker, under the header on every page ─────────────── */
+.d2-ticker { position: relative; z-index: 39; flex: none; }
+.d2-ticker-btn {
+  display: block; width: 100%; height: 30px; overflow: hidden; padding: 0; border: 0; cursor: pointer;
+  border-block: 1px solid rgba(255, 59, 79, 0.35); color: #ffd3d9; text-decoration: none;
+  background: linear-gradient(90deg, rgba(120, 8, 26, 0.92), rgba(70, 6, 30, 0.92));
+}
+.d2-ticker-btn:focus-visible { outline: 2px solid #ff3b4f; outline-offset: -2px; }
+.d2-ticker-track { display: flex; width: max-content; height: 100%; align-items: center; animation: d2-tick 26s linear infinite; }
+.d2-ticker-line {
+  padding-right: 28px; white-space: nowrap; font-family: var(--font-mono), "JetBrains Mono", ui-monospace, monospace;
+  font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
+}
+.d2-ticker-dot {
+  display: inline-block; width: 7px; height: 7px; margin-right: 8px; border-radius: 50%; vertical-align: 1px;
+  background: #ff3b4f; box-shadow: 0 0 8px #ff3b4f; animation: d2-blink 1s ease-in-out infinite;
+}
+@keyframes d2-tick { to { transform: translateX(-50%); } }
+@keyframes d2-blink { 50% { opacity: 0.15; } }
+@media (max-width: 1023px) {
+  /* On a phone, Home carries its own ticker in its fixed header. */
+  .d2-ticker[data-place="shell-home"] { display: none; }
+  /* Home's fixed header grows by the ticker, so its stops start lower. */
+  .fh[data-ticker] { --fh-top: calc(126px + env(safe-area-inset-top, 0px)); }
+}
+
+/* ── The phase card in the final stretch (data-endgame paints it red) ────── */
+.d2-final-banner {
+  margin-bottom: 12px; font-weight: 900; font-size: clamp(26px, 8vw, 48px); line-height: 1; letter-spacing: 0.06em;
+  text-align: center; text-transform: uppercase; color: #ff2d3d; text-shadow: 0 0 18px rgba(255, 45, 61, 0.7);
+  animation: d2-blink 1.6s ease-in-out infinite;
+}
+.d2-litrow {
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;
+  margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255, 59, 79, 0.3);
+}
+.d2-litrow-label {
+  font-family: var(--font-mono), "JetBrains Mono", ui-monospace, monospace; font-size: 10.5px;
+  letter-spacing: 0.16em; text-transform: uppercase; color: #ffb3bc;
+}
+.d2-litrow ul { list-style: none; margin: 0; padding: 0; display: flex; gap: 12px; }
+.d2-litrow li {
+  display: flex; align-items: center; gap: 3px; color: #9a90ad;
+  font-family: var(--font-mono), "JetBrains Mono", ui-monospace, monospace; font-size: 11px; font-weight: 700;
+}
+.d2-litrow li[data-lit] { color: var(--d2-key); }
+.d2-litrow li[data-lit] svg { fill: var(--d2-key); filter: drop-shadow(0 0 5px var(--d2-key)); }
+
+/* ── Tab bar: a dot on Map while the funfair is open ──────────────────────── */
+.fh-tab[data-dot] { position: relative; }
+.fh-tab[data-dot]::after {
+  content: ""; position: absolute; top: 9px; left: calc(50% + 7px); width: 9px; height: 9px; border-radius: 50%;
+  background: #ffb347; animation: d2-ping 1.4s ease-out infinite;
+}
+@keyframes d2-ping { 0% { box-shadow: 0 0 0 0 rgba(255, 179, 71, 0.75); } 100% { box-shadow: 0 0 0 9px rgba(255, 179, 71, 0); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .d2-toast, .d2-toast[data-leaving], .d2-toast::before, .d2-meter i, .d2-toast[data-kind="lit"] .d2-toast-icon svg,
+  .d2-card, .d2-card[data-state="closed"], .d2-card-overlay, .d2-card-mark, .d2-ticker-track, .d2-ticker-dot,
+  .d2-final-banner, .d2-beat, .fh-tab[data-dot]::after { animation: none; }
+  .d2-toast::before { display: none; }
+  .d2-meter i { background: var(--d2-accent); }
+  .d2-strip::before, .d2-strip::after { animation: none; opacity: 1; }
+}

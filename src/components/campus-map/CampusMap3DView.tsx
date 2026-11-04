@@ -32,6 +32,7 @@ import {
 import {
   AREA_PLACES,
   CONTENT_BOUNDS,
+  TENNIS_PLAY_AREAS,
   areaPlace,
   clampToSlab,
   labelPoint,
@@ -136,6 +137,7 @@ type Taps = {
   station: (s: Station) => void;
   badge: (area: string) => void;
   building: (area: string) => boolean;
+  tennis: (stationArea: string) => boolean;
   group: (id: number) => void;
   /** Accuracy check: the ground was tapped here (world x, z). */
   ground: (x: number, z: number) => void;
@@ -207,6 +209,11 @@ function SceneMarks({
             } else if (taps.building(p.area)) taps.used(e);
           }}
         />
+      ))}
+      {!checking && TENNIS_PLAY_AREAS.map(place => (
+        <HitArea key={`play-${place.area}`} place={place} height={place.height} onTap={event => {
+          if (taps.tennis(place.area)) taps.used(event);
+        }} />
       ))}
       <CameraRig flight={flight} />
     </>
@@ -364,6 +371,7 @@ export function CampusMap3DView({
   const [flight, setFlight] = useState<Flight | null>(null);
   // The light switch: null is Auto (by the time of day). It lasts until Auto is picked again or the page reloads.
   const [look, setLook] = useState<Mode | null>(null);
+  const [tennisStationArea, setTennisStationArea] = useState(TENNIS_AREA);
   // Accuracy check: where Admin last tapped (world x, z).
   const [checkTap, setCheckTap] = useState<[number, number] | null>(null);
   const [sceneReady, setSceneReady] = useState(false);
@@ -664,9 +672,10 @@ export function CampusMap3DView({
     return place ? [{ place, color: accent }] : [];
   });
 
-  // The court footprint and markers all open the same card while tennis is enabled.
+  // Only the lower game-entry blocks open Tennis; upper courts and their markers show stations.
   function openTennis(area: string) {
-    if (area !== TENNIS_AREA || !tennis.loaded) return false;
+    if (!tennis.loaded) return false;
+    setTennisStationArea(area);
     data.setOpenBuilding(null);
     data.setClusterArea(null);
     data.setSelected(null);
@@ -677,13 +686,16 @@ export function CampusMap3DView({
 
   const taps: Taps = {
     used: (e) => (usedAt.current = e.nativeEvent.timeStamp),
+    tennis: openTennis,
     station: (s) => {
-      if (openTennis(s.area)) return;
+      if (s.area === TENNIS_AREA || s.area === "Volleyball Court") {
+        taps.badge(s.area);
+        return;
+      }
       data.setSelected((current) => (current?.id === s.id ? null : s));
       onStationTap?.(s);
     },
     badge: (area) => {
-      if (openTennis(area)) return;
       tennis.hideCard();
       data.setSelected(null);
       if (canManageStations) {
@@ -693,10 +705,12 @@ export function CampusMap3DView({
       data.setClusterArea((current) => (!fullscreen && current === area ? null : area));
     },
     // A building or court itself: the same as its marker, or Admin's building panel. False when the tap does
-    // nothing here (the card then opens full screen, as a tap on the 2D map's picture does). While the tennis game
-    // is open, the tennis court opens its card (Play), in full screen.
+    // nothing here (the card then opens full screen, as a tap on the 2D map's picture does).
     building: (area) => {
-      if (openTennis(area)) return true;
+      if (area === TENNIS_AREA || area === "Volleyball Court") {
+        taps.badge(area);
+        return true;
+      }
       if (canManageStations) {
         toggleBuilding(area);
         return true;
@@ -945,7 +959,7 @@ export function CampusMap3DView({
                         canManageStations
                           ? () => {
                               tennis.hideCard();
-                              toggleBuilding(TENNIS_AREA);
+                              toggleBuilding(tennisStationArea);
                             }
                           : undefined
                       }

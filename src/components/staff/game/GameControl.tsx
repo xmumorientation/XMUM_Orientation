@@ -18,7 +18,7 @@ import { TokensSection } from "./TokensSection";
 // (Live control, Admin → NFC). Each group's tokens and puzzles are on the
 // Scores tab (GroupScores); the HOGM's own blind-box QR is on Home
 // (StaffHome). Server permissions: migration 0071.
-// Home (the files on each role's Home page, migration 0115) is here too.
+// Home (the files on each role's Home page, migration 0117) is here too.
 
 type SectionKey = "stations" | "tokens" | "puzzles" | "funfair" | "home" | "log";
 

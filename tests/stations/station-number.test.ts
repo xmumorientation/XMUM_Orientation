@@ -1,4 +1,4 @@
-// Migration 0117: a new station gets the next free station_number for its day.
+// Migration 0119: a new station gets the next free station_number for its day.
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -8,7 +8,7 @@ import { Client } from "pg";
 import { afterAll, beforeAll, expect, it } from "vitest";
 
 const read = (p: string) => readFileSync(path.join(path.resolve(__dirname, "../.."), p), "utf8");
-const PORT = 54332;
+const PORT = 54352;
 let pg: EmbeddedPostgres;
 let dataDir: string;
 let db: Client;
@@ -48,9 +48,9 @@ it("0061 alone collides on a non-numeric floor (the bug)", async () => {
   await expect(add("A1-ny")).rejects.toThrow(/stations_number_day_unique/);
 });
 
-it("0117 numbers by day, whatever the code says", async () => {
+it("0119 numbers by day, whatever the code says", async () => {
   await db.query("truncate stations");
-  await db.query(read("supabase/migrations/0117_station_number_next_free.sql"));
+  await db.query(read("supabase/migrations/0119_station_number_next_free.sql"));
   expect(await add("A1-1")).toBe(1);
   expect(await add("A1-ny")).toBe(2);
   expect(await add("A2-1")).toBe(3);

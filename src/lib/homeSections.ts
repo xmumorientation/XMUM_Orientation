@@ -3,7 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { UserRole } from "./types";
 
 /** Files (PDF or image) that HOF, OC, HOGM and Admin put on the Home page of the
- *  roles they pick (migration 0115). Managed in Admin → Settings → Home Sections
+ *  roles they pick (migration 0117). Managed in Admin → Settings → Home Sections
  *  and in Ops → Home Sections; shown by components/HomeSections.tsx. */
 export type HomeSectionKind = "image" | "pdf";
 

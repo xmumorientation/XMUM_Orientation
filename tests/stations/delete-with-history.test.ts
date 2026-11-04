@@ -1,4 +1,4 @@
-// Migration 0116: fn_delete_station_with_history.
+// Migration 0118: fn_delete_station_with_history.
 // Real Postgres (embedded-postgres) + the small Supabase stub from the station tests.
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -11,7 +11,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 const ROOT = path.resolve(__dirname, "../..");
 const read = (p: string) => readFileSync(path.join(ROOT, p), "utf8");
 
-const PORT = 54331;
+const PORT = 54351;
 let pg: EmbeddedPostgres;
 let dataDir: string;
 let admin: Client;
@@ -77,7 +77,7 @@ beforeAll(async () => {
   admin = await connect();
 
   await admin.query(read("tests/stations/stub-schema.sql"));
-  // What 0116 needs from the rest of the schema.
+  // What 0118 needs from the rest of the schema.
   await admin.query(`
     create table public.game_config (key text primary key, value jsonb not null);
     create function public.config_bool(p_key text, p_default boolean) returns boolean
@@ -99,7 +99,7 @@ beforeAll(async () => {
       station_id integer references public.stations (id) on delete set null
     );
   `);
-  await admin.query(read("supabase/migrations/0116_delete_station_with_history.sql"));
+  await admin.query(read("supabase/migrations/0118_delete_station_with_history.sql"));
 
   await q("insert into groups (id, name) values (1, 'Group 1')");
   await q("insert into profiles (id, role, full_name) values ($1, 'admin', 'Admin'), ($2, 'hogm', 'HOGM'), ($3, 'gm', 'GM')", [ADMIN, HOGM, GM]);

@@ -1,5 +1,5 @@
 -- ═══════════════════════════════════════════════════════════════════════
--- Migration 0116: delete a station that has token history (Rehearsal mode)
+-- Migration 0118: delete a station that has token history (Rehearsal mode)
 --
 -- A station with token history cannot be deleted: token_transactions.station_id
 -- (0001) has no ON DELETE rule, so the delete fails. The Stations pages

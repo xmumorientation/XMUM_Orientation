@@ -15,8 +15,9 @@ import {
 } from "@/components/freshie/FreshieHome";
 import { HOME_SECTIONS_STOP, HomeSectionsStop } from "@/components/HomeSections";
 import { useHomeSections } from "@/components/useHomeSections";
+import { FunfairTicker, useTickerOn } from "@/components/day2/Day2Alerts";
 import { FreshieSky, type SkyCabin } from "@/components/freshie/FreshieSky";
-import { groupSwatch, VORTEXA_THEME } from "@/components/freshie/groupTheme";
+import { groupSwatch, staffTheme } from "@/components/freshie/groupTheme";
 import { nexusBody, vxDisplay, vxSlab } from "@/components/home/fonts";
 import { priceText, useMyBlindBoxes, type MyBlindBoxSeller } from "@/components/BlindBoxCard";
 import { GroupBadge } from "@/components/GroupBadge";
@@ -89,7 +90,7 @@ function WelcomeStop({ name, role }: { name: string; role: UserRole }) {
         <span className="fh-mark">Vortexa</span>
       </h1>
       <p className="fh-hello">
-        Hi <b>{name || "there"}</b> / {ROLE_LABELS[role]}
+        Hi <b>{name || "there"}</b> / <span className="sh-role">{ROLE_LABELS[role]}</span>
       </p>
       {/* Same rule as Freshie Home: the running game, else the event countdown. */}
       {live ? (
@@ -350,11 +351,15 @@ export function StaffHome() {
     return () => root.classList.remove("fh-snap");
   }, []);
   const cabins: SkyCabin[] = useMemo(() => (groups ?? []).map(({ id, color }) => ({ id, color })), [groups]);
-  const theme = VORTEXA_THEME;
+  // The role's own colour (ROLE_COLOR) is the main sky light; AppShell sets --fh-role for the chip and role name. GM has none.
+  const theme = staffTheme(profile.role);
+  // The funfair's ticker sits in the fixed header, so the stops start lower (day2-alerts.css).
+  const tickerOn = useTickerOn();
 
   return (
     <div
       className={`fh fh-vx sh ${nexusBody.variable} ${vxDisplay.variable} ${vxSlab.variable}`}
+      data-ticker={tickerOn || undefined}
       style={
         {
           "--fh-accent": theme.accent,
@@ -387,7 +392,8 @@ export function StaffHome() {
             />
           </div>
         </div>
-        <StopBar stops={stops} />
+        <FunfairTicker place="home" />
+        <StopBar stops={isGm ? GM_STOPS : STOPS} />
       </header>
 
       <WelcomeStop name={profile.full_name ?? ""} role={profile.role} />

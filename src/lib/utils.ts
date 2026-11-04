@@ -99,7 +99,9 @@ const ERROR_MESSAGES: Record<string, string> = {
   BB_OFF_BY_ADMIN: "Blind boxes are switched off by Admin. Nothing was charged.",
   FUNFAIR_NOT_YET: "The map can be lit only in the Funfair.",
   FUNFAIR_OFF_BY_ADMIN: "Lighting the map is switched off by Admin.",
-  STATION_GAME_OFF: "Station games are switched off by Admin in Live control.",
+  TIER_CLOSED: "This station's tier is closed by the Day 2 schedule. Nothing was charged.",
+  SEGMENT_HELD: "A segment is held by hand. Press Back to Auto before adding or removing segments.",
+  BAD_SEGMENTS: "Those segments are not valid. Keep 1 to 8 segments, the first at 0, each starting later than the one before.",
   NO_PAUSE: "Pause has been removed. Use +5 / −5 or End.",
   // Admin Game master (0107)
   INVALID_QUANTITY: "Give 1 to 5 boxes at a time.",
@@ -140,6 +142,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   BOX_UNKNOWN: "This blind box code isn't active.",
   BOXES_SOLD_OUT: "All blind boxes here have been given out!",
   BB_ALREADY_FROM_SELLER: "Your group has already bought a box from this seller.",
+  BB_CODE_USED: "Someone already claimed this hidden box. Look for another one!",
   BB_GROUP_CAP: "Your group has already bought the most blind boxes it is allowed.",
   BB_PRICE_CHANGED: "The price of this box just changed. Nothing was charged. Check the new price and tap BUY again.",
   BB_HAS_SALES: "Groups have already bought blind boxes from this seller, so it can't be deleted. Turn its boxes off in Admin → Blind box instead.",

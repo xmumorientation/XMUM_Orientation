@@ -5,7 +5,7 @@ import EmbeddedPostgres from "embedded-postgres";
 import { Client } from "pg";
 import { afterAll, beforeAll, expect, it } from "vitest";
 
-// Migration 0115 on a minimal stand-in for Supabase: who can read, add, change
+// Migration 0117 on a minimal stand-in for Supabase: who can read, add, change
 // and remove home sections and their files, and that the action plans are seeded.
 
 const root = path.resolve(__dirname, "../..");
@@ -61,7 +61,7 @@ beforeAll(async () => {
     grant select, insert, update, delete on storage.objects to authenticated;
   `);
   for (const r of ROLES) await db.query("insert into public.profiles values ($1, $2)", [uid(USER[r]), r]);
-  await db.query(readFileSync(path.join(root, "supabase/migrations/0115_home_sections.sql"), "utf8"));
+  await db.query(readFileSync(path.join(root, "supabase/migrations/0117_home_sections.sql"), "utf8"));
   await db.query("grant select, insert, update, delete on public.home_sections to authenticated");
 }, 120_000);
 
@@ -81,7 +81,7 @@ it("seeds both action plans for every role except Freshie", async () => {
   expect(rows[0].roles).not.toContain("freshie");
   expect(rows[0].roles).toContain("faci");
   // re-running the migration adds nothing
-  await db.query(readFileSync(path.join(root, "supabase/migrations/0115_home_sections.sql"), "utf8"));
+  await db.query(readFileSync(path.join(root, "supabase/migrations/0117_home_sections.sql"), "utf8"));
   expect((await db.query("select count(*)::int n from public.home_sections")).rows[0].n).toBe(2);
 });
 

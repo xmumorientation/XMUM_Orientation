@@ -14,6 +14,8 @@ import {
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
+import { useDay2State } from "@/components/useDay2State";
+import { tierClosedText } from "@/lib/day2";
 import {
   PIECES_PER_SET,
   PROJECTOR_LOCATIONS,
@@ -38,7 +40,7 @@ export function keyMode(state: CardState): KeyMode {
   return "normal";
 }
 
-const RING_LABEL: Record<CardState, (data: ItemsData, loc: ProjectorLocation) => string> = {
+export const RING_LABEL: Record<CardState, (data: ItemsData, loc: ProjectorLocation) => string> = {
   locked: () => "Day 2",
   collecting: (data, loc) => `${data.pieces[loc].length}/${PIECES_PER_SET}`,
   key: () => "Key Ready",
@@ -203,10 +205,11 @@ export function ItemShelf({ data, onSelect }: { data: ItemsData; onSelect: (item
 
 export function TokenDetail({ data }: { data: ItemsData }) {
   const balance = data.tokens.balance;
+  const day2 = useDay2State();
   const tiers = [
-    { key: "low", name: "Low", cost: data.costs.low },
-    { key: "medium", name: "Medium", cost: data.costs.medium },
-    { key: "high", name: "High", cost: data.costs.high },
+    { key: "low" as const, name: "Low", cost: data.costs.low },
+    { key: "medium" as const, name: "Medium", cost: data.costs.medium },
+    { key: "high" as const, name: "High", cost: data.costs.high },
   ];
   return (
     <div className="fi-item-detail">
@@ -228,6 +231,9 @@ export function TokenDetail({ data }: { data: ItemsData }) {
               </span>
               <b>×{rounds}</b>
               <small>{rounds === 1 ? "round" : "rounds"}</small>
+              {day2.state?.game_on && tierClosedText(day2, tier.key, day2.state) && (
+                <small className="fh-mono">{tierClosedText(day2, tier.key, day2.state)}</small>
+              )}
             </div>
           );
         })}

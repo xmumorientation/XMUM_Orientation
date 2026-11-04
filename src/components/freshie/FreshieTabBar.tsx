@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import { useProfile } from "@/components/ProfileProvider";
 import { OPS_ROLES } from "@/lib/types";
 import { prefetchCampusMap } from "@/components/campus-map/preload";
+import { useFinalStretch } from "@/components/day2/useDay2Live";
 
 import "./freshie.css";
 
@@ -39,6 +40,8 @@ export function FreshieTabBar() {
   const isOps = OPS_ROLES.includes(profile.role);
   const isGm = profile.role === "gm";
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
+  // While the funfair is open, a dot on Map draws everyone to it (day2-alerts.css).
+  const finalStretch = useFinalStretch();
 
   const tabs = isOps || isGm ? OPS_TABS : TABS;
   const center = isOps
@@ -51,6 +54,7 @@ export function FreshieTabBar() {
 
   const tab = ({ href, label, Icon }: Tab) => (
     <Link key={href} href={href} className="fh-tab" aria-current={isActive(href) ? "page" : undefined}
+      data-dot={href === "/map" && finalStretch ? "" : undefined}
       onPointerEnter={() => prefetchCampusMap(href)} onFocus={() => prefetchCampusMap(href)}
       onPointerDown={() => prefetchCampusMap(href)}>
       <Icon size={22} strokeWidth={1.9} aria-hidden />

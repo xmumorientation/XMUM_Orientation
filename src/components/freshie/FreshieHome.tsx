@@ -26,6 +26,8 @@ import { GAME_PHASES, SPONSORS, SPONSORS_ARE_EXAMPLES } from "@/components/home/
 import { vxDisplay, vxSlab } from "@/components/home/fonts";
 import { useHomeSections } from "@/components/useHomeSections";
 import { ChallengeBanner } from "@/components/ChallengeBanner";
+import { FinalStretchBanner, FunfairTicker, ProjectorsLitRow, useTickerOn } from "@/components/day2/Day2Alerts";
+import { useFinalStretch } from "@/components/day2/useDay2Live";
 import { GroupBadge } from "@/components/GroupBadge";
 import { usePhases, usePhaseTimer } from "@/components/PhaseTimerProvider";
 import { useProfile } from "@/components/ProfileProvider";
@@ -134,6 +136,8 @@ export function Countdown() {
 export function PhaseCard() {
   const { phases, offsetMs, tick } = usePhaseTimer();
   void tick;
+  // The funfair is open: red like the old endgame, Final Stretch on top, the projectors under the timer.
+  const finalStretch = useFinalStretch();
   const activeIdx = phases.findIndex((p) => p.state === "active");
   const i = activeIdx >= 0 ? activeIdx : phases.findIndex((p) => p.state === "paused");
   if (i < 0) return null;
@@ -150,8 +154,8 @@ export function PhaseCard() {
   const next = phases[i + 1];
 
   return (
-    <div className="fh-phasecard" data-endgame={current.is_endgame}>
-      <ChallengeBanner />
+    <div className="fh-phasecard" data-endgame={current.is_endgame || finalStretch}>
+      {finalStretch && <FinalStretchBanner />}
       <div className="fh-phasecard-top fh-mono">
         <i aria-hidden />
         {current.state === "paused" ? "PAUSED" : current.is_endgame ? "ENDGAME" : "LIVE"} / PHASE {i + 1} OF{" "}
@@ -169,6 +173,7 @@ export function PhaseCard() {
       ) : (
         <div className="fh-phasecard-time fh-slab">LIVE</div>
       )}
+      {finalStretch && <ProjectorsLitRow />}
       {next && <small>Next: {next.name}</small>}
     </div>
   );
@@ -737,6 +742,8 @@ export function FreshieHome() {
     teamView?.find((f) => f.isMe) ?? faciFromProfile({ id: profile.id, full_name: myName }, profile.id);
   // Scoreboard rows double as the ferris wheel's cabins (one per group).
   const [cabins, setCabins] = useState<SkyCabin[]>([]);
+  // The funfair's ticker sits in the fixed header, so the stops start lower (day2-alerts.css).
+  const tickerOn = useTickerOn();
 
   // Section-by-section snapping, this page only (same idea as the homepage).
   useEffect(() => {
@@ -756,6 +763,7 @@ export function FreshieHome() {
   return (
     <div
       className={`fh ${vxDisplay.variable} ${vxSlab.variable}`}
+      data-ticker={tickerOn || undefined}
       style={
         {
           "--fh-accent": theme.accent,
@@ -790,6 +798,7 @@ export function FreshieHome() {
             />
           </div>
         </div>
+        <FunfairTicker place="home" />
         <StopBar stops={stops} />
       </header>
 
