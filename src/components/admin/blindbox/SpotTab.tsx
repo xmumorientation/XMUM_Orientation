@@ -4,17 +4,13 @@ import { Download, Printer } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { Card } from "@/components/ui";
-import { groupQrPng } from "@/lib/group-qr";
+import { spotCodeCard } from "@/lib/spot-card";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { cn, friendlyError } from "@/lib/utils";
 
 import type { TabProps } from "./TypesTab";
 
-const SPOT_COLOR = "#FE06AB"; // the Welcome page's pink
-
 type SpotCode = { n: number; claimed: boolean; group_name: string | null; claimed_at: string | null; url: string };
-
-const cardLabel = (n: number) => `BLIND BOX ${String(n).padStart(2, "0")}`;
 
 // The Spot box: ONE CODE PER BOX (migration 0116). Each box in the pool has
 // its own QR, made once and never changed. Print the sheet once and hide the
@@ -75,7 +71,7 @@ export function SpotTab({ data, onError, onNotice }: TabProps) {
   }
 
   async function downloadOne(c: SpotCode) {
-    const png = await groupQrPng(cardLabel(c.n), c.url, SPOT_COLOR);
+    const png = await spotCodeCard(c.n, c.url);
     const link = document.createElement("a");
     link.href = png;
     link.download = `hidden-blind-box-${String(c.n).padStart(2, "0")}.png`;
@@ -90,12 +86,12 @@ export function SpotTab({ data, onError, onNotice }: TabProps) {
     if (!win) return onError("Allow pop-ups for this site to print all the codes.");
     setPrinting(true);
     try {
-      const pngs = await Promise.all(codes.map((c) => groupQrPng(cardLabel(c.n), c.url, SPOT_COLOR)));
+      const pngs = await Promise.all(codes.map((c) => spotCodeCard(c.n, c.url)));
       win.document.write(`<!doctype html><title>hidden-blind-box-codes</title>
 <style>
   @page { size: A4; margin: 10mm }
   body { margin: 0; font-family: sans-serif }
-  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6mm }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5mm }
   .grid img { width: 100%; break-inside: avoid }
 </style>
 <div class="grid">${pngs.map((p, i) => `<img src="${p}" alt="Blind box ${codes[i].n}">`).join("")}</div>
