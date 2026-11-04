@@ -129,6 +129,7 @@ html.fh-snap { overflow-x: hidden; }
 .fh-credits-sponsors li { min-width: 0; display: flex; justify-content: center; align-items: center; }
 /* Sponsor logos keep their own colours, as supplied. */
 .fh-sponsor-logo { display: block; height: clamp(30px, 6.5vw, 44px); width: auto; max-width: 100%; object-fit: contain; }
+.fh-sponsor-logo--taobao { height: clamp(24px, 5vw, 34px); }
 .fh-sponsor-ph { font-weight: 600; font-size: 14px; color: var(--fh-mute); }
 /* Leave room under the last stop so its content sits above the city. */
 .fh > .fh-stop:last-of-type { padding-bottom: clamp(270px, 26vw, 340px); }

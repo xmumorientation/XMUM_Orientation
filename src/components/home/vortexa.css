@@ -439,6 +439,7 @@ html.vx-snap { scroll-snap-type: y mandatory; }
   display: block; height: clamp(30px, 6.5vw, 46px); width: auto; max-width: 100%; object-fit: contain;
   transition: transform 0.15s;
 }
+.vx-sponsor-logo--taobao { height: clamp(24px, 5vw, 36px); }
 .vx-credits a:hover .vx-sponsor-logo { transform: translateY(-1px); }
 @media (max-width: 1023px) {
   .vx-credits { margin-top: 18px; padding-top: 14px; }
