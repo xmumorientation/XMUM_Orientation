@@ -2,7 +2,8 @@
 .vt-sky{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 38%,#252152 0%,transparent 60%)}
 .vt-sky i{position:absolute;width:3px;height:3px;background:var(--color);box-shadow:0 0 10px var(--color);border-radius:50%;animation:vt-twinkle 3s var(--delay) ease-in-out infinite alternate}
 .vt-logo{position:absolute;top:max(22px,env(safe-area-inset-top));left:50%;transform:translateX(-50%);width:126px;z-index:2}.vt-logo img{width:100%;height:auto}
-.vt-magic{position:absolute;top:50%;left:50%;width:0;height:0;z-index:2}
+.vt-magic{position:absolute;top:36%;left:50%;width:0;height:0;z-index:2;transition:top .65s var(--vt-ease)}
+.vt-lit .vt-magic{top:23%}
 .vt-core{position:absolute;width:84px;height:84px;left:-42px;top:-42px;filter:drop-shadow(0 0 18px #0dfcfd);animation:vt-core-charge 2.1s ease-in both}.vt-core svg{width:100%;height:100%;fill:#fff6c5}
 .vt-trail{position:absolute;inset:-130px;border:1px solid transparent;border-top:2px solid var(--color);border-right-color:var(--color);border-radius:50%;transform:rotate(var(--turn));animation:vt-gather calc(2.1s - var(--delay)) var(--delay) cubic-bezier(.6,0,.4,1) both}.vt-trail i{position:absolute;left:35px;top:35px;width:9px;height:9px;background:var(--color);border-radius:50%;box-shadow:0 0 22px var(--color)}
 .vt-charging{position:absolute;top:52%;width:100%;font-size:16px;letter-spacing:.04em;color:#e0b4fc;transition:opacity .2s}.vt-charging span{display:block;margin:18px auto;width:100px;height:2px;background:#e0b4fc;transform-origin:left;animation:vt-progress 2.1s linear both}
@@ -23,7 +24,7 @@
 @keyframes vt-wash{from{opacity:0}35%{opacity:1}to{opacity:.7}}
 @keyframes vt-twinkle{from{opacity:.3;transform:scale(.65)}to{opacity:.9;transform:scale(1.15)}}
 @keyframes vt-draw{to{stroke-dashoffset:0}}@keyframes vt-wheel{to{transform:rotate(360deg)}}
-@media(max-height:650px){.vt-logo{width:95px;top:12px}.vt-magic{top:29%}.vt-result{top:41%}.vt-result h1{font-size:32px}.vt-location{margin-top:12px}.vt-note{margin-top:12px}.vt-lit .vt-park{opacity:.35}}
+@media(max-height:650px){.vt-logo{width:95px;top:12px}.vt-magic{top:30%}.vt-lit .vt-magic{top:19%}.vt-result{top:36%}.vt-result h1{font-size:32px}.vt-location{margin-top:12px}.vt-note{margin-top:12px}.vt-lit .vt-park{opacity:.25}}
 @media(prefers-reduced-motion:reduce){.vt-scene *{animation:none!important;transition:none!important}.vt-trail,.vt-wave,.vt-spark,.vt-charging{display:none}.vt-wash{opacity:.7}.vt-outline{stroke-dashoffset:0}.vt-core{opacity:1}}
 
 .vt-scene:not(.vt-ready) *{animation-play-state:paused!important}
