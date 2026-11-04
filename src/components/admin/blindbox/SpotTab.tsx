@@ -1,6 +1,6 @@
 "use client";
 
-import { Download, Printer } from "lucide-react";
+import { Download } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { Card } from "@/components/ui";
@@ -78,28 +78,19 @@ export function SpotTab({ data, onError, onNotice }: TabProps) {
     link.click();
   }
 
-  // One page with every code, to print (or save as PDF) once.
-  async function printAll() {
+  // Every code as its own PNG (hidden-blind-box-01.png, 02, ...), one after
+  // another. The browser may ask once to allow multiple downloads.
+  async function downloadAll() {
     if (!codes?.length) return;
-    // Open the window now, inside the click, so a pop-up blocker allows it.
-    const win = window.open("", "_blank");
-    if (!win) return onError("Allow pop-ups for this site to print all the codes.");
     setPrinting(true);
     try {
-      const pngs = await Promise.all(codes.map((c) => spotCodeCard(c.n, c.url)));
-      win.document.write(`<!doctype html><title>hidden-blind-box-codes</title>
-<style>
-  @page { size: A4; margin: 10mm }
-  body { margin: 0; font-family: sans-serif }
-  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5mm }
-  .grid img { width: 100%; break-inside: avoid }
-</style>
-<div class="grid">${pngs.map((p, i) => `<img src="${p}" alt="Blind box ${codes[i].n}">`).join("")}</div>
-<script>window.onload = function () { setTimeout(function () { window.print(); }, 300); };<\/script>`);
-      win.document.close();
+      for (const c of codes) {
+        await downloadOne(c);
+        await new Promise((r) => setTimeout(r, 350));
+      }
+      onNotice(`Downloaded ${codes.length} codes.`);
     } catch (e) {
-      win.close();
-      onError(`Couldn't make the print page: ${String(e)}`);
+      onError(`Couldn't make the codes: ${String(e)}`);
     } finally {
       setPrinting(false);
     }
@@ -119,14 +110,14 @@ export function SpotTab({ data, onError, onNotice }: TabProps) {
         <button
           type="button"
           disabled={!codes?.length || printing}
-          onClick={printAll}
+          onClick={downloadAll}
           className="btn-primary w-full gap-1.5 active:scale-[0.98]"
         >
-          <Printer size={16} strokeWidth={1.75} aria-hidden />
-          {printing ? "Making the Sheet…" : `Print All ${codes?.length ?? ""} Codes`.replace("  ", " ")}
+          <Download size={16} strokeWidth={1.75} aria-hidden />
+          {printing ? "Downloading…" : `Download All ${codes?.length ?? ""} Codes`.replace("  ", " ")}
         </button>
         <p className="text-xs text-ink-faint">
-          The codes never change. If you lose one, print just that one again from the list.
+          The codes never change. Each code downloads as its own PNG (hidden-blind-box-01.png and so on). If you lose one, download just that one again from the list.
         </p>
 
         {codes === null ? (
