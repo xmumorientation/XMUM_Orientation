@@ -78,7 +78,7 @@ export function SpotTab({ data, onError, onNotice }: TabProps) {
     const png = await groupQrPng(cardLabel(c.n), c.url, SPOT_COLOR);
     const link = document.createElement("a");
     link.href = png;
-    link.download = `blind-box-spot-${String(c.n).padStart(2, "0")}.png`;
+    link.download = `hidden-blind-box-${String(c.n).padStart(2, "0")}.png`;
     link.click();
   }
 
@@ -91,7 +91,7 @@ export function SpotTab({ data, onError, onNotice }: TabProps) {
     setPrinting(true);
     try {
       const pngs = await Promise.all(codes.map((c) => groupQrPng(cardLabel(c.n), c.url, SPOT_COLOR)));
-      win.document.write(`<!doctype html><title>Spot Box Codes</title>
+      win.document.write(`<!doctype html><title>hidden-blind-box-codes</title>
 <style>
   @page { size: A4; margin: 10mm }
   body { margin: 0; font-family: sans-serif }
