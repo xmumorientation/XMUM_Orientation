@@ -32,11 +32,11 @@ export const SIGN_NOTE =
   "Central. Change a zone's keys only in an emergency, or its sign and the key that lights it disagree.";
 
 /**
- * What players call a zone: its key's code name and its area, "Star · Big Top". One projector per zone by design,
+ * What players call a zone: its key's code name and its area. One projector per zone by design,
  * so the map's zone signs and Items' keys match. East, Central and West are for Admin and HOGM only.
  */
 export function zoneTitle(zone: FunfairZone): string {
-  return `${PROJECTOR_CODE_NAMES[DEFAULT_ZONE_KEYS[zone]]} / ${FUNFAIR_ZONE_NAMES[zone].split(" / ")[1]}`;
+  return `${PROJECTOR_CODE_NAMES[DEFAULT_ZONE_KEYS[zone]]} and ${FUNFAIR_ZONE_NAMES[zone].split(" / ")[1]}`;
 }
 
 /** A row of funfair_zones. */

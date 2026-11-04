@@ -25,7 +25,7 @@ describe("lake stage finale", () => {
 
 // Labels survive separator changes without dropping the area's name.
 it("names each funfair zone with its projector and area", () => {
-  expect(zoneTitle("west")).toBe("Wheel / Neon Pier");
-  expect(zoneTitle("central")).toBe("Orbit / Starlight Midway");
-  expect(zoneTitle("east")).toBe("Star / Big Top");
+  expect(zoneTitle("west")).toBe("Wheel and Neon Pier");
+  expect(zoneTitle("central")).toBe("Orbit and Starlight Midway");
+  expect(zoneTitle("east")).toBe("Star and Big Top");
 });
