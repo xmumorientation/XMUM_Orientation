@@ -2,6 +2,7 @@
 
 import { useSharedFeed, type FeedSource } from "@/lib/sharedFeed";
 import { supabaseBrowser } from "@/lib/supabase/client";
+import type { ProjectorLocation } from "@/lib/types";
 
 /** One row of fn_scoreboard(): every group's name, colour and tokens. */
 export interface ScoreboardRow {
@@ -41,15 +42,20 @@ export function useScoreboard(): ScoreboardRow[] | undefined {
   return useSharedFeed("scoreboard", scoreboardSource);
 }
 
-/** Puzzle pieces held per group id (a count, not which pieces); undefined until the first load. */
-function piecesSource(): FeedSource<Record<number, number>> {
+export type GroupPieces = Record<ProjectorLocation, number[]>;
+
+/** Piece numbers held per key, by group id (which pieces, from fn_scoreboard_pieces); undefined until the first load. */
+function piecesSource(): FeedSource<Record<number, GroupPieces>> {
   const supabase = supabaseBrowser();
   return {
     async load() {
-      const { data } = await supabase.rpc("fn_scoreboard_pieces");
-      if (!data) return undefined;
-      const out: Record<number, number> = {};
-      for (const row of data as { group_id: number; pieces: number }[]) out[row.group_id] = row.pieces ?? 0;
+      const { data, error } = await supabase.rpc("fn_scoreboard_pieces");
+      if (error || !data) return undefined;
+      const out: Record<number, GroupPieces> = {};
+      for (const row of data as { group_id: number; location: ProjectorLocation; puzzle_index: number }[]) {
+        const own = (out[row.group_id] ??= { B1: [], A3: [], TF: [] });
+        own[row.location]?.push(row.puzzle_index);
+      }
       return out;
     },
     // Realtime sends a player only their own group's inventory, so the poll does the rest.
@@ -64,6 +70,6 @@ function piecesSource(): FeedSource<Record<number, number>> {
   };
 }
 
-export function useScoreboardPieces(): Record<number, number> | undefined {
+export function useScoreboardPieces(): Record<number, GroupPieces> | undefined {
   return useSharedFeed("scoreboard-pieces", piecesSource);
 }

@@ -683,7 +683,27 @@ div.fi-lamp:active { transform: none; }
   color: var(--fh-mute); font: inherit; font-weight: 600; font-size: 14px;
 }
 .fh-day-seg button[aria-selected="true"] { background: var(--fh-ink); color: #fff; box-shadow: inset 0 0 0 1.5px var(--fh-accent); }
-.fh-team-pz { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; letter-spacing: 0.04em; color: var(--fh-blue-light); font-variant-numeric: tabular-nums; }
+.fh-board-pz { max-width: 880px; }
+.fh-pz-cols, .fh-pz-head { display: grid; grid-template-columns: 32px minmax(0, 1fr) 52px 64px 18px; align-items: center; gap: 10px; }
+.fh-pz-cols { max-width: 880px; padding: 0 14px 8px 16px; font-size: 9.5px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--fh-mute); }
+.fh-pz-cols span:first-child { grid-column: 1 / 3; }
+.fh-pz-cols span:not(:first-child) { text-align: right; }
+.fh-pz-cols span:last-child { grid-column: 4; }
+.fh-pz { border-radius: 14px; background: var(--fh-ink-2); border: 1px solid var(--fh-line); overflow: hidden; }
+.fh-pz[data-me] { border-color: var(--fh-accent); background: color-mix(in srgb, var(--fh-accent) 14%, var(--fh-ink-2)); }
+.fh-pz-head { width: 100%; padding: 11px 14px; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.fh-pz-head b { font-weight: 600; font-size: 15px; display: flex; align-items: center; gap: 8px; min-width: 0; }
+.fh-pz-head .fh-team-sc, .fh-pz-n { text-align: right; }
+.fh-pz-n { font-size: 18px; color: var(--fh-mute); font-variant-numeric: tabular-nums; }
+.fh-pz-n small { font-size: 12px; margin-left: 1px; }
+.fh-pz-chev { color: var(--fh-mute); transition: transform 0.25s ease; }
+.fh-pz-chev[data-open] { transform: rotate(180deg); }
+.fh-pz-keys { list-style: none; margin: 0 14px; padding: 12px 0 14px; border-top: 1px solid var(--fh-line); display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.fh-pz-key { display: grid; justify-items: center; gap: 4px; padding: 12px 6px; border-radius: 16px; background: var(--fh-ink); border: 1px solid var(--fh-line); text-align: center; }
+.fh-pz-art { width: min(84px, 100%); height: auto; overflow: visible; }
+.fh-pz-key b { font-size: 13.5px; font-weight: 600; }
+.fh-pz-key small { font-size: 11px; color: var(--fh-mute); line-height: 1.25; }
+.fh-pz-chip { font-size: 11px; letter-spacing: 0.06em; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--fh-line); color: var(--fh-blue-light); }
 .fh-team-sc { font-size: 18px; color: var(--fh-mute); font-variant-numeric: tabular-nums; }
 
 /* ── Freshie schedule page (welcome schedule layout) ─────────────────────── */
