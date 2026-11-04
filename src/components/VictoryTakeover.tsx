@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, type CSSProperties } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { ACTIVATION_JOURNEY_KEY } from "@/lib/activation-journey";
+import { prefetchCampusMap } from "@/components/campus-map/preload";
 import type { FunfairZone } from "@/lib/funfair";
 import "./victory-takeover.css";
 
@@ -22,7 +23,7 @@ export function VictoryTakeover({place, groupName, replayZones = [], mapHref = "
     try { sessionStorage.setItem(ACTIVATION_JOURNEY_KEY, JSON.stringify({at:Date.now(), zones:replayZones})); } catch { /* Storage is optional; the real map still opens. */ }
     router.replace(`${mapHref}?arrival=activation`);
   }
-  useEffect(() => { router.prefetch(mapHref); }, [router, mapHref]);
+  useEffect(() => { router.prefetch(mapHref); prefetchCampusMap(mapHref); }, [router, mapHref]);
   const [lit, setLit] = useState(false);
   const [ready, setReady] = useState(false);
   useEffect(() => {
