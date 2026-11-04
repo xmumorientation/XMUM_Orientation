@@ -102,7 +102,7 @@ begin
     execute 'update public.nfc_guardian_verifications set consumed_by_nfc_id = null where consumed_by_nfc_id is not null';
   end if;
 
-  delete from public.nfc_tokens;
+  delete from public.nfc_tokens where id is not null;
   get diagnostics v_stickers = row_count;
 
   delete from public.nfc_test_runs where id is not null;
