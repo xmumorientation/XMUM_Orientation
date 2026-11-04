@@ -14,6 +14,8 @@ import {
 import { LightbulbList, bulbStatus, bulbTitle } from "@/components/LightbulbList";
 import { StationEditDialog } from "@/components/StationEditDialog";
 import { stationDotColor } from "@/components/ui";
+import { useDay2State } from "@/components/useDay2State";
+import { tierClosedText } from "@/lib/day2";
 import type { Station } from "@/lib/types";
 import { LiveText } from "@/components/LiveAgo";
 import { timeAgoExact } from "@/lib/utils";
@@ -27,6 +29,13 @@ function stationStatusText(status: Station["status"]): string {
   if (status === "available") return "Available";
   if (status === "in_progress") return "In Progress";
   return "Closed";
+}
+
+/** " / Closed until 60 min" when the Day 2 schedule has this station's tier closed (0115). */
+function TierClosed({ station }: { station: Station }) {
+  const day2 = useDay2State();
+  const text = station.day === 2 && day2.state?.game_on ? tierClosedText(day2, station.risk_tier, day2.state) : null;
+  return text ? <> / {text}</> : null;
 }
 
 /**
@@ -333,6 +342,7 @@ export function MapInfoCard({
           </div>
           <div className="truncate text-xs font-semibold" style={{ color: stationDotColor(activeSelected.status) }}>
             {stationStatusText(activeSelected.status)} / {whoIsHere(data, activeSelected)}
+            <TierClosed station={activeSelected} />
           </div>
         </div>
         <button
@@ -408,6 +418,7 @@ export function CampusMapPanels({
             <span className="block truncate text-xs text-ink-faint">
               {station.area}
               {station.purpose ? ` / ${station.purpose}` : ""}
+              <TierClosed station={station} />
             </span>
           </span>
         </div>

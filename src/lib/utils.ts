@@ -99,7 +99,9 @@ const ERROR_MESSAGES: Record<string, string> = {
   BB_OFF_BY_ADMIN: "Blind boxes are switched off by Admin. Nothing was charged.",
   FUNFAIR_NOT_YET: "The map can be lit only in the Funfair.",
   FUNFAIR_OFF_BY_ADMIN: "Lighting the map is switched off by Admin.",
-  STATION_GAME_OFF: "Station games are switched off by Admin in Live control.",
+  TIER_CLOSED: "This station's tier is closed by the Day 2 schedule. Nothing was charged.",
+  SEGMENT_HELD: "A segment is held by hand. Press Back to Auto before adding or removing segments.",
+  BAD_SEGMENTS: "Those segments are not valid. Keep 1 to 8 segments, the first at 0, each starting later than the one before.",
   NO_PAUSE: "Pause has been removed. Use +5 / −5 or End.",
   // Admin Game master (0107)
   INVALID_QUANTITY: "Give 1 to 5 boxes at a time.",

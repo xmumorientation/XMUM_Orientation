@@ -328,6 +328,13 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 
 ## Done
 
+### Day 2 inner schedule: add / remove segments, Easy / Medium / Hard station switches, 2026-11-04 (Jiamin, branch `claude/day2-schedule-segments-83f0af`)
+- Plan: [docs/plans/day2-flexible-segments.md](plans/day2-flexible-segments.md). Migration `0115` (run after 0114; replaces the old 60 / 90 / 120 times with the new seed).
+- The schedule is a list of 1 to 8 segments (`day2_schedule.segments`): id, label, start minute, and five switches: Easy, Medium and Hard station (risk tiers low / medium / high), Blind Box, Funfair. Live control → Day 2 inner schedule: one slider handle per segment, Add Segment After (splits at the midpoint), Remove (time goes to the segment before), rename, and per-card switches that edit the saved defaults. On the running segment a flip asks Change Default or Just Now.
+- The Station Game switch is gone. A tier that is off is closed: `fn_day2_challenge` and a GM's Start game (`fn_manual_checkin`, via `fn_day2_guard_checkin`) are refused with `TIER_CLOSED`. A group already checked in at the station (it started while the tier was open) can still submit. `stations.status` is not written. GM Check step, Admin and Ops → Stations, the map station cards and the Freshie token detail show "Closed until N min".
+- Seed: Opening 0-60 (Hard off), Hard Stations Open 60-105, Funfair 105-end. Blind Box is on in every segment, so CHALLENGE MODE shows for the whole game (it follows the Blind Box switch now, not a segment). Add / remove is refused while a segment is held (`SEGMENT_HELD`).
+- Tests: `tests/game-lead/day2-schedule.test.ts`, `tests/admin-ui/game-master-day2.test.tsx`.
+
 ### David, 2026-11-03 — Separate court station and Tennis entry areas (local)
 - Per the annotated screenshot: both upper court blocks and their markers show the corresponding stations; both lower sports blocks open Tennis. The lower blocks are additional invisible hit areas, separate from station positions and the match geometry. No model, game rule or station location moved.
 - The Tennis card's Stations button remembers which side opened it, returning to the matching upper court's station list. The unrelated two-finger twist draft remains separate.

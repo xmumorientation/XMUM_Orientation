@@ -5,41 +5,38 @@ import { useMemo, useRef, useState } from "react";
 import { ChallengeBanner } from "@/components/ChallengeBanner";
 import { useConfig } from "@/components/useConfig";
 import { useDay2State } from "@/components/useDay2State";
-import { SEGMENTS, SEGMENT_DEFAULTS, SWITCHES, type Day2Segment, type Day2Switch } from "@/lib/day2";
+import { MAX_SEGMENTS, SWITCHES, newSegmentId, segmentEnds, type Day2SegmentDef, type Day2Switch } from "@/lib/day2";
 import { gameLengthKey } from "@/lib/gameLength";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { friendlyError } from "@/lib/utils";
 
 import "./day2-schedule.css";
 
-type Bound = "challenge_start_min" | "challenge_end_min" | "funfair_start_min";
-
-// Each segment runs from its start bound to its end bound. The first starts at
-// the game's start, the last ends at the game's end, so those two are fixed.
-const META: Record<Day2Segment, { tone: string; start: Bound | null; end: Bound | null }> = {
-  normal1: { tone: "#8ba3c4", start: null, end: "challenge_start_min" },
-  challenge: { tone: "#f25555", start: "challenge_start_min", end: "challenge_end_min" },
-  normal2: { tone: "#8ba3c4", start: "challenge_end_min", end: "funfair_start_min" },
-  funfair: { tone: "#fbbf24", start: "funfair_start_min", end: null },
-};
-const BOUND_ORDER: Bound[] = ["challenge_start_min", "challenge_end_min", "funfair_start_min"];
 const STEP = 5;
+const TONES = ["#8ba3c4", "#5eead4", "#a78bfa", "#f472b6", "#fb923c", "#60a5fa", "#a3e635", "#f87171"];
+const FUNFAIR_TONE = "#fbbf24";
 
-// Who feels each switch: the server refuses the action (fn_day2_guard, 0102).
+// Who feels each switch: the server refuses the action (fn_day2_guard, 0115).
 const EFFECT: Record<Day2Switch, [on: string, off: string]> = {
-  station: ["GM can run and submit Day 2 games", "GM can't submit a Day 2 game"],
+  easy: ["Easy stations can run and submit games", "Easy stations are closed"],
+  medium: ["Medium stations can run and submit games", "Medium stations are closed"],
+  hard: ["Hard stations can run and submit games", "Hard stations are closed"],
   blindbox: ["Freshies can buy blind boxes", "Blind box buying is closed"],
   funfair: ["NFC and map lighting are live", "NFC and map lighting are blocked"],
 };
 
-// Live control, Day 2: the game's inner schedule (fn_day2_control, 0102,
-// Admin only). The timeline shows the segments over the game's length; drag a
-// handle, or use a card's stepper, to move a boundary (minutes from the game's
-// real start), also while it runs. Start <segment> holds that segment, even
-// with no game on (for tests), until Back to auto. End <segment> during auto
-// moves its end to now. Switches are live on the running segment only (a flip
-// lasts until the next segment); the other cards preview the segment's default.
-// Kill-switches still win over all of it.
+const nameOf = (g: Day2SegmentDef, i: number) => g.label.trim() || `Segment ${i + 1}`;
+const toneOf = (g: Day2SegmentDef, i: number) => (g.funfair ? FUNFAIR_TONE : TONES[i % TONES.length]);
+
+// Live control, Day 2: the game's inner schedule (fn_day2_control, 0115,
+// Admin only). A list of 1 to 8 segments over the game's length. Drag a
+// handle, or use a card's stepper, to move a segment's start (minutes from the
+// game's real start), also while it runs. Add Segment After splits a segment
+// in two; Remove gives its time to the one before. Each card's switches are
+// that segment's saved defaults (Easy, Medium and Hard stations, Blind Box,
+// Funfair). On the running segment a flip asks: Change Default (saved) or
+// Just Now (until the next segment). Start Now holds a segment, even with no
+// game on (for tests), until Back to Auto. Kill-switches still win over all of it.
 export function Day2Schedule({
   onError,
   onNotice,
@@ -50,11 +47,12 @@ export function Day2Schedule({
   const supabase = useMemo(() => supabaseBrowser(), []);
   const { config } = useConfig();
   const day2 = useDay2State();
-  const { state, segment, manual, switches, flipped, starts, reload } = day2;
-  const [draft, setDraft] = useState<Partial<Record<Bound, number>>>({});
-  const [dragging, setDragging] = useState<Bound | null>(null);
+  const { state, segment, index, manual, switches, flipped, starts, reload } = day2;
+  const [draft, setDraft] = useState<Record<string, number>>({});
+  const [dragging, setDragging] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [open, setOpen] = useState(false);
+  const [ask, setAsk] = useState<{ id: string; key: Day2Switch } | null>(null);
   const railRef = useRef<HTMLDivElement>(null);
   const latest = useRef<number | null>(null);
 
@@ -65,19 +63,30 @@ export function Day2Schedule({
     const n = Number(config[gameLengthKey("day2")]);
     return Number.isInteger(n) && n > 0 ? n : 150;
   })();
-  const val = (k: Bound) => draft[k] ?? state?.[k] ?? 0;
-  const elapsed = starts ? Math.max(0, Math.floor((Date.now() - starts.normal1) / 60_000)) : null;
+  const saved = state?.segments ?? [];
+  const segs = saved.map((g) => (g.id in draft ? { ...g, start_min: draft[g.id] } : g));
+  const ends = segmentEnds(segs, length);
+  const elapsed = starts ? Math.max(0, Math.floor((Date.now() - starts[0]) / 60_000)) : null;
   const disabled = busy || !state;
+  const atMax = segs.length >= MAX_SEGMENTS;
 
-  // A boundary can't pass its neighbours.
-  const limits = (k: Bound): [number, number] => {
-    const i = BOUND_ORDER.indexOf(k);
-    return [i === 0 ? 0 : val(BOUND_ORDER[i - 1]), i === 2 ? length : val(BOUND_ORDER[i + 1])];
-  };
-  const clamp = (k: Bound, n: number) => {
-    const [lo, hi] = limits(k);
+  // A start can't pass its neighbours (at least 1 min per segment).
+  const limits = (i: number): [number, number] => [segs[i - 1].start_min + 1, i + 1 < segs.length ? segs[i + 1].start_min - 1 : Math.max(segs[i].start_min, length - 1)];
+  const clamp = (i: number, n: number) => {
+    const [lo, hi] = limits(i);
     return Math.min(hi, Math.max(lo, n));
   };
+
+  async function save(next: Day2SegmentDef[], notice: string) {
+    setBusy(true);
+    onError(null);
+    const { error } = await supabase.rpc("fn_day2_control", { p_action: "set_segments", p_segments: next });
+    setBusy(false);
+    setDraft({});
+    if (error) return onError(friendlyError(error));
+    onNotice(notice);
+    reload();
+  }
 
   async function call(args: Record<string, unknown>, notice: string) {
     setBusy(true);
@@ -89,61 +98,71 @@ export function Day2Schedule({
     reload();
   }
 
-  async function saveTimes(next: Partial<Record<Bound, number>>) {
-    const t = { challenge_start_min: val("challenge_start_min"), challenge_end_min: val("challenge_end_min"), funfair_start_min: val("funfair_start_min"), ...next };
-    if (!(t.challenge_start_min <= t.challenge_end_min && t.challenge_end_min <= t.funfair_start_min)) {
-      setDraft({});
-      return onError("Keep the order: challenge starts, challenge ends, then the funfair.");
-    }
-    await call(
-      {
-        p_action: "set_times",
-        p_challenge_start_min: t.challenge_start_min,
-        p_challenge_end_min: t.challenge_end_min,
-        p_funfair_start_min: t.funfair_start_min,
-      },
-      `Day 2: challenge ${t.challenge_start_min}–${t.challenge_end_min} min, funfair from ${t.funfair_start_min} min`
-    );
-    setDraft({});
+  const withStart = (id: string, n: number) => saved.map((g) => (g.id === id ? { ...g, start_min: n } : g));
+
+  function setStart(i: number, n: number) {
+    const v = clamp(i, Math.round(n));
+    if (v === saved[i].start_min) return setDraft({});
+    void save(withStart(saved[i].id, v), `Day 2: ${nameOf(saved[i], i)} starts at ${v} min`);
   }
 
-  // End during auto: move this segment's end boundary to now.
-  const label = (k: Day2Segment) => SEGMENTS.find((s) => s.key === k)!.label;
-  const range = (k: Day2Segment): [number, number] => [META[k].start ? val(META[k].start!) : 0, META[k].end ? val(META[k].end!) : length];
+  function setLabel(i: number, label: string) {
+    const v = label.trim().slice(0, 40);
+    if (v === saved[i].label) return;
+    void save(saved.map((g, k) => (k === i ? { ...g, label: v } : g)), "Day 2: segment renamed");
+  }
+
+  function addAfter(i: number) {
+    const a = saved[i].start_min;
+    const b = ends[i];
+    if (b - a < 2) return onError("That segment is too short to split. Make it at least 2 minutes long first.");
+    const mid = a + Math.floor((b - a) / 2);
+    const copy: Day2SegmentDef = { ...saved[i], id: newSegmentId(saved), label: "", start_min: mid };
+    const next = [...saved.slice(0, i + 1), copy, ...saved.slice(i + 1)];
+    void save(next, `Day 2: segment added at ${mid} min`);
+  }
+
+  function remove(i: number) {
+    if (!window.confirm(`Remove ${nameOf(saved[i], i).toLowerCase()}? Its time goes to the segment before it.`)) return;
+    void save(saved.filter((_, k) => k !== i), "Day 2: segment removed");
+  }
+
+  function setDefault(i: number, key: Day2Switch, on: boolean) {
+    void save(saved.map((g, k) => (k === i ? { ...g, [key]: on } : g)), `Day 2: ${SWITCHES.find((s) => s.key === key)!.label} default ${on ? "on" : "off"}`);
+  }
 
   // Handle drag: pointer position -> minutes, snapped to 5.
-  function minutesAt(clientX: number, k: Bound) {
+  function minutesAt(clientX: number, i: number) {
     const r = railRef.current!.getBoundingClientRect();
-    const raw = Math.round(((clientX - r.left) / r.width) * length / STEP) * STEP;
-    return clamp(k, raw);
+    return clamp(i, Math.round((((clientX - r.left) / r.width) * length) / STEP) * STEP);
   }
-  function onHandleMove(e: React.PointerEvent, k: Bound) {
-    if (dragging !== k) return;
-    const m = minutesAt(e.clientX, k);
+  function onHandleMove(e: React.PointerEvent, i: number) {
+    if (dragging !== segs[i].id) return;
+    const m = minutesAt(e.clientX, i);
     latest.current = m;
-    setDraft((d) => ({ ...d, [k]: m }));
+    setDraft((d) => ({ ...d, [segs[i].id]: m }));
   }
-  function endDrag(k: Bound) {
-    if (dragging !== k) return;
+  function endDrag(i: number) {
+    if (dragging !== segs[i].id) return;
     setDragging(null);
     const m = latest.current;
     latest.current = null;
-    if (m !== null && m !== state?.[k]) saveTimes({ [k]: m });
+    if (m !== null && m !== saved[i].start_min) setStart(i, m);
     else setDraft({});
   }
-  function onHandleKey(e: React.KeyboardEvent, k: Bound) {
+  function onHandleKey(e: React.KeyboardEvent, i: number) {
     const d = e.key === "ArrowRight" || e.key === "ArrowUp" ? STEP : e.key === "ArrowLeft" || e.key === "ArrowDown" ? -STEP : 0;
     if (!d) return;
     e.preventDefault();
-    const m = clamp(k, val(k) + d);
+    const m = clamp(i, segs[i].start_min + d);
     latest.current = m;
-    setDraft((x) => ({ ...x, [k]: m }));
+    setDraft((x) => ({ ...x, [segs[i].id]: m }));
   }
-  function onHandleKeyUp(e: React.KeyboardEvent, k: Bound) {
+  function onHandleKeyUp(e: React.KeyboardEvent, i: number) {
     if (!e.key.startsWith("Arrow") || latest.current === null) return;
     const m = latest.current;
     latest.current = null;
-    if (m !== state?.[k]) saveTimes({ [k]: m });
+    if (m !== saved[i].start_min) setStart(i, m);
   }
 
   return (
@@ -159,7 +178,7 @@ export function Day2Schedule({
               Inner Schedule
             </span>
             <p className="d2s-now">
-              Now: <b>{segment === "off" ? "No Day 2 game" : label(segment)}</b>
+              Now: <b>{segment === "off" ? "No Day 2 game" : day2.label}</b>
               {manual && " · held by hand"}
               {elapsed !== null && ` · ${elapsed} of ${length} min`}
             </p>
@@ -168,17 +187,16 @@ export function Day2Schedule({
           <div className="d2s-timeline">
             <div className="d2s-railwrap">
               <div className="d2s-rail" ref={railRef}>
-                {SEGMENTS.map((s) => {
-                  const [a, b] = range(s.key);
-                  const pct = (Math.max(0, b - a) / length) * 100;
+                {segs.map((g, i) => {
+                  const pct = (Math.max(0, ends[i] - g.start_min) / length) * 100;
                   return (
                     <div
-                      key={s.key}
+                      key={g.id}
                       className="d2s-seg"
-                      data-on={segment === s.key}
-                      style={{ width: `${pct}%`, ["--tone" as string]: META[s.key].tone }}
+                      data-on={segment === g.id}
+                      style={{ width: `${pct}%`, ["--tone" as string]: toneOf(g, i) }}
                     >
-                      {pct >= 12 ? s.label : ""}
+                      {pct >= 12 ? nameOf(g, i) : ""}
                     </div>
                   );
                 })}
@@ -186,33 +204,35 @@ export function Day2Schedule({
                   <span className="d2s-now-mark" style={{ left: `${(elapsed / length) * 100}%` }} />
                 )}
               </div>
-              {BOUND_ORDER.map((k) => (
-                <button
-                  key={k}
-                  type="button"
-                  role="slider"
-                  aria-label={k === "challenge_start_min" ? "Challenge mode starts" : k === "challenge_end_min" ? "Challenge mode ends" : "Funfair starts"}
-                  aria-valuemin={limits(k)[0]}
-                  aria-valuemax={limits(k)[1]}
-                  aria-valuenow={val(k)}
-                  aria-valuetext={`${val(k)} min`}
-                  className="d2s-handle"
-                  data-drag={dragging === k}
-                  disabled={disabled}
-                  style={{ left: `${(val(k) / length) * 100}%` }}
-                  onPointerDown={(e) => {
-                    e.currentTarget.setPointerCapture(e.pointerId);
-                    setDragging(k);
-                  }}
-                  onPointerMove={(e) => onHandleMove(e, k)}
-                  onPointerUp={() => endDrag(k)}
-                  onPointerCancel={() => endDrag(k)}
-                  onKeyDown={(e) => onHandleKey(e, k)}
-                  onKeyUp={(e) => onHandleKeyUp(e, k)}
-                >
-                  <span className="d2s-tip">{val(k)} min</span>
-                </button>
-              ))}
+              {segs.map((g, i) =>
+                i === 0 ? null : (
+                  <button
+                    key={g.id}
+                    type="button"
+                    role="slider"
+                    aria-label={`${nameOf(g, i)} starts`}
+                    aria-valuemin={limits(i)[0]}
+                    aria-valuemax={limits(i)[1]}
+                    aria-valuenow={g.start_min}
+                    aria-valuetext={`${g.start_min} min`}
+                    className="d2s-handle"
+                    data-drag={dragging === g.id}
+                    disabled={disabled}
+                    style={{ left: `${(g.start_min / length) * 100}%` }}
+                    onPointerDown={(e) => {
+                      e.currentTarget.setPointerCapture(e.pointerId);
+                      setDragging(g.id);
+                    }}
+                    onPointerMove={(e) => onHandleMove(e, i)}
+                    onPointerUp={() => endDrag(i)}
+                    onPointerCancel={() => endDrag(i)}
+                    onKeyDown={(e) => onHandleKey(e, i)}
+                    onKeyUp={(e) => onHandleKeyUp(e, i)}
+                  >
+                    <span className="d2s-tip">{g.start_min} min</span>
+                  </button>
+                )
+              )}
             </div>
             <div className="d2s-scale" aria-hidden>
               <span>0</span>
@@ -220,133 +240,186 @@ export function Day2Schedule({
               <span>{length} min</span>
             </div>
           </div>
-          <p className="d2s-hint">Drag a handle or use a card to move a time. Minutes from the game&apos;s start. +5 on the Day 2 game makes the Funfair longer.</p>
+          <p className="d2s-hint">
+            Drag a handle or use a card to move a time. Minutes from the game&apos;s start. +5 on the Day 2 game makes the last segment longer. Up to {MAX_SEGMENTS} segments.
+          </p>
 
-          <button
-            type="button"
-            className="d2s-more"
-            aria-expanded={open}
-            aria-controls="d2s-cards"
-            onClick={() => setOpen((o) => !o)}
-          >
+          <button type="button" className="d2s-more" aria-expanded={open} aria-controls="d2s-cards" onClick={() => setOpen((o) => !o)}>
             <span>Segment Times and Switches</span>
             <i><ChevronIcon /></i>
           </button>
 
           <div className="d2s-collapse" data-open={open} id="d2s-cards">
-          <div className="d2s-grid" inert={!open}>
-            {SEGMENTS.map((s, i) => {
-              const k = s.key;
-              const m = META[k];
-              const on = segment === k;
-              const [a, b] = range(k);
-              const done = elapsed !== null && !manual && !on && elapsed >= b;
-              const endBound = m.end;
-              const defaults = SEGMENT_DEFAULTS[k];
-              return (
-                <article
-                  key={k + i}
-                  className="d2s-card"
-                  data-on={on}
-                  data-done={done}
-                  style={{ ["--tone" as string]: m.tone }}
-                >
-                  <div className="d2s-card-top">
-                    <div>
-                      <span className="d2s-num">{String(i + 1).padStart(2, "0")}</span>
-                      <h3 className="d2s-name">{s.label}</h3>
+            <div className="d2s-grid" inert={!open}>
+              {segs.map((g, i) => {
+                const on = segment === g.id;
+                const a = g.start_min;
+                const b = ends[i];
+                const done = elapsed !== null && !manual && !on && elapsed >= b;
+                const nextStart = i + 1 < segs.length ? segs[i + 1].start_min : null;
+                const label = nameOf(g, i);
+                return (
+                  <article key={g.id} className="d2s-card" data-on={on} data-done={done} style={{ ["--tone" as string]: toneOf(g, i) }}>
+                    <div className="d2s-card-top">
+                      <div>
+                        <span className="d2s-num">{String(i + 1).padStart(2, "0")}</span>
+                        <h3 className="d2s-name">{label}</h3>
+                      </div>
+                      {on ? (
+                        <span className="d2s-chip" data-kind={manual ? "hand" : "live"}>{manual ? "Held" : "Live"}</span>
+                      ) : done ? (
+                        <span className="d2s-chip">Done</span>
+                      ) : null}
                     </div>
-                    {on ? (
-                      <span className="d2s-chip" data-kind={manual ? "hand" : "live"}>{manual ? "Held" : "Live"}</span>
-                    ) : done ? (
-                      <span className="d2s-chip">Done</span>
-                    ) : null}
-                  </div>
 
-                  <div className="d2s-time">
-                    <p className="d2s-time-l">
-                      <b>Starts at</b>
-                      {a}–{b} min · {Math.max(0, b - a)} long
-                    </p>
-                    {m.start ? (
-                      <Stepper value={val(m.start)} disabled={disabled} limits={limits(m.start)} onCommit={(n) => saveTimes({ [m.start!]: n })} />
-                    ) : (
-                      <span className="d2s-fixed">0 min</span>
-                    )}
-                  </div>
-
-                  <div className="d2s-switches">
-                    {SWITCHES.map((w) => {
-                      const live = on && !!state;
-                      const value = live ? switches[w.key] : defaults[w.key];
-                      const byHand = live && w.key in flipped;
-                      return (
-                        <div key={w.key} className="d2s-sw">
-                          <div className="min-w-0">
-                            <p className="d2s-sw-name">
-                              {w.label}
-                              {byHand && <span className="d2s-sw-flag">By Hand</span>}
-                            </p>
-                            <p className="d2s-sw-note">{EFFECT[w.key][value ? 0 : 1]}</p>
-                          </div>
-                          <button
-                            type="button"
-                            role="switch"
-                            aria-checked={value}
-                            aria-label={`${w.label}, ${s.label}`}
-                            title={live ? undefined : "Start this segment to change it"}
-                            className="d2s-toggle"
-                            data-preview={!live}
-                            disabled={busy || !live}
-                            onClick={() =>
-                              call(
-                                { p_action: "set_switch", p_switch: w.key, p_on: !value },
-                                `Day 2: ${w.label} ${value ? "off" : "on"} until the next segment`
-                              )
-                            }
-                          />
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  <div className="d2s-actions">
-                    {on && !manual && endBound && elapsed !== null && (
-                      <button
-                        className="d2s-btn"
-                        data-kind="stop"
-                        disabled={busy}
-                        onClick={() => window.confirm(`End ${s.label.toLowerCase()} now?`) && saveTimes({ [endBound]: elapsed })}
-                      >
-                        <i><StopIcon /></i>End Now
-                      </button>
-                    )}
-                    {on && manual && (
-                      <button className="d2s-btn" data-kind="go" disabled={busy} onClick={() => call({ p_action: "auto" }, "Day 2: back to auto")}>
-                        <i><BackIcon /></i>Back to Auto
-                      </button>
-                    )}
-                    {!on && (
-                      <button
-                        className="d2s-btn"
+                    <label className="d2s-labelrow">
+                      <span>Name</span>
+                      <input
+                        key={g.label}
+                        type="text"
+                        maxLength={40}
+                        aria-label={`Name, segment ${i + 1}`}
+                        defaultValue={g.label}
+                        placeholder={`Segment ${i + 1}`}
                         disabled={disabled}
-                        onClick={() =>
-                          window.confirm(`Start ${s.label.toLowerCase()} now? It holds until Back to Auto.`) &&
-                          call({ p_action: "start_segment", p_segment: k }, `Day 2: ${s.label} started by hand`)
-                        }
+                        onBlur={(e) => setLabel(i, e.currentTarget.value)}
+                        onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+                      />
+                    </label>
+
+                    <div className="d2s-time">
+                      <p className="d2s-time-l">
+                        <b>Starts at</b>
+                        {a}–{b} min · {Math.max(0, b - a)} long
+                      </p>
+                      {i > 0 ? (
+                        <Stepper value={a} disabled={disabled} limits={limits(i)} onCommit={(n) => setStart(i, n)} />
+                      ) : (
+                        <span className="d2s-fixed">0 min</span>
+                      )}
+                    </div>
+
+                    <div className="d2s-switches">
+                      {SWITCHES.map((w) => {
+                        const live = on && !!state;
+                        const value = live ? switches[w.key] : g[w.key];
+                        const byHand = live && w.key in flipped;
+                        const asking = ask?.id === g.id && ask.key === w.key;
+                        return (
+                          <div key={w.key} className="d2s-sw-wrap">
+                            <div className="d2s-sw">
+                              <div className="min-w-0">
+                                <p className="d2s-sw-name">
+                                  {w.label}
+                                  {byHand && <span className="d2s-sw-flag">By Hand</span>}
+                                </p>
+                                <p className="d2s-sw-note">{EFFECT[w.key][value ? 0 : 1]}</p>
+                              </div>
+                              <button
+                                type="button"
+                                role="switch"
+                                aria-checked={value}
+                                aria-label={`${w.label}, ${label}`}
+                                className="d2s-toggle"
+                                disabled={busy || !state}
+                                onClick={() => (live ? setAsk(asking ? null : { id: g.id, key: w.key }) : setDefault(i, w.key, !value))}
+                              />
+                            </div>
+                            {asking && (
+                              <div className="d2s-ask" role="group" aria-label={`Change ${w.label}`}>
+                                <button
+                                  type="button"
+                                  className="d2s-btn"
+                                  disabled={busy}
+                                  onClick={() => {
+                                    setAsk(null);
+                                    setDefault(i, w.key, !value);
+                                  }}
+                                >
+                                  Change Default
+                                </button>
+                                <button
+                                  type="button"
+                                  className="d2s-btn"
+                                  disabled={busy}
+                                  onClick={() => {
+                                    setAsk(null);
+                                    void call(
+                                      { p_action: "set_switch", p_switch: w.key, p_on: !value },
+                                      `Day 2: ${w.label} ${value ? "off" : "on"} until the next segment`
+                                    );
+                                  }}
+                                >
+                                  Just Now
+                                </button>
+                                <button type="button" className="d2s-btn" onClick={() => setAsk(null)}>
+                                  Cancel
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    <div className="d2s-actions">
+                      {on && !manual && nextStart !== null && elapsed !== null && elapsed > a && (
+                        <button
+                          className="d2s-btn"
+                          data-kind="stop"
+                          disabled={busy}
+                          onClick={() =>
+                            window.confirm(`End ${label.toLowerCase()} now?`) && save(withStart(segs[i + 1].id, Math.min(elapsed, (i + 2 < segs.length ? segs[i + 2].start_min - 1 : length - 1))), `Day 2: ${label} ended`)
+                          }
+                        >
+                          <i><StopIcon /></i>End Now
+                        </button>
+                      )}
+                      {on && manual && (
+                        <button className="d2s-btn" data-kind="go" disabled={busy} onClick={() => call({ p_action: "auto" }, "Day 2: back to auto")}>
+                          <i><BackIcon /></i>Back to Auto
+                        </button>
+                      )}
+                      {!on && (
+                        <button
+                          className="d2s-btn"
+                          disabled={disabled}
+                          onClick={() =>
+                            window.confirm(`Start ${label.toLowerCase()} now? It holds until Back to Auto.`) &&
+                            call({ p_action: "start_segment", p_segment: g.id }, `Day 2: ${label} started by hand`)
+                          }
+                        >
+                          <i><PlayIcon /></i>Start Now
+                        </button>
+                      )}
+                      <button
+                        className="d2s-btn"
+                        disabled={disabled || atMax || manual}
+                        title={manual ? "Press Back to Auto first" : atMax ? `At most ${MAX_SEGMENTS} segments` : undefined}
+                        onClick={() => addAfter(i)}
                       >
-                        <i><PlayIcon /></i>Start Now
+                        <i><PlusIcon /></i>Add Segment After
                       </button>
-                    )}
-                  </div>
-                </article>
-              );
-            })}
-          </div>
+                      {i > 0 && (
+                        <button
+                          className="d2s-btn"
+                          data-kind="stop"
+                          disabled={disabled || manual}
+                          title={manual ? "Press Back to Auto first" : undefined}
+                          onClick={() => remove(i)}
+                        >
+                          <i><TrashIcon /></i>Remove
+                        </button>
+                      )}
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
           </div>
 
           <p className="d2s-foot">
-            Switches are live on the running segment; a flip lasts until the next segment. Other cards show their default. Kill-switches (blind box, NFC, token freeze) still stop everything.
+            A card&apos;s switches are the segment&apos;s saved defaults. On the running segment, Just Now lasts until the next segment. A closed station tier refuses Start Game and Submit at that tier&apos;s stations. Kill-switches (blind box, NFC, token freeze) still stop everything.
           </p>
         </div>
       </div>
@@ -407,4 +480,10 @@ const StopIcon = () => (
 );
 const BackIcon = () => (
   <svg viewBox="0 0 16 16" aria-hidden><path d="M3.5 8a4.5 4.5 0 1 0 1.4-3.2M3.5 3v2.5H6" /></svg>
+);
+const PlusIcon = () => (
+  <svg viewBox="0 0 16 16" aria-hidden><path d="M8 3.5v9M3.5 8h9" /></svg>
+);
+const TrashIcon = () => (
+  <svg viewBox="0 0 16 16" aria-hidden><path d="M3.5 4.5h9M6.5 4.5V3h3v1.5M5 4.5l.5 8h5l.5-8" /></svg>
 );

@@ -4,7 +4,6 @@ import { Pause, Trophy } from "lucide-react";
 
 import { usePhaseTimer } from "@/components/PhaseTimerProvider";
 import { useDay2State } from "@/components/useDay2State";
-import { SEGMENTS } from "@/lib/day2";
 import type { Phase } from "@/lib/types";
 import { formatCountdown } from "@/lib/utils";
 
@@ -111,8 +110,7 @@ export function GameStatusPill({ status }: { status: GameStatus }) {
 /**
  * The running day's progress, shown only while Day 1 or Day 2 is on (or
  * paused). Day 1 is one bar. Day 2 is split by Admin's inner schedule
- * (fn_day2_state, 0102): Normal, Challenge, Normal, Funfair, each as long as
- * Admin set it. A segment Admin started by hand counts as reached, so the
+ * (fn_day2_state, 0115): one piece per segment, each as long as Admin set it. A segment Admin started by hand counts as reached, so the
  * segments before it fill up.
  */
 export function GameTrack({ status, serverNow }: { status: GameStatus; serverNow: number }) {
@@ -127,23 +125,24 @@ export function GameTrack({ status, serverNow }: { status: GameStatus; serverNow
   if (p.key === "day2" && s?.game_on && t1 > t0) {
     const total = t1 - t0;
     const at = (min: number) => Math.min(total, Math.max(0, min * 60_000));
-    const edges = [0, at(s.challenge_start_min), at(s.challenge_end_min), at(s.funfair_start_min), total];
+    const list = s.segments;
+    const edges = [...list.map((g) => at(g.start_min)), total];
     for (let i = 1; i < edges.length; i++) edges[i] = Math.max(edges[i], edges[i - 1]);
-    const current = SEGMENTS.findIndex((seg) => seg.key === day2.segment);
+    const current = day2.index;
     const elapsed = serverNow - t0;
-    const segs = SEGMENTS.map((seg, i) => {
+    const segs = list.map((seg, i) => {
       const from = edges[i];
       const to = edges[i + 1];
       const fill = i < current ? 1 : i > current ? 0 : to > from ? (elapsed - from) / (to - from) : 1;
       return { ...seg, from, to, fill: Math.min(1, Math.max(0, fill)), now: i === current };
     }).filter((seg) => seg.to > seg.from || seg.now);
     return (
-      <div className="fa-track" data-day="2" aria-label={`Day 2: ${SEGMENTS[current]?.label ?? ""}`}>
+      <div className="fa-track" data-day="2" aria-label={`Day 2: ${day2.label}`}>
         {segs.map((seg) => (
           <span
-            key={seg.key}
+            key={seg.id}
             className="fa-seg"
-            data-seg={seg.key}
+            data-seg={seg.funfair ? "funfair" : "normal"}
             data-now={seg.now || undefined}
             style={{ flexGrow: Math.max(seg.to - seg.from, 1) }}
             title={seg.label}

@@ -15,6 +15,7 @@ import { undoWindowMinutes } from "@/components/token/UndoWindowSetting";
 import { ChallengeBanner } from "@/components/ChallengeBanner";
 import { useConfig } from "@/components/useConfig";
 import { useDay2State } from "@/components/useDay2State";
+import { tierClosedText } from "@/lib/day2";
 import { useOfflineQueue } from "@/components/useOfflineQueue";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import {
@@ -96,7 +97,7 @@ function day2Checks({
   counts,
   locations,
   phaseOn,
-  stationOn,
+  tierClosed,
   frozen,
   places,
 }: {
@@ -105,8 +106,8 @@ function day2Checks({
   counts: Counts | null | undefined;
   locations: ProjectorLocation[];
   phaseOn: boolean;
-  /** Live control's Station game switch (Day 2 inner schedule, 0102). */
-  stationOn: boolean;
+  /** Why this station's tier is closed by the Day 2 inner schedule (0115), or null when open. */
+  tierClosed: string | null;
   frozen: boolean;
   places: Places;
 }): Day2Check[] {
@@ -133,7 +134,9 @@ function day2Checks({
       ? { label: "Day 2 Game", text: "Running", state: "ok" }
       : { label: "Day 2 Game", text: "Not started yet. Results are refused until Live control starts it.", state: "bad" }
   );
-  if (!stationOn) checks.push({ label: "Station Game", text: "Switched off by Admin in Live control. Results are refused.", state: "bad" });
+  if (tierClosed) {
+    checks.push({ label: `${RISK_TIER_META[station.risk_tier].label} Stations`, text: `${tierClosed}. You can't start or submit here until it opens.`, state: "bad" });
+  }
 
   const need = RISK_TIER_META[station.risk_tier].pick;
   const piece = "Puzzle Piece";
@@ -609,12 +612,12 @@ export default function GmPanelPage() {
         p.state === "active" &&
         (!p.ends_at || Date.parse(p.ends_at) > serverNow)
     );
-  const stationOn = day2.switches.station;
+  const tierClosed = tierClosedText(day2, tier, day2.state);
   const frozen = flag(config["tokens_frozen"]);
   const group = groups.find((g) => g.id === groupId) ?? null;
   const counts = piecesFor && piecesFor.groupId === groupId ? piecesFor.counts : undefined;
   const checks = group
-    ? day2Checks({ station, balance: group.token_balance, counts, locations, phaseOn, stationOn, frozen, places })
+    ? day2Checks({ station, balance: group.token_balance, counts, locations, phaseOn, tierClosed, frozen, places })
     : [];
   const canStart = !!group && checks.every((c) => c.state === "ok" || c.state === "warn");
   const step = game ? (confirmWin !== null ? 2 : 1) : 0;
@@ -631,7 +634,7 @@ export default function GmPanelPage() {
     setBusy(false);
     setPiecesFor({ groupId, counts: fresh });
     const balance = rows?.find((g) => g.id === groupId)?.token_balance ?? group?.token_balance ?? null;
-    const blocked = day2Checks({ station, balance, counts: fresh, locations, phaseOn, stationOn, frozen, places }).find(
+    const blocked = day2Checks({ station, balance, counts: fresh, locations, phaseOn, tierClosed, frozen, places }).find(
       (c) => c.state === "bad" || c.state === "wait"
     );
     if (blocked) return result.setError(`${blocked.label}: ${blocked.text}`);
