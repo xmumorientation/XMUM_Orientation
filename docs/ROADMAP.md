@@ -328,6 +328,11 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 
 ## Done
 
+### Spot box: one code per box, 2026-11-04 (Jiamin, branch `jiamin-day2-schedule-segments`)
+- Migration `0116` (run after 0115). The Spot used one shared QR for the whole pool, so one printed copy (or a photo) could be scanned again and again. Now every box in the pool has its own random code (`blind_box_spot_codes`, made once and stored). A code can be claimed once, by any group; a group can claim as many as it finds (free, outside the 50-box limit, no more "one per group").
+- Admin → Blind box → Spot Box: Print All Codes (one page, 3 per row), a list of codes with who claimed each, and a download for a single code. "Boxes in the Pool" is the number of codes: a bigger pool adds codes, a smaller one removes unclaimed ones (highest number first). Codes never change, so print once. Restore boxes frees every code.
+- QR token `bb5` (`{c: code}`, `blindBoxSpotToken` in `lib/blindbox.ts`); `/blindbox` uses `fn_bb_spot_public` / `fn_bb_spot_preview` / `fn_bb_spot_claim`. The old shared Spot QR stops working (`bb_refuse_spot` is patched into the old buy / preview functions), so **print the new codes**. Spot claims made before 0116 are tied to codes 1, 2, ... Tests: `tests/blindbox/db.test.ts` (0116 block).
+
 ### Day 2 inner schedule: add / remove segments, Easy / Medium / Hard station switches, 2026-11-04 (Jiamin, branch `claude/day2-schedule-segments-83f0af`)
 - Plan: [docs/plans/day2-flexible-segments.md](plans/day2-flexible-segments.md). Migration `0115` (run after 0114; replaces the old 60 / 90 / 120 times with the new seed).
 - The schedule is a list of 1 to 8 segments (`day2_schedule.segments`): id, label, start minute, and five switches: Easy, Medium and Hard station (risk tiers low / medium / high), Blind Box, Funfair. Live control → Day 2 inner schedule: one slider handle per segment, Add Segment After (splits at the midpoint), Remove (time goes to the segment before), rename, and per-card switches that edit the saved defaults. On the running segment a flip asks Change Default or Just Now.

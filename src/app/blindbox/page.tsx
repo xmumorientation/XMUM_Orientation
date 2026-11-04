@@ -48,11 +48,12 @@ export default async function BlindBoxPage({
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Who is selling (public: the name only, and only for a valid code).
-  const { data: seller, error: sellerError } = await supabase.rpc("fn_bb_seller_public", {
-    p_seller_id: token.sellerId,
-    p_version: token.version,
-  });
+  // Who is selling (public: the name only, and only for a valid code). A
+  // hidden (Spot) box has its own code (bb5, migration 0116).
+  const spotCode = token.spotCode;
+  const { data: seller, error: sellerError } = spotCode
+    ? await supabase.rpc("fn_bb_spot_public", { p_code: spotCode })
+    : await supabase.rpc("fn_bb_seller_public", { p_seller_id: token.sellerId, p_version: token.version });
   if (sellerError) return <ErrorScreen {...UNKNOWN} />;
   const { seller_name: sellerName, spot } = seller as { seller_name: string; spot?: boolean };
 
@@ -60,10 +61,9 @@ export default async function BlindBoxPage({
     return <BlindBoxLogin sellerName={sellerName} spot={spot} />;
   }
 
-  const { data, error } = await supabase.rpc("fn_bb_seller_preview", {
-    p_seller_id: token.sellerId,
-    p_version: token.version,
-  });
+  const { data, error } = spotCode
+    ? await supabase.rpc("fn_bb_spot_preview", { p_code: spotCode })
+    : await supabase.rpc("fn_bb_seller_preview", { p_seller_id: token.sellerId, p_version: token.version });
 
   if (error) {
     if (error.message.includes("FRESHIE_ONLY")) {
@@ -97,7 +97,9 @@ export default async function BlindBoxPage({
   // An old seller-wide code (bb3) of a seller who now has several types asks
   // for the right one instead.
   let preview = data as BlindBoxPreview;
-  if (token.assignmentId !== undefined) {
+  if (spotCode) {
+    // one hidden box: nothing to choose
+  } else if (token.assignmentId !== undefined) {
     const only = preview.options.filter((o) => o.assignment_id === token.assignmentId);
     if (only.length === 0) return <ErrorScreen {...UNKNOWN} />;
     preview = {
@@ -116,8 +118,9 @@ export default async function BlindBoxPage({
 
   return (
     <BlindBoxBuy
-      sellerId={token.sellerId}
-      version={token.version}
+      sellerId={token.sellerId ?? 0}
+      version={token.version ?? 0}
+      spotCode={spotCode}
       preview={preview}
       color={(group?.color as string | null) ?? null}
     />

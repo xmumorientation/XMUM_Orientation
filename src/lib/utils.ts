@@ -142,6 +142,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   BOX_UNKNOWN: "This blind box code isn't active.",
   BOXES_SOLD_OUT: "All blind boxes here have been given out!",
   BB_ALREADY_FROM_SELLER: "Your group has already bought a box from this seller.",
+  BB_CODE_USED: "Someone already claimed this hidden box. Look for another one!",
   BB_GROUP_CAP: "Your group has already bought the most blind boxes it is allowed.",
   BB_PRICE_CHANGED: "The price of this box just changed. Nothing was charged. Check the new price and tap BUY again.",
   BB_HAS_SALES: "Groups have already bought blind boxes from this seller, so it can't be deleted. Turn its boxes off in Admin → Blind box instead.",

@@ -203,6 +203,7 @@ export type BlindBoxPageStatus =
   | "frozen"
   | "sold_out"
   | "already_from_seller"
+  | "code_used"
   | "cap_reached";
 
 export type BlindBoxOptionStatus = "ok" | "sold_out" | "insufficient";
@@ -218,7 +219,7 @@ export interface BlindBoxOption {
 
 export interface BlindBoxPreview {
   status: BlindBoxPageStatus;
-  /** The hidden Spot box (migration 0100): free, one per group. */
+  /** The hidden Spot box (0100, one code per box since 0116): free, outside the cap. */
   spot?: boolean;
   seller_name: string;
   group_name: string;
