@@ -5,13 +5,14 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { vxSlab, vxDisplay } from "@/components/home/fonts";
 import { useEventCountdown } from "@/components/useEventCountdown";
+import { useProfile } from "@/components/ProfileProvider";
 import { useGroup } from "@/components/useGroup";
 import { useScheduleItems } from "@/components/useScheduleFeed";
 import type { ScheduleItem } from "@/lib/types";
 
 import "./freshie.css";
 import "@/components/staff/staff-home.css";
-import { themeFromColor, VORTEXA_THEME } from "./groupTheme";
+import { staffTheme, themeFromColor } from "./groupTheme";
 
 // Logged-in Freshie schedule. Same night layout as the welcome page
 // schedule (day switcher + timeline cards), filled from schedule_items
@@ -42,7 +43,9 @@ function whenLabel(item: ScheduleItem) {
 
 export function FreshieSchedule({ vortexa = false }: { vortexa?: boolean }) {
   const { group } = useGroup();
-  const theme = vortexa ? VORTEXA_THEME : themeFromColor(group?.color);
+  const { role } = useProfile();
+  // Ops crew: the Welcome colours with the role's colour as the main light (GM keeps them as they are).
+  const theme = vortexa ? staffTheme(role) : themeFromColor(group?.color);
   const { nowId: onId } = useEventCountdown();
   const nowId = vortexa ? onId : null;
   // Shared, cached feed (useScheduleFeed.ts): a return visit shows the last schedule at once.

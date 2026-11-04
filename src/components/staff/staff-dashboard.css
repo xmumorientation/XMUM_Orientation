@@ -31,6 +31,11 @@
   --sp-mute: #8d87a0;
 }
 .staff-dashboard-shell { background: var(--sp-bg); color: var(--sp-text); }
+/* Ops crew (ROLE_COLOR, AppShell): the role's light at the top right, behind
+   pages that draw no background of their own (Committee's scoreboard). */
+.staff-dashboard-shell.staff-vx[data-role-color] {
+  background: radial-gradient(ellipse 70% 45% at 100% 0, color-mix(in srgb, var(--role-light) 24%, transparent), transparent 70%) var(--sp-bg);
+}
 .sd { position: relative; min-height: calc(100dvh - 40px); max-width: 900px; margin: auto; padding: 0 4px 24px; font-family: var(--font-nexus-body), Outfit, sans-serif; background: radial-gradient(ellipse at 100% 0, color-mix(in srgb, var(--fh-glow) 9%, transparent), transparent 45%); }
 .sd-header { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: calc(8px + env(safe-area-inset-top, 0px)) 0 24px; }
 .sd-header > img { width: 88px; height: auto; }

@@ -15,7 +15,7 @@ import {
 } from "@/components/freshie/FreshieHome";
 import { ACTION_PLAN_STOP, ActionPlanStop } from "@/components/ActionPlan";
 import { FreshieSky, type SkyCabin } from "@/components/freshie/FreshieSky";
-import { groupSwatch, VORTEXA_THEME } from "@/components/freshie/groupTheme";
+import { groupSwatch, staffTheme } from "@/components/freshie/groupTheme";
 import { nexusBody, vxDisplay, vxSlab } from "@/components/home/fonts";
 import { priceText, useMyBlindBoxes, type MyBlindBoxSeller } from "@/components/BlindBoxCard";
 import { GroupBadge } from "@/components/GroupBadge";
@@ -83,7 +83,7 @@ function WelcomeStop({ name, role }: { name: string; role: UserRole }) {
         <span className="fh-mark">Vortexa</span>
       </h1>
       <p className="fh-hello">
-        Hi <b>{name || "there"}</b> / {ROLE_LABELS[role]}
+        Hi <b>{name || "there"}</b> / <span className="sh-role">{ROLE_LABELS[role]}</span>
       </p>
       {/* Same rule as Freshie Home: the running game, else the event countdown. */}
       {live ? (
@@ -347,7 +347,8 @@ export function StaffHome() {
     return () => root.classList.remove("fh-snap");
   }, []);
   const cabins: SkyCabin[] = useMemo(() => (groups ?? []).map(({ id, color }) => ({ id, color })), [groups]);
-  const theme = VORTEXA_THEME;
+  // The role's own colour (ROLE_COLOR) is the main sky light; AppShell sets --fh-role for the chip and role name. GM has none.
+  const theme = staffTheme(profile.role);
 
   return (
     <div

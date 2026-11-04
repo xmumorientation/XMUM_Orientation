@@ -42,7 +42,40 @@
 }
 .gc-orb { position: absolute; border-radius: 50%; filter: blur(80px); }
 .gc-orb-navy { width: 420px; height: 420px; left: -160px; top: 4%; background: #063a65; opacity: 0.55; }
-.gc-orb-pink { width: 360px; height: 360px; right: -140px; bottom: 6%; background: #fe06ab; opacity: 0.16; }
+.gc-orb-pink { width: 360px; height: 360px; right: -140px; bottom: 6%; background: var(--role-light, #fe06ab); opacity: 0.16; }
+
+/* Role colour (ROLE_COLOR in groupTheme.ts; [data-role-color] is set by AppShell
+   for HOF, OC, HOGM and Committee, and by OpsShell for Admin): a big light at the
+   top right, a haze from the top, role-tinted card edges and eyebrows, and a line
+   under the OPS title. Cyan (selected tab, "where you are") and yellow keep their jobs. */
+[data-role-color] .gc-orb-pink { width: 520px; height: 520px; right: -200px; top: -14%; bottom: auto; opacity: 0.42; }
+[data-role-color] .gc-bg::after {
+  content: ""; position: absolute; inset: 0 0 auto; height: 320px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--role-light) 20%, transparent), transparent);
+}
+[data-role-color] .gc-card { border-color: color-mix(in srgb, var(--role-accent) 28%, var(--gc-line)); }
+[data-role-color] .gc-eyebrow { color: var(--role-accent); }
+.gc-role-line {
+  display: block; width: 96px; height: 4px; margin: 4px 0 6px; border-radius: 4px;
+  background: var(--role-accent); box-shadow: 0 0 16px var(--role-accent);
+}
+
+/* GM Station page, Day 2 station (tierVars in groupTheme.ts): the station's
+   tier colour, as strong as a role colour on Ops: a big light at the top right,
+   a haze from the top, card edges, every eyebrow, the title glow, the step
+   numbers and the difficulty meter under the title. */
+.gc-st[data-tier] .gc-orb-pink { width: 520px; height: 520px; right: -200px; top: -14%; bottom: auto; background: var(--st-accent); opacity: 0.42; }
+.gc-st[data-tier] .gc-bg::after {
+  content: ""; position: absolute; inset: 0 0 auto; height: 320px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--st-accent) 20%, transparent), transparent);
+}
+.gc-st[data-tier] .gc-card { border-color: color-mix(in srgb, var(--st-accent) 28%, var(--gc-line)); }
+.gc-st[data-tier] .gc-eyebrow { color: var(--st-accent); }
+.gc-st[data-tier] .gc-st-top .gc-title { text-shadow: 0 0 28px var(--st-glow); }
+.gc-st[data-tier] .gc-st-step { color: var(--st-accent); }
+.gc-st-tier { display: flex; gap: 4px; margin: 4px 0 2px; }
+.gc-st-tier i { width: 22px; height: 6px; border-radius: 3px; background: var(--gc-line-2); }
+.gc-st-tier i[data-on] { background: var(--st-accent); box-shadow: 0 0 8px var(--st-glow); }
 
 /* ── Type ────────────────────────────────────────────────────────────────── */
 .gc .gc-title { margin: 0; font-family: var(--gc-display); font-weight: 400; font-size: clamp(36px, 9vw, 52px); line-height: 1.05; color: var(--gc-text); }

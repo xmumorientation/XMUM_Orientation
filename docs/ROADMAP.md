@@ -328,6 +328,10 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 
 ## Done
 
+### Role colours and GM tier colours, 2026-11-04 (Ben, branch `gm-role-tier-colours`)
+- Each ops role has its own colour (`ROLE_COLOR` in `groupTheme.ts`): HOF orange, OC blue, HOGM pink, Committee lilac, Admin navy with white accents. AppShell sets it on every page of those roles (Home, Ops, Map, Scores, Schedule): the role chip and account avatar, the eyebrows, the main sky light on Home and Schedule, and on Ops, Map and Scores a big top-right light, a haze from the top, role-tinted card edges and a line under the OPS title. Cyan and yellow keep their jobs.
+- GM Station page on a Day 2 station follows the station's tier (`TIER_COLOR`): Easy lilac, Medium orange, Hard pink, as strongly as a role colour on Ops: a big top-right light, a haze from the top, card edges, every eyebrow, the title glow, step numbers and a 3-bar difficulty meter. GM's other pages and Day 1 stations are unchanged. No migration.
+
 ### Spot box: one code per box, 2026-11-04 (Jiamin, branch `jiamin-day2-schedule-segments`)
 - Migration `0116` (run after 0115). The Spot used one shared QR for the whole pool, so one printed copy (or a photo) could be scanned again and again. Now every box in the pool has its own random code (`blind_box_spot_codes`, made once and stored). A code can be claimed once, by any group; a group can claim as many as it finds (free, outside the 50-box limit, no more "one per group").
 - Admin → Blind box → Spot Box: Download All Codes (each code as its own PNG, hidden-blind-box-01.png and so on; the card is styled in the Vortexa logo colours, `lib/spot-card.ts`), a list of codes with who claimed each, and a download for a single code. "Boxes in the Pool" is the number of codes: a bigger pool adds codes, a smaller one removes unclaimed ones (highest number first). Codes never change, so print once. Restore boxes frees every code.

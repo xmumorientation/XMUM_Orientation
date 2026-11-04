@@ -3,7 +3,7 @@
 import { Check, CircleDashed, History, TriangleAlert, Undo2, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
 
-import { groupSwatch } from "@/components/freshie/groupTheme";
+import { groupSwatch, tierVars } from "@/components/freshie/groupTheme";
 import { KEY_COLORS, KEY_NAMES } from "@/components/freshie/items/KeyEmblem";
 import { vxDisplay, vxSlab } from "@/components/home/fonts";
 import { usePhases } from "@/components/PhaseTimerProvider";
@@ -24,6 +24,7 @@ import {
   RISK_TIER_META,
   type Day2Result,
   type ProjectorLocation,
+  type RiskTier,
   type Station,
   type StationStatus,
 } from "@/lib/types";
@@ -73,6 +74,9 @@ const STATUS: Record<StationStatus, { label: string; tone: "ok" | "warn" | "off"
   in_progress: { label: "In Progress", tone: "warn" },
   closed: { label: "Closed", tone: "off" },
 };
+
+/** Filled bars of the difficulty meter under a Day 2 station's name. */
+const TIER_LEVEL: Record<RiskTier, number> = { low: 1, medium: 2, high: 3 };
 
 const TOTAL_PIECES = PIECES_PER_SET * PROJECTOR_LOCATIONS.length;
 type Places = Record<ProjectorLocation, ProjectorPlace>;
@@ -710,9 +714,15 @@ export default function GmPanelPage() {
   }
 
   const status = station ? STATUS[station.status] : null;
+  // A Day 2 station takes its tier's colour (tierVars); Day 1 and no station keep the Welcome colours.
+  const tinted = station?.day === 2;
 
   return (
-    <div className={cn("gc gc-st", vxDisplay.variable, vxSlab.variable)}>
+    <div
+      className={cn("gc gc-st", vxDisplay.variable, vxSlab.variable)}
+      data-tier={tinted ? tier : undefined}
+      style={tinted ? tierVars(tier) : undefined}
+    >
       <div className="gc-bg" aria-hidden>
         <i className="gc-orb gc-orb-navy" />
         <i className="gc-orb gc-orb-pink" />
@@ -726,6 +736,13 @@ export default function GmPanelPage() {
         <MyActivitySheet open={activityOpen} onClose={() => setActivityOpen(false)} userId={profile.id} groups={groups} />
         <p className="gc-eyebrow">{station ? `Day ${station.day} Station` : "Station Panel"}</p>
         <h1 className="gc-title">{station?.name ?? "No Station Yet"}</h1>
+        {tinted && (
+          <span className="gc-st-tier" role="img" aria-label={`Difficulty ${TIER_LEVEL[tier]} of 3`}>
+            {[1, 2, 3].map((n) => (
+              <i key={n} data-on={n <= TIER_LEVEL[tier] || undefined} />
+            ))}
+          </span>
+        )}
         <p className="gc-sub">
           <i aria-hidden />
           {station ? (

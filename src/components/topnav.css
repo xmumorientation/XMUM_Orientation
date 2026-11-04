@@ -75,6 +75,9 @@
   display: grid; place-items: center; width: 100%; height: 100%; border-radius: 50%;
   background: var(--tn-accent); color: var(--fh-on-blue, #001629); font-family: var(--font-vx-slab), Georgia, serif;
 }
+/* Ops crew: the role chip and avatar in the role's own colour (ROLE_COLOR, AppShell); the rest of TopNav keeps cyan. */
+[data-role-color] .vx-topnav-role { border-color: var(--fh-role); color: var(--fh-role); }
+[data-role-color] .vx-topnav .fh-faci-avatar.fh-faci-avatar-plain > span { background: var(--fh-role); color: #001629; }
 
 .vx-topnav-menu {
   position: absolute; right: 0; top: calc(100% + 10px); z-index: 50; width: 230px;

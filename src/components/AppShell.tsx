@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 
 import { nexusBody, vxDisplay } from "@/components/home/fonts";
 import { FreshieTabBar } from "@/components/freshie/FreshieTabBar";
-import { themeFromColor, VORTEXA_THEME } from "@/components/freshie/groupTheme";
+import { ROLE_COLOR, roleVars, themeFromColor, VORTEXA_THEME } from "@/components/freshie/groupTheme";
 import { ShellMenuProvider } from "@/components/ShellMenu";
 import { PersistentMapProvider } from "@/components/campus-map/PersistentCampusMap";
 import { NavIcon } from "@/components/NavIcon";
@@ -144,6 +144,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const groupTheme = isFreshie || isFaci ? themeFromColor(group?.color) : null;
   // Only the --fh-* night colours; --brand-1 stays the brand so light pages keep theirs.
   const fhTheme = groupTheme ?? (isVortexa ? VORTEXA_THEME : null);
+  // HOF, OC, HOGM and Committee: the role's own colour (ROLE_COLOR) on every page,
+  // read by the page backgrounds, headers and chips. GM has none and keeps the Welcome colours.
+  const roleColor = isOps ? ROLE_COLOR[profile.role] : undefined;
   const isNight = isStaffDashboard || (
     (isFreshie || isFaci) &&
     (pathname === "/dashboard" || pathname === "/schedule" || pathname === "/checklist" || pathname === "/inventory" || pathname === "/map"));
@@ -206,6 +209,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         isStaffArea && `staff-dashboard-shell ${nexusBody.variable} ${vxDisplay.variable}`,
         isStaffArea && (isVortexa || isAdminMap) && "staff-vx"
       )}
+      data-role-color={roleColor ? "" : undefined}
       style={
         {
           "--brand-1": groupTheme?.accent ?? brand.brandPrimary,
@@ -221,6 +225,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 "--fh-on-blue": fhTheme.onAccent,
               }
             : {}),
+          ...(roleColor ? { ...roleVars(profile.role), "--fh-role": roleColor.accent } : {}),
         } as React.CSSProperties
       }
     >
