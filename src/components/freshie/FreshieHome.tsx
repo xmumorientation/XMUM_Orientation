@@ -28,11 +28,11 @@ import { ChallengeBanner } from "@/components/ChallengeBanner";
 import { FinalStretchBanner, FunfairTicker, ProjectorsLitRow, useTickerOn } from "@/components/day2/Day2Alerts";
 import { useFinalStretch } from "@/components/day2/useDay2Live";
 import { GroupBadge } from "@/components/GroupBadge";
+import { SupportLinks } from "@/components/SupportLinks";
 import { usePhases, usePhaseTimer } from "@/components/PhaseTimerProvider";
 import { useProfile } from "@/components/ProfileProvider";
 import { EDIT_PROFILE_EVENT } from "@/components/TopNav";
 import { useGroup } from "@/components/useGroup";
-import { SupportLinks } from "@/components/SupportLinks";
 import { TokenBoard } from "@/components/TokenBoard";
 import { useScoreboard } from "@/components/useScoreboard";
 import { countdownParts, useEventCountdown } from "@/components/useEventCountdown";
@@ -596,6 +596,7 @@ export function AccountMenu({
   onEditProfile?: () => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -655,7 +656,16 @@ export function AccountMenu({
               <Pencil size={15} aria-hidden /> Edit Profile
             </button>
           )}
-          <SupportLinks menu />
+          <button
+            type="button"
+            role="menuitem"
+            className="fh-menu-help-toggle"
+            aria-expanded={helpOpen}
+            onClick={() => setHelpOpen((value) => !value)}
+          >
+            Help &amp; Feedback <ChevronDown size={14} aria-hidden />
+          </button>
+          {helpOpen && <div id="fh-account-help"><SupportLinks variant="menu" /></div>}
           <button type="button" role="menuitem" onClick={signOut}>
             Log Out
           </button>

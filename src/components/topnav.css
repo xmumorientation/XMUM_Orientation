@@ -93,3 +93,10 @@
 }
 .vx-topnav-menu button:hover { border-color: var(--tn-accent); color: var(--tn-accent); }
 .vx-topnav-menu .vx-topnav-menu-edit + button { margin-top: 8px; }
+.vx-topnav-menu .vx-topnav-menu-help-toggle { justify-content: space-between; min-height: 36px; margin-top: 8px; padding: 0 4px; border: 0; border-radius: 6px; color: #8ba3c4; font-size: 12px; font-weight: 500; }
+.vx-topnav-menu .vx-topnav-menu-help-toggle:hover { border: 0; color: #eef5ff; }
+.staff-vx .vx-topnav-menu .vx-topnav-menu-help-toggle { border: 0; color: #8d87a0; }
+.staff-vx .vx-topnav-menu .vx-topnav-menu-help-toggle:hover { border: 0; color: #f3f0fa; }
+.vx-topnav-menu .support-links-menu { display: grid; gap: 0; justify-content: stretch; margin: 0; padding-left: 8px; font-size: 12px; }
+.vx-topnav-menu .support-links-menu a { min-height: 34px; justify-content: flex-start; color: #8ba3c4; font-size: inherit; font-weight: 500; text-decoration: none; }
+.vx-topnav-menu .support-links-menu a:hover, .vx-topnav-menu .support-links-menu a:focus-visible { color: var(--tn-accent); }

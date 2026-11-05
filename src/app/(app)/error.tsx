@@ -5,6 +5,7 @@ import { saveAdminDayFilter } from "@/lib/adminDayFilter";
 import { useEffect } from "react";
 
 import { Card } from "@/components/ui";
+import { SupportLinks } from "@/components/SupportLinks";
 
 // Error boundary scoped to the authenticated app segment: keeps the shell
 // (sidebar/nav) intact and recovers just the page content.
@@ -32,6 +33,7 @@ export default function AppError({
       <button onClick={reset} className="btn-primary mt-3">
         Try Again
       </button>
+      <SupportLinks />
       {pathname === "/admin" && <button className="btn-secondary min-h-[44px]" onClick={() => {
         saveAdminDayFilter("Day 1");
         window.location.assign("/admin");

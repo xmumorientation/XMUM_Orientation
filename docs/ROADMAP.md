@@ -328,6 +328,18 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 
 ## Done
 
+### David, 2026-11-06 (Expandable Faci group QR)
+- Made the Group Code QR tappable. It expands within the card for easier scanning and returns to its original size on the next tap, with an accessible button label and reduced-motion support.
+
+### David, 2026-11-06 (Tech Team WhatsApp template)
+- Simplified the Contact Tech Team WhatsApp message to ask only for an issue category and brief description. The current page and an approximate device/browser label are added automatically when the user opens WhatsApp.
+- Grouped the profile menu's feedback and Tech Team links under a subdued, collapsed Help & Feedback row so support remains available without competing with account actions.
+
+### David, 2026-11-06 (Contextual help and mobile touch)
+- Removed the Offline Guide link from the public footer; the offline notice and existing menu entry remain available.
+- Removed always-visible feedback and Tech Team links from auth screens and account menus. Help links now appear with login, recovery, scanner or game-control errors.
+- Applied transparent tap highlighting to links and buttons while retaining keyboard focus outlines. The iPhone touch effect still needs a real-device check.
+
 ### David, 2026-11-06 (Login, game and scan recovery)
 - Added clear staff login errors and recovery guidance, including network failures. GM Day 2 shows the first blocking check near Start Game with actionable guidance.
 - Added QR recovery guidance and made Freshie Home show loading or retry when puzzle pieces are unavailable instead of presenting zero pieces. Other inventory views have not been visually checked in failure states.

@@ -70,6 +70,7 @@ function useGroupCode(group: Group | null) {
 
 export function GroupCodeStop({ group }: { group: Group | null }) {
   const { code, codeReady, codeError, png, qrError, retry } = useGroupCode(group);
+  const [qrExpanded, setQrExpanded] = useState(false);
   const digits = codeReady ? (code ?? "----").split("") : ["", "", "", ""];
 
   return (
@@ -88,9 +89,17 @@ export function GroupCodeStop({ group }: { group: Group | null }) {
         <div className="fh-gc">
           <div className="fh-gc-qr">
             {png ? (
-              // The card is a generated image, same file Freshie control downloads.
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={png} alt={`${group.name} QR code`} />
+              <button
+                type="button"
+                className="fh-gc-qr-toggle"
+                aria-label={qrExpanded ? "Return the QR code to its normal size" : "Enlarge the QR code"}
+                aria-expanded={qrExpanded}
+                onClick={() => setQrExpanded((expanded) => !expanded)}
+              >
+                {/* The card is a generated image, the same file Freshie control downloads. */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img className={qrExpanded ? "is-expanded" : undefined} src={png} alt={`${group.name} QR code`} />
+              </button>
             ) : qrError ? (
               <div className="fh-gc-qr-msg" role="alert">
                 <p>Could not make the QR code.</p>

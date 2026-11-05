@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { SupportLinks } from "@/components/SupportLinks";
 
 // Root error boundary: catches render/data errors in any route and offers a
 // styled recovery path instead of an unstyled crash.
@@ -35,6 +36,7 @@ export default function Error({
             Go Home
           </a>
         </div>
+        <SupportLinks />
       </div>
     </div>
   );
