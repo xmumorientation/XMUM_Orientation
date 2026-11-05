@@ -7,7 +7,7 @@ import { FoldBody } from "@/components/staff/game/parts";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import type { FaciStatus, GroupPosition } from "@/lib/types";
 import type { GroupPin } from "@/lib/groupPosition";
-import { MAX_DRAW_ACCURACY_M, groupPinColor } from "@/lib/mapGeo";
+import { GROUP_PIN_COLOR, MAX_DRAW_ACCURACY_M } from "@/lib/mapGeo";
 import { LiveText } from "@/components/LiveAgo";
 import { friendlyError, timeAgoExact } from "@/lib/utils";
 
@@ -77,7 +77,7 @@ function GroupDot({ groupId }: { groupId: number }) {
   return (
     <span
       className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white"
-      style={{ backgroundColor: groupPinColor(groupId) }}
+      style={{ backgroundColor: GROUP_PIN_COLOR }}
     >
       {groupId}
     </span>

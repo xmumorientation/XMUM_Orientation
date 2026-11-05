@@ -174,7 +174,6 @@ export function useCampusMapData({
   const supabase = useMemo(() => supabaseBrowser(), []);
   const profile = useProfile();
   const myId = profile.id;
-  const canSeeStaff = profile.role !== "freshie";
   const [staffPositions, setStaffPositions] = useState<StaffPosition[]>([]);
   const myGroupId = profile.group_id;
   // The station lists name the groups at a station for Committee tier; everyone else gets a count (Ben).
@@ -223,7 +222,8 @@ export function useCampusMapData({
     : null;
 
   useEffect(() => {
-    if (!canSeeStaff || !live) return;
+    // HOF, OC and HOGM pins: every role, like the group pins (0124, same rule as 0108).
+    if (!live) return;
     let active = true;
     let request = 0;
     async function loadStaff() {
@@ -237,7 +237,7 @@ export function useCampusMapData({
     window.addEventListener("staff-location-change", loadStaff);
     document.addEventListener("visibilitychange", onVisible);
     return () => { active = false; clearInterval(timer); window.removeEventListener("staff-location-change", loadStaff); document.removeEventListener("visibilitychange", onVisible); };
-  }, [supabase, canSeeStaff, live]);
+  }, [supabase, live]);
 
   const loadStations = useCallback(async () => {
     const { data } = await supabase.from("stations").select("*").order("id");

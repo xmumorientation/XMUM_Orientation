@@ -22,6 +22,8 @@ import {
   isTap,
   pinArt,
   stationArt,
+  STAFF_PIN_TOP,
+  staffArt,
   tagArt,
   youArt,
   type Flight,
@@ -44,7 +46,8 @@ import { prefersLite } from "@/components/map3d/webgl";
 import { stationDotColor } from "@/components/ui";
 import { ACTIVATION_JOURNEY_KEY, readActivationJourney } from "@/lib/activation-journey";
 import { type FunfairPower, type FunfairZone, isFunfairPreview, type FunfairPreview, zoneTitle } from "@/lib/funfair";
-import { groupPinColor } from "@/lib/mapGeo";
+import { GROUP_PIN_COLOR } from "@/lib/mapGeo";
+import { STAFF_PIN_COLOR } from "@/lib/staffLocation";
 import type { Station } from "@/lib/types";
 
 import type { CampusMapViewProps } from "./CampusMap2DView";
@@ -136,7 +139,8 @@ type StationMark = Mark & { station: Station; big: boolean };
 type BadgeMark = Mark & { area: string; stations: Station[]; big: boolean };
 type PinMark = Mark & { groupId: number; color: string; big: boolean; dashed: boolean; manual: boolean };
 /** A name tag on the map during Admin's accuracy check: "You", another Admin, the tapped spot. */
-type TagMark = { key: string; text: string; at: Vec3; dot?: boolean };
+/** `staff`: a HOF, OC or HOGM sharing their location (red pin and tag) instead of the blue "you" dot. */
+type TagMark = { key: string; text: string; at: Vec3; dot?: boolean; staff?: boolean };
 
 type Taps = {
   station: (s: Station) => void;
@@ -253,12 +257,25 @@ function SceneMarkers({
       <RideTags />
       {showNames && <ZoneSigns power={funfair} size={size} />}
       {tags.map((t) => (
-        <Marker key={`tag-${t.key}`} position={t.at} art={tagArt(t.text)} dy={t.dot ? 24 : 16} order={9} size={size} />
+        <Marker
+          key={`tag-${t.key}`}
+          position={t.at}
+          art={tagArt(t.text, t.staff ? STAFF_PIN_COLOR : undefined)}
+          dy={t.staff ? STAFF_PIN_TOP + 14 : t.dot ? 24 : 16}
+          order={t.staff ? 10 : 9}
+          size={size}
+        />
       ))}
       {tags
         .filter((t) => t.dot)
         .map((t) => (
-          <Marker key={`dot-${t.key}`} position={t.at} art={youArt()} order={9} size={size} />
+          <Marker
+            key={`dot-${t.key}`}
+            position={t.at}
+            art={t.staff ? staffArt(STAFF_PIN_COLOR) : youArt()}
+            order={t.staff ? 10 : 9}
+            size={size}
+          />
         ))}
       {badges.map((b) => {
         const status = clusterStatus(b.stations);
@@ -630,7 +647,7 @@ export function CampusMap3DView({
     const beside = new Map<string, number>();
     const atSpot = new Map<string, PinMark[]>();
     for (const { g, pin } of drawnPins) {
-      const color = pin.state === "stale" ? "#9ca3af" : groupPinColor(g.group_id);
+      const color = pin.state === "stale" ? "#9ca3af" : GROUP_PIN_COLOR;
       const big = selectedGroup === g.group_id;
       const base = {
         groupId: g.group_id,
@@ -671,7 +688,7 @@ export function CampusMap3DView({
     const [x, z] = gpsToWorld(person.lat, person.lng);
     // Do not clamp an off-campus fix to the edge and misrepresent its location.
     if (Math.abs(x) <= EXTENT.x && Math.abs(z) <= EXTENT.z) {
-      tags.push({ key: `staff-${person.user_id}`, text: `${person.role.toUpperCase()} / ${person.full_name || "Staff"}`, at: [x, 0, z], dot: true });
+      tags.push({ key: `staff-${person.user_id}`, text: `${person.role.toUpperCase()} / ${person.full_name || "Staff"}`, at: [x, groundY(x, z), z], dot: true, staff: true });
     }
   }
 

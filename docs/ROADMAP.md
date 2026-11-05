@@ -328,6 +328,14 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 
 ## Done
 
+### Map: OC shares its location, everyone sees staff pins, red staff pins and blue group pins, 2026-11-05 (Ben, branch `map3d-a5-carpark`)
+Migration `0124_staff_location_oc_everyone` (run on the live database, 2026-11-05).
+- OC can turn on Share Location like HOF and HOGM (0103 refused it, though the app showed OC the switch).
+- HOF, OC and HOGM pins follow the group-location rule (0108): every signed-in account sees them, Freshies included.
+- Staff pins are a red map pin (`STAFF_PIN_COLOR`, `staffPinPath()` in `src/lib/staffLocation.ts`) with a white hole and a red name tag, on 2D (pulsing halo at the tip), 3D (`staffArt()`) and the "Staff on the Map" list.
+- Every group pin is one blue (`GROUP_PIN_COLOR` in `mapGeo.ts`, replacing the 8-colour cycle); the number tells groups apart, stale pins stay grey. Group theme colours on the Freshie and Faci pages are unchanged.
+- Checked: typecheck, lint, map tests; mock renders only. Not yet seen on a phone with real sharing.
+
 ### Map: the road to the A-row's basement car park, the track's ends, the A-row's forecourts, B1's east side, 2026-11-05 (Ben, branch `map3d-a5-carpark`)
 No migration. Ben: the art's road between the track and A5 stopped in the lawn; really it goes down into the car park under the A-row.
 - The road now leaves the campus road where the imagery has it, runs north and bends west down a ramp into the car park, between a white house at the terrace's east end (green overgrown roof, two grey roller shutters, Ben's photos) and a white wall. A grey paved way climbs beside the ramp to the A-row's walk.

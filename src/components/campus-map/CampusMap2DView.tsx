@@ -9,7 +9,8 @@ import { bulbStatus, bulbTitle } from "@/components/LightbulbList";
 import { stationDotColor } from "@/components/ui";
 import { PROJECTOR_CODE_NAMES, type Station } from "@/lib/types";
 import { MAP_BUILDINGS } from "@/lib/mapBuildings";
-import { accuracyAxes, gpsToMapPercent, groupPinColor } from "@/lib/mapGeo";
+import { GROUP_PIN_COLOR, accuracyAxes, gpsToMapPercent } from "@/lib/mapGeo";
+import { STAFF_PIN_COLOR, staffPinHeadY, staffPinPath } from "@/lib/staffLocation";
 
 import { LayerSwitch, MapInfoCard } from "./CampusMapPanels";
 import { clusterStatus, type CampusMapData } from "./useCampusMapData";
@@ -715,22 +716,12 @@ export function CampusMap2DView({
                 />
               )}
 
-              {data.staffPositions.map((person) => {
-                const p = gpsToMapPercent(person.lat, person.lng);
-                if (!p) return null;
-                const label = `${person.role.toUpperCase()} / ${person.full_name || "Staff"}`;
-                return <g key={person.user_id} transform={`translate(${mx(p.x)},${my(p.y)})`}>
-                  <title>{label}</title>
-                  <circle r={18} fill="#0891b2" stroke="white" strokeWidth={4} />
-                  <text y={-28} textAnchor="middle" fontSize={24} fontWeight="bold" fill="#0891b2" stroke="white" strokeWidth={5} paintOrder="stroke">{label}</text>
-                </g>;
-              })}
               {showGroupPins &&
                 drawnPins.map(({ g, pin, dx }) => {
                   const x = mx(pin.pos.x) + dx;
                   const y = my(pin.pos.y);
                   const color =
-                    pin.state === "stale" ? "#9ca3af" : groupPinColor(g.group_id);
+                    pin.state === "stale" ? "#9ca3af" : GROUP_PIN_COLOR;
                   const isSel = selectedGroup === g.group_id;
                   const halo =
                     pin.source === "gps" &&
@@ -806,6 +797,24 @@ export function CampusMap2DView({
                     </g>
                   );
                 })}
+              {/* HOF, OC and HOGM sharing their location: a red map pin (tip on the spot, pulsing halo under it) and a
+                  red name tag,
+                  drawn over the group pins so it stands out. */}
+              {data.staffPositions.map((person) => {
+                const p = gpsToMapPercent(person.lat, person.lng);
+                if (!p) return null;
+                const label = `${person.role.toUpperCase()} / ${person.full_name || "Staff"}`;
+                const tagW = Math.round(label.length * 14 + 32);
+                return <g key={person.user_id} transform={`translate(${mx(p.x)},${my(p.y)})`} className="pointer-events-none">
+                  <title>{label}</title>
+                  <ellipse rx={34} ry={13} fill={STAFF_PIN_COLOR} fillOpacity={0.35} className="campus-map-staff-pulse" />
+                  <ellipse rx={12} ry={5} fill="#1a1206" fillOpacity={0.35} />
+                  <path d={staffPinPath(24)} fill={STAFF_PIN_COLOR} stroke="white" strokeWidth={5} strokeLinejoin="round" />
+                  <circle cy={-staffPinHeadY(24)} r={12} fill="white" />
+                  <rect x={-tagW / 2} y={-128} width={tagW} height={38} rx={19} fill={STAFF_PIN_COLOR} stroke="white" strokeWidth={4} />
+                  <text y={-102} textAnchor="middle" fontSize={24} fontWeight={800} fill="white">{label}</text>
+                </g>;
+              })}
               {checkMode && canManageStations && (
                 <>
                   {anchors.map((an) => (

@@ -7,6 +7,7 @@ import type { MapControls as MapControlsImpl } from "three-stdlib";
 
 import { KEY_COLORS } from "@/components/freshie/items/KeyEmblem";
 import { DEFAULT_ZONE_KEYS, FUNFAIR_ZONES, type FunfairPower, type FunfairZone } from "@/lib/funfair";
+import { staffPinHeadY, staffPinPath } from "@/lib/staffLocation";
 import { PROJECTOR_CODE_NAMES, type ProjectorLocation } from "@/lib/types";
 
 import type { Vec3 } from "./CampusScene";
@@ -250,16 +251,53 @@ export function youArt(): MarkerArt {
   return { tex, w, h, x: w / 2, y: h / 2, r };
 }
 
-/** A small name tag (the dorms). */
-export function tagArt(text: string): MarkerArt {
+/**
+ * A HOF, OC or HOGM sharing their location: a red map pin (teardrop, white hole, white rim) whose tip sits on
+ * the spot, over a soft red halo, so it reads apart from the blue "you" dot and the group pins.
+ */
+export function staffArt(color: string): MarkerArt {
+  const r = 12;
+  const w = 40;
+  const h = 50;
+  const tipY = h - 7;
+  const tex = cachedTexture(`staff|${color}`, w, h, (ctx) => {
+    const c = new THREE.Color(color);
+    const rgba = (a: number) => `rgba(${Math.round(c.r * 255)},${Math.round(c.g * 255)},${Math.round(c.b * 255)},${a})`;
+    ctx.beginPath();
+    ctx.ellipse(w / 2, tipY, 16, 6, 0, 0, Math.PI * 2);
+    ctx.fillStyle = rgba(0.35);
+    ctx.fill();
+    ctx.save();
+    ctx.translate(w / 2, tipY);
+    const pin = new Path2D(staffPinPath(r));
+    ctx.fillStyle = color;
+    ctx.fill(pin);
+    ctx.lineWidth = 2.5;
+    ctx.lineJoin = "round";
+    ctx.strokeStyle = "#ffffff";
+    ctx.stroke(pin);
+    ctx.beginPath();
+    ctx.arc(0, -staffPinHeadY(r), r * 0.5, 0, Math.PI * 2);
+    ctx.fillStyle = "#ffffff";
+    ctx.fill();
+    ctx.restore();
+  });
+  return { tex, w, h, x: w / 2, y: tipY, r };
+}
+
+/** Screen px from a staff pin's tip to the top of its head, for placing the name tag above it. */
+export const STAFF_PIN_TOP = staffPinHeadY(12) + 12 + 2;
+
+/** A small name tag (the dorms). With `fill`, a coloured tag with a white rim (a staff member's name). */
+export function tagArt(text: string, fill?: string): MarkerArt {
   const h = 20;
   const font = `700 10px ${FONT}`;
   const probe = document.createElement("canvas").getContext("2d")!;
   probe.font = font;
   const w = Math.ceil(probe.measureText(text).width) + 16;
-  const tex = cachedTexture(`tag|${text}`, w, h, (ctx) => {
-    ctx.fillStyle = "rgba(20,18,30,0.62)";
-    ctx.strokeStyle = "rgba(255,255,255,0.25)";
+  const tex = cachedTexture(`tag|${fill ?? ""}|${text}`, w, h, (ctx) => {
+    ctx.fillStyle = fill ?? "rgba(20,18,30,0.62)";
+    ctx.strokeStyle = fill ? "#ffffff" : "rgba(255,255,255,0.25)";
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.roundRect(0.5, 0.5, w - 1, h - 1, (h - 1) / 2);
