@@ -62,7 +62,9 @@
   position: relative; display: flex; align-items: center; justify-content: center; min-width: 0;
   background: color-mix(in srgb, var(--tone) 16%, transparent);
   color: color-mix(in srgb, var(--tone) 60%, #fff);
-  font-size: 11px; font-weight: 700; letter-spacing: 0.02em; white-space: nowrap; overflow: hidden;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.02em; overflow: hidden;
+  /* long names wrap onto up to 3 lines instead of being cut off; 14px each side keeps them clear of the handles */
+  padding: 0 14px; text-align: center; line-height: 1.15; text-wrap: balance; overflow-wrap: anywhere;
   border-bottom: 3px solid color-mix(in srgb, var(--tone) 55%, transparent);
 }
 .d2s-seg + .d2s-seg { border-left: 1px solid var(--d2-bg); }
@@ -241,4 +243,8 @@
 /* where the running game ends, when the plan is longer than the game */
 .d2s-end-mark {
   position: absolute; top: 0; bottom: 0; width: 0; border-left: 2px dashed var(--d2-cyan); opacity: 0.7; pointer-events: none;
+}
+
+@media (max-width: 640px) {
+  .d2s-seg { font-size: 10px; padding: 0 12px; }
 }

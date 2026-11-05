@@ -198,10 +198,11 @@ export function Day2Schedule({
                     <div
                       key={g.id}
                       className="d2s-seg"
+                      title={nameOf(g, i)}
                       data-on={segment === g.id}
                       style={{ width: `${pct}%`, ["--tone" as string]: toneOf(g, i) }}
                     >
-                      {pct >= 12 ? nameOf(g, i) : ""}
+                      {pct >= 18 ? nameOf(g, i) : ""}
                     </div>
                   );
                 })}
