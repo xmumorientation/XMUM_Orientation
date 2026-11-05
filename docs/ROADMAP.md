@@ -328,6 +328,25 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 
 ## Done
 
+### Map: OC shares its location, everyone sees staff pins, red staff pins and blue group pins, 2026-11-05 (Ben, branch `map3d-a5-carpark`)
+Migration `0124_staff_location_oc_everyone` (run on the live database, 2026-11-05).
+- OC can turn on Share Location like HOF and HOGM (0103 refused it, though the app showed OC the switch).
+- HOF, OC and HOGM pins follow the group-location rule (0108): every signed-in account sees them, Freshies included.
+- Staff pins are a red map pin (`STAFF_PIN_COLOR`, `staffPinPath()` in `src/lib/staffLocation.ts`) with a white hole and a red name tag, on 2D (pulsing halo at the tip), 3D (`staffArt()`) and the "Staff on the Map" list.
+- Every group pin is one blue (`GROUP_PIN_COLOR` in `mapGeo.ts`, replacing the 8-colour cycle); the number tells groups apart, stale pins stay grey. Group theme colours on the Freshie and Faci pages are unchanged.
+- Checked: typecheck, lint, map tests; mock renders only. Not yet seen on a phone with real sharing.
+
+### Map: the road to the A-row's basement car park, the track's ends, the A-row's forecourts, B1's east side, 2026-11-05 (Ben, branch `map3d-a5-carpark`)
+No migration. Ben: the art's road between the track and A5 stopped in the lawn; really it goes down into the car park under the A-row.
+- The road now leaves the campus road where the imagery has it, runs north and bends west down a ramp into the car park, between a white house at the terrace's east end (green overgrown roof, two grey roller shutters, Ben's photos) and a white wall. A grey paved way climbs beside the ramp to the A-row's walk.
+- Brick walks on both sides (the east one runs on to the lake), a palm row along the lawn and a belt of trees toward the track. The art road's stretch through the fence to the outer road is gone, and the fence and the tree strip there are whole.
+- The ramp is really dug in (3.5 m at the portal): the ground is cut away over it, its floor wears the road's paint, and pins and taps follow it. The way in glows faintly at night.
+- Both ends of the track's infield are red now (the south end was green).
+- The forecourts of A1, A2, A4 and A5's east side are centred on their porches (they followed the imagery, 1 to 7 m to one side).
+- In front of A1 the campus road is grey paving past its bend, so it runs into the A-row's walk and A1's forecourt instead of the asphalt stopping short beside it; the walk now starts at the road's end.
+- B1's east side, toward the east gate, is paved in pale terracotta pavers like Ben's photo (it was lawn).
+- Code: `BASEMENT_*` in `geo.ts`, `basement.tsx`; details in the session handoff, "The road to the A-row's basement car park". Checked on `/map3d` from above, from the track side, from the lawn, into the portal, at night and at phone size in lite mode; `tests/map3d/basement.test.ts`; `tsc` and `eslint` clean for the map.
+
 ### David, 2026-11-05 — Public Offline Guide
 - Added a standalone offline guide with retry, saved public Schedule, static campus map and recovery instructions. The Welcome menu/footer link to it; an app-wide offline notice preserves the original page by opening the guide separately.
 - Matched the existing Vortexa logo, fonts, night palette, date picker, timeline cards and category tags; added mobile guide tabs and expandable staff help. Saved assets include the logo and fonts.

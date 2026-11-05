@@ -136,6 +136,6 @@ export function StaffLocationSwitch() {
       <button type="button" role="switch" aria-checked={on} aria-label="Share my location" className="btn-secondary min-h-[44px] px-4" disabled={state === "starting" || state === "stopping"} onClick={() => void toggle()}>{on ? "Stop Sharing" : "Share Location"}</button>
     </div>
     {error && <p role="alert" className="mt-2 text-sm">{error}</p>}
-    <p className="mt-2 text-xs text-ink-faint">Staff and Facilitators can see your pin. Locked or inactive phones may stop updating; pins disappear after 2 minutes without an update.</p>
+    <p className="mt-2 text-xs text-ink-faint">Everyone in the app can see your red pin, the same as group locations. Locked or inactive phones may stop updating; pins disappear after 2 minutes without an update.</p>
   </section>;
 }

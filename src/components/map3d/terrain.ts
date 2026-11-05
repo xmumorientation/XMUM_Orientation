@@ -11,6 +11,7 @@ import {
   PLATEAU_H,
   plateauEdge,
   plateauY,
+  rampDepth,
   UNITS_PER_M,
   type World,
 } from "./geo";
@@ -191,8 +192,13 @@ export function basinY(x: number, z: number): number {
   return Math.max(lean, bowl <= base ? base : base + (bowl - base) * (1 - smooth(off / BOWL_FADE)));
 }
 
-/** The ground's height at a world point: the A-row's raised ground and the lake's low ground (they never meet). */
+/**
+ * The ground's height at a world point: the A-row's raised ground and the lake's low ground (they never meet), and on
+ * the ramp down to the A-row's basement car park, its floor.
+ */
 export function groundY(x: number, z: number): number {
+  const ramp = rampDepth(x, z);
+  if (ramp !== null) return -ramp;
   return plateauY(x, z) + basinY(x, z);
 }
 

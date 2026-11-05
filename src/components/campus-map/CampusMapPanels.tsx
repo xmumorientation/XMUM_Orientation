@@ -18,6 +18,7 @@ import { useDay2State } from "@/components/useDay2State";
 import { tierClosedText } from "@/lib/day2";
 import type { Station } from "@/lib/types";
 import { LiveText } from "@/components/LiveAgo";
+import { STAFF_PIN_COLOR, staffPinHeadY, staffPinPath } from "@/lib/staffLocation";
 import { timeAgoExact } from "@/lib/utils";
 
 import type { CampusMapData, MapLayer, MapView } from "./useCampusMapData";
@@ -492,9 +493,15 @@ export function CampusMapPanels({
     <>
       {data.staffPositions.length > 0 && <section className="card mt-3 p-3" aria-label="Staff sharing location">
         <h2 className="font-semibold">Staff on the Map</h2>
-        <ul className="mt-2 space-y-2">{data.staffPositions.map((person) => <li key={person.user_id}>
+        <ul className="mt-2 space-y-2">{data.staffPositions.map((person) => <li key={person.user_id} className="flex gap-2">
+          <svg aria-hidden viewBox="-12 -32 24 34" className="mt-0.5 h-5 w-4 shrink-0">
+            <path d={staffPinPath(10)} fill={STAFF_PIN_COLOR} stroke="white" strokeWidth={1.5} strokeLinejoin="round" />
+            <circle cy={-staffPinHeadY(10)} r={5} fill="white" />
+          </svg>
+          <span>
           <span className="text-sm font-semibold">{person.role.toUpperCase()} / {person.full_name || "Staff"}</span>
           <span className="block text-xs text-ink-faint">Updated {new Date(person.updated_at).toLocaleTimeString()} / {person.accuracy_m == null ? "accuracy unknown" : `±${Math.round(person.accuracy_m)} m`}</span>
+          </span>
         </li>)}</ul>
       </section>}
       {canManageStations && (

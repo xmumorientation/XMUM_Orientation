@@ -4,10 +4,12 @@ import { useEffect, useMemo } from "react";
 import * as THREE from "three";
 
 import { drawB1Crossing, drawB1Grounds } from "./b1";
+import { basementFloor, cutBasement, drawBasementRise, drawBasementRoad } from "./basement";
 import { basinMask, basinSurface } from "./basin";
 import {
   A_FRONT,
   B1_PLACE,
+  BASEMENT_HOUSE,
   BLOCKS,
   COLORS,
   DOME,
@@ -151,7 +153,6 @@ function makeGroundTexture(lite: boolean): THREE.CanvasTexture {
     speckle(Math.round((x1 - x0) * (z1 - z0) * 2.4), x0, z0, x1, z1, "rgba(200,210,120,0.14)", "rgba(70,90,30,0.13)");
   }
   ctx.restore();
-  poly(img(GROUND.roadNotch), COLORS.road);
   // inside the outer road only from here on
   ctx.save();
   trace(base);
@@ -161,8 +162,8 @@ function makeGroundTexture(lite: boolean): THREE.CanvasTexture {
   for (const p of FOOTPATHS) stroke(p, FOOTPATH_W, COLORS.path);
   ctx.restore();
   // The campus road behind the main gate, over the walks. On the east it runs over the east road's inner edge, so a
-  // grass verge goes there first. The notch road is painted again over their junction, and the statue's plaza and
-  // A1's forecourt over the road.
+  // grass verge goes there first. The road to the A-row's basement car park leaves it between A5 and the track, and the
+  // statue's plaza and A1's forecourt are painted over it.
   poly(GATE_ROAD.verge, COLORS.lawn);
   ctx.save();
   trace(GATE_ROAD.verge);
@@ -177,18 +178,33 @@ function makeGroundTexture(lite: boolean): THREE.CanvasTexture {
   ctx.setLineDash([0.8, 0.7]);
   stroke(GATE_ROAD.line, 0.08, COLORS.roadLine);
   ctx.setLineDash([]);
+  // past its bend toward A1 the campus road is grey paving, like the A-row's walk it runs into: a straight change from
+  // the asphalt, kerbs carried on, and its round end paved too
   {
-    const notch = img(GROUND.roadNotch);
-    const [, z0, , z1] = bounds(notch);
-    const zm = (z0 + z1) / 2;
-    const [x] = GATE_ROAD.line.reduce((a, b) => (Math.abs(b[1] - zm) < Math.abs(a[1] - zm) ? b : a));
+    const tail = GATE_ROAD.line.slice(GATE_ROAD.paved);
+    const [ex, ez] = tail[tail.length - 1];
     ctx.save();
+    ctx.lineCap = "butt";
+    ctx.lineJoin = "round";
+    trace(tail);
+    ctx.lineWidth = GATE_ROAD.width + 2 * KERB;
+    ctx.strokeStyle = COLORS.kerb;
+    ctx.stroke();
     ctx.beginPath();
-    ctx.rect(x - 1, z0, 2, z1 - z0);
-    ctx.clip();
-    poly(notch, COLORS.road);
+    ctx.arc(ex, ez, GATE_ROAD.width / 2 + KERB, 0, Math.PI * 2);
+    ctx.fillStyle = COLORS.kerb;
+    ctx.fill();
+    trace(tail);
+    ctx.lineWidth = GATE_ROAD.width;
+    ctx.strokeStyle = COLORS.paving;
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(ex, ez, GATE_ROAD.width / 2, 0, Math.PI * 2);
+    ctx.fillStyle = COLORS.paving;
+    ctx.fill();
     ctx.restore();
   }
+  drawBasementRoad(ctx, KERB, PATH_EDGE);
   // the east gate: its entrance over the verge, and the guard house's island (paving, then a lawn at its outer end)
   {
     const { x, half, z, island } = EAST_GATE;
@@ -217,6 +233,7 @@ function makeGroundTexture(lite: boolean): THREE.CanvasTexture {
   trace(base);
   ctx.clip();
   drawAFront(ctx);
+  drawBasementRise(ctx, KERB);
   ctx.restore();
 
   // the funfair's land: lawn, like the lake park
@@ -290,11 +307,16 @@ function makeGroundTexture(lite: boolean): THREE.CanvasTexture {
   };
   for (const b of BLOCKS) foot(b, b.flat ? 0.1 : -0.3);
   foot(B1_PLACE, 0.1);
+  // the white house at the terrace's east end
+  poly(BASEMENT_HOUSE.outline, "rgba(0,0,0,0.45)");
   // the statue's round flower bed
   ctx.beginPath();
   ctx.arc(STATUE[0], STATUE[1], BED.r * UNITS_PER_M * LANDMARK_SCALE, 0, Math.PI * 2);
   ctx.fill();
   ctx.restore();
+
+  // last: the ground is cut away over the car park's ramp, whose floor wears this canvas
+  cutBasement(ctx);
 
   const tex = new THREE.CanvasTexture(canvas);
   tex.colorSpace = THREE.SRGBColorSpace;
@@ -413,9 +435,10 @@ function drawTrack(ctx: CanvasRenderingContext2D) {
   for (let x = -TRACK_M.length / 2, i = 0; x < TRACK_M.length / 2; x += 7.5, i++) {
     if (i % 2) ctx.fillRect(x, -outerR, 7.5, outerR * 2);
   }
-  // the north end (+x) is red synthetic from the goal line to the kerb, for field events
+  // both ends (+x north, -x south) are red synthetic from the goal line to the kerb, for field events (Ben 2026-11-05)
   ctx.fillStyle = COLORS.track;
   ctx.fillRect(PITCH_M.length / 2, -outerR, outerR * 2, outerR * 2);
+  ctx.fillRect(-PITCH_M.length / 2 - outerR * 2, -outerR, outerR * 2, outerR * 2);
   ctx.restore();
 
   // pitch markings
@@ -450,10 +473,12 @@ export function Ground({ lite = false }: { lite?: boolean }) {
   const raised = useMemo(() => plateauSurface(lite), [lite]);
   const low = useMemo(() => basinSurface(lite), [lite]);
   const cut = useMemo(() => basinMask(lite), [lite]);
+  const floor = useMemo(() => basementFloor(), []);
   useEffect(() => () => tex.dispose(), [tex]);
   return (
     <>
-      {/* the flat ground, cut away over the lake's low ground */}
+      {/* the flat ground, cut away over the lake's low ground (alphaMap) and over the car park's ramp (the canvas's
+       alpha, cutBasement) */}
       <mesh rotation-x={-Math.PI / 2} receiveShadow>
         <planeGeometry args={[EXTENT.x * 2, EXTENT.z * 2]} />
         <meshStandardMaterial map={tex} roughness={1} alphaMap={cut} alphaTest={0.5} />
@@ -462,9 +487,20 @@ export function Ground({ lite = false }: { lite?: boolean }) {
        meet the flat ground (the A-row's steps cast the shadows) */}
       {[raised, low].map((g) => (
         <mesh key={g.uuid} geometry={g} receiveShadow>
-          <meshStandardMaterial map={tex} roughness={1} polygonOffset polygonOffsetFactor={-1} polygonOffsetUnits={-1} />
+          <meshStandardMaterial
+            map={tex}
+            roughness={1}
+            alphaTest={0.5}
+            polygonOffset
+            polygonOffsetFactor={-1}
+            polygonOffsetUnits={-1}
+          />
         </mesh>
       ))}
+      {/* the ramp's floor wears the canvas where it is cut away, so the road's paint runs on down it */}
+      <mesh geometry={floor} receiveShadow>
+        <meshStandardMaterial map={tex} roughness={1} polygonOffset polygonOffsetFactor={-1} polygonOffsetUnits={-1} />
+      </mesh>
     </>
   );
 }
