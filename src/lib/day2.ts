@@ -3,7 +3,7 @@
 // page changes segment on time without asking the server again. The server
 // does the same sum (fn_day2_segment / fn_day2_off_reason) before it lets a
 // fee, a piece, a blind box or a map light through.
-import type { RiskTier } from "@/lib/types";
+import type { RiskTier, Station, StationStatus } from "@/lib/types";
 
 export type Day2Switch = "easy" | "medium" | "hard" | "blindbox" | "funfair";
 
@@ -121,6 +121,21 @@ export function tierStatus(n: Day2Now, tier: RiskTier, state: Day2State | null):
     if (state.segments[i][sw]) return { open: false, reopenAt: n.starts[i] };
   }
   return { open: false, reopenAt: null };
+}
+
+/**
+ * The status a station shows while a Day 2 game runs: Closed when its tier's
+ * switch is off (On = available, Off = closed), unless a group is playing there.
+ * Display only: stations.status itself is never written by the schedule, so a
+ * tier that opens again puts every station back to what it was.
+ */
+export function effectiveStatus(
+  s: Pick<Station, "day" | "risk_tier" | "status">,
+  n: Day2Now,
+  state: Day2State | null
+): StationStatus {
+  if (s.day !== 2 || !state?.game_on || s.status === "in_progress") return s.status;
+  return tierStatus(n, s.risk_tier, state).open ? s.status : "closed";
 }
 
 /** "Closed", "Opens at 60 min" style text for a closed tier. */

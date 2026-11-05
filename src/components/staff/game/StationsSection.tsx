@@ -7,7 +7,7 @@ import { usePhases } from "@/components/PhaseTimerProvider";
 import { useConfig } from "@/components/useConfig";
 import { useStationOccupants, type Occupant } from "@/components/staff/useStationOccupants";
 import { useDay2State } from "@/components/useDay2State";
-import { tierClosedText } from "@/lib/day2";
+import { effectiveStatus, tierClosedText } from "@/lib/day2";
 import { MAP_BUILDINGS, stationPosition } from "@/lib/mapBuildings";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { RISK_TIER_META, type RiskTier, type Station, type StationStatus } from "@/lib/types";
@@ -323,8 +323,8 @@ export function StationsSection() {
                   {s.name}
                   {here.length > 0 && <small className="gc-fold-here">{here.map((o) => o.name).join(", ")} here</small>}
                 </span>
-                <span className="gc-chip" data-tone={STATUS_TONE[s.status]}>
-                  {STATUS.find((x) => x.value === s.status)?.label}
+                <span className="gc-chip" data-tone={STATUS_TONE[effectiveStatus(s, day2, day2.state)]}>
+                  {STATUS.find((x) => x.value === effectiveStatus(s, day2, day2.state))?.label}
                 </span>
                 <ChevronDown size={18} aria-hidden className="gc-fold-chev" />
               </button>

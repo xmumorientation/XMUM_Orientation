@@ -7,6 +7,8 @@ import { usePhases } from "@/components/PhaseTimerProvider";
 import { activeMapDay } from "@/lib/mapDay";
 import { bulbTitle } from "@/components/LightbulbList";
 import { useProfile } from "@/components/ProfileProvider";
+import { useDay2State } from "@/components/useDay2State";
+import { effectiveStatus } from "@/lib/day2";
 import { useProjectorPlaces } from "@/components/useConfig";
 import { funfairFromBulbs, funfairFromState, funfairMissing, type FunfairPower } from "@/lib/funfair";
 import { supabaseBrowser } from "@/lib/supabase/client";
@@ -178,7 +180,17 @@ export function useCampusMapData({
   const myGroupId = profile.group_id;
   // The station lists name the groups at a station for Committee tier; everyone else gets a count (Ben).
   const staffView = COMMITTEE_TIER.includes(profile.role);
-  const [stations, setStations] = useState<Station[]>([]);
+  const [rawStations, setStations] = useState<Station[]>([]);
+  // A Day 2 station whose tier is switched off by the inner schedule shows (and
+  // lights its marker) as Closed, on every map and list that reads this hook.
+  const day2 = useDay2State();
+  const stations = useMemo(
+    () => rawStations.map((s) => {
+      const status = effectiveStatus(s, day2, day2.state);
+      return status === s.status ? s : { ...s, status };
+    }),
+    [rawStations, day2]
+  );
   const [layerState, setLayerState] = useState<MapLayer>("stations");
   const layer: MapLayer = bulbLayer ? layerState : "stations";
   const [bulbs, setBulbs] = useState<MapLightbulb[]>([]);
