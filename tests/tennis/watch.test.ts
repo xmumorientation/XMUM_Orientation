@@ -97,6 +97,15 @@ describe("tennis courts board", () => {
     hub.advance(1);
     expect(board.getView()).toEqual([]);
   });
+
+  it("keeps older matches visible when their host does not send names", () => {
+    const hub = new Hub(0.04);
+    const board = new Board(hub.transport("v"));
+    const old = hub.transport("old").join("courts");
+    old.track({ court: 1, key: "1:a:b:c", colors: ["#ffffff", "#000000"] });
+    hub.advance(1);
+    expect(board.getView()).toEqual([{ court: 1, key: "1:a:b:c", colors: ["#ffffff", "#000000"] }]);
+  });
 });
 
 describe("watching a match", () => {

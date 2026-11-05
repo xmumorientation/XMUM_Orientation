@@ -37,7 +37,7 @@ export default function InventoryPage() {
   return <GroupInventory />;
 }
 
-/** Live data by default; ?demo=… plays the sample instead (kept for previews and the Replay demo). */
+/** Live data by default; ?demo=… plays the sample instead for previews. */
 function FreshieItemsRoute() {
   const params = useSearchParams();
   return params.get("demo") ? <ItemsPreview /> : <LiveItems />;
@@ -50,61 +50,28 @@ function FreshieItemsRoute() {
 // open them. The buy and open token changes show in Activity through the
 // token log.
 //
-// Replay demo is always there: it shows the sample for a moment (marked
-// Sample data), the T&F key going from 4 to 5 pieces, then returns to the
-// group's live data.
-const REPLAY_PIECE_MS = 1500;
-const REPLAY_BACK_MS = 7000;
-
 function LiveItems() {
   const profile = useProfile();
   const { group } = useGroup();
   const { data } = useItemsData();
   const blind = useBlindBoxes(group?.id ?? profile.group_id ?? null, true);
-  const [demo, setDemo] = useState<ItemsData | null>(null);
-  const [run, setRun] = useState(0);
-
-  useEffect(() => {
-    if (!run) return;
-    const piece = window.setTimeout(() => setDemo((d) => (d ? withLastTrackPiece(d) : d)), REPLAY_PIECE_MS);
-    const back = window.setTimeout(() => setDemo(null), REPLAY_BACK_MS);
-    return () => {
-      window.clearTimeout(piece);
-      window.clearTimeout(back);
-    };
-  }, [run]);
-
-  function replay() {
-    setDemo(sampleItems(DEFAULT_SCENARIO));
-    setRun((n) => n + 1);
-  }
-
   const live: ItemsData = useMemo(() => ({ ...data, boxes: boxGroupsOf(blind.claims) }), [data, blind.claims]);
 
   return (
-    <>
-      {/* A new key per run remounts the page, so only the 5th piece animates in
-          (not every piece that differs between live and sample data). */}
       <FreshieItems
-        key={demo ? `demo-${run}` : "live"}
-        data={demo ? { ...demo, group: data.group } : live}
+        data={live}
         groupColor={group?.color}
         // Only the group's Freshie login opens real boxes; a Faci sees them.
-        canOpenBoxes={demo === null && profile.role === "freshie"}
+        canOpenBoxes={profile.role === "freshie"}
         onOpenBox={blind.openBox}
-        sample={demo !== null}
         hideStatus
       />
-      <button type="button" className="fi-replay" onClick={replay}>
-        Replay Demo
-      </button>
-    </>
   );
 }
 
 // SAMPLE DATA (?demo=…): everything shown comes from sampleData.ts, not from
 // the game. ?demo=complete plays the last T&F piece arriving after a moment,
-// with a Replay button; ?demo=day1|day2|ready|taken|won picks another state.
+// while ?demo=day1|day2|ready|taken|won picks another state.
 // Opening a box only changes the sample in this browser. In the sample,
 // Freshies can open boxes too so the blind box flow can be demoed.
 function ItemsPreview() {
@@ -114,13 +81,12 @@ function ItemsPreview() {
   const scenario: SampleScenario = SAMPLE_SCENARIOS.includes(asked as SampleScenario) ? (asked as SampleScenario) : DEFAULT_SCENARIO;
 
   const [data, setData] = useState<ItemsData>(() => sampleItems(scenario));
-  const [run, setRun] = useState(0);
   useEffect(() => {
     setData(sampleItems(scenario));
     if (scenario !== "complete") return;
     const timer = window.setTimeout(() => setData(withLastTrackPiece), 1500);
     return () => window.clearTimeout(timer);
-  }, [scenario, run]);
+  }, [scenario]);
 
   const view: ItemsData = {
     ...data,
@@ -158,7 +124,6 @@ function ItemsPreview() {
   }
 
   return (
-    <>
       <FreshieItems
         data={view}
         groupColor={group?.color}
@@ -166,12 +131,6 @@ function ItemsPreview() {
         onOpenBox={openSampleBox}
         sample
       />
-      {scenario === "complete" && (
-        <button type="button" className="fi-replay" onClick={() => setRun((n) => n + 1)}>
-          Replay Demo
-        </button>
-      )}
-    </>
   );
 }
 

@@ -166,7 +166,7 @@ export function PhaseCard() {
         <>
           <div className="fh-phasecard-time fh-slab">{formatCountdown(remaining)}</div>
           <div className="fh-phasecard-bar" aria-hidden>
-            <i style={{ width: `${progress * 100}%` }} />
+            <i style={{ transform: `scaleX(${progress})` }} />
           </div>
         </>
       ) : (
@@ -689,7 +689,7 @@ export function StopBar({ stops }: { stops: readonly { id: string; label: string
     <div className="fh-stopbar fh-mono" aria-hidden>
       <b>{String(active + 1).padStart(2, "0")}</b>
       <span className="fh-stopbar-track">
-        <span style={{ width: `${((active + 1) / stops.length) * 100}%` }} />
+        <span style={{ transform: `scaleX(${(active + 1) / stops.length})` }} />
       </span>
       <span>{stops[active]?.label}</span>
     </div>

@@ -137,7 +137,8 @@ export function TennisCard({
   onStations?: () => void;
 }) {
   const view = useSyncExternalStore(courts.subscribe, courts.getView, courts.getView);
-  const busy = useSyncExternalStore(courts.board.subscribe, courts.board.getView, courts.board.getView).length;
+  const liveCourts = useSyncExternalStore(courts.board.subscribe, courts.board.getView, courts.board.getView);
+  const busy = liveCourts.length;
   const queued = view.phase === "queue";
   const full = busy >= 3;
   return (
@@ -169,6 +170,13 @@ export function TennisCard({
           </button>
         )}
       </div>
+      {liveCourts.some((court) => court.names) && (
+        <ul className="map-tennis-matches" aria-label="Current tennis matches">
+          {liveCourts.filter((court) => court.names).map((court) => (
+            <li key={court.key}><span>Court {court.court + 1}</span><strong>{court.names?.[0]} vs {court.names?.[1]}</strong></li>
+          ))}
+        </ul>
+      )}
       <div className="map-tennis-actions">
         {queued ? (
           <button

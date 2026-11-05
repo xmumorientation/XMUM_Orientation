@@ -9,6 +9,10 @@
 .campus-map-viewer .text-ink-faint { color: var(--mv-muted); }
 .map-tennis-card, .map-location-panel { padding: 12px 16px; border-radius: 16px; background: var(--mv-surface); color: var(--mv-text); box-shadow: 0 12px 32px #0006; font-size: 14px; }
 .map-tennis-status { color: var(--mv-muted); font-size: 14px; line-height: 1.5; }
+.map-tennis-matches { display: grid; gap: 5px; margin: 10px 0 0; padding: 0; list-style: none; }
+.map-tennis-matches li { display: flex; gap: 10px; align-items: baseline; font-size: 12px; }
+.map-tennis-matches li span { color: var(--mv-muted); white-space: nowrap; }
+.map-tennis-matches li strong { overflow-wrap: anywhere; }
 .map-tennis-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
 .map-tennis-actions button, .map-manage-stations { min-height: 44px; padding: 10px 14px; border-radius: 12px; font: inherit; font-weight: 700; }
 .map-tennis-primary, .map-manage-stations { background: var(--mv-primary); color: #07060b; }

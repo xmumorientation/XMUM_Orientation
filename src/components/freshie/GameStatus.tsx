@@ -157,7 +157,7 @@ export function GameTrack({ status, serverNow }: { status: GameStatus; serverNow
             style={{ flexGrow: Math.max(seg.to - seg.from, 1) }}
             title={seg.label}
           >
-            <span style={{ width: `${seg.fill * 100}%` }} />
+            <span style={{ transform: `scaleX(${seg.fill})` }} />
           </span>
         ))}
       </div>
@@ -167,7 +167,7 @@ export function GameTrack({ status, serverNow }: { status: GameStatus; serverNow
   return (
     <div className="fa-track" data-day="1" aria-hidden>
       <span className="fa-seg" data-now style={{ flexGrow: 1 }}>
-        <span style={{ width: `${phaseDone(p, serverNow) * 100}%` }} />
+        <span style={{ transform: `scaleX(${phaseDone(p, serverNow)})` }} />
       </span>
     </div>
   );

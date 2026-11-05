@@ -1,0 +1,53 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "gradient-text",
+        "value": "*",
+        "files": [
+          "src/components/freshie/freshie.css"
+        ],
+        "createdAt": "2026-11-05T12:46:16.262Z",
+        "reason": "Existing blind box artwork uses gradients intentionally; unrelated to sponsor logo sizing."
+      },
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "src/components/freshie/freshie.css"
+        ],
+        "createdAt": "2026-11-05T19:04:59.366Z",
+        "reason": "Reviewed: the activity timeline uses a thin type-colored edge; the blind-box coin uses inset shading."
+      },
+      {
+        "rule": "bounce-easing",
+        "value": "cubic-bezier(0.2, 1.4, 0.4, 1)",
+        "files": [
+          "src/components/freshie/freshie.css"
+        ],
+        "createdAt": "2026-11-05T19:05:02.915Z",
+        "reason": "Reviewed: the puzzle piece celebration uses playful motion and respects reduced-motion preferences."
+      },
+      {
+        "rule": "bounce-easing",
+        "value": "cubic-bezier(0.2, 1.5, 0.4, 1)",
+        "files": [
+          "src/components/freshie/freshie.css"
+        ],
+        "createdAt": "2026-11-05T19:05:06.306Z",
+        "reason": "Reviewed: key and blind-box rewards use celebratory motion with reduced-motion support."
+      },
+      {
+        "rule": "bounce-easing",
+        "value": "cubic-bezier(0.2, 1.3, 0.4, 1)",
+        "files": [
+          "src/components/freshie/freshie.css"
+        ],
+        "createdAt": "2026-11-05T19:05:09.303Z",
+        "reason": "Reviewed: key and blind-box arrivals use playful motion with reduced-motion support."
+      }
+    ]
+  }
+}
