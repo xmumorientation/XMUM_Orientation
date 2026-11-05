@@ -7,13 +7,15 @@ import { usePhaseTimer } from "@/components/PhaseTimerProvider";
 import { Card, StationStatusChip } from "@/components/ui";
 import { useConfig } from "@/components/useConfig";
 import { gameLength, otherGameRunning, saveGameLength } from "@/lib/gameLength";
+import { useDay2State } from "@/components/useDay2State";
 import { useStations } from "@/components/useStations";
+import { effectiveStatus } from "@/lib/day2";
 import { reloadSharedFeed, setSharedFeed } from "@/lib/sharedFeed";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import type { Phase, Station, StationStatus } from "@/lib/types";
 import { cn, formatCountdown, friendlyError } from "@/lib/utils";
 
-type StationRow = Pick<Station, "id" | "name" | "day" | "status">;
+type StationRow = Pick<Station, "id" | "name" | "day" | "status" | "risk_tier">;
 const NO_STATIONS: StationRow[] = [];
 
 const PHASE_DAY: Record<string, 1 | 2> = { day1: 1, day2: 2 };
@@ -49,6 +51,7 @@ export function GameToggles({
   const { config } = useConfig();
   const [lengthDraft, setLengthDraft] = useState("");
   const stations: StationRow[] = useStations() ?? NO_STATIONS;
+  const day2 = useDay2State();
   const [busy, setBusy] = useState(false);
   const [open, setOpen] = useState<string | null>(null);
 
@@ -121,7 +124,7 @@ export function GameToggles({
         : null;
   const stationDay = PHASE_DAY[game.key];
   const dayStations = stations.filter((s) => s.day === stationDay);
-  const openCount = dayStations.filter((s) => s.status !== "closed").length;
+  const openCount = dayStations.filter((s) => effectiveStatus(s, day2, day2.state) !== "closed").length;
   const length = gameLength(config, game);
   const blocker = on ? undefined : otherGameRunning(phases, game);
 
@@ -205,7 +208,7 @@ export function GameToggles({
           {dayStations.map((s) => (
             <div key={s.id} className="av-station">
               <span className="min-w-0 flex-1 truncate">{s.name}</span>
-              <StationStatusChip status={s.status} />
+              <StationStatusChip status={effectiveStatus(s, day2, day2.state)} />
               <select
                 className="input w-32 text-sm"
                 aria-label={`${s.name} status`}
