@@ -51,7 +51,11 @@
 .d2s-now b { color: var(--d2-text); font-weight: 700; }
 
 /* timeline */
-.d2s-timeline { padding: 0 9px; }
+/* overflow-x: clip is a backstop: nothing inside the timeline may widen the page
+   (a handle at left: 300% did, and a phone zoomed the whole page out). The tip
+   still shows above the rail because y stays visible. */
+.d2s-timeline { padding: 0 9px; min-width: 0; overflow-x: clip; }
+.d2s-handle[data-past="true"]::before { background: color-mix(in srgb, #f3f6fb 55%, transparent); }
 .d2s-railwrap { position: relative; height: 56px; }
 .d2s-rail { position: absolute; inset: 6px 0; display: flex; border-radius: 16px; overflow: hidden; background: var(--d2-bg); }
 .d2s-seg {

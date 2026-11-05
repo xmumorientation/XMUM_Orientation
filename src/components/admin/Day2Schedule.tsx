@@ -218,7 +218,11 @@ export function Day2Schedule({
                     className="d2s-handle"
                     data-drag={dragging === g.id}
                     disabled={disabled}
-                    style={{ left: `${(g.start_min / length) * 100}%` }}
+                    data-past={g.start_min >= length}
+                    // A segment can start after the running game ends (a 20 min rehearsal
+                    // against a 60 and 105 min plan). Pin its handle to the rail's end:
+                    // 300% would push the page wider than a phone.
+                    style={{ left: `${Math.min(100, (g.start_min / length) * 100)}%` }}
                     onPointerDown={(e) => {
                       e.currentTarget.setPointerCapture(e.pointerId);
                       setDragging(g.id);
