@@ -165,7 +165,7 @@ function Preview({ opts, meeting = false }: { opts: Opts; meeting?: boolean }) {
         {...viewProps}
         view={view}
         onFail={fallBack}
-        scene={{ mode: opts.mode, lite: opts.lite, intro: opts.intro, camera: opts.cam, tennis: opts.tennis ? tennis : null, smoothArrival: meeting }}
+        scene={{ mode: meeting ? "night" : opts.mode, lite: opts.lite, intro: opts.intro, camera: opts.cam, tennis: opts.tennis ? tennis : null, smoothArrival: meeting }}
       />
       {opts.tennis && (
         <label className="card mt-3 flex items-center gap-2 p-3 text-xs font-semibold">
