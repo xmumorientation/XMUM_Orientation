@@ -53,6 +53,7 @@ import type { Station } from "@/lib/types";
 import type { CampusMapViewProps } from "./CampusMap2DView";
 import { MapInfoCard } from "./CampusMapPanels";
 import { clusterStatus } from "./useCampusMapData";
+import { useDay2State } from "@/components/useDay2State";
 
 function initialActivationArrival(): { zones: FunfairZone[]; on: boolean } | null {
   if (typeof window === "undefined" || new URLSearchParams(window.location.search).get("arrival") !== "activation") return null;
@@ -470,9 +471,13 @@ export function CampusMap3DView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const day2 = useDay2State();
   const isLite = lite ?? env?.lite ?? true;
-  // The light switch wins; Auto is the page's `mode`, else the time of day.
-  const sceneMode = look ?? mode ?? env?.mode ?? "day";
+  // Day 2 Funfair open: auto switches the map to night view.
+  // The light switch wins if the user explicitly picked one; Auto is night if Funfair is open or zones are lit, else the page's `mode`, else the time of day.
+  const funfairActive = (day2.segment !== "off" && day2.switches.funfair) || (data.funfair && (data.funfair.west > 0 || data.funfair.central > 0 || data.funfair.east > 0));
+  const autoMode = funfairActive ? "night" : (mode ?? env?.mode ?? "day");
+  const sceneMode = look ?? autoMode;
   // The funfair's zones (data.funfair: funfair_zones, or the default keys), and Admin's preview
   // (?funfair_preview=west, from the Funfair card): full screen opens on that zone, which then powers up, on this
   // screen only. ?funfair_preview=lakefront opens on the lake stage and plays the concert's opening. Otherwise the
@@ -894,9 +899,22 @@ export function CampusMap3DView({
             {smoothArrival && arrival && <div className={`meeting-map-veil${sceneReady ? " is-ready" : ""}`} aria-hidden={sceneReady}>
               <span>Opening the funfair…</span>
             </div>}
-            {arrival && <div role="status" className="pointer-events-none absolute inset-x-4 bottom-24 z-30 mx-auto max-w-sm rounded-2xl bg-black/80 px-5 py-3 text-center text-sm text-white">
-              {!arrival.on ? "Your magic is reaching the funfair…" : arrival.zones.length ? `${arrival.zones.map(zoneTitle).join(" and ")} are lit up!` : "Your projector is lit. Explore the funfair!"}
-            </div>}
+            {arrival && (
+              <div
+                role="status"
+                className="pointer-events-none absolute inset-x-4 z-30 mx-auto max-w-sm rounded-2xl bg-black/80 px-5 py-3 text-center text-sm text-white shadow-xl backdrop-blur-sm"
+                style={{
+                  bottom: "max(1.75rem, calc(env(safe-area-inset-bottom) + 1.25rem))",
+                  maxWidth: "calc(100vw - 5.5rem)",
+                }}
+              >
+                {!arrival.on
+                  ? "Your magic is reaching the funfair…"
+                  : arrival.zones.length
+                    ? `${arrival.zones.map(zoneTitle).join(" and ")} are lit up!`
+                    : "Your projector is lit. Explore the funfair!"}
+              </div>
+            )}
 
             <div
               className="pointer-events-none absolute inset-x-0 top-0 z-30 flex items-start justify-between gap-3 px-3"
@@ -1017,11 +1035,7 @@ export function CampusMap3DView({
                   showGroupPins={showGroupPins}
                   canManageStations={canManageStations}
                   onStationTap={onStationTap}
-                  idle={
-                    <p className="inline-flex rounded-full bg-black/55 px-3 py-1.5 text-xs font-semibold text-white">
-                      {env?.touch ? "Drag to move / Two fingers to zoom and turn" : "Drag to move / Right-drag to turn / Scroll to zoom"}
-                    </p>
-                  }
+                  idle={null}
                 />
               </div>
               <div className="pointer-events-auto flex shrink-0 flex-col overflow-hidden rounded-2xl bg-white shadow-lg">

@@ -51,6 +51,7 @@ export const AUDIT_ACTIONS: Record<string, AuditKind> = {
   "station.delete": "stations",
   "inventory.grant": "puzzles",
   "inventory.admin_give_piece": "puzzles",
+  "inventory.admin_remove_piece": "puzzles",
   "puzzle.redeem": "puzzles",
   "projector.activate": "projectors",
   "projector.activate_manual": "projectors",
@@ -318,6 +319,8 @@ export function describeAudit(e: AuditEntry, n: AuditNames): AuditRow {
       return { ...G, action: "Piece given", detail: str(d.item_name) };
     case "inventory.admin_give_piece":
       return { ...G, action: "Piece given (Game master)", detail: join(projectorName(d.location), `piece ${num(d.index)}`) };
+    case "inventory.admin_remove_piece":
+      return { ...G, action: "Piece removed (Game master)", detail: join(projectorName(d.location), `piece ${num(d.index)}`) };
     case "puzzle.redeem": {
       const note = str(d.nfc_note).trim();
       return { ...G, action: "Puzzle handed in", detail: join(projectorName(d.location), note && `"${note}"`) };

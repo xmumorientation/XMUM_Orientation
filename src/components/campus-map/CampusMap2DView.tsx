@@ -1046,15 +1046,7 @@ export function CampusMap2DView({
                   showGroupPins={showGroupPins}
                   canManageStations={canManageStations}
                   onStationTap={onStationTap}
-                  idle={
-                    view.scale <= 1.05 ? (
-                      <p className="inline-flex rounded-full bg-black/55 px-3 py-1.5 text-xs font-semibold text-white">
-                        Drag to move / Pinch to zoom
-                      </p>
-                    ) : (
-                      <span />
-                    )
-                  }
+                  idle={null}
                 />
               </div>
               <div className="pointer-events-auto flex shrink-0 flex-col overflow-hidden rounded-2xl bg-white shadow-lg">
