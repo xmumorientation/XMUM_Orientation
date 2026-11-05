@@ -54,7 +54,8 @@ Ben may continue this work in a new Claude conversation. This file says where ev
   - The west road crosses the north road (just covering it) and runs on across the red brick service road (`CARPARK.road`) to the walk to the south. North of the north road the walk carries its line on; the north road does not go on to the dorms.
   - The west road and the stairs run about 10° off B1's west face (`b1StairsFoot`); the stairs keep one depth.
   - OSM's lake walk ends at `B1_WALK_END`, and one walk (`B1_NORTH_WALK`) sweeps from there to the west road; the walk along the lake is whole. Two stub walks are dropped (`DROPPED_WALKS`). Walks are generated data (`campusData.ts`), so they are trimmed and dropped in `geo.ts`.
-- **Later:** check the north and east sides against photos (none yet); railings between the brick pillars; the stairs' south end is straight (the imagery shows a curved wall).
+- **East side** (toward the east gate; Ben's photo, 2026-11-05): pale terracotta pavers (`EAST_PLAZA` in `b1.tsx`, `#c48c76`, mottled) from B1's east face to the campus road's kerb, between the drive and the service road. The service road keeps the imagery's darker red brick.
+- **Later:** check the north side against photos (none yet); railings between the brick pillars; the stairs' south end is straight (the imagery shows a curved wall).
 
 ### The lake's low ground (2026-11-02, branch `map3d-lake-basin`)
 

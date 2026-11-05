@@ -328,7 +328,7 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 
 ## Done
 
-### Map: the road to the A-row's basement car park, the track's ends, the A-row's forecourts, 2026-11-05 (Ben, branch `map3d-a5-carpark`)
+### Map: the road to the A-row's basement car park, the track's ends, the A-row's forecourts, B1's east side, 2026-11-05 (Ben, branch `map3d-a5-carpark`)
 No migration. Ben: the art's road between the track and A5 stopped in the lawn; really it goes down into the car park under the A-row.
 - The road now leaves the campus road where the imagery has it, runs north and bends west down a ramp into the car park, between a white house at the terrace's east end (green overgrown roof, two grey roller shutters, Ben's photos) and a white wall. A grey paved way climbs beside the ramp to the A-row's walk.
 - Brick walks on both sides (the east one runs on to the lake), a palm row along the lawn and a belt of trees toward the track. The art road's stretch through the fence to the outer road is gone, and the fence and the tree strip there are whole.
@@ -336,6 +336,7 @@ No migration. Ben: the art's road between the track and A5 stopped in the lawn; 
 - Both ends of the track's infield are red now (the south end was green).
 - The forecourts of A1, A2, A4 and A5's east side are centred on their porches (they followed the imagery, 1 to 7 m to one side).
 - In front of A1 the campus road is grey paving past its bend, so it runs into the A-row's walk and A1's forecourt instead of the asphalt stopping short beside it; the walk now starts at the road's end.
+- B1's east side, toward the east gate, is paved in pale terracotta pavers like Ben's photo (it was lawn).
 - Code: `BASEMENT_*` in `geo.ts`, `basement.tsx`; details in the session handoff, "The road to the A-row's basement car park". Checked on `/map3d` from above, from the track side, from the lawn, into the portal, at night and at phone size in lite mode; `tests/map3d/basement.test.ts`; `tsc` and `eslint` clean for the map.
 
 ### David, 2026-11-05 — Welcome Page Polish
