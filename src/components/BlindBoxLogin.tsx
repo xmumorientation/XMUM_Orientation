@@ -149,7 +149,7 @@ export function BlindBoxLogin({
           />
         </label>
         {error && (
-          <div className="vx-login-error"><p role="alert">{error}</p><SupportLinks /></div>
+          <div className="vx-login-error"><p role="alert">{error}</p></div>
         )}
         <button type="submit" className="vx-btn vx-btn-primary" disabled={busy || code.length !== 4 || !groupId}>
           {busy ? "Checking…" : "Continue to the Blind Box"}

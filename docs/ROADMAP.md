@@ -328,6 +328,9 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 
 ## Done
 
+### David, 2026-11-06 (Login support links)
+- Removed feedback and Tech Team links from sign-in errors pending a later discussion of their placement. Error messages remain visible.
+
 ### David, 2026-11-06 (Expandable Faci group QR)
 - Made the Group Code QR tappable. It expands within the card for easier scanning and returns to its original size on the next tap, with an accessible button label and reduced-motion support.
 

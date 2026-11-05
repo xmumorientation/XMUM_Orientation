@@ -81,7 +81,7 @@ export function LoginForm({ demoLogins }: { demoLogins: DemoLogin[] }) {
     <AuthShell role="Committee, Faci, GM Login" lead="Sign in with your campus email or Google.">
       <form onSubmit={onSubmit} className="vx-login-form">
         {error && (
-          <div className="vx-login-error"><p role="alert">{error}</p><SupportLinks /></div>
+          <div className="vx-login-error"><p role="alert">{error}</p></div>
         )}
 
         <label htmlFor="email">
