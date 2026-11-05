@@ -178,6 +178,32 @@ function makeGroundTexture(lite: boolean): THREE.CanvasTexture {
   ctx.setLineDash([0.8, 0.7]);
   stroke(GATE_ROAD.line, 0.08, COLORS.roadLine);
   ctx.setLineDash([]);
+  // past its bend toward A1 the campus road is grey paving, like the A-row's walk it runs into: a straight change from
+  // the asphalt, kerbs carried on, and its round end paved too
+  {
+    const tail = GATE_ROAD.line.slice(GATE_ROAD.paved);
+    const [ex, ez] = tail[tail.length - 1];
+    ctx.save();
+    ctx.lineCap = "butt";
+    ctx.lineJoin = "round";
+    trace(tail);
+    ctx.lineWidth = GATE_ROAD.width + 2 * KERB;
+    ctx.strokeStyle = COLORS.kerb;
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(ex, ez, GATE_ROAD.width / 2 + KERB, 0, Math.PI * 2);
+    ctx.fillStyle = COLORS.kerb;
+    ctx.fill();
+    trace(tail);
+    ctx.lineWidth = GATE_ROAD.width;
+    ctx.strokeStyle = COLORS.paving;
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(ex, ez, GATE_ROAD.width / 2, 0, Math.PI * 2);
+    ctx.fillStyle = COLORS.paving;
+    ctx.fill();
+    ctx.restore();
+  }
   drawBasementRoad(ctx, KERB, PATH_EDGE);
   // the east gate: its entrance over the verge, and the guard house's island (paving, then a lawn at its outer end)
   {

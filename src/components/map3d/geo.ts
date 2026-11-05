@@ -478,7 +478,7 @@ export const FOOTPATH_W = 5 * UNITS_PER_M;
 const A_FRONT_M = {
   centre: [-274.2, -424.2] as EN,
   terrace: { r: 419, width: 11, e: [-482, -166] },
-  walk: { r: 443.8, width: 5.5, e: [-458, -152] },
+  walk: { r: 443.8, width: 5.5, e: [-470, -152] },
   links: [
     { width: 3.5, line: [[-460, -22], [-457, -42]] as EN[] },
     { width: 3, line: [[-399.5, 3], [-399, -22]] as EN[] },
@@ -683,7 +683,11 @@ export const GATE_ROAD = (() => {
     [xn, eastRoadZ(xn) + EAST_ROAD.verge],
     [xs, eastRoadZ(xs) + EAST_ROAD.verge],
   ];
-  return { line, width: 8 * UNITS_PER_M, verge };
+  // past its bend toward A1 it is paved like the A-row's walk it runs into (Ben, 2026-11-05: the asphalt stopping at
+  // A1's forecourt looked cut off): `paved` is the index on `line` where that starts
+  const [px, pz] = fromReal(-490, -32);
+  const paved = line.reduce((best, p, i) => (Math.hypot(p[0] - px, p[1] - pz) < Math.hypot(line[best][0] - px, line[best][1] - pz) ? i : best), 0);
+  return { line, width: 8 * UNITS_PER_M, verge, paved };
 })();
 
 /**
