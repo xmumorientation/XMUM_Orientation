@@ -409,9 +409,10 @@ function drawTrack(ctx: CanvasRenderingContext2D) {
   for (let x = -TRACK_M.length / 2, i = 0; x < TRACK_M.length / 2; x += 7.5, i++) {
     if (i % 2) ctx.fillRect(x, -outerR, 7.5, outerR * 2);
   }
-  // the north end (+x) is red synthetic from the goal line to the kerb, for field events
+  // both ends (+x north, -x south) are red synthetic from the goal line to the kerb, for field events (Ben 2026-11-05)
   ctx.fillStyle = COLORS.track;
   ctx.fillRect(PITCH_M.length / 2, -outerR, outerR * 2, outerR * 2);
+  ctx.fillRect(-PITCH_M.length / 2 - outerR * 2, -outerR, outerR * 2, outerR * 2);
   ctx.restore();
 
   // pitch markings
