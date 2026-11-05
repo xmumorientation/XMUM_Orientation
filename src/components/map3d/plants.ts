@@ -1,6 +1,7 @@
 import {
   A_FRONT_PLANTS,
   B1_PALMS,
+  BASEMENT_TREES,
   BRIDGE,
   BUSH_ROWS,
   EXTENT,
@@ -77,6 +78,16 @@ function rowTrees(): Plant[] {
   // palms between the A-row's forecourts, about 15 m tall: taller than B1's, so they read next to the blocks
   for (const [x, z] of A_FRONT_PLANTS.palms) {
     if (!inKeepOut(x, z, 0.3)) rowCache.push({ x, z, s: 0.5 + r() * 0.15, rot: r() * Math.PI * 2, kind: "palm" });
+  }
+  // by the road to the A-row's basement car park: palms along the lawn's edge, and the belt of trees toward the track
+  for (const [x, z] of BASEMENT_TREES.palms) {
+    if (!inKeepOut(x, z, 0.2)) rowCache.push({ x, z, s: 0.36 + r() * 0.08, rot: r() * Math.PI * 2, kind: "palm" });
+  }
+  for (const [x, z] of BASEMENT_TREES.belt) {
+    const [jx, jz] = [(r() - 0.5) * 0.5, (r() - 0.5) * 0.5];
+    if (!inKeepOut(x + jx, z + jz, 0.4)) {
+      rowCache.push({ x: x + jx, z: z + jz, s: 0.6 + r() * 0.2, rot: r() * Math.PI * 2, kind: "broad" });
+    }
   }
   // then the palms on the strip along B1's north road, which the keep-out covers with the road: about 10 m tall, as
   // in the imagery (the art's palms are over three times that)

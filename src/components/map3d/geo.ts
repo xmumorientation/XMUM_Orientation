@@ -85,12 +85,6 @@ export const GROUND = {
     [1886, 538],
     [1080, 1035],
   ] as Img[],
-  roadNotch: [
-    [318, 322],
-    [346, 312],
-    [522, 420],
-    [498, 430],
-  ] as Img[],
   lawns: [
     // track lawn
     [
@@ -381,7 +375,8 @@ export const FLAG: World = (() => {
  * Ben pointed them out (2026-10-17). In metres east / north, like campusData.ts: the walk along the lake side of A3,
  * A4 and A5 (it carries on OSM's walk along A1 and A2), the walk down A5's east side, the sidewalk along the south
  * of the lawn east of A5, and the walk along that lawn's east edge (OSM way 1422330769, which OSM draws about 11 m
- * east of it, in the trees; emit_phase1.py leaves the OSM one out).
+ * east of it, in the trees; emit_phase1.py leaves the OSM one out). That walk starts at the campus road, as the brick
+ * walk beside the road to the basement car park (BASEMENT_M).
  */
 const TRACED_PATHS_M: EN[][] = [
   // the lake side of A3, A4 and A5: from the end of OSM's walk north of A1 and A2 (way 1547736698), past A3's north
@@ -395,10 +390,11 @@ const TRACED_PATHS_M: EN[][] = [
   [[-109.2, 111.7], [-107.8, 103.4], [-111.6, 95.4], [-117.6, 75.8], [-120.6, 69.9], [-132.5, 22.5], [-137.0, 9.8]],
   // the sidewalk along the south of the lawn
   [[-168.9, 14.5], [-152.5, 10.7], [-138.5, 9.5], [-108.6, 0.6], [-98.8, -1.2], [-89.9, -1.5]],
-  // along the lawn's east edge, then north to the lake (OSM way 1422330769, traced again)
+  // the brick walk along the east side of the road to the basement car park (BASEMENT_M, 2026-11-05), from the campus
+  // road, then along the lawn's east edge north to the lake (OSM way 1422330769, traced again)
   [
-    [-95.2, -17.2], [-91.3, -7.7], [-83.9, 22.5], [-81.8, 44.1], [-77.3, 71.7], [-75.8, 96.0], [-72.0, 102.8],
-    [-64.8, 110.8], [-64.5, 169.2], [-63.6, 196.7],
+    [-96.5, -96], [-96.5, -44], [-94.5, -30], [-94, -20], [-93.5, -12], [-91.3, -7.7], [-83.9, 22.5], [-81.8, 44.1],
+    [-77.3, 71.7], [-75.8, 96.0], [-72.0, 102.8], [-64.8, 110.8], [-64.5, 169.2], [-63.6, 196.7],
   ],
 ];
 
@@ -476,7 +472,8 @@ export const FOOTPATH_W = 5 * UNITS_PER_M;
  *   fits them to within a metre), `r` metres out, from `e[0]` to `e[1]` east. The terrace replaces OSM's walk along
  *   it.
  * - `links`: walks across the lawn from the walk to the terrace, each to a narrow stair through it (TERRACE).
- * - `eastLink`: the walk from the terrace's east end to the brick sidewalk (TRACED_PATHS_M).
+ *
+ * East of the walk's end, the paved way down beside the car park's ramp (BASEMENT_RISE) carries it on to the road.
  */
 const A_FRONT_M = {
   centre: [-274.2, -424.2] as EN,
@@ -488,7 +485,6 @@ const A_FRONT_M = {
     { width: 3, line: [[-250, 17], [-250, -3]] as EN[] },
     { width: 3, line: [[-189.5, 11], [-189, -10]] as EN[] },
   ],
-  eastLink: { width: 4, line: [[-170, -18], [-158, -8], [-145, -4], [-130, 0]] as EN[] },
 };
 
 /**
@@ -653,9 +649,9 @@ function rounded(pts: World[]): World[] {
 
 /**
  * The campus road just inside the fence (Ben's blue line on OSM, 2026-11-02; OSM ways 1180134071 and 793404004), in
- * metres east / north: from the campus's south-east corner west past the road east of the statue (the art's notch,
- * which stands in for OSM's) and behind the main gate, round the lawn's south-west corner and up its west side to A1's
- * forecourt (Ben's choice). The statue's plaza is paved across it, and A1's forecourt covers its end.
+ * metres east / north: from the campus's south-east corner west past the road to the basement car park (BASEMENT_M)
+ * and behind the main gate, round the lawn's south-west corner and up its west side to A1's forecourt (Ben's choice).
+ * The statue's plaza is paved across it, and A1's forecourt covers its end.
  */
 const GATE_ROAD_M: EN[] = [
   [79, -86], [70, -91], [59, -94], [32, -98], [4, -100], [-120, -100], [-240, -95], [-249, -93], [-265, -89],
@@ -767,7 +763,6 @@ export const A_FRONT: { courts: World[][]; strips: { width: number; line: World[
     arc(terrace),
     arc(walk),
     ...A_FRONT_M.links.map(walkOf),
-    walkOf(A_FRONT_M.eastLink),
     ...walks.u.map((w) => {
       const [p, , q] = axis([w, w], [walks.from, foot + 0.5]);
       return { width: walks.width * UNITS_PER_M, line: [p, q] };
@@ -835,26 +830,414 @@ export const PLATEAU: { outline: World[]; slope: number[] } = (() => {
   return { outline: pts.map(([p]) => fromReal(...p)), slope: pts.map(([, w]) => w * UNITS_PER_M) };
 })();
 
-/** Where the raised ground and its slopes can be: the outline's bounds, grown by the widest slope. */
-const PLATEAU_BOX = (() => {
+// ── The road to the A-row's basement car park ────────────────────────────
+/**
+ * Between the track and A5 a road leaves the campus road, runs north, and bends west down a ramp into the car park
+ * under the A-row's raised ground (Ben, 2026-11-05: the art's road there stopped in the lawn). Traced on Esri imagery
+ * (zoom 19) in metres east / north and moved A_FRONT_DN north like the A-row's paving, so it meets the terrace;
+ * checked against OSM (ways 793404004 and 933852033) and Ben's aerial photos.
+ *
+ * Along A5's front everything follows the A-row's arc round A_FRONT_M.centre (`r`: metres out; `deg`: degrees from
+ * east toward north): the white house at the terrace's east end (from `r.house`, by the terrace's foot, to
+ * `r.inner`), the ramp along its north side (`r.inner` to `r.wall`), the white wall north of the ramp, and the paved
+ * way beyond it out to `r.rise`, which climbs from the road's fork to the A-row's walk. The ramp goes in under the
+ * house's west end at `deg.portal`; `deg.east` is the house's east end.
+ *
+ * - `road`: the road's middle (east), half its width, and the campus road's middle (north), where it starts;
+ *   `fillet`: the radii of its corners at the campus road, west and east.
+ * - `bend`: the road's west edge where it bends into the ramp's inner edge, `inner`, which starts at the ramp's mouth;
+ *   `outer`: the white wall from its end at the fork. Both run on along the arc to the portal.
+ * - `fork`: the road's east edge from the bend up to where the paved way starts; `riseEdge`: the paved way's outer
+ *   edge, from the road until it runs on along the arc.
+ * - `lawn`: the lawn's edge (OSM landuse=grass) round the brick walk inside the bend, from the house's corner south;
+ *   `walk`: that walk's width along the road.
+ * - `palms`: the palm row along that edge; `belt`: the two rows of trees between the road and the track (OSM
+ *   natural=tree_row).
+ */
+const BASEMENT_M = {
+  road: { e: -102.5, half: 3.5, n: -100 },
+  fillet: [12, 6],
+  bend: [
+    [-106, -40],
+    [-106.25, -36],
+  ] as EN[],
+  inner: [[-108.5, -32], [-110, -28], [-113, -24], [-117.5, -20], [-123.5, -16]] as EN[],
+  outer: [[-103.3, -27.8], [-104.5, -24], [-108, -20], [-112, -16], [-118, -12]] as EN[],
+  fork: [
+    [-99, -38],
+    [-97, -32],
+    [-97, -26],
+  ] as EN[],
+  riseEdge: [[-97, -26], [-94.5, -16], [-96, -12], [-99.5, -8], [-107.5, -4], [-117.5, 0]] as EN[],
+  r: { house: 413.1, inner: 430.8, wall: 437.3, rise: 448.3 },
+  deg: { east: 70, portal: 74.1 },
+  lawn: [[-126.1, -34.7], [-118.4, -39.1], [-114.6, -42.5], [-110.0, -49.6], [-108.5, -56]] as EN[],
+  walk: 2.5,
+  palms: [[-119.7, -87.3], [-111.4, -59.0], [-111.5, -53.6], [-114.4, -47.4], [-118.4, -42.3], [-128.7, -36.8]] as EN[],
+  belt: [
+    [
+      [-93.3, -81.0],
+      [-71.7, 8.9],
+    ],
+    [
+      [-88.8, -84.0],
+      [-64.4, 10.0],
+    ],
+  ] as EN[][],
+};
+
+/** How deep (metres) the ramp's floor goes, at the portal; the portal's opening is `open` metres high. */
+export const RAMP_DEPTH_M = 3.5;
+export const PORTAL_OPEN_M = 3;
+/** The white walls along the ramp: their thickness, and how far they stand above the ground beside them (metres). */
+export const BASEMENT_WALL_M = { thick: 0.35, parapet: 0.6 };
+/** The white house's height (metres, true height like the raised ground; its roof is a little above it). */
+export const BASEMENT_HOUSE_H_M = 4.3;
+/** Sections across the ramp, from its mouth at the fork to the portal. */
+const RAMP_K = 56;
+/** The ramp stays level for this share of its length before it goes down. */
+const RAMP_FLAT = 0.12;
+
+const smoothstep = (t: number) => {
+  const u = Math.max(0, Math.min(1, t));
+  return u * u * (3 - 2 * u);
+};
+
+/** A point `r` metres out from the A-row's arc centre (moved A_FRONT_DN north), `deg` degrees from east toward north. */
+function arcEN(r: number, deg: number): EN {
+  const [ce, cn] = A_FRONT_M.centre;
+  const a = (deg * Math.PI) / 180;
+  return [ce + r * Math.cos(a), cn + A_FRONT_DN + r * Math.sin(a)];
+}
+
+/** The same point in the world. */
+export const aRowArc = (r: number, deg: number): World => fromReal(...arcEN(r, deg));
+
+/** A point's angle round the A-row's arc centre, in degrees from east toward north. */
+function arcDeg([e, n]: EN): number {
+  const [ce, cn] = A_FRONT_M.centre;
+  return (Math.atan2(n - cn - A_FRONT_DN, e - ce) * 180) / Math.PI;
+}
+
+/** Points along an arc of radius `r` from `a` to `b` degrees, about every `step` metres, both ends included. */
+function arcRun(r: number, a: number, b: number, step = 2): EN[] {
+  const count = Math.max(1, Math.ceil((Math.abs(b - a) * Math.PI * r) / 180 / step));
+  return Array.from({ length: count + 1 }, (_, i) => arcEN(r, a + ((b - a) * i) / count));
+}
+
+/** A line as `count` + 1 points evenly spaced along it; its ends stay put. */
+function resample(pts: readonly EN[], count: number): EN[] {
+  const along = [0];
+  for (let i = 1; i < pts.length; i++) {
+    along.push(along[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+  }
+  const total = along[along.length - 1];
+  const out: EN[] = [];
+  let i = 1;
+  for (let k = 0; k <= count; k++) {
+    const s = (total * k) / count;
+    while (i < pts.length - 1 && along[i] < s) i++;
+    const t = (s - along[i - 1]) / (along[i] - along[i - 1] || 1);
+    out.push([pts[i - 1][0] + (pts[i][0] - pts[i - 1][0]) * t, pts[i - 1][1] + (pts[i][1] - pts[i - 1][1]) * t]);
+  }
+  return out;
+}
+
+/** Unit normals at a line's points, each turned away from the matching point of `other` (metres east / north). */
+function normalsAway(pts: readonly EN[], other: readonly EN[]): EN[] {
+  return pts.map((p, k) => {
+    const a = pts[Math.max(0, k - 1)];
+    const b = pts[Math.min(pts.length - 1, k + 1)];
+    const len = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1;
+    let nx = -(b[1] - a[1]) / len;
+    let ny = (b[0] - a[0]) / len;
+    if (nx * (p[0] - other[k][0]) + ny * (p[1] - other[k][1]) < 0) [nx, ny] = [-nx, -ny];
+    return [nx, ny];
+  });
+}
+
+/** The ramp's two edges in metres east / north, RAMP_K + 1 points each from its mouth at the fork to the portal. */
+const RAMP_EN = (() => {
+  const { r, deg, inner, outer } = BASEMENT_M;
+  const run = (edge: EN[], radius: number) =>
+    resample(rounded([...edge, ...arcRun(radius, arcDeg(edge[edge.length - 1]) + 0.4, deg.portal)]), RAMP_K);
+  const s = run(inner, r.inner);
+  const n = run(outer, r.wall);
+  return { s, n, mid: s.map((p, k) => [(p[0] + n[k][0]) / 2, (p[1] + n[k][1]) / 2] as EN) };
+})();
+
+/**
+ * The ramp in the world, RAMP_K + 1 sections from its mouth at the fork to the portal: its inner edge (along the
+ * house) and its outer edge (the white wall's inner face), each with unit normals (world x, z) pointing away from the
+ * ramp; the floor's depth below the lawn at each section, and the paved way's height beside the wall (world units).
+ * `outline` is its footprint; `cut` the same, grown under the walls, where the ground's canvas is cut away
+ * (ground.tsx). `east` is the first section along the house; the inner wall runs from `inner0` (where the floor starts
+ * to go down) to it.
+ */
+export const BASEMENT_RAMP = (() => {
+  const { s, n, mid } = RAMP_EN;
+  const sOut = normalsAway(s, n);
+  const nOut = normalsAway(n, s);
+  const t = s.map((_, k) => k / RAMP_K);
+  const depth = t.map((u) => RAMP_DEPTH_M * smoothstep((u - RAMP_FLAT) / (1 - RAMP_FLAT)) * UNITS_PER_M);
+  const climb = t.map((u) => PLATEAU_H * smoothstep(u));
+  const inner0 = depth.findIndex((d) => d > 0.02 * UNITS_PER_M);
+  const east = s.findIndex((p) => arcDeg(p) >= BASEMENT_M.deg.east);
+  const half = BASEMENT_WALL_M.thick / 2;
+  const grow = (p: EN, d: EN, by: number): World => fromReal(p[0] + d[0] * by, p[1] + d[1] * by);
+  const world = (pts: EN[]) => pts.map((p) => fromReal(...p));
+  // a metres-east / north direction as a world one (x north, z east)
+  const dir = ([e, nn]: EN): World => [nn, e];
+  // the cut runs on 0.6 m in under the house, so the ground's edge never shows on the portal's lintel
+  const inside = BASEMENT_M.deg.portal + (0.6 / BASEMENT_M.r.inner) * (180 / Math.PI);
+  const cut = [
+    ...s.map((p, k) => grow(p, sOut[k], k >= inner0 ? half : 0)),
+    fromReal(...arcEN(BASEMENT_M.r.inner - half, inside)),
+    fromReal(...arcEN(BASEMENT_M.r.wall + half, inside)),
+    ...n.map((p, k) => grow(p, nOut[k], half)).reverse(),
+  ];
+  const xs = cut.map((p) => p[0]);
+  const zs = cut.map((p) => p[1]);
+  return {
+    inner: world(s),
+    wall: world(n),
+    innerOut: sOut.map(dir),
+    wallOut: nOut.map(dir),
+    mid: world(mid),
+    depth,
+    climb,
+    inner0,
+    east,
+    outline: [...world(s), ...world(n).reverse()],
+    cut,
+    box: [Math.min(...xs), Math.min(...zs), Math.max(...xs), Math.max(...zs)] as const,
+  };
+})();
+
+/**
+ * The white house at the terrace's east end (Ben's photos and imagery: one storey, white, a green overgrown roof, two
+ * grey roller shutters on its east end). From the terrace's foot (`r.south`) to the ramp (`r.north`) between `deg.east`
+ * and the portal; west of the portal it reaches out over the ramp to the white wall's outer face (`r.cover`), up to the
+ * terrace's end wall at `deg.west`. `outline`: its footprint in the world, round from the south-east corner.
+ */
+export const BASEMENT_HOUSE = (() => {
+  const { r, deg } = BASEMENT_M;
+  const { terrace } = A_FRONT_M;
+  // the terrace's end, where its end wall stands (plateau.tsx, 0.6 m thick), and the house just east of that wall
+  const end = (Math.acos((terrace.e[1] - A_FRONT_M.centre[0]) / terrace.r) * 180) / Math.PI;
+  const radii = { south: r.house, north: r.inner, cover: r.wall + BASEMENT_WALL_M.thick };
+  const degs = { east: deg.east, portal: deg.portal, west: end - (0.35 / terrace.r) * (180 / Math.PI) };
+  const outline = [
+    ...arcRun(radii.south, degs.east, degs.west),
+    ...arcRun(radii.cover, degs.west, degs.portal),
+    ...arcRun(radii.north, degs.portal, degs.east),
+  ].map((p) => fromReal(...p));
+  return { r: radii, deg: degs, outline, height: BASEMENT_HOUSE_H_M * UNITS_PER_M };
+})();
+
+/** Width (metres) of the paved way's top beside the wall, the bank beyond it, and how far its ground spills over the
+ * ramp's side (cut away there; it keeps the ground's mesh from sagging at the wall). */
+const RISE_WIDE = 11;
+const RISE_FALL = 12;
+const RISE_SPILL = 3.6;
+
+/**
+ * The paved way that climbs beside the ramp from the road's fork to the A-row's walk (imagery: light grey paving; OSM
+ * way 793404004 carries on as that walk): `band`, its paving in the world, `edge` its kerbed outer edge, `mid` a line
+ * down its middle for the paving's joints. Its ground (riseY) climbs with the wall, from the lawn at the fork to the
+ * raised ground's top at the portal.
+ */
+export const BASEMENT_RISE = (() => {
+  const { r, deg, riseEdge } = BASEMENT_M;
+  const edgeEN = resample(rounded([...riseEdge, ...arcRun(r.rise, arcDeg(riseEdge[riseEdge.length - 1]) + 0.4, deg.portal)]), RAMP_K);
+  const edge = edgeEN.map((p) => fromReal(...p));
+  const { wall } = BASEMENT_RAMP;
+  const band = [...wall, ...[...edge].reverse()];
+  const mid = wall.map((p, k) => [(p[0] + edge[k][0]) / 2, (p[1] + edge[k][1]) / 2] as World);
+  const reach = (RISE_WIDE + RISE_FALL) * UNITS_PER_M;
+  const xs = wall.map((p) => p[0]);
+  const zs = wall.map((p) => p[1]);
+  const box = [Math.min(...xs) - reach, Math.min(...zs) - reach, Math.max(...xs) + reach, Math.max(...zs) + reach] as const;
+  return { band, edge, mid, box };
+})();
+
+/**
+ * The paved way's ground (world units) at a world point, 0 off it: level across its top, `climb` at the nearest point
+ * of the wall (the lawn's level at the fork, the raised ground's top at the portal), then down a bank beyond it. On the
+ * ramp's side it carries on over the ramp for RISE_SPILL metres, where the canvas is cut away.
+ */
+function riseY(x: number, z: number): number {
+  const [x0, z0, x1, z1] = BASEMENT_RISE.box;
+  if (x < x0 || x > x1 || z < z0 || z > z1) return 0;
+  const { wall, climb } = BASEMENT_RAMP;
+  let best = Infinity;
+  let h = 0;
+  let side = 0;
+  for (let i = 0; i < wall.length - 1; i++) {
+    const [ax, az] = wall[i];
+    const dx = wall[i + 1][0] - ax;
+    const dz = wall[i + 1][1] - az;
+    const u = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz || 1)));
+    const d = Math.hypot(x - ax - dx * u, z - az - dz * u);
+    if (d < best) {
+      best = d;
+      h = climb[i] + (climb[i + 1] - climb[i]) * u;
+      // the paved way is on the right, walking from the fork to the portal (world x is north, z east)
+      side = (z - az) * dx - (x - ax) * dz;
+    }
+  }
+  const m = best / UNITS_PER_M;
+  if (side < 0) return m < RISE_SPILL ? h : 0;
+  if (m <= RISE_WIDE) return h;
+  return h * (1 - smoothstep((m - RISE_WIDE) / RISE_FALL));
+}
+
+/** How far down (world units) the ramp's floor is at a world point on it; null off the ramp. */
+export function rampDepth(x: number, z: number): number | null {
+  const [x0, z0, x1, z1] = BASEMENT_RAMP.box;
+  if (x < x0 || x > x1 || z < z0 || z > z1) return null;
+  const { outline, mid, depth } = BASEMENT_RAMP;
+  if (!inPolygon(outline, x, z)) return null;
+  let best = Infinity;
+  let at = 0;
+  for (let i = 0; i < mid.length - 1; i++) {
+    const [ax, az] = mid[i];
+    const dx = mid[i + 1][0] - ax;
+    const dz = mid[i + 1][1] - az;
+    const u = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz || 1)));
+    const d = Math.hypot(x - ax - dx * u, z - az - dz * u);
+    if (d < best) {
+      best = d;
+      at = depth[i] + (depth[i + 1] - depth[i]) * u;
+    }
+  }
+  return at;
+}
+
+/**
+ * The road's paint (ground.tsx): `asphalt`, from inside the campus road up to the fork and down the ramp to the portal;
+ * `kerb`, its edge outside the campus road; `centre`, its dashed middle line; `stop`, the stop line across the lane
+ * out (traffic keeps left); `walk`, the brick walk along its west side that widens round the inside of the bend to the
+ * house (the walk along its east side is a footpath, TRACED_PATHS_M).
+ */
+export const BASEMENT_ROAD = (() => {
+  const { road, fillet, bend, fork, lawn, walk } = BASEMENT_M;
+  const north = road.n + 4;
+  const west = road.e - road.half;
+  const east = road.e + road.half;
+  const [rw, re] = fillet;
+  const arc = (ce: number, cn: number, rad: number, a: number, b: number): EN[] =>
+    Array.from({ length: 9 }, (_, i) => {
+      const t = ((a + ((b - a) * i) / 8) * Math.PI) / 180;
+      return [ce + rad * Math.cos(t), cn + rad * Math.sin(t)];
+    });
+  const { s, n } = RAMP_EN;
+  const westFillet = arc(west - rw, north + rw, rw, -90, 0);
+  const eastFillet = arc(east + re, north + re, re, 180, 270);
+  const edge: EN[] = [
+    ...westFillet,
+    ...bend,
+    ...s,
+    ...[...n].reverse(),
+    ...[...fork].reverse(),
+    [east, north + re],
+    ...eastFillet.slice(1),
+  ];
+  const asphalt: EN[] = [[west - rw - 3, road.n + 0.5], ...edge, [east + re + 3, road.n + 0.5]];
+  const centre: EN[] = rounded([[road.e, north], [road.e, bend[0][1]], ...RAMP_EN.mid]);
+  const house = BASEMENT_HOUSE;
+  const turn = s.filter((p) => arcDeg(p) < house.deg.east);
+  const walkEdge: EN[] = [
+    ...westFillet,
+    ...bend,
+    ...turn,
+    arcEN(house.r.north, house.deg.east),
+    arcEN(house.r.south, house.deg.east),
+    ...lawn,
+    [west - walk, north + rw],
+    ...arc(west - rw, north + rw, rw - walk, 0, -90).slice(1),
+  ];
+  const world = (pts: readonly EN[]) => pts.map((p) => fromReal(...p));
+  return {
+    asphalt: world(asphalt),
+    kerb: world(edge),
+    centre: world(centre),
+    stop: world([
+      [road.e, north + 0.6],
+      [east - 0.3, north + 0.6],
+    ]),
+    walk: world(walkEdge),
+  };
+})();
+
+/** The trees by the road (OSM natural=tree_row): palms along the lawn's edge, every 7 m; two rows between the road and the track, every 9 m. */
+export const BASEMENT_TREES = (() => {
+  const along = (pts: readonly EN[], gap: number, offset = 0): World[] => {
+    const out: World[] = [];
+    for (let i = 1; i < pts.length; i++) {
+      const [a, b] = [pts[i - 1], pts[i]];
+      const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
+      for (let d = i === 1 ? offset : 0; d < len; d += gap) {
+        out.push(fromReal(a[0] + ((b[0] - a[0]) * d) / len, a[1] + ((b[1] - a[1]) * d) / len));
+      }
+    }
+    return out;
+  };
+  return {
+    palms: along(BASEMENT_M.palms, 7, 2),
+    belt: BASEMENT_M.belt.flatMap((row, i) => along(row, 9, i * 4.5)),
+  };
+})();
+
+/** Where anything of the road, its walk, the house and the paved way can be (world units), for a quick check. */
+const BASEMENT_BOX = (() => {
+  const pts = [...BASEMENT_ROAD.asphalt, ...BASEMENT_ROAD.walk, ...BASEMENT_HOUSE.outline, ...BASEMENT_RISE.band];
+  const xs = pts.map((p) => p[0]);
+  const zs = pts.map((p) => p[1]);
+  return [Math.min(...xs) - 1, Math.min(...zs) - 1, Math.max(...xs) + 1, Math.max(...zs) + 1] as const;
+})();
+
+/** Whether a world point is on the road, its walk, the house or the paved way (or within `margin` of them). */
+function inBasement(x: number, z: number, margin: number): boolean {
+  const [x0, z0, x1, z1] = BASEMENT_BOX;
+  if (x < x0 - margin || x > x1 + margin || z < z0 - margin || z > z1 + margin) return false;
+  const wall = BASEMENT_WALL_M.thick * UNITS_PER_M;
+  const { asphalt, walk } = BASEMENT_ROAD;
+  return (
+    [asphalt, walk, BASEMENT_HOUSE.outline, BASEMENT_RISE.band].some((p) => inPolygon(p, x, z)) ||
+    nearLine(asphalt, x, z, margin + wall, true) ||
+    [walk, BASEMENT_HOUSE.outline, BASEMENT_RISE.band].some((p) => nearLine(p, x, z, margin, true))
+  );
+}
+
+/** Where the raised ground and its slopes can be: the outline's bounds, grown by the widest slope, and the paved way. */
+export const PLATEAU_BOX = (() => {
   const { outline, slope } = PLATEAU;
   const m = Math.max(...slope);
   const xs = outline.map((p) => p[0]);
   const zs = outline.map((p) => p[1]);
-  return [Math.min(...xs) - m, Math.min(...zs) - m, Math.max(...xs) + m, Math.max(...zs) + m] as const;
+  const r = BASEMENT_RISE.box;
+  return [
+    Math.min(Math.min(...xs) - m, r[0]),
+    Math.min(Math.min(...zs) - m, r[1]),
+    Math.max(Math.max(...xs) + m, r[2]),
+    Math.max(Math.max(...zs) + m, r[3]),
+  ] as const;
 })();
 
 /**
  * The raised ground's height at a world point: PLATEAU_H on its top, coming down over each edge's slope (0 off the
- * A-row). The slope eases out at its foot (a square), so a mesh of the ground stays under the steps laid over it. The
- * ground's height anywhere, the lake's low ground included, is terrain.ts groundY.
+ * A-row), and the paved way climbing to it beside the car park's ramp (riseY). The slope eases out at its foot (a
+ * square), so a mesh of the ground stays under the steps laid over it. The ground's height anywhere, the lake's low
+ * ground and the ramp included, is terrain.ts groundY.
  */
 export function plateauY(x: number, z: number): number {
   const [x0, z0, x1, z1] = PLATEAU_BOX;
   if (x < x0 || x > x1 || z < z0 || z > z1) return 0;
+  const rise = riseY(x, z);
   const { d, w } = plateauEdge(x, z);
   const k = d === 0 ? 1 : Math.max(0, 1 - d / w);
-  return PLATEAU_H * k * k;
+  return Math.max(rise, PLATEAU_H * k * k);
 }
 
 /**
@@ -1093,11 +1476,9 @@ export const CAMPUS_FENCE: World[][] = (() => {
     [gx + south[0] * reach, gz + south[1] * reach],
   ];
 
-  // gaps: the road east of the statue (the art's notch) and the east gate, each a point on the fence and half its
-  // width (the other roads on the east side meet the campus road inside the fence)
-  const nz = GROUND.roadNotch.map((p) => toWorld(p)[1]);
+  // gaps: the east gate, a point on the fence and half its width (the other roads, the one to the A-row's basement car
+  // park included, meet the campus road inside the fence)
   const gaps: { at: World; half: number }[] = [
-    { at: [gx, (Math.min(...nz) + Math.max(...nz)) / 2], half: (Math.max(...nz) - Math.min(...nz)) / 2 + 0.2 },
     { at: [EAST_GATE.x, eastRoadZ(EAST_GATE.x) + FENCE_EAST_OUT], half: EAST_GATE.half },
   ];
   // and every walk that runs out through it
@@ -1254,6 +1635,7 @@ export function inKeepOut(x: number, z: number, margin: number): boolean {
   if (nearLine(BRIDGE, x, z, 0.8 + margin)) return true;
   if (CAMPUS_FENCE.some((r) => nearLine(r, x, z, 0.25 + margin))) return true;
   if (nearLine(GATE_ROAD.line, x, z, GATE_ROAD.width / 2 + margin)) return true;
+  if (inBasement(x, z, margin)) return true;
   if (inRect([EAST_GATE.x - EAST_GATE.half, EAST_GATE.x + EAST_GATE.half], EAST_GATE.z)) return true;
   if (FOOTPATHS.some((p) => nearLine(p, x, z, FOOTPATH_W / 2 + margin))) return true;
   const { courts, strips, crossing } = A_FRONT;
@@ -1289,29 +1671,17 @@ export const TREE_ROWS: { gap: number; kind?: TreeKind; pts: Img[] }[] = [
   {
     gap: 1.9,
     pts: [
-      [422, 348],
-      [510, 404],
-    ],
-  },
-  {
-    gap: 1.9,
-    pts: [
       [738, 152],
       [880, 82],
     ],
   },
+  // between the campus road and the outer road, on past where the art's road to the track's west side cut it (that road
+  // and the trees along it are gone: BASEMENT_M)
   {
     gap: 1.8,
     pts: [
       [215, 462],
-      [382, 362],
-    ],
-  },
-  {
-    gap: 1.8,
-    pts: [
-      [352, 378],
-      [512, 436],
+      [415, 342],
     ],
   },
   {

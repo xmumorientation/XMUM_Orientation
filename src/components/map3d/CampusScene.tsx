@@ -10,6 +10,7 @@ import { allZonesOn, anyZoneOn, FUNFAIR_OFF, type FunfairPower } from "@/lib/fun
 
 import { Atmosphere, MODES, type Mode } from "./atmosphere";
 import { B1Building } from "./b1";
+import { Basement } from "./basement";
 import { Blocks, Flag, Grandstand, Statue } from "./buildings";
 import { Bridge } from "./footbridge";
 import { Funfair } from "./funfair/Funfair";
@@ -215,6 +216,7 @@ const Campus = memo(function Campus({ mode, lite }: { mode: Mode; lite: boolean 
       <Slab />
       <Ground lite={lite} />
       <Plateau />
+      <Basement glow={look.windows} />
       <Lakes />
       <Duck />
       <Blocks glow={look.windows} />
