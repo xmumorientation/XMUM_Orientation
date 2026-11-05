@@ -60,9 +60,14 @@ function initialActivationArrival(): { zones: FunfairZone[]; on: boolean } | nul
 
 // Signal an actual rendered frame, rather than starting the power-up while
 // the 3D bundle, shaders or phone GPU are still loading.
-function SceneReady({ onReady }: { onReady: () => void }) {
-  const sent = useRef(false);
-  useFrame(() => { if (!sent.current) { sent.current = true; onReady(); } });
+function SceneReady({ onReady, warmupFrames = 1 }: { onReady: () => void; warmupFrames?: number }) {
+  const frames = useRef(0);
+  useFrame(({ invalidate }) => {
+    if (frames.current >= warmupFrames) return;
+    frames.current += 1;
+    if (frames.current === warmupFrames) onReady();
+    else invalidate();
+  });
   return null;
 }
 
@@ -323,6 +328,8 @@ export type CampusMap3DViewProps = CampusMapViewProps & {
   camera?: CameraView;
   /** The 3D map can't be used on this device (no renderer, or too slow): show the 2D map. */
   onFail?: () => void;
+  /** Keep the meeting demo's loading screen until the scene has drawn a few frames. */
+  smoothArrival?: boolean;
   /** The tennis game on the courts (docs/ROADMAP.md, item 9): Admin's switch and who plays here. None: no game. */
   tennis?: TennisSettings | null;
 };
@@ -342,6 +349,7 @@ export function CampusMap3DView({
   intro = false,
   camera,
   onFail,
+  smoothArrival = false,
   paused = false,
 }: CampusMap3DViewProps) {
   const {
@@ -497,7 +505,7 @@ export function CampusMap3DView({
     const move = window.setTimeout(() => {
       const [x, z] = ZONE_CENTERS[zone];
       fly({ kind: "focus", target: [x, 0, z], distance: arrival.zones.length > 1 ? 150 : window.innerWidth < window.innerHeight ? 115 : 70 });
-    }, 100);
+    }, smoothArrival ? 700 : 100);
     const power = window.setTimeout(() => {
       arrivalStarted.current = true;
       setArrival(current => current && { ...current, on: true });
@@ -505,7 +513,7 @@ export function CampusMap3DView({
       const url = new URL(window.location.href);
       url.searchParams.delete("arrival");
       window.history.replaceState(window.history.state, "", url);
-    }, window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 150 : 1400);
+    }, window.matchMedia("(prefers-reduced-motion: reduce)").matches ? (smoothArrival ? 700 : 150) : (smoothArrival ? 2000 : 1400));
     return () => { window.clearTimeout(move); window.clearTimeout(power); };
     // Setters and fly are stable; wait for rendering, fullscreen layout and shared state.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -838,7 +846,7 @@ export function CampusMap3DView({
                   )
                 }
               >
-                <SceneReady onReady={markSceneReady} />
+                <SceneReady onReady={markSceneReady} warmupFrames={smoothArrival && arrival ? 3 : 1} />
                 <SceneMarks
                   circles={circles}
                   outlines={outlines}
@@ -866,6 +874,9 @@ export function CampusMap3DView({
             onContextMenu={(e) => e.preventDefault()}
           >
             <div ref={fullSlot} className="absolute inset-0 cursor-grab active:cursor-grabbing" />
+            {smoothArrival && arrival && <div className={`meeting-map-veil${sceneReady ? " is-ready" : ""}`} aria-hidden={sceneReady}>
+              <span>Opening the funfair…</span>
+            </div>}
             {arrival && <div role="status" className="pointer-events-none absolute inset-x-4 bottom-24 z-30 mx-auto max-w-sm rounded-2xl bg-black/80 px-5 py-3 text-center text-sm text-white">
               {!arrival.on ? "Your magic is reaching the funfair…" : arrival.zones.length ? `${arrival.zones.map(zoneTitle).join(" and ")} are lit up!` : "Your projector is lit. Explore the funfair!"}
             </div>}

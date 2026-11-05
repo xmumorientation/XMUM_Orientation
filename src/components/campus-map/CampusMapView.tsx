@@ -18,7 +18,7 @@ import { preloadCampusMap } from "./preload";
 /** The card while the 3D code loads; the same height as the 3D map's card. */
 function MapLoading() {
   return (
-    <div className="card overflow-hidden p-0">
+    <div className="card campus-map-loading overflow-hidden p-0">
       <div className="flex h-[clamp(260px,80vw,520px)] w-full items-center justify-center bg-paper-100 text-sm font-semibold text-ink-faint">
         Loading the 3D map…
       </div>
@@ -64,7 +64,7 @@ class Fallback extends Component<{ onError: () => void; children: ReactNode }, {
 }
 
 /** Options for the 3D view only: the scene's (the dev preview sets them), and the tennis game on its courts. */
-export type SceneOptions = Pick<CampusMap3DViewProps, "mode" | "lite" | "intro" | "camera" | "tennis">;
+export type SceneOptions = Pick<CampusMap3DViewProps, "mode" | "lite" | "intro" | "camera" | "tennis" | "smoothArrival">;
 
 function ActivationFallback({ setLayer }: { setLayer: CampusMapViewProps["data"]["setLayer"] }) {
   const [arrival, setArrival] = useState(false);
