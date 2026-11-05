@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 
 export const metadata: Metadata = {
-  title: "Enter the Park — Orientation 2026",
+  title: "Enter the Park, Orientation 2026",
   description:
     "A cinematic prototype: enter a futuristic neon carnival marking the start of your university journey.",
 };

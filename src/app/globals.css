@@ -249,3 +249,7 @@ body:is(:has(.fh:not(.fa-head)), :has(.staff-dashboard-shell)) {
 @media (prefers-reduced-motion: reduce) {
   .gc-fold-wrap { transition: none; }
 }
+
+.support-links { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
+.support-links a { display: flex; align-items: center; justify-content: center; min-height: 44px; padding: 8px 12px; border: 1px solid currentColor; border-radius: 12px; color: inherit; font-size: 14px; font-weight: 600; text-align: center; text-decoration: none; }
+.support-links a:hover, .support-links a:focus-visible { color: var(--fh-accent, #5cb8ff); }

@@ -805,7 +805,7 @@ export default function TokenControl({ scoreboardOnly = false }: { scoreboardOnl
                         {log.transaction_type}
                       </span>
                     </td>
-                    <td className="py-2.5 text-slate-600">{log.notes || "—"}</td>
+                    <td className="py-2.5 text-slate-600">{log.notes || "Not available"}</td>
                     {isAdmin && (
                       <td className="py-2.5 text-right">
                         <div className="flex items-center justify-end gap-1">

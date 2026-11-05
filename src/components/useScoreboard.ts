@@ -1,6 +1,6 @@
 "use client";
 
-import { useSharedFeed, type FeedSource } from "@/lib/sharedFeed";
+import { reloadSharedFeed, useSharedFeed, type FeedSource } from "@/lib/sharedFeed";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import type { ProjectorLocation } from "@/lib/types";
 
@@ -16,15 +16,26 @@ export interface ScoreboardRow {
 // Shared by Staff Home and Freshie Home's Tokens and cached between visits
 // (src/lib/sharedFeed.ts). Realtime on groups, plus a 30 s refresh for the
 // events RLS does not send to a GM.
-function scoreboardSource(): FeedSource<ScoreboardRow[]> {
+export type ScoreboardState = {
+  rows: ScoreboardRow[] | undefined;
+  updatedAt: number | null;
+  failed: boolean;
+};
+
+function scoreboardSource(): FeedSource<ScoreboardState> {
   const supabase = supabaseBrowser();
   return {
-    async load() {
-      const { data } = await supabase.rpc("fn_scoreboard");
-      if (!data) return undefined;
-      return (data as ScoreboardRow[])
-        .map((row) => ({ id: row.id, name: row.name, color: row.color, token_balance: row.token_balance ?? 0 }))
-        .sort((a, b) => a.id - b.id);
+    async load(current) {
+      try {
+        const { data, error } = await supabase.rpc("fn_scoreboard");
+        if (error || !data) throw new Error("Scoreboard unavailable");
+        const rows = (data as ScoreboardRow[])
+          .map((row) => ({ id: row.id, name: row.name, color: row.color, token_balance: row.token_balance ?? 0 }))
+          .sort((a, b) => a.id - b.id);
+        return { rows, updatedAt: Date.now(), failed: false };
+      } catch {
+        return { rows: current?.rows, updatedAt: current?.updatedAt ?? null, failed: true };
+      }
     },
     listen(reload) {
       const channel = supabase
@@ -39,7 +50,16 @@ function scoreboardSource(): FeedSource<ScoreboardRow[]> {
 
 /** Groups in id order with their tokens; undefined until the first load. */
 export function useScoreboard(): ScoreboardRow[] | undefined {
+  return useScoreboardState()?.rows;
+}
+
+/** Status and cached rows use the same request, subscription and polling as all scoreboard readers. */
+export function useScoreboardState() {
   return useSharedFeed("scoreboard", scoreboardSource);
+}
+
+export function refreshScoreboard() {
+  reloadSharedFeed("scoreboard");
 }
 
 export type GroupPieces = Record<ProjectorLocation, number[]>;

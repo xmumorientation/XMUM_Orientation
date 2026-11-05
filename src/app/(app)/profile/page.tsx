@@ -10,11 +10,11 @@ export default function ProfilePage() {
   const profile = useProfile();
   const group = useInitialGroup();
   const rows = [
-    ["Name", profile.full_name || "—"],
+    ["Name", profile.full_name || "Not available"],
     ["Role", ROLE_LABELS[profile.role]],
-    ["Student ID", profile.student_id || "—"],
-    ["Email", profile.email || "—"],
-    ["Group", group?.name || (profile.group_id ? `Group ${profile.group_id}` : "—")],
+    ["Student ID", profile.student_id || "Not available"],
+    ["Email", profile.email || "Not available"],
+    ["Group", group?.name || (profile.group_id ? `Group ${profile.group_id}` : "Not available")],
   ];
 
   async function signOut() {

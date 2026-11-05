@@ -83,7 +83,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   TOKENS_FROZEN: "Token operations are currently frozen by Admin.",
   INVALID_DELTA: "Invalid token amount.",
   PHASE_LOCKED: "This action isn't available in the current game phase.",
-  INSUFFICIENT_BALANCE: "Not enough tokens — the balance can't go negative.",
+  INSUFFICIENT_BALANCE: "Not enough tokens. The balance can't go negative.",
   GROUP_NOT_FOUND: "Group not found.",
   ITEM_NOT_FOUND: "Item not found.",
   DUPLICATE_PUZZLE_PIECE: "This group already owns that puzzle piece.",
@@ -126,18 +126,18 @@ const ERROR_MESSAGES: Record<string, string> = {
   UNDO_WOULD_GO_NEGATIVE: "Undo rejected: it would make the balance negative.",
   UNDO_DAY2_NOT_ALLOWED: "A Day 2 result can't be undone here (the piece stays). Ask Admin to correct it.",
   UNKNOWN_ACTION: "The database doesn't support this action yet.",
-  NO_STATION_ASSIGNED: "Your account has no station assigned — ask Admin.",
+  NO_STATION_ASSIGNED: "Your account has no station assigned. Ask Admin.",
   SESSION_NOT_OPEN: "This session hasn't been opened yet.",
   NO_END_TIME: "Set an end time first (here, or the planned end on the Schedule page).",
   END_TIME_PASSED: "That end time has already passed. Pick a later time.",
   TIMER_ALREADY_RUNNING: "This timer is already running.",
   ANOTHER_TIMER_RUNNING: "Another timer is running. End it first.",
-  WRONG_DAY_STATION: "Your station isn't set up for this day — ask Admin.",
+  WRONG_DAY_STATION: "Your station isn't set up for this day. Ask Admin.",
   INVALID_RESULT: "Pick Win or Lose.",
   NEED_TWO_LOCATIONS: "Pick exactly 2 locations for a medium-risk station.",
   NEED_ONE_LOCATION: "Pick exactly 1 location for a high-risk station.",
   POOL_EXHAUSTED:
-    "This group already owns every piece available from that choice — pick differently.",
+    "This group already owns every piece available from that choice. Pick another location.",
   FRESHIE_ONLY: "Only Freshie accounts can open blind boxes.",
   BOX_UNKNOWN: "This blind box code isn't active.",
   BOXES_SOLD_OUT: "All blind boxes here have been given out!",
@@ -170,7 +170,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   NAME_TOO_LONG: "Keep the group name to 40 characters.",
   SLOGAN_TOO_LONG: "Keep the slogan to 80 characters.",
   FACI_ONLY: "Only a facilitator can save this.",
-  NO_GROUPS_CONFIGURED: "No groups configured yet — set the total number of groups first.",
+  NO_GROUPS_CONFIGURED: "No groups configured yet. Set the total number of groups first.",
   INVALID_COUNT: "Enter a group count between 1 and 200.",
   FRESHIE_NOT_FOUND: "Freshie not found.",
 };
@@ -190,7 +190,7 @@ export function friendlyError(err: unknown): string {
         : detailed[1] === "BB_STOCK_BELOW_ASSIGNED"
           ? "Stock can't go below what's assigned"
           : "Can't go below what's already opened";
-    return `${lead} — ${detailed[2]}.`;
+    return `${lead}, ${detailed[2]}.`;
   }
   for (const code of Object.keys(ERROR_MESSAGES)) {
     if (msg.includes(code)) return ERROR_MESSAGES[code];

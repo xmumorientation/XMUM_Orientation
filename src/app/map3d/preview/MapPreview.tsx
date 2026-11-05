@@ -192,7 +192,7 @@ function Preview({ opts, meeting = false }: { opts: Opts; meeting?: boolean }) {
         {fullscreen && <p className="meeting-map-badge">Demo Map</p>}
         <main className={main}>
           <header className="fh-map-top"><p className="fh-eyebrow fh-mono">Campus</p><h1 className="fh-h2">Map</h1></header>
-          <p className="meeting-map-label">Meeting demo · simulated map</p>
+          <p className="meeting-map-label">Meeting demo, simulated map</p>
           {map}
         </main>
       </div>

@@ -49,7 +49,7 @@ export default function AdminBrandPage() {
         return;
       }
     }
-    setNotice("Brand updated — every open client refreshes live.");
+    setNotice("Brand updated. Every open client refreshes live.");
     setTimeout(() => setNotice(null), 3000);
     setBusy(false);
   }
@@ -58,7 +58,7 @@ export default function AdminBrandPage() {
     <div className="space-y-4">
       <PageTitle
         title="Event Branding"
-        subtitle="Rename & recolour for each year's orientation — no redeploy"
+        subtitle="Rename & recolour for each year's orientation, no redeploy"
       />
       <ErrorBanner message={error} />
       <SuccessBanner message={notice} />

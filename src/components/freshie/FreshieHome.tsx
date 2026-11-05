@@ -32,6 +32,7 @@ import { usePhases, usePhaseTimer } from "@/components/PhaseTimerProvider";
 import { useProfile } from "@/components/ProfileProvider";
 import { EDIT_PROFILE_EVENT } from "@/components/TopNav";
 import { useGroup } from "@/components/useGroup";
+import { SupportLinks } from "@/components/SupportLinks";
 import { TokenBoard } from "@/components/TokenBoard";
 import { useScoreboard } from "@/components/useScoreboard";
 import { countdownParts, useEventCountdown } from "@/components/useEventCountdown";
@@ -406,7 +407,7 @@ function FaciStop({
 
 function ProgressStop({ group, loading }: { group: Group | null; loading: boolean }) {
   // Same live data as the Items page, so both always show the same keys.
-  const { data: items } = useItemsData();
+  const { data: items, piecesStatus, retry } = useItemsData();
   const owned = PROJECTOR_LOCATIONS.reduce((sum, loc) => sum + items.pieces[loc].length, 0);
 
   return (
@@ -451,13 +452,15 @@ function ProgressStop({ group, loading }: { group: Group | null; loading: boolea
               <span>
                 <b className="fh-prog-title">Puzzle Pieces</b>
                 <small className="fh-mono">
-                  {owned}/{PROJECTOR_LOCATIONS.length * PIECES_PER_SET}
+                  {piecesStatus === "ready" ? `${owned}/${PROJECTOR_LOCATIONS.length * PIECES_PER_SET}` : piecesStatus === "loading" ? "Loading…" : "Unavailable"}
                 </small>
               </span>
             </div>
-            <div className="fh-prog-keys">
-              <ProjectorKeys data={items} arrivals={{}} />
-            </div>
+            {piecesStatus === "ready" ? (
+              <div className="fh-prog-keys"><ProjectorKeys data={items} arrivals={{}} /></div>
+            ) : piecesStatus === "error" ? (
+              <div role="status"><p>Could not load puzzle pieces. Check your connection and try again.</p><button type="button" className="fh-btn fh-btn-ghost" onClick={retry}>Try Again</button></div>
+            ) : <p role="status">Loading puzzle pieces…</p>}
           </div>
 
         </div>
@@ -526,7 +529,6 @@ function ScoresStop({ groupId, onRows }: { groupId: number | null; onRows?: (row
         rows={rows}
         groupId={groupId}
         titleId="fh-scores-title"
-        aside={<span className="fh-pill fh-mono">● LIVE FROM 28 NOV</span>}
       />
     </section>
   );
@@ -653,6 +655,7 @@ export function AccountMenu({
               <Pencil size={15} aria-hidden /> Edit Profile
             </button>
           )}
+          <SupportLinks menu />
           <button type="button" role="menuitem" onClick={signOut}>
             Log Out
           </button>
@@ -771,7 +774,7 @@ export function FreshieHome() {
       <header className="fh-head">
         <div className="fh-head-row">
           <div className="fh-head-l">
-            <button type="button" className="fh-brand" onClick={() => goTo("fh-welcome")} aria-label="Vortexa — back to top">
+            <button type="button" className="fh-brand" onClick={() => goTo("fh-welcome")} aria-label="Vortexa, back to top">
               <Image src="/vortexa-logo-sm.webp" alt="" width={320} height={184} priority style={{ width: "auto" }} />
             </button>
           </div>

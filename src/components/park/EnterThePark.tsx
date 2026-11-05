@@ -56,7 +56,7 @@ export default function EnterThePark() {
 
       {/* Accessible, always-present description of the experience. */}
       <div className="sr-only">
-        <h1>Orientation 2026 — Enter the Park</h1>
+        <h1>Orientation 2026, Enter the Park</h1>
         <p>
           A cinematic prototype for the university orientation website. Welcome to
           the Park: your journey starts here. Meet, explore, and experience a

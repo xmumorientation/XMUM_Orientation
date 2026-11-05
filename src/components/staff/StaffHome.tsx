@@ -233,7 +233,7 @@ function SellerBox({
           ) : (
             <>
               <small className="sh-bb-note">
-                {row ? `${row.type?.name ?? "Box"} · ${priceText(row.type)}. ` : ""}A Freshie scans this after your mini-game. Tap the code to enlarge it. Each group can buy one box.
+                {row ? `${row.type?.name ?? "Box"}, ${priceText(row.type)}. ` : ""}A Freshie scans this after your mini-game. Tap the code to enlarge it. Each group can buy one box.
               </small>
               {shown && !sold && (
                 <button type="button" className="fh-btn fh-btn-ghost sh-bb-copy" onClick={() => copy(copyId, shown.url)}>
@@ -378,7 +378,7 @@ export function StaffHome() {
       <header className="fh-head">
         <div className="fh-head-row">
           <div className="fh-head-l">
-            <button type="button" className="fh-brand" onClick={() => goTo("sh-welcome")} aria-label="Vortexa — back to top">
+            <button type="button" className="fh-brand" onClick={() => goTo("sh-welcome")} aria-label="Vortexa, back to top">
               <Image src="/vortexa-logo-sm.webp" alt="" width={320} height={184} priority style={{ width: "auto" }} />
             </button>
           </div>

@@ -115,7 +115,7 @@ export default function AdminUsersPage() {
       setResult(data);
       if (!dryRun && data.created) {
         setNotice(
-          `Created ${data.created.length} accounts. Copy the credentials in the import window NOW — passwords are not shown again.`
+          `Created ${data.created.length} accounts. Copy the credentials in the import window now. Passwords are not shown again.`
         );
         load();
       }
@@ -439,7 +439,7 @@ export default function AdminUsersPage() {
                       ) : u.group_id != null ? (
                         <span className="font-semibold tabular-nums">Group {u.group_id}</span>
                       ) : (
-                        <span className="text-ink-faint">—</span>
+                        <span className="text-ink-faint">Not available</span>
                       )}
                     </td>
                     <td className="px-4 py-2.5">
@@ -650,7 +650,7 @@ export default function AdminUsersPage() {
         >
           <div className="space-y-2">
             <p className="text-xs text-ink-faint">
-              Columns: <code>name,email,role,group,station</code> — role ∈{" "}
+              Columns: <code>name,email,role,group,station</code>, role ∈{" "}
               faci/gm/guardian_gm/hof/oc/hogm/committee/admin.
             </p>
             <label className="btn-secondary inline-flex cursor-pointer items-center">

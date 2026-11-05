@@ -26,7 +26,7 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
   const group = getDemoGroup(id);
-  if (!group) return { title: "Group — Vortexa" };
+  if (!group) return { title: "Group, Vortexa" };
   return {
     title: `${group.name} / Group ${group.number}`,
     description: `Group Homepage for ${group.name}.`,

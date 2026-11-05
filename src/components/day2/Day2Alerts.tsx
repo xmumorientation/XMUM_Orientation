@@ -207,7 +207,7 @@ function toastCopy(t: Toast, canScan: boolean, isPlayer: boolean) {
         return {
           accent: VX_YELLOW,
           icon: <Gift size={24} />,
-          eyebrow: "Day 2 · Game On",
+          eyebrow: "Day 2, Game On",
           title: "Day 2 Game Started",
           text: "Stations are running. Freshies can now challenge OC, HOF and HOGM for a blind box.",
           action: { href: "/map", label: "Open Map" },
@@ -216,7 +216,7 @@ function toastCopy(t: Toast, canScan: boolean, isPlayer: boolean) {
       return {
         accent: VX_YELLOW,
         icon: <Gift size={24} />,
-        eyebrow: "Day 2 · Game On",
+        eyebrow: "Day 2, Game On",
         title: "Challenge OC, HOF and HOGM",
         text: "Find them around campus and challenge them for a blind box.",
         crew: true,
@@ -232,7 +232,7 @@ function toastCopy(t: Toast, canScan: boolean, isPlayer: boolean) {
             <i />
           </span>
         ),
-        eyebrow: "Day 2 · Hard Stations",
+        eyebrow: "Day 2, Hard Stations",
         title: "Hard Stations Open",
         text: isPlayer ? "Pick 1 location. Win, and a piece from it is yours." : "Groups can now play and submit games at the Hard stations.",
         action: { href: "/map", label: "View on Map" },
@@ -241,7 +241,7 @@ function toastCopy(t: Toast, canScan: boolean, isPlayer: boolean) {
       return {
         accent: VX_ORANGE,
         icon: <FerrisWheel size={24} />,
-        eyebrow: "Day 2 · Final Stretch",
+        eyebrow: "Day 2, Final Stretch",
         title: "The Funfair Race Is On",
         text: "Groups can now light their projectors and power up the funfair.",
         action: { href: "/map", label: "Open Map" },
@@ -252,7 +252,7 @@ function toastCopy(t: Toast, canScan: boolean, isPlayer: boolean) {
       return {
         accent: KEY_COLORS[t.loc].main,
         icon: <Lightbulb size={24} />,
-        eyebrow: `Projector Lit · ${zoneName(t.loc)}`,
+        eyebrow: `Projector Lit, ${zoneName(t.loc)}`,
         title: t.ours ? `Your Group Lit ${name}` : `${name} Is Lit`,
         text: t.ours
           ? `${zone} is powering up. Watch it on the map.`
@@ -391,7 +391,7 @@ function FunfairCard({
           <span className="d2-strip d2-strip-l" aria-hidden />
           <div className="d2-card-in">
             <div className="d2-card-top">
-              <span className="d2-card-eb">Day 2 · Final Stretch</span>
+              <span className="d2-card-eb">Day 2, Final Stretch</span>
               {left !== null && <span className="d2-card-left">{formatCountdown(left)} Left</span>}
             </div>
             <RadixDialog.Title className="d2-card-title">
@@ -482,11 +482,11 @@ export function FunfairTicker({ place }: { place: "home" | "shell" | "shell-home
     isPlayer ? "Got an NFC card? Tap it on your phone" : null,
   ]
     .filter(Boolean)
-    .join(" · ");
+    .join(", ");
   const line = (
     <span className="d2-ticker-line">
       <i className="d2-ticker-dot" />
-      {text} ·
+      {text}
     </span>
   );
   const track = (

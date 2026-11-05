@@ -280,7 +280,7 @@ export function HeadcountTable() {
                           min={0}
                           inputMode="numeric"
                           aria-label={`${g.name} ${f.label.toLowerCase()} headcount`}
-                          placeholder="—"
+                          placeholder="Not available"
                           disabled={savingId === g.id}
                           className={cn(
                             "input min-h-[36px] w-24 text-sm tabular-nums",
