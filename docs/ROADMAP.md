@@ -347,6 +347,16 @@ No migration. Ben: the art's road between the track and A5 stopped in the lawn; 
 - B1's east side, toward the east gate, is paved in pale terracotta pavers like Ben's photo (it was lawn).
 - Code: `BASEMENT_*` in `geo.ts`, `basement.tsx`; details in the session handoff, "The road to the A-row's basement car park". Checked on `/map3d` from above, from the track side, from the lawn, into the portal, at night and at phone size in lite mode; `tests/map3d/basement.test.ts`; `tsc` and `eslint` clean for the map.
 
+### David, 2026-11-05 — Public Offline Guide
+- Added a standalone offline guide with retry, saved public Schedule, static campus map and recovery instructions. The Welcome menu/footer link to it; an app-wide offline notice preserves the original page by opening the guide separately.
+- Matched the existing Vortexa logo, fonts, night palette, date picker, timeline cards and category tags; added mobile guide tabs and expandable staff help. Saved assets include the logo and fonts.
+- Replaced the old 2D reference with a still captured from the existing online 3D scene and its default camera, avoiding the old empty brown area. Added a visible Technical Development Team contact reminder for staff.
+- Simplified the guide: Wi-Fi-off illustration, prominent You’re Offline heading, one recovery action, concise saved timestamps and collapsed help. Distinguishes actual device offline, failed navigation while onLine is true, and a newly detected connection. App banner uses the same short icon/status treatment.
+- Added a narrowly scoped service worker: precaches guide files only, provides failed-navigation fallback, and retains successful public timetable snapshots. No signed-in pages, game writes or private data are cached. No database migration.
+- Validation: four service-worker boundary tests, typecheck, changed-file lint and production build passed (existing 2D-map image lint warning remains). Chromium checks at 412px and 1280px verified homepage preparation, offline refresh/new tab, saved Schedule and labelled map, failed-update retention, reconnect/retry and the first-visit limitation. Design detector is clear; no ignores added.
+- Release checks on current main: production build and final Chromium offline/reconnect flow passed; full suite had 392 passed and one pre-existing Admin +5 label assertion failure, reproduced on a clean origin/main copy.
+- Preparation and cache versioning: [offline-guide.md](offline-guide.md). Physical-phone and venue-network rehearsal remains pending. Release uses the existing GitHub-to-Vercel integration; live status is checked separately after push.
+
 ### David, 2026-11-05 — Welcome Page Polish
 - Enlarged the Jack 'n Jill sponsor logo and made Schedule category tags consistent in width and alignment.
 

@@ -6,6 +6,7 @@ export function SiteFooter() {
   return (
     <footer className="vx-footer">
       <Image src="/vortexa-logo-sm.webp" alt="Vortexa" width={320} height={184} sizes="80px" />
+      <p><a href="/offline.html">Offline Guide</a></p>
       <p>&ldquo;One Ticket, One Ride, Discover Adventure Inside.&rdquo;</p>
       <p className="vx-mono">NOVEMBER 28–29, 2026, XIAMEN UNIVERSITY MALAYSIA</p>
     </footer>

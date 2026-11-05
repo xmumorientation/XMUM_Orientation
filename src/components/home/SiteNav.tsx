@@ -145,6 +145,7 @@ export function SiteNav({ active, onJoin }: { active: StopId; onJoin?: () => voi
             </span>
           </button>
         ))}
+        <a className="vx-menu-item" href="/offline.html">Offline Guide</a>
         <div className="vx-menu-actions">
           <button
             type="button"

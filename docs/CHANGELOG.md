@@ -237,3 +237,7 @@ PR numbers are in brackets. Migration numbers are the files in `supabase/migrati
 - Added safe, idempotent OC enum/permission migrations 0113 and 0114; the database change and requested test account were verified through the Orientation project's existing connection.
 
 - Follow-up: Restore map sharpness up to DPR 2 and remove camera-motion downscaling; fix invisible Admin account initials caused by shared avatar CSS overriding the TopNav background. No migration.
+
+### 2026-11-05
+- Added the Vortexa offline guide: clear disconnection and retry states, saved public timetable, a static map captured from the online 3D view, and Technical Development Team help. Welcome links and an app-wide offline notice make it reachable; signed-in data and game writes are not cached. No database migration.
+- Removed an obsolete, overridden width transition from the Welcome progress bar; its existing transform animation is preserved.

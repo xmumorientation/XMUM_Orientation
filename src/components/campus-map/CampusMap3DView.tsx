@@ -101,7 +101,7 @@ const MAX_FIT = 360;
  * Look from the A-row side toward the Funfair, keeping the blocks spread across the screen. Fit the
  * buildings, courts and dorms, including their markers.
  */
-function fitCamera(aspect: number): CameraView {
+export function fitCamera(aspect: number): CameraView {
   const [x0, x1] = CONTENT_BOUNDS.x;
   const [z0, z1] = CONTENT_BOUNDS.z;
   const target = new THREE.Vector3((x0 + x1) / 2, 0, (z0 + z1) / 2);
