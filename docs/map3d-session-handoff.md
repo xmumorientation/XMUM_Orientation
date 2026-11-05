@@ -143,6 +143,7 @@ Ben may continue this work in a new Claude conversation. This file says where ev
 
 - Ben: not everything is lawn. The forecourts and steps of A1–A5, the terrace along the arc, the walk past the forecourts, A3's axis to the statue and the statue's plaza are light grey stone from Esri imagery (`A_FRONT` in `geo.ts`, painted by `drawAFront` in `ground.tsx`). Details: the roadmap's "Done".
 - The imagery sits about 4 m south of OSM here, so the traces move 4 m north (`A_FRONT_DN`). Forecourts are rectangles square to their block (`A_FORECOURTS_M`) that start under the block, so they meet it wherever OSM put it.
+- Each forecourt is centred on its porch (Ben, 2026-11-05); the widths are the imagery's. The walk (`A_FRONT_M.walk`) starts at the campus road's end in front of A1, where the road is grey paving past its bend (`GATE_ROAD.paved`, painted in `ground.tsx`).
 - A3's axis is laid out from the statue (`A_AXIS_M`): its pieces run to wherever the axis meets the terrace's foot, the walk and A3.
 - To trace more paving: curl Esri tiles into the scratchpad and classify the pixels (grey stone, red-brown walk, lawn) along lines of constant east or north, in a headless Chrome page with `--allow-file-access-from-files`. Eyeballing the tiles was several metres off.
 - **Later:** the red-brown walks in the imagery are still the 2D art's orange.
