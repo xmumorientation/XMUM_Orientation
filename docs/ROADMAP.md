@@ -328,6 +328,9 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 
 ## Done
 
+### David, 2026-11-05 — Welcome Page Polish
+- Enlarged the Jack 'n Jill sponsor logo and made Schedule category tags consistent in width and alignment.
+
 ### David, 2026-11-04 — Checklist Mobile Spacing
 - Restored the left inset for expanded checklist forms on narrow screens, including Manual Location Update and Take Attendance.
 

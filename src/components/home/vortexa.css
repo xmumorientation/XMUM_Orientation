@@ -440,6 +440,7 @@ html.vx-snap { scroll-snap-type: y mandatory; }
   transition: transform 0.15s;
 }
 .vx-sponsor-logo--taobao { height: clamp(24px, 5vw, 36px); }
+.vx-sponsor-logo--jack-n-jill { height: clamp(40px, 9vw, 58px); }
 .vx-credits a:hover .vx-sponsor-logo { transform: translateY(-1px); }
 @media (max-width: 1023px) {
   .vx-credits { margin-top: 18px; padding-top: 14px; }
@@ -582,7 +583,7 @@ html.vx-snap { scroll-snap-type: y mandatory; }
 .vx-day[aria-selected="true"] { background: var(--vx-cyan); border-color: var(--vx-cyan); color: #06121a; }
 .vx-day[aria-selected="true"] span { color: #06313a; }
 .vx-timeline { list-style: none; margin: 0; padding: 0 0 0 28px; border-left: 1px dashed var(--vx-line-2); display: flex; flex-direction: column; gap: 12px; }
-.vx-item { position: relative; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 4px 14px; padding: 14px 18px; border-radius: 14px; }
+.vx-item { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 4px 14px; padding: 14px 18px; border-radius: 14px; }
 .vx-item::before { content: ""; position: absolute; left: -35px; top: 50%; width: 13px; height: 13px; border-radius: 50%; background: var(--dot); transform: translateY(-50%); box-shadow: 0 0 0 4px var(--vx-ink); }
 .vx-item b { font-weight: 600; font-size: 16px; }
 .vx-item small { grid-column: 1; font-size: 11px; letter-spacing: 0.14em; color: var(--vx-mute); }
@@ -592,7 +593,7 @@ html.vx-snap { scroll-snap-type: y mandatory; }
   .vx-item-skel { animation: vx-skel 1.4s ease-in-out infinite alternate; }
 }
 @keyframes vx-skel { to { opacity: 0.25; } }
-.vx-tag { grid-row: 1 / span 2; grid-column: 2; display: inline-flex; align-items: center; gap: 6px; font-size: 10.5px; letter-spacing: 0.14em; padding: 5px 10px; border-radius: 999px; border: 1px solid currentColor; }
+.vx-tag { grid-row: 1 / span 2; grid-column: 2; display: inline-flex; align-items: center; justify-content: center; width: 100px; gap: 6px; font-size: 10.5px; letter-spacing: 0.14em; padding: 5px 8px; border-radius: 999px; border: 1px solid currentColor; }
 @media (max-width: 1023px) {
   .vx-sched .vx-inner { grid-template-columns: 1fr; gap: 20px; }
   .vx-days { flex-direction: row; padding: 4px; background: var(--vx-ink-3); border-radius: 999px; gap: 4px; }
