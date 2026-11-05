@@ -332,6 +332,7 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 - Made the Group Code QR tappable. It expands within the card for easier scanning and returns to its original size on the next tap, with an accessible button label and reduced-motion support.
 
 ### David, 2026-11-06 (Tech Team WhatsApp template)
+- Organised the WhatsApp message into issue selection, description and automatic details, with a prompt encouraging users to attach a screenshot.
 - Simplified the Contact Tech Team WhatsApp message to ask only for an issue category and brief description. The current page and an approximate device/browser label are added automatically when the user opens WhatsApp.
 - Grouped the profile menu's feedback and Tech Team links under a subdued, collapsed Help & Feedback row so support remains available without competing with account actions.
 

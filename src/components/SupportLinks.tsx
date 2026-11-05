@@ -25,7 +25,7 @@ function supportMessage() {
   const deviceAndBrowser = describeDeviceAndBrowser(navigator.userAgent);
   return `Hi Tech Team, I need help with the Vortexa website.
 
-Problem (reply with a number):
+Please enter the number that best describes your issue:
 1. Login or account
 2. QR or NFC scan, or check-in
 3. Map or finding a location
@@ -33,12 +33,15 @@ Problem (reply with a number):
 5. Website error or loading
 6. Other
 
+Issue number:
+
 What happened?
 
-Page: ${page}
-Device/browser: ${deviceAndBrowser}
+Please attach a screenshot if you can. It will help the Tech Team understand the issue faster.
 
-Please reply with the issue number and briefly describe what happened. A screenshot is optional.`;
+Automatically included:
+Page: ${page}
+Device/browser: ${deviceAndBrowser}`;
 }
 
 export function SupportLinks({ variant = "inline" }: { variant?: "inline" | "menu" }) {
