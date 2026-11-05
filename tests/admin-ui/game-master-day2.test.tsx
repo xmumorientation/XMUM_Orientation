@@ -80,7 +80,7 @@ describe("Day 2 Schedule", () => {
     const start = Date.now() - 13 * 60_000;
     h.day2 = {
       ...h.day2,
-      state: { ...h.day2.state, game_on: true, game_started_at: new Date(start).toISOString(), game_ends_at: new Date(start + 20 * 60_000).toISOString() },
+      state: { ...(h.day2.state as object), game_on: true, game_started_at: new Date(start).toISOString(), game_ends_at: new Date(start + 20 * 60_000).toISOString() },
       segment: "s1",
       index: 0,
       label: "Opening",
