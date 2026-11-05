@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 
 import { AuthShell } from "@/components/auth/AuthShell";
+import { SupportLinks } from "@/components/SupportLinks";
 import { Spinner } from "@/components/ui";
 import { loginError } from "@/lib/loginError";
 import { supabaseBrowser } from "@/lib/supabase/client";
@@ -80,9 +81,7 @@ export function LoginForm({ demoLogins }: { demoLogins: DemoLogin[] }) {
     <AuthShell role="Committee, Faci, GM Login" lead="Sign in with your campus email or Google.">
       <form onSubmit={onSubmit} className="vx-login-form">
         {error && (
-          <p className="vx-login-error" role="alert">
-            {error}
-          </p>
+          <div className="vx-login-error"><p role="alert">{error}</p><SupportLinks /></div>
         )}
 
         <label htmlFor="email">

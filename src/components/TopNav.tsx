@@ -1,6 +1,6 @@
 "use client";
 
-import { Pencil } from "lucide-react";
+import { ChevronDown, Pencil } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -46,6 +46,7 @@ export function TopNav({
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -119,7 +120,16 @@ export function TopNav({
                   <Pencil size={15} aria-hidden /> Edit Profile
                 </button>
               )}
-              <SupportLinks menu />
+              <button
+                type="button"
+                role="menuitem"
+                className="vx-topnav-menu-help-toggle"
+                aria-expanded={helpOpen}
+                onClick={() => setHelpOpen((value) => !value)}
+              >
+                Help &amp; Feedback <ChevronDown size={14} aria-hidden />
+              </button>
+              {helpOpen && <div><SupportLinks variant="menu" /></div>}
               <button type="button" role="menuitem" onClick={onSignOut}>
                 Log Out
               </button>

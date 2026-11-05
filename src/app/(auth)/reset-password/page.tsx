@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { AuthShell } from "@/components/auth/AuthShell";
+import { SupportLinks } from "@/components/SupportLinks";
 import { Spinner } from "@/components/ui";
 import { supabaseBrowser } from "@/lib/supabase/client";
 
@@ -32,9 +33,7 @@ export default function ResetPasswordPage() {
     <AuthShell role="Set a New Password" backHref="/login" backLabel="Back to Login">
       <form onSubmit={onSubmit} className="vx-login-form">
         {error && (
-          <p className="vx-login-error" role="alert">
-            {error}
-          </p>
+          <div className="vx-login-error"><p role="alert">{error}</p><SupportLinks /></div>
         )}
         <label htmlFor="password">
           New Password (Min 8 Characters)

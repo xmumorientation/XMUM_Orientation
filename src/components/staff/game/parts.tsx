@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { vxDisplay, vxSlab } from "@/components/home/fonts";
+import { SupportLinks } from "@/components/SupportLinks";
 import { Dialog, DialogContent } from "@/components/ui/Dialog";
 import { cn } from "@/lib/utils";
 
@@ -24,7 +25,7 @@ export function useStatus() {
 }
 
 export function StatusLine({ error, notice }: { error: string | null; notice: string | null }) {
-  if (error) return <p className="gc-status gc-status-err" role="alert">{error}</p>;
+  if (error) return <div className="gc-status gc-status-err"><p role="alert">{error}</p><SupportLinks /></div>;
   if (notice) return <p className="gc-status gc-status-ok" role="status">{notice}</p>;
   return null;
 }

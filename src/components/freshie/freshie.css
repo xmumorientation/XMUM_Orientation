@@ -259,6 +259,11 @@ html.fh-snap { overflow-x: hidden; }
 .fh-menu .fh-menu-edit { display: flex; align-items: center; justify-content: center; gap: 8px; }
 .fh-menu .fh-menu-edit:hover { border-color: var(--fh-accent); color: var(--fh-accent); }
 .fh-menu .fh-menu-edit + button { margin-top: 8px; }
+.fh-menu .fh-menu-help-toggle { display: flex; align-items: center; justify-content: space-between; min-height: 36px; margin-top: 8px; padding: 0 4px; border: 0; border-radius: 6px; color: var(--fh-mute); font-size: 12px; font-weight: 500; }
+.fh-menu .fh-menu-help-toggle:hover { border: 0; color: var(--fh-text); }
+.fh-menu .support-links-menu { display: grid; gap: 0; justify-content: stretch; margin: 0; padding-left: 8px; font-size: 12px; }
+.fh-menu .support-links-menu a { min-height: 34px; justify-content: flex-start; color: var(--fh-mute); font-size: inherit; font-weight: 500; text-decoration: none; }
+.fh-menu .support-links-menu a:hover, .fh-menu .support-links-menu a:focus-visible { color: var(--fh-accent); }
 /* Faci: the header button is their FaciAvatar (same photo or initials as their card). */
 .fh-avatar.fh-avatar-me { width: auto; height: auto; padding: 0; background: none; box-shadow: none; border-radius: 50%; }
 .fh-avatar.fh-avatar-me:focus-visible { outline-offset: 2px; }
@@ -592,7 +597,11 @@ div.fi-lamp:active { transform: none; }
   box-shadow: 0 18px 50px -28px var(--fh-glow);
 }
 .fh-gc-qr { display: grid; place-items: center; }
-.fh-gc-qr img { display: block; width: min(100%, 210px); height: auto; border-radius: 22px; box-shadow: 0 0 40px -10px var(--fh-glow); }
+.fh-gc-qr-toggle { display: block; width: min(100%, 210px); padding: 0; border: 0; border-radius: 22px; background: transparent; cursor: zoom-in; }
+.fh-gc-qr-toggle:focus-visible { outline: 2px solid var(--fh-accent); outline-offset: 4px; }
+.fh-gc-qr-toggle img { display: block; width: 100%; height: auto; border-radius: 22px; box-shadow: 0 0 40px -10px var(--fh-glow); }
+.fh-gc-qr-toggle img.is-expanded { width: min(100%, 320px); }
+.fh-gc-qr-toggle:has(img.is-expanded) { width: min(100%, 320px); cursor: zoom-out; }
 .fh-gc-qr-msg {
   width: min(100%, 210px); aspect-ratio: 0.89; display: grid; place-items: center; align-content: center; gap: 12px;
   border-radius: 22px; border: 1.5px dashed var(--fh-line-2); background: var(--fh-ink); text-align: center; padding: 16px;
@@ -619,7 +628,7 @@ div.fi-lamp:active { transform: none; }
 @media (min-width: 720px) {
   .fh-gc { grid-template-columns: auto minmax(0, 1fr); gap: 28px; padding: 24px; align-items: center; }
   .fh-gc-pass { align-items: flex-start; text-align: left; }
-  .fh-gc-qr img, .fh-gc-qr-msg { width: 240px; }
+  .fh-gc-qr-toggle, .fh-gc-qr-msg { width: 240px; }
 }
 .fh-check-msg { font-size: 13px; color: var(--fh-text-2); }
 

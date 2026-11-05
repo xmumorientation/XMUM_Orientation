@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type QrScannerType from "qr-scanner";
+import { SupportLinks } from "@/components/SupportLinks";
 
 import { classifyScan, type ScanRoute } from "@/lib/scan-route";
 import { siteUrl } from "@/lib/site-url";
@@ -376,7 +377,8 @@ export function QrScannerScreen({ onClose, closeHref = "/dashboard", preview = f
               <Camera size={18} /> Try Again
             </button>
             {uploadButton}
-            <p className="text-center text-sm text-white/75">Still stuck? Ask your Facilitator or use Contact Tech Team in the account menu.</p>
+            <p className="text-center text-sm text-white/75">Still stuck? Ask your Facilitator for help.</p>
+            <SupportLinks />
           </div>
         </div>
       )}
