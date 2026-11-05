@@ -15,6 +15,9 @@ import {
   b1WestRoadMid,
   CARPARK,
   COLORS,
+  EAST_ROAD,
+  eastRoadZ,
+  GATE_ROAD,
   UNITS_PER_M,
 } from "./geo";
 import { B1_WALL_W, makeB1Walls } from "./textures";
@@ -560,7 +563,73 @@ function drawWestRoad(ctx: Ctx, z0: number, z1: number) {
  * for the west road, slanting with the stairs and crossing the north road (the walk north carries on from it). Its
  * stretch across the service road is drawB1Crossing's, drawn after the service road.
  */
+/**
+ * B1's east side, toward the east gate (Ben's photo, 2026-11-05): pale terracotta pavers from its east face to the
+ * campus road's kerb, between the drive along its north side and the service road south of it. `tones` mottle the
+ * pavers lighter and darker, as in the photo.
+ */
+const EAST_PLAZA = {
+  color: "#c48c76",
+  tones: ["rgba(255,236,222,0.12)", "rgba(120,58,40,0.10)"],
+  joint: "rgba(105,55,40,0.16)",
+};
+
+function drawB1EastPlaza(ctx: Ctx) {
+  const { trace, fill } = b1Canvas(ctx);
+  const wall = B1_PLACE.hx / UNITS_PER_M;
+  const z0 = B1_ROADS_M.north.drive[1];
+  const z1 = (B1_PLACE.pos[0] - CARPARK.x[1]) / UNITS_PER_M;
+  // the campus road's west edge, less its kerb (ground.tsx, 0.09 units), in metres east of B1's middle
+  const edge = (z: number) => {
+    const [wx] = b1Point(0, z);
+    return (eastRoadZ(wx) + EAST_ROAD.mid - GATE_ROAD.width / 2 - 0.09 - B1_PLACE.pos[1]) / UNITS_PER_M;
+  };
+  const pts = [
+    [wall, z0],
+    [edge(z0), z0],
+    [edge(z1), z1],
+    [wall, z1],
+  ];
+  fill(pts, EAST_PLAZA.color);
+  ctx.save();
+  trace(pts);
+  ctx.closePath();
+  ctx.clip();
+  // pavers on a world grid (B1 stands square to it), about 1.7 m: mottled, with joints
+  const corners = pts.map(([x, z]) => b1Point(x, z));
+  const [x0, x1] = [Math.min(...corners.map((p) => p[0])), Math.max(...corners.map((p) => p[0]))];
+  const [w0, w1] = [Math.min(...corners.map((p) => p[1])), Math.max(...corners.map((p) => p[1]))];
+  const step = 0.25;
+  let seed = 23;
+  const rand = () => {
+    seed = (seed * 16807) % 2147483647;
+    return seed / 2147483647;
+  };
+  for (let x = x0; x < x1; x += step) {
+    for (let z = w0; z < w1; z += step) {
+      const r = rand();
+      if (r < 0.55) continue;
+      ctx.fillStyle = EAST_PLAZA.tones[r < 0.8 ? 0 : 1];
+      ctx.fillRect(x, z, step, step);
+    }
+  }
+  ctx.beginPath();
+  for (let x = x0; x < x1; x += step) {
+    ctx.moveTo(x, w0);
+    ctx.lineTo(x, w1);
+  }
+  for (let z = w0; z < w1; z += step) {
+    ctx.moveTo(x0, z);
+    ctx.lineTo(x1, z);
+  }
+  ctx.lineWidth = 0.02;
+  ctx.strokeStyle = EAST_PLAZA.joint;
+  ctx.stroke();
+  ctx.restore();
+}
+
 export function drawB1Grounds(ctx: Ctx) {
+  drawB1EastPlaza(ctx);
   const { rect, line } = b1Canvas(ctx);
   const { stairsN, stairsS } = B1_FRONT_M;
   const { west, north } = B1_ROADS_M;
