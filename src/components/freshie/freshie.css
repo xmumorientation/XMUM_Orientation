@@ -52,14 +52,10 @@
   .fh { --fh-bottom: 0px; --fh-top: 24px; }
 }
 
-/* One stop per screen, this page only (class set by FreshieHome): mandatory
-   snap (one scroll = next stop) on large screens, gentle proximity snap on
-   phones and tablets so taller stops can still be read. The snap sits on
-   AppShell's .app-scroll, the scroller on Freshie / Faci pages. */
-html.fh-snap .app-scroll { scroll-snap-type: y proximity; }
-@media (min-width: 1024px) and (min-height: 700px) {
-  html.fh-snap .app-scroll { scroll-snap-type: y mandatory; }
-}
+/* Home pages settle on each stop at every screen size. Oversized stops remain
+   scrollable within their bounds using native scroll snapping. */
+html.fh-snap .app-scroll { scroll-snap-type: y mandatory; }
+html.fh-snap .fh-stop { scroll-snap-stop: always; }
 @media (prefers-reduced-motion: reduce) {
   html.fh-snap .app-scroll { scroll-snap-type: none; }
 }
