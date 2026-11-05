@@ -12,7 +12,6 @@ import "@/components/staff/game/game-control.css";
 import { MyActivitySheet } from "@/components/staff/game/MyActivitySheet";
 import { ConfirmSheet, StatusLine, useStatus } from "@/components/staff/game/parts";
 import { undoWindowMinutes } from "@/components/token/UndoWindowSetting";
-import { ChallengeBanner } from "@/components/ChallengeBanner";
 import { useConfig } from "@/components/useConfig";
 import { useDay2State } from "@/components/useDay2State";
 import { tierClosedText } from "@/lib/day2";
@@ -760,7 +759,6 @@ export default function GmPanelPage() {
             "Ask Admin to assign your station"
           )}
         </p>
-        <ChallengeBanner />
         {days.length > 0 && (
           <ul className="gc-st-days" aria-label="Your stations">
             {([1, 2] as const).map((d) => {
