@@ -1524,3 +1524,14 @@ div.fi-lamp:active { transform: none; }
 @keyframes bbuy-drop { from { opacity: 0; transform: translateY(-48px) scale(0.9) rotateY(-18deg); } }
 @keyframes bbuy-float { 0%, 100% { transform: translateY(0) rotateY(-7deg) rotateX(3deg); } 50% { transform: translateY(-12px) rotateY(7deg) rotateX(-2deg); } }
 @keyframes bbuy-in { from { opacity: 0; transform: translateY(10px); } }
+
+.fh-board-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin: 12px 0;
+  color: var(--fh-text-2);
+  font-size: 14px;
+  line-height: 1.5;
+}

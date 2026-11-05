@@ -24,7 +24,7 @@ export default function Error({
         </span>
         <h1 className="mt-3 text-xl font-bold text-ink">Something Went Wrong</h1>
         <p className="mx-auto mt-2 max-w-[34ch] text-sm leading-5 text-ink-faint">
-          An unexpected error interrupted this screen. You can try again — your
+          An unexpected error interrupted this screen. You can try again. Your
           progress is saved on the server.
         </p>
         <div className="mt-5 flex items-center justify-center gap-3">

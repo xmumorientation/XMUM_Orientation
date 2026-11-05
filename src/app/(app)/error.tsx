@@ -27,7 +27,7 @@ export default function AppError({
       </span>
       <p className="font-semibold">This Screen Ran Into a Problem</p>
       <p className="max-w-[32ch] text-sm leading-5 text-ink-faint">
-        Try again — the rest of the app is still running.
+        Try again. The rest of the app is still running.
       </p>
       <button onClick={reset} className="btn-primary mt-3">
         Try Again

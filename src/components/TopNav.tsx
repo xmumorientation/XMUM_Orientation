@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
+import { SupportLinks } from "@/components/SupportLinks";
 import { FaciAvatar } from "@/components/freshie/ProfileEditor";
 import { PhaseTimer } from "@/components/PhaseTimer";
 import { prefetchCampusMap } from "@/components/campus-map/preload";
@@ -118,6 +119,7 @@ export function TopNav({
                   <Pencil size={15} aria-hidden /> Edit Profile
                 </button>
               )}
+              <SupportLinks menu />
               <button type="button" role="menuitem" onClick={onSignOut}>
                 Log Out
               </button>

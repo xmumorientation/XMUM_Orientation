@@ -96,7 +96,7 @@ export default async function ActivatePage({
     return (
       <ErrorScreen
         title="Invalid NFC Code"
-        message="This code isn't recognised. Copied or forwarded links don't work — tap the real sticker!"
+        message="This code isn't recognised. Copied or forwarded links don't work. Tap the real sticker!"
       />
     );
   }

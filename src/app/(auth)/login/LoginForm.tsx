@@ -7,6 +7,7 @@ import { useState } from "react";
 
 import { AuthShell } from "@/components/auth/AuthShell";
 import { Spinner } from "@/components/ui";
+import { loginError } from "@/lib/loginError";
 import { supabaseBrowser } from "@/lib/supabase/client";
 
 import type { DemoLogin } from "./demo-logins";
@@ -34,17 +35,17 @@ export function LoginForm({ demoLogins }: { demoLogins: DemoLogin[] }) {
   async function performLogin(loginEmail: string, loginPass: string) {
     setBusy(true);
     setError(null);
-    const supabase = supabaseBrowser();
-    const { error } = await supabase.auth.signInWithPassword({
-      email: loginEmail,
-      password: loginPass,
-    });
-    if (error) {
-      setError(error.message);
+    try {
+      const { error } = await supabaseBrowser().auth.signInWithPassword({
+        email: loginEmail,
+        password: loginPass,
+      });
+      if (error) throw error;
+      window.location.href = nextUrl || "/dashboard";
+    } catch (error) {
+      setError(loginError(error));
       setBusy(false);
-      return;
     }
-    window.location.href = nextUrl || "/dashboard";
   }
 
   async function onSubmit(e: React.FormEvent) {
@@ -63,15 +64,14 @@ export function LoginForm({ demoLogins }: { demoLogins: DemoLogin[] }) {
   async function continueWithGoogle() {
     setBusy(true);
     setError(null);
-    const supabase = supabaseBrowser();
-    const { error: oauthError } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      },
-    });
-    if (oauthError) {
-      setError(oauthError.message);
+    try {
+      const { error: oauthError } = await supabaseBrowser().auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: `${window.location.origin}/auth/callback` },
+      });
+      if (oauthError) throw oauthError;
+    } catch {
+      setError("Google sign-in could not start. Check your connection and try again. If the problem continues, contact the Tech Team.");
       setBusy(false);
     }
   }

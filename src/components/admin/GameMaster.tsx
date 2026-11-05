@@ -185,7 +185,7 @@ export function GameMaster({
       blocked: frozen ? "Token freeze is on." : after < 0 ? `Can't deduct ${amount}: ${group.name} only has ${group.token_balance}.` : undefined,
       text: (
         <>
-          {group.name} · {delta > 0 ? "+" : ""}{delta} tokens · {group.token_balance} → <b>{after}</b>
+          {group.name}, {delta > 0 ? "+" : ""}{delta} tokens, {group.token_balance} → <b>{after}</b>
         </>
       ),
       run: async () => {
@@ -215,7 +215,7 @@ export function GameMaster({
       setPending({
         text: (
           <>
-            {group.name} · remove <b>{places[loc].name}</b> piece {index}
+            {group.name}, remove <b>{places[loc].name}</b> piece {index}
           </>
         ),
         run: async () => {
@@ -231,7 +231,7 @@ export function GameMaster({
       setPending({
         text: (
           <>
-            {group.name} · give <b>{places[loc].name}</b> piece {index}
+            {group.name}, give <b>{places[loc].name}</b> piece {index}
           </>
         ),
         run: async () => {
@@ -253,7 +253,7 @@ export function GameMaster({
     setPending({
       text: (
         <>
-          {group.name} · gift <b>{qty} {type.name}</b> blind box{qty > 1 ? "es" : ""} · free, not counted as sold
+          {group.name}, gift <b>{qty} {type.name}</b> blind box{qty > 1 ? "es" : ""}, free, not counted as sold
         </>
       ),
       run: async () => {
@@ -367,7 +367,7 @@ export function GameMaster({
                         {tx.length === 0 && <li>No transactions yet.</li>}
                         {tx.map((t) => (
                           <li key={t.id}>
-                            <span>{t.reason || "No reason"} · {new Date(t.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+                            <span>{t.reason || "No reason"}, {new Date(t.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
                             <b className={t.delta > 0 ? "gm-pos" : "gm-neg"}>{t.delta > 0 ? "+" : ""}{t.delta}</b>
                           </li>
                         ))}

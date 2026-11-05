@@ -224,7 +224,7 @@ export default function GroupHome({ group }: { group: DemoGroup }) {
         </div>
 
         <p className="vx-demo-warn">
-          DEMO ROUTE — Designed for orientation rehearsal walkthrough. Production passes are signed and time-expiring.
+          DEMO ROUTE, Designed for orientation rehearsal walkthrough. Production passes are signed and time-expiring.
         </p>
       </div>
     </div>

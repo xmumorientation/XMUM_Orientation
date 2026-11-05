@@ -332,8 +332,8 @@ export function StationsSection() {
                 <div className="gc-fold-body">
                   <dl className="gc-facts">
                     <div><dt>Location</dt><dd>{s.code}</dd></div>
-                    <div><dt>Game</dt><dd>{s.purpose || "—"}</dd></div>
-                    <div><dt>Groups at Once</dt><dd>{s.max_groups ?? "—"}</dd></div>
+                    <div><dt>Game</dt><dd>{s.purpose || "Not available"}</dd></div>
+                    <div><dt>Groups at Once</dt><dd>{s.max_groups ?? "Not available"}</dd></div>
                     {s.day === 2 && (
                       <div><dt>Risk &amp; Entry</dt><dd>
                         {RISK_TIER_META[s.risk_tier].label} / −{s.entry_cost}

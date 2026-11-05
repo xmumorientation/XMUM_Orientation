@@ -136,7 +136,7 @@ export async function POST(req: NextRequest) {
   if (errors.length > 0) {
     return NextResponse.json(
       {
-        error: "CSV has errors — run a dry run first",
+        error: "CSV has errors, run a dry run first",
         errors: errors.map((r) => ({ line: r.line, error: r.error })),
       },
       { status: 400 }

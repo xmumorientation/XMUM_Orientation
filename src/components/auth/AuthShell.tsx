@@ -1,5 +1,6 @@
 "use client";
 
+import { SupportLinks } from "@/components/SupportLinks";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
@@ -47,6 +48,8 @@ export function AuthShell({
           {lead && <p className="vx-welcome-slogan">{lead}</p>}
 
           {children}
+
+          <SupportLinks />
 
           <Link href={backHref} className="vx-login-back">
             <ArrowLeft size={18} aria-hidden /> {backLabel}

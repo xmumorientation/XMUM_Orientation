@@ -328,6 +328,19 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 
 ## Done
 
+### David, 2026-11-06 (Login, game and scan recovery)
+- Added clear staff login errors and recovery guidance, including network failures. GM Day 2 shows the first blocking check near Start Game with actionable guidance.
+- Added QR recovery guidance and made Freshie Home show loading or retry when puzzle pieces are unavailable instead of presenting zero pieces. Other inventory views have not been visually checked in failure states.
+
+### David, 2026-11-06 (Feedback and Tech Team)
+- Added Google Form feedback and a WhatsApp Tech Team contact to login screens and Freshie, Faci, GM and staff account menus. Links open separately; sending a message remains the user’s choice.
+
+### David, 2026-11-06 (UX copy and scoreboard status)
+- Removed em dashes and middle dots from code-owned visible copy. Reworded messages and missing-value labels; Admin-authored database content was not changed.
+- Home token boards now show loading, last successful update time and refresh errors with retry. Failed refreshes retain the last scores and timestamp. All scoreboard readers still share one query, realtime subscription and poll.
+- GM Day 2 keeps Start Game as the button label, with the entry fee and charge-on-submit explanation immediately above it and linked through aria-describedby. Gameplay behavior is unchanged.
+- Typecheck and three scoreboard status tests passed. Installed-app/NFC behavior and a complete real-phone visual review still need validation.
+
 ### David, 2026-11-06 (Freshie navigation and Items)
 - Removed Replay Demo from Items and its preview. Removed the Freshie FAQ navigation and redirect Freshie visits to Home; the shared FAQ and Admin editor remain available to other roles.
 - Changed Home and game progress fills to animate with transforms instead of width, keeping their existing timing and progress calculations.

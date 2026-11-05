@@ -460,7 +460,7 @@ Groups checked in here will lose that check-in.`)) return;
                       ))}
                     </td>
                     <td className="px-4 py-2.5">
-                      {s.day === 2 ? RISK_TIER_META[s.risk_tier].label : "—"}
+                      {s.day === 2 ? RISK_TIER_META[s.risk_tier].label : "Not available"}
                       {s.day === 2 && tierClosedText(day2, s.risk_tier, day2.state) && (
                         <span className="ml-2 rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-700">
                           {tierClosedText(day2, s.risk_tier, day2.state)}
@@ -468,7 +468,7 @@ Groups checked in here will lose that check-in.`)) return;
                       )}
                     </td>
                     <td className="px-4 py-2.5 font-bold tabular-nums">
-                      {s.day === 2 ? `−${s.entry_cost}` : "—"}
+                      {s.day === 2 ? `−${s.entry_cost}` : "Not available"}
                     </td>
                     <td className="px-4 py-2.5">
                       <button

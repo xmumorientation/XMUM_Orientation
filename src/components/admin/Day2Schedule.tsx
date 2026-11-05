@@ -184,8 +184,8 @@ export function Day2Schedule({
             </span>
             <p className="d2s-now">
               Now: <b>{segment === "off" ? "No Day 2 game" : day2.label}</b>
-              {manual && " · held by hand"}
-              {elapsed !== null && ` · ${elapsed} of ${length} min`}
+              {manual && ", held by hand"}
+              {elapsed !== null && `, ${elapsed} of ${length} min`}
             </p>
           </div>
 
@@ -301,7 +301,7 @@ export function Day2Schedule({
                     <div className="d2s-time">
                       <p className="d2s-time-l">
                         <b>Starts at</b>
-                        {a}–{b} min · {Math.max(0, b - a)} long
+                        {a}–{b} min, {Math.max(0, b - a)} long
                       </p>
                       {i > 0 ? (
                         <Stepper value={a} disabled={disabled} limits={limits(i)} onCommit={(n) => setStart(i, n)} />

@@ -145,7 +145,7 @@ export function QrScannerScreen({ onClose, closeHref = "/dashboard", preview = f
       const r = await QrScanner.scanImage(file, { returnDetailedScanResult: true });
       handleResult(r.data);
     } catch {
-      setUploadError("No QR code found in that photo. Try again closer and with more light.");
+      setUploadError("Could not read a QR code in that photo. Try a clearer photo or ask your Facilitator for help.");
     }
   }
 
@@ -302,13 +302,13 @@ export function QrScannerScreen({ onClose, closeHref = "/dashboard", preview = f
           <p className="max-w-xs text-sm text-white/70">
             {detected.route.kind === "app"
               ? preview
-                ? "Preview only — scanning works, but nothing is opened."
+                ? "Preview only. Scanning works, but nothing is opened."
                 : "Opening it…"
               : detected.route.kind === "blocked"
                 ? detected.route.reason
                 : detected.route.kind === "link"
-                  ? "This is not a Vortexa link. Only open it if you trust it."
-                  : "This QR code holds plain text."}
+                  ? "This is not a Vortexa link. Only open it if you trust it. If you expected a game code, scan again or ask your Facilitator."
+                  : "This QR code contains text. If you expected a game code, scan again or ask your Facilitator."}
           </p>
           {detected.route.kind !== "blocked" && (
             <p className="max-w-xs break-all rounded-xl bg-white/5 px-3 py-2 font-mono text-[11px] text-white/50">{detected.raw}</p>
@@ -364,7 +364,7 @@ export function QrScannerScreen({ onClose, closeHref = "/dashboard", preview = f
               </ol>
             </>
           ) : (
-            <p className="text-sm text-white/75">We couldn&apos;t open a camera on this device. You can still upload a photo of the QR code.</p>
+            <p className="text-sm text-white/75">We couldn&apos;t open a camera on this device. Upload a photo of the QR code or ask your Facilitator for help.</p>
           )}
           <div className="mt-auto space-y-2">
             {uploadError && <p className="text-center text-sm text-[#FC9E3D]">{uploadError}</p>}
@@ -376,6 +376,7 @@ export function QrScannerScreen({ onClose, closeHref = "/dashboard", preview = f
               <Camera size={18} /> Try Again
             </button>
             {uploadButton}
+            <p className="text-center text-sm text-white/75">Still stuck? Ask your Facilitator or use Contact Tech Team in the account menu.</p>
           </div>
         </div>
       )}
