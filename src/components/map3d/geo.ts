@@ -524,13 +524,16 @@ function blockRect(name: string, side: number, [a0, a1]: readonly number[], [o0,
  * the block's long side (its OSM bearing) to that side, so it follows the footprint. `across` is metres along that
  * side from the block's middle (+ to the right, facing the block); it runs from the block's centre `out` metres. A5's
  * door is on its east side (A5Block), with a forecourt of its own.
+ *
+ * Each is centred on its porch, which stands in the middle of the wall (Ben, 2026-11-05). The widths are the imagery's,
+ * which put A1's, A2's, A4's and A5's east forecourts 1 to 7 m to one side of the porch.
  */
 const A_FORECOURTS_M: { block: string; side: number; across: [number, number]; out: number }[] = [
-  { block: "A1", side: 90, across: [-16.5, 5], out: 66.5 },
-  { block: "A2", side: 0, across: [-18.25, 3.75], out: 70.5 },
-  { block: "A4", side: 180, across: [-12.25, 9.75], out: 69.7 },
+  { block: "A1", side: 90, across: [-10.75, 10.75], out: 66.5 },
+  { block: "A2", side: 0, across: [-11, 11], out: 70.5 },
+  { block: "A4", side: 180, across: [-11, 11], out: 69.7 },
   { block: "A5", side: 180, across: [-11.25, 11.25], out: 67.2 },
-  { block: "A5", side: 90, across: [-14, 3], out: 50 },
+  { block: "A5", side: 90, across: [-8.5, 8.5], out: 50 },
 ];
 
 /**
