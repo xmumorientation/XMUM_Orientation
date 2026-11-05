@@ -328,6 +328,16 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 
 ## Done
 
+### David, 2026-11-05 — Public Offline Guide
+- Added a standalone offline guide with retry, saved public Schedule, static campus map and recovery instructions. The Welcome menu/footer link to it; an app-wide offline notice preserves the original page by opening the guide separately.
+- Matched the existing Vortexa logo, fonts, night palette, date picker, timeline cards and category tags; added mobile guide tabs and expandable staff help. Saved assets include the logo and fonts.
+- Replaced the old 2D reference with a still captured from the existing online 3D scene and its default camera, avoiding the old empty brown area. Added a visible Technical Development Team contact reminder for staff.
+- Simplified the guide: Wi-Fi-off illustration, prominent You’re Offline heading, one recovery action, concise saved timestamps and collapsed help. Distinguishes actual device offline, failed navigation while onLine is true, and a newly detected connection. App banner uses the same short icon/status treatment.
+- Added a narrowly scoped service worker: precaches guide files only, provides failed-navigation fallback, and retains successful public timetable snapshots. No signed-in pages, game writes or private data are cached. No database migration.
+- Validation: four service-worker boundary tests, typecheck, changed-file lint and production build passed (existing 2D-map image lint warning remains). Chromium checks at 412px and 1280px verified homepage preparation, offline refresh/new tab, saved Schedule and labelled map, failed-update retention, reconnect/retry and the first-visit limitation. Design detector is clear; no ignores added.
+- Release checks on current main: production build and final Chromium offline/reconnect flow passed; full suite had 392 passed and one pre-existing Admin +5 label assertion failure, reproduced on a clean origin/main copy.
+- Preparation and cache versioning: [offline-guide.md](offline-guide.md). Physical-phone and venue-network rehearsal remains pending. Release uses the existing GitHub-to-Vercel integration; live status is checked separately after push.
+
 ### David, 2026-11-05 — Welcome Page Polish
 - Enlarged the Jack 'n Jill sponsor logo and made Schedule category tags consistent in width and alignment.
 

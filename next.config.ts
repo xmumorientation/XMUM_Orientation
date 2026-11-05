@@ -18,6 +18,15 @@ const nextConfig: NextConfig = {
       ? [{ protocol: "https", hostname: supabaseHost, pathname: "/storage/v1/object/public/faci-avatars/**" }]
       : [],
   },
+  async headers() {
+    return [{
+      source: "/sw.js",
+      headers: [
+        { key: "Cache-Control", value: "no-store" },
+        { key: "Service-Worker-Allowed", value: "/" },
+      ],
+    }];
+  },
   // Freshie control moved into the Admin area.
   async redirects() {
     return [
