@@ -328,6 +328,14 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 
 ## Done
 
+### Map: the road to the A-row's basement car park, and both ends of the track red, 2026-11-05 (Ben, branch `map3d-a5-carpark`)
+No migration. Ben: the art's road between the track and A5 stopped in the lawn; really it goes down into the car park under the A-row.
+- The road now leaves the campus road where the imagery has it, runs north and bends west down a ramp into the car park, between a white house at the terrace's east end (green overgrown roof, two grey roller shutters, Ben's photos) and a white wall. A grey paved way climbs beside the ramp to the A-row's walk.
+- Brick walks on both sides (the east one runs on to the lake), a palm row along the lawn and a belt of trees toward the track. The art road's stretch through the fence to the outer road is gone, and the fence and the tree strip there are whole.
+- The ramp is really dug in (3.5 m at the portal): the ground is cut away over it, its floor wears the road's paint, and pins and taps follow it. The way in glows faintly at night.
+- Both ends of the track's infield are red now (the south end was green).
+- Code: `BASEMENT_*` in `geo.ts`, `basement.tsx`; details in the session handoff, "The road to the A-row's basement car park". Checked on `/map3d` from above, from the track side, from the lawn, into the portal, at night and at phone size in lite mode; `tests/map3d/basement.test.ts`; `tsc` and `eslint` clean for the map.
+
 ### David, 2026-11-05 — Welcome Page Polish
 - Enlarged the Jack 'n Jill sponsor logo and made Schedule category tags consistent in width and alignment.
 
