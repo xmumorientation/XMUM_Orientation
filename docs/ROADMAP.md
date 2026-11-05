@@ -7,7 +7,7 @@ For everything already merged, day by day since the first commit, see [CHANGELOG
 
 > **From Ben:** when you finish your work, write down what you completed in the "Done" section at the end of this file, so the next teammate can see it. Do this for partly finished items too: say which parts are done and which are left.
 
-Last updated: 2026-11-04
+Last updated: 2026-11-06
 
 ## Status key
 
@@ -327,6 +327,13 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 ---
 
 ## Done
+
+### David, 2026-11-06 (Freshie navigation and Items)
+- Removed Replay Demo from Items and its preview. Removed the Freshie FAQ navigation and redirect Freshie visits to Home; the shared FAQ and Admin editor remain available to other roles.
+- Changed Home and game progress fills to animate with transforms instead of width, keeping their existing timing and progress calculations.
+
+### David, 2026-11-05 (sponsor logo and tennis spectators)
+- Enlarged Jack 'n Jill on the signed-in Home credits to match the Welcome page. Tennis cards list the players on each active court, including Bot matches; older clients that do not send names still show their courts. Needs live deployment and real-device multiplayer verification.
 
 ### Map: OC shares its location, everyone sees staff pins, red staff pins and blue group pins, 2026-11-05 (Ben, branch `map3d-a5-carpark`)
 Migration `0124_staff_location_oc_everyone` (run on the live database, 2026-11-05).

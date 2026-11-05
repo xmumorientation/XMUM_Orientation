@@ -113,7 +113,7 @@ export async function createGame(o: TennisOptions): Promise<Game> {
     const transport = await openTransport(o.net);
     const online = (game.online = new Online(transport, game.profile, o.auto ? "bot" : "player"));
     // the host puts its match on the courts' board (T3a), so the map shows it to everyone
-    hostOnBoard(online, () => new Board(transport), (theirs) => shirtsOf(color, theirs));
+    hostOnBoard(online, () => new Board(transport), (theirs) => shirtsOf(color, theirs), profile.name);
     return game;
   }
   // a fixed seed with two bots, so a held moment is the same every time

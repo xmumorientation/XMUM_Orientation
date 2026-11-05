@@ -4,7 +4,7 @@ import { PIECES_PER_SET, type ProjectorLocation } from "@/lib/types";
 import type { BoxGroup, HistoryEntry, ItemsData } from "./types";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SAMPLE DATA ONLY: not real game data. Kept for previews and the Replay demo.
+// SAMPLE DATA ONLY: not real game data. Kept for previews.
 // /inventory shows live data (useItemsData.ts); add ?demo=… to see these:
 // ?demo=complete plays the T&F key completing (the 5th piece arrives, with a
 // Replay button); ?demo=day1|day2|ready|taken|won shows the other states.
@@ -52,7 +52,7 @@ function sampleBoxes(goldLeft: number, goldOpened: number[], stdLeft: number, st
   ];
 }
 
-/** Sample blind boxes (the ?demo previews and the Replay demo). Live data shows the group's real boxes. */
+/** Sample blind boxes for ?demo previews. Live data shows the group's real boxes. */
 export const SAMPLE_BOXES: ItemsData["boxes"] = sampleBoxes(5, [5], 2, [2, 1, 1, 2]);
 
 function base(): ItemsData {

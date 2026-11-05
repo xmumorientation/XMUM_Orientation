@@ -282,7 +282,7 @@ describe("Game start/end (GameToggles)", () => {
     setup({ phases: [phase("day1", "Day 1 game", "active", { ends_at: ends }), phase("day2", "Day 2 game", "pending")] });
     render(<GameToggles day="Day 1" onError={noop} onNotice={noop} />);
     expect(screen.getByRole("timer", { name: "Day 1 game time left" })).toBeTruthy();
-    await userEvent.click(screen.getByRole("button", { name: "+5" }));
+    await userEvent.click(screen.getByRole("button", { name: "+5mins" }));
     expect(confirm).not.toHaveBeenCalled();
     await userEvent.click(screen.getByRole("button", { name: "End Day 1 game" }));
     expect(confirm).toHaveBeenCalledWith("End Day 1 game? Station statuses are not changed.");

@@ -1,13 +1,21 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { redirect } from "next/navigation";
 
+import { useProfile } from "@/components/ProfileProvider";
 import { Card, EmptyState, PageTitle, Spinner } from "@/components/ui";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import type { FaqItem } from "@/lib/types";
 
 // FAQ + contacts.
 export default function FaqPage() {
+  const profile = useProfile();
+  if (profile.role === "freshie") redirect("/dashboard");
+  return <FaqContent />;
+}
+
+function FaqContent() {
   const supabase = useMemo(() => supabaseBrowser(), []);
   const [items, setItems] = useState<FaqItem[]>([]);
   const [loading, setLoading] = useState(true);

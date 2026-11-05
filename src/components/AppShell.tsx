@@ -98,7 +98,6 @@ const NAV: NavItem[] = [
       "admin",
     ],
   },
-  { href: "/faq", label: "FAQ", code: "FQ", roles: ["freshie"] },
   {
     href: "/committee",
     label: "Ops",
