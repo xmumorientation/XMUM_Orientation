@@ -196,9 +196,11 @@ html.fh-snap { overflow-x: hidden; }
    Normal, Challenge, Normal, Funfair, sized by Admin's inner schedule. */
 .fa-track { display: flex; gap: 3px; height: 3px; max-width: 1000px; margin: 0 auto; padding: 0 16px 6px; box-sizing: content-box; }
 .fa-seg { --k: var(--fh-accent); position: relative; flex-basis: 0; height: 3px; border-radius: 3px; overflow: hidden; background: color-mix(in srgb, var(--k) 16%, var(--fh-ink-3)); }
-.fa-seg[data-seg="funfair"] { --k: var(--fh-lilac); }
+/* Day 2 segments, by what they open (the same for every group): green before Hard, orange with Hard open, red for the funfair. */
+.fa-seg[data-seg="normal"] { --k: #2fd27a; }
+.fa-seg[data-seg="hard"] { --k: #fc9e3d; }
+.fa-seg[data-seg="funfair"] { --k: #ff3b4e; }
 .fa-seg > span { position: absolute; inset: 0 auto 0 0; border-radius: 3px; background: var(--k); transition: width 1s linear; }
-.fa-seg[data-seg="funfair"] > span { background: var(--fh-holo); }
 .fa-seg[data-now] > span { box-shadow: 0 0 8px var(--k); }
 @media (min-width: 1024px) {
   .fh.fa-head { display: none; }

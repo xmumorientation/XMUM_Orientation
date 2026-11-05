@@ -20,11 +20,13 @@ export type GameStatus =
   | { kind: "break"; next: Phase | null }
   | { kind: "waiting"; next: Phase | null }
   | { kind: "over" }
-  /** Over for longer than GAME_OVER_SHOW_MS: the pill is hidden. */
+  /** Over, or on a break, for longer than GAME_OVER_SHOW_MS / BREAK_SHOW_MS: the pill is hidden. */
   | { kind: "none" };
 
 /** How long GAME OVER stays up after Day 2 ends. */
 const GAME_OVER_SHOW_MS = 30 * 60_000;
+/** How long BREAK stays up after a phase (Day 1) ends. */
+const BREAK_SHOW_MS = 30 * 60_000;
 
 function gameStatus(phases: Phase[], serverNow: number): GameStatus {
   const current = phases.find((p) => p.state === "active") ?? phases.find((p) => p.state === "paused");
@@ -45,7 +47,14 @@ function gameStatus(phases: Phase[], serverNow: number): GameStatus {
     return serverNow - endedAt >= GAME_OVER_SHOW_MS ? { kind: "none" } : { kind: "over" };
   }
   const next = phases.find((p) => p.state === "pending") ?? null;
-  return phases.some((p) => p.state === "ended") ? { kind: "break", next } : { kind: "waiting", next };
+  const ended = phases.filter((p) => p.state === "ended");
+  if (ended.length === 0) return { kind: "waiting", next };
+  // BREAK (between Day 1 and Day 2) shows for 30 min after the last phase ended, then the pill goes (Ben).
+  // ends_at is when that phase ended (time up, or Admin's End). A phase ended without ever running (the old
+  // Endgame row on the live database: ended, ends_at null) has no end time and does not count.
+  const endTimes = ended.map((p) => (p.ends_at ? new Date(p.ends_at).getTime() : NaN)).filter(Number.isFinite);
+  if (endTimes.length === 0) return { kind: "break", next };
+  return serverNow - Math.max(...endTimes) >= BREAK_SHOW_MS ? { kind: "none" } : { kind: "break", next };
 }
 
 /** How much of a phase has run, 0 to 1. */
@@ -111,7 +120,8 @@ export function GameStatusPill({ status }: { status: GameStatus }) {
  * The running day's progress, shown only while Day 1 or Day 2 is on (or
  * paused). Day 1 is one bar. Day 2 is split by Admin's inner schedule
  * (fn_day2_state, 0115): one piece per segment, each as long as Admin set it. A segment Admin started by hand counts as reached, so the
- * segments before it fill up.
+ * segments before it fill up. Each Day 2 segment is coloured by what it opens (freshie.css): green before the
+ * Hard stations open, orange once they are open, red for the funfair (Ben).
  */
 export function GameTrack({ status, serverNow }: { status: GameStatus; serverNow: number }) {
   const day2 = useDay2State();
@@ -142,7 +152,7 @@ export function GameTrack({ status, serverNow }: { status: GameStatus; serverNow
           <span
             key={seg.id}
             className="fa-seg"
-            data-seg={seg.funfair ? "funfair" : "normal"}
+            data-seg={seg.funfair ? "funfair" : seg.hard ? "hard" : "normal"}
             data-now={seg.now || undefined}
             style={{ flexGrow: Math.max(seg.to - seg.from, 1) }}
             title={seg.label}
