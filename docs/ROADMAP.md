@@ -75,6 +75,12 @@ Parked for now. Fix it before real Freshie data and the live game go on the site
 
 **Update:** the `bonding-session` branch appears to fix most of this item. See "Read before merging `bonding-session`" above. This item describes `main` as it is today.
 
+**Live database checked 2026-11-06 (Ben, SQL Editor):** the live database is not what `main`'s migrations say. `bonding-session`'s migrations ran on it, so:
+- A and C are fixed live: `token_logs`, `puzzle_inventory` and `game_config_rules` have role-scoped policies (from `bonding-session` 0018 and `60c8ac1`), not the `allow all` ones; `freshies` is gone (0041).
+- D is fixed live: `fn_set_total_groups` checks `has_permission('accounts.manage')` and is not granted to anon; `fn_admin_update_freshie` / `fn_admin_delete_freshie` do not exist.
+- New and fixed the same day: `fn_provision_group_login` (0034) was callable by anon and authenticated (0034 revoked it from `public` only); migration 0125 records the fix. Every other security definer function anon or authenticated can call was reviewed: the rest are triggers, read-only public data, checked inside (or through a checked function), or harmless.
+- Still to do: those policies and the 0018 checks are not in `main`'s migrations, so a database rebuilt from `main` would be open again. Port them into a `main` migration.
+
 ### Why this matters
 
 The Supabase anon key (`NEXT_PUBLIC_SUPABASE_ANON_KEY`) is shipped to every browser, so anyone can copy it from the site.
@@ -327,6 +333,9 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 ---
 
 ## Done
+
+### Unlisted site: no search engine indexing, 2026-11-06 (Ben, branch `main`)
+No migration. The site is reachable by link only: every page has `robots: noindex, nofollow` (root `layout.tsx` metadata) and every response the `X-Robots-Tag: noindex, nofollow` header (`next.config.ts`), and `sitemap.ts` is removed. `robots.txt` still allows crawling, so search engines can see the noindex and drop pages they indexed before. This hides the site from search only; it is not access control (item 3 still applies). Link previews (WhatsApp, Instagram) still work.
 
 ### Security: Seed Test Accounts route removed, 2026-11-06 (Ben, branch `main`)
 No migration. `/api/admin/seed-test-accounts` (POST and GET) had no role check: any signed-in account could reset the test accounts' passwords, the admin test account included, to the values in the code. Nothing in the app called it, so it is deleted (item 3 B). Create or reset test accounts locally with `node --experimental-websocket --env-file=.env.local scripts/seed-test-accounts.mjs`. The test passwords were in the repo, so on 2026-11-06 every test account on the live database got a new password, `TEST_ACCOUNT_PASSWORD` in `.env.local` (gitignored); the seed script and the local demo logins read it from there, and the script now only resets an existing account's password, leaving its profile alone. That run also created `freshie@test.com`, `hof@test.com` and `hogm@test.com`, which had not existed (delete them if unused). Still to do: check the test accounts' sign-in history in Supabase.
