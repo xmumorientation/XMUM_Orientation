@@ -6,7 +6,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
-import { SupportLinks } from "@/components/SupportLinks";
 import { FaciAvatar } from "@/components/freshie/ProfileEditor";
 import { PhaseTimer } from "@/components/PhaseTimer";
 import { prefetchCampusMap } from "@/components/campus-map/preload";
@@ -129,7 +128,7 @@ export function TopNav({
               >
                 Help &amp; Feedback <ChevronDown size={14} aria-hidden />
               </button>
-              {helpOpen && <div><SupportLinks variant="menu" /></div>}
+              {helpOpen && <a className="vx-topnav-feedback" href="https://forms.gle/gcFHEWHCMzKgMcbMA" target="_blank" rel="noopener noreferrer" role="menuitem">Give Feedback</a>}
               <button type="button" role="menuitem" onClick={onSignOut}>
                 Log Out
               </button>

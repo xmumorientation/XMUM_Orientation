@@ -72,7 +72,7 @@ export function LoginForm({ demoLogins }: { demoLogins: DemoLogin[] }) {
       });
       if (oauthError) throw oauthError;
     } catch {
-      setError("Google sign-in could not start. Check your connection and try again. If the problem continues, contact the Tech Team.");
+      setError("Google sign-in could not start. Check your connection and try again.");
       setBusy(false);
     }
   }

@@ -665,7 +665,7 @@ export function AccountMenu({
           >
             Help &amp; Feedback <ChevronDown size={14} aria-hidden />
           </button>
-          {helpOpen && <div id="fh-account-help"><SupportLinks variant="menu" /></div>}
+          {helpOpen && <a className="fh-menu-feedback" href="https://forms.gle/gcFHEWHCMzKgMcbMA" target="_blank" rel="noopener noreferrer" role="menuitem">Give Feedback</a>}
           <button type="button" role="menuitem" onClick={signOut}>
             Log Out
           </button>
