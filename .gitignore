@@ -43,5 +43,8 @@ supabase/.temp
 .preview-shots/
 test-results/
 
+# Tutorial videos and their source (never commit)
+/docs/videos/
+
 # Registration imports contain Student IDs and stay local.
 .private/

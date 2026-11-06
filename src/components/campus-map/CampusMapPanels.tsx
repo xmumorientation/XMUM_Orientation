@@ -16,7 +16,8 @@ import { StationEditDialog } from "@/components/StationEditDialog";
 import { stationDotColor } from "@/components/ui";
 import { useDay2State } from "@/components/useDay2State";
 import { tierClosedText } from "@/lib/day2";
-import type { Station } from "@/lib/types";
+import { FUNFAIR_ZONE_NAMES, PROJECTOR_ZONES } from "@/lib/funfair";
+import { PROJECTOR_CODE_NAMES, type Station } from "@/lib/types";
 import { LiveText } from "@/components/LiveAgo";
 import { STAFF_PIN_COLOR, staffPinHeadY, staffPinPath } from "@/lib/staffLocation";
 import { timeAgoExact } from "@/lib/utils";
@@ -117,7 +118,7 @@ export function MapToolbar({
   canManageStations: boolean;
   view: MapView;
 }) {
-  const { checkMode, check, movingTitle } = data;
+  const { checkMode, check } = data;
   return (
     <>
       {canManageStations && !checkMode && (
@@ -146,20 +147,6 @@ export function MapToolbar({
           log={data.checkLog.log}
           onClearLog={data.checkLog.clear}
         />
-      )}
-      {movingTitle && (
-        <div className="mb-2 flex items-center justify-between gap-3 rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-950 ring-1 ring-amber-200">
-          <span>
-            Tap the map where the {bulbTitle(movingTitle, data.places)} NFC card is. Use full screen for a precise spot.
-          </span>
-          <button
-            type="button"
-            className="shrink-0 font-semibold underline"
-            onClick={() => data.setMovingBulb(null)}
-          >
-            Cancel
-          </button>
-        </div>
       )}
     </>
   );
@@ -251,7 +238,6 @@ export function MapInfoCard({
     checkError,
     checkNotice,
     layer,
-    movingTitle,
     selectedBulb,
     bulbs,
     nowMs,
@@ -259,7 +245,7 @@ export function MapInfoCard({
     selectedPin,
     activeSelected,
   } = data;
-  return checkMode && canManageStations && !movingTitle ? (
+  return checkMode && canManageStations ? (
     <div className="pointer-events-auto rounded-2xl bg-white px-3 py-2.5 text-sm shadow-lg">
       <div className="font-semibold">Tap where you really are</div>
       <div className="text-xs text-ink-faint">
@@ -270,29 +256,20 @@ export function MapInfoCard({
             : "Finding your location…")}
       </div>
     </div>
-  ) : layer === "bulbs" && movingTitle ? (
-    <div className="pointer-events-auto flex items-center justify-between gap-3 rounded-2xl bg-amber-50 px-3 py-2.5 text-sm text-amber-950 shadow-lg">
-      <span className="min-w-0">
-        Tap where the {bulbTitle(movingTitle, data.places)} NFC card is.
-      </span>
-      <button
-        type="button"
-        className="shrink-0 font-semibold underline"
-        onClick={() => data.setMovingBulb(null)}
-      >
-        Cancel
-      </button>
-    </div>
   ) : layer === "bulbs" && selectedBulb ? (
     (() => {
+      // The 2D map draws all three bulbs on their funfair zones, so one may be tapped before fn_map_lightbulbs
+      // sends its row (unlit, before the map unlocks): code name and zone only.
       const b = bulbs.find((item) => item.location === selectedBulb);
-      if (!b) return <span />;
+      const area = FUNFAIR_ZONE_NAMES[PROJECTOR_ZONES[selectedBulb]].split(" / ")[1];
       return (
         <div className="pointer-events-auto flex items-center justify-between gap-3 rounded-2xl bg-white px-3 py-2.5 text-sm shadow-lg">
           <div className="min-w-0">
-            <div className="truncate font-semibold">{bulbTitle(b, data.places)}</div>
+            <div className="truncate font-semibold">
+              {b ? bulbTitle(b, data.places) : PROJECTOR_CODE_NAMES[selectedBulb]}
+            </div>
             <div className="truncate text-xs text-ink-faint">
-              {bulbStatus(b, nowMs, data.myGroupId)}
+              {b ? bulbStatus(b, nowMs, data.myGroupId) : "Not lit yet"} / Lights the {area}
             </div>
           </div>
           <button
@@ -482,8 +459,6 @@ export function CampusMapPanels({
         selected={data.selectedBulb}
         onSelect={(loc) => data.setSelectedBulb((cur) => (cur === loc ? null : loc))}
         canManage={canManageStations}
-        moving={data.movingBulb}
-        onMove={view === "2d" ? data.setMovingBulb : undefined}
         resetting={data.resetting}
         onReset={data.resetBulb}
       />

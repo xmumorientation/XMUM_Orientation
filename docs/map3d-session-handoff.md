@@ -171,7 +171,8 @@ Ben may continue this work in a new Claude conversation. This file says where ev
 - **Dev preview:** `/map3d/preview`, with mock data. Parameters: `?role=freshie|faci|staff|admin`, `&full=1`, `&map=2d`, `&check=1` (Admin's accuracy check).
 - **Lightbulbs (Ben, 2026-10-15):** no lightbulb markers or layer in 3D.
   - The funfair zones show which bulbs are lit, and the location photos on the Items page tell groups where to go.
-  - The lightbulb list sits under the 3D map, and Admin keeps Reset there. Move bulb is in the 2D view only.
+  - The lightbulb list sits under the 3D map, and Admin keeps Reset there.
+  - The 2D map (2026-11-06) draws the funfair too, in the art's isometric style (`campus-map/Funfair2D.tsx`): all 15 rides and the VORTEXA gate in their 3D layout, squeezed into the art's brown field (`funfair2dLayout.ts` `squeeze`, then the art's transform `worldToArt`; the gate stands on the field's park-side edge; `tests/funfair-2d-spots.test.ts` keeps them in step), on a lawn with walks, plazas, lamps and trees (`FunfairGround`, drawn under the night layer). A zone is grey and still with a red standby light until its projector (default key) is lit; then its bulbs come on one by one, the neon flickers on and the rides move (SMIL, off with reduced motion; no SVG filters, for old phones). On the Projectors layer one sign floats over each zone (key glyph, code name, area), which opens the projector's card. Night follows the 3D Auto clock (`mapTimeAt` in `src/lib/mapTime.ts`): the map darkens, off zones fade and each lit ride casts a pool of light. `?time=day|sunset|night` fixes the time for testing. Move bulb is gone.
   - See the funfair design, "How the game reaches the funfair".
 - **Light switch:** full screen has Auto / Sunset / Day / Night (top right). Its accent is the group colour, or the Welcome page's cyan.
 - **Admin's accuracy check in 3D:** tap the ground to see the GPS error in metres. Nothing is saved. Saved anchors bend the 2D map only.
@@ -313,6 +314,6 @@ Fixed (the review's findings and Ben's additions):
 Still open:
 
 - Merge static meshes (about 700 draw calls); measure on a cheap 2–3-year-old Android.
-- Admin's Move bulb and save-correction stay 2D only (`?map=2d`).
+- Admin's save-correction stays 2D only (`?map=2d`).
 - A tap during a camera flight stops it (on purpose: a drag takes over).
 - Check A5 against Ben's photos. Real pages behind login and a real phone are still unchecked.

@@ -135,6 +135,15 @@ function mockBulbs(now: number): MapLightbulb[] {
     };
   };
   const result = [bulb("B1", "B1 Basement", "B1", 3, 12), bulb("A3", "A3 Building", "A3", null, 0), bulb("TF", "Track & Field", "Track & Field", 7, 3)];
+  // ?lit=all | none | B1,TF: which projectors are lit (default: Star and Orbit).
+  const litParam = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("lit") : null;
+  if (litParam) {
+    const lit = litParam === "all" ? ["B1", "A3", "TF"] : litParam === "none" ? [] : litParam.split(",");
+    for (const [k, b] of result.entries()) {
+      const on = lit.includes(b.location);
+      result[k] = { ...b, activated_by_group: on ? (b.activated_by_group ?? 5) : null, group_name: on ? `Group ${b.activated_by_group ?? 5}` : null, activated_at: on ? ago(6) : null };
+    }
+  }
   // The local success harness simulates only this arrival's activation.
   // No account, token or remote game state is touched.
   if (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("arrival") === "activation") {
@@ -179,7 +188,6 @@ export function useMockMapData(opts: MockOptions): CampusMapData {
   const [openBuilding, setOpenBuilding] = useState<string | null>(opts.building);
   const [clusterArea, setClusterArea] = useState<string | null>(opts.cluster);
   const [selectedBulb, setSelectedBulb] = useState<ProjectorLocation | null>(opts.bulb);
-  const [movingBulb, setMovingBulb] = useState<ProjectorLocation | null>(null);
   const [selectedGroup, setSelectedGroup] = useState<number | null>(opts.group);
   const [showNames, setShowNames] = useState(opts.names);
   const [editing, setEditing] = useState<Station | null>(null);
@@ -217,7 +225,6 @@ export function useMockMapData(opts: MockOptions): CampusMapData {
     setLayerState(next);
     setSelected(null);
     setSelectedBulb(null);
-    setMovingBulb(null);
     setOpenBuilding(null);
     setClusterArea(null);
   }
@@ -258,18 +265,10 @@ export function useMockMapData(opts: MockOptions): CampusMapData {
     newLit,
     selectedBulb,
     setSelectedBulb,
-    movingBulb,
-    setMovingBulb,
-    movingTitle: movingBulb ? bulbs.find((b) => b.location === movingBulb) : undefined,
     bulbError: null,
     resetting: null,
     resetBulb: async (loc: ProjectorLocation) => {
       setBulbs((list) => list.map((b) => (b.location === loc ? { ...b, activated_at: null, activated_by_group: null, group_name: null } : b)));
-    },
-    placeBulb: async (x: number, y: number) => {
-      const loc = movingBulb;
-      setMovingBulb(null);
-      if (loc) setBulbs((list) => list.map((b) => (b.location === loc ? { ...b, map_x: x, map_y: y } : b)));
     },
     positions,
     groupPins,

@@ -1,6 +1,6 @@
 "use client";
 
-import { Lightbulb, Move, RotateCcw } from "lucide-react";
+import { Lightbulb, RotateCcw } from "lucide-react";
 
 import type { MapPlaces } from "@/lib/projectorPlaces";
 import { PROJECTOR_CODE_NAMES, type MapLightbulb, type ProjectorLocation } from "@/lib/types";
@@ -34,8 +34,6 @@ export function LightbulbList({
   selected,
   onSelect,
   canManage,
-  moving,
-  onMove,
   resetting,
   onReset,
 }: {
@@ -46,10 +44,8 @@ export function LightbulbList({
   nowMs: number;
   selected: ProjectorLocation | null;
   onSelect: (location: ProjectorLocation) => void;
-  /** Admin: reset buttons, and Move buttons when `onMove` is given (the 2D map only). */
+  /** Admin: reset buttons. */
   canManage: boolean;
-  moving: ProjectorLocation | null;
-  onMove?: (location: ProjectorLocation | null) => void;
   /** Bulb whose reset is in progress. */
   resetting: ProjectorLocation | null;
   /** Admin: turn a lit bulb off again. */
@@ -93,17 +89,6 @@ export function LightbulbList({
               >
                 <RotateCcw className="h-3.5 w-3.5" />
                 {resetting === b.location ? "Resetting…" : "Reset"}
-              </button>
-            )}
-            {canManage && onMove && (
-              <button
-                type="button"
-                onClick={() => onMove(moving === b.location ? null : b.location)}
-                aria-pressed={moving === b.location}
-                className="inline-flex min-h-[36px] shrink-0 items-center gap-1 rounded-lg border border-paper-200 px-2.5 text-xs font-semibold hover:bg-paper-100"
-              >
-                <Move className="h-3.5 w-3.5" />
-                {moving === b.location ? "Cancel" : "Move"}
               </button>
             )}
           </li>

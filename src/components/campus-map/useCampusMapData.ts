@@ -203,7 +203,6 @@ export function useCampusMapData({
     ? { B1: clues.B1?.place ?? null, A3: clues.A3?.place ?? null, TF: clues.TF?.place ?? null }
     : staffPlaces;
   const [selectedBulb, setSelectedBulb] = useState<ProjectorLocation | null>(null);
-  const [movingBulb, setMovingBulb] = useState<ProjectorLocation | null>(null);
   // Admin anchors (map_anchors), added to the built-in ones in mapGeo.
   // warpVersion changes when they are refitted, so pins are placed again.
   const [anchors, setAnchors] = useState<MapAnchor[]>([]);
@@ -424,7 +423,6 @@ export function useCampusMapData({
     writeStored(LAYER_KEY, next);
     setSelected(null);
     setSelectedBulb(null);
-    setMovingBulb(null);
     setOpenBuilding(null);
     setClusterArea(null);
     setBulbError(null);
@@ -439,26 +437,6 @@ export function useCampusMapData({
     const { error } = await supabase.rpc("fn_admin_reset_projector", { p_location: loc });
     setResetting(null);
     setBulbError(error ? friendlyError(error) : null);
-    const { data } = await supabase.rpc("fn_map_lightbulbs");
-    if (data) setBulbs(data as MapLightbulb[]);
-  }
-
-  // Admin: put the bulb being moved at this map percent.
-  async function placeBulb(xPct: number, yPct: number) {
-    const loc = movingBulb;
-    if (!loc) return;
-    const round = (n: number) => Math.round(Math.min(100, Math.max(0, n)) * 100) / 100;
-    const x = round(xPct);
-    const y = round(yPct);
-    setMovingBulb(null);
-    // Show it at once; the realtime reload confirms it.
-    setBulbs((list) => list.map((b) => (b.location === loc ? { ...b, map_x: x, map_y: y } : b)));
-    const { error } = await supabase
-      .from("projectors")
-      .update({ map_x: x, map_y: y })
-      .eq("location", loc);
-    if (error) setBulbError(friendlyError(error));
-    else setBulbError(null);
     const { data } = await supabase.rpc("fn_map_lightbulbs");
     if (data) setBulbs(data as MapLightbulb[]);
   }
@@ -612,10 +590,6 @@ export function useCampusMapData({
   const selectedPin =
     selectedGroup != null ? (groupPins.get(selectedGroup) ?? null) : null;
 
-  const movingTitle = movingBulb
-    ? bulbs.find((b) => b.location === movingBulb)
-    : undefined;
-
   return {
     myId,
     staffPositions,
@@ -654,13 +628,9 @@ export function useCampusMapData({
     newLit,
     selectedBulb,
     setSelectedBulb,
-    movingBulb,
-    setMovingBulb,
-    movingTitle,
     bulbError,
     resetting,
     resetBulb,
-    placeBulb,
     // Group pins
     positions,
     groupPins,
