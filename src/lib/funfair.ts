@@ -26,6 +26,9 @@ export const FUNFAIR_OFF: FunfairPower = { west: 0, central: 0, east: 0 };
 /** The default key of each zone (also 0088's seed rows). */
 export const DEFAULT_ZONE_KEYS: Record<FunfairZone, ProjectorLocation> = { east: "B1", west: "A3", central: "TF" };
 
+/** The zone each projector stands over on the maps (its default zone). */
+export const PROJECTOR_ZONES: Record<ProjectorLocation, FunfairZone> = { B1: "east", A3: "west", TF: "central" };
+
 /** For Admin's and HOGM's Funfair cards: the map's zone signs follow the default keys, not the keys set there. */
 export const SIGN_NOTE =
   "The map's zone signs name each zone after its default key: Star (B1) for East, Wheel (A3) for West, Orbit (TF) for " +

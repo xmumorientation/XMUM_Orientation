@@ -45,6 +45,7 @@ import { stationDotColor } from "@/components/ui";
 import { ACTIVATION_JOURNEY_KEY, readActivationJourney } from "@/lib/activation-journey";
 import { type FunfairPower, type FunfairZone, isFunfairPreview, type FunfairPreview, zoneTitle } from "@/lib/funfair";
 import { groupPinColor } from "@/lib/mapGeo";
+import { mapTimeAt } from "@/lib/mapTime";
 import type { Station } from "@/lib/types";
 
 import type { CampusMapViewProps } from "./CampusMap2DView";
@@ -116,11 +117,9 @@ function fitCamera(aspect: number): CameraView {
   return { position: [position.x, position.y, position.z], target: [target.x, target.y, target.z] };
 }
 
-/** The look for the time of day: day from 7:00, sunset round dawn and dusk, night otherwise. */
+/** The look for the time of day (mapTimeAt, shared with the 2D map). */
 function modeNow(): Mode {
-  const h = new Date().getHours();
-  if (h >= 7 && h < 18) return "day";
-  return h === 6 || h === 18 ? "sunset" : "night";
+  return mapTimeAt(new Date());
 }
 
 /** Where a station's marker sits: a point, and how far above it (CSS px) the dot's centre is. */

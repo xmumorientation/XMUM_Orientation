@@ -7,11 +7,14 @@ import { Maximize2, Minus, Plus, RotateCcw, X } from "lucide-react";
 import { pinSummary } from "@/components/GroupStatusList";
 import { bulbStatus, bulbTitle } from "@/components/LightbulbList";
 import { stationDotColor } from "@/components/ui";
-import { PROJECTOR_CODE_NAMES, type Station } from "@/lib/types";
+import { PROJECTOR_CODE_NAMES, type ProjectorLocation, type Station } from "@/lib/types";
+import { PROJECTOR_ZONES } from "@/lib/funfair";
 import { MAP_BUILDINGS } from "@/lib/mapBuildings";
 import { accuracyAxes, gpsToMapPercent, groupPinColor } from "@/lib/mapGeo";
+import { mapTimeAt, type MapTime } from "@/lib/mapTime";
 
 import { LayerSwitch, MapInfoCard } from "./CampusMapPanels";
+import { Funfair2D, FunfairGround, groundLights, NightLight, ZoneSign } from "./Funfair2D";
 import { clusterStatus, type CampusMapData } from "./useCampusMapData";
 
 /** What a map view (2D or 3D) gets from CampusMap. */
@@ -94,6 +97,29 @@ function svgPercent(e: React.MouseEvent<SVGRectElement>) {
   };
 }
 
+/**
+ * Demo: every funfair zone is lit on the 2D map, whatever the projectors say (the zone signs and the projector list
+ * still show the real state). Set to false before the event, or the funfair gives away nothing to win.
+ */
+const FUNFAIR_DEMO_ALL_LIT = true;
+
+/** The time of day (mapTimeAt), checked again every minute. ?time=day|sunset|night fixes it, for testing. */
+function useMapTime(): MapTime {
+  const [time, setTime] = useState<MapTime>("day");
+  useEffect(() => {
+    const forced = new URLSearchParams(window.location.search).get("time");
+    if (forced === "day" || forced === "sunset" || forced === "night") {
+      setTime(forced);
+      return;
+    }
+    const check = () => setTime(mapTimeAt(new Date()));
+    check();
+    const tick = setInterval(check, 60_000);
+    return () => clearInterval(tick);
+  }, []);
+  return time;
+}
+
 // FR-4.1: illustrated campus map (no Google Maps dependency).
 // The 2D view: the Figma image with overlays at percent positions, an inline
 // card that stays still so the page can scroll, and a full-screen viewer
@@ -122,14 +148,25 @@ export function CampusMap2DView({
     showNames,
     bulbs,
     selectedBulb,
-    movingBulb,
-    movingTitle,
     drawnPins,
     selectedGroup,
     check,
     checkMode,
     anchors,
   } = data;
+  const time = useMapTime();
+  // All three projectors, one sign over each funfair zone. One with no row yet (unlit, before the map unlocks)
+  // shows as off.
+  const bulbSpots = (["A3", "TF", "B1"] as const).map((location) => ({
+    location,
+    row: bulbs.find((b) => b.location === location) ?? null,
+  }));
+  // A lit projector powers its zone (its default key, as the 3D zone signs). On either layer, as in 3D.
+  const lit = (location: ProjectorLocation) => bulbSpots.some((b) => b.location === location && b.row?.activated_at);
+  const power = FUNFAIR_DEMO_ALL_LIT
+    ? { west: true, central: true, east: true }
+    : { west: lit("A3"), central: lit("TF"), east: lit("B1") };
+  const lights = groundLights(power);
   const [view, setView] = useState<MapView>({ scale: 1, x: 0, y: 0 });
   const [content, setContent] = useState<Box>({ w: 0, h: 0 });
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -143,12 +180,6 @@ export function CampusMap2DView({
   function placeAnchor(e: React.MouseEvent<SVGRectElement>) {
     const p = svgPercent(e);
     if (p) void data.placeAnchor(p.x, p.y);
-  }
-
-  // Admin: put the bulb being moved where the map was tapped.
-  function placeBulb(e: React.MouseEvent<SVGRectElement>) {
-    const p = svgPercent(e);
-    if (p) void data.placeBulb(p.x, p.y);
   }
 
   // Zoom by a factor around a point given in viewport pixels.
@@ -406,6 +437,8 @@ export function CampusMap2DView({
                   <stop offset="100%" stopColor="#f59e0b" stopOpacity="0" />
                 </radialGradient>
               </defs>
+              <FunfairGround id={fitted ? "ground-full" : "ground-inline"} />
+              <NightLight time={time} lights={lights} id={fitted ? "night-full" : "night-inline"} />
               {MAP_BUILDINGS.map((place) => (
                 <ellipse
                   key={place.area}
@@ -416,8 +449,11 @@ export function CampusMap2DView({
                   fill={openBuilding === place.area ? "#f59e0b33" : "#ffffff24"}
                   stroke={openBuilding === place.area ? "#f59e0b" : "#fff7ed"}
                   strokeWidth={openBuilding === place.area ? 10 : 7}
+                  // Softer in the dark, so the lit projectors stay the brightest thing on the map.
+                  opacity={time === "night" && openBuilding !== place.area ? 0.4 : 1}
                 />
               ))}
+              <Funfair2D power={power} time={time} id={fitted ? "ff-full" : "ff-inline"} />
               {layer === "stations" &&
                 !split &&
                 clusters.map((c) => {
@@ -578,142 +614,23 @@ export function CampusMap2DView({
               })}
 
               {layer === "bulbs" &&
-                bulbs.map((b) => {
-                  const x = mx(Number(b.map_x));
-                  const y = my(Number(b.map_y));
-                  const lit = !!b.activated_at;
-                  const isSel = selectedBulb === b.location;
-                  return (
-                    <g
-                      key={b.location}
-                      data-map-hit
-                      className="pointer-events-auto cursor-pointer"
-                      onClick={() =>
-                        data.setSelectedBulb((cur) => (cur === b.location ? null : b.location))
-                      }
-                    >
-                      <title>
-                        {bulbTitle(b, data.places)} / {bulbStatus(b, nowMs, data.myGroupId)}
-                      </title>
-                      <circle cx={x} cy={y + 20} r="110" fill="transparent" />
-                      {lit && (
-                        <>
-                          <circle
-                            cx={x}
-                            cy={y - 4}
-                            r="120"
-                            fill={`url(#${glowId})`}
-                            className="animate-pulse"
-                          />
-                          {/* Rays round the glass (none below, where the base is). */}
-                          {[-90, -45, 0, 180, 225].map((deg) => {
-                            const a = (deg * Math.PI) / 180;
-                            return (
-                              <line
-                                key={deg}
-                                x1={x + Math.cos(a) * 64}
-                                y1={y - 6 + Math.sin(a) * 64}
-                                x2={x + Math.cos(a) * 86}
-                                y2={y - 6 + Math.sin(a) * 86}
-                                stroke="#f59e0b"
-                                strokeWidth="9"
-                                strokeLinecap="round"
-                              />
-                            );
-                          })}
-                        </>
-                      )}
-                      {/* Glass: pear shape, centred on the spot, narrowing to the neck. */}
-                      <path
-                        d={`M ${x - 21} ${y + 40} C ${x - 21} ${y + 26} ${x - 46} ${y + 12} ${x - 46} ${y - 8} A 46 46 0 1 1 ${x + 46} ${y - 8} C ${x + 46} ${y + 12} ${x + 21} ${y + 26} ${x + 21} ${y + 40} Z`}
-                        fill={lit ? "#fcd34d" : "#e7e5e4"}
-                        stroke={isSel ? "#1c1917" : lit ? "#b45309" : "#a8a29e"}
-                        strokeWidth={isSel ? 9 : 6}
-                        strokeLinejoin="round"
-                      />
-                      {/* Inner warm core when lit. */}
-                      {lit && <circle cx={x} cy={y - 6} r="28" fill="#fef3c7" opacity="0.9" />}
-                      {/* Shine. */}
-                      <path
-                        d={`M ${x - 30} ${y - 14} A 32 32 0 0 1 ${x - 10} ${y - 38}`}
-                        fill="none"
-                        stroke="#fff"
-                        strokeWidth="7"
-                        strokeLinecap="round"
-                        opacity={lit ? 0.95 : 0.8}
-                      />
-                      {/* Filament: two wires up from the neck, a coil across the top. */}
-                      <path
-                        d={`M ${x - 11} ${y + 40} L ${x - 11} ${y + 4} L ${x - 6} ${y - 6} L ${x - 1} ${y + 4} L ${x + 4} ${y - 6} L ${x + 9} ${y + 4} L ${x + 11} ${y + 4} L ${x + 11} ${y + 40}`}
-                        fill="none"
-                        stroke={lit ? "#ea580c" : "#78716c"}
-                        strokeWidth="4.5"
-                        strokeLinejoin="round"
-                        strokeLinecap="round"
-                      />
-                      {/* Screw base with threads and a contact tip. */}
-                      <rect
-                        x={x - 23}
-                        y={y + 38}
-                        width="46"
-                        height="30"
-                        rx="6"
-                        fill={lit ? "#a8a29e" : "#78716c"}
-                        stroke="#fff"
-                        strokeWidth="4"
-                      />
-                      <line x1={x - 21} y1={y + 48} x2={x + 21} y2={y + 46} stroke="#57534e" strokeWidth="3" />
-                      <line x1={x - 21} y1={y + 58} x2={x + 21} y2={y + 56} stroke="#57534e" strokeWidth="3" />
-                      <path
-                        d={`M ${x - 12} ${y + 68} L ${x + 12} ${y + 68} L ${x + 6} ${y + 78} L ${x - 6} ${y + 78} Z`}
-                        fill="#44403c"
-                        stroke="#fff"
-                        strokeWidth="3"
-                        strokeLinejoin="round"
-                      />
-                      {!lit && (
-                        <text
-                          x={x}
-                          y={y - 18}
-                          textAnchor="middle"
-                          fontSize="30"
-                          fontWeight="800"
-                          fill="#78716c"
-                        >
-                          ?
-                        </text>
-                      )}
-                      <text
-                        x={x}
-                        y={y + 112}
-                        textAnchor="middle"
-                        fontSize="30"
-                        fontWeight="800"
-                        fill={lit ? "#b45309" : "#57534e"}
-                        stroke="#fff"
-                        strokeWidth="8"
-                        paintOrder="stroke"
-                      >
-                        {PROJECTOR_CODE_NAMES[b.location]}
-                        {lit && b.activated_by_group != null ? ` / G${b.activated_by_group}` : ""}
-                      </text>
-                    </g>
-                  );
-                })}
-
-              {layer === "bulbs" && movingBulb && (
-                <rect
-                  x="0"
-                  y="0"
-                  width={MAP_W}
-                  height={MAP_H}
-                  fill="#f59e0b"
-                  fillOpacity="0.08"
-                  data-map-hit
-                  className="pointer-events-auto cursor-crosshair"
-                  onClick={placeBulb}
-                />
-              )}
+                bulbSpots.map(({ location, row }) => (
+                  <ZoneSign
+                    key={location}
+                    id={fitted ? "sign-full" : "sign-inline"}
+                    location={location}
+                    zone={PROJECTOR_ZONES[location]}
+                    lit={!!row?.activated_at}
+                    selected={selectedBulb === location}
+                    group={row?.activated_by_group ?? null}
+                    title={
+                      row
+                        ? `${bulbTitle(row, data.places)} / ${bulbStatus(row, nowMs, data.myGroupId)}`
+                        : `${PROJECTOR_CODE_NAMES[location]} / Not lit yet`
+                    }
+                    onTap={() => data.setSelectedBulb((cur) => (cur === location ? null : location))}
+                  />
+                ))}
 
               {data.staffPositions.map((person) => {
                 const p = gpsToMapPercent(person.lat, person.lng);
@@ -860,19 +777,17 @@ export function CampusMap2DView({
                         </g>
                       );
                     })()}
-                  {!movingBulb && (
-                    <rect
-                      x="0"
-                      y="0"
-                      width={MAP_W}
-                      height={MAP_H}
-                      fill="#0ea5e9"
-                      fillOpacity="0.06"
-                      data-map-hit
-                      className="pointer-events-auto cursor-crosshair"
-                      onClick={placeAnchor}
-                    />
-                  )}
+                  <rect
+                    x="0"
+                    y="0"
+                    width={MAP_W}
+                    height={MAP_H}
+                    fill="#0ea5e9"
+                    fillOpacity="0.06"
+                    data-map-hit
+                    className="pointer-events-auto cursor-crosshair"
+                    onClick={placeAnchor}
+                  />
                 </>
               )}
             </svg>

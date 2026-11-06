@@ -25,3 +25,22 @@
   .map-viewer-bottom { display: block; padding-right: 12px; }
   .map-viewer-bottom > .pointer-events-auto { position: absolute; right: 12px; bottom: calc(100% + 12px); }
 }
+/* 2D map funfair (Funfair2D): on power-up the bulbs switch on one after another and the neon flickers on; then
+   some bulbs twinkle, the glows breathe, the pools sway, a standby light blinks on a zone that is still off. */
+.ff-on .ff-b { animation: ff-bulb-in .35s var(--d, 0s) both; }
+.ff-on .ff-b.ff-tw { animation: ff-bulb-in .35s var(--d, 0s) both, ff-twinkle 1.8s calc(var(--d, 0s) + .4s) ease-in-out infinite; }
+.ff-on .ff-neon { animation: ff-neon-in 1.1s both; }
+.ff-halo { animation: ff-breathe 3s ease-in-out infinite; }
+.ff-beacon, .ff-standby { animation: ff-blink 1.4s steps(1, end) infinite; }
+.ff-spark { animation: ff-spark 2.6s ease-out infinite; }
+.map-bulb-pool { animation: map-bulb-sway 4s ease-in-out infinite; }
+@keyframes ff-bulb-in { 0% { opacity: 0; } 60% { opacity: 1; } 75% { opacity: .4; } 100% { opacity: 1; } }
+@keyframes ff-twinkle { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+@keyframes ff-neon-in { 0%, 18% { opacity: 0; } 22% { opacity: 1; } 30% { opacity: .2; } 40%, 100% { opacity: 1; } }
+@keyframes ff-breathe { 0%, 100% { opacity: .7; } 50% { opacity: 1; } }
+@keyframes ff-blink { 0%, 100% { opacity: 1; } 50% { opacity: .2; } }
+@keyframes ff-spark { 0%, 70% { opacity: 0; } 75%, 85% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes map-bulb-sway { 0%, 100% { opacity: .85; } 50% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .ff-b, .ff-neon, .ff-halo, .ff-beacon, .ff-standby, .ff-spark, .map-bulb-pool { animation: none !important; }
+}

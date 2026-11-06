@@ -172,6 +172,7 @@ The design branches are merged. These remote branches are still not in `main` (c
 - Seeded stations are removed. New ones are created in Admin → Stations and sit on A1–A5, B1, Track & Field, Tennis Court or Volleyball Court.
 - GPS pins: the 3D map places them straight from GPS (true scale); the 2D fallback warps them onto the art (see Done, 2026-10-07 and 2026-10-13). Both still need a real walk-through: stand at each building and court with a phone and check the pin. Admin's Accuracy check (Map page) measures the error.
 - Before the event: turn **NFC demo mode** off in Live control, and Reset any bulbs lit while testing.
+- Before the event: set `FUNFAIR_DEMO_ALL_LIT` to `false` in [CampusMap2DView.tsx](../src/components/campus-map/CampusMap2DView.tsx). It lights the whole 2D funfair for demos (2026-11-06), whatever the projectors say.
 - Before the event: brief Facis that a phone only shares location while the app is open on screen, and that one phone per group should use Keep tracking with a power bank.
 - Admin → Stations "Other…" block: the database only accepts the listed buildings (and TBD), so saving a station with another block name fails.
 - The lake stage (LakeFront Café): check it on a real phone, and check against satellite imagery that it faces west. See [map3d-lakefront-design.md](map3d-lakefront-design.md).
@@ -327,6 +328,17 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 ---
 
 ## Done
+
+### Zichien, 2026-11-06 — The funfair on the 2D map, lit by the projectors, with night light (local)
+- The 2D map draws the Vortexa Funfair on the dorm field like the 3D map, in the art's isometric style ([Funfair2D.tsx](../src/components/campus-map/Funfair2D.tsx)): West / Neon Pier (Vortexa Eye wheel, carousel, game booths, two spiders; neon pink), Central / Starlight Midway (teacups, bumper cars, swings, drop tower; toy cyan), East / Big Top (Big Top with searchlights, VORTEX coaster and loop, pirate ship, haunted house, arcade; red, cream and yellow), plus the VORTEXA gate, bulb strings between rides and a power box per zone.
+- The rides keep their 3D layout, squeezed into the art's brown field ([funfair2dLayout.ts](../src/components/campus-map/funfair2dLayout.ts) `squeeze`): the 3D land runs about 10 units further west, over the art's road. `tests/funfair-2d-spots.test.ts` checks the 3D spots, that every ride sits inside the field with room for its footprint, and that the order is kept.
+- The field is no longer brown: an olive lawn in the art's colours, beige paved walks (a promenade down the middle, a boulevard by the road, the cross walk from the gate, a ring walk round the Big Top), a round plaza under each ride with an inlay ring in its zone's colour, a fountain hub in Central, flower beds, lamp posts and the art's trees along the road and the park. A lit zone's plaza rings turn to neon, its lamps light, the fountain glows and at night its walks glow.
+- Off at night, a zone's rides turn to dark shapes (a darker grey palette), not faded ghosts.
+- Dev preview: `?lit=all`, `?lit=none` or `?lit=B1,TF` chooses which projectors the mock has lit.
+- A zone is powered off (grey frames, dead bulbs, still rides, a blinking red standby light) until its projector is lit (its default key: Wheel lights West, Orbit Central, Star East, `PROJECTOR_ZONES` in [funfair.ts](../src/lib/funfair.ts)). Then its bulbs switch on one after another, the neon flickers on and the rides move: the wheel turns, the spiders and teacups spin, the drop tower rises and drops, the ship swings, the coaster train runs the loop. The gate lights once any zone is on. Motion stops with reduced motion. No SVG filters, since this is the old phones' map.
+- On the Projectors layer a sign floats over each zone (key glyph, code name, area; the key's colour when lit, grey with "OFF" when not). Tapping it opens the projector's card, which works before `fn_map_lightbulbs` sends an unlit row (code name and zone only, never the place).
+- Dusk (6:00, 18:00) and night (19:00 to 6:00) follow the 3D map's Auto clock (`mapTimeAt`, [mapTime.ts](../src/lib/mapTime.ts), now shared by both views): the map darkens, off zones fade and each lit ride casts a pool of light, on both layers. `?time=day|sunset|night` fixes the time for testing.
+- Admin's Move bulb is removed (the spots are fixed). `projectors.map_x` / `map_y` are no longer read by the map. No migration.
 
 ### David, 2026-11-04 — CSV Import Dialog (Local)
 
@@ -857,7 +869,7 @@ Migration `0097_projector_places.sql` (**needs running**). Where the three proje
 - `B1`, `A3` and `TF` stay the projectors' ids (`projector_location`) and are never shown as places. Players see the code names Star, Wheel and Orbit until the map unlocks, then the place.
 - The place is game_config `projector_place_<B1|A3|TF>`, `{"name", "short"}` (short is for small cards, at most 8 characters). Admin sets it on Admin → Puzzles (now "Projectors and puzzle pictures"), HOGM on Game control → Puzzles (`ProjectorPlaceForm`). 0097 lets HOGM set those keys through `fn_set_config`, like the puzzle pictures (0071) and game lengths (0072).
 - Pages read it through `projectorPlaces()` ([projectorPlaces.ts](../src/lib/projectorPlaces.ts); server pages such as `/activate`) or `useProjectorPlaces()` (client pages, live through `useConfig`). A missing value falls back to `PROJECTOR_LABELS` / `PROJECTOR_SHORT_LABELS` in `types.ts`, so nothing changes until a place is saved.
-- Since 0098, Freshie and Faci no longer read these keys (see above). Moving a projector's spot on the map is still Admin → Map → Projectors → Move.
+- Since 0098, Freshie and Faci no longer read these keys (see above). Since 2026-11-06 the map's bulbs stand on their funfair zones, fixed in code; Admin → Map → Projectors → Move is gone.
 - Still to decide (team): the three places and by when; then the NFC card, the Guardian GM and the map spot follow.
 
 ### Interface wording: "projector" and "lit", 2026-10-22
