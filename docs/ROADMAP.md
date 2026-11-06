@@ -89,7 +89,7 @@ Migrations 0012 and 0013 caused most of these gaps. They replaced the earlier ro
 - Source: [0013_fix_token_logs_rls.sql:233-241](../supabase/migrations/0013_fix_token_logs_rls.sql#L233-L241).
 - Risk: data leak (a privacy and PDPA issue), and the roster can be edited or wiped.
 
-**B. Admin accounts can be taken over.** `POST /api/admin/seed-test-accounts` does not check the caller's role. Any logged-in user, including a Freshie, can call it. It creates the hardcoded test accounts, or resets their passwords, and the admin test account is one of them.
+**B. ~~Admin accounts can be taken over.~~ Fixed 2026-11-06: the route is removed.** `POST /api/admin/seed-test-accounts` does not check the caller's role. Any logged-in user, including a Freshie, can call it. It creates the hardcoded test accounts, or resets their passwords, and the admin test account is one of them.
 - Source: [seed-test-accounts/route.ts:35](../src/app/api/admin/seed-test-accounts/route.ts#L35).
 - Risk: anyone can reset the admin password and log in as admin.
 
@@ -327,6 +327,9 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 ---
 
 ## Done
+
+### Security: Seed Test Accounts route removed, 2026-11-06 (Ben, branch `main`)
+No migration. `/api/admin/seed-test-accounts` (POST and GET) had no role check: any signed-in account could reset the test accounts' passwords, the admin test account included, to the values in the code. Nothing in the app called it, so it is deleted (item 3 B). Create or reset test accounts locally with `node --env-file=.env.local scripts/seed-test-accounts.mjs`. Still to do on the live database: delete the `@test.com` and `.test@xmu.edu.my` accounts, or give them passwords that are not in the repo, and check their sign-in history.
 
 ### David, 2026-11-06 (Login support links)
 - Removed feedback and Tech Team links from sign-in errors pending a later discussion of their placement. Error messages remain visible.
