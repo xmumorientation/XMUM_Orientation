@@ -249,3 +249,11 @@ body:is(:has(.fh:not(.fa-head)), :has(.staff-dashboard-shell)) {
 @media (prefers-reduced-motion: reduce) {
   .gc-fold-wrap { transition: none; }
 }
+
+.support-links { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; column-gap: 16px; margin-top: 8px; font-size: 14px; line-height: 1.5; }
+.support-links span { width: 100%; }
+.support-links a { display: inline-flex; align-items: center; min-height: 44px; color: inherit; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+.support-links a:hover, .support-links a:focus-visible { color: var(--fh-accent, #5cb8ff); }
+
+/* Safari can draw a rectangular touch highlight around pill-shaped controls. */
+a, button, [role="button"] { -webkit-tap-highlight-color: transparent; }

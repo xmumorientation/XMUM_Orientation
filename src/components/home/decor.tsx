@@ -2,7 +2,6 @@
 
 import type { CSSProperties } from "react";
 
-import { ChallengeBanner } from "@/components/ChallengeBanner";
 import { countdownParts, useEventCountdown } from "@/components/useEventCountdown";
 
 import { FONT } from "./data";
@@ -82,8 +81,8 @@ export function MarqueeBanner() {
     "★ ONE TICKET, ONE RIDE ★",
     "28–29 NOV 2026",
     "2 DAYS",
-    "TEAMS TBA",
-    "10 COMMITTEES",
+    "10 TEAMS",
+    "49 COMMITTEES",
     "★ DISCOVER ADVENTURE INSIDE ★",
   ];
   const doubled = [...items, ...items];
@@ -137,7 +136,6 @@ export function Countdown() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-    <ChallengeBanner />
     <div className="vx-count-label vx-mono">{label}</div>
     <div className="vx-count" role="timer" aria-label={label.toLowerCase()} aria-atomic="true" aria-live="off" data-paused={paused || undefined}>
       {units.map((u, i) => (

@@ -5,5 +5,5 @@ export function preloadCampusMap() {
 }
 
 export function prefetchCampusMap(href: string) {
-  if (href === "/map") void preloadCampusMap().catch(() => {});
+  if (href === "/map" || href === "/meeting-nfc/map") void preloadCampusMap().catch(() => {});
 }

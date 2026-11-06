@@ -76,6 +76,22 @@ describe("Day 2 Schedule", () => {
     expect(screen.getAllByRole("slider").map((s) => s.getAttribute("aria-label"))).toEqual(["Hard Stations Open starts", "Funfair starts"]);
   });
 
+  it("a handle for a segment that starts after the game ends stays on the rail, and the rail shows the whole plan", () => {
+    const start = Date.now() - 13 * 60_000;
+    h.day2 = {
+      ...h.day2,
+      state: { ...(h.day2.state as object), game_on: true, game_started_at: new Date(start).toISOString(), game_ends_at: new Date(start + 20 * 60_000).toISOString() },
+      segment: "s1",
+      index: 0,
+      label: "Opening",
+      starts: [start],
+    };
+    render(<Day2Schedule onError={noop} onNotice={noop} />);
+    const lefts = screen.getAllByRole("slider").map((s) => (s as HTMLElement).style.left);
+    // the rail shows the whole plan (0-115 min): 60 and 105 are on it, not stacked at the end
+    expect(lefts.map((l) => Math.round(parseFloat(l)))).toEqual([52, 91]);
+  });
+
   it("each card has Easy, Medium and Hard station switches and no Station Game switch", () => {
     render(<Day2Schedule onError={noop} onNotice={noop} />);
     expect(screen.getAllByRole("switch", { name: /^Hard Station, /i })).toHaveLength(3);

@@ -10,6 +10,7 @@
 .av .starlight-rule { background: #0dfcfd; width: 32px; height: 2px; }
 .av :is(.input,input[type="color"]) { background: #030b1c; color: #eef5ff; border-color: #34516e; }
 .av .input::placeholder { color: #a4b8d1; }
+.av .label { color: #c4d6ee; font-weight: 600; }
 .av .btn-primary { background: #f2ff0b; background-image: none; color: #111; box-shadow: none; border-radius: 12px; }
 .av .btn-secondary { background: #0b2246; border-color: #34516e; color: #eef5ff; box-shadow: none; border-radius: 10px; }
 .av .btn-secondary:hover { background: #16305a; transform: none; }

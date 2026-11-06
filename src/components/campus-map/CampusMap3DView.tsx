@@ -22,6 +22,8 @@ import {
   isTap,
   pinArt,
   stationArt,
+  STAFF_PIN_TOP,
+  staffArt,
   tagArt,
   youArt,
   type Flight,
@@ -44,13 +46,15 @@ import { prefersLite } from "@/components/map3d/webgl";
 import { stationDotColor } from "@/components/ui";
 import { ACTIVATION_JOURNEY_KEY, readActivationJourney } from "@/lib/activation-journey";
 import { type FunfairPower, type FunfairZone, isFunfairPreview, type FunfairPreview, zoneTitle } from "@/lib/funfair";
-import { groupPinColor } from "@/lib/mapGeo";
+import { GROUP_PIN_COLOR } from "@/lib/mapGeo";
 import { mapTimeAt } from "@/lib/mapTime";
+import { STAFF_PIN_COLOR } from "@/lib/staffLocation";
 import type { Station } from "@/lib/types";
 
 import type { CampusMapViewProps } from "./CampusMap2DView";
 import { MapInfoCard } from "./CampusMapPanels";
 import { clusterStatus } from "./useCampusMapData";
+import { useDay2State } from "@/components/useDay2State";
 
 function initialActivationArrival(): { zones: FunfairZone[]; on: boolean } | null {
   if (typeof window === "undefined" || new URLSearchParams(window.location.search).get("arrival") !== "activation") return null;
@@ -61,9 +65,14 @@ function initialActivationArrival(): { zones: FunfairZone[]; on: boolean } | nul
 
 // Signal an actual rendered frame, rather than starting the power-up while
 // the 3D bundle, shaders or phone GPU are still loading.
-function SceneReady({ onReady }: { onReady: () => void }) {
-  const sent = useRef(false);
-  useFrame(() => { if (!sent.current) { sent.current = true; onReady(); } });
+function SceneReady({ onReady, warmupFrames = 1 }: { onReady: () => void; warmupFrames?: number }) {
+  const frames = useRef(0);
+  useFrame(({ invalidate }) => {
+    if (frames.current >= warmupFrames) return;
+    frames.current += 1;
+    if (frames.current === warmupFrames) onReady();
+    else invalidate();
+  });
   return null;
 }
 
@@ -94,7 +103,7 @@ const MAX_FIT = 360;
  * Look from the A-row side toward the Funfair, keeping the blocks spread across the screen. Fit the
  * buildings, courts and dorms, including their markers.
  */
-function fitCamera(aspect: number): CameraView {
+export function fitCamera(aspect: number): CameraView {
   const [x0, x1] = CONTENT_BOUNDS.x;
   const [z0, z1] = CONTENT_BOUNDS.z;
   const target = new THREE.Vector3((x0 + x1) / 2, 0, (z0 + z1) / 2);
@@ -130,7 +139,8 @@ type StationMark = Mark & { station: Station; big: boolean };
 type BadgeMark = Mark & { area: string; stations: Station[]; big: boolean };
 type PinMark = Mark & { groupId: number; color: string; big: boolean; dashed: boolean; manual: boolean };
 /** A name tag on the map during Admin's accuracy check: "You", another Admin, the tapped spot. */
-type TagMark = { key: string; text: string; at: Vec3; dot?: boolean };
+/** `staff`: a HOF, OC or HOGM sharing their location (red pin and tag) instead of the blue "you" dot. */
+type TagMark = { key: string; text: string; at: Vec3; dot?: boolean; staff?: boolean };
 
 type Taps = {
   station: (s: Station) => void;
@@ -247,12 +257,25 @@ function SceneMarkers({
       <RideTags />
       {showNames && <ZoneSigns power={funfair} size={size} />}
       {tags.map((t) => (
-        <Marker key={`tag-${t.key}`} position={t.at} art={tagArt(t.text)} dy={t.dot ? 24 : 16} order={9} size={size} />
+        <Marker
+          key={`tag-${t.key}`}
+          position={t.at}
+          art={tagArt(t.text, t.staff ? STAFF_PIN_COLOR : undefined)}
+          dy={t.staff ? STAFF_PIN_TOP + 14 : t.dot ? 24 : 16}
+          order={t.staff ? 10 : 9}
+          size={size}
+        />
       ))}
       {tags
         .filter((t) => t.dot)
         .map((t) => (
-          <Marker key={`dot-${t.key}`} position={t.at} art={youArt()} order={9} size={size} />
+          <Marker
+            key={`dot-${t.key}`}
+            position={t.at}
+            art={t.staff ? staffArt(STAFF_PIN_COLOR) : youArt()}
+            order={t.staff ? 10 : 9}
+            size={size}
+          />
         ))}
       {badges.map((b) => {
         const status = clusterStatus(b.stations);
@@ -322,6 +345,8 @@ export type CampusMap3DViewProps = CampusMapViewProps & {
   camera?: CameraView;
   /** The 3D map can't be used on this device (no renderer, or too slow): show the 2D map. */
   onFail?: () => void;
+  /** Keep the meeting demo's loading screen until the scene has drawn a few frames. */
+  smoothArrival?: boolean;
   /** The tennis game on the courts (docs/ROADMAP.md, item 9): Admin's switch and who plays here. None: no game. */
   tennis?: TennisSettings | null;
 };
@@ -341,6 +366,7 @@ export function CampusMap3DView({
   intro = false,
   camera,
   onFail,
+  smoothArrival = false,
   paused = false,
 }: CampusMap3DViewProps) {
   const {
@@ -444,9 +470,13 @@ export function CampusMap3DView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const day2 = useDay2State();
   const isLite = lite ?? env?.lite ?? true;
-  // The light switch wins; Auto is the page's `mode`, else the time of day.
-  const sceneMode = look ?? mode ?? env?.mode ?? "day";
+  // Day 2 Funfair open: auto switches the map to night view.
+  // The light switch wins if the user explicitly picked one; Auto is night if Funfair is open or zones are lit, else the page's `mode`, else the time of day.
+  const funfairActive = (day2.segment !== "off" && day2.switches.funfair) || (data.funfair && (data.funfair.west > 0 || data.funfair.central > 0 || data.funfair.east > 0));
+  const autoMode = funfairActive ? "night" : (mode ?? env?.mode ?? "day");
+  const sceneMode = look ?? autoMode;
   // The funfair's zones (data.funfair: funfair_zones, or the default keys), and Admin's preview
   // (?funfair_preview=west, from the Funfair card): full screen opens on that zone, which then powers up, on this
   // screen only. ?funfair_preview=lakefront opens on the lake stage and plays the concert's opening. Otherwise the
@@ -496,7 +526,7 @@ export function CampusMap3DView({
     const move = window.setTimeout(() => {
       const [x, z] = ZONE_CENTERS[zone];
       fly({ kind: "focus", target: [x, 0, z], distance: arrival.zones.length > 1 ? 150 : window.innerWidth < window.innerHeight ? 115 : 70 });
-    }, 100);
+    }, smoothArrival ? 700 : 100);
     const power = window.setTimeout(() => {
       arrivalStarted.current = true;
       setArrival(current => current && { ...current, on: true });
@@ -504,7 +534,7 @@ export function CampusMap3DView({
       const url = new URL(window.location.href);
       url.searchParams.delete("arrival");
       window.history.replaceState(window.history.state, "", url);
-    }, window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 150 : 1400);
+    }, window.matchMedia("(prefers-reduced-motion: reduce)").matches ? (smoothArrival ? 700 : 150) : (smoothArrival ? 2000 : 1400));
     return () => { window.clearTimeout(move); window.clearTimeout(power); };
     // Setters and fly are stable; wait for rendering, fullscreen layout and shared state.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -621,7 +651,7 @@ export function CampusMap3DView({
     const beside = new Map<string, number>();
     const atSpot = new Map<string, PinMark[]>();
     for (const { g, pin } of drawnPins) {
-      const color = pin.state === "stale" ? "#9ca3af" : groupPinColor(g.group_id);
+      const color = pin.state === "stale" ? "#9ca3af" : GROUP_PIN_COLOR;
       const big = selectedGroup === g.group_id;
       const base = {
         groupId: g.group_id,
@@ -662,7 +692,7 @@ export function CampusMap3DView({
     const [x, z] = gpsToWorld(person.lat, person.lng);
     // Do not clamp an off-campus fix to the edge and misrepresent its location.
     if (Math.abs(x) <= EXTENT.x && Math.abs(z) <= EXTENT.z) {
-      tags.push({ key: `staff-${person.user_id}`, text: `${person.role.toUpperCase()} / ${person.full_name || "Staff"}`, at: [x, 0, z], dot: true });
+      tags.push({ key: `staff-${person.user_id}`, text: `${person.role.toUpperCase()} / ${person.full_name || "Staff"}`, at: [x, groundY(x, z), z], dot: true, staff: true });
     }
   }
 
@@ -837,7 +867,7 @@ export function CampusMap3DView({
                   )
                 }
               >
-                <SceneReady onReady={markSceneReady} />
+                <SceneReady onReady={markSceneReady} warmupFrames={smoothArrival && arrival ? 3 : 1} />
                 <SceneMarks
                   circles={circles}
                   outlines={outlines}
@@ -865,9 +895,25 @@ export function CampusMap3DView({
             onContextMenu={(e) => e.preventDefault()}
           >
             <div ref={fullSlot} className="absolute inset-0 cursor-grab active:cursor-grabbing" />
-            {arrival && <div role="status" className="pointer-events-none absolute inset-x-4 bottom-24 z-30 mx-auto max-w-sm rounded-2xl bg-black/80 px-5 py-3 text-center text-sm text-white">
-              {!arrival.on ? "Your magic is reaching the funfair…" : arrival.zones.length ? `${arrival.zones.map(zoneTitle).join(" & ")} — lit up!` : "Your projector is lit. Explore the funfair!"}
+            {smoothArrival && arrival && <div className={`meeting-map-veil${sceneReady ? " is-ready" : ""}`} aria-hidden={sceneReady}>
+              <span>Opening the funfair…</span>
             </div>}
+            {arrival && (
+              <div
+                role="status"
+                className="pointer-events-none absolute inset-x-4 z-30 mx-auto max-w-sm rounded-2xl bg-black/80 px-5 py-3 text-center text-sm text-white shadow-xl backdrop-blur-sm"
+                style={{
+                  bottom: "max(1.75rem, calc(env(safe-area-inset-bottom) + 1.25rem))",
+                  maxWidth: "calc(100vw - 5.5rem)",
+                }}
+              >
+                {!arrival.on
+                  ? "Your magic is reaching the funfair…"
+                  : arrival.zones.length
+                    ? `${arrival.zones.map(zoneTitle).join(" and ")} are lit up!`
+                    : "Your projector is lit. Explore the funfair!"}
+              </div>
+            )}
 
             <div
               className="pointer-events-none absolute inset-x-0 top-0 z-30 flex items-start justify-between gap-3 px-3"
@@ -988,11 +1034,7 @@ export function CampusMap3DView({
                   showGroupPins={showGroupPins}
                   canManageStations={canManageStations}
                   onStationTap={onStationTap}
-                  idle={
-                    <p className="inline-flex rounded-full bg-black/55 px-3 py-1.5 text-xs font-semibold text-white">
-                      {env?.touch ? "Drag to move / Two fingers to zoom and turn" : "Drag to move / Right-drag to turn / Scroll to zoom"}
-                    </p>
-                  }
+                  idle={null}
                 />
               </div>
               <div className="pointer-events-auto flex shrink-0 flex-col overflow-hidden rounded-2xl bg-white shadow-lg">

@@ -12,7 +12,6 @@ import "@/components/staff/game/game-control.css";
 import { MyActivitySheet } from "@/components/staff/game/MyActivitySheet";
 import { ConfirmSheet, StatusLine, useStatus } from "@/components/staff/game/parts";
 import { undoWindowMinutes } from "@/components/token/UndoWindowSetting";
-import { ChallengeBanner } from "@/components/ChallengeBanner";
 import { useConfig } from "@/components/useConfig";
 import { useDay2State } from "@/components/useDay2State";
 import { tierClosedText } from "@/lib/day2";
@@ -129,14 +128,14 @@ function day2Checks({
     checks.push(
       balance >= fee
         ? { label: "Tokens", text: `Has ${balance} / entry ${fee} / ${balance - fee} left after`, state: "ok" }
-        : { label: "Tokens", text: `Has ${balance}, needs ${fee}. Short by ${fee - balance}.`, state: "bad" }
+        : { label: "Tokens", text: `Has ${balance}, needs ${fee}. Short by ${fee - balance}. Ask the Facilitator to earn more tokens first.`, state: "bad" }
     );
   }
-  if (frozen) checks.push({ label: "Token Freeze", text: "Admin froze tokens. Results are refused until they unfreeze.", state: "bad" });
+  if (frozen) checks.push({ label: "Token Freeze", text: "Admin froze tokens. Ask Admin when token operations can resume.", state: "bad" });
   checks.push(
     phaseOn
       ? { label: "Day 2 Game", text: "Running", state: "ok" }
-      : { label: "Day 2 Game", text: "Not started yet. Results are refused until Live control starts it.", state: "bad" }
+      : { label: "Day 2 Game", text: "Not running. Ask Admin to start the Day 2 game.", state: "bad" }
   );
   if (tierClosed) {
     checks.push({ label: `${RISK_TIER_META[station.risk_tier].label} Stations`, text: `${tierClosed}. You can't start or submit here until it opens.`, state: "bad" });
@@ -624,6 +623,7 @@ export default function GmPanelPage() {
     ? day2Checks({ station, balance: group.token_balance, counts, locations, phaseOn, tierClosed, frozen, places })
     : [];
   const canStart = !!group && checks.every((c) => c.state === "ok" || c.state === "warn");
+  const blockingCheck = checks.find((check) => check.state === "bad" || check.state === "wait");
   const step = game ? (confirmWin !== null ? 2 : 1) : 0;
   const day1Ready = !!day1Game && day1Game.groupIds.every((id) => day1Game.done.includes(id) || day1Game.results[id]);
   const day1Step = !day1Game ? 0 : day1Ready ? 2 : 1;
@@ -760,7 +760,6 @@ export default function GmPanelPage() {
             "Ask Admin to assign your station"
           )}
         </p>
-        <ChallengeBanner />
         {days.length > 0 && (
           <ul className="gc-st-days" aria-label="Your stations">
             {([1, 2] as const).map((d) => {
@@ -913,7 +912,7 @@ export default function GmPanelPage() {
 
                 {!day1Game ? (
                   <>
-                    <p className="gc-muted">
+                    <p id="day2-group-reason" className="gc-muted">
                       {day1Picks.length === 0
                         ? "Pick the group at your station, or two groups for a head-to-head."
                         : <>
@@ -943,7 +942,7 @@ export default function GmPanelPage() {
                             {g && <i className="gc-swatch" style={{ background: groupSwatch(g.id, g.color) }} aria-hidden />}
                             <b>{g?.name ?? `Group ${id}`}</b>
                             <span className="gc-chip" data-tone={paid ? "ok" : "warn"}>
-                              {paid ? "Given" : `${g?.token_balance ?? "—"} tokens`}
+                              {paid ? "Given" : g?.token_balance == null ? "Token balance unavailable" : `${g.token_balance} tokens`}
                             </span>
                           </p>
                           <div className="gc-row2">
@@ -1131,13 +1130,20 @@ export default function GmPanelPage() {
                       </ul>
                     )}
 
+                    <p id="day2-entry-fee" className="gc-muted">Entry fee: {fee} tokens. Charged only when you submit the result.</p>
+                    {group && !canStart && (
+                      <p id="day2-start-reason" className="gc-muted" role="status">
+                        {blockingCheck?.text}
+                      </p>
+                    )}
                     <button
                       type="button"
+                      aria-describedby={canStart ? "day2-entry-fee" : group ? "day2-entry-fee day2-start-reason" : "day2-entry-fee day2-group-reason"}
                       className="gc-btn gc-btn-primary gc-st-submit"
                       disabled={busy || !canStart}
                       onClick={startGame}
                     >
-                      Start Game / Entry −{fee} on Submit
+                      Start Game
                     </button>
                     <StatusLine error={result.error} notice={result.notice} />
                   </>
@@ -1168,7 +1174,7 @@ export default function GmPanelPage() {
                         </div>
                         <div>
                           <dt>Tokens Now</dt>
-                          <dd>{gameGroup?.token_balance ?? "—"}</dd>
+                          <dd>{gameGroup?.token_balance ?? "Not available"}</dd>
                         </div>
                       </dl>
                     </div>

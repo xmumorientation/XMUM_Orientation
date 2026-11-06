@@ -7,7 +7,7 @@ import { puzzleImageUrl, useConfig } from "@/components/useConfig";
 import { useGroup } from "@/components/useGroup";
 import { loadProjectorClues, projectorPlaces, type ProjectorClues } from "@/lib/projectorPlaces";
 import { loadProjectorStates, type ProjectorState } from "@/lib/projectorStates";
-import { useSharedFeed, type FeedSource } from "@/lib/sharedFeed";
+import { reloadSharedFeed, useSharedFeed, type FeedSource } from "@/lib/sharedFeed";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { PIECES_PER_SET, PROJECTOR_LOCATIONS, type Phase, type ProjectorLocation, type RiskTier } from "@/lib/types";
 import { formatCountdown } from "@/lib/utils";
@@ -41,7 +41,7 @@ type TxRow = { id: number; delta: number; reason: string; created_at: string };
 type StationRow = { risk_tier: RiskTier; entry_cost: number };
 
 type Fetched = {
-  pieces: PieceRow[];
+  pieces: PieceRow[] | null;
   tx: TxRow[];
   projectors: ProjectorState[];
   // "missing" until 0098 runs: the config then decides, for the keys the group has earned.
@@ -99,43 +99,47 @@ export function useGameTimeLeft(): string | null {
 }
 
 // The group's pieces, token history, projectors, Day 2 entry fees and clues, live.
-function itemsSource(groupId: number): () => FeedSource<Fetched> {
+export function itemsSource(groupId: number): () => FeedSource<Fetched> {
   return () => {
     const supabase = supabaseBrowser();
     return {
       async load(cur) {
-        const [pieces, tx, projectors, stations, clues] = await Promise.all([
-          supabase
-            .from("inventory")
-            .select("id, created_at, source, items!inner(type, puzzle_location, puzzle_index)")
-            .eq("group_id", groupId)
-            .eq("items.type", "puzzle"),
-          supabase
-            .from("token_transactions")
-            .select("id, delta, reason, created_at")
-            .eq("group_id", groupId)
-            .order("created_at", { ascending: false })
-            .limit(200),
-          loadProjectorStates(supabase),
-          supabase.from("stations").select("risk_tier, entry_cost").eq("day", 2),
-          loadProjectorClues(supabase),
-        ]);
-        const costs = { ...DEFAULT_COSTS };
-        const seen = new Set<string>();
-        for (const s of (stations.data ?? []) as StationRow[]) {
-          if (!(s.risk_tier in costs)) continue;
-          // The cheapest station of each tier, so the hint never overstates the fee.
-          if (!seen.has(s.risk_tier) || s.entry_cost < costs[s.risk_tier]) costs[s.risk_tier] = s.entry_cost;
-          seen.add(s.risk_tier);
+        try {
+          const [pieces, tx, projectors, stations, clues] = await Promise.all([
+            supabase
+              .from("inventory")
+              .select("id, created_at, source, items!inner(type, puzzle_location, puzzle_index)")
+              .eq("group_id", groupId)
+              .eq("items.type", "puzzle"),
+            supabase
+              .from("token_transactions")
+              .select("id, delta, reason, created_at")
+              .eq("group_id", groupId)
+              .order("created_at", { ascending: false })
+              .limit(200),
+            loadProjectorStates(supabase),
+            supabase.from("stations").select("risk_tier, entry_cost").eq("day", 2),
+            loadProjectorClues(supabase),
+          ]);
+          const costs = { ...DEFAULT_COSTS };
+          const seen = new Set<string>();
+          for (const s of (stations.data ?? []) as StationRow[]) {
+            if (!(s.risk_tier in costs)) continue;
+            // The cheapest station of each tier, so the hint never overstates the fee.
+            if (!seen.has(s.risk_tier) || s.entry_cost < costs[s.risk_tier]) costs[s.risk_tier] = s.entry_cost;
+            seen.add(s.risk_tier);
+          }
+          return {
+            pieces: pieces.error ? null : (pieces.data ?? []) as unknown as PieceRow[],
+            tx: (tx.data ?? []) as TxRow[],
+            // A failed call keeps the last answer instead of showing every projector dark.
+            projectors: projectors ?? cur?.projectors ?? [],
+            clues: clues ?? cur?.clues ?? "missing",
+            costs,
+          };
+        } catch {
+          return { pieces: null, tx: cur?.tx ?? [], projectors: cur?.projectors ?? [], clues: cur?.clues ?? "missing", costs: cur?.costs ?? DEFAULT_COSTS };
         }
-        return {
-          pieces: (pieces.data ?? []) as unknown as PieceRow[],
-          tx: (tx.data ?? []) as TxRow[],
-          // A failed call keeps the last answer instead of showing every projector dark.
-          projectors: projectors ?? cur?.projectors ?? [],
-          clues: clues ?? cur?.clues ?? "missing",
-          costs,
-        };
       },
       listen(reload) {
         const channel = supabase
@@ -152,7 +156,7 @@ function itemsSource(groupId: number): () => FeedSource<Fetched> {
   };
 }
 
-export function useItemsData(): { data: ItemsData; loading: boolean } {
+export function useItemsData(): { data: ItemsData; loading: boolean; piecesStatus: "loading" | "ready" | "error"; retry: () => void } {
   const { group } = useGroup();
   const { phases, offsetMs } = usePhases();
   const { config } = useConfig();
@@ -260,5 +264,10 @@ export function useItemsData(): { data: ItemsData; loading: boolean } {
     };
   }, [fetched, phases, offsetMs, group, groupId, config]);
 
-  return { data, loading: fetched === null };
+  return {
+    data,
+    loading: fetched === null,
+    piecesStatus: fetched === null ? "loading" : fetched.pieces === null ? "error" : "ready",
+    retry: () => { if (groupId) reloadSharedFeed(`items:${groupId}`); },
+  };
 }

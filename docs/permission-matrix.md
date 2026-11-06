@@ -121,11 +121,10 @@ OC (`oc`, migrations `0113` + `0114`) is a separate role with the same pages and
 | Home Sections: see a section's file on Home (only if the section lists your role; HOF, OC, HOGM and Admin read all in Settings) | Listed | Listed | Listed | Listed | Listed | Listed | Listed | Listed | DB |
 | Brand config | — | — | — | — | — | — | — | ✓ | DB |
 | NFC Token generation | — | — | — | — | — | — | § | ✓ | API + DB |
-| Seed Test Accounts | Any logged-in user | Any logged-in user | Any logged-in user | Any logged-in user | Any logged-in user | Any logged-in user | Any logged-in user | Any logged-in user | ⚠ No check |
 
 ## Issues Found
 
-1. **Seed Test Accounts has no permission check.** The POST handler in [seed-test-accounts/route.ts:35](../src/app/api/admin/seed-test-accounts/route.ts#L35) does not check the caller's role. Any logged-in user can call it, and it creates or resets the passwords of the hardcoded test accounts, including admin.
+1. ~~**Seed Test Accounts has no permission check.**~~ Removed (2026-11-06): the route was unused. Create test accounts locally with `node --experimental-websocket --env-file=.env.local scripts/seed-test-accounts.mjs`.
 2. **Migration 0013 opens several tables to everyone.** From [0013_fix_token_logs_rls.sql:218](../supabase/migrations/0013_fix_token_logs_rls.sql#L218) onward, `token_logs`, `puzzle_inventory`, `game_config_rules` and `freshies` use `using (true)` and `grant all ... to anon`. Anyone with the anon key can read and write them without logging in. The `freshies` table holds names, phone numbers and student IDs, and the original "admin only" policy is overridden.
 3. **A batch of RPCs have no role check and are granted to anon.** These are `fn_set_total_groups`, `fn_admin_update_freshie` and `fn_admin_delete_freshie`. (Migration 0046 made `fn_update_game_config_rule` admin only, dropped `fn_manual_token_adjust`, and made `fn_day1_record_result`, `fn_day2_deduct_entry` and `fn_day2_award_piece` uncallable.) On the Token System page, "only admin can edit/delete logs" is hidden in the frontend only.
 4. ~~**`/api/token` has no role check.**~~ Removed: the route was unused.

@@ -289,17 +289,9 @@ export function accuracyAxes(
   };
 }
 
-const GROUP_COLORS = [
-  "#dc2626",
-  "#2563eb",
-  "#16a34a",
-  "#d97706",
-  "#7c3aed",
-  "#db2777",
-  "#0891b2",
-  "#65a30d",
-];
-
-export function groupPinColor(groupId: number) {
-  return GROUP_COLORS[Math.abs(groupId) % GROUP_COLORS.length];
-}
+/**
+ * Every group's pin on the map (2D, 3D and the group list) is this one blue; the number tells groups apart.
+ * Ben (2026-11-05): a colour per group made a busy map look messy. HOF, OC and HOGM pins are red
+ * (`STAFF_PIN_COLOR`), and a stale group pin is grey.
+ */
+export const GROUP_PIN_COLOR = "#2563eb";

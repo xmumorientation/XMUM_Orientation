@@ -9,7 +9,6 @@ import {
   Compass,
   Gamepad2,
   GraduationCap,
-  HelpCircle,
   Languages,
   ListChecks,
   Pencil,
@@ -22,13 +21,14 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { HOME_SECTIONS_STOP, HomeSectionsStop } from "@/components/HomeSections";
-import { GAME_PHASES, SPONSORS, SPONSORS_ARE_EXAMPLES } from "@/components/home/data";
+import { GAME_PHASES, SPONSORS } from "@/components/home/data";
 import { vxDisplay, vxSlab } from "@/components/home/fonts";
 import { useHomeSections } from "@/components/useHomeSections";
 import { ChallengeBanner } from "@/components/ChallengeBanner";
 import { FinalStretchBanner, FunfairTicker, ProjectorsLitRow, useTickerOn } from "@/components/day2/Day2Alerts";
 import { useFinalStretch } from "@/components/day2/useDay2Live";
 import { GroupBadge } from "@/components/GroupBadge";
+import { SupportLinks } from "@/components/SupportLinks";
 import { usePhases, usePhaseTimer } from "@/components/PhaseTimerProvider";
 import { useProfile } from "@/components/ProfileProvider";
 import { EDIT_PROFILE_EVENT } from "@/components/TopNav";
@@ -59,7 +59,7 @@ import { groupSwatch, themeFromColor } from "./groupTheme";
 //      center tab, /checklist)
 //   03 Your Facilitator (Freshie) or You & Your Partner (Faci; own card has
 //      an edit pencil). Real profiles from fn_group_facis().
-//   03 Your Progress (tokens, puzzle pieces per key, FAQ)
+//   03 Your Progress (tokens and puzzle pieces per key)
 //   04 Scoreboard (own group highlighted)
 //   05 How the game works
 // The day's programme is on the Schedule page, not here.
@@ -167,7 +167,7 @@ export function PhaseCard() {
         <>
           <div className="fh-phasecard-time fh-slab">{formatCountdown(remaining)}</div>
           <div className="fh-phasecard-bar" aria-hidden>
-            <i style={{ width: `${progress * 100}%` }} />
+            <i style={{ transform: `scaleX(${progress})` }} />
           </div>
         </>
       ) : (
@@ -407,7 +407,7 @@ function FaciStop({
 
 function ProgressStop({ group, loading }: { group: Group | null; loading: boolean }) {
   // Same live data as the Items page, so both always show the same keys.
-  const { data: items } = useItemsData();
+  const { data: items, piecesStatus, retry } = useItemsData();
   const owned = PROJECTOR_LOCATIONS.reduce((sum, loc) => sum + items.pieces[loc].length, 0);
 
   return (
@@ -452,23 +452,17 @@ function ProgressStop({ group, loading }: { group: Group | null; loading: boolea
               <span>
                 <b className="fh-prog-title">Puzzle Pieces</b>
                 <small className="fh-mono">
-                  {owned}/{PROJECTOR_LOCATIONS.length * PIECES_PER_SET}
+                  {piecesStatus === "ready" ? `${owned}/${PROJECTOR_LOCATIONS.length * PIECES_PER_SET}` : piecesStatus === "loading" ? "Loading…" : "Unavailable"}
                 </small>
               </span>
             </div>
-            <div className="fh-prog-keys">
-              <ProjectorKeys data={items} arrivals={{}} />
-            </div>
+            {piecesStatus === "ready" ? (
+              <div className="fh-prog-keys"><ProjectorKeys data={items} arrivals={{}} /></div>
+            ) : piecesStatus === "error" ? (
+              <div role="status"><p>Could not load puzzle pieces. Check your connection and try again.</p><button type="button" className="fh-btn fh-btn-ghost" onClick={retry}>Try Again</button></div>
+            ) : <p role="status">Loading puzzle pieces…</p>}
           </div>
 
-          <Link href="/faq" className="fh-tile fh-prog-faq">
-            <span className="fh-tile-ic" style={{ background: "#FE06AB24", color: "#FE06AB" }} aria-hidden>
-              <HelpCircle size={20} />
-            </span>
-            <b className="fh-prog-title">FAQ</b>
-            <small>Rules, help and contacts</small>
-            <ArrowRight size={18} aria-hidden />
-          </Link>
         </div>
       )}
     </section>
@@ -535,7 +529,6 @@ function ScoresStop({ groupId, onRows }: { groupId: number | null; onRows?: (row
         rows={rows}
         groupId={groupId}
         titleId="fh-scores-title"
-        aside={<span className="fh-pill fh-mono">● LIVE FROM 28 NOV</span>}
       />
     </section>
   );
@@ -544,7 +537,7 @@ function ScoresStop({ groupId, onRows }: { groupId: number | null; onRows?: (row
 /** Organiser + sponsors, under the Welcome buttons. Same list as the public homepage. */
 export function Credits() {
   return (
-    <div className="fh-credits" data-example-sponsors={SPONSORS_ARE_EXAMPLES || undefined}>
+    <div className="fh-credits">
       <div className="fh-credits-col">
         <span className="fh-credits-label fh-mono">Organised by</span>
         <Image
@@ -557,13 +550,11 @@ export function Credits() {
       </div>
       <span className="fh-credits-sep" aria-hidden />
       <div className="fh-credits-col">
-        <span className="fh-credits-label fh-mono">
-          Supported by{SPONSORS_ARE_EXAMPLES && <span className="fh-credits-example"> (Example)</span>}
-        </span>
+        <span className="fh-credits-label fh-mono">Supported by</span>
         <ul className="fh-credits-sponsors">
           {SPONSORS.map((s, i) => {
             const body = s.logo ? (
-              <Image src={s.logo} alt={s.name} width={240} height={102} className="fh-sponsor-logo" />
+              <Image src={s.logo} alt={s.name} width={240} height={102} className={`fh-sponsor-logo fh-sponsor-logo--${s.id}`} />
             ) : (
               <span className="fh-sponsor-ph">{s.name}</span>
             );
@@ -605,6 +596,7 @@ export function AccountMenu({
   onEditProfile?: () => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -664,6 +656,16 @@ export function AccountMenu({
               <Pencil size={15} aria-hidden /> Edit Profile
             </button>
           )}
+          <button
+            type="button"
+            role="menuitem"
+            className="fh-menu-help-toggle"
+            aria-expanded={helpOpen}
+            onClick={() => setHelpOpen((value) => !value)}
+          >
+            Help &amp; Feedback <ChevronDown size={14} aria-hidden />
+          </button>
+          {helpOpen && <a className="fh-menu-feedback" href="https://forms.gle/gcFHEWHCMzKgMcbMA" target="_blank" rel="noopener noreferrer" role="menuitem">Give Feedback</a>}
           <button type="button" role="menuitem" onClick={signOut}>
             Log Out
           </button>
@@ -700,7 +702,7 @@ export function StopBar({ stops }: { stops: readonly { id: string; label: string
     <div className="fh-stopbar fh-mono" aria-hidden>
       <b>{String(active + 1).padStart(2, "0")}</b>
       <span className="fh-stopbar-track">
-        <span style={{ width: `${((active + 1) / stops.length) * 100}%` }} />
+        <span style={{ transform: `scaleX(${(active + 1) / stops.length})` }} />
       </span>
       <span>{stops[active]?.label}</span>
     </div>
@@ -782,7 +784,7 @@ export function FreshieHome() {
       <header className="fh-head">
         <div className="fh-head-row">
           <div className="fh-head-l">
-            <button type="button" className="fh-brand" onClick={() => goTo("fh-welcome")} aria-label="Vortexa — back to top">
+            <button type="button" className="fh-brand" onClick={() => goTo("fh-welcome")} aria-label="Vortexa, back to top">
               <Image src="/vortexa-logo-sm.webp" alt="" width={320} height={184} priority style={{ width: "auto" }} />
             </button>
           </div>

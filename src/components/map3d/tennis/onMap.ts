@@ -73,7 +73,7 @@ export class TennisOnMap {
       const online = (this.online = this.seat(profile));
       this.stops.push(
         online.subscribe(() => this.update()),
-        hostOnBoard(online, () => this.board, (theirs) => shirtsOf(profile.color, theirs)),
+        hostOnBoard(online, () => this.board, (theirs) => shirtsOf(profile.color, theirs), profile.name),
       );
     }
     this.online.play();
@@ -96,7 +96,7 @@ export class TennisOnMap {
     const profile = playerProfile(who.name, who.color);
     const key = `${court}:bot:${Math.random().toString(36).slice(2, 10)}:${Date.now().toString(36)}`;
     this.bot = { key, court, profile, room: this.transport.join(`match:${key}`) };
-    this.board.say({ court, key, colors: shirtsOf(profile.color, profile.color) });
+    this.board.say({ court, key, colors: shirtsOf(profile.color, profile.color), names: [profile.name, "Bot"] });
     this.set({ phase: "match", lobby: null, match: key });
     return true;
   }

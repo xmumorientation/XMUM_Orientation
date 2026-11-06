@@ -87,7 +87,7 @@ export function FunfairLightGroup({
     <div className="fl">
       <div className="fl-head">
         <b>Light a Key for a Group</b>
-        <span>{group ? group.name : "Pick a group"} · no card tap or Guardian check</span>
+        <span>{group ? group.name : "Pick a group"}, no card tap or Guardian check</span>
         {canReplace && (
           <button type="button" className="fl-btn fl-reset" data-kind="warn" disabled={busy || !states?.some((s) => s.activated_at)} onClick={() => void resetAll()}>
             Reset All Keys

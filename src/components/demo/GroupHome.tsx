@@ -15,7 +15,6 @@ import {
   CheckCircle2,
   Clock,
   Compass,
-  HelpCircle,
   Map as MapIcon,
   MessageSquare,
   Sparkles,
@@ -180,18 +179,6 @@ export default function GroupHome({ group }: { group: DemoGroup }) {
               </div>
             </Link>
 
-            <Link href="/faq" className="vx-demo-shortcut-card group">
-              <div className="flex items-center justify-between">
-                <span className="vx-demo-shortcut-icon">
-                  <HelpCircle size={20} strokeWidth={1.75} />
-                </span>
-                <ArrowUpRight size={16} strokeWidth={1.75} className="text-[var(--vx-mute)] transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-              </div>
-              <div className="mt-3">
-                <span className="vx-demo-shortcut-name">Emergency & FAQ</span>
-                <p className="vx-demo-shortcut-desc">Medical first aid, lost & found, rules</p>
-              </div>
-            </Link>
           </div>
         </section>
 
@@ -237,7 +224,7 @@ export default function GroupHome({ group }: { group: DemoGroup }) {
         </div>
 
         <p className="vx-demo-warn">
-          DEMO ROUTE — Designed for orientation rehearsal walkthrough. Production passes are signed and time-expiring.
+          DEMO ROUTE, Designed for orientation rehearsal walkthrough. Production passes are signed and time-expiring.
         </p>
       </div>
     </div>

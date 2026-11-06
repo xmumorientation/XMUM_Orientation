@@ -52,3 +52,62 @@
 .tk button { min-height: 44px; }
 .tk button:not(.btn):not(.btn-primary):not(.btn-secondary) { padding-left: max(12px, 0.75rem); padding-right: max(12px, 0.75rem); }
 .tk button[aria-pressed="true"] { background-color: var(--sp-raised, #0b2246); color: #0dfcfd; box-shadow: inset 0 0 0 2px #0dfcfd; }
+
+/* ── Live group scores ─────────────────────────────────────────────────── */
+.tk-scoreboard {
+  display: grid; gap: 14px; padding: 20px; border: 1px solid var(--sp-line, #25405e); border-radius: 20px;
+  background: color-mix(in srgb, var(--sp-card, #071a30) 92%, transparent);
+}
+.tk-scoreboard-head { display: flex; align-items: start; justify-content: space-between; gap: 20px; }
+.tk-kicker { margin: 0 0 5px; color: #0dfcfd; font-size: 11px; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; }
+.tk-scoreboard h2 { margin: 0; color: var(--sp-text, #eef5ff); font-size: 20px; line-height: 1.2; }
+.tk-scoreboard-head > div > p:last-child { margin: 5px 0 0; color: var(--sp-text-2, #c4d6ee); font-size: 13px; }
+.tk-scoreboard-total { margin: 0; min-width: 112px; padding: 10px 14px; border-radius: 14px; background: var(--sp-bg, #030b1c); border: 1px solid color-mix(in srgb, #fcd34d 38%, var(--sp-line, #25405e)); text-align: right; }
+.tk-scoreboard-total dt { color: var(--sp-text-2, #c4d6ee); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; }
+.tk-scoreboard-total dd { margin: 3px 0 0; color: #fcd34d; font-size: 24px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.tk-scoreboard-tools { display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 14px; border-radius: 14px; background: var(--sp-bg, #030b1c); border: 1px solid var(--sp-line-2, #34516e); color: var(--sp-text-2, #c4d6ee); }
+.tk-scoreboard-tools input { min-height: 42px !important; border: 0 !important; background: transparent !important; padding: 0 !important; }
+.tk-group-list { display: grid; gap: 8px; padding: 0; margin: 0; list-style: none; }
+.tk-group-row { display: grid; grid-template-columns: minmax(170px, 1.3fr) minmax(92px, .55fr) minmax(112px, .7fr) minmax(290px, 1.65fr) auto; gap: 14px; align-items: center; padding: 12px 14px; border: 1px solid var(--sp-line, #25405e); border-radius: 16px; background: var(--sp-bg, #030b1c); }
+.tk-group-name { display: flex; min-width: 0; align-items: center; gap: 10px; }
+.tk-group-name > span { min-width: 0; display: grid; gap: 2px; }
+.tk-group-name b { overflow: hidden; color: var(--sp-text, #eef5ff); font-size: 15px; text-overflow: ellipsis; white-space: nowrap; }
+.tk-group-name small { color: var(--sp-mute, #8ba3c4); font-size: 12px; }
+.tk-score-stat { display: grid; gap: 2px; }
+.tk-score-stat > span { color: var(--sp-mute, #8ba3c4); font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.tk-score-stat b { display: flex; align-items: center; gap: 5px; color: #fcd34d; font-size: 17px; font-variant-numeric: tabular-nums; }
+.tk-score-stat:nth-child(3) b { color: #c7d2fe; }
+.tk-score-stat small { color: var(--sp-text-2, #c4d6ee); font-size: 12px; }
+.tk-piece-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.tk-piece-list > span { display: flex; align-items: center; justify-content: space-between; min-height: 38px; padding: 6px 8px; border: 1px solid var(--sp-line, #25405e); border-radius: 10px; color: var(--sp-mute, #8ba3c4); background: color-mix(in srgb, var(--sp-card, #071a30) 80%, transparent); }
+.tk-piece-list > span[data-has-pieces] { border-color: color-mix(in srgb, #a5b4fc 48%, var(--sp-line, #25405e)); color: #e0e7ff; background: color-mix(in srgb, #6366f1 14%, var(--sp-card, #071a30)); }
+.tk-piece-list b { font-size: 11px; }
+.tk-piece-list em { color: #fcd34d; font-size: 13px; font-style: normal; font-weight: 800; font-variant-numeric: tabular-nums; }
+.tk-adjust { min-height: 38px !important; border: 1px solid color-mix(in srgb, #0dfcfd 50%, var(--sp-line, #25405e)); border-radius: 10px; background: transparent; color: #0dfcfd; font-size: 12px; font-weight: 800; white-space: nowrap; }
+.tk-adjust:hover { background: color-mix(in srgb, #0dfcfd 12%, transparent); }
+.tk-empty { margin: 0; padding: 24px; color: var(--sp-text-2, #c4d6ee); text-align: center; }
+
+/* ── Token adjustment sheet ────────────────────────────────────────────── */
+.tk-adjust-backdrop { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 16px; background: rgb(3 11 28 / 76%); backdrop-filter: blur(8px); }
+.tk-adjust-sheet { width: min(100%, 440px); display: grid; gap: 16px; padding: 24px; border: 1px solid var(--sp-line-2, #34516e); border-radius: 20px; background: var(--sp-card, #071a30); box-shadow: 0 24px 60px rgb(0 0 0 / 40%); }
+.tk-adjust-sheet h2 { margin: 0; color: var(--sp-text, #eef5ff); font-size: 24px; }
+.tk-adjust-sheet p { margin: 4px 0 0; color: var(--sp-text-2, #c4d6ee); font-size: 14px; }
+.tk-adjust-sheet label { display: grid; gap: 7px; color: var(--sp-text-2, #c4d6ee); font-weight: 700; }
+.tk-adjust-sheet input { width: 100%; }
+.tk-adjust-review { padding: 12px; border: 1px solid color-mix(in srgb, #0dfcfd 38%, var(--sp-line, #25405e)); border-radius: 12px; background: color-mix(in srgb, #0dfcfd 9%, var(--sp-bg, #030b1c)); }
+.tk-adjust-review b { color: #fcd34d; }
+.tk-adjust-actions { display: flex; justify-content: flex-end; gap: 10px; }
+
+@media (max-width: 900px) {
+  .tk-group-row { grid-template-columns: minmax(160px, 1fr) 1fr 1fr auto; }
+  .tk-piece-list { grid-column: 1 / -1; }
+}
+@media (max-width: 560px) {
+  .tk-scoreboard { padding: 16px; }
+  .tk-scoreboard-head { display: grid; }
+  .tk-scoreboard-total { width: 100%; text-align: left; }
+  .tk-group-row { grid-template-columns: 1fr auto; gap: 12px; }
+  .tk-score-stat { grid-column: span 1; }
+  .tk-piece-list { grid-column: 1 / -1; }
+  .tk-adjust { grid-column: 1 / -1; width: 100%; }
+}

@@ -3,6 +3,7 @@ import { Inter, JetBrains_Mono, Space_Grotesk } from "next/font/google";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
 import "./globals.css";
+import { OfflineSupport } from "@/components/offline/OfflineSupport";
 import { ViewportDebug } from "@/components/ViewportDebug";
 import { VortexaIntro } from "@/components/VortexaIntro";
 import { cn } from "@/lib/utils";
@@ -33,6 +34,9 @@ export const metadata: Metadata = {
   description:
     "XMUM 26/12 Orientation",
   metadataBase: new URL("https://vortexa.xmum.edu.my"),
+  // Unlisted: reachable by link, never in search results. next.config.ts
+  // sends the same as an X-Robots-Tag header for files and API routes.
+  robots: { index: false, follow: false, googleBot: { index: false, follow: false } },
   openGraph: {
     title: "Vortexa",
     description:
@@ -77,6 +81,7 @@ export default function RootLayout({
             stays mounted on in-app navigation, so it does not replay there. */}
         <VortexaIntro />
         {children}
+        <OfflineSupport />
         {/* TEMPORARY: viewport numbers for the iPad Chrome bug, only with ?vp=1. */}
         <ViewportDebug />
         <SpeedInsights />

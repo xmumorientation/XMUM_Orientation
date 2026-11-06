@@ -158,7 +158,7 @@ export function FunfairSection() {
         })}
         <div className="gc-ff-row gc-ff-finale">
           <div className="gc-ff-name">
-            <h4>Finale · Lake Stage Concert</h4>
+            <h4>Finale, Lake Stage Concert</h4>
             {finale !== null && (
               <span className="gc-chip" data-tone={finale ? "live" : "off"}>
                 {finale ? "LIVE" : "OFF"}

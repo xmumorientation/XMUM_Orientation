@@ -65,7 +65,12 @@ export function Day2Schedule({
   })();
   const saved = state?.segments ?? [];
   const segs = saved.map((g) => (g.id in draft ? { ...g, start_min: draft[g.id] } : g));
-  const ends = segmentEnds(segs, length);
+  // The timeline always shows the whole plan. If the running game is shorter than
+  // the plan (a rehearsal), the rail stretches to the last segment's start plus
+  // 10 min, so every segment keeps its own width instead of being squeezed off
+  // the end; the game's real end is marked on it.
+  const span = Math.max(length, (segs.length ? segs[segs.length - 1].start_min : 0) + 10);
+  const ends = segmentEnds(segs, span);
   const elapsed = starts ? Math.max(0, Math.floor((Date.now() - starts[0]) / 60_000)) : null;
   const disabled = busy || !state;
   const atMax = segs.length >= MAX_SEGMENTS;
@@ -134,7 +139,7 @@ export function Day2Schedule({
   // Handle drag: pointer position -> minutes, snapped to 5.
   function minutesAt(clientX: number, i: number) {
     const r = railRef.current!.getBoundingClientRect();
-    return clamp(i, Math.round((((clientX - r.left) / r.width) * length) / STEP) * STEP);
+    return clamp(i, Math.round((((clientX - r.left) / r.width) * span) / STEP) * STEP);
   }
   function onHandleMove(e: React.PointerEvent, i: number) {
     if (dragging !== segs[i].id) return;
@@ -179,8 +184,8 @@ export function Day2Schedule({
             </span>
             <p className="d2s-now">
               Now: <b>{segment === "off" ? "No Day 2 game" : day2.label}</b>
-              {manual && " · held by hand"}
-              {elapsed !== null && ` · ${elapsed} of ${length} min`}
+              {manual && ", held by hand"}
+              {elapsed !== null && `, ${elapsed} of ${length} min`}
             </p>
           </div>
 
@@ -188,21 +193,23 @@ export function Day2Schedule({
             <div className="d2s-railwrap">
               <div className="d2s-rail" ref={railRef}>
                 {segs.map((g, i) => {
-                  const pct = (Math.max(0, ends[i] - g.start_min) / length) * 100;
+                  const pct = (Math.max(0, ends[i] - g.start_min) / span) * 100;
                   return (
                     <div
                       key={g.id}
                       className="d2s-seg"
+                      title={nameOf(g, i)}
                       data-on={segment === g.id}
                       style={{ width: `${pct}%`, ["--tone" as string]: toneOf(g, i) }}
                     >
-                      {pct >= 12 ? nameOf(g, i) : ""}
+                      {pct >= 18 ? nameOf(g, i) : ""}
                     </div>
                   );
                 })}
-                {elapsed !== null && elapsed <= length && !manual && (
-                  <span className="d2s-now-mark" style={{ left: `${(elapsed / length) * 100}%` }} />
+                {elapsed !== null && elapsed <= span && !manual && (
+                  <span className="d2s-now-mark" style={{ left: `${(elapsed / span) * 100}%` }} />
                 )}
+                {span > length && <span className="d2s-end-mark" style={{ left: `${(length / span) * 100}%` }} title={`Game ends at ${length} min`} />}
               </div>
               {segs.map((g, i) =>
                 i === 0 ? null : (
@@ -218,7 +225,11 @@ export function Day2Schedule({
                     className="d2s-handle"
                     data-drag={dragging === g.id}
                     disabled={disabled}
-                    style={{ left: `${(g.start_min / length) * 100}%` }}
+                    data-past={g.start_min >= length}
+                    // A segment can start after the running game ends (a 20 min rehearsal
+                    // against a 60 and 105 min plan). Pin its handle to the rail's end:
+                    // 300% would push the page wider than a phone.
+                    style={{ left: `${Math.min(100, (g.start_min / span) * 100)}%` }}
                     onPointerDown={(e) => {
                       e.currentTarget.setPointerCapture(e.pointerId);
                       setDragging(g.id);
@@ -236,8 +247,8 @@ export function Day2Schedule({
             </div>
             <div className="d2s-scale" aria-hidden>
               <span>0</span>
-              <span>{Math.round(length / 2)}</span>
-              <span>{length} min</span>
+              <span>{Math.round(span / 2)}</span>
+              <span>{span} min</span>
             </div>
           </div>
           <p className="d2s-hint">
@@ -290,7 +301,7 @@ export function Day2Schedule({
                     <div className="d2s-time">
                       <p className="d2s-time-l">
                         <b>Starts at</b>
-                        {a}–{b} min · {Math.max(0, b - a)} long
+                        {a}–{b} min, {Math.max(0, b - a)} long
                       </p>
                       {i > 0 ? (
                         <Stepper value={a} disabled={disabled} limits={limits(i)} onCommit={(n) => setStart(i, n)} />

@@ -75,7 +75,8 @@ describe("tennis on the map pages", () => {
     // the host's shirt first, then the other's, as the host's phone sees them
     const hostIsA = key!.split(":")[1] === "a";
     const shirts = hostIsA ? [RED.color, GREEN.color] : [GREEN.color, RED.color];
-    expect(viewer.courts.board.getView()).toEqual([{ court: 1, key, colors: shirts }]);
+    const names = hostIsA ? [RED.name, GREEN.name] : [GREEN.name, RED.name];
+    expect(viewer.courts.board.getView()).toEqual([{ court: 1, key, colors: shirts, names }]);
     // the players' own boards show it too (their pages draw it as their match, not a spectator's)
     expect(a.courts.board.getView().map((c) => c.key)).toEqual([key]);
     for (const p of [a, b, viewer]) expect(p.joins.filter((r) => r === "courts")).toHaveLength(1);
@@ -147,7 +148,7 @@ describe("tennis on the map pages", () => {
     expect(run(hub, [a, viewer], 1, () => viewer.courts.board.getView().length > 0)).toBe(true);
     const seen = viewer.courts.board.getView();
     // the bot's shirt differs from the player's own, as a real opponent's would
-    expect(seen).toMatchObject([{ court: 1 }]);
+    expect(seen).toMatchObject([{ court: 1, names: [RED.name, "Bot"] }]);
     expect(seen[0].colors[0]).toBe(RED.color);
     expect(seen[0].colors[1]).not.toBe(RED.color);
     // Play (matchmaking) is blocked while the bot match is on, and so is a second Play with Bot

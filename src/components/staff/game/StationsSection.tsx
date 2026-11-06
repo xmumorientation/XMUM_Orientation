@@ -7,7 +7,7 @@ import { usePhases } from "@/components/PhaseTimerProvider";
 import { useConfig } from "@/components/useConfig";
 import { useStationOccupants, type Occupant } from "@/components/staff/useStationOccupants";
 import { useDay2State } from "@/components/useDay2State";
-import { tierClosedText } from "@/lib/day2";
+import { effectiveStatus, tierClosedText } from "@/lib/day2";
 import { MAP_BUILDINGS, stationPosition } from "@/lib/mapBuildings";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { RISK_TIER_META, type RiskTier, type Station, type StationStatus } from "@/lib/types";
@@ -148,7 +148,7 @@ export function StationsSection() {
       floor: floorOf(s),
       risk: s.risk_tier,
       purpose: s.purpose ?? "",
-      max_groups: s.max_groups != null ? String(s.max_groups) : "",
+      max_groups: s.day === 2 ? "1" : s.max_groups != null ? String(s.max_groups) : "",
     });
     setEditing(s);
   }
@@ -164,7 +164,7 @@ export function StationsSection() {
       // Day 1 has no entry fee; keep the column at its default
       risk_tier: form.day === 2 ? form.risk : "low",
       purpose: form.purpose.trim(),
-      max_groups: form.max_groups ? parseInt(form.max_groups, 10) : null,
+      max_groups: form.day === 2 ? 1 : form.max_groups ? parseInt(form.max_groups, 10) : null,
     };
     const old = editing !== "new" ? editing : null;
     // Keep an existing code that doesn't follow block-floor unless the location changed
@@ -323,8 +323,8 @@ export function StationsSection() {
                   {s.name}
                   {here.length > 0 && <small className="gc-fold-here">{here.map((o) => o.name).join(", ")} here</small>}
                 </span>
-                <span className="gc-chip" data-tone={STATUS_TONE[s.status]}>
-                  {STATUS.find((x) => x.value === s.status)?.label}
+                <span className="gc-chip" data-tone={STATUS_TONE[effectiveStatus(s, day2, day2.state)]}>
+                  {STATUS.find((x) => x.value === effectiveStatus(s, day2, day2.state))?.label}
                 </span>
                 <ChevronDown size={18} aria-hidden className="gc-fold-chev" />
               </button>
@@ -332,8 +332,8 @@ export function StationsSection() {
                 <div className="gc-fold-body">
                   <dl className="gc-facts">
                     <div><dt>Location</dt><dd>{s.code}</dd></div>
-                    <div><dt>Game</dt><dd>{s.purpose || "—"}</dd></div>
-                    <div><dt>Groups at Once</dt><dd>{s.max_groups ?? "—"}</dd></div>
+                    <div><dt>Game</dt><dd>{s.purpose || "Not available"}</dd></div>
+                    <div><dt>Groups at Once</dt><dd>{s.max_groups ?? "Not available"}</dd></div>
                     {s.day === 2 && (
                       <div><dt>Risk &amp; Entry</dt><dd>
                         {RISK_TIER_META[s.risk_tier].label} / −{s.entry_cost}
@@ -395,7 +395,7 @@ export function StationsSection() {
             <span>Day</span>
             <div className="gc-seg">
               {([1, 2] as const).map((d) => (
-                <button key={d} type="button" aria-pressed={form.day === d} onClick={() => setForm({ ...form, day: d })}>
+                <button key={d} type="button" aria-pressed={form.day === d} onClick={() => setForm({ ...form, day: d, max_groups: d === 2 ? "1" : form.max_groups })}>
                   Day {d}
                 </button>
               ))}
@@ -435,8 +435,10 @@ export function StationsSection() {
               inputMode="numeric"
               min="1"
               value={form.max_groups}
+              disabled={form.day === 2}
               onChange={(e) => setForm({ ...form, max_groups: e.target.value })}
             />
+            {form.day === 2 && <small>Day 2 game stations always allow 1 group.</small>}
           </label>
           {form.day === 2 && (
             <div className="gc-field">

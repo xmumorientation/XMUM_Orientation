@@ -87,12 +87,13 @@ beforeAll(async () => {
   await admin.query(read("supabase/migrations/0062_station_capacity.sql"));
   await admin.query(read("supabase/migrations/0064_building_geofence.sql"));
   await admin.query(read("supabase/migrations/0095_gm_station_checkin.sql"));
+  await admin.query(read("supabase/migrations/0122_day2_hard_open_and_capacity.sql"));
 
   await q("insert into groups (id, name) values (1, 'Group 1'), (2, 'Group 2'), (3, 'Group 3')");
   await q("insert into phases (key, state) values ('day1', 'pending'), ('day2', 'pending'), ('endgame', 'pending')");
   A = Number((await q("insert into stations (code, name, day, status, max_groups) values ('A1-1', 'Station A', 1, 'closed', 2) returning id"))[0].id);
   B = Number((await q("insert into stations (code, name, day, status) values ('A2-1', 'Station B', 1, 'closed') returning id"))[0].id);
-  D2 = Number((await q("insert into stations (code, name, day, status) values ('B1-1', 'Day 2 station', 2, 'closed') returning id"))[0].id);
+  D2 = Number((await q("insert into stations (code, name, day, status, max_groups) values ('B1-1', 'Day 2 station', 2, 'closed', 1) returning id"))[0].id);
 
   await q("insert into profiles (id, role, full_name) values ($1, 'admin', 'Admin'), ($2, 'hof', 'HOF')", [ADMIN, HOF]);
   await q("insert into profiles (id, role, full_name, station_id) values ($1, 'gm', 'GM A', $4), ($2, 'gm', 'GM B', $5), ($3, 'guardian_gm', 'Guardian', $4)", [GM_A, GM_B, GUARDIAN, A, B]);
@@ -108,6 +109,13 @@ afterAll(async () => {
   } catch {
     /* left for the OS temp cleanup */
   }
+});
+
+describe("Day 2 station capacity", () => {
+  it("requires exactly one group", async () => {
+    expect(await fails(q("update stations set max_groups = 2 where id = $1", [D2]))).toContain("stations_day2_one_group");
+    expect((await q("select max_groups from stations where id = $1", [D2]))[0].max_groups).toBe(1);
+  });
 });
 
 describe("before 0078 (proves the old coupling)", () => {

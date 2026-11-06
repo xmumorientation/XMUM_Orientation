@@ -232,7 +232,7 @@ export default function AdminStationsPage() {
       floor: codeFloor(s.code, s.area),
       risk: s.risk_tier,
       purpose: s.purpose ?? "",
-      max_groups: s.max_groups != null ? String(s.max_groups) : "",
+      max_groups: s.day === 2 ? "1" : s.max_groups != null ? String(s.max_groups) : "",
     });
     setEditing(s);
   }
@@ -252,7 +252,7 @@ export default function AdminStationsPage() {
       // Day 1 has no entry fee; keep the column at its default
       risk_tier: form.day === 2 ? form.risk : "low",
       purpose: form.purpose.trim(),
-      max_groups: form.max_groups ? parseInt(form.max_groups, 10) : null,
+      max_groups: form.day === 2 ? 1 : form.max_groups ? parseInt(form.max_groups, 10) : null,
     };
 
     // Keep an existing code that doesn't follow block-floor unless the location changed
@@ -420,7 +420,7 @@ Groups checked in here will lose that check-in.`)) return;
                 <th className="w-16 px-4 py-3">Day</th>
                 <th className="w-32 px-4 py-3">Status</th>
                 <th className="w-28 px-4 py-3">Risk</th>
-                <th className="w-20 px-4 py-3">Entry</th>
+                <th className="w-24 px-4 py-3">Entry Token</th>
                 <th className="w-64 px-4 py-3">Game Master</th>
                 <th className="w-20 px-4 py-3" />
               </tr>
@@ -460,7 +460,7 @@ Groups checked in here will lose that check-in.`)) return;
                       ))}
                     </td>
                     <td className="px-4 py-2.5">
-                      {s.day === 2 ? RISK_TIER_META[s.risk_tier].label : "—"}
+                      {s.day === 2 ? RISK_TIER_META[s.risk_tier].label : "Not available"}
                       {s.day === 2 && tierClosedText(day2, s.risk_tier, day2.state) && (
                         <span className="ml-2 rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-700">
                           {tierClosedText(day2, s.risk_tier, day2.state)}
@@ -468,7 +468,7 @@ Groups checked in here will lose that check-in.`)) return;
                       )}
                     </td>
                     <td className="px-4 py-2.5 font-bold tabular-nums">
-                      {s.day === 2 ? `−${s.entry_cost}` : "—"}
+                      {s.day === 2 ? `−${s.entry_cost}` : "Not available"}
                     </td>
                     <td className="px-4 py-2.5">
                       <button
@@ -638,7 +638,7 @@ Groups checked in here will lose that check-in.`)) return;
                   <button
                     key={d}
                     type="button"
-                    onClick={() => setForm({ ...form, day: d })}
+                    onClick={() => setForm({ ...form, day: d, max_groups: d === 2 ? "1" : form.max_groups })}
                     aria-pressed={form.day === d}
                     className={cn(
                       "btn min-h-[44px] text-sm",
@@ -724,10 +724,12 @@ Groups checked in here will lose that check-in.`)) return;
                 className="input text-sm"
                 placeholder="How many groups fit (a full station refuses more check-ins)"
                 value={form.max_groups}
+                disabled={form.day === 2}
                 onChange={(e) =>
                   setForm({ ...form, max_groups: e.target.value })
                 }
               />
+              {form.day === 2 && <p className="mt-1 text-xs text-ink-faint">Day 2 game stations always allow 1 group.</p>}
             </div>
 
             {form.day === 2 && (

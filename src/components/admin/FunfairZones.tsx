@@ -121,7 +121,7 @@ export function FunfairZones() {
       })}
       <div className="ffz-row ffz-finale">
         <div className="ffz-name">
-          <h4>Finale · Lake Stage Concert</h4>
+          <h4>Finale, Lake Stage Concert</h4>
           {finale !== null && <span className="ffz-chip" data-on={finale}>{finale ? "LIVE" : "OFF"}</span>}
         </div>
         <p>Plays while all three zones are on. To start it early, set all three overrides to On.</p>

@@ -5,9 +5,9 @@ import type { Online } from "./online";
 // T3a). Each match's host is in the "courts" room's presence while its match is on: its court, the match, and both
 // players' shirts. Everyone else is in the room with no presence of their own, so a phone that opens the map learns
 // the busy courts at once (the presence it gets on joining) and then hears only a match starting or ending, never
-// the play itself. Names and score are not shown from afar (Ben, 2026-10-27).
+// the play itself. Older clients may announce a match without names.
 
-export type LiveCourt = { court: number; key: string; colors: [string, string] };
+export type LiveCourt = { court: number; key: string; colors: [string, string]; names?: [string, string] };
 
 /** A match's key, as lobby.ts makes it (court, host, guest, when the host queued): it names a Realtime channel. */
 const KEY = /^[0-2]:[a-z0-9]{1,16}:[a-z0-9]{1,16}:[a-z0-9]{1,16}$/;
@@ -15,10 +15,11 @@ const HEX = /^#[0-9a-f]{6}$/i;
 
 /** Another phone's presence as a busy court, if it is one (it comes from any phone, so it is checked). */
 function liveCourt(s: Payload): LiveCourt | null {
-  const { court, key, colors } = s;
+  const { court, key, colors, names } = s;
   if (typeof court !== "number" || typeof key !== "string" || !KEY.test(key) || Number(key[0]) !== court) return null;
   if (!Array.isArray(colors) || colors.length !== 2 || !colors.every((c) => typeof c === "string" && HEX.test(c))) return null;
-  return { court, key, colors: [colors[0], colors[1]] };
+  const validNames = Array.isArray(names) && names.length === 2 && names.every((n) => typeof n === "string" && n.trim().length > 0 && n.length <= 20);
+  return { court, key, colors: [colors[0], colors[1]], ...(validNames ? { names: [names[0], names[1]] as [string, string] } : {}) };
 }
 
 export class Board {
@@ -50,7 +51,7 @@ export class Board {
     const text = live && JSON.stringify(live);
     if (text === this.mine) return;
     this.mine = text;
-    if (live) this.room.track({ court: live.court, key: live.key, colors: live.colors });
+    if (live) this.room.track({ court: live.court, key: live.key, colors: live.colors, ...(live.names ? { names: live.names } : {}) });
     else this.room.untrack();
   }
 
@@ -82,13 +83,13 @@ export class Board {
  * a phone may be in a room only once. `colors`: both shirts as the players see them (host first), from the other
  * player's group colour.
  */
-export function hostOnBoard(online: Online, board: () => Board, colors: (theirs: string) => [string, string]) {
+export function hostOnBoard(online: Online, board: () => Board, colors: (theirs: string) => [string, string], name?: string) {
   let on: Board | null = null;
   return online.subscribe(() => {
     const m = online.getView().match;
     if (m?.host && m.link.round > 0 && m.link.phase !== "closed") {
       on ??= board();
-      on.say({ court: m.court, key: m.key, colors: colors(m.opponent.color) });
+      on.say({ court: m.court, key: m.key, colors: colors(m.opponent.color), ...(name ? { names: [name, m.opponent.name] } : {}) });
     } else on?.say(null);
   });
 }

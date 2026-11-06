@@ -5,6 +5,7 @@ import { saveAdminDayFilter } from "@/lib/adminDayFilter";
 import { useEffect } from "react";
 
 import { Card } from "@/components/ui";
+import { SupportLinks } from "@/components/SupportLinks";
 
 // Error boundary scoped to the authenticated app segment: keeps the shell
 // (sidebar/nav) intact and recovers just the page content.
@@ -27,11 +28,12 @@ export default function AppError({
       </span>
       <p className="font-semibold">This Screen Ran Into a Problem</p>
       <p className="max-w-[32ch] text-sm leading-5 text-ink-faint">
-        Try again — the rest of the app is still running.
+        Try again. The rest of the app is still running.
       </p>
       <button onClick={reset} className="btn-primary mt-3">
         Try Again
       </button>
+      <SupportLinks />
       {pathname === "/admin" && <button className="btn-secondary min-h-[44px]" onClick={() => {
         saveAdminDayFilter("Day 1");
         window.location.assign("/admin");

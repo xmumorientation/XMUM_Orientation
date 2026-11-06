@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#07060b">
+  <meta name="robots" content="noindex">
+  <title>Offline Guide | Vortexa</title>
+  <link rel="preload" href="/offline-fonts/outfit-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/offline-fonts/alfa-slab-one-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/offline.css">
+  <script src="/offline-setup.js" defer></script>
+  <script src="/offline.js" defer></script>
+</head>
+<body>
+  <svg class="icon-defs" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
+    <symbol id="i-wifi-off" viewBox="0 0 24 24"><path d="m2 2 20 20M8.5 16.5a5 5 0 0 1 7 0M12 20h.01M5 12a10 10 0 0 1 5-2.6m4.5.2A10 10 0 0 1 19 12M2 8.5a16 16 0 0 1 3-2m3.3-1.3A16 16 0 0 1 22 8.5"/></symbol>
+    <symbol id="i-wifi" viewBox="0 0 24 24"><path d="M2 8.5a16 16 0 0 1 20 0M5 12a10 10 0 0 1 14 0m-10.5 4.5a5 5 0 0 1 7 0M12 20h.01"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18M8 15h2m4 0h2m-8 3h2"/></symbol>
+    <symbol id="i-map" viewBox="0 0 24 24"><path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3ZM9 3v15m6-12v15"/></symbol>
+    <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><path d="m5.6 5.6 3.6 3.6m5.6 5.6 3.6 3.6m-3.6-9.2 3.6-3.6m-9.2 9.2-3.6 3.6"/></symbol>
+    <symbol id="i-retry" viewBox="0 0 24 24"><path d="M3 11a9 9 0 0 1 15.5-6.2L21 7m0-5v5h-5M21 13a9 9 0 0 1-15.5 6.2L3 17m0 5v-5h5"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="m12 19 7-7-7-7M5 12h14"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-10h.01"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3l-5.6 2.9 1.1-6.2L3 9.6l6.2-.9Z"/></symbol>
+    <symbol id="i-game" viewBox="0 0 24 24"><path d="M6 7h12a3 3 0 0 1 3 2.5l1 8a2 2 0 0 1-3.4 1.7L16 17H8l-2.6 2.2A2 2 0 0 1 2 17.5l1-8A3 3 0 0 1 6 7ZM7 10v6m-3-3h6m6-1h.01M19 14h.01"/></symbol>
+    <symbol id="i-food" viewBox="0 0 24 24"><path d="M4 3v6a3 3 0 0 0 6 0V3M7 3v19M20 22V3c-4 3-5 7-5 11h5"/></symbol>
+  </defs></svg>
+  <a class="skip" href="#schedule">Skip to Schedule</a>
+  <header class="guide-header">
+    <div class="header-inner">
+      <a href="/" aria-label="Back to the Vortexa website"><img class="brand" src="/vortexa-logo-sm.webp" alt="Vortexa" width="80" height="46"></a>
+      <a class="website-link" href="/">Back to Website <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+    </div>
+  </header>
+  <main>
+    <section class="intro" aria-labelledby="guide-title">
+      <div class="connection-art" aria-hidden="true"><svg class="icon"><use id="connection-icon" href="#i-wifi-off"/></svg></div>
+      <div class="intro-copy">
+        <h1 id="guide-title">You’re Offline</h1>
+        <p id="connection" class="lead" role="status">You have no internet connection.</p>
+        <div class="actions"><button id="retry" class="button primary" type="button"><svg class="icon" aria-hidden="true"><use href="#i-retry"/></svg><span>Try Again</span></button></div>
+      </div>
+    </section>
+    <nav class="guide-nav" aria-label="Guide sections">
+      <a href="#schedule" aria-current="location"><svg class="icon" aria-hidden="true"><use href="#i-calendar"/></svg><span>Schedule</span></a>
+      <a href="#map"><svg class="icon" aria-hidden="true"><use href="#i-map"/></svg><span>Campus Map</span></a>
+      <a href="#help"><svg class="icon" aria-hidden="true"><use href="#i-help"/></svg><span>Getting Help</span></a>
+    </nav>
+    <section id="schedule" class="guide-section" aria-labelledby="schedule-title">
+      <div class="section-heading"><div><h2 id="schedule-title">Schedule</h2><p id="saved-time">No saved schedule.</p></div><button id="refresh" class="button secondary compact" type="button"><svg class="icon" aria-hidden="true"><use href="#i-retry"/></svg><span>Update</span></button></div>
+      <p id="update-status" class="update-status" role="status"></p>
+      <div id="schedule-content"><div class="empty-state"><svg class="icon" aria-hidden="true"><use href="#i-calendar"/></svg><h3>No Saved Schedule</h3><p>Reconnect and tap Update to save the schedule.</p></div></div>
+    </section>
+    <section id="map" class="guide-section" aria-labelledby="map-title">
+      <div class="section-heading"><div><h2 id="map-title">Campus Map</h2><p>Reference only. No live locations.</p></div><a class="button secondary compact" href="/campus-reference.webp">Full Screen <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a></div>
+      <figure class="map-frame"><a href="/campus-reference.webp" aria-label="Open the full-size campus reference map"><img src="/campus-reference.webp" alt="XMUM campus map from the same viewpoint as the online map, showing A1 to A5, B1, the lake, funfair and sports areas" width="1600" height="1000"></a><figcaption>Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap contributors</a></figcaption></figure>
+    </section>
+    <section id="help" class="guide-section" aria-labelledby="help-title">
+      <div class="section-heading"><div><h2 id="help-title">Getting Help</h2></div></div>
+      <p class="tech-help"><svg class="icon" aria-hidden="true"><use href="#i-help"/></svg><span>For technical issues, contact the <strong>Technical Development Team</strong>.</span></p>
+      <div class="help-list">
+        <details><summary>Participants</summary><div><p>Stay with your group. Ask your facilitator what’s next.</p></div></details>
+        <details><summary>Committees, FACIs and GMs</summary><div><p>Keep pending results open on the original phone. Don’t resubmit from another device.</p><p>Can’t submit? Note the time, station, group and result. Ask HOGM or Admin to check before entering it later.</p></div></details>
+        <details><summary>After Reconnecting</summary><div><p>Tap Try Again. Check pending or rejected results before submitting again.</p></div></details>
+      </div>
+
+    </section>
+  </main>
+  <footer><p id="readiness" role="status">Checking saved files…</p></footer>
+</body>
+</html>

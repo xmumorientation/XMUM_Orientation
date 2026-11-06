@@ -185,7 +185,7 @@ export function GameMaster({
       blocked: frozen ? "Token freeze is on." : after < 0 ? `Can't deduct ${amount}: ${group.name} only has ${group.token_balance}.` : undefined,
       text: (
         <>
-          {group.name} · {delta > 0 ? "+" : ""}{delta} tokens · {group.token_balance} → <b>{after}</b>
+          {group.name}, {delta > 0 ? "+" : ""}{delta} tokens, {group.token_balance} → <b>{after}</b>
         </>
       ),
       run: async () => {
@@ -208,24 +208,42 @@ export function GameMaster({
   // ── puzzle ──────────────────────────────────────────────────────────
   const itemFor = (loc: ProjectorLocation, index: number) => items.find((i) => i.puzzle_location === loc && i.puzzle_index === index);
 
-  function reviewPiece(loc: ProjectorLocation, index: number) {
+  function reviewPiece(loc: ProjectorLocation, index: number, isOwned = false) {
     if (!group) return;
     setPick({ loc, index });
-    setPending({
-      text: (
-        <>
-          {group.name} · give <b>{places[loc].name}</b> piece {index}
-        </>
-      ),
-      run: async () => {
-        const res = await rpc("fn_admin_give_piece", { p_group_id: group.id, p_location: loc, p_index: index, p_idempotency_key: key() });
-        if (!res) return;
-        setPending(null);
-        setPick(null);
-        onNotice(`${group.name} got ${places[loc].name} piece ${index}`);
-        await refresh();
-      },
-    });
+    if (isOwned) {
+      setPending({
+        text: (
+          <>
+            {group.name}, remove <b>{places[loc].name}</b> piece {index}
+          </>
+        ),
+        run: async () => {
+          const res = await rpc("fn_admin_remove_piece", { p_group_id: group.id, p_location: loc, p_index: index });
+          if (!res) return;
+          setPending(null);
+          setPick(null);
+          onNotice(`${group.name} removed ${places[loc].name} piece ${index}`);
+          await refresh();
+        },
+      });
+    } else {
+      setPending({
+        text: (
+          <>
+            {group.name}, give <b>{places[loc].name}</b> piece {index}
+          </>
+        ),
+        run: async () => {
+          const res = await rpc("fn_admin_give_piece", { p_group_id: group.id, p_location: loc, p_index: index, p_idempotency_key: key() });
+          if (!res) return;
+          setPending(null);
+          setPick(null);
+          onNotice(`${group.name} got ${places[loc].name} piece ${index}`);
+          await refresh();
+        },
+      });
+    }
   }
 
   // ── blind box ───────────────────────────────────────────────────────
@@ -235,7 +253,7 @@ export function GameMaster({
     setPending({
       text: (
         <>
-          {group.name} · gift <b>{qty} {type.name}</b> blind box{qty > 1 ? "es" : ""} · free, not counted as sold
+          {group.name}, gift <b>{qty} {type.name}</b> blind box{qty > 1 ? "es" : ""}, free, not counted as sold
         </>
       ),
       run: async () => {
@@ -349,7 +367,7 @@ export function GameMaster({
                         {tx.length === 0 && <li>No transactions yet.</li>}
                         {tx.map((t) => (
                           <li key={t.id}>
-                            <span>{t.reason || "No reason"} · {new Date(t.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+                            <span>{t.reason || "No reason"}, {new Date(t.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
                             <b className={t.delta > 0 ? "gm-pos" : "gm-neg"}>{t.delta > 0 ? "+" : ""}{t.delta}</b>
                           </li>
                         ))}
@@ -359,7 +377,7 @@ export function GameMaster({
 
                   {tab === "puz" && group && (
                     <div className="gm-pane" key="puz">
-                      <div className="gm-who"><b>{group.name}</b><span>Tap a missing piece to give it</span></div>
+                      <div className="gm-who"><b>{group.name}</b><span>Tap a missing piece to give it, or an owned piece to remove it</span></div>
                       <div className="gm-pieces" style={{ ["--c" as string]: groupColor(group.color) }}>
                         {PROJECTOR_LOCATIONS.map((loc) => {
                           const all = items.filter((i) => i.puzzle_location === loc).sort((a, b) => a.puzzle_index - b.puzzle_index);
@@ -375,10 +393,10 @@ export function GameMaster({
                                       key={it.id}
                                       type="button"
                                       className={own ? "own" : undefined}
-                                      disabled={own || busy}
-                                      aria-label={`${places[loc].name} piece ${it.puzzle_index}${own ? ", owned" : ""}`}
+                                      disabled={busy}
+                                      aria-label={`${places[loc].name} piece ${it.puzzle_index}${own ? ", owned (tap to remove)" : " (tap to give)"}`}
                                       aria-pressed={pick?.loc === loc && pick.index === it.puzzle_index}
-                                      onClick={() => itemFor(loc, it.puzzle_index) && reviewPiece(loc, it.puzzle_index)}
+                                      onClick={() => itemFor(loc, it.puzzle_index) && reviewPiece(loc, it.puzzle_index, own)}
                                     >
                                       {own ? "✓" : it.puzzle_index}
                                     </button>
@@ -390,7 +408,7 @@ export function GameMaster({
                         })}
                       </div>
                       <Summary pending={pending} busy={busy} onCancel={() => { setPending(null); setPick(null); }} />
-                      <p className="gm-note">A wrong piece is removed on the Puzzles page.</p>
+                      <p className="gm-note">Tap an owned piece (✓) to remove it, or a numbered missing piece to give it.</p>
                     </div>
                   )}
 

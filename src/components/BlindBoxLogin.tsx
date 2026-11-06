@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 import { AuthShell } from "@/components/auth/AuthShell";
+import { SupportLinks } from "@/components/SupportLinks";
 import { groupLoginEmail, groupLoginPassword } from "@/lib/group-login";
 import { supabaseBrowser } from "@/lib/supabase/client";
 
@@ -148,9 +149,7 @@ export function BlindBoxLogin({
           />
         </label>
         {error && (
-          <p className="vx-login-error" role="alert">
-            {error}
-          </p>
+          <div className="vx-login-error"><p role="alert">{error}</p></div>
         )}
         <button type="submit" className="vx-btn vx-btn-primary" disabled={busy || code.length !== 4 || !groupId}>
           {busy ? "Checking…" : "Continue to the Blind Box"}

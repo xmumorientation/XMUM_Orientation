@@ -39,7 +39,10 @@ import "./day2-alerts.css";
 //    time a projector is lit, never saying which group unless it is their
 //    own (0096); and, while the funfair is open, the screen edges beat:
 //    faintly at first, harder after each projector is lit.
-//  - Everyone else: a plain toast when the funfair opens.
+//  - Everyone else (HOF, OC, HOGM, Committee, GM, Guardian GM, Admin): the same
+//    toasts as plain notices (Ben, 2026-11-05): the Day 2 game has started,
+//    the Hard stations are open, the funfair is open, and a projector is lit
+//    (never which group). No funfair card and no heartbeat.
 //  - The final stretch ticker (FunfairTicker) for players and the ops crew.
 // An open page shows each moment as it comes; a page that loads mid-game
 // shows the latest one (src/lib/day2Moments.ts), so a reload shows it again.
@@ -85,8 +88,8 @@ export function Day2Alerts({ children }: { children: React.ReactNode }) {
   const profile = useProfile();
   const isPlayer = PLAYER_ROLES.includes(profile.role);
   const day2 = useDay2State();
-  // Only players get the projector toasts and the heartbeat, and only while the Day 2 game runs.
-  const lights = useProjectorLights(isPlayer ? profile.group_id : null, isPlayer && day2.segment !== "off");
+  // Every role gets the projector toasts while the Day 2 game runs; only players get the heartbeat and "your group".
+  const lights = useProjectorLights(isPlayer ? profile.group_id : null, day2.segment !== "off");
   const finalStretch = isFinalStretch(day2);
 
   const [toast, setToast] = useState<Toast | null>(null);
@@ -141,7 +144,7 @@ export function Day2Alerts({ children }: { children: React.ReactNode }) {
       clearTimers();
       setToast(null);
       setCardOpen(true);
-    } else if (isPlayer || moment === "funfair") {
+    } else {
       show({ id: Date.now(), kind: moment });
     }
   }, [day2, isPlayer, show, clearTimers]);
@@ -154,13 +157,13 @@ export function Day2Alerts({ children }: { children: React.ReactNode }) {
   // A projector lit since the last reading (never on the first one).
   const litSeen = useRef<ProjectorLocation[] | null>(null);
   useEffect(() => {
-    if (!isPlayer || !lights.loaded) return;
+    if (!lights.loaded) return;
     const before = litSeen.current;
     litSeen.current = lights.lit;
     const loc = before ? newlyLit(before, lights.lit).pop() : undefined;
     if (!loc) return;
     show({ id: Date.now(), kind: "lit", loc, ours: loc === lights.ours, left: PROJECTOR_LOCATIONS.length - lights.lit.length });
-  }, [isPlayer, lights, show]);
+  }, [lights, show]);
 
   const api = useMemo(() => ({ openFunfair: () => setCardOpen(true) }), []);
   const level = isPlayer ? heartbeatLevel(finalStretch, lights.lit.length) : 0;
@@ -170,7 +173,16 @@ export function Day2Alerts({ children }: { children: React.ReactNode }) {
       {children}
       {level > 0 && <div className="d2-beat" data-level={level} aria-hidden />}
       <div className={`d2-toasts ${vxSlab.variable}`} role="status" aria-live="polite">
-        {toast && <Day2Toast key={toast.id} toast={toast} leaving={leaving} canScan={profile.role === "freshie"} onClose={dismiss} />}
+        {toast && (
+          <Day2Toast
+            key={toast.id}
+            toast={toast}
+            leaving={leaving}
+            canScan={profile.role === "freshie"}
+            isPlayer={isPlayer}
+            onClose={dismiss}
+          />
+        )}
       </div>
       {/* Mounted only in the final stretch, so the group's Items data is not loaded on every page all day. */}
       {isPlayer && finalStretch && (
@@ -187,13 +199,24 @@ export function Day2Alerts({ children }: { children: React.ReactNode }) {
 
 // ── Toasts ───────────────────────────────────────────────────────────────
 
-function toastCopy(t: Toast, canScan: boolean) {
+/** `isPlayer` false (staff): the same moments as plain notices, worded for the crew. */
+function toastCopy(t: Toast, canScan: boolean, isPlayer: boolean) {
   switch (t.kind) {
     case "challenge":
+      if (!isPlayer) {
+        return {
+          accent: VX_YELLOW,
+          icon: <Gift size={24} />,
+          eyebrow: "Day 2, Game On",
+          title: "Day 2 Game Started",
+          text: "Stations are running. Freshies can now challenge OC, HOF and HOGM for a blind box.",
+          action: { href: "/map", label: "Open Map" },
+        };
+      }
       return {
         accent: VX_YELLOW,
         icon: <Gift size={24} />,
-        eyebrow: "Day 2 · Game On",
+        eyebrow: "Day 2, Game On",
         title: "Challenge OC, HOF and HOGM",
         text: "Find them around campus and challenge them for a blind box.",
         crew: true,
@@ -209,16 +232,16 @@ function toastCopy(t: Toast, canScan: boolean) {
             <i />
           </span>
         ),
-        eyebrow: "Day 2 · Hard Stations",
+        eyebrow: "Day 2, Hard Stations",
         title: "Hard Stations Open",
-        text: "Pick 1 location. Win, and a piece from it is yours.",
+        text: isPlayer ? "Pick 1 location. Win, and a piece from it is yours." : "Groups can now play and submit games at the Hard stations.",
         action: { href: "/map", label: "View on Map" },
       };
     case "funfair":
       return {
         accent: VX_ORANGE,
         icon: <FerrisWheel size={24} />,
-        eyebrow: "Day 2 · Final Stretch",
+        eyebrow: "Day 2, Final Stretch",
         title: "The Funfair Race Is On",
         text: "Groups can now light their projectors and power up the funfair.",
         action: { href: "/map", label: "Open Map" },
@@ -229,7 +252,7 @@ function toastCopy(t: Toast, canScan: boolean) {
       return {
         accent: KEY_COLORS[t.loc].main,
         icon: <Lightbulb size={24} />,
-        eyebrow: `Projector Lit · ${zoneName(t.loc)}`,
+        eyebrow: `Projector Lit, ${zoneName(t.loc)}`,
         title: t.ours ? `Your Group Lit ${name}` : `${name} Is Lit`,
         text: t.ours
           ? `${zone} is powering up. Watch it on the map.`
@@ -246,15 +269,18 @@ function Day2Toast({
   toast,
   leaving,
   canScan,
+  isPlayer,
   onClose,
 }: {
   toast: Toast;
   leaving: boolean;
   /** A Freshie scans blind box QRs; a Faci has no Scan tab. */
   canScan: boolean;
+  /** Freshie or Faci; staff get the plain notice wording. */
+  isPlayer: boolean;
   onClose: () => void;
 }) {
-  const c = toastCopy(toast, canScan);
+  const c = toastCopy(toast, canScan, isPlayer);
   return (
     <div
       className="d2-toast"
@@ -365,7 +391,7 @@ function FunfairCard({
           <span className="d2-strip d2-strip-l" aria-hidden />
           <div className="d2-card-in">
             <div className="d2-card-top">
-              <span className="d2-card-eb">Day 2 · Final Stretch</span>
+              <span className="d2-card-eb">Day 2, Final Stretch</span>
               {left !== null && <span className="d2-card-left">{formatCountdown(left)} Left</span>}
             </div>
             <RadixDialog.Title className="d2-card-title">
@@ -456,11 +482,11 @@ export function FunfairTicker({ place }: { place: "home" | "shell" | "shell-home
     isPlayer ? "Got an NFC card? Tap it on your phone" : null,
   ]
     .filter(Boolean)
-    .join(" · ");
+    .join(", ");
   const line = (
     <span className="d2-ticker-line">
       <i className="d2-ticker-dot" />
-      {text} ·
+      {text}
     </span>
   );
   const track = (

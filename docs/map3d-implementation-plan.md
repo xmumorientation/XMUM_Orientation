@@ -59,7 +59,7 @@ Related components to check:
 | 2D feature | 3D |
 |---|---|
 | Station markers and cluster badges | Floating markers next to the buildings; tapping one opens the same panel |
-| Group pins with fresh/faded/stale state and the accuracy area | 3D pins in the group colour (`groupPinColor`, `--fh-*` variables), with a ground circle |
+| Group pins with fresh/faded/stale state and the accuracy area | 3D pins in one blue for every group (`GROUP_PIN_COLOR`), with a ground circle |
 | Stations / Lightbulbs layer tabs, the "new lit" pulse | Stations only in 3D; the funfair shows lit bulbs. The tabs stay in the 2D fallback |
 | Zoom, pan, fullscreen viewer | 3D camera controls; a card on the page that expands to fullscreen |
 | Admin: add/edit stations, reset/move projectors | Kept, using the same dialogs. Move projector is 2D only |

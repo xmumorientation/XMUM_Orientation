@@ -113,7 +113,7 @@ export async function createGame(o: TennisOptions): Promise<Game> {
     const transport = await openTransport(o.net);
     const online = (game.online = new Online(transport, game.profile, o.auto ? "bot" : "player"));
     // the host puts its match on the courts' board (T3a), so the map shows it to everyone
-    hostOnBoard(online, () => new Board(transport), (theirs) => shirtsOf(color, theirs));
+    hostOnBoard(online, () => new Board(transport), (theirs) => shirtsOf(color, theirs), profile.name);
     return game;
   }
   // a fixed seed with two bots, so a held moment is the same every time
@@ -585,8 +585,8 @@ function MatchHud({ game, session, exit }: { game: Game; session: Session; exit:
         : "Click or press Space to serve"
       : view.hint === "play"
         ? touch
-          ? "Drag ← → to move · Tap to swing"
-          : "Drag or ← → to move · Click or Space to swing"
+          ? "Drag ← → to move. Tap to swing"
+          : "Drag or ← → to move. Click or Space to swing"
         : null;
 
   return (
@@ -620,7 +620,7 @@ function MatchHud({ game, session, exit }: { game: Game; session: Session; exit:
           <div className="tn-call-text" style={{ "--tn-glow": colors[call.winner] } as CSSProperties}>
             {callText(call)}
           </div>
-          <div className="tn-call-detail">Point · {names[call.winner]}</div>
+          <div className="tn-call-detail">Point, {names[call.winner]}</div>
         </div>
       )}
       {hint && <div className="tn-hint">{hint}</div>}
@@ -658,7 +658,7 @@ function MatchHud({ game, session, exit }: { game: Game; session: Session; exit:
 /** Where a phone in the queue stands. */
 export function queueStatus(lobby: LobbyView) {
   if (lobby.waiting < 2) return "Finding someone to play…";
-  return lobby.playing >= 3 ? `Waiting for a free court · ${lobby.ahead} ahead` : "Pairing…";
+  return lobby.playing >= 3 ? `Waiting for a free court, ${lobby.ahead} ahead` : "Pairing…";
 }
 
 /** Online: the queue, the match's start and pauses, and its end (rematch or not). */
@@ -698,7 +698,7 @@ function OnlineHud({ game, online, session, exit }: { game: Game; online: Online
     const status = !lobby || !queued ? "Play someone on the courts" : queueStatus(lobby);
     return (
       <div className="tn-panel">
-        <div className="tn-panel-title">Tennis · {game.profile.name}</div>
+        <div className="tn-panel-title">Tennis, {game.profile.name}</div>
         <div className="tn-panel-sub" aria-live="polite">
           {status}
         </div>
@@ -719,7 +719,7 @@ function OnlineHud({ game, online, session, exit }: { game: Game; online: Online
     );
   }
 
-  const where = `vs ${name} · Court ${view.match.court + 1}`;
+  const where = `vs ${name}, Court ${view.match.court + 1}`;
   if (link.phase === "connecting" || link.phase === "countdown") {
     return (
       <div className="tn-banner">
@@ -751,7 +751,7 @@ function OnlineEnd({ game, online, session, name, exit }: { game: Game; online: 
     game.wake();
   };
   const title =
-    mv.left === 1 ? `${name} left · You win` : mv.left === 0 ? "You left the match" : mv.winner === 0 ? "You win!" : `${name} wins`;
+    mv.left === 1 ? `${name} left. You win` : mv.left === 0 ? "You left the match" : mv.winner === 0 ? "You win!" : `${name} wins`;
   const { me, them } = link.rematch;
   const closed = link.phase === "closed";
   const note = closed

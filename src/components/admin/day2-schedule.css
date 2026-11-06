@@ -51,14 +51,20 @@
 .d2s-now b { color: var(--d2-text); font-weight: 700; }
 
 /* timeline */
-.d2s-timeline { padding: 0 9px; }
+/* overflow-x: clip is a backstop: nothing inside the timeline may widen the page
+   (a handle at left: 300% did, and a phone zoomed the whole page out). The tip
+   still shows above the rail because y stays visible. */
+.d2s-timeline { padding: 0 9px; min-width: 0; overflow-x: clip; }
+.d2s-handle[data-past="true"]::before { background: color-mix(in srgb, #f3f6fb 55%, transparent); }
 .d2s-railwrap { position: relative; height: 56px; }
 .d2s-rail { position: absolute; inset: 6px 0; display: flex; border-radius: 16px; overflow: hidden; background: var(--d2-bg); }
 .d2s-seg {
   position: relative; display: flex; align-items: center; justify-content: center; min-width: 0;
   background: color-mix(in srgb, var(--tone) 16%, transparent);
   color: color-mix(in srgb, var(--tone) 60%, #fff);
-  font-size: 11px; font-weight: 700; letter-spacing: 0.02em; white-space: nowrap; overflow: hidden;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.02em; overflow: hidden;
+  /* long names wrap onto up to 3 lines instead of being cut off; 14px each side keeps them clear of the handles */
+  padding: 0 14px; text-align: center; line-height: 1.15; text-wrap: balance; overflow-wrap: anywhere;
   border-bottom: 3px solid color-mix(in srgb, var(--tone) 55%, transparent);
 }
 .d2s-seg + .d2s-seg { border-left: 1px solid var(--d2-bg); }
@@ -232,4 +238,13 @@
 @keyframes d2s-in { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) {
   .d2s *, .d2s *::before, .d2s *::after { transition-duration: 0.01ms !important; animation: none !important; }
+}
+
+/* where the running game ends, when the plan is longer than the game */
+.d2s-end-mark {
+  position: absolute; top: 0; bottom: 0; width: 0; border-left: 2px dashed var(--d2-cyan); opacity: 0.7; pointer-events: none;
+}
+
+@media (max-width: 640px) {
+  .d2s-seg { font-size: 10px; padding: 0 12px; }
 }

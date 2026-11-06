@@ -219,7 +219,7 @@ export default function GuardianPage() {
             </p>
           ) : status.verified ? (
             <p className="text-sm font-semibold text-green-700">
-              Verified — the group’s assigned Facilitator can tap the NFC sticker to light it during the Endgame.
+              Verified. The group’s assigned Facilitator can tap the NFC sticker to light it during the Endgame.
             </p>
           ) : status.complete ? (
             <>
@@ -245,7 +245,7 @@ export default function GuardianPage() {
             </>
           ) : (
             <p className="text-sm text-ink-faint">
-              Set incomplete — the group still needs{" "}
+              Set incomplete. The group still needs{" "}
               {status.total - status.pieces} piece
               {status.total - status.pieces > 1 ? "s" : ""}.
             </p>

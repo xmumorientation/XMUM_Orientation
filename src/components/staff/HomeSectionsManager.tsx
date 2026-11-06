@@ -176,7 +176,7 @@ export function HomeSectionsManager() {
                     <Icon size={20} className="hsm-ic" aria-hidden />
                     <div className="gc-ops-body">
                       <p className="gc-ops-name hsm-title" title={s.title}>{s.title}</p>
-                      <p className="gc-ops-meta">{s.file_kind === "pdf" ? "PDF" : "Image"} · {audienceLabels(s)}</p>
+                      <p className="gc-ops-meta">{s.file_kind === "pdf" ? "PDF" : "Image"}, {audienceLabels(s)}</p>
                     </div>
                     <a className="gc-icon" href={s.url} target="_blank" rel="noopener noreferrer" aria-label={`Open ${s.title}`}>
                       <ExternalLink size={16} aria-hidden />

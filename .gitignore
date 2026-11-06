@@ -3,6 +3,8 @@
 
 # next.js
 /.next/
+/.next-oc-map-review/
+/.next-ascent*/
 /out/
 
 # production
@@ -43,3 +45,6 @@ test-results/
 
 # Tutorial videos and their source (never commit)
 /docs/videos/
+
+# Registration imports contain Student IDs and stay local.
+.private/

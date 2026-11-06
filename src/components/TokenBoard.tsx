@@ -10,7 +10,7 @@ import { usePhases } from "@/components/PhaseTimerProvider";
 import { FoldBody } from "@/components/staff/game/parts";
 import { useProjectorPlaces } from "@/components/useConfig";
 import "@/components/staff/game/game-control.css";
-import { useScoreboardPieces, type GroupPieces } from "@/components/useScoreboard";
+import { refreshScoreboard, useScoreboardState, useScoreboardPieces, type GroupPieces } from "@/components/useScoreboard";
 import { PIECES_PER_SET, PROJECTOR_LOCATIONS } from "@/lib/types";
 
 // Home's Tokens board, for every role. Day 1: each group's tokens. Day 2: like
@@ -43,6 +43,7 @@ export function TokenBoard({
   const live = phases.find((p) => p.state === "active" || p.state === "paused");
   const day: Day = picked ?? (live && (live.key === "day2" || live.is_endgame) ? 2 : 1);
   const pieces = useScoreboardPieces();
+  const scoreState = useScoreboardState();
   const held = (id: number) => pieces?.[id] ?? NO_PIECES;
   const heldCount = (id: number) => PROJECTOR_LOCATIONS.reduce((n, loc) => n + held(id)[loc].length, 0);
 
@@ -60,6 +61,19 @@ export function TokenBoard({
             Day {d}
           </button>
         ))}
+      </div>
+
+      <div role="status" className="fh-board-status">
+        {!scoreState ? "Loading scores…" : scoreState.failed ? (
+          <>
+            <span>{scoreState.rows ? "Could not refresh scores. Showing the last saved scores." : "Could not load scores. Check your connection and try again."}</span>
+            <button type="button" className="fh-btn fh-btn-ghost" onClick={refreshScoreboard}>Try Again</button>
+          </>
+        ) : scoreState.updatedAt ? (
+          <span>Last updated at {new Date(scoreState.updatedAt).toLocaleTimeString("en-MY", { hour: "2-digit", minute: "2-digit", second: "2-digit", timeZone: "Asia/Kuala_Lumpur" })}.
+            {rows.length === 0 && " No groups to show yet."}
+          </span>
+        ) : null}
       </div>
 
       {day === 1 ? (

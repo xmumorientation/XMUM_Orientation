@@ -51,6 +51,7 @@ export const AUDIT_ACTIONS: Record<string, AuditKind> = {
   "station.delete": "stations",
   "inventory.grant": "puzzles",
   "inventory.admin_give_piece": "puzzles",
+  "inventory.admin_remove_piece": "puzzles",
   "puzzle.redeem": "puzzles",
   "projector.activate": "projectors",
   "projector.activate_manual": "projectors",
@@ -63,6 +64,8 @@ export const AUDIT_ACTIONS: Record<string, AuditKind> = {
   "nfc.test.start": "projectors",
   "nfc.test.finish": "projectors",
   "nfc.test.reset": "projectors",
+  "nfc.test.reset_all": "projectors",
+  "nfc.stickers.clear_all": "projectors",
   "blindbox.buy": "blindbox",
   "blindbox.open": "blindbox",
   "blindbox.admin_gift": "blindbox",
@@ -316,6 +319,8 @@ export function describeAudit(e: AuditEntry, n: AuditNames): AuditRow {
       return { ...G, action: "Piece given", detail: str(d.item_name) };
     case "inventory.admin_give_piece":
       return { ...G, action: "Piece given (Game master)", detail: join(projectorName(d.location), `piece ${num(d.index)}`) };
+    case "inventory.admin_remove_piece":
+      return { ...G, action: "Piece removed (Game master)", detail: join(projectorName(d.location), `piece ${num(d.index)}`) };
     case "puzzle.redeem": {
       const note = str(d.nfc_note).trim();
       return { ...G, action: "Puzzle handed in", detail: join(projectorName(d.location), note && `"${note}"`) };
@@ -345,6 +350,10 @@ export function describeAudit(e: AuditEntry, n: AuditNames): AuditRow {
       };
     case "nfc.test.reset":
       return { object: "NFC test", action: "Test reset", detail: "" };
+    case "nfc.test.reset_all":
+      return { object: "NFC test mode", action: "Test data cleared", detail: `${num(d.stickers_deleted)} sticker${num(d.stickers_deleted) === 1 ? "" : "s"}, ${num(d.runs_deleted)} run${num(d.runs_deleted) === 1 ? "" : "s"}` };
+    case "nfc.stickers.clear_all":
+      return { object: "NFC stickers", action: "All stickers cleared", detail: `${num(d.stickers_deleted)} sticker${num(d.stickers_deleted) === 1 ? "" : "s"}, ${num(d.test_runs_deleted)} test run${num(d.test_runs_deleted) === 1 ? "" : "s"}` };
     case "blindbox.buy": {
       const price = num(d.price);
       return { ...G, action: "Bought a blind box", tokens: -price, detail: join(boxType(d.type), `from ${str(d.seller)}`, price === 0 && "free") };

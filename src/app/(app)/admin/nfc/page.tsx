@@ -55,7 +55,7 @@ export default function AdminNfcPage() {
       .from("nfc_tokens")
       .select("id, location, label, used_at, used_by_group, created_at, test_run_id")
       .order("id", { ascending: false });
-    if (tokensError) setError(`Unable to load issued tokens. ${tokensError.message}`);
+    if (tokensError) setError(`Unable to load issued stickers. ${tokensError.message}`);
     else setExisting((data as NfcTokenRow[]) ?? []);
     const { data: projectors, error: projectorsError } = await supabase
       .from("projectors").select("activated_by_nfc_id");
@@ -168,10 +168,36 @@ export default function AdminNfcPage() {
     else await load();
   }
 
+  async function resetTestMode() {
+    if (!window.confirm("Reset NFC Test Mode? This deletes every test run and test sticker, and clears their test activations and redemptions. Production stickers stay untouched.")) return;
+    setBusy(true);
+    setError(null);
+    const { error } = await supabase.rpc("fn_admin_reset_nfc_test_mode");
+    setBusy(false);
+    if (error) setError(testRunError(error.message));
+    else {
+      setMinted([]);
+      await load();
+    }
+  }
+
+  async function clearAllStickers() {
+    if (!window.confirm("Clear all issued stickers? This permanently deletes every sticker, including used stickers, and clears any projector activation linked to a sticker. This cannot be undone.")) return;
+    setBusy(true);
+    setError(null);
+    const { error } = await supabase.rpc("fn_admin_clear_nfc_stickers");
+    setBusy(false);
+    if (error) setError(testRunError(error.message));
+    else {
+      setMinted([]);
+      await load();
+    }
+  }
+
   return (
     <div className="space-y-4">
       <PageTitle
-        title="NFC Activation Tokens"
+        title="NFC Activation Stickers"
         subtitle="One-time signed URLs for the physical stickers"
       />
       <ErrorBanner message={error} />
@@ -181,6 +207,7 @@ export default function AdminNfcPage() {
           <h2 className="font-semibold">NFC Test Mode</h2>
           <p className="mt-1 text-sm text-ink-soft">Creates a test-only Guardian redemption so the group can exercise the real sticker activation without waiting for Endgame. The group must scan while signed in to its account.</p>
         </div>
+        {testRuns.length > 0 && <button type="button" disabled={busy} onClick={resetTestMode} className="btn-danger self-start">Reset Test Mode</button>}
         <div className="grid gap-3 sm:grid-cols-3">
           <label className="label mb-0">Test Group
             <select className="input mt-1" value={groupId} onChange={(e) => setGroupId(Number(e.target.value))}>
@@ -238,7 +265,7 @@ export default function AdminNfcPage() {
 
       <div className="grid items-start gap-4 lg:grid-cols-[22rem_minmax(0,1fr)]">
         <Card className="space-y-3">
-          <h2 className="font-semibold">Generate Tokens</h2>
+          <h2 className="font-semibold">Generate Stickers</h2>
           <div className="grid grid-cols-3 gap-2">
             {PROJECTOR_LOCATIONS.map((loc) => (
               <button
@@ -270,14 +297,15 @@ export default function AdminNfcPage() {
             />
           </div>
           <button disabled={busy} onClick={() => mint()} className="btn-primary w-full">
-            Generate {count} Token{count > 1 ? "s" : ""}
+            Generate {count} Sticker{count > 1 ? "s" : ""}
           </button>
         </Card>
 
         <Card className="overflow-x-auto p-0">
-          <p className="border-b border-paper-200 px-4 py-3 text-sm font-semibold">
-            Issued tokens ({existing.length})
-          </p>
+          <div className="flex items-center justify-between gap-3 border-b border-paper-200 px-4 py-3">
+            <p className="text-sm font-semibold">Issued Stickers ({existing.length})</p>
+            {existing.length > 0 && <button type="button" disabled={busy} onClick={clearAllStickers} className="btn-danger text-xs">Clear All Stickers</button>}
+          </div>
           <table className="w-full min-w-[420px] text-left text-sm">
             <thead>
               <tr className="border-b border-paper-200 text-xs font-bold uppercase tracking-wide text-ink-faint">
@@ -322,7 +350,7 @@ export default function AdminNfcPage() {
               {existing.length === 0 && (
                 <tr>
                   <td colSpan={4} className="px-4 py-8 text-center text-ink-faint">
-                    No tokens issued yet.
+                    No stickers issued yet.
                   </td>
                 </tr>
               )}

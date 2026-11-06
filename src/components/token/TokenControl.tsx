@@ -98,6 +98,11 @@ export default function TokenControl({ scoreboardOnly = false }: { scoreboardOnl
 
   // ── Scoreboard Controls ───────────────────────────────────────────────────
   const [scoreSearch, setScoreSearch] = useState("");
+  const [adjustingGroup, setAdjustingGroup] = useState<TokenGroup | null>(null);
+  const [tokenChange, setTokenChange] = useState(0);
+  const [tokenReason, setTokenReason] = useState("");
+  const [adjustmentReady, setAdjustmentReady] = useState(false);
+  const [adjustmentError, setAdjustmentError] = useState<string | null>(null);
 
   // ── Audit Log Filters ─────────────────────────────────────────────────────
   const [auditGroupFilter, setAuditGroupFilter] = useState<string>("all");
@@ -380,6 +385,53 @@ export default function TokenControl({ scoreboardOnly = false }: { scoreboardOnl
     }
   };
 
+  function startTokenAdjustment(group: TokenGroup) {
+    setAdjustingGroup(group);
+    setTokenChange(0);
+    setTokenReason("");
+    setAdjustmentReady(false);
+    setAdjustmentError(null);
+  }
+
+  function reviewTokenAdjustment() {
+    if (!adjustingGroup) return;
+    if (!Number.isInteger(tokenChange) || tokenChange === 0 || Math.abs(tokenChange) > 50) {
+      setAdjustmentError("Enter a whole-number token change from -50 to +50, other than 0.");
+      return;
+    }
+    if (adjustingGroup.current_tokens + tokenChange < 0) {
+      setAdjustmentError(`${adjustingGroup.group_name} cannot have a negative token balance.`);
+      return;
+    }
+    setAdjustmentError(null);
+    setAdjustmentReady(true);
+  }
+
+  async function confirmTokenAdjustment() {
+    if (!adjustingGroup || !adjustmentReady) return;
+    setBusy(true);
+    setErrorMsg(null);
+    setAdjustmentError(null);
+    const { error } = await supabase.rpc("fn_admin_token_adjust", {
+      p_group_id: adjustingGroup.group_id,
+      p_delta: tokenChange,
+      p_reason: tokenReason.trim(),
+      p_idempotency_key: crypto.randomUUID(),
+    });
+    setBusy(false);
+    if (error) {
+      setAdjustmentError(error.message.includes("INVALID_DELTA")
+        ? "Enter a whole-number token change from -50 to +50, other than 0."
+        : error.message);
+      return;
+    }
+    const change = tokenChange > 0 ? `+${tokenChange}` : String(tokenChange);
+    notifySuccess(`${adjustingGroup.group_name}: ${change} tokens recorded.`);
+    setAdjustingGroup(null);
+    setAdjustmentReady(false);
+    await loadAllData(true);
+  }
+
   return (
     <div className="tk space-y-6 pb-6" aria-busy={loading}>
       {/* ── Top Header & Global Actions ────────────────────────────────────────── */}
@@ -555,88 +607,84 @@ export default function TokenControl({ scoreboardOnly = false }: { scoreboardOnl
         </>
       )}
 
-      {/* ────────────────────────────────────────────────────────────────────────── */}
-      {/* SECTION 2: LIVE 12-GROUPS SCOREBOARD & LEADERBOARD (CLEAN WHITE CARDS)    */}
-      {/* ────────────────────────────────────────────────────────────────────────── */}
-      <div className="space-y-4">
-        {/* Scoreboard Metrics & Section Title */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <h2 className="text-xl font-black text-slate-900 tracking-tight">
-            Live Group Scoreboard & Blueprint Matrix
-          </h2>
-
-          {/* Quick Metrics Chips */}
-          <div className="flex items-center gap-2">
-            <span className="chip bg-white border border-slate-200 text-slate-700 text-xs font-bold shadow-sm">
-              Total Tokens: <strong className="text-amber-600 ml-1 font-black">{totalTokens}</strong>
-            </span>
+      <section className="tk-scoreboard" aria-labelledby="token-scoreboard-title">
+        <div className="tk-scoreboard-head">
+          <div>
+            <p className="tk-kicker">Live Scores</p>
+            <h2 id="token-scoreboard-title">Group Tokens and Puzzle Progress</h2>
+            <p>Each location shows the number of puzzle pieces the group has collected.</p>
           </div>
+          <dl className="tk-scoreboard-total">
+            <dt>Total Tokens</dt>
+            <dd>{totalTokens}</dd>
+          </dl>
         </div>
 
-        {/* Search & Sort Controls (Clean White Background) */}
-        <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between rounded-2xl bg-white p-3.5 border border-slate-200 shadow-sm">
-          <div className="relative flex-1">
-            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Search group name or number (1-10)..."
-              value={scoreSearch}
-              onChange={(e) => setScoreSearch(e.target.value)}
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-3.5 py-2 text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:border-cyan-500 focus:bg-white focus:outline-none"
-            />
-          </div>
+        <div className="tk-scoreboard-tools">
+          <Search size={18} aria-hidden />
+          <input
+            type="text"
+            placeholder="Search Group Name or Number"
+            aria-label="Search Groups"
+            value={scoreSearch}
+            onChange={(e) => setScoreSearch(e.target.value)}
+          />
         </div>
 
-        <div className="flex flex-col gap-2">
+        <ol className="tk-group-list">
           {sortedGroups.map((grp) => {
             return (
-              <div
+              <li
                 key={grp.group_id}
-                className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl border border-slate-200 bg-white px-3 py-3 shadow-sm"
+                className="tk-group-row"
               >
-                <div className="flex min-w-0 flex-1 items-center gap-2">
+                <div className="tk-group-name">
                   <GroupBadge id={grp.group_id} color={grp.color} />
-                  <span className="truncate font-black text-slate-900" title={grp.display_name?.trim() || grp.group_name}>
-                    {grp.display_name?.trim() || grp.group_name}
+                  <span>
+                    <b title={grp.display_name?.trim() || grp.group_name}>{grp.display_name?.trim() || grp.group_name}</b>
+                    <small>Group {grp.group_id}</small>
                   </span>
                 </div>
-
-                <div className="flex items-center gap-1.5 text-lg font-black tabular-nums text-amber-600">
-                  <Coins size={16} className="text-amber-500" />
-                  {grp.current_tokens}
+                <div className="tk-score-stat">
+                  <span>Tokens</span>
+                  <b><Coins size={16} aria-hidden />{grp.current_tokens}</b>
                 </div>
-                {/* Phones: puzzles and pieces drop to a second line (indented under
-                    the name) so the group name keeps the first line's width. */}
-                <div className="flex basis-full items-center gap-x-4 gap-y-2 pl-10 sm:basis-auto sm:pl-0">
-                <div className="flex items-center gap-1 text-sm font-black tabular-nums text-indigo-600">
-                  <Layers size={14} />
-                  {grp.puzzles_count || 0}/15
+                <div className="tk-score-stat">
+                  <span>Puzzle Pieces</span>
+                  <b><Layers size={16} aria-hidden />{grp.puzzles_count || 0}<small>/15</small></b>
                 </div>
-                <div className="flex flex-wrap gap-1">
+                <div className="tk-piece-list" aria-label={`${grp.group_name} puzzle pieces by location`}>
                   {[1, 2, 3].map((locId) => {
                     const count = grp.location_pieces?.[locId]?.length || 0;
                     const meta = LOCATION_NAMES[locId];
                     return (
                       <span
                         key={locId}
-                        className={cn(
-                          "rounded-md border px-1.5 py-0.5 text-[10px] font-bold",
-                          count > 0
-                            ? "border-indigo-200 bg-indigo-50 text-indigo-800"
-                            : "border-slate-100 bg-slate-50 text-slate-400"
-                        )}
+                        title={meta.name}
+                        aria-label={`${meta.name}: ${count} pieces`}
+                        data-has-pieces={count > 0 || undefined}
                       >
-                        {meta.short} {count}
+                        <b>{meta.short}</b><em>{count}</em>
                       </span>
                     );
                   })}
                 </div>
-                </div>
-              </div>
+                {isAdmin && !scoreboardOnly && (
+                  <button
+                    type="button"
+                    className="tk-adjust"
+                    aria-label={`Adjust Tokens for ${grp.display_name?.trim() || grp.group_name}`}
+                    onClick={() => startTokenAdjustment(grp)}
+                  >
+                    Adjust Tokens
+                  </button>
+                )}
+              </li>
             );
           })}
-        </div>
-      </div>
+        </ol>
+        {sortedGroups.length === 0 && <p className="tk-empty">No groups match this search.</p>}
+      </section>
 
       {!scoreboardOnly && (
         <>
@@ -757,7 +805,7 @@ export default function TokenControl({ scoreboardOnly = false }: { scoreboardOnl
                         {log.transaction_type}
                       </span>
                     </td>
-                    <td className="py-2.5 text-slate-600">{log.notes || "—"}</td>
+                    <td className="py-2.5 text-slate-600">{log.notes || "Not available"}</td>
                     {isAdmin && (
                       <td className="py-2.5 text-right">
                         <div className="flex items-center justify-end gap-1">
@@ -897,6 +945,40 @@ export default function TokenControl({ scoreboardOnly = false }: { scoreboardOnl
               </div>
             </form>
           </div>
+        </div>
+      )}
+
+      {isAdmin && adjustingGroup && (
+        <div className="tk-adjust-backdrop" role="presentation">
+          <section className="tk-adjust-sheet" role="dialog" aria-modal="true" aria-labelledby="token-adjust-title">
+            <div>
+              <p className="tk-kicker">Token Adjustment</p>
+              <h2 id="token-adjust-title">{adjustingGroup.display_name?.trim() || adjustingGroup.group_name}</h2>
+              <p>Current balance: <b>{adjustingGroup.current_tokens} tokens</b></p>
+            </div>
+            <label>
+              Token Change
+              <input type="number" inputMode="numeric" min={-50} max={50} aria-label="Token change" aria-describedby={adjustmentError ? "token-adjustment-error" : undefined} value={tokenChange} onChange={(e) => { setTokenChange(Number(e.target.value)); setAdjustmentReady(false); setAdjustmentError(null); }} />
+            </label>
+            <label>
+              Reason
+              <input type="text" maxLength={160} aria-label="Reason" placeholder="e.g. Correcting a station result" value={tokenReason} onChange={(e) => { setTokenReason(e.target.value); setAdjustmentReady(false); setAdjustmentError(null); }} />
+            </label>
+            {adjustmentError && <p id="token-adjustment-error" role="alert" className="rounded-xl border border-red-400/35 bg-red-950/40 px-3 py-2 text-sm font-medium text-red-100">{adjustmentError}</p>}
+            {adjustmentReady && (
+              <p className="tk-adjust-review">
+                {adjustingGroup.current_tokens} {tokenChange > 0 ? `+ ${tokenChange}` : `− ${Math.abs(tokenChange)}`} = <b>{adjustingGroup.current_tokens + tokenChange}</b> tokens
+              </p>
+            )}
+            <div className="tk-adjust-actions">
+              <button type="button" className="btn-secondary" disabled={busy} onClick={() => { setAdjustingGroup(null); setAdjustmentError(null); }}>Cancel</button>
+              {adjustmentReady ? (
+                <button type="button" className="btn-primary" disabled={busy} onClick={confirmTokenAdjustment}>Confirm Adjustment</button>
+              ) : (
+                <button type="button" className="btn-primary" disabled={busy} onClick={reviewTokenAdjustment}>Review Adjustment</button>
+              )}
+            </div>
+          </section>
         </div>
       )}
     </div>

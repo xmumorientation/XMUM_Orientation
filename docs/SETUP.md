@@ -47,6 +47,8 @@ Use the guarded copy above so existing local keys are not overwritten.
 > ⚠️ Set `NEXT_PUBLIC_SITE_URL` to the final production domain *before*
 > minting sticker tokens.
 
+Local only (do not add it to Vercel): `TEST_ACCOUNT_PASSWORD`, the password of the test accounts (`*.test@xmu.edu.my`, `*@test.com`). Generate one with `openssl rand -base64 24`, then run `node --experimental-websocket --env-file=.env.local scripts/seed-test-accounts.mjs` to create the accounts or reset them to it. The login page's one-tap demo logins use it on `npm run dev` only.
+
 On Vercel, add the same variables under Project → Settings →
 Environment Variables.
 

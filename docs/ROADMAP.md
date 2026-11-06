@@ -7,7 +7,7 @@ For everything already merged, day by day since the first commit, see [CHANGELOG
 
 > **From Ben:** when you finish your work, write down what you completed in the "Done" section at the end of this file, so the next teammate can see it. Do this for partly finished items too: say which parts are done and which are left.
 
-Last updated: 2026-11-04
+Last updated: 2026-11-06
 
 ## Status key
 
@@ -75,6 +75,12 @@ Parked for now. Fix it before real Freshie data and the live game go on the site
 
 **Update:** the `bonding-session` branch appears to fix most of this item. See "Read before merging `bonding-session`" above. This item describes `main` as it is today.
 
+**Live database checked 2026-11-06 (Ben, SQL Editor):** the live database is not what `main`'s migrations say. `bonding-session`'s migrations ran on it, so:
+- A and C are fixed live: `token_logs`, `puzzle_inventory` and `game_config_rules` have role-scoped policies (from `bonding-session` 0018 and `60c8ac1`), not the `allow all` ones; `freshies` is gone (0041).
+- D is fixed live: `fn_set_total_groups` checks `has_permission('accounts.manage')` and is not granted to anon; `fn_admin_update_freshie` / `fn_admin_delete_freshie` do not exist.
+- New and fixed the same day: `fn_provision_group_login` (0034) was callable by anon and authenticated (0034 revoked it from `public` only); migration 0125 records the fix. Every other security definer function anon or authenticated can call was reviewed: the rest are triggers, read-only public data, checked inside (or through a checked function), or harmless.
+- Still to do: those policies and the 0018 checks are not in `main`'s migrations, so a database rebuilt from `main` would be open again. Port them into a `main` migration.
+
 ### Why this matters
 
 The Supabase anon key (`NEXT_PUBLIC_SUPABASE_ANON_KEY`) is shipped to every browser, so anyone can copy it from the site.
@@ -89,7 +95,7 @@ Migrations 0012 and 0013 caused most of these gaps. They replaced the earlier ro
 - Source: [0013_fix_token_logs_rls.sql:233-241](../supabase/migrations/0013_fix_token_logs_rls.sql#L233-L241).
 - Risk: data leak (a privacy and PDPA issue), and the roster can be edited or wiped.
 
-**B. Admin accounts can be taken over.** `POST /api/admin/seed-test-accounts` does not check the caller's role. Any logged-in user, including a Freshie, can call it. It creates the hardcoded test accounts, or resets their passwords, and the admin test account is one of them.
+**B. ~~Admin accounts can be taken over.~~ Fixed 2026-11-06: the route is removed.** `POST /api/admin/seed-test-accounts` does not check the caller's role. Any logged-in user, including a Freshie, can call it. It creates the hardcoded test accounts, or resets their passwords, and the admin test account is one of them.
 - Source: [seed-test-accounts/route.ts:35](../src/app/api/admin/seed-test-accounts/route.ts#L35).
 - Risk: anyone can reset the admin password and log in as admin.
 
@@ -339,6 +345,83 @@ Since 2026-10-20 (branch `gm-redesign`) GM and Guardian GM have no blind box QR 
 - On the Projectors layer a sign floats over each zone (key glyph, code name, area; the key's colour when lit, grey with "OFF" when not). Tapping it opens the projector's card, which works before `fn_map_lightbulbs` sends an unlit row (code name and zone only, never the place).
 - Dusk (6:00, 18:00) and night (19:00 to 6:00) follow the 3D map's Auto clock (`mapTimeAt`, [mapTime.ts](../src/lib/mapTime.ts), now shared by both views): the map darkens, off zones fade and each lit ride casts a pool of light, on both layers. `?time=day|sunset|night` fixes the time for testing.
 - Admin's Move bulb is removed (the spots are fixed). `projectors.map_x` / `map_y` are no longer read by the map. No migration.
+
+### Unlisted site: no search engine indexing, 2026-11-06 (Ben, branch `main`)
+No migration. The site is reachable by link only: every page has `robots: noindex, nofollow` (root `layout.tsx` metadata) and every response the `X-Robots-Tag: noindex, nofollow` header (`next.config.ts`), and `sitemap.ts` is removed. `robots.txt` still allows crawling, so search engines can see the noindex and drop pages they indexed before. This hides the site from search only; it is not access control (item 3 still applies). Link previews (WhatsApp, Instagram) still work.
+
+### Security: Seed Test Accounts route removed, 2026-11-06 (Ben, branch `main`)
+No migration. `/api/admin/seed-test-accounts` (POST and GET) had no role check: any signed-in account could reset the test accounts' passwords, the admin test account included, to the values in the code. Nothing in the app called it, so it is deleted (item 3 B). Create or reset test accounts locally with `node --experimental-websocket --env-file=.env.local scripts/seed-test-accounts.mjs`. The test passwords were in the repo, so on 2026-11-06 every test account on the live database got a new password, `TEST_ACCOUNT_PASSWORD` in `.env.local` (gitignored); the seed script and the local demo logins read it from there, and the script now only resets an existing account's password, leaving its profile alone. That run also created `freshie@test.com`, `hof@test.com` and `hogm@test.com`, which had not existed (delete them if unused). Still to do: check the test accounts' sign-in history in Supabase.
+
+### David, 2026-11-06 (Login support links)
+- Removed feedback and Tech Team links from sign-in errors pending a later discussion of their placement. Error messages remain visible.
+
+### David, 2026-11-06 (Expandable Faci group QR)
+- Made the Group Code QR tappable. It expands within the card for easier scanning and returns to its original size on the next tap, with an accessible button label and reduced-motion support.
+
+### David, 2026-11-06 (Tech Team WhatsApp template)
+- Organised the WhatsApp message into issue selection, description and automatic details, with a prompt encouraging users to attach a screenshot.
+- Simplified the Contact Tech Team WhatsApp message to ask only for an issue category and brief description. The current page and an approximate device/browser label are added automatically when the user opens WhatsApp.
+- Grouped the profile menu's feedback and Tech Team links under a subdued, collapsed Help & Feedback row so support remains available without competing with account actions.
+
+### David, 2026-11-06 (Contextual help and mobile touch)
+- Removed the Offline Guide link from the public footer; the offline notice and existing menu entry remain available.
+- Removed always-visible feedback and Tech Team links from auth screens and account menus. Help links now appear with login, recovery, scanner or game-control errors.
+- Applied transparent tap highlighting to links and buttons while retaining keyboard focus outlines. The iPhone touch effect still needs a real-device check.
+
+### David, 2026-11-06 (Login, game and scan recovery)
+- Added clear staff login errors and recovery guidance, including network failures. GM Day 2 shows the first blocking check near Start Game with actionable guidance.
+- Added QR recovery guidance and made Freshie Home show loading or retry when puzzle pieces are unavailable instead of presenting zero pieces. Other inventory views have not been visually checked in failure states.
+
+### David, 2026-11-06 (Feedback and Tech Team)
+- Added Google Form feedback and a WhatsApp Tech Team contact to login screens and Freshie, Faci, GM and staff account menus. Links open separately; sending a message remains the user’s choice.
+
+### David, 2026-11-06 (UX copy and scoreboard status)
+- Removed em dashes and middle dots from code-owned visible copy. Reworded messages and missing-value labels; Admin-authored database content was not changed.
+- Home token boards now show loading, last successful update time and refresh errors with retry. Failed refreshes retain the last scores and timestamp. All scoreboard readers still share one query, realtime subscription and poll.
+- GM Day 2 keeps Start Game as the button label, with the entry fee and charge-on-submit explanation immediately above it and linked through aria-describedby. Gameplay behavior is unchanged.
+- Typecheck and three scoreboard status tests passed. Installed-app/NFC behavior and a complete real-phone visual review still need validation.
+
+### David, 2026-11-06 (Freshie navigation and Items)
+- Removed Replay Demo from Items and its preview. Removed the Freshie FAQ navigation and redirect Freshie visits to Home; the shared FAQ and Admin editor remain available to other roles.
+- Changed Home and game progress fills to animate with transforms instead of width, keeping their existing timing and progress calculations.
+
+### David, 2026-11-05 (sponsor logo and tennis spectators)
+- Enlarged Jack 'n Jill on the signed-in Home credits to match the Welcome page. Tennis cards list the players on each active court, including Bot matches; older clients that do not send names still show their courts. Needs live deployment and real-device multiplayer verification.
+
+### Map: OC shares its location, everyone sees staff pins, red staff pins and blue group pins, 2026-11-05 (Ben, branch `map3d-a5-carpark`)
+Migration `0124_staff_location_oc_everyone` (run on the live database, 2026-11-05).
+- OC can turn on Share Location like HOF and HOGM (0103 refused it, though the app showed OC the switch).
+- HOF, OC and HOGM pins follow the group-location rule (0108): every signed-in account sees them, Freshies included.
+- Staff pins are a red map pin (`STAFF_PIN_COLOR`, `staffPinPath()` in `src/lib/staffLocation.ts`) with a white hole and a red name tag, on 2D (pulsing halo at the tip), 3D (`staffArt()`) and the "Staff on the Map" list.
+- Every group pin is one blue (`GROUP_PIN_COLOR` in `mapGeo.ts`, replacing the 8-colour cycle); the number tells groups apart, stale pins stay grey. Group theme colours on the Freshie and Faci pages are unchanged.
+- Checked: typecheck, lint, map tests; mock renders only. Not yet seen on a phone with real sharing.
+
+### Map: the road to the A-row's basement car park, the track's ends, the A-row's forecourts, B1's east side, 2026-11-05 (Ben, branch `map3d-a5-carpark`)
+No migration. Ben: the art's road between the track and A5 stopped in the lawn; really it goes down into the car park under the A-row.
+- The road now leaves the campus road where the imagery has it, runs north and bends west down a ramp into the car park, between a white house at the terrace's east end (green overgrown roof, two grey roller shutters, Ben's photos) and a white wall. A grey paved way climbs beside the ramp to the A-row's walk.
+- Brick walks on both sides (the east one runs on to the lake), a palm row along the lawn and a belt of trees toward the track. The art road's stretch through the fence to the outer road is gone, and the fence and the tree strip there are whole.
+- The ramp is really dug in (3.5 m at the portal): the ground is cut away over it, its floor wears the road's paint, and pins and taps follow it. The way in glows faintly at night.
+- Both ends of the track's infield are red now (the south end was green).
+- The forecourts of A1, A2, A4 and A5's east side are centred on their porches (they followed the imagery, 1 to 7 m to one side).
+- In front of A1 the campus road is grey paving past its bend, so it runs into the A-row's walk and A1's forecourt instead of the asphalt stopping short beside it; the walk now starts at the road's end.
+- B1's east side, toward the east gate, is paved in pale terracotta pavers like Ben's photo (it was lawn).
+- Code: `BASEMENT_*` in `geo.ts`, `basement.tsx`; details in the session handoff, "The road to the A-row's basement car park". Checked on `/map3d` from above, from the track side, from the lawn, into the portal, at night and at phone size in lite mode; `tests/map3d/basement.test.ts`; `tsc` and `eslint` clean for the map.
+
+### David, 2026-11-05 — Public Offline Guide
+- Added a standalone offline guide with retry, saved public Schedule, static campus map and recovery instructions. The Welcome menu/footer link to it; an app-wide offline notice preserves the original page by opening the guide separately.
+- Matched the existing Vortexa logo, fonts, night palette, date picker, timeline cards and category tags; added mobile guide tabs and expandable staff help. Saved assets include the logo and fonts.
+- Replaced the old 2D reference with a still captured from the existing online 3D scene and its default camera, avoiding the old empty brown area. Added a visible Technical Development Team contact reminder for staff.
+- Simplified the guide: Wi-Fi-off illustration, prominent You’re Offline heading, one recovery action, concise saved timestamps and collapsed help. Distinguishes actual device offline, failed navigation while onLine is true, and a newly detected connection. App banner uses the same short icon/status treatment.
+- Added a narrowly scoped service worker: precaches guide files only, provides failed-navigation fallback, and retains successful public timetable snapshots. No signed-in pages, game writes or private data are cached. No database migration.
+- Validation: four service-worker boundary tests, typecheck, changed-file lint and production build passed (existing 2D-map image lint warning remains). Chromium checks at 412px and 1280px verified homepage preparation, offline refresh/new tab, saved Schedule and labelled map, failed-update retention, reconnect/retry and the first-visit limitation. Design detector is clear; no ignores added.
+- Release checks on current main: production build and final Chromium offline/reconnect flow passed; full suite had 392 passed and one pre-existing Admin +5 label assertion failure, reproduced on a clean origin/main copy.
+- Preparation and cache versioning: [offline-guide.md](offline-guide.md). Physical-phone and venue-network rehearsal remains pending. Release uses the existing GitHub-to-Vercel integration; live status is checked separately after push.
+
+### David, 2026-11-05 — Welcome Page Polish
+- Enlarged the Jack 'n Jill sponsor logo and made Schedule category tags consistent in width and alignment.
+
+### David, 2026-11-04 — Checklist Mobile Spacing
+- Restored the left inset for expanded checklist forms on narrow screens, including Manual Location Update and Take Attendance.
 
 ### David, 2026-11-04 — CSV Import Dialog (Local)
 

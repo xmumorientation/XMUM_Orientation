@@ -9,7 +9,7 @@ import {
   BLOCKS,
   EXTENT,
   NORTH_STAIRS,
-  PLATEAU,
+  PLATEAU_BOX,
   PLATEAU_H,
   TERRACE,
   UNITS_PER_M,
@@ -47,12 +47,9 @@ export function plateauSurface(lite: boolean, minY = 0): THREE.BufferGeometry {
   const cached = surfaces.get(key);
   if (cached) return cached;
   const cell = lite ? 0.5 : 0.25;
-  const { outline, slope } = PLATEAU;
-  const grow = Math.max(...slope);
-  const x0 = Math.min(...outline.map((p) => p[0])) - grow;
-  const z0 = Math.min(...outline.map((p) => p[1])) - grow;
-  const nx = Math.ceil((Math.max(...outline.map((p) => p[0])) + grow - x0) / cell) + 1;
-  const nz = Math.ceil((Math.max(...outline.map((p) => p[1])) + grow - z0) / cell) + 1;
+  const [x0, z0, x1, z1] = PLATEAU_BOX;
+  const nx = Math.ceil((x1 - x0) / cell) + 1;
+  const nz = Math.ceil((z1 - z0) / cell) + 1;
   const pos = new Float32Array(nx * nz * 3);
   const uv = new Float32Array(nx * nz * 2);
   const ys = new Float32Array(nx * nz);

@@ -52,14 +52,10 @@
   .fh { --fh-bottom: 0px; --fh-top: 24px; }
 }
 
-/* One stop per screen, this page only (class set by FreshieHome): mandatory
-   snap (one scroll = next stop) on large screens, gentle proximity snap on
-   phones and tablets so taller stops can still be read. The snap sits on
-   AppShell's .app-scroll, the scroller on Freshie / Faci pages. */
-html.fh-snap .app-scroll { scroll-snap-type: y proximity; }
-@media (min-width: 1024px) and (min-height: 700px) {
-  html.fh-snap .app-scroll { scroll-snap-type: y mandatory; }
-}
+/* Home pages settle on each stop at every screen size. Oversized stops remain
+   scrollable within their bounds using native scroll snapping. */
+html.fh-snap .app-scroll { scroll-snap-type: y mandatory; }
+html.fh-snap .fh-stop { scroll-snap-stop: always; }
 @media (prefers-reduced-motion: reduce) {
   html.fh-snap .app-scroll { scroll-snap-type: none; }
 }
@@ -123,13 +119,14 @@ html.fh-snap { overflow-x: hidden; }
 }
 .fh-credits-sep { width: 1px; flex: none; background: var(--fh-line-2); }
 .fh-credits-label { font-size: clamp(9px, 2.4vw, 10.5px); letter-spacing: 0.24em; text-transform: uppercase; color: var(--fh-mute); white-space: nowrap; }
-.fh-credits-example { text-transform: none; letter-spacing: 0.08em; }
-@media (max-width: 479px) { .fh-credits-example { display: block; margin-top: 2px; } }
 /* White-on-transparent copy of public/xmum-logo-horizontal.png. */
 .fh-credits-xmum { height: clamp(24px, 6.5vw, 38px); width: auto; max-width: 100%; object-fit: contain; opacity: 0.92; }
-.fh-credits-sponsors { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px 16px; }
+.fh-credits-sponsors { list-style: none; width: min(208px, 100%); margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: center; gap: 8px 12px; }
+.fh-credits-sponsors li { min-width: 0; display: flex; justify-content: center; align-items: center; }
 /* Sponsor logos keep their own colours, as supplied. */
-.fh-sponsor-logo { height: clamp(32px, 8.5vw, 46px); width: auto; max-width: 180px; object-fit: contain; border-radius: 7px; }
+.fh-sponsor-logo { display: block; height: clamp(30px, 6.5vw, 44px); width: auto; max-width: 100%; object-fit: contain; }
+.fh-sponsor-logo--taobao { height: clamp(24px, 5vw, 34px); }
+.fh-sponsor-logo--jack-n-jill { height: clamp(40px, 9vw, 58px); }
 .fh-sponsor-ph { font-weight: 600; font-size: 14px; color: var(--fh-mute); }
 /* Leave room under the last stop so its content sits above the city. */
 .fh > .fh-stop:last-of-type { padding-bottom: clamp(270px, 26vw, 340px); }
@@ -196,9 +193,11 @@ html.fh-snap { overflow-x: hidden; }
    Normal, Challenge, Normal, Funfair, sized by Admin's inner schedule. */
 .fa-track { display: flex; gap: 3px; height: 3px; max-width: 1000px; margin: 0 auto; padding: 0 16px 6px; box-sizing: content-box; }
 .fa-seg { --k: var(--fh-accent); position: relative; flex-basis: 0; height: 3px; border-radius: 3px; overflow: hidden; background: color-mix(in srgb, var(--k) 16%, var(--fh-ink-3)); }
-.fa-seg[data-seg="funfair"] { --k: var(--fh-lilac); }
-.fa-seg > span { position: absolute; inset: 0 auto 0 0; border-radius: 3px; background: var(--k); transition: width 1s linear; }
-.fa-seg[data-seg="funfair"] > span { background: var(--fh-holo); }
+/* Day 2 segments, by what they open (the same for every group): green before Hard, orange with Hard open, red for the funfair. */
+.fa-seg[data-seg="normal"] { --k: #2fd27a; }
+.fa-seg[data-seg="hard"] { --k: #fc9e3d; }
+.fa-seg[data-seg="funfair"] { --k: #ff3b4e; }
+.fa-seg > span { position: absolute; inset: 0; border-radius: 3px; background: var(--k); transform-origin: left; transition: transform 1s linear; }
 .fa-seg[data-now] > span { box-shadow: 0 0 8px var(--k); }
 @media (min-width: 1024px) {
   .fh.fa-head { display: none; }
@@ -260,6 +259,11 @@ html.fh-snap { overflow-x: hidden; }
 .fh-menu .fh-menu-edit { display: flex; align-items: center; justify-content: center; gap: 8px; }
 .fh-menu .fh-menu-edit:hover { border-color: var(--fh-accent); color: var(--fh-accent); }
 .fh-menu .fh-menu-edit + button { margin-top: 8px; }
+.fh-menu .fh-menu-help-toggle { display: flex; align-items: center; justify-content: space-between; min-height: 36px; margin-top: 8px; padding: 0 4px; border: 0; border-radius: 6px; color: var(--fh-mute); font-size: 12px; font-weight: 500; }
+.fh-menu .fh-menu-help-toggle:hover { border: 0; color: var(--fh-text); }
+.fh-menu .support-links-menu { display: grid; gap: 0; justify-content: stretch; margin: 0; padding-left: 8px; font-size: 12px; }
+.fh-menu .support-links-menu a { min-height: 34px; justify-content: flex-start; color: var(--fh-mute); font-size: inherit; font-weight: 500; text-decoration: none; }
+.fh-menu .support-links-menu a:hover, .fh-menu .support-links-menu a:focus-visible { color: var(--fh-accent); }
 /* Faci: the header button is their FaciAvatar (same photo or initials as their card). */
 .fh-avatar.fh-avatar-me { width: auto; height: auto; padding: 0; background: none; box-shadow: none; border-radius: 50%; }
 .fh-avatar.fh-avatar-me:focus-visible { outline-offset: 2px; }
@@ -272,7 +276,7 @@ html.fh-snap { overflow-x: hidden; }
    when the label changes; otherwise the fill shrinks before it grows. */
 .fh-stopbar > span:last-child { flex: none; width: 12.5ch; text-align: right; white-space: nowrap; }
 .fh-stopbar-track { flex: 1; height: 4px; border-radius: 4px; background: var(--fh-ink-3); overflow: hidden; }
-.fh-stopbar-track span { display: block; height: 100%; background: var(--fh-holo); transition: width 0.35s ease; }
+.fh-stopbar-track span { display: block; width: 100%; height: 100%; background: var(--fh-holo); transform-origin: left; transition: transform 0.35s ease; }
 @media (min-width: 1024px) {
   /* TopNav carries the logo, role and account menu here; no stop bar (option A). */
   .fh-head { display: none; }
@@ -341,7 +345,7 @@ html.fh-snap { overflow-x: hidden; }
 .fh-phasecard > b { display: block; font-size: 26px; margin-top: 6px; }
 .fh-phasecard-time { font-size: clamp(44px, 12vw, 56px); line-height: 1; margin-top: 4px; font-variant-numeric: tabular-nums; }
 .fh-phasecard-bar { height: 6px; border-radius: 6px; background: var(--fh-ink-3); overflow: hidden; margin-top: 12px; }
-.fh-phasecard-bar i { display: block; height: 100%; background: var(--fh-holo); transition: width 1s linear; }
+.fh-phasecard-bar i { display: block; width: 100%; height: 100%; background: var(--fh-holo); transform-origin: left; transition: transform 1s linear; }
 .fh-phasecard small { display: block; margin-top: 8px; font-size: 12.5px; color: var(--fh-mute); }
 .fh-phasecard[data-endgame="true"] { border-color: #bc071d; background: rgba(188, 7, 29, 0.16); }
 .fh-phasecard[data-endgame="true"] .fh-phasecard-top { color: #ff3b4f; }
@@ -433,7 +437,7 @@ html.fh-snap { overflow-x: hidden; }
 
 /* ── 03 Your progress ────────────────────────────────────────────────────── */
 .fh-prog { display: grid; gap: 12px; }
-/* One heading style for Tokens, Puzzle pieces and FAQ. Scoped to .fh-prog so
+/* One heading style for Tokens and Puzzle Pieces. Scoped to .fh-prog so
    the .fh-next / .fh-tile defaults (20px / 14.5px b) do not win. */
 .fh-prog .fh-prog-title { display: block; margin: 0; font-family: inherit; font-size: 15px; font-weight: 700; line-height: 1.3; color: var(--fh-text); }
 .fh-prog .fh-prog-num { display: block; font-size: clamp(40px, 12vw, 56px); line-height: 1; margin: 4px 0 0; font-variant-numeric: tabular-nums; }
@@ -450,9 +454,6 @@ div.fi-lamp:active { transform: none; }
 .fh-prog-tokens:active { transform: none; }
 .fh-prog-keys .fi-sec { margin-top: 0; }
 .fh-prog-keys .fi-grid { border: 0; background: transparent; padding: 4px 0 0; }
-.fh-prog-faq { display: grid; grid-template-columns: auto auto 1fr auto; }
-.fh-prog-faq small { font-size: 13px; color: var(--fh-mute); }
-.fh-prog-faq > svg { color: var(--fh-text-2); }
 
 @keyframes fh-pulse { 50% { opacity: 0.35; } }
 
@@ -579,7 +580,8 @@ div.fi-lamp:active { transform: none; }
 .fh-cl-switch input:focus-visible + span { outline: 2px solid var(--fh-accent); outline-offset: 2px; }
 .fh-cl-gps-note { padding-left: 52px; font-size: 12px; color: var(--fh-mute); }
 @media (max-width: 420px) {
-  .fh-cl-body, .fh-cl-gps-err, .fh-cl-gps-actions, .fh-cl-gps-note { padding-left: 0; }
+  .fh-cl-body { padding-left: 16px; }
+  .fh-cl-gps-err, .fh-cl-gps-actions, .fh-cl-gps-note { padding-left: 0; }
 }
 .fh-input {
   width: 100%; min-height: 44px; border-radius: 12px; border: 1px solid var(--fh-line-2);
@@ -595,7 +597,11 @@ div.fi-lamp:active { transform: none; }
   box-shadow: 0 18px 50px -28px var(--fh-glow);
 }
 .fh-gc-qr { display: grid; place-items: center; }
-.fh-gc-qr img { display: block; width: min(100%, 210px); height: auto; border-radius: 22px; box-shadow: 0 0 40px -10px var(--fh-glow); }
+.fh-gc-qr-toggle { display: block; width: min(100%, 210px); padding: 0; border: 0; border-radius: 22px; background: transparent; cursor: zoom-in; }
+.fh-gc-qr-toggle:focus-visible { outline: 2px solid var(--fh-accent); outline-offset: 4px; }
+.fh-gc-qr-toggle img { display: block; width: 100%; height: auto; border-radius: 22px; box-shadow: 0 0 40px -10px var(--fh-glow); }
+.fh-gc-qr-toggle img.is-expanded { width: min(100%, 320px); }
+.fh-gc-qr-toggle:has(img.is-expanded) { width: min(100%, 320px); cursor: zoom-out; }
 .fh-gc-qr-msg {
   width: min(100%, 210px); aspect-ratio: 0.89; display: grid; place-items: center; align-content: center; gap: 12px;
   border-radius: 22px; border: 1.5px dashed var(--fh-line-2); background: var(--fh-ink); text-align: center; padding: 16px;
@@ -622,7 +628,7 @@ div.fi-lamp:active { transform: none; }
 @media (min-width: 720px) {
   .fh-gc { grid-template-columns: auto minmax(0, 1fr); gap: 28px; padding: 24px; align-items: center; }
   .fh-gc-pass { align-items: flex-start; text-align: left; }
-  .fh-gc-qr img, .fh-gc-qr-msg { width: 240px; }
+  .fh-gc-qr-toggle, .fh-gc-qr-msg { width: 240px; }
 }
 .fh-check-msg { font-size: 13px; color: var(--fh-text-2); }
 
@@ -922,15 +928,6 @@ div.fi-lamp:active { transform: none; }
 @keyframes fi-slot-open { from { grid-template-rows: 0fr; margin-top: 0; } }
 @keyframes fi-keyban-in { from { opacity: 0; transform: translateY(8px) scale(0.98); } }
 
-/* Sample-data only: replays the "complete" demo. */
-.fi-replay {
-  position: fixed; right: 16px; bottom: calc(var(--fh-bottom, 72px) + 16px); z-index: 50;
-  min-height: 40px; padding: 0 16px; border-radius: 999px; cursor: pointer;
-  font: 600 13px var(--font-mono), monospace; color: #1a1200; background: #ffd66b; border: 0;
-  box-shadow: 0 8px 24px -8px #000;
-}
-@media (max-width: 1023px) { .fi-replay { bottom: calc(96px + env(safe-area-inset-bottom, 0px)); } }
-
 /* 2 · Key banner */
 .fi-keyban-slot { display: grid; grid-template-rows: 1fr; }
 .fi-keyban-clip { min-height: 0; }
@@ -1139,8 +1136,7 @@ div.fi-lamp:active { transform: none; }
   .fi-key-actions { grid-template-columns: 1fr 1fr; }
 }
 .fi-key-actions .fh-btn { white-space: nowrap; }
-/* Demo scan (NFC demo mode only) takes the full row under the two main buttons. */
-.fi-key-actions .fi-key-demo { grid-column: 1 / -1; }
+.fi-key-instruction { display: flex; grid-column: 1 / -1; align-items: center; justify-content: center; gap: 8px; min-height: 44px; margin: 0; padding: 10px 14px; border: 1px solid var(--fh-line-2); border-radius: 12px; color: var(--fh-text-2); font-size: 13px; font-weight: 700; text-align: center; }
 .fi-key-foot { margin: 8px 2px 0; font-size: 12px; color: var(--fh-mute); text-align: center; }
 
 /* Blind box (BlindBox.tsx): ask → sealed → opening → reveal. Full screen
@@ -1537,3 +1533,14 @@ div.fi-lamp:active { transform: none; }
 @keyframes bbuy-drop { from { opacity: 0; transform: translateY(-48px) scale(0.9) rotateY(-18deg); } }
 @keyframes bbuy-float { 0%, 100% { transform: translateY(0) rotateY(-7deg) rotateX(3deg); } 50% { transform: translateY(-12px) rotateY(7deg) rotateX(-2deg); } }
 @keyframes bbuy-in { from { opacity: 0; transform: translateY(10px); } }
+
+.fh-board-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin: 12px 0;
+  color: var(--fh-text-2);
+  font-size: 14px;
+  line-height: 1.5;
+}

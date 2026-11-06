@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 
-import { SPONSORS, SPONSORS_ARE_EXAMPLES, scrollToSection } from "../data";
+import { SPONSORS, scrollToSection } from "../data";
 
 export function WelcomeSection({ onJoin }: { onJoin?: () => void }) {
   return (
@@ -16,7 +16,7 @@ export function WelcomeSection({ onJoin }: { onJoin?: () => void }) {
           <span className="vx-welcome-mark vx-holo">Vortexa</span>
         </h1>
 
-        <p className="vx-welcome-slogan vx-rise-2">One Ticket, One Ride.<br />Discover Adventure Inside.</p>
+        <p className="vx-welcome-slogan vx-rise-2">One Ticket, One Ride.<br /><span className="vx-slogan-line">Discover Adventure Inside.</span></p>
 
 
         <div className="vx-welcome-actions vx-rise-3">
@@ -49,13 +49,11 @@ export function WelcomeSection({ onJoin }: { onJoin?: () => void }) {
           </div>
           <span className="vx-credits-sep" aria-hidden />
           <div className="vx-credits-col vx-credits-sponsors">
-            <span className="vx-credits-label vx-mono">
-              Supported by{SPONSORS_ARE_EXAMPLES && <span className="vx-credits-example"> (Example)</span>}
-            </span>
+            <span className="vx-credits-label vx-mono">Supported by</span>
             <ul>
               {SPONSORS.map((s, i) => {
                 const body = s.logo ? (
-                  <Image src={s.logo} alt={s.name} width={240} height={102} className="vx-sponsor-logo" />
+                  <Image src={s.logo} alt={s.name} width={240} height={102} className={`vx-sponsor-logo vx-sponsor-logo--${s.id}`} />
                 ) : (
                   <span className="vx-sponsor-ph">
                     <i aria-hidden />

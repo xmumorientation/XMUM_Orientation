@@ -114,7 +114,7 @@ function OpsOverview({ canAssignFacis }: { canAssignFacis: boolean }) {
   ];
 
   const name = (g: Group) => g.display_name?.trim() || g.name;
-  const n = (v: number | null | undefined) => (v == null ? "—" : v);
+  const n = (v: number | null | undefined) => (v == null ? "Not available" : v);
 
   return (
     <OpsShell name={canAssignFacis ? "Overview" : "Committee / Read Only"} sections={sections} current={view} onPick={setView}>
@@ -190,7 +190,7 @@ function OpsOverview({ canAssignFacis }: { canAssignFacis: boolean }) {
               </div>
               <div className="gc-ops-code">
                 <small>Password</small>
-                <b>{codes[g.id] ?? "—"}</b>
+                <b>{codes[g.id] ?? "Not available"}</b>
               </div>
             </li>
           ))}

@@ -6,7 +6,9 @@ import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 
 import { AuthShell } from "@/components/auth/AuthShell";
+import { SupportLinks } from "@/components/SupportLinks";
 import { Spinner } from "@/components/ui";
+import { loginError } from "@/lib/loginError";
 import { supabaseBrowser } from "@/lib/supabase/client";
 
 import type { DemoLogin } from "./demo-logins";
@@ -34,17 +36,17 @@ export function LoginForm({ demoLogins }: { demoLogins: DemoLogin[] }) {
   async function performLogin(loginEmail: string, loginPass: string) {
     setBusy(true);
     setError(null);
-    const supabase = supabaseBrowser();
-    const { error } = await supabase.auth.signInWithPassword({
-      email: loginEmail,
-      password: loginPass,
-    });
-    if (error) {
-      setError(error.message);
+    try {
+      const { error } = await supabaseBrowser().auth.signInWithPassword({
+        email: loginEmail,
+        password: loginPass,
+      });
+      if (error) throw error;
+      window.location.href = nextUrl || "/dashboard";
+    } catch (error) {
+      setError(loginError(error));
       setBusy(false);
-      return;
     }
-    window.location.href = nextUrl || "/dashboard";
   }
 
   async function onSubmit(e: React.FormEvent) {
@@ -63,15 +65,14 @@ export function LoginForm({ demoLogins }: { demoLogins: DemoLogin[] }) {
   async function continueWithGoogle() {
     setBusy(true);
     setError(null);
-    const supabase = supabaseBrowser();
-    const { error: oauthError } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      },
-    });
-    if (oauthError) {
-      setError(oauthError.message);
+    try {
+      const { error: oauthError } = await supabaseBrowser().auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: `${window.location.origin}/auth/callback` },
+      });
+      if (oauthError) throw oauthError;
+    } catch {
+      setError("Google sign-in could not start. Check your connection and try again.");
       setBusy(false);
     }
   }
@@ -80,9 +81,7 @@ export function LoginForm({ demoLogins }: { demoLogins: DemoLogin[] }) {
     <AuthShell role="Committee, Faci, GM Login" lead="Sign in with your campus email or Google.">
       <form onSubmit={onSubmit} className="vx-login-form">
         {error && (
-          <p className="vx-login-error" role="alert">
-            {error}
-          </p>
+          <div className="vx-login-error"><p role="alert">{error}</p></div>
         )}
 
         <label htmlFor="email">

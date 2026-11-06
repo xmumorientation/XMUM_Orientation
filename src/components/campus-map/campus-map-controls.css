@@ -25,3 +25,8 @@
 .campus-map-building:focus-visible { outline: 2px solid var(--cm-accent); outline-offset: 3px; }
 .campus-map-building-count { min-width: 22px; padding: 2px 5px; border-radius: 6px; background: var(--cm-raised); color: var(--cm-text); font-size: 12px; font-variant-numeric: tabular-nums; text-align: center; }
 @media (prefers-reduced-motion: reduce) { .campus-map-building { transition: none; } }
+
+/* HOF, OC and HOGM location pin on the 2D map: the red halo under its tip breathes. */
+.campus-map-staff-pulse { transform-box: fill-box; transform-origin: center; animation: campus-map-staff-pulse 1.8s ease-out infinite; }
+@keyframes campus-map-staff-pulse { 0% { transform: scale(0.7); opacity: 1; } 100% { transform: scale(1.35); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .campus-map-staff-pulse { animation: none; } }
