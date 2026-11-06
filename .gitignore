@@ -40,3 +40,6 @@ supabase/.temp
 # local preview / playwright artifacts
 .preview-shots/
 test-results/
+
+# Tutorial videos and their source (never commit)
+/docs/videos/
