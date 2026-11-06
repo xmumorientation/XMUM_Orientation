@@ -34,6 +34,9 @@ export const metadata: Metadata = {
   description:
     "XMUM 26/12 Orientation",
   metadataBase: new URL("https://vortexa.xmum.edu.my"),
+  // Unlisted: reachable by link, never in search results. next.config.ts
+  // sends the same as an X-Robots-Tag header for files and API routes.
+  robots: { index: false, follow: false, googleBot: { index: false, follow: false } },
   openGraph: {
     title: "Vortexa",
     description:

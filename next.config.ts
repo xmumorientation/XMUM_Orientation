@@ -19,13 +19,20 @@ const nextConfig: NextConfig = {
       : [],
   },
   async headers() {
-    return [{
-      source: "/sw.js",
-      headers: [
-        { key: "Cache-Control", value: "no-store" },
-        { key: "Service-Worker-Allowed", value: "/" },
-      ],
-    }];
+    return [
+      {
+        source: "/sw.js",
+        headers: [
+          { key: "Cache-Control", value: "no-store" },
+          { key: "Service-Worker-Allowed", value: "/" },
+        ],
+      },
+      // Unlisted site: no search engine indexes any page, file or API route.
+      {
+        source: "/:path*",
+        headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
+      },
+    ];
   },
   // Freshie control moved into the Admin area.
   async redirects() {
